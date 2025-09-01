@@ -118,46 +118,50 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   end
 
   @doc """
-  Fetches a CSV from the given URL and imports all assistants for each org_id.
+  Fetches the data from the given URL and imports all assistants for each org_id.
   """
   @spec import_asst_from_csv(String.t()) :: :ok
   def import_asst_from_csv(url) do
-    case get(url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        lines = String.split(body, "\n", trim: true)
+    {:ok, %Tesla.Env{status: 200, body: body}} = get(url)
 
-        Task.Supervisor.async_stream_nolink(
-          Glific.TaskSupervisor,
-          lines,
-          fn line ->
-            case String.split(line, ",") do
-              [org_id, assistant_id] ->
-                Filesearch.import_assistant(
-                  String.trim(assistant_id),
-                  String.to_integer(String.trim(org_id))
-                )
+    lines =
+      body
+      |> String.split("\n", trim: true)
+      |> Enum.map(&String.trim_trailing(&1, "\r"))
 
-              _ ->
-                {:error, :invalid_row}
-            end
-          end,
-          max_concurrency: 20,
-          timeout: 60_000,
-          on_timeout: :kill_task
-        )
-        |> Enum.each(fn
-          {:ok, {:ok, result}} ->
-            Logger.info("Imported assistant: #{inspect(result)}")
+    Task.Supervisor.async_stream_nolink(
+      Glific.TaskSupervisor,
+      lines,
+      fn line ->
+        case String.split(line, ",") do
+          [org_id, assistant_id] ->
+            Filesearch.import_assistant(
+              String.trim(assistant_id),
+              String.to_integer(String.trim(org_id))
+            )
 
-          {:ok, {:error, :invalid_row}} ->
-            Logger.error("Invalid CSV row")
+          _ ->
+            {:error, :invalid_row}
+        end
+      end,
+      max_concurrency: 20,
+      timeout: 60_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.each(fn
+      {:ok, {:ok, result}} ->
+        Logger.info("Imported assistant: #{inspect(result)}")
 
-          {:ok, {:error, reason}} ->
-            Logger.error("Import failed: #{inspect(reason)}")
+      {:ok, {:error, :invalid_row}} ->
+        Logger.error("Invalid CSV row")
 
-          {:exit, reason} ->
-            Logger.error("Task crashed: #{inspect(reason)}")
-        end)
-    end
+      {:ok, {:error, reason}} ->
+        Logger.error("Import failed: #{inspect(reason)}")
+
+      {:exit, reason} ->
+        Logger.error("Task crashed: #{inspect(reason)}")
+    end)
+
+    :ok
   end
 end
