@@ -3,6 +3,8 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   Onboard Glific orgs to KAAPI and store KAAPI API keys as provider credentials.
   """
 
+  use Tesla
+
   require Logger
   import Ecto.Query
 
@@ -12,8 +14,11 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     Partners.Provider,
     Repo,
     TaskSupervisor,
-    ThirdParty.Kaapi
+    ThirdParty.Kaapi,
+    Filesearch
   }
+
+  plug Tesla.Middleware.FollowRedirects
 
   @doc """
   Onboard all eligible organizations from the DB.
@@ -110,6 +115,50 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
 
       {:error, error} ->
         "Org #{id} onboarding failed: #{inspect(error)}"
+    end
+  end
+
+  @doc """
+  Fetches a CSV from the given URL and imports all assistants for each org_id.
+  """
+  @spec import_asst_from_csv(String.t()) :: :ok
+  def import_asst_from_csv(url) do
+    case get(url) do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        lines = String.split(body, "\n", trim: true)
+
+        Task.Supervisor.async_stream_nolink(
+          Glific.TaskSupervisor,
+          lines,
+          fn line ->
+            case String.split(line, ",") do
+              [org_id, assistant_id] ->
+                Filesearch.import_assistant(
+                  String.trim(assistant_id),
+                  String.to_integer(String.trim(org_id))
+                )
+
+              _ ->
+                {:error, :invalid_row}
+            end
+          end,
+          max_concurrency: 20,
+          timeout: 60_000,
+          on_timeout: :kill_task
+        )
+        |> Enum.each(fn
+          {:ok, {:ok, result}} ->
+            Logger.info("Imported assistant: #{inspect(result)}")
+
+          {:ok, {:error, :invalid_row}} ->
+            Logger.error("Invalid CSV row")
+
+          {:ok, {:error, reason}} ->
+            Logger.error("Import failed: #{inspect(reason)}")
+
+          {:exit, reason} ->
+            Logger.error("Task crashed: #{inspect(reason)}")
+        end)
     end
   end
 end
