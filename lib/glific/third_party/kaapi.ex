@@ -96,8 +96,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}), reason=#{inspect(reason)}",
-            reason: reason
+              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}), reason=#{inspect(reason)}"
           },
           []
         )
