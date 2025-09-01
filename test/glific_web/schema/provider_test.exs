@@ -36,8 +36,10 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     assert res == "Gupshup"
 
-    # check for kaapi
-    assert Enum.any?(providers, fn p -> p["name"] == "Kaapi" end)
+    assert {:ok, _provider} = Repo.fetch_by(Provider, %{shortcode: "kaapi"})
+
+    # Kaapi should not be in the list, as we explicitly excluded it
+    refute Enum.any?(providers, fn p -> p["name"] == "Kaapi" end)
   end
 
   test "count returns the number of providers", %{user: user} do
