@@ -4,18 +4,17 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   """
 
   use Tesla
-
   require Logger
   import Ecto.Query
 
   alias Glific.{
+    Filesearch,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
     Repo,
     TaskSupervisor,
-    ThirdParty.Kaapi,
-    Filesearch
+    ThirdParty.Kaapi
   }
 
   plug Tesla.Middleware.FollowRedirects
