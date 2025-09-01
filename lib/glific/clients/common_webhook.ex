@@ -15,6 +15,7 @@ defmodule Glific.Clients.CommonWebhook do
     Providers.Maytapi,
     Repo,
     ThirdParty.GoogleSlide.Slide,
+    ThirdParty.Kaapi.ApiClient,
     WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
@@ -27,60 +28,76 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
-    endpoint = fields["endpoint"]
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
+    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization_id}) do
+      result_name = fields["result_name"]
+      webhook_log_id = fields["webhook_log_id"]
+      {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+      {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      kaapi_config = Application.fetch_env!(:glific, ApiClient)
 
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow_id,
+        "contact_id" => contact_id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(
+          organization_id,
+          Jason.encode!(signature_payload),
+          signature_payload["timestamp"]
+        )
+
+      organization = Partners.organization(organization_id)
+
+      callback_url =
+        "https://api.#{organization.shortcode}.glific.com" <>
+          "/webhook/flow_resume"
+
+      payload =
+        fields
+        |> Map.merge(signature_payload)
+        |> Map.put("signature", signature)
+        |> Map.put("callback_url", callback_url)
+        |> Map.put("webhook_log_id", webhook_log_id)
+        |> Map.put("result_name", result_name)
+        |> maybe_put_response_id(fields)
+        |> Jason.encode!()
+
+      Glific.Metrics.increment("Kaapi Requests")
+
+      client =
+        Tesla.client([
+          {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+          {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
+        ])
+
+      client
+      |> Tesla.post(
+        "api/v1/responses",
+        payload,
+        headers: headers,
+        opts: [adapter: [recv_timeout: 300_000]]
       )
+      |> case do
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          Map.merge(%{success: true}, body)
 
-    organization = Partners.organization(organization_id)
+        {:ok, %Tesla.Env{status: _status, body: body}} ->
+          Glific.Metrics.increment("Kaapi Failed")
+          reason = Jason.encode!(body)
+          %{success: false, reason: reason}
 
-    callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
-
-    payload =
-      fields
-      |> Map.merge(signature_payload)
-      |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
-      |> Jason.encode!()
-
-    endpoint
-    |> Tesla.post(
-      payload,
-      headers: headers,
-      opts: [adapter: [recv_timeout: 300_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        Map.merge(%{success: true}, response)
-
-      {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
+        {:error, reason} ->
+          if reason == :timeout, do: Glific.Metrics.increment("Kaapi Timeout")
+          %{success: false, reason: inspect(reason)}
+      end
+    else
+      do_call_and_wait(fields, headers)
     end
   end
 
@@ -502,6 +519,73 @@ defmodule Glific.Clients.CommonWebhook do
         )
 
         {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
+    end
+  end
+
+  @spec maybe_put_response_id(map(), map()) :: map()
+  defp maybe_put_response_id(map, fields) do
+    case fields["thread_id"] do
+      nil -> map
+      thread_id -> Map.put(map, "response_id", thread_id)
+    end
+  end
+
+  @spec do_call_and_wait(map(), list()) :: map()
+  defp do_call_and_wait(fields, headers) do
+    endpoint = fields["endpoint"]
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume?" <>
+        "organization_id=#{organization_id}&" <>
+        "flow_id=#{flow_id}&" <>
+        "contact_id=#{contact_id}&" <>
+        "timestamp=#{timestamp}&" <>
+        "signature=#{signature}"
+
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback", callback)
+      |> Jason.encode!()
+
+    endpoint
+    |> Tesla.post(
+      payload,
+      headers: headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        response = Jason.decode!(body)
+        Map.merge(%{success: true}, response)
+
+      {:ok, %Tesla.Env{status: _status, body: body}} ->
+        %{success: false, response: body}
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
     end
   end
 end
