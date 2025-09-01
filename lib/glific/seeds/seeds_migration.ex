@@ -136,7 +136,7 @@ defmodule Glific.Seeds.SeedsMigration do
       language_id: 1,
       organization_id: org_id,
       button_type: :otp,
-      buttons: [%{"type" => "OTP", "text" => "Copy OTP", "otp_type" => "COPY_CODE"}]
+      buttons: [%{"type" => "OTP", "text" => "Copy code", "otp_type" => "COPY_CODE"}]
     }
     |> Templates.create_session_template()
   end
