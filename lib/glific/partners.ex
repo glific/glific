@@ -546,6 +546,7 @@ defmodule Glific.Partners do
       |> Flags.set_ticketing_enabled()
       |> Flags.set_certificate_enabled()
       |> Flags.set_interactive_re_response_enabled()
+      |> Flags.set_is_kaapi_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1282,7 +1283,9 @@ defmodule Glific.Partners do
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
-      "interactive_re_response_enabled" => Flags.get_interactive_re_response_enabled(organization)
+      "interactive_re_response_enabled" =>
+        Flags.get_interactive_re_response_enabled(organization),
+      "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization)
     }
   end
 
