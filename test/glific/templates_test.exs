@@ -2059,7 +2059,7 @@ defmodule Glific.TemplatesTest do
     assert template.category == "AUTHENTICATION"
 
     assert template.buttons == [
-             %{"otp_type" => "COPY_CODE", "text" => "Copy OTP", "type" => "OTP"}
+             %{"otp_type" => "COPY_CODE", "text" => "Copy code", "type" => "OTP"}
            ]
   end
 
