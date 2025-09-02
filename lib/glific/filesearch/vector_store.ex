@@ -76,7 +76,7 @@ defmodule Glific.Filesearch.VectorStore do
   """
   @spec upsert_vector_store(map()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
   def upsert_vector_store(attrs) do
-    conflict_opts = Enum.into(attrs, [])
+    conflict_opts = attrs |> Map.take([:name, :files, :size, :status]) |> Map.to_list()
 
     %VectorStore{}
     |> changeset(attrs)
