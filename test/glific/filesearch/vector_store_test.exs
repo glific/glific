@@ -2,14 +2,11 @@ defmodule Glific.Filesearch.VectorStoreTest do
   @moduledoc """
   Tests for VectorStores
   """
+  use Glific.DataCase
+
   alias Glific.Filesearch.Assistant
-
-  alias Glific.{
-    Filesearch.VectorStore,
-    Repo
-  }
-
-  use GlificWeb.ConnCase
+  alias Glific.Filesearch.VectorStore
+  alias Glific.Repo
 
   test "create_vector_store/1 with valid data creates a vector_store", attrs do
     valid_attrs = %{
@@ -43,6 +40,57 @@ defmodule Glific.Filesearch.VectorStoreTest do
     assert {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
 
     assert {:ok, %VectorStore{}} = VectorStore.get_vector_store(vector_store.id)
+  end
+
+  test "upsert_vector_store/1 creates a vector_store when it doesn't exist", attrs do
+    valid_attrs = %{
+      vector_store_id: "vs_upsert_new",
+      name: "New Upserted VectorStore",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    assert {:ok, vector_store} = VectorStore.upsert_vector_store(valid_attrs)
+    assert vector_store.vector_store_id == "vs_upsert_new"
+    assert vector_store.name == "New Upserted VectorStore"
+  end
+
+  test "upsert_vector_store/1 updates name when vector_store already exists", attrs do
+    # First create a vector store
+    initial_attrs = %{
+      vector_store_id: "vs_upsert_existing",
+      name: "Initial VectorStore",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    assert {:ok, initial_vector_store} = VectorStore.create_vector_store(initial_attrs)
+    assert initial_vector_store.name == "Initial VectorStore"
+
+    # Now upsert with the same vector_store_id but different name
+    updated_attrs = %{
+      vector_store_id: "vs_upsert_existing",
+      name: "Updated VectorStore",
+      files: %{},
+      organization_id: attrs.organization_id
+    }
+
+    assert {:ok, updated_vector_store} = VectorStore.upsert_vector_store(updated_attrs)
+    assert updated_vector_store.id == initial_vector_store.id
+    assert updated_vector_store.vector_store_id == "vs_upsert_existing"
+    assert updated_vector_store.name == "Updated VectorStore"
+  end
+
+  test "upsert_vector_store/1 with invalid data returns error", attrs do
+    invalid_attrs = %{
+      name: "Invalid VectorStore",
+      files: %{},
+      organization_id: attrs.organization_id
+      # missing required vector_store_id
+    }
+
+    assert {:error, changeset} = VectorStore.upsert_vector_store(invalid_attrs)
+    assert %{vector_store_id: ["can't be blank"]} = errors_on(changeset)
   end
 
   test "list_vector_stores/1 with returns list of VectorStores matching the filters", attrs do

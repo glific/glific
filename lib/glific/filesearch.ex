@@ -394,7 +394,7 @@ defmodule Glific.Filesearch do
   defp create_filesearch_artifacts_on_import(assistant_data, vector_store_data) do
     Multi.new()
     |> Multi.run(:create_vector_store, fn _, _ ->
-      VectorStore.create_vector_store(
+      VectorStore.upsert_vector_store(
         %{
           vector_store_id: vector_store_data.id,
           inserted_at: DateTime.from_unix!(vector_store_data.created_at),
