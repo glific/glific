@@ -88,7 +88,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{}, opts)
+    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{}, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, %{message: "Assistant synced successfully"}}
