@@ -38,9 +38,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         body
       end
 
+    opts = [adapter: [recv_timeout: 30_000]]
+
     api_key
     |> client()
-    |> Tesla.post("/api/v1/onboard", body)
+    |> Tesla.post("/api/v1/onboard", body, opts: opts)
     |> parse_kaapi_response()
   end
 
