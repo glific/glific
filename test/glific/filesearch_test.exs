@@ -1105,6 +1105,107 @@ defmodule Glific.FilesearchTest do
       Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
   end
 
+  test "import_assistant/2, when vector_store already exists in the system", attrs do
+    # First create a vector store in the system
+    existing_vector_store_id = "vs_fxTfuin6XLBEqpIXSykw0bPI"
+
+    {:ok, existing_vector_store} =
+      VectorStore.create_vector_store(%{
+        vector_store_id: existing_vector_store_id,
+        name: "Existing Vector Store",
+        files: %{},
+        organization_id: attrs.user.organization_id
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_ljpFv60NIlSmXZdnVYHMNuq2",
+            name: "test-with-existing-vs",
+            instructions: "",
+            description: nil,
+            metadata: %{},
+            object: "assistant",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{file_search: %{vector_store_ids: [existing_vector_store_id]}},
+            created_at: 1_730_961_252,
+            response_format: %{type: "text"},
+            top_p: 1.0
+          }
+        }
+
+      %{
+        method: :get,
+        url: "https://api.openai.com/v1/vector_stores/vs_fxTfuin6XLBEqpIXSykw0bPI/files"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: [
+              %{
+                id: "file-sNDXUc9cysWhFDBF3ftsDnPB",
+                status: "completed",
+                last_error: nil,
+                object: "vector_store.file",
+                vector_store_id: "vs_fxTfuin6XLBEqpIXSykw0bPI",
+                created_at: 1_731_062_491,
+                usage_bytes: 2188,
+                chunking_strategy: %{
+                  type: "static",
+                  static: %{max_chunk_size_tokens: 800, chunk_overlap_tokens: 400}
+                }
+              }
+            ],
+            object: "list"
+          }
+        }
+
+      %{method: :get, url: "https://api.openai.com/v1/vector_stores/" <> _} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "vs_fxTfuin6XLBEqpIXSykw0bPI",
+            name: "Updated Vector Store Name",
+            status: "completed",
+            object: "vector_store",
+            created_at: 1_731_062_489,
+            usage_bytes: 2188
+          }
+        }
+
+      %{method: :get, url: "https://api.openai.com/v1/files/file-sNDXUc9cysWhFDBF3ftsDnPB"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-sNDXUc9cysWhFDBF3ftsDnPB",
+            filename: "Dev Policies.pdf",
+            bytes: 78_063,
+            object: "file",
+            created_at: 1_731_062_487,
+            purpose: "assistants"
+          }
+        }
+    end)
+
+    {:ok, %Assistant{vector_store_id: vs_id}} =
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+
+    # Verify that the vector store is the same one
+    assert vs_id == existing_vector_store.id
+
+    # Check that the vector store was updated
+    {:ok, updated_vector_store} = VectorStore.get_vector_store(vs_id)
+    assert updated_vector_store.name == "Updated Vector Store Name"
+    assert updated_vector_store.vector_store_id == existing_vector_store_id
+
+    # Verify that files were updated
+    assert map_size(updated_vector_store.files) == 1
+    assert Map.has_key?(updated_vector_store.files, "file-sNDXUc9cysWhFDBF3ftsDnPB")
+  end
+
   defp enable_kaapi(attrs) do
     {:ok, credential} =
       Partners.create_credential(%{
