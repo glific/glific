@@ -75,6 +75,7 @@ defmodule Glific.Saas.Onboard do
          %{is_valid: true} <- Queries.validate_shortcode(result, shortcode),
          %{is_valid: true} = result <-
            Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
+      Repo.put_process_state(result.organization.id)
       Queries.seed_data(result)
       SeedsMigration.migrate_data(:template_flows, result.organization)
       org = status(result.organization.id, :active)
