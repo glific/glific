@@ -221,18 +221,23 @@ defmodule Glific.Filesearch do
       vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
 
       if is_nil(vector_store_id) do
-        Assistant.create_assistant(
-          %{
-            assistant_id: assistant_id,
-            inserted_at: DateTime.from_unix!(assistant_data.created_at),
-            organization_id: Repo.get_organization_id()
-          }
-          |> Map.merge(assistant_data)
-        )
+        create_assistant(assistant_id, assistant_data)
       else
         create_assistant_and_vector_store(vector_store_id, assistant_data)
       end
     end
+  end
+
+  @spec create_assistant(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  defp create_assistant(assistant_id, assistant_data) do
+    Assistant.create_assistant(
+      %{
+        assistant_id: assistant_id,
+        inserted_at: DateTime.from_unix!(assistant_data.created_at),
+        organization_id: Repo.get_organization_id()
+      }
+      |> Map.merge(assistant_data)
+    )
   end
 
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
