@@ -47,6 +47,8 @@ defmodule Glific.Filesearch.VectorStoreTest do
       vector_store_id: "vs_upsert_new",
       name: "New Upserted VectorStore",
       files: %{},
+      size: 129_837,
+      status: "completed",
       organization_id: attrs.organization_id
     }
 
@@ -71,14 +73,18 @@ defmodule Glific.Filesearch.VectorStoreTest do
     updated_attrs = %{
       vector_store_id: "vs_upsert_existing",
       name: "Updated VectorStore",
+      status: initial_vector_store.status,
+      size: 129_837,
       files: %{},
       organization_id: attrs.organization_id
     }
 
     assert {:ok, updated_vector_store} = VectorStore.upsert_vector_store(updated_attrs)
     assert updated_vector_store.id == initial_vector_store.id
+    assert updated_vector_store.status == initial_vector_store.status
     assert updated_vector_store.vector_store_id == "vs_upsert_existing"
     assert updated_vector_store.name == "Updated VectorStore"
+    assert updated_vector_store.size == 129_837
   end
 
   test "upsert_vector_store/1 with invalid data returns error", attrs do
