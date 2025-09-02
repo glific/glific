@@ -385,7 +385,7 @@ defmodule Glific.Partners do
     case Repo.fetch(Contact, org.contact_id) do
       {:ok, contact} ->
         contact
-        |> Ecto.Changeset.change(%{phone: phone})
+        |> Contact.changeset(%{phone: phone})
         |> Repo.update()
 
       _ ->
