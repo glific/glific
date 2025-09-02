@@ -225,6 +225,7 @@ defmodule Glific.Saas.Queries do
             "run_flow_each_time" => false,
             "allow_bot_number_update" => true
           },
+          signature_phrase: "Please change me, NOW!",
           team_emails: %{
             "finance" => params["email"],
             "analytics" => params["email"],
