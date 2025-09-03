@@ -301,6 +301,133 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
+  @tag :tt
+  test "updating an organization with a valid phone number will update the main user and contact phone number",
+       %{user: user} do
+    organization =
+      Repo.get!(Glific.Partners.Organization, user.organization_id)
+
+    valid_phone = "917905556238"
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "phone" => valid_phone
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+
+    {:ok, main_user} =
+      Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
+
+    {:ok, contact} =
+      Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
+
+    refute updated_organization["setting"]["allow_bot_number_update"]
+    assert main_user.phone == valid_phone
+    assert contact.phone == valid_phone
+  end
+
+  test "updating phone fails if NGO Main Account does not exist", %{user: user} do
+    organization = Fixtures.organization_fixture()
+    valid_phone = "917905556238"
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "phone" => valid_phone
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+    assert updated_organization == nil
+
+    [error] = get_in(query_data, [:errors])
+    assert error.message =~ "Organization contact not found"
+  end
+
+  test "updating an organization with a completely invalid phone triggers parse error", %{
+    user: user
+  } do
+    organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
+    invalid_phone = "abcd"
+
+    {:ok, result} =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{"phone" => invalid_phone}
+        }
+      )
+
+    assert get_in(result, [:data, "updateOrganization"]) == nil
+
+    errors = get_in(result, [:errors])
+    assert [%{message: message}] = errors
+    assert message =~ "Phone number is not valid because"
+  end
+
+  test "updating an organization with improperly formatted phone returns validation error", %{
+    user: user
+  } do
+    organization = Repo.get!(Glific.Partners.Organization, user.organization_id)
+    invalid_phone = "123abc"
+
+    {:ok, result} =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{"phone" => invalid_phone}
+        }
+      )
+
+    assert get_in(result, [:data, "updateOrganization"]) == nil
+    errors = get_in(result, [:errors])
+    assert [%{message: message}] = errors
+    assert message =~ "Phone number is not valid"
+  end
+
+  test "Updating an Organization with Invalid Phone Number does not update NGO Main Account number and Contact phone number",
+       %{user: user} do
+    organization =
+      Repo.get!(Glific.Partners.Organization, user.organization_id)
+
+    invalid_phone = "12345"
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "phone" => invalid_phone
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_org = get_in(query_data, [:data, "updateOrganization", "organization"])
+    assert updated_org == nil
+
+    {:ok, main_user} =
+      Repo.fetch_by(Glific.Users.User, %{contact_id: organization.contact_id})
+
+    {:ok, contact} =
+      Repo.fetch_by(Glific.Contacts.Contact, %{id: organization.contact_id})
+
+    assert main_user.phone != invalid_phone
+    assert contact.phone != invalid_phone
+  end
+
   test "update an organization and test possible scenarios and errors", %{user: user} do
     name = "Organization Test Name"
     shortcode = "org_shortcode"

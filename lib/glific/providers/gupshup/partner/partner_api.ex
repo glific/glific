@@ -3,6 +3,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   A module to handle fetching tier related information like quality rating and app rating using partner API
   """
 
+  alias Glific.Seeds.SeedsMigration
+
   alias Glific.{
     Caches,
     Partners,
@@ -14,6 +16,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   alias Plug.Conn.Query
   alias Tesla.Multipart
+
+  defmodule Error do
+    @moduledoc """
+    Custom Error module for Gupshup partner api failures
+    """
+    defexception [:message]
+  end
 
   plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
@@ -37,9 +46,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:error, error} ->
         error = "#{inspect(error)}"
 
-        if String.contains?(error, "Re-linking"),
-          do: fetch_gupshup_app_details(org_id),
-          else: error
+        if String.contains?(error, "Re-linking") do
+          fetch_gupshup_app_details(org_id)
+        else
+          Glific.log_exception(%Error{message: "Linking App to partner failed due to #{error}"})
+
+          "Linking App to partner failed, please double-check and enter correct App name and API key"
+        end
     end
   end
 
@@ -295,6 +308,32 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
              org_id: org_id
            ) do
       {:ok, %{"balance" => resp["walletResponse"]["currentBalance"]}}
+    end
+  end
+
+  @doc """
+  Call one-time configuration related Gupshup apis post credential updates
+  """
+  @spec apply_gupshup_settings(non_neg_integer()) :: :ok
+  def apply_gupshup_settings(org_id) do
+    # If we remove cache in tests, it will be flaky since some tests need to be mocked
+    #  token fetch api due to parallel cache clearing
+    if Application.get_env(:glific, :environment) != :test do
+      Glific.Caches.remove(org_id, ["partner_app_token"])
+    end
+
+    try do
+      {:ok, _} = SeedsMigration.submit_otp_template_for_org(org_id)
+      {:ok, _} = enable_template_messaging(org_id)
+      {:ok, _} = set_subscription(org_id)
+      :ok
+    rescue
+      error ->
+        Glific.log_exception(%Error{
+          message: "Error occurred while applying gupshup settings due to #{inspect(error)}"
+        })
+
+        :ok
     end
   end
 
@@ -558,7 +597,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       app
     else
       {:error, error} ->
-        error
+        Glific.log_exception(%Error{
+          message: "Fetching app details for app #{app_name} failed due to #{error}"
+        })
+
+        "Fetching app details failed, please double check App name and API key are correct"
 
       _ ->
         "Invalid Gupshup App"

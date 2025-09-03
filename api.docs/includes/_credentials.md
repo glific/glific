@@ -31,7 +31,7 @@ query credential($shortcode: String!) {
       "credential": {
         "id": "1",
         "isActive": true,
-        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\",\"api_end_point\":\"https://api.gupshup.io/sm/api/v1\"}",
+        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\"}",
         "provider": {
           "shortcode": "gupshup"
         },
@@ -145,7 +145,7 @@ mutation updateCredential($id: ID!, $input: CredentialInput!) {
       "credential": {
         "id": "1",
         "isActive": true,
-        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\",\"api_end_point\":\"https://api.gupshup.io/sm/api/v1\"}",
+        "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\"}",
         "provider": {
           "shortcode": "gupshup"
         },
