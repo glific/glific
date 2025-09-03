@@ -114,7 +114,7 @@ defmodule Glific.Erase do
   @spec remove_old_records() :: any
   defp remove_old_records do
     [
-      {"message_broadcasts", "week"},
+      {"message_broadcast_contacts", "week"},
       {"notifications", "week"},
       {"webhook_logs", "week"},
       {"flow_contexts", "month"},
