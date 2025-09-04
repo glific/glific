@@ -12,7 +12,7 @@ query organizationServices {
     whatsapp_group_enabled
     certificate_enabled
     kaapi_enabled
-    ask_me_enabled
+    ask_me_bot_enabled
     errors {
       key
       message

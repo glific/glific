@@ -299,12 +299,12 @@ defmodule Glific.Flags do
     do:
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
-  @spec get_ask_me_enabled(map()) :: boolean
-  def get_ask_me_enabled(organization) do
+  @spec get_ask_me_bot_enabled(map()) :: boolean
+  def get_ask_me_bot_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
-      FunWithFlags.enabled?(:is_ask_me_enabled, for: %{organization_id: organization.id}) ->
+      FunWithFlags.enabled?(:is_ask_me_bot_enabled, for: %{organization_id: organization.id}) ->
         true
 
       Glific.trusted_env?(app_env, organization.id) ->
@@ -447,12 +447,12 @@ defmodule Glific.Flags do
     )
   end
 
-  @spec set_is_ask_me_enabled(map()) :: map()
-  def set_is_ask_me_enabled(organization) do
+  @spec set_is_ask_me_bot_enabled(map()) :: map()
+  def set_is_ask_me_bot_enabled(organization) do
     Map.put(
       organization,
-      :is_ask_me_enabled,
-      get_ask_me_enabled(organization)
+      :is_ask_me_bot_enabled,
+      get_ask_me_bot_enabled(organization)
     )
   end
 
@@ -474,8 +474,9 @@ defmodule Glific.Flags do
       :is_whatsapp_group_enabled,
       :is_certificate_enabled,
       :is_kaapi_enabled,
-      :is_ask_me_enabled,
-      :is_interactive_re_response_enabled
+      :is_interactive_re_response_enabled,
+      :is_ask_me_bot_enabled,
+
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
