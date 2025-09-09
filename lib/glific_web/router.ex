@@ -73,10 +73,6 @@ defmodule GlificWeb.Router do
     post("/onboard/setup", OnboardController, :setup)
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
-  end
-
-  scope "/api/v1", GlificWeb.API.V1 do
-    pipe_through :api
     post "/askme", AskmeController, :ask
   end
 
