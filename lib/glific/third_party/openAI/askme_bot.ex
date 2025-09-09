@@ -10,6 +10,7 @@ defmodule Glific.ThirdParty.OpenAI.AskmeBot do
   """
   @spec askme(map()) :: {:ok, String.t()} | {:error, String.t()}
   def askme(params) do
+    Glific.Metrics.increment("askme bot requests")
     api_key = Glific.get_open_ai_key()
     vector_store_id = Application.get_env(:glific, :askme_bot_vector_store_id)
     url = @endpoint <> "/responses"
