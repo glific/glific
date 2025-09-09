@@ -1,10 +1,11 @@
 defmodule GlificWeb.API.V1.AskmeController do
+  @moduledoc """
+  AskMe bot Controller
+  """
   use GlificWeb, :controller
   alias Glific.ThirdParty.OpenAI.AskmeBot
 
-  @doc """
-  Returns the reponse from openAI response api
-  """
+  @doc false
   @spec ask(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def ask(conn, params) do
     case AskmeBot.askme(params) do
