@@ -38,9 +38,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         body
       end
 
+    opts = [adapter: [recv_timeout: 30_000]]
+
     api_key
     |> client()
-    |> Tesla.post("/api/v1/onboard", body)
+    |> Tesla.post("/api/v1/onboard", body, opts: opts)
     |> parse_kaapi_response()
   end
 
@@ -82,9 +84,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
   def ingest_ai_assistants(org_api_key, assistant_id) do
+    opts = [adapter: [recv_timeout: 30_000]]
+
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{})
+    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{}, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, %{message: "Assistant synced successfully"}}
