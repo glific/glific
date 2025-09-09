@@ -1208,7 +1208,7 @@ defmodule Glific.Partners do
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
       "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
-      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
     }
   end
 

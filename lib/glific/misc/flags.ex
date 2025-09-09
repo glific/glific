@@ -299,6 +299,9 @@ defmodule Glific.Flags do
     do:
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
+  @doc """
+  Get ask_me bot value for organization flag
+  """
   @spec get_ask_me_bot_enabled(map()) :: boolean
   def get_ask_me_bot_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
@@ -447,6 +450,9 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Set fun_with_flag toggle for ask_me bot enabled for an organization
+  """
   @spec set_is_ask_me_bot_enabled(map()) :: map()
   def set_is_ask_me_bot_enabled(organization) do
     Map.put(
@@ -475,8 +481,7 @@ defmodule Glific.Flags do
       :is_certificate_enabled,
       :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
-      :is_ask_me_bot_enabled,
-
+      :is_ask_me_bot_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
