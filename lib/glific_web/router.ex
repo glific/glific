@@ -75,6 +75,11 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
   end
 
+  scope "/api/v1", GlificWeb.API.V1 do
+    pipe_through :api
+    post "/askme", AskmeController, :ask
+  end
+
   # Enables LiveDashboard only for development
   #
   # If you want to use the LiveDashboard in production, you should put
