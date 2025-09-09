@@ -472,6 +472,7 @@ defmodule Glific.Partners do
       |> Flags.set_certificate_enabled()
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_kaapi_enabled()
+      |> Flags.set_is_ask_me_bot_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1206,7 +1207,8 @@ defmodule Glific.Partners do
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
-      "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization)
+      "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
     }
   end
 
