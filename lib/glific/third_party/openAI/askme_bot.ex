@@ -18,15 +18,11 @@ defmodule Glific.ThirdParty.OpenAI.AskmeBot do
 
     base =
       %{
-        "model" => "gpt-4o-mini",
         "input" => input,
-        "tools" => [
-          %{
-            "type" => "file_search",
-            "vector_store_ids" => [vector_store_id],
-            "max_num_results" => 20
-          }
-        ]
+        "model" => "gpt-5",
+        "prompt" => %{
+          "id" => "pmpt_68c13895b8748190ac0af72d6747523f0ae6e206c3370b30",
+        }
       }
 
     middleware = [
@@ -38,7 +34,13 @@ defmodule Glific.ThirdParty.OpenAI.AskmeBot do
     |> Tesla.post(url, base, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        content = get_in(body, ["output", Access.at(1), "content", Access.at(0), "text"])
+        content =
+          body
+          |> get_in(["output"])
+          |> Enum.find_value(fn output ->
+            get_in(output, ["content", Access.at(0), "text"])
+          end)
+
         {:ok, content}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
