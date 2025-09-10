@@ -1,18 +1,19 @@
-defmodule Glific.ThirdParty.OpenAI.AskmeBot do
+defmodule Glific.AskmeBot do
   @moduledoc """
   Glific AskMeBot module for all API calls to openAI
   """
-
+  require Logger
+  alias Glific.Partners.OrganizationData
+  alias Glific.Repo
   @endpoint "https://api.openai.com/v1"
 
   @doc """
   Calls the OpenAI response api and fetch the answer for AskMe bot
   """
-  @spec askme(map()) :: {:ok, String.t()} | {:error, String.t()}
-  def askme(params) do
-    Glific.Metrics.increment("askme bot requests")
+  @spec askme(map(), non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def askme(params, organization_id) do
+    Glific.Metrics.increment("AskMeBot Requests")
     api_key = Glific.get_open_ai_key()
-    vector_store_id = Application.get_env(:glific, :askme_bot_vector_store_id)
     url = @endpoint <> "/responses"
     input = Map.get(params, "input", [])
 
@@ -21,7 +22,7 @@ defmodule Glific.ThirdParty.OpenAI.AskmeBot do
         "input" => input,
         "model" => "gpt-5",
         "prompt" => %{
-          "id" => "pmpt_68c13895b8748190ac0af72d6747523f0ae6e206c3370b30",
+          "id" => "pmpt_68c13895b8748190ac0af72d6747523f0ae6e206c3370b30"
         }
       }
 
@@ -41,13 +42,32 @@ defmodule Glific.ThirdParty.OpenAI.AskmeBot do
             get_in(output, ["content", Access.at(0), "text"])
           end)
 
+        question = List.last(input)["content"]
+
+        attrs =
+          %{}
+          |> Map.put(:key, body["id"])
+          |> Map.put(:json, %{
+            question: question,
+            answer: content
+          })
+          |> Map.put(:organization_id, organization_id)
+
+        %OrganizationData{}
+        |> OrganizationData.changeset(attrs)
+        |> Repo.insert()
+
         {:ok, content}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
-        {:error, "Unexpected OpenAI response (#{status}): #{inspect(body)}"}
+        error = "Unexpected OpenAI response (#{status}): #{inspect(body)}"
+        Logger.error(error)
+        {:error, error}
 
       {:error, reason} ->
-        {:error, "HTTP error calling OpenAI: #{inspect(reason)}"}
+        error = "HTTP error calling OpenAI: #{inspect(reason)}"
+        Logger.error(error)
+        {:error, error}
     end
   end
 end

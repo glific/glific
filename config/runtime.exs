@@ -124,6 +124,3 @@ config :glific,
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),
   kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret")
-
-config :glific,
-  askme_bot_vector_store_id: env!("ASKME_BOT_VECTOR_STORE_ID", :string, "This is not a secret")

@@ -2,14 +2,9 @@ defmodule Glific.ThirdParty.OpenAI.AskmeTest do
   use Glific.DataCase, async: true
   import Tesla.Mock
 
-  alias Glific.ThirdParty.OpenAI.AskmeBot
+  alias Glific.AskmeBot
 
   @endpoint "https://api.openai.com/v1/responses"
-
-  setup do
-    Application.put_env(:glific, :askme_bot_vector_store_id, "vs_xyz")
-    :ok
-  end
 
   test "askme/1 returns the response successfully" do
     expected_text =

@@ -3,12 +3,12 @@ defmodule GlificWeb.API.V1.AskmeController do
   AskMe bot Controller
   """
   use GlificWeb, :controller
-  alias Glific.ThirdParty.OpenAI.AskmeBot
+  alias Glific.AskmeBot
 
   @doc false
   @spec ask(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def ask(conn, params) do
-    case AskmeBot.askme(params) do
+    case AskmeBot.askme(params, conn.assigns.current_user.organization_id) do
       {:ok, text} ->
         json(conn, %{response: text})
 
