@@ -15,7 +15,7 @@ defmodule Glific.UsersTest do
       phone: "some phone",
       language_id: 1,
       email: "some_name@gmail.com",
-      consent: false,
+      consent_for_updates: false,
       password: @password,
       password_confirmation: @password,
       roles: ["admin"]
@@ -23,7 +23,7 @@ defmodule Glific.UsersTest do
     @valid_attrs_1 %{
       name: "some name 1",
       phone: "some phone 1",
-      consent: false,
+      consent_for_updates: false,
       email: "some_name1@gmail.com",
       language_id: 1,
       password: @password,
@@ -34,7 +34,7 @@ defmodule Glific.UsersTest do
       phone: "some phone 2",
       email: "some_name2@gmail.com",
       language_id: 1,
-      consent: false,
+      consent_for_updates: false,
       password: @password,
       password_confirmation: @password
     }
@@ -42,7 +42,7 @@ defmodule Glific.UsersTest do
       name: "some name 3",
       phone: "some phone 3",
       email: "some_name3@gmail.com",
-      consent: false,
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -51,7 +51,7 @@ defmodule Glific.UsersTest do
       name: "aaaa name",
       phone: "some phone 4",
       email: "some_name4@gmail.com",
-      consent: false,
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -60,7 +60,7 @@ defmodule Glific.UsersTest do
       name: "zzzz name",
       phone: "some phone 5",
       email: "some_name5@gmail.com",
-      consent: false,
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -72,7 +72,7 @@ defmodule Glific.UsersTest do
       language_id: 1,
       password: @password,
       password_confirmation: @password,
-      consent: false,
+      consent_for_updates: false,
       roles: [:staff, :admin],
       is_restricted: true
     }
@@ -82,7 +82,7 @@ defmodule Glific.UsersTest do
       email: nil,
       language_id: 1,
       password: nil,
-      consent: false,
+      consent_for_updates: false,
       password_confirmation: nil
     }
 
@@ -135,7 +135,7 @@ defmodule Glific.UsersTest do
       assert user.phone == "some phone"
       assert user.email == "some_name@gmail.com"
       assert user.roles == [:admin]
-      assert user.consent == false
+      assert user.consent_for_updates == false
     end
 
     test "create_user/1 with invalid data returns error changeset", attrs do
@@ -150,7 +150,7 @@ defmodule Glific.UsersTest do
       assert user.email == "some_updated_name@gmail.com"
       assert user.roles == [:staff, :admin]
       assert user.is_restricted == true
-      assert user.consent == false
+      assert user.consent_for_updates == false
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
@@ -167,7 +167,7 @@ defmodule Glific.UsersTest do
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
-      assert user.consent == false
+      assert user.consent_for_updates == false
     end
 
     test "update_user/2 with only a valid email should update the user’s email.", attrs do
@@ -292,7 +292,6 @@ defmodule Glific.UsersTest do
     end
   end
 
-  @tag :tt
   test "promoting a user works for first user", attrs do
     user = user_fixture(Map.put(attrs, :roles, [:none]))
     assert user.roles == [:none]
