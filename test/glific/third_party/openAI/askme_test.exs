@@ -6,7 +6,7 @@ defmodule Glific.ThirdParty.OpenAI.AskmeTest do
 
   @endpoint "https://api.openai.com/v1/responses"
 
-  test "askme/1 returns the response successfully" do
+  test "askme/1 returns the response successfully", attrs do
     expected_text =
       """
       A flow in Glific is a structured sequence of interactions designed to facilitate communication with contacts or beneficiaries. It consists of several nodes, each representing a step that can include sending messages, waiting for user responses, or executing specific actions based on user inputs. Flows are triggered by specific keywords, which enable dynamic engagement with users.
@@ -53,17 +53,17 @@ defmodule Glific.ThirdParty.OpenAI.AskmeTest do
       ]
     }
 
-    assert {:ok, content} = AskmeBot.askme(params)
+    assert {:ok, content} = AskmeBot.askme(params, attrs.organization_id)
     assert content == expected_text
   end
 
-  test "askme/1 failure cases" do
+  test "askme/1 failure cases", attrs do
     mock(fn
       %{method: :post, url: @endpoint} ->
         {:error, :timeout}
     end)
 
-    assert {:error, msg} = AskmeBot.askme(%{"input" => []})
+    assert {:error, msg} = AskmeBot.askme(%{"input" => []}, attrs.organization_id)
     assert msg =~ "HTTP error calling OpenAI: :timeout"
   end
 end
