@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddConsentToUsers do
 
   def change do
     alter table(:users) do
-      add :consent, :boolean, default: false, null: false
+      add :consent_for_updates, :boolean, default: false, null: false
     end
   end
 end
