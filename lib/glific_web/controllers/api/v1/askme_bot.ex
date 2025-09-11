@@ -15,7 +15,7 @@ defmodule GlificWeb.API.V1.AskmeController do
     else
       nil ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:unauthorized)
         |> json(%{error: %{status: 401, message: "Authentication failure"}})
 
       {:error, reason} ->
