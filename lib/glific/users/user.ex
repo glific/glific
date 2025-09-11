@@ -43,7 +43,7 @@ defmodule Glific.Users.User do
           last_login_at: :utc_datetime | nil,
           last_login_from: String.t() | nil,
           upload_contacts: boolean() | false,
-          consent_for_updates: boolean() | false,
+          consent_for_updates: boolean() | nil,
           confirmed_at: :utc_datetime | nil
         }
 
