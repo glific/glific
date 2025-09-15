@@ -43,6 +43,7 @@ defmodule Glific.Users.User do
           last_login_at: :utc_datetime | nil,
           last_login_from: String.t() | nil,
           upload_contacts: boolean() | false,
+          consent_for_updates: boolean(),
           confirmed_at: :utc_datetime | nil
         }
 
@@ -56,7 +57,8 @@ defmodule Glific.Users.User do
     :language_id,
     :upload_contacts,
     :confirmed_at,
-    :email
+    :email,
+    :consent_for_updates
   ]
 
   @password_opts [
@@ -77,6 +79,7 @@ defmodule Glific.Users.User do
     field(:name, :string)
     field(:email, :string)
     field(:roles, {:array, UserRoles}, default: [:none])
+    field(:consent_for_updates, :boolean, default: false)
 
     # is this user restricted to contacts only in groups that they are part of
     field(:is_restricted, :boolean, default: false)
