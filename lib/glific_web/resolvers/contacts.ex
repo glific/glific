@@ -97,11 +97,15 @@ defmodule GlificWeb.Resolvers.Contacts do
       ) do
     organization_id = Glific.parse_maybe_integer(id) |> elem(1)
 
-    Import.import_contacts(
-      organization_id,
-      %{user: user, collection: group_label, type: :import_contact},
-      [{type, data}]
-    )
+    if user.organization_id != organization_id do
+      {:error, "Unauthorized access to organization"}
+    else
+      Import.import_contacts(
+        organization_id,
+        %{user: user, collection: group_label, type: :import_contact},
+        [{type, data}]
+      )
+    end
   end
 
   @doc false
