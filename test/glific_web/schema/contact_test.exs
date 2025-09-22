@@ -10,7 +10,6 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Flows,
     Messages.Message,
-    Partners,
     Profiles.Profile,
     Repo,
     Seeds.SeedsDev,
@@ -297,7 +296,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -331,7 +329,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -347,41 +344,6 @@ defmodule GlificWeb.Schema.ContactTest do
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 1
 
-    # Test success for updating the contact when we send an organization ID other than the user’s own organization ID.
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200
-        }
-    end)
-
-    test_name = "test1"
-    test_phone = "+917905556231"
-
-    data =
-      "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09 12:34:25,collection"
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "type" => "DATA",
-          "data" => data,
-          "id" => 100,
-          "group_label" => "collection"
-        }
-      )
-
-    assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
-
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default, with_scheduled: true)
-
-    contact = assert Contacts.get_contact_by_phone!(test_phone)
-
-    assert contact.optin_method == "Import"
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
-    assert count == 1
     # Test success for updating a contact, the contact won't get uploaded due to
     #  test_phone being invalid
     Tesla.Mock.mock(fn
@@ -402,7 +364,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -436,7 +397,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "URL",
           "data" => "https://storage.cloud.google.com/test.csv",
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -473,7 +433,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -486,43 +445,6 @@ defmodule GlificWeb.Schema.ContactTest do
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 1
-  end
-
-  test "Test success for uploading contact through filepath organization_id is given", %{
-    manager: user
-  } do
-    user = Map.put(user, :roles, [:glific_admin])
-
-    file =
-      System.tmp_dir!()
-      |> Path.join("fixture.csv")
-      |> File.open!([:write, :utf8])
-
-    [
-      ~w(name phone Language opt_in collection),
-      ["test", "+91989329297", "english", "2021-03-09 12:34:25", "collection"]
-    ]
-    |> CSV.encode()
-    |> Enum.each(&IO.write(file, &1))
-
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
-    [organization | _] = Partners.list_organizations()
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "type" => "FILE_PATH",
-          "data" => file_name,
-          "id" => organization.id,
-          "group_label" => "collection"
-        }
-      )
-
-    assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
-
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default, with_scheduled: true)
   end
 
   test "test success for uploading contact for different csv", %{manager: user} do
@@ -547,7 +469,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -577,7 +498,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
