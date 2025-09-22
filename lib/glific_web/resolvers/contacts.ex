@@ -92,10 +92,10 @@ defmodule GlificWeb.Resolvers.Contacts do
 
   def import_contacts(
         _,
-        %{type: type, data: data, id: id, group_label: group_label} = _contact_attrs,
+        %{type: type, data: data, id: _id, group_label: group_label} = _contact_attrs,
         %{context: %{current_user: user}}
       ) do
-    organization_id = Glific.parse_maybe_integer(id) |> elem(1)
+    organization_id = user.organization_id
 
     Import.import_contacts(
       organization_id,
