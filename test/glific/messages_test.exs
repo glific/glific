@@ -1367,7 +1367,7 @@ defmodule Glific.MessagesTest do
         |> Messages.create_and_send_hsm_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
-      Oban.drain_queue(queue: :gupshup, with_safety: false)
+      assert %{success: 1} = Oban.drain_queue(queue: :gupshup, with_safety: false)
 
       message = Messages.get_message!(message.id)
 
