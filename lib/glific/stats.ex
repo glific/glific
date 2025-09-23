@@ -361,7 +361,7 @@ defmodule Glific.Stats do
     optout = time_query |> where([c], not is_nil(c.optout_time))
 
     # don't generate summary contact stats for hourly snapshots
-    if(period == :hour, do: stats, else: make_result(stats, query, period_date, :contacts))
+    if(period == :hour, do: stats, else: make_result(stats, time_query, period_date, :contacts))
     |> make_result(time_query, period_date, :active)
     |> make_result(optin, period_date, :optin)
     |> make_result(optout, period_date, :optout)
