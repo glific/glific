@@ -105,11 +105,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       "message" =>
         Jason.encode!(%{
           "type" => template_type,
-          template_type =>
-            %{
-              "link" => parse_media_url(payload, template_type)
-            }
-            |> Map.merge(maybe_add_filename(payload, template_type))
+          template_type => create_template_type_data(payload, template_type)
         })
     })
   end
@@ -124,12 +120,19 @@ defmodule Glific.Providers.Gupshup.Worker do
        when template_type in ["video", "document"],
        do: Jason.decode!(template_payload["message"])["url"]
 
-  @spec maybe_add_filename(map(), String.t()) :: map()
-  defp maybe_add_filename(template_payload, template_type) when template_type in ["document"] do
+  @spec create_template_type_data(map(), String.t()) :: map()
+  defp create_template_type_data(payload, template_type) do
     %{
-      "filename" => Jason.decode!(template_payload["message"])["filename"]
+      "link" => parse_media_url(payload, template_type)
     }
+    |> maybe_add_filename(payload, template_type)
   end
 
-  defp maybe_add_filename(_, _), do: %{}
+  @spec maybe_add_filename(map(), map(), String.t()) :: map()
+  defp maybe_add_filename(template_type_data, payload, template_type)
+       when template_type in ["document"] do
+    Map.put(template_type_data, "filename", Jason.decode!(payload["message"])["filename"])
+  end
+
+  defp maybe_add_filename(template_type_data, _, _), do: template_type_data
 end
