@@ -746,6 +746,22 @@ if Code.ensure_loaded?(Faker) do
         example: "Hi [Anil],\n\nYour image file was updated today",
         uuid: Ecto.UUID.generate()
       })
+
+      Repo.insert!(%SessionTemplate{
+        label: "File reminder",
+        type: :document,
+        shortcode: "file_reminder",
+        is_hsm: true,
+        number_parameters: 1,
+        translations: translations,
+        language_id: en.id,
+        organization_id: organization.id,
+        status: "APPROVED",
+        category: "UTILITY",
+        body: "Hi {{1}},\n\nYour document file was updated today",
+        example: "Hi [Anil],\n\nYour document file was updated today",
+        uuid: Ecto.UUID.generate()
+      })
     end
 
     @doc false
