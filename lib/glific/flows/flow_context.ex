@@ -4,32 +4,33 @@ defmodule Glific.Flows.FlowContext do
   contact and/or a conversation (or other Glific data types). Let encapsulate
   this in a module and isolate the flow from the other aspects of Glific
   """
-  alias Glific.Groups.WAGroups
-  alias __MODULE__
 
   use Ecto.Schema
+  use Gettext, backend: GlificWeb.Gettext
+
   import Ecto.Changeset
   import Ecto.Query, warn: false
-  use Gettext, backend: GlificWeb.Gettext
   require Logger
 
-  alias Glific.{
-    Contacts,
-    Contacts.Contact,
-    Flows,
-    Flows.Flow,
-    Flows.FlowResult,
-    Flows.MessageBroadcast,
-    Flows.MessageVarParser,
-    Flows.Node,
-    Groups.WAGroup,
-    Messages,
-    Messages.Message,
-    Notifications,
-    Partners.Organization,
-    Profiles.Profile,
-    Repo
-  }
+  alias __MODULE__
+  alias Glific.Contacts
+  alias Glific.Contacts.Contact
+  alias Glific.Flows
+  alias Glific.Flows.Flow
+  alias Glific.Flows.FlowResult
+  alias Glific.Flows.MessageBroadcast
+  alias Glific.Flows.MessageVarParser
+  alias Glific.Flows.Node
+  alias Glific.Flows.Webhook
+  alias Glific.Flows.WebhookLog
+  alias Glific.Groups.WAGroup
+  alias Glific.Groups.WAGroups
+  alias Glific.Messages
+  alias Glific.Messages.Message
+  alias Glific.Notifications
+  alias Glific.Partners.Organization
+  alias Glific.Profiles.Profile
+  alias Glific.Repo
 
   @required_fields [:flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
@@ -373,7 +374,6 @@ defmodule Glific.Flows.FlowContext do
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
     # we'll always use strings as keys
-
     messages =
       [
         %{
@@ -383,6 +383,8 @@ defmodule Glific.Flows.FlowContext do
           },
           "message" => msg.body,
           "message_id" => msg.id,
+          "message_type" => msg.type,
+          "message_media" => get_message_media(msg),
           "date" => now,
           "node_uuid" => context.node_uuid
         }
@@ -445,8 +447,10 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Count the number of times we have sent the same message in the recent past
   """
-  @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
-  def match_outbound(context, body, go_back \\ 6) do
+  @spec match_outbound(FlowContext.t(), String.t(), String.t() | nil, integer) :: integer
+  def match_outbound(context, body, outbound_media \\ nil, go_back \\ 6)
+
+  def match_outbound(context, body, outbound_media, go_back) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
@@ -454,15 +458,26 @@ defmodule Glific.Flows.FlowContext do
       fn item ->
         date = get_datetime(item)
 
-        # comparing node uuids is a lot more powerful than comparing message body
-        # but for webhooks, the function can return something different every time
-        # so we check for both node uuid and body
-        item["node_uuid"] == context.node_uuid and
-          item["message"] == body and
+        same_message?(context, item, body, outbound_media) and
           DateTime.compare(date, since) in [:gt, :eq]
       end
     )
     |> length()
+  end
+
+  # comparing node uuids is a lot more powerful than comparing message body
+  # but for webhooks, the function can return something different every time
+  # so we check for both node uuid and body.
+
+  # If the message is only media (audio, image etc..) then the message body will be empty
+  # in that case we check the outbound attachment instead of body
+  @spec same_message?(FlowContext.t(), map(), body :: String.t(), String.t()) :: boolean()
+  defp same_message?(context, item, "", outbound_media) do
+    item["node_uuid"] == context.node_uuid and item["message_media"] == outbound_media
+  end
+
+  defp same_message?(context, item, body, _outbound_media) do
+    item["node_uuid"] == context.node_uuid and item["message"] == body
   end
 
   @doc """
@@ -930,6 +945,24 @@ defmodule Glific.Flows.FlowContext do
       )
 
     message =
+      if is_nil(message) and
+           FunWithFlags.enabled?(:is_kaapi_enabled,
+             for: %{organization_id: context.organization_id}
+           ) do
+        webhook_log =
+          WebhookLog
+          |> where([w], w.flow_context_id == ^context.id)
+          |> order_by([w], desc: w.inserted_at)
+          |> limit(1)
+          |> Repo.one()
+
+        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+        Messages.create_temp_message(context.organization_id, "Failure")
+      else
+        message
+      end
+
+    message =
       if is_nil(message),
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
@@ -1123,4 +1156,11 @@ defmodule Glific.Flows.FlowContext do
   end
 
   defp validate_contact_and_wa_groups(changeset, _flow_context), do: changeset
+
+  @spec get_message_media(map()) :: String.t() | nil
+  defp get_message_media(%{media_id: media_id} = msg) when media_id != nil do
+    msg.media.url
+  end
+
+  defp get_message_media(_msg), do: nil
 end

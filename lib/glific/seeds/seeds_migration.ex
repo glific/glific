@@ -136,7 +136,7 @@ defmodule Glific.Seeds.SeedsMigration do
       language_id: 1,
       organization_id: org_id,
       button_type: :otp,
-      buttons: [%{"type" => "OTP", "text" => "Copy OTP", "otp_type" => "COPY_CODE"}]
+      buttons: [%{"type" => "OTP", "text" => "Copy code", "otp_type" => "COPY_CODE"}]
     }
     |> Templates.create_session_template()
   end
@@ -272,7 +272,8 @@ defmodule Glific.Seeds.SeedsMigration do
             attrs,
             %{
               name: "Glific Simulator " <> name,
-              phone: simulator_phone_prefix <> phone
+              phone: simulator_phone_prefix <> phone,
+              contact_type: "WABA"
             }
           )
         end

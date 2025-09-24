@@ -73,6 +73,7 @@ defmodule GlificWeb.Router do
     post("/onboard/setup", OnboardController, :setup)
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
+    post "/askme", AskmeController, :ask
   end
 
   # Enables LiveDashboard only for development
@@ -93,7 +94,7 @@ defmodule GlificWeb.Router do
     pipe_through([:phx_browser, :require_authenticated_user])
 
     live_session(:authenticated, on_mount: {GlificWeb.UserAuth, :ensure_authenticated}) do
-      live("/stats", StatsLive)
+      # live("/stats", StatsLive)
       ## add all the authenticated live views here.
     end
   end

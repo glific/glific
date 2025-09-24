@@ -222,7 +222,7 @@ defmodule Glific.Bhasini do
         %{success: false, reason: body}
 
       error ->
-        Logger.info("Error from Bhashini: #{error}")
+        Logger.info("Error from Bhashini: #{inspect(error)}")
         %{success: false, reason: "could not fetch data"}
     end
   end

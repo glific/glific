@@ -149,11 +149,6 @@
           "type": "text"
         },
         {
-          "key": "active_profile_id",
-          "help": "the active profile id of the contact",
-          "type": "text"
-        },
-        {
           "key": "active_profile_name",
           "help": "the active profile name of the contact",
           "type": "text"

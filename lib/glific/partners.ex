@@ -50,7 +50,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth"], provider.shortcode)
+      Enum.member?(["goth", "kaapi"], provider.shortcode)
     end)
   end
 
@@ -470,6 +470,9 @@ defmodule Glific.Partners do
       |> Flags.set_whatsapp_group_enabled()
       |> Flags.set_ticketing_enabled()
       |> Flags.set_certificate_enabled()
+      |> Flags.set_interactive_re_response_enabled()
+      |> Flags.set_is_kaapi_enabled()
+      |> Flags.set_is_ask_me_bot_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1201,7 +1204,11 @@ defmodule Glific.Partners do
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),
-      "certificate_enabled" => Flags.get_certificate_enabled(organization)
+      "certificate_enabled" => Flags.get_certificate_enabled(organization),
+      "interactive_re_response_enabled" =>
+        Flags.get_interactive_re_response_enabled(organization),
+      "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
     }
   end
 

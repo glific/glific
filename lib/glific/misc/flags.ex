@@ -232,6 +232,46 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get ai-platform value for organization flag
+  """
+  @spec get_is_kaapi_enabled(map()) :: boolean
+  def get_is_kaapi_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
+  Get Interactive Message re-response value for organization flag
+  """
+  @spec get_interactive_re_response_enabled(map()) :: boolean
+  def get_interactive_re_response_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_interactive_re_response_enabled,
+        for: %{organization_id: organization.id}
+      ) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Get OpenAI auto translation value for organization flag
   """
   @spec get_open_ai_auto_translation_enabled(map()) :: boolean
@@ -260,6 +300,25 @@ defmodule Glific.Flags do
       FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
   @doc """
+  Get ask_me bot value for organization flag
+  """
+  @spec get_ask_me_bot_enabled(map()) :: boolean
+  def get_ask_me_bot_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_ask_me_bot_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Set fun_with_flag toggle for ticketing for an organization
   """
   @spec set_ticketing_enabled(map()) :: map()
@@ -284,7 +343,7 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle forcustom certificate for an organization
+  Set fun_with_flag toggle for custom certificate for an organization
   """
   @spec set_certificate_enabled(map()) :: map()
   def set_certificate_enabled(organization) do
@@ -292,6 +351,30 @@ defmodule Glific.Flags do
       organization,
       :is_certificate_enabled,
       get_certificate_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for ai-platform for an organization
+  """
+  @spec set_is_kaapi_enabled(map()) :: map()
+  def set_is_kaapi_enabled(organization) do
+    Map.put(
+      organization,
+      :is_kaapi_enabled,
+      get_is_kaapi_enabled(organization)
+    )
+  end
+
+  @doc """
+  Set fun_with_flag toggle for Interactive Message re-response for an organization
+  """
+  @spec set_interactive_re_response_enabled(map()) :: map()
+  def set_interactive_re_response_enabled(organization) do
+    Map.put(
+      organization,
+      :is_interactive_re_response_enabled,
+      get_interactive_re_response_enabled(organization)
     )
   end
 
@@ -367,6 +450,18 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Set fun_with_flag toggle for ask_me bot enabled for an organization
+  """
+  @spec set_is_ask_me_bot_enabled(map()) :: map()
+  def set_is_ask_me_bot_enabled(organization) do
+    Map.put(
+      organization,
+      :is_ask_me_bot_enabled,
+      get_ask_me_bot_enabled(organization)
+    )
+  end
+
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -383,7 +478,10 @@ defmodule Glific.Flags do
       :is_open_ai_auto_translation_enabled,
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
-      :is_certificate_enabled
+      :is_certificate_enabled,
+      :is_kaapi_enabled,
+      :is_interactive_re_response_enabled,
+      :is_ask_me_bot_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

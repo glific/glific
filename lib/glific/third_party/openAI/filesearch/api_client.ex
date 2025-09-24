@@ -2,10 +2,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   @moduledoc """
   Glific module for API calls to OpenAI related to Filesearch
   """
+
+  use Tesla
   alias Tesla.Multipart
+
   require Logger
   @endpoint "https://api.openai.com/v1"
-  use Tesla
 
   @spec headers() :: list()
   defp headers do
@@ -16,6 +18,14 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       {"Content-Type", "application/json"},
       {"OpenAI-Beta", "assistants=v2"}
     ]
+  end
+
+  # using "Content-Type: application/json" in the file upload API caused intermittent errors
+  # because OpenAI's handling of this header was inconsistent. Removing the Content-Type header
+  # from the upload request resolved the issue.
+  @spec remove_content_type(list()) :: list()
+  defp remove_content_type(headers) do
+    Enum.reject(headers, fn {key, _} -> String.downcase(key) == "content-type" end)
   end
 
   plug(Tesla.Middleware.JSON, engine_opts: [keys: :atoms])
@@ -58,7 +68,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Multipart.add_file(media_info.path, name: "file", filename: media_info.filename)
       |> Multipart.add_field("purpose", "assistants")
 
-    post(url, data, headers: headers())
+    post(url, data, headers: remove_content_type(headers()))
     |> parse_response()
   end
 
@@ -135,13 +145,9 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       %{
         "name" => params.name,
         "model" => params.model,
-        "instructions" => params[:instructions],
+        "instructions" => params.instructions,
         "temperature" => params.temperature,
-        "tools" => [
-          %{
-            "type" => "file_search"
-          }
-        ],
+        "tools" => [%{"type" => "file_search"}],
         "tool_resources" => %{
           "file_search" => %{
             "vector_store_ids" => params.vector_store_ids
@@ -172,13 +178,12 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   def modify_assistant(assistant_id, params) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    payload =
-      %{
-        "name" => params.name,
-        "model" => params.model,
-        "instructions" => params.instructions || "",
-        "temperature" => params.temperature
-      }
+    payload = %{
+      "name" => params.name,
+      "model" => params.model,
+      "instructions" => params.instructions || "",
+      "temperature" => params.temperature
+    }
 
     if Map.has_key?(params, :vector_store_ids) do
       Map.merge(payload, %{

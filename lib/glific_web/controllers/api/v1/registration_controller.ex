@@ -20,6 +20,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Contacts,
     Contacts.Contact,
     Partners,
+    Partners.Saas,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Users,
     Users.User
@@ -126,14 +128,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     case registration do
       "true" ->
-        handle_registration_otp(conn, organization_id, phone, registration)
+        handle_registration_otp(conn, organization_id, phone)
 
       "false" ->
-        handle_non_registration_otp(conn, organization_id, phone, registration)
+        handle_non_registration_otp(conn, organization_id, phone)
     end
   end
 
-  defp handle_registration_otp(conn, organization_id, phone, registration) do
+  defp handle_registration_otp(conn, organization_id, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
     case existing_user do
@@ -141,10 +143,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
         send_otp_error(conn, "Account with phone number #{phone} already exists")
 
       _ ->
-        with {:ok, contact} <- optin_contact(organization_id, phone),
-             {:ok, _contact} <- can_send_otp_to_phone?(organization_id, phone),
-             true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+        with {:ok, _contact} <- optin_contact(organization_id, phone),
+             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+             {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -153,14 +155,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  defp handle_non_registration_otp(conn, organization_id, phone, registration) do
+  defp handle_non_registration_otp(conn, organization_id, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
     case existing_user do
       {:ok, _user} ->
         with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
-             true <- send_otp_allowed?(organization_id, phone, registration),
-             {:ok, _otp} <- create_and_send_verification_code(contact) do
+             {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
           _ ->
@@ -204,12 +206,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
            Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
          true <- can_send_message_to?(contact),
          do: {:ok, contact}
-  end
-
-  @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
-  defp send_otp_allowed?(organization_id, phone, registration) do
-    {result, _} = Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
-    (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
   @doc """
@@ -278,6 +274,23 @@ defmodule GlificWeb.API.V1.RegistrationController do
           method: "registration"
         }
         |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
+    end
+  end
+
+  # If the org's gupshup account has 0 balance or gupshup is inactive
+  # we will use Glific's gupshup to send the message, for that
+  # the contact should be created under Glific org.
+  @spec maybe_switch_to_glific_contact(Contact.t()) :: {:ok, map()}
+  defp maybe_switch_to_glific_contact(contact) do
+    case PartnerAPI.get_balance(contact.organization_id) do
+      {:ok, %{"balance" => balance}} when balance > 0 ->
+        {:ok, contact}
+
+      _ ->
+        Glific.Metrics.increment("otp_sent_via_glific")
+        org_id = Saas.organization_id()
+        build_context(org_id)
+        optin_contact(org_id, contact.phone)
     end
   end
 end

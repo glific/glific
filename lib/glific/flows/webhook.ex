@@ -6,8 +6,11 @@ defmodule Glific.Flows.Webhook do
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
-  alias Glific.{Messages, Repo}
+  alias Glific.Clients.CommonWebhook
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
+  alias Glific.Messages
+  alias Glific.Messages.Message
+  alias Glific.Repo
 
   use Oban.Worker,
     queue: :webhook,
@@ -19,6 +22,16 @@ defmodule Glific.Flows.Webhook do
       keys: [:context_id, :url, :action_id],
       states: [:available, :scheduled, :executing, :completed]
     ]
+
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Kaapi webhook failures.
+    Since Kaapi is a backend service (NGOs don’t interact with it directly),
+    sending errors to them won’t resolve the issue.
+    Reporting these failures to AppSignal lets us detect and fix problems
+    """
+    defexception [:message, :reason]
+  end
 
   @non_unique_urls [
     "parse_via_gpt_vision",
@@ -65,20 +78,25 @@ defmodule Glific.Flows.Webhook do
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         contact_id: context.contact_id,
-        wa_group_id: context.wa_group_id
+        wa_group_id: context.wa_group_id,
+        flow_context_id: context.id
       }
       |> WebhookLog.create_webhook_log()
 
     webhook_log
   end
 
-  @spec update_log(WebhookLog.t() | non_neg_integer, map()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
+  @doc """
+  Update a webhook log with the given message.
+  """
+  @spec update_log(WebhookLog.t() | non_neg_integer, map() | binary()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
+  def update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
     webhook_log = Repo.get!(WebhookLog, webhook_log_id)
     update_log(webhook_log, message)
   end
 
-  defp update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
+  def update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
     # handle incorrect json body
     json_body =
       case Jason.decode(body) do
@@ -94,12 +112,10 @@ defmodule Glific.Flows.Webhook do
       status_code: message.status
     }
 
-    webhook_log
-    |> WebhookLog.update_webhook_log(attrs)
+    webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # this is when we are storing the return from an internal function call
-  defp update_log(webhook_log, result) when is_map(result) do
+  def update_log(webhook_log, result) when is_map(result) do
     attrs = %{
       response_json: result,
       status_code: 200
@@ -109,8 +125,7 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
-  defp update_log(webhook_log, error_message) do
+  def update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message,
       status_code: 400
@@ -412,8 +427,85 @@ defmodule Glific.Flows.Webhook do
   defp format_response(response_json), do: response_json
 
   @spec create_oban_changeset(map()) :: Oban.Job.changeset()
+  defp create_oban_changeset(%{url: "create_certificate"} = payload) do
+    __MODULE__.new(payload,
+      queue: :custom_certificate
+    )
+  end
+
   defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
-    do: __MODULE__.new(payload, unique: nil)
+    do: __MODULE__.new(payload, queue: :gpt_webhook_queue, unique: nil)
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
+
+  @doc """
+  The function updates the flow_context and waits for Kaapi to send a response.
+  """
+  @spec webhook_and_wait(map(), FlowContext.t(), boolean()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def webhook_and_wait(action, context, is_active?) do
+    parsed_attrs = parse_header_and_url(action, context)
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
+
+    case create_body(context, action.body) do
+      {:error, message} ->
+        webhook_log = create_log(action, %{}, action.headers, context)
+        update_log(webhook_log, message)
+        {:ok, context, [failure_message]}
+
+      {fields, body} ->
+        webhook_log = create_log(action, fields, action.headers, context)
+
+        fields =
+          fields
+          |> Map.put("webhook_log_id", webhook_log.id)
+          |> Map.put("result_name", action.result_name)
+          |> Map.put("flow_id", context.flow_id)
+          |> Map.put("contact_id", context.contact_id)
+
+        headers =
+          add_signature(parsed_attrs.header, context.organization_id, body)
+          |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
+
+        if is_active? do
+          response = CommonWebhook.webhook("call_and_wait", fields, headers)
+
+          case response do
+            %{success: true, data: data} ->
+              update_log(webhook_log.id, data)
+              wait_time = action.wait_time || 60
+
+              {:ok, context} =
+                FlowContext.update_flow_context(
+                  context,
+                  %{
+                    wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+                    is_background_flow: context.flow.is_background,
+                    is_await_result: true
+                  }
+                )
+
+              {:wait, context, []}
+
+            %{success: false, reason: data} ->
+              update_log(webhook_log.id, data)
+
+              {:ok, context, [failure_message]}
+
+            _ ->
+              update_log(webhook_log.id, "Something went wrong")
+              {:ok, context, [failure_message]}
+          end
+        else
+          update_log(webhook_log.id, "Kaapi is not active")
+
+          Appsignal.send_error(
+            %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
+            []
+          )
+
+          {:ok, context, [failure_message]}
+        end
+    end
+  end
 end

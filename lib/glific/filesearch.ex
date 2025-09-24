@@ -9,7 +9,8 @@ defmodule Glific.Filesearch do
     Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
-    Repo
+    Repo,
+    ThirdParty.Kaapi
   }
 
   require Logger
@@ -80,13 +81,17 @@ defmodule Glific.Filesearch do
         temperature: 1,
         model: @default_model,
         organization_id: Repo.get_organization_id(),
-        vector_store_ids: vector_store_ids
+        vector_store_ids: vector_store_ids,
+        instructions: "You are a helpful assistant"
       }
       |> Map.merge(params)
 
-    with {:ok, %{id: assistant_id}} <- ApiClient.create_assistant(attrs),
+    with {:ok, %{id: assistant_id} = openai_response} <-
+           ApiClient.create_assistant(attrs),
          {:ok, assistant} <-
            Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
+      # calling kaapi right after open ai so that the latest details of the assistant can be synced with kaapi
+      Kaapi.create_assistant(openai_response, params.organization_id)
       {:ok, %{assistant: assistant}}
     else
       {:error, %Ecto.Changeset{} = err} ->
@@ -107,6 +112,8 @@ defmodule Glific.Filesearch do
       if assistant.vector_store_id do
         delete_vector_store(assistant.vector_store_id)
       end
+
+      Kaapi.delete_assistant(assistant.assistant_id, assistant.organization_id)
 
       Repo.delete(assistant)
     end
@@ -164,8 +171,10 @@ defmodule Glific.Filesearch do
   def update_assistant(id, attrs) do
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
          {:ok, params} <- parse_assistant_attrs(assistant, attrs),
-         {:ok, _} <-
+         {:ok, openai_response} <-
            ApiClient.modify_assistant(assistant.assistant_id, params) do
+      Kaapi.update_assistant(openai_response, params.organization_id)
+
       Assistant.update_assistant(
         assistant,
         params
@@ -212,18 +221,23 @@ defmodule Glific.Filesearch do
       vector_store_id = List.first(assistant_data.tool_resources.file_search.vector_store_ids)
 
       if is_nil(vector_store_id) do
-        Assistant.create_assistant(
-          %{
-            assistant_id: assistant_id,
-            inserted_at: DateTime.from_unix!(assistant_data.created_at),
-            organization_id: Repo.get_organization_id()
-          }
-          |> Map.merge(assistant_data)
-        )
+        create_assistant(assistant_id, assistant_data)
       else
         create_assistant_and_vector_store(vector_store_id, assistant_data)
       end
     end
+  end
+
+  @spec create_assistant(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  defp create_assistant(assistant_id, assistant_data) do
+    Assistant.create_assistant(
+      %{
+        assistant_id: assistant_id,
+        inserted_at: DateTime.from_unix!(assistant_data.created_at),
+        organization_id: Repo.get_organization_id()
+      }
+      |> Map.merge(assistant_data)
+    )
   end
 
   @spec create_vector_store(map()) :: {:ok, map()} | {:error, any()}
@@ -385,7 +399,7 @@ defmodule Glific.Filesearch do
   defp create_filesearch_artifacts_on_import(assistant_data, vector_store_data) do
     Multi.new()
     |> Multi.run(:create_vector_store, fn _, _ ->
-      VectorStore.create_vector_store(
+      VectorStore.upsert_vector_store(
         %{
           vector_store_id: vector_store_data.id,
           inserted_at: DateTime.from_unix!(vector_store_data.created_at),

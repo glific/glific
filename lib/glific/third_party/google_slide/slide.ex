@@ -4,10 +4,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   """
   require Logger
 
-  alias Glific.{
-    Partners,
-    Repo
-  }
+  alias Glific.Partners
 
   alias Tesla
 
@@ -25,6 +22,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
   @retry_error_codes [429, 501, 502, 503, 504]
 
+  @api_timeout 30_000
   @spec auth_headers(String.t()) :: list()
   defp auth_headers(token) do
     [
@@ -45,7 +43,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
          {:ok, copied_slide} <- copy_slide(token, presentation_id),
          {:ok, _} <- replace_text(token, copied_slide["id"], fields),
          {:ok, data} <- fetch_thumbnail(token, copied_slide["id"], slide_id) do
-      delete_template_copy(token, copied_slide["id"], org_id)
+      delete_template_copy(token, copied_slide["id"])
       {:ok, data["contentUrl"]}
     else
       {:error, reason} ->
@@ -101,7 +99,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   """
   @spec get_file(non_neg_integer(), String.t()) :: {:ok, any()} | {:error, String.t()}
   def get_file(org_id, presentation_id) do
-    url = "#{@drive_url}/#{presentation_id}"
+    url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
 
     with %{token: token} <-
            Partners.get_goth_token(org_id, "google_slides", scopes: @drive_scopes),
@@ -119,10 +117,13 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
   @spec copy_slide(String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp copy_slide(token, presentation_id) do
-    url = "#{@drive_url}/#{presentation_id}/copy"
+    url = "#{@drive_url}/#{presentation_id}/copy?supportsAllDrives=true"
     headers = auth_headers(token)
 
-    case Tesla.post(client(), url, "{}", headers: headers) do
+    case Tesla.post(client(), url, "{}",
+           headers: headers,
+           opts: [adapter: [recv_timeout: @api_timeout]]
+         ) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         case Jason.decode(response_body) do
           {:ok, decoded_body} -> {:ok, decoded_body}
@@ -158,7 +159,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
 
     body = Jason.encode!(%{"requests" => requests})
 
-    case Tesla.post(client(), url, body, headers: auth_headers(token)) do
+    case Tesla.post(client(), url, body,
+           headers: auth_headers(token),
+           opts: [adapter: [recv_timeout: @api_timeout]]
+         ) do
       {:ok, %Tesla.Env{status: 200, body: response_body}} ->
         {:ok, response_body}
 
@@ -175,7 +179,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   defp fetch_thumbnail(token, presentation_id, slide_id) do
     url = "#{@slide_url}/#{presentation_id}/pages/#{slide_id}/thumbnail"
 
-    case Tesla.get(client(), url, headers: auth_headers(token)) do
+    case Tesla.get(client(), url,
+           headers: auth_headers(token),
+           opts: [adapter: [recv_timeout: @api_timeout]]
+         ) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode(body)
 
@@ -194,7 +201,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
       {
         Tesla.Middleware.Retry,
         delay: 500,
-        max_retries: 5,
+        max_retries: 3,
         should_retry: fn
           {:ok, %{status: status}}, _, _ when status in @retry_error_codes ->
             true
@@ -209,13 +216,17 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     ])
   end
 
-  @spec delete_template_copy(String.t(), String.t(), integer()) :: any()
-  defp delete_template_copy(token, presentation_id, org_id) do
+  @spec delete_template_copy(String.t(), String.t()) :: any()
+  defp delete_template_copy(token, presentation_id) do
     Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-      Repo.put_process_state(org_id)
-      delete_url = "#{@drive_url}/#{presentation_id}"
+      # There's a chance metadata not yet ready for just copied file, so deleting after 10s
+      Process.sleep(10_000)
+      delete_url = "#{@drive_url}/#{presentation_id}?supportsAllDrives=true"
 
-      case Tesla.delete(client(), delete_url, headers: auth_headers(token)) do
+      case Tesla.patch(client(), delete_url, Jason.encode!(%{"trashed" => true}),
+             headers: auth_headers(token),
+             opts: [adapter: [recv_timeout: @api_timeout]]
+           ) do
         {:ok, %Tesla.Env{status: status, body: _body}} when status >= 200 and status < 400 ->
           :ok
 

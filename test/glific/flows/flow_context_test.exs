@@ -423,4 +423,272 @@ defmodule Glific.Flows.FlowContextTest do
                FlowContext.update_flow_context(flow_context, %{status: "failed"})
     end
   end
+
+  test "match_outbound calculation where body is not empty", attrs do
+    {context, contact, node_uuid} = get_context_details(attrs)
+
+    base_time =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    message = "hello"
+
+    recent_outbound =
+      Enum.map(0..3, fn index ->
+        date =
+          DateTime.add(base_time, -index * 5, :second)
+          |> DateTime.to_iso8601()
+
+        %{
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+          "date" => date,
+          "message" => message,
+          "message_id" => index,
+          "node_uuid" => node_uuid
+        }
+      end)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        recent_outbound:
+          recent_outbound ++
+            [
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 300, :second),
+                "message" => message,
+                "message_id" => 10,
+                "node_uuid" => "8b4d2e09-9d72-4436-a01a-8e3def9cf4e1"
+              }
+            ]
+      })
+
+    assert FlowContext.match_outbound(context, message) == 4
+  end
+
+  test "match_outbound calculation where body is empty, but recent_outbound doesnt have type and media attrs",
+       attrs do
+    {context, contact, node_uuid} = get_context_details(attrs)
+
+    base_time =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    message = "hello"
+
+    recent_outbound =
+      Enum.map(0..3, fn index ->
+        date =
+          DateTime.add(base_time, -index * 5, :second)
+          |> DateTime.to_iso8601()
+
+        %{
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+          "date" => date,
+          "message" => message,
+          "message_id" => index,
+          "node_uuid" => node_uuid
+        }
+      end)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        recent_outbound:
+          recent_outbound ++
+            [
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 300, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid
+              }
+            ]
+      })
+
+    # This is an edge case where message_type and message_media won't be in recent_outbound
+    # this is the case for older flow_contexts. But body being empty string going into infinity loop
+    # itself is an edge case, so this issue won't be in future flow_contexts.
+    assert FlowContext.match_outbound(context, "") == 5
+  end
+
+  test "match_outbound calculation where body is empty, and recent_outbound have type and media attrs",
+       attrs do
+    {context, contact, node_uuid} = get_context_details(attrs)
+
+    base_time =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    message = "hello"
+
+    recent_outbound =
+      Enum.map(0..3, fn index ->
+        date =
+          DateTime.add(base_time, -index * 5, :second)
+          |> DateTime.to_iso8601()
+
+        %{
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+          "date" => date,
+          "message" => message,
+          "message_id" => index,
+          "node_uuid" => node_uuid
+        }
+      end)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        recent_outbound:
+          recent_outbound ++
+            [
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 300, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5",
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img.jpg"
+              }
+            ]
+      })
+
+    assert FlowContext.match_outbound(context, "", "https://acme.org/img.jpg") == 1
+  end
+
+  test "match_outbound calculation where body is empty, but there are multiple distinct media for a node",
+       attrs do
+    {context, contact, node_uuid} = get_context_details(attrs)
+
+    base_time =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    message = "hello"
+
+    recent_outbound =
+      Enum.map(0..2, fn index ->
+        date =
+          DateTime.add(base_time, -index * 5, :second)
+          |> DateTime.to_iso8601()
+
+        %{
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+          "date" => date,
+          "message" => message,
+          "message_id" => index,
+          "node_uuid" => "8b4d2e09-9d72-4436-a01a-8e3def9cf4312"
+        }
+      end)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        recent_outbound:
+          recent_outbound ++
+            [
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 300, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid,
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img.jpg"
+              },
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 1000, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid,
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img2.jpg"
+              }
+            ]
+      })
+
+    assert FlowContext.match_outbound(context, "", "https://acme.org/img.jpg") == 1
+  end
+
+  test "match_outbound calculation where body is empty, but there are multiple same media for a node",
+       attrs do
+    {context, contact, node_uuid} = get_context_details(attrs)
+
+    base_time =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    message = "hello"
+
+    recent_outbound =
+      Enum.map(0..2, fn index ->
+        date =
+          DateTime.add(base_time, -index * 5, :second)
+          |> DateTime.to_iso8601()
+
+        %{
+          "contact" => %{"name" => contact.name, "uuid" => contact.id},
+          "date" => date,
+          "message" => message,
+          "message_id" => index,
+          "node_uuid" => "8b4d2e09-9d72-4436-a01a-8e3def9cf4312"
+        }
+      end)
+
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        recent_outbound:
+          recent_outbound ++
+            [
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 300, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid,
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img.jpg"
+              },
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, 1000, :second),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid,
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img.jpg"
+              },
+              %{
+                "contact" => %{"name" => contact.name, "uuid" => contact.id},
+                "date" => DateTime.add(base_time, -2, :day),
+                "message" => "",
+                "message_id" => 10,
+                "node_uuid" => node_uuid,
+                "message_type" => "image",
+                "message_media" => "https://acme.org/img.jpg"
+              }
+            ]
+      })
+
+    assert FlowContext.match_outbound(context, "", "https://acme.org/img.jpg") == 2
+  end
+
+  defp get_context_details(attrs) do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    node_uuid = "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5"
+
+    [contact | _] = Contacts.list_contacts(%{})
+
+    context_attrs = %{
+      flow_id: flow.id,
+      flow_uuid: flow.uuid,
+      contact_id: contact.id,
+      organization_id: attrs.organization_id,
+      node_uuid: node_uuid
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_attrs)
+    {context, contact, node_uuid}
+  end
 end
