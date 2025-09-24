@@ -831,8 +831,8 @@ defmodule Glific.Partners do
   defp valid_bsp?(credential) do
     bsp = credential.provider.shortcode
 
-    # non_nil_string(credential.keys["api_end_point"]) &&
     credential.provider.group == "bsp" &&
+      non_nil_string(credential.keys["api_end_point"]) &&
       validate_secrets?(credential.secrets, bsp)
   end
 
