@@ -310,8 +310,11 @@ defmodule Glific.Flows.ContactAction do
     ## This is bit expansive and we will optimize it bit more
     # session_template =
     if Flows.media_type?(type) and media_id != nil do
-      Messages.get_message_media!(media_id)
-      |> Messages.update_message_media(%{caption: session_template.body})
+      message_media = Messages.get_message_media!(media_id)
+
+      Messages.update_message_media(message_media, %{
+        caption: get_caption(type, message_media.url, session_template.body)
+      })
     end
 
     attrs = %{
@@ -502,4 +505,11 @@ defmodule Glific.Flows.ContactAction do
       handle_attachment_expression(context, type, url)
     end
   end
+
+  @spec get_caption(atom(), String.t(), String.t()) :: String.t()
+  defp get_caption(:document, url, _template_body) do
+    Path.basename(url)
+  end
+
+  defp get_caption(_, _, template_body), do: template_body
 end
