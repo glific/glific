@@ -1,4 +1,7 @@
 defmodule Glific.RepoHelpers do
+  # We add a few functions to make our life easier with a few helper functions that ecto does
+  # not provide which will be used by `Glific.Repo and Glific.RepoReplica`.
+
   defmacro __using__(_) do
     quote do
       alias __MODULE__
