@@ -10,10 +10,19 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
+ssl_opts =
+  if Mix.env() != :test,
+    do: [
+      cacertfile: Path.expand("../", __DIR__) <> env!("CACERT_PATH", :string),
+      verify: :verify_peer
+    ],
+    else: false
+
 config :glific, Glific.Repo,
   url: env!("DATABASE_URL", :string!),
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
+  ssl: ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
