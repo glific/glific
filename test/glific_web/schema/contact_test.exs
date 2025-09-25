@@ -10,7 +10,6 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Flows,
     Messages.Message,
-    Partners,
     Profiles.Profile,
     Repo,
     Seeds.SeedsDev,
@@ -297,7 +296,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -331,7 +329,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -367,7 +364,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -401,7 +397,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "URL",
           "data" => "https://storage.cloud.google.com/test.csv",
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -438,7 +433,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -471,14 +465,12 @@ defmodule GlificWeb.Schema.ContactTest do
     |> Enum.each(&IO.write(file, &1))
 
     file_name = System.tmp_dir!() |> Path.join("fixture.csv")
-    [organization | _] = Partners.list_organizations()
 
     result =
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => organization.id,
           "group_label" => "collection"
         }
       )
@@ -512,7 +504,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "FILE_PATH",
           "data" => file_name,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
@@ -542,7 +533,6 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "type" => "DATA",
           "data" => data,
-          "id" => user.organization_id,
           "group_label" => "collection"
         }
       )
