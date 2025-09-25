@@ -14,6 +14,8 @@ defmodule Glific.UsersTest do
       name: "some name",
       phone: "some phone",
       language_id: 1,
+      email: "some_name@gmail.com",
+      consent_for_updates: false,
       password: @password,
       password_confirmation: @password,
       roles: ["admin"]
@@ -21,6 +23,8 @@ defmodule Glific.UsersTest do
     @valid_attrs_1 %{
       name: "some name 1",
       phone: "some phone 1",
+      consent_for_updates: false,
+      email: "some_name1@gmail.com",
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -28,13 +32,17 @@ defmodule Glific.UsersTest do
     @valid_attrs_2 %{
       name: "some name 2",
       phone: "some phone 2",
+      email: "some_name2@gmail.com",
       language_id: 1,
+      consent_for_updates: false,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_3 %{
       name: "some name 3",
       phone: "some phone 3",
+      email: "some_name3@gmail.com",
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -42,6 +50,8 @@ defmodule Glific.UsersTest do
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       phone: "some phone 4",
+      email: "some_name4@gmail.com",
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -49,6 +59,8 @@ defmodule Glific.UsersTest do
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
       phone: "some phone 5",
+      email: "some_name5@gmail.com",
+      consent_for_updates: false,
       language_id: 1,
       password: @password,
       password_confirmation: @password
@@ -56,17 +68,21 @@ defmodule Glific.UsersTest do
     @update_attrs %{
       name: "some updated name",
       phone: "some updated phone",
+      email: "some_updated_name@gmail.com",
       language_id: 1,
       password: @password,
       password_confirmation: @password,
+      consent_for_updates: false,
       roles: [:staff, :admin],
       is_restricted: true
     }
     @invalid_attrs %{
       name: nil,
       phone: nil,
+      email: nil,
       language_id: 1,
       password: nil,
+      consent_for_updates: false,
       password_confirmation: nil
     }
 
@@ -117,7 +133,9 @@ defmodule Glific.UsersTest do
       assert {:ok, %User{} = user} = Users.create_user(valid_attrs)
       assert user.name == "some name"
       assert user.phone == "some phone"
+      assert user.email == "some_name@gmail.com"
       assert user.roles == [:admin]
+      assert user.consent_for_updates == false
     end
 
     test "create_user/1 with invalid data returns error changeset", attrs do
@@ -129,14 +147,16 @@ defmodule Glific.UsersTest do
 
       assert {:ok, %User{} = user} = Users.update_user(user, @update_attrs)
       assert user.name == "some updated name"
+      assert user.email == "some_updated_name@gmail.com"
       assert user.roles == [:staff, :admin]
       assert user.is_restricted == true
+      assert user.consent_for_updates == false
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
     end
 
-    test "update_user/2 with valid with only name updates the user", attrs do
+    test "update_user/2 with only a valid name should update the user’s name.", attrs do
       user = user_fixture(attrs)
 
       assert {:ok, %User{} = user} = Users.update_user(user, %{name: "some updated name"})
@@ -147,6 +167,16 @@ defmodule Glific.UsersTest do
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
+      assert user.consent_for_updates == false
+    end
+
+    test "update_user/2 with only a valid email should update the user’s email.", attrs do
+      user = user_fixture(attrs)
+
+      assert {:ok, %User{} = user} =
+               Users.update_user(user, %{email: "some_updated_name@gmail.com"})
+
+      assert user.email == "some_updated_name@gmail.com"
     end
 
     test "update_user/2 with invalid data returns error changeset", attrs do
@@ -264,12 +294,10 @@ defmodule Glific.UsersTest do
 
   test "promoting a user works for first user", attrs do
     user = user_fixture(Map.put(attrs, :roles, [:none]))
-
     assert user.roles == [:none]
 
     user = Users.promote_first_user(user)
     assert user.roles == [:admin]
-
     user = user_fixture(Map.put(@valid_attrs_1, :roles, [:none]))
 
     assert user.roles == [:none]

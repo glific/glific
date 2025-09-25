@@ -56,8 +56,15 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:opt_in_out, organizations), do: SeedsFlows.opt_in_out_flows(organizations)
   defp do_migrate_data(:simulator, organizations), do: add_simulators(organizations)
 
-  defp do_migrate_data(:template_flows, organizations),
-    do: SeedsFlows.add_template_flows(organizations)
+  defp do_migrate_data(:template_flows, organizations) do
+    # since in test and dev  env we are seeding some of the template flows
+    # priv/repo/seeds/20200723172939_add_glific_data.exs:flows/1
+    if Application.get_env(:glific, :environment) in [:prod] do
+      SeedsFlows.add_template_flows(organizations)
+    end
+
+    :ok
+  end
 
   defp do_migrate_data(:stats, organizations) do
     org_id_list = Enum.map(organizations, fn o -> o.id end)

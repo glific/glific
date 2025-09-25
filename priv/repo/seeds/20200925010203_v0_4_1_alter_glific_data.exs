@@ -101,7 +101,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             provider_id: gupshup.id,
             keys: %{
               url: "https://gupshup.io/",
-              api_end_point: "https://api.gupshup.io/sm/api/v1",
               handler: "Glific.Providers.Gupshup.Message",
               worker: "Glific.Providers.Gupshup.Worker",
               bsp_limit: 40
@@ -374,7 +373,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             provider_id: gupshup_enterprise.id,
             keys: %{
               url: "https://enterprise.smsgupshup.com/",
-              api_end_point: "https://media.smsgupshup.com/GatewayAPI/rest",
               handler: "Glific.Providers.Gupshup.Enterprise.Message",
               worker: "Glific.Providers.Gupshup.Enterprise.Worker",
               bsp_limit: 40
