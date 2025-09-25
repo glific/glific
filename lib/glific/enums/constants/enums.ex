@@ -110,6 +110,13 @@ defmodule Glific.Enums.Constants do
       @certificate_template_type_const [
         :slides
       ]
+
+      # Sheet sync status types
+      @sheet_sync_status_const [
+        :pending,
+        :success,
+        :failed
+      ]
     end
   end
 end
