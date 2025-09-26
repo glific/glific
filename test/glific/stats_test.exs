@@ -2,6 +2,7 @@ defmodule Glific.StatsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts,
     Partners,
     Seeds.SeedsDev,
     Stats
@@ -107,5 +108,38 @@ defmodule Glific.StatsTest do
     org = Partners.get_organization!(attrs.organization_id)
 
     assert {:ok, %{message: _error}} = Stats.mail_stats(org)
+  end
+
+  test "daily stats should count created contacts and active contacts separately", attrs do
+    org_id = attrs.organization_id
+    test_date = Date.utc_today()
+    test_datetime = DateTime.new!(test_date, ~T[12:00:00], "Etc/UTC")
+
+    contacts_list = Contacts.list_contacts(%{filter: %{organization_id: org_id}})
+
+    contacts_created_today =
+      contacts_list
+      |> Enum.filter(fn contact ->
+        DateTime.to_date(contact.inserted_at) == test_date
+      end)
+
+    existing_contacts_today = length(contacts_created_today)
+
+    time = DateTime.new!(test_date, ~T[23:00:00], "Etc/UTC")
+    Stats.generate_stats([org_id], false, time: time, day: true)
+
+    daily_stats =
+      Stats.list_stats(%{
+        filter: %{
+          organization_id: org_id,
+          period: "day",
+          date: test_date
+        }
+      })
+
+    assert length(daily_stats) == 1
+    [stat] = daily_stats
+
+    assert stat.contacts == existing_contacts_today
   end
 end

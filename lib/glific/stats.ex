@@ -357,11 +357,23 @@ defmodule Glific.Stats do
           |> where([c], c.last_message_at >= ^start)
           |> where([c], c.last_message_at <= ^finish)
 
+    # Get the contacts who came today irrespective of whether they are active/opted in or not
+    contacts_created_query =
+      if period == :summary,
+        do: query,
+        else:
+          query
+          |> where([c], c.inserted_at >= ^start)
+          |> where([c], c.inserted_at <= ^finish)
+
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
 
     # don't generate summary contact stats for hourly snapshots
-    if(period == :hour, do: stats, else: make_result(stats, time_query, period_date, :contacts))
+    if(period == :hour,
+      do: stats,
+      else: make_result(stats, contacts_created_query, period_date, :contacts)
+    )
     |> make_result(time_query, period_date, :active)
     |> make_result(optin, period_date, :optin)
     |> make_result(optout, period_date, :optout)
