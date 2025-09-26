@@ -7,7 +7,7 @@ defmodule Glific.RepoReplica do
     otp_app: :glific,
     adapter: Ecto.Adapters.Postgres
 
-  # if we are adding `read_only: true`, then RepoHelpers can't have delete fn, so we need
+  # TODO: if we are adding `read_only: true`, then RepoHelpers can't have delete fn, so we need
   # to figure out a way to not add the function in that case, for now its fine. 
   use Glific.RepoHelpers
 end
