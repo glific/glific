@@ -1,6 +1,8 @@
 defmodule Glific.RepoHelpers do
-  # We add a few functions to make our life easier with a few helper functions that ecto does
-  # not provide which will be used by `Glific.Repo and Glific.RepoReplica`.
+  @moduledoc """
+  We add a few functions to make our life easier with a few helper functions that ecto does
+  not provide which will be used by `Glific.Repo` and `Glific.RepoReplica`.
+  """
 
   defmacro __using__(_) do
     quote do
@@ -80,6 +82,7 @@ defmodule Glific.RepoHelpers do
           []
       end
 
+      @doc false
       @spec add_opts(
               Ecto.Queryable.t(),
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()) | nil,
@@ -228,6 +231,7 @@ defmodule Glific.RepoHelpers do
       @spec opts_with_id(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
       def opts_with_id(query, opts), do: opts_with_field(query, opts, :id)
 
+      @doc false
       @spec make_like(Ecto.Queryable.t(), atom(), String.t() | nil) :: Ecto.Queryable.t()
       def make_like(query, _name, str) when is_nil(str) or str == "",
         do: query
@@ -356,22 +360,6 @@ defmodule Glific.RepoHelpers do
         if skip_permission || skip_permission?(user),
           do: query,
           else: permission_fn.(query, user)
-      end
-
-      # codebeat:enable[ABC, LOC]
-
-      @doc """
-      In Join tables we rarely use the table id. We always know the object ids
-      and hence more convenient to delete an entry via its object ids.
-      """
-      @spec delete_relationships_by_ids(atom(), {{atom(), integer}, {atom(), [integer]}}) ::
-              {integer(), nil | [term()]}
-      def delete_relationships_by_ids(object, fields) do
-        {{key_1, value_1}, {key_2, values_2}} = fields
-
-        object
-        |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
-        |> __MODULE__.delete_all()
       end
 
       @doc false
