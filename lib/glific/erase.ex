@@ -12,7 +12,7 @@ defmodule Glific.Erase do
     queue: :purge,
     max_attempts: 1
 
-  @batch_sleep 1_000
+  @batch_sleep 10_000
   @no_of_months 2
 
   @doc """
@@ -323,7 +323,7 @@ defmodule Glific.Erase do
        when is_number(batch_size) and is_number(max_rows_to_delete) do
     time_before_delete = DateTime.utc_now()
 
-    {:ok, %{num_rows: rows_deleted}} =
+    %{num_rows: rows_deleted} =
       try do
         """
         WITH rows_to_delete AS (
@@ -335,13 +335,14 @@ defmodule Glific.Erase do
         DELETE FROM messages
         WHERE id IN (SELECT id FROM rows_to_delete);
         """
-        |> Repo.query([], timeout: 400_000, skip_organization_id: true)
+        |> Repo.query!([], timeout: 400_000, skip_organization_id: true)
       rescue
         err ->
-          Logger.error("Messages purge timed out #{inspect(err)}")
-          {:ok, %{num_rows: 0}}
+          Logger.error("Messages purge timed out due to #{inspect(err)}")
+          %{num_rows: 0}
       end
 
+    Logger.info("Messages deleted #{rows_deleted}")
     total_rows_deleted = total_rows_deleted + rows_deleted
     time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
 
@@ -352,7 +353,7 @@ defmodule Glific.Erase do
 
       {:ok, total_rows_deleted}
     else
-      # deleting the next batch after a second, to ease the DB load
+      # deleting the next batch after x second, to ease the DB load
       if sleep_after_delete? do
         Process.sleep(@batch_sleep)
       end
