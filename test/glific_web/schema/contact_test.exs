@@ -268,8 +268,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:move_contacts, user,
         variables: %{
           "type" => "DATA",
-          "data" => data,
-          "id" => user.organization_id
+          "data" => data
         }
       )
 
@@ -445,41 +444,6 @@ defmodule GlificWeb.Schema.ContactTest do
 
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 1
-  end
-
-  test "Test success for uploading contact through filepath organization_id is given", %{
-    manager: user
-  } do
-    user = Map.put(user, :roles, [:glific_admin])
-
-    file =
-      System.tmp_dir!()
-      |> Path.join("fixture.csv")
-      |> File.open!([:write, :utf8])
-
-    [
-      ~w(name phone Language opt_in collection),
-      ["test", "+91989329297", "english", "2021-03-09 12:34:25", "collection"]
-    ]
-    |> CSV.encode()
-    |> Enum.each(&IO.write(file, &1))
-
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "type" => "FILE_PATH",
-          "data" => file_name,
-          "group_label" => "collection"
-        }
-      )
-
-    assert {:ok, _} = result
-    assert_enqueued(worker: ImportWorker, prefix: "global")
-
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default, with_scheduled: true)
   end
 
   test "test success for uploading contact for different csv", %{manager: user} do
