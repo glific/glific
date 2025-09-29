@@ -150,6 +150,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
         },
+        "error" => "Invalid 'previous_response_id'",
         "success" => false
       }
 
@@ -174,7 +175,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
 
       # once a response is received the flow moves to next node i.e. send the message which is @results.response.message
-
       [message | _messages] =
         Glific.Messages.list_messages(%{
           filter: %{contact_id: contact.id},

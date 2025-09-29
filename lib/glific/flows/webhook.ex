@@ -456,56 +456,95 @@ defmodule Glific.Flows.Webhook do
       {fields, body} ->
         webhook_log = create_log(action, fields, action.headers, context)
 
-        fields =
-          fields
-          |> Map.put("webhook_log_id", webhook_log.id)
-          |> Map.put("result_name", action.result_name)
-          |> Map.put("flow_id", context.flow_id)
-          |> Map.put("contact_id", context.contact_id)
+        params = %{
+          action: action,
+          context: context,
+          webhook_log: webhook_log,
+          fields: fields,
+          body: body,
+          headers: parsed_attrs.header
+        }
 
-        headers =
-          add_signature(parsed_attrs.header, context.organization_id, body)
-          |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
-
-        if is_active? do
-          response = CommonWebhook.webhook("call_and_wait", fields, headers)
-
-          case response do
-            %{success: true, data: data} ->
-              update_log(webhook_log.id, data)
-              wait_time = action.wait_time || 60
-
-              {:ok, context} =
-                FlowContext.update_flow_context(
-                  context,
-                  %{
-                    wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-                    is_background_flow: context.flow.is_background,
-                    is_await_result: true
-                  }
-                )
-
-              {:wait, context, []}
-
-            %{success: false, reason: data} ->
-              update_log(webhook_log.id, data)
-
-              {:ok, context, [failure_message]}
-
-            _ ->
-              update_log(webhook_log.id, "Something went wrong")
-              {:ok, context, [failure_message]}
-          end
-        else
-          update_log(webhook_log.id, "Kaapi is not active")
-
-          Appsignal.send_error(
-            %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
-            []
-          )
-
-          {:ok, context, [failure_message]}
-        end
+        process_webhook(params, is_active?, failure_message)
     end
+  end
+
+  @spec process_webhook(map(), boolean(), Message.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp process_webhook(
+         %{webhook_log: webhook_log, context: context} = _params,
+         false,
+         failure_message
+       ) do
+    update_log(webhook_log.id, "Kaapi is not active")
+
+    Appsignal.send_error(
+      %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
+      []
+    )
+
+    {:ok, context, [failure_message]}
+  end
+
+  defp process_webhook(params, true, failure_message) do
+    %{
+      action: action,
+      context: context,
+      webhook_log: webhook_log,
+      fields: fields,
+      body: body,
+      headers: headers
+    } = params
+
+    fields =
+      fields
+      |> Map.put("webhook_log_id", webhook_log.id)
+      |> Map.put("result_name", action.result_name)
+      |> Map.put("flow_id", context.flow_id)
+      |> Map.put("contact_id", context.contact_id)
+
+    headers =
+      headers
+      |> add_signature(context.organization_id, body)
+      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
+
+    execute_webhook(webhook_log.id, fields, headers, action, context, failure_message)
+  end
+
+  @spec execute_webhook(integer(), map(), list(), map(), FlowContext.t(), Message.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp execute_webhook(log_id, fields, headers, action, context, failure_message) do
+    response = CommonWebhook.webhook("call_and_wait", fields, headers)
+
+    case response do
+      %{success: true, data: data} ->
+        update_log(log_id, data)
+        wait_time = action.wait_time || 60
+        update_context_for_wait(context, wait_time)
+
+      %{success: false, reason: data} ->
+        update_log(log_id, data)
+        {:ok, context, [failure_message]}
+
+      _ ->
+        update_log(log_id, "Something went wrong")
+        {:ok, context, [failure_message]}
+    end
+  end
+
+  @spec update_context_for_wait(FlowContext.t(), integer()) ::
+          {:wait, FlowContext.t(), []}
+  defp update_context_for_wait(context, wait_time) do
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
+          is_background_flow: context.flow.is_background,
+          is_await_result: true
+        }
+      )
+
+    {:wait, context, []}
   end
 end

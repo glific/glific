@@ -29,7 +29,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     message =
       %{
         success: result["success"],
-        message: response["message"] || response["error"],
+        message: response["message"] || result["error"],
         thread_id: thread_id
       }
 
