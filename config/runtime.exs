@@ -13,7 +13,7 @@ http_port = env!("HTTP_PORT", :integer, 4000)
 ssl_opts =
   if Mix.env() != :test,
     do: [
-      cacertfile: Path.expand("../", __DIR__) <> env!("CACERT_PATH", :string),
+      cacerts: :public_key.cacerts_get(),
       verify: :verify_peer
     ],
     else: false
