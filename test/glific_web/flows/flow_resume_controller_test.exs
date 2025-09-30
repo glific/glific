@@ -150,7 +150,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
         },
-        "error" => "Invalid 'previous_response_id'",
         "success" => false
       }
 
