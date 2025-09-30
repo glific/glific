@@ -566,9 +566,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         "signature" => signature,
         "timestamp" => timestamp,
         "webhook_log_id" => webhook_log.id,
-        "result_name" => "filesearch",
-        # Add error in data as well
-        "error" => error_message
+        "result_name" => "filesearch"
       },
       "error" => error_message,
       "metadata" => nil,
