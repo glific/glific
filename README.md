@@ -323,16 +323,16 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  brew services restart postgresql@<version>
  ```
 
- 7. Setup CA certificates for Glific:
+ 8. Test SSL connection:
+ First get the mkcert root path
  ```bash
- CAROOT=$(mkcert -CAROOT)
- cp "$CAROOT/rootCA.pem" priv/cert/glific-CA.pem
+ echo $(mkcert -CAROOT)
  ```
 
- 8. Test SSL connection:
  ```bash
- psql "sslmode=require dbname=glific_dev host=localhost"
+ psql "sslmode=verify-full dbname=glific_dev host=localhost sslrootcert=path/to/mkcert/rootCA.pem"
  ```
+
  You should see SSL connection details. Verify with:
  ```sql
  SHOW ssl;
