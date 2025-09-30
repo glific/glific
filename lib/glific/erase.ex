@@ -342,7 +342,7 @@ defmodule Glific.Erase do
           %{num_rows: 0}
       end
 
-    Logger.info("Messages deleted #{rows_deleted}")
+    Logger.info("Messages deleted:  #{rows_deleted}")
     total_rows_deleted = total_rows_deleted + rows_deleted
     time_after_delete = DateTime.diff(DateTime.utc_now(), time_before_delete)
 
@@ -353,7 +353,7 @@ defmodule Glific.Erase do
 
       {:ok, total_rows_deleted}
     else
-      # deleting the next batch after x second, to ease the DB load
+      # deleting the next batch after @batch_sleep second, to ease the DB load
       if sleep_after_delete? do
         Process.sleep(@batch_sleep)
       end
