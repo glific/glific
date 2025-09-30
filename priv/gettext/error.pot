@@ -11,17 +11,17 @@
 msgid ""
 msgstr ""
 
-#: lib/glific/saas/queries.ex:367
+#: lib/glific/saas/queries.ex:368
 #, elixir-autogen, elixir-format
 msgid "API Key or App Name is empty."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:515
+#: lib/glific/saas/queries.ex:516
 #, elixir-autogen, elixir-format
 msgid "Billing frequency cannot be empty."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:426
+#: lib/glific/saas/queries.ex:427
 #, elixir-autogen, elixir-format
 msgid "Email is not valid."
 msgstr ""
@@ -32,7 +32,7 @@ msgstr ""
 msgid "Field cannot be empty."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:591
+#: lib/glific/saas/queries.ex:592
 #, elixir-autogen, elixir-format
 msgid "Field cannot be false."
 msgstr ""
@@ -47,37 +47,37 @@ msgstr ""
 msgid "Field cannot be more than %{length} letters."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:438
+#: lib/glific/saas/queries.ex:439
 #, elixir-autogen, elixir-format
 msgid "Phone is not valid."
 msgstr ""
 
-#: lib/glific/saas/onboard.ex:133
+#: lib/glific/saas/onboard.ex:134
 #, elixir-autogen, elixir-format
 msgid "Registration ID is empty."
 msgstr ""
 
-#: lib/glific/saas/onboard.ex:122
+#: lib/glific/saas/onboard.ex:123
 #, elixir-autogen, elixir-format
 msgid "Registration doesn't exist for given registration ID."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:387
+#: lib/glific/saas/queries.ex:388
 #, elixir-autogen, elixir-format
 msgid "Shortcode cannot be empty."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:397
+#: lib/glific/saas/queries.ex:398
 #, elixir-autogen, elixir-format
 msgid "Shortcode has already been taken."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:519
+#: lib/glific/saas/queries.ex:520
 #, elixir-autogen, elixir-format
 msgid "Value should be one of Monthly , Quarterly, Half-Yearly, Annually."
 msgstr ""
 
-#: lib/glific/saas/queries.ex:401
+#: lib/glific/saas/queries.ex:402
 #, elixir-autogen, elixir-format
 msgid "Invalid shortcode. It should match the regex /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/."
 msgstr ""
