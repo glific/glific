@@ -220,7 +220,6 @@ defmodule Glific.Fixtures do
       shortcode: "gupshup_enterprise",
       keys: %{
         url: "test_url",
-        api_end_point: "test_api_end_point",
         handler: "Glific.Providers.Gupshup.Enterprise.Message",
         worker: "Glific.Providers.Gupshup.Enterprise.Worker",
         bsp_limit: 60
@@ -239,7 +238,6 @@ defmodule Glific.Fixtures do
       shortcode: "gupshup",
       keys: %{
         url: "test_url",
-        api_end_point: "test_api_end_point",
         handler: "Glific.Providers.Gupshup.Message",
         worker: "Glific.Providers.Gupshup.Worker",
         bsp_limit: 60
