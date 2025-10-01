@@ -73,6 +73,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   def perform_periodic(org_id) do
     if BigQuery.active?(org_id) do
       Logger.info("Found bigquery credentials for org_id: #{org_id}")
+      RepoReplica.put_process_state(org_id)
 
       Jobs.get_bigquery_jobs(org_id)
       |> Enum.each(&init_insert_job(&1, org_id))
