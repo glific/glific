@@ -15,6 +15,8 @@ defmodule Glific.Application do
       # Start the Ecto repository
       Glific.Repo,
 
+      # Start the Ecto Repository for Read replica
+      Glific.RepoReplica,
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
 

@@ -50,6 +50,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Partners,
     Profiles.Profile,
     Repo,
+    RepoReplica,
     Searches.SavedSearch,
     Stats.Stat,
     Tags.Tag,
@@ -72,6 +73,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   def perform_periodic(org_id) do
     if BigQuery.active?(org_id) do
       Logger.info("Found bigquery credentials for org_id: #{org_id}")
+      RepoReplica.put_process_state(org_id)
 
       Jobs.get_bigquery_jobs(org_id)
       |> Enum.each(&init_insert_job(&1, org_id))
@@ -156,6 +158,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         } = _job
       ) do
     Repo.put_process_state(organization_id)
+    RepoReplica.put_process_state(organization_id)
     Logger.info("removing duplicates for org_id: #{organization_id} table: #{table}")
     BigQuery.make_job_to_remove_duplicate(table, organization_id)
     :ok
@@ -167,6 +170,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         } = _job
       ) do
     Repo.put_process_state(organization_id)
+    RepoReplica.put_process_state(organization_id)
 
     Jobs.get_bigquery_job(organization_id, table)
     |> insert_for_table(organization_id, action)
@@ -191,7 +195,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], m.id)
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :id)
+      |> RepoReplica.aggregate(:max, :id)
 
     if is_nil(max_id),
       do: table_id,
@@ -215,7 +219,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> add_organization_id(table_name, organization_id)
       |> order_by([tb], [tb.updated_at, tb.id])
       |> limit(@per_min_limit)
-      |> Repo.aggregate(:max, :updated_at, timeout: 40_000)
+      |> RepoReplica.aggregate(:max, :updated_at, timeout: 40_000)
 
     if is_nil(max_last_update),
       do: table_last_updated_at,
@@ -294,8 +298,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("messages", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("messages", organization_id, attrs)
     |> Enum.reduce([], fn row, acc ->
       [
         row
@@ -316,8 +319,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching contacts_wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("contacts_wa_groups", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("contacts_wa_groups", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -348,8 +350,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("flow_labels", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("flow_labels", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -378,8 +379,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("contacts_fields", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("contacts_fields", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -409,8 +409,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("groups", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("groups", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -443,8 +442,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("tags", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("tags", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -475,8 +473,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching saved_searches data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("saved_searches", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("saved_searches", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -507,8 +504,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("speed_sends", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("speed_sends", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -544,8 +540,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("wa_groups", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("wa_groups", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -577,8 +572,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("interactive_templates", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("interactive_templates", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -612,8 +606,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching wa_groups_collections data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("wa_groups_collections", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("wa_groups_collections", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -644,8 +637,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching wa_reactions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("wa_reactions", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("wa_reactions", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -676,8 +668,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching certificate_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("certificate_templates", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("certificate_templates", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -708,8 +699,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching issued_certificates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("issued_certificates", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("issued_certificates", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -741,8 +731,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("message_broadcast_contacts", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("message_broadcast_contacts", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -773,8 +762,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching message_broadcasts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("message_broadcasts", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("message_broadcasts", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -811,8 +799,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("contacts", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("contacts", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -866,8 +853,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching contacts_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("contacts_groups", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("contacts_groups", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -900,8 +886,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching profiles data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("profiles", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("profiles", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -943,8 +928,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching contact_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("contact_histories", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("contact_histories", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -976,8 +960,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("message_conversations", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("message_conversations", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1010,8 +993,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flows data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("flows", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("flows", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1044,8 +1026,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("flow_results", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("flow_results", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1082,8 +1063,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flow_counts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("flow_counts", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("flow_counts", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1116,8 +1096,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching messages_media data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("messages_media", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("messages_media", organization_id, attrs)
     |> queue_message_media_data(organization_id, attrs)
 
     :ok
@@ -1128,8 +1107,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching flow_contexts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("flow_contexts", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("flow_contexts", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1179,8 +1157,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("tickets", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("tickets", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1219,8 +1196,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
-    get_query("wa_messages", organization_id, attrs)
-    |> Repo.all()
+    fetch_data("wa_messages", organization_id, attrs)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1268,9 +1244,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         do: :stats,
         else: :stats_all
 
-    get_query(stat, organization_id, attrs)
+    fetch_data(stat, organization_id, attrs)
     # for stats_all we specifically want to skip organization_id
-    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1327,9 +1302,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         do: :trackers,
         else: :trackers_all
 
-    get_query(tracker, organization_id, attrs)
+    fetch_data(tracker, organization_id, attrs)
     # for tracker_all we specifically want to skip organization_id
-    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       [],
       fn row, acc ->
@@ -1874,6 +1848,17 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job([], job_type, organization_id, attrs)
     else
       Enum.each(chunks, &make_job(&1, job_type, organization_id, attrs))
+    end
+  end
+
+  @spec fetch_data(String.t(), non_neg_integer(), map()) :: list()
+  defp fetch_data(table, organization_id, attrs) do
+    query = get_query(table, organization_id, attrs)
+
+    if table in ["stats", "stats_all", "trackers", "trackers_all"] do
+      RepoReplica.all(query, skip_organization_id: true)
+    else
+      RepoReplica.all(query)
     end
   end
 end

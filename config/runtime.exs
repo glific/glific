@@ -17,6 +17,13 @@ config :glific, Glific.Repo,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
+config :glific, Glific.RepoReplica,
+  url: env!("READ_REPLICA_DATABASE_URL", :string!),
+  pool_size: env!("POOL_SIZE", :integer, 20),
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
+
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 # Glific endpoint configs
