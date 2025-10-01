@@ -172,4 +172,7 @@ defmodule Glific.Enums do
 
   defmacro certificate_template_type_const,
     do: Macro.expand(@certificate_template_type_const, __CALLER__)
+
+  defmacro sheet_sync_status_const,
+    do: Macro.expand(@sheet_sync_status_const, __CALLER__)
 end
