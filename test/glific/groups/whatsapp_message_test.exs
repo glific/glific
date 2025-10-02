@@ -369,4 +369,40 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     assert wa_message.type == :image
   end
+
+  test "Handling create_and_send_wa_message/3 failure",
+       attrs do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post
+      } ->
+        {:error, :timeout}
+    end)
+
+    params = %{
+      wa_group_id: wa_group.id,
+      message: "hi",
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert_enqueued(worker: WAWorker, prefix: "global")
+
+    assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+    assert wa_message.body == params.message
+    assert wa_message.bsp_status == :sent
+    assert wa_message.flow == :outbound
+  end
 end
