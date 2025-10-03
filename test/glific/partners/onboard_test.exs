@@ -850,6 +850,26 @@ defmodule Glific.OnboardTest do
             data: %{name: "name", customer_name: "name"}
           }
         }
+
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "test",
+               project_name: "test",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
     end)
 
     assert %{
@@ -886,6 +906,26 @@ defmodule Glific.OnboardTest do
             data: %{name: "name", customer_name: "name"}
           }
         }
+
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "test",
+               project_name: "test",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
     end)
 
     assert %{
