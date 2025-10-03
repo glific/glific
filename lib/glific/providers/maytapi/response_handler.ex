@@ -14,9 +14,10 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
 
   require Logger
 
-  @default_tesla_error """
-  {\"success\":false,\"message\":\"Error sending message due to network issues or maytapi Outage\"}
-  """
+  @default_tesla_error %{
+    "success" => false,
+    "message" => "Error sending message due to network issues or maytapi Outage"
+  }
 
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, WAMessage.t() | {:error, any()}) ::
@@ -39,10 +40,13 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.info(
-      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+      "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
     )
 
-    handle_error_response(%{body: @default_tesla_error}, message)
+    handle_error_response(
+      %{body: put_in(@default_tesla_error, ["error"], inspect(error))},
+      message
+    )
   end
 
   @spec handle_success_response(Tesla.Env.t(), WAMessage.t()) :: {:ok, WAMessage.t()}
@@ -86,11 +90,9 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
         errors: build_error(response.body)
       })
 
-    error_msg = Jason.decode!(response.body)
-
     Notifications.create_notification(%{
       category: "WA Group",
-      message: "Error sending message: #{error_msg["message"]}",
+      message: "Error sending message: #{response.body["message"]}",
       severity: Notifications.types().critical,
       organization_id: message.organization_id,
       entity: %{

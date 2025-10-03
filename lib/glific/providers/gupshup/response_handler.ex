@@ -36,14 +36,27 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
       }
     }
   }
-  # Sending default error when API Client call fails for some reason
+
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.error(
       "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
     )
 
-    Communications.Message.handle_error_response(%{body: @default_tesla_error}, message)
-    :ok
+    # Sending default error when API Client call fails for some reason
+    err =
+      Communications.Message.handle_error_response(
+        %{body: put_in(@default_tesla_error, ["payload", "payload", "error"], inspect(error))},
+        message
+      )
+
+    case error do
+      {:error, reason} when reason in [:timeout, :closed_timeout, :closed] ->
+        # This will kickoff oban retry mechanism for timeout related errors
+        err
+
+      _ ->
+        :ok
+    end
   end
 end
