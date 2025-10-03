@@ -212,7 +212,6 @@ defmodule Glific.CommunicationsTest do
       assert message.sent_at == nil
     end
 
-    @tag :tt
     test "handle connection timeout error when API call fails",
          %{global_schema: global_schema} = attrs do
       Tesla.Mock.mock(fn

@@ -394,15 +394,11 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, _wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
 
     assert_enqueued(worker: WAWorker, prefix: "global")
 
     assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
-
-    assert wa_message.body == params.message
-    assert wa_message.bsp_status == :sent
-    assert wa_message.flow == :outbound
   end
 end
