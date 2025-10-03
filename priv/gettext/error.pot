@@ -52,12 +52,12 @@ msgstr ""
 msgid "Phone is not valid."
 msgstr ""
 
-#: lib/glific/saas/onboard.ex:134
+#: lib/glific/saas/onboard.ex:136
 #, elixir-autogen, elixir-format
 msgid "Registration ID is empty."
 msgstr ""
 
-#: lib/glific/saas/onboard.ex:123
+#: lib/glific/saas/onboard.ex:125
 #, elixir-autogen, elixir-format
 msgid "Registration doesn't exist for given registration ID."
 msgstr ""

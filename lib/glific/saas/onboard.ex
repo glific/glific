@@ -24,6 +24,7 @@ defmodule Glific.Saas.Onboard do
     Repo,
     Saas.Queries,
     Seeds.SeedsMigration,
+    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -80,6 +81,7 @@ defmodule Glific.Saas.Onboard do
       SeedsMigration.migrate_data(:template_flows, result.organization)
       org = status(result.organization.id, :active)
       notify_saas_team(result.organization)
+      setup_kaapi_for_organization(result.organization)
       Map.put(result, :organization, org)
     end
   end
@@ -449,5 +451,15 @@ defmodule Glific.Saas.Onboard do
       {false, _} -> Map.put(params, "is_disputed", true)
       _ -> params
     end
+  end
+
+  defp setup_kaapi_for_organization(organization) do
+    %{
+      organization_id: organization.id,
+      organization_name: organization.parent_org || organization.name,
+      project_name: organization.name,
+      user_name: organization.shortcode
+    }
+    |> Kaapi.onboard()
   end
 end
