@@ -465,13 +465,13 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        process_webhook(params, is_active?, failure_message)
+        do_webhook_and_wait(params, is_active?, failure_message)
     end
   end
 
-  @spec process_webhook(map(), boolean(), Message.t()) ::
+  @spec do_webhook_and_wait(map(), boolean(), Message.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_webhook(
+  defp do_webhook_and_wait(
          %{webhook_log: webhook_log, context: context} = _params,
          false,
          failure_message
@@ -486,7 +486,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, context, [failure_message]}
   end
 
-  defp process_webhook(params, true, failure_message) do
+  defp do_webhook_and_wait(params, true, failure_message) do
     %{
       action: action,
       context: context,
@@ -508,12 +508,12 @@ defmodule Glific.Flows.Webhook do
       |> add_signature(context.organization_id, body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    execute_webhook(webhook_log.id, fields, headers, action, context, failure_message)
+    process_call_and_wait(webhook_log.id, fields, headers, action, context, failure_message)
   end
 
-  @spec execute_webhook(integer(), map(), list(), map(), FlowContext.t(), Message.t()) ::
+  @spec process_call_and_wait(integer(), map(), list(), map(), FlowContext.t(), Message.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp execute_webhook(log_id, fields, headers, action, context, failure_message) do
+  defp process_call_and_wait(log_id, fields, headers, action, context, failure_message) do
     response = CommonWebhook.webhook("call_and_wait", fields, headers)
 
     case response do

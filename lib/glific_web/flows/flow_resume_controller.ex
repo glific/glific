@@ -35,7 +35,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
 
-    # check lib/glific/flows/webhook.ex:449
     respone_key = response["result_name"] || "response"
 
     message =
@@ -55,8 +54,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
           nil
       end
 
-    # need to validate timestamp
-    # need to validate signature
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
