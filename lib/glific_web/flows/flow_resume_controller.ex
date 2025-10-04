@@ -25,7 +25,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
 
-    # updated the webhook log with latest response
     message =
       %{
         success: result["success"],
@@ -34,7 +33,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
-
     respone_key = response["result_name"] || "response"
 
     message =
