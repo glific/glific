@@ -476,4 +476,122 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
 
     Partners.update_credential(credential, valid_update_attrs)
   end
+
+  test "should add the error in webhook log when getting the error response from kaapi",
+       %{conn: conn} do
+    organization_id = conn.assigns.organization_id
+    # activate kaapi
+    enable_kaapi(%{organization_id: organization_id})
+
+    FunWithFlags.enable(:is_kaapi_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    contact = Fixtures.contact_fixture()
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+    [node | _tail] = flow.nodes
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        uuid_map: %{},
+        organization_id: organization_id,
+        node_uuid: node.uuid
+      })
+
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "call_webhook",
+      uuid: "UUID 1",
+      url: "filesearch-gpt",
+      body:
+        "{\n\"question\": \"tell me a fact about consistency\",\n  \"flow_id\": \"@flow.id\",\n  \"endpoint\": \"This is not a secretapi/v1/responses\",\n
+        \"contact_id\": \"@contact.id\",\n  \"callback_url\": \"https://91e372283c55/webhook/flow_resume\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
+      method: "FUNCTION",
+      headers: %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      result_name: "filesearch",
+      node_uuid: "Test UUID"
+    }
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              message: "Response creation started",
+              status: "processing",
+              success: true
+            }
+          }
+        }
+    end)
+
+    message_stream = []
+    # execute the webhook node
+    Action.execute(action, context, message_stream)
+
+    webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow.id,
+      "contact_id" => contact.id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    error_message =
+      "Invalid 'previous_response_id': '@results.filesearch'. Expected an ID that contains letters, numbers, underscores, or dashes, but this value contained additional characters."
+
+    params = %{
+      "data" => %{
+        "contact_id" => contact.id,
+        "flow_id" => flow.id,
+        "organization_id" => organization_id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "webhook_log_id" => webhook_log.id,
+        "result_name" => "filesearch"
+      },
+      "error" => error_message,
+      "metadata" => nil,
+      "success" => false
+    }
+
+    conn =
+      conn
+      |> post("/webhook/flow_resume", params)
+
+    assert json_response(conn, 200) == ""
+
+    [message | _messages] =
+      Glific.Messages.list_messages(%{
+        filter: %{contact_id: contact.id},
+        opts: %{limit: 1, order: :desc}
+      })
+
+    assert message.body == "failure"
+
+    # webhook log should be updated with the error response
+    updated_webhook_log = Repo.get_by(WebhookLog, %{id: webhook_log.id})
+
+    assert updated_webhook_log.response_json["message"] == error_message
+    assert updated_webhook_log.response_json["success"] == false
+    assert updated_webhook_log.response_json["thread_id"] == nil
+  end
 end
