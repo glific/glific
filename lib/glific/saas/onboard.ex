@@ -457,8 +457,7 @@ defmodule Glific.Saas.Onboard do
     %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
-      project_name: organization.name,
-      user_name: organization.shortcode
+      project_name: organization.shortcode
     }
     |> Kaapi.onboard()
   end

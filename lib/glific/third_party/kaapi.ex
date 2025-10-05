@@ -38,13 +38,10 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
     else
       {:error, error} ->
-        Appsignal.send_error(
-          %Error{
-            message:
-              "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
+        })
 
         Logger.error(
           "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
