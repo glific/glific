@@ -14,7 +14,14 @@ fragment OrganizationFields on OrganizationResult {
       keys
       secrets
     }
-
+    setting {  
+      report_frequency
+      run_flow_each_time
+      low_balance_threshold
+      critical_balance_threshold
+      send_warning_mail
+      allow_bot_number_update
+    }
     out_of_office {
       enabled
       start_time

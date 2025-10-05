@@ -23,6 +23,7 @@ defmodule Glific.Users.User do
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,
+          email: String.t() | nil,
           password_hash: String.t() | nil,
           fingerprint: String.t() | nil,
           contact_id: non_neg_integer | nil,
@@ -42,6 +43,7 @@ defmodule Glific.Users.User do
           last_login_at: :utc_datetime | nil,
           last_login_from: String.t() | nil,
           upload_contacts: boolean() | false,
+          consent_for_updates: boolean(),
           confirmed_at: :utc_datetime | nil
         }
 
@@ -54,7 +56,9 @@ defmodule Glific.Users.User do
     :last_login_at,
     :language_id,
     :upload_contacts,
-    :confirmed_at
+    :confirmed_at,
+    :email,
+    :consent_for_updates
   ]
 
   @password_opts [
@@ -73,7 +77,9 @@ defmodule Glific.Users.User do
 
   schema "users" do
     field(:name, :string)
+    field(:email, :string)
     field(:roles, {:array, UserRoles}, default: [:none])
+    field(:consent_for_updates, :boolean, default: false)
 
     # is this user restricted to contacts only in groups that they are part of
     field(:is_restricted, :boolean, default: false)
@@ -109,6 +115,7 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
     |> Changeset.validate_required(@required_fields)
+    |> Changeset.validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
@@ -143,9 +150,11 @@ defmodule Glific.Users.User do
       :is_restricted,
       :last_login_at,
       :last_login_from,
-      :language_id
+      :language_id,
+      :email
     ])
     |> Changeset.validate_required([:name, :roles])
+    |> Changeset.validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)
   end

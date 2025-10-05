@@ -300,7 +300,6 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field :move_contacts, :import_result do
-      arg(:id, :id)
       arg(:type, :import_contacts_type_enum)
       arg(:data, non_null(:string))
       middleware(Authorize, :manager)
@@ -308,7 +307,6 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field :import_contacts, :import_result do
-      arg(:id, :id)
       arg(:type, :import_contacts_type_enum)
       arg(:group_label, :string)
       arg(:data, non_null(:string))

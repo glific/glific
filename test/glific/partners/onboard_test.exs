@@ -4,6 +4,7 @@ defmodule Glific.OnboardTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   import Mock
 
+  @dummy_phone_number "91783481114"
   alias Faker.Phone
 
   alias Glific.{
@@ -70,6 +71,7 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
+              "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
               "token" => "ks_test_token",
               "status" => "success",
               "templates" => [],
@@ -106,7 +108,7 @@ defmodule Glific.OnboardTest do
     ) do
       attrs =
         @valid_attrs
-        |> Map.put("shortcode", "new_glific")
+        |> Map.put("shortcode", "newglific")
         |> Map.put("phone", "919917443995")
 
       result = Onboard.setup(attrs)
@@ -202,7 +204,7 @@ defmodule Glific.OnboardTest do
       with_mock(GcsWorker, upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end) do
         attrs =
           @valid_attrs
-          |> Map.put("shortcode", "new_glific")
+          |> Map.put("shortcode", "newglific")
           |> Map.put("phone", "919917443995")
 
         %{organization: %{id: org_id}, registration_id: registration_id} =
@@ -646,13 +648,13 @@ defmodule Glific.OnboardTest do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
-      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("shortcode", "newglific")
       |> Map.put("phone", "919917443995")
 
     result = Onboard.setup(attrs)
 
     assert result.organization.name == "First"
-    assert result.organization.shortcode == "new_glific"
+    assert result.organization.shortcode == "newglific"
   end
 
   test "Handling submitting invalid app name" do
@@ -682,7 +684,7 @@ defmodule Glific.OnboardTest do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
-      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("shortcode", "glificnew")
       |> Map.put("phone", "919917443995")
 
     assert %{is_valid: false} = Onboard.setup(attrs)
@@ -716,7 +718,7 @@ defmodule Glific.OnboardTest do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
-      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("shortcode", "glificnew")
       |> Map.put("phone", "919917443995")
 
     assert %{is_valid: false} = Onboard.setup(attrs)
@@ -726,13 +728,13 @@ defmodule Glific.OnboardTest do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
-      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("shortcode", "newglific")
       |> Map.put("phone", "919917443995")
 
     result = Onboard.setup(attrs)
 
     assert result.organization.name == "First"
-    assert result.organization.shortcode == "new_glific"
+    assert result.organization.shortcode == "newglific"
 
     simulator_contacts =
       Contacts.list_contacts(%{
@@ -748,7 +750,7 @@ defmodule Glific.OnboardTest do
     result = Onboard.setup(attrs)
 
     assert result.organization.name == "First"
-    assert result.organization.shortcode == "new_glific"
+    assert result.organization.shortcode == "newglific"
 
     # if we don't delete the existing migration, length of simulator_contacts here will be 0
     simulator_contacts =
@@ -764,25 +766,165 @@ defmodule Glific.OnboardTest do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
-      |> Map.put("shortcode", "NEW_Glific")
+      |> Map.put("shortcode", "newglific")
       |> Map.put("phone", "919917443995")
 
     result = Onboard.setup(attrs)
 
     assert result.organization.name == "First"
-    assert result.organization.shortcode == "new_glific"
+    assert result.organization.shortcode == "newglific"
 
-    result = Onboard.setup(attrs |> Map.merge(%{"shortcode" => "glific_b"}))
+    result = Onboard.setup(attrs |> Map.merge(%{"shortcode" => "glificb"}))
 
     assert result.organization.name == "First"
-    assert result.organization.shortcode == "glific_b"
+    assert result.organization.shortcode == "glificb"
 
     query =
       from schema in "schema_seeds",
-        where: schema.tenant == "new_glific",
+        where: schema.tenant == "newglific",
         select: %{version: schema.version}
 
-    # making sure that migrations are still there for new_glific
+    # making sure that migrations are still there for newglific
     assert length(Repo.all(query, skip_organization_id: true)) > 0
+  end
+
+  test "onboard setup v2, invalid params" do
+    attrs = %{
+      "name" => "",
+      "email" => "foobar"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{name: "name", customer_name: "name"}
+          }
+        }
+    end)
+
+    assert %{is_valid: false, messages: %{name: "Field cannot be empty."}} =
+             Onboard.setup_v2(attrs)
+
+    attrs = %{
+      "name" => "org_name",
+      "email" => "foobar"
+    }
+
+    assert %{is_valid: false, messages: %{email: "Email is not valid."}} =
+             Onboard.setup_v2(attrs)
+  end
+
+  test "onboard setup v2, invalid shortcode" do
+    attrs = %{
+      "name" => "org_name",
+      "email" => "foobar@gmail.com"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{name: "name", customer_name: "name"}
+          }
+        }
+    end)
+
+    assert %{is_valid: false, messages: %{shortcode: "Invalid shortcode." <> _}} =
+             Onboard.setup_v2(attrs)
+  end
+
+  test "onboard setup v2, valid params" do
+    attrs = %{
+      "name" => "orgname is acme",
+      "email" => "foobar@gmail.com"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{name: "name", customer_name: "name"}
+          }
+        }
+    end)
+
+    assert %{
+             is_valid: true,
+             messages: %{},
+             organization: organization,
+             contact: contact,
+             credential: credential
+           } =
+             Onboard.setup_v2(attrs)
+
+    assert contact.phone == @dummy_phone_number
+    assert contact.name == "NGO Main Account"
+    user = Repo.preload(contact, [:user])
+    assert user.phone == @dummy_phone_number
+    assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
+    assert organization.is_active
+    assert organization.status == :active
+    assert organization.shortcode == "oia"
+  end
+
+  test "onboard setup v2, valid params, but we also pass shortcode" do
+    attrs = %{
+      "name" => "orgname",
+      "email" => "foobar@gmail.com",
+      "shortcode" => "org"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{name: "name", customer_name: "name"}
+          }
+        }
+    end)
+
+    assert %{
+             is_valid: true,
+             messages: %{},
+             organization: organization,
+             contact: contact,
+             credential: credential
+           } =
+             Onboard.setup_v2(attrs)
+
+    assert contact.phone == @dummy_phone_number
+    assert contact.name == "NGO Main Account"
+    user = Repo.preload(contact, [:user])
+    assert user.phone == @dummy_phone_number
+    assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
+    assert organization.is_active
+    assert organization.status == :active
+    assert organization.shortcode == "org"
+  end
+
+  test "onboard setup v2, valid params, but erp api fails" do
+    attrs = %{
+      "name" => "orgname",
+      "email" => "foobar@gmail.com",
+      "shortcode" => "org"
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        {:error,
+         %Tesla.Env{
+           status: 500,
+           body: %{
+             _server_messages: "[{\"message\":\"reason\"}]"
+           }
+         }}
+    end)
+
+    assert %{is_valid: false} = Onboard.setup_v2(attrs)
   end
 end
