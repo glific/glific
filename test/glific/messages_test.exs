@@ -1332,6 +1332,51 @@ defmodule Glific.MessagesTest do
       assert message.sent_at != nil
     end
 
+    test "send document hsm message",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+
+      shortcode = "file_reminder"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param1"]
+
+      # send media hsm without media should return error
+      {:error, error_message} =
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
+
+      assert error_message == "Please provide media for media template."
+
+      media = Fixtures.message_media_fixture(attrs)
+
+      # send media hsm with media should send media template
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters,
+          media_id: media.id
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      assert %{success: 1} = Oban.drain_queue(queue: :gupshup, with_safety: false)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.status == :sent
+      assert message.sent_at != nil
+    end
+
     test "prepare hsm template",
          %{organization_id: organization_id} do
       shortcode = "otp"

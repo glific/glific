@@ -72,6 +72,21 @@ defmodule Glific.Filesearch.VectorStore do
   end
 
   @doc """
+  Upserts VectorStore
+  """
+  @spec upsert_vector_store(map()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_vector_store(attrs) do
+    conflict_opts = attrs |> Map.take([:name, :files, :size, :status]) |> Map.to_list()
+
+    %VectorStore{}
+    |> changeset(attrs)
+    |> Repo.insert(
+      on_conflict: [set: conflict_opts],
+      conflict_target: [:vector_store_id, :organization_id]
+    )
+  end
+
+  @doc """
     Retrieves a vector_store
   """
   @spec get_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}

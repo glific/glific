@@ -174,7 +174,12 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable custom certificate feature for an organization
     field(:is_certificate_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field for now to conditionally enable kaapi for an organization
+    field(:is_kaapi_enabled, :boolean, default: false, virtual: true)
+
     field(:is_interactive_re_response_enabled, :boolean, default: false, virtual: true)
+
+    field(:is_ask_me_bot_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
   end

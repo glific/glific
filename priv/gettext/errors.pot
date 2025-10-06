@@ -125,7 +125,7 @@ msgstr ""
 msgid "Could not find invoice for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:135
+#: lib/glific/flows/webhook.ex:150
 #, elixir-format, elixir-autogen
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr ""
@@ -165,8 +165,8 @@ msgstr ""
 msgid "Error while fetching the BSP balance"
 msgstr ""
 
-#: lib/glific/partners.ex:425
-#: lib/glific/partners.ex:442
+#: lib/glific/partners.ex:500
+#: lib/glific/partners.ex:517
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -176,8 +176,8 @@ msgstr ""
 msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/partners.ex:421
-#: lib/glific/partners.ex:438
+#: lib/glific/partners.ex:496
+#: lib/glific/partners.ex:513
 #: lib/glific/providers/gupshup/api_client.ex:36
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
@@ -239,7 +239,7 @@ msgstr ""
 msgid "Unsupported node type"
 msgstr ""
 
-#: lib/glific/flows/flow_context.ex:497
+#: lib/glific/flows/flow_context.ex:498
 #, elixir-format, elixir-autogen
 msgid "We have finished the flow"
 msgstr ""
@@ -270,7 +270,7 @@ msgstr ""
 msgid "Does not have access to the user"
 msgstr ""
 
-#: lib/glific/flows/webhook.ex:173
+#: lib/glific/flows/webhook.ex:188
 #, elixir-autogen, elixir-format
 msgid "Error in encoding webhook body. Please check the json body in floweditor"
 msgstr ""

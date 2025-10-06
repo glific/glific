@@ -273,6 +273,59 @@ defmodule Glific.Flows.ContactActionTest do
              "Hi var_1,\n\nYour account image was updated on var_2 by var_3 with above"
   end
 
+  test "send message template with attachments - pdf", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # preload contact
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "account_update", is_hsm: true})
+      })
+
+    templating = %Templating{
+      template: template,
+      variables: ["var_1", "var_2", "var_3"]
+    }
+
+    url = "https://www.buildquickbots.com/whatsapp/media/sample/pdf/sample01.pdf"
+    type = "document"
+
+    attachments = %{
+      type => url
+    }
+
+    Glific.Fixtures.mock_validate_media(type)
+
+    action = %Action{templating: templating, attachments: attachments}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+      |> Repo.preload(:media)
+
+    # message media should be created
+    assert message.media_id != nil
+    assert message.is_hsm == true
+    assert message.media.url == attachments["document"]
+
+    assert message.media.caption ==
+             "sample01.pdf"
+  end
+
   test "if loop is detected then flow should be aborted and a notification should be created",
        attrs do
     node_uuid = "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5"

@@ -8,6 +8,7 @@ defmodule Glific.FilesearchTest do
   alias Glific.{
     Filesearch,
     Filesearch.VectorStore,
+    Partners,
     Repo
   }
 
@@ -63,6 +64,14 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/list_models.gql"
   )
 
+  setup do
+    FunWithFlags.disable(:is_kaapi_enabled,
+      for_actor: %{organization_id: 1}
+    )
+
+    :ok
+  end
+
   test "upload_file/1, uploads the file successfully", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://api.openai.com/v1/files"} ->
@@ -107,12 +116,43 @@ defmodule Glific.FilesearchTest do
   end
 
   test "valid create assistant", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
     Tesla.Mock.mock(fn
+      # Mock OpenAI assistants endpoint
       %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "asst_123"
+            id: "asst_123",
+            name: "Assistant,-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0
+          }
+        }
+
+      # Mock Kaapi backend endpoint
+      %{method: :post, url: "This is not a secret/api/v1/assistant/"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "Assistant-f78f4392",
+              instructions: "you are a helpful asssitant",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_123",
+              vector_store_ids: [],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -198,6 +238,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "update assistant", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -213,7 +255,38 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "asst_abc"
+            id: "asst_abc",
+            name: "Updated Assistant",
+            model: "gpt-4o",
+            instructions: "new instructions",
+            temperature: 0.7,
+            tool_resources: %{file_search: %{vector_store_ids: ["vs_1"]}}
+          }
+        }
+
+      %{
+        method: :patch,
+        url: "This is not a secret/api/v1/assistant/asst_abc"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "Assistant-f78f4392",
+              instructions: "you are a helpful asssitant",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_1"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -249,6 +322,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "add_assistant_files and remove assistant file, assistant doesnt has vectorStore", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -264,10 +339,41 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
           }
         }
 
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
+          }
+        }
+
+      # Delete assistant (DELETE)
       %{method: :delete} ->
         %Tesla.Env{
           status: 200,
@@ -332,6 +438,8 @@ defmodule Glific.FilesearchTest do
   end
 
   test "add_assistant_files, assistant already has a vectorStore", attrs do
+    enable_kaapi(%{organization_id: attrs.organization_id})
+
     valid_attrs = %{
       assistant_id: "asst_abc",
       name: "new assistant",
@@ -347,7 +455,37 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
+          }
+        }
+
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -377,7 +515,37 @@ defmodule Glific.FilesearchTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "vs_abc"
+            id: "vs_abc",
+            name: "Assistant-f11ead89",
+            instructions: "this is a story telling assistant that tells story",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{
+              file_search: %{vector_store_ids: ["vs_68a5"]}
+            }
+          }
+        }
+
+      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 86,
+              name: "new assistant",
+              instructions: "this is a story telling assistant that tells story",
+              organization_id: 1,
+              project_id: 1,
+              assistant_id: "asst_abc",
+              vector_store_ids: ["vs_68a5"],
+              temperature: 0.1,
+              model: "gpt-4o",
+              is_deleted: false,
+              deleted_at: nil
+            },
+            metadata: nil,
+            success: true
           }
         }
     end)
@@ -935,5 +1103,130 @@ defmodule Glific.FilesearchTest do
 
     {:error, _} =
       Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+  end
+
+  test "import_assistant/2, when vector_store already exists in the system", attrs do
+    # First create a vector store in the system
+    existing_vector_store_id = "vs_fxTfuin6XLBEqpIXSykw0bPI"
+
+    {:ok, existing_vector_store} =
+      VectorStore.create_vector_store(%{
+        vector_store_id: existing_vector_store_id,
+        name: "Existing Vector Store",
+        files: %{},
+        organization_id: attrs.user.organization_id
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://api.openai.com/v1/assistants/" <> _} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "asst_ljpFv60NIlSmXZdnVYHMNuq2",
+            name: "test-with-existing-vs",
+            instructions: "",
+            description: nil,
+            metadata: %{},
+            object: "assistant",
+            model: "gpt-4o",
+            temperature: 1.0,
+            tool_resources: %{file_search: %{vector_store_ids: [existing_vector_store_id]}},
+            created_at: 1_730_961_252,
+            response_format: %{type: "text"},
+            top_p: 1.0
+          }
+        }
+
+      %{
+        method: :get,
+        url: "https://api.openai.com/v1/vector_stores/vs_fxTfuin6XLBEqpIXSykw0bPI/files"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: [
+              %{
+                id: "file-sNDXUc9cysWhFDBF3ftsDnPB",
+                status: "completed",
+                last_error: nil,
+                object: "vector_store.file",
+                vector_store_id: "vs_fxTfuin6XLBEqpIXSykw0bPI",
+                created_at: 1_731_062_491,
+                usage_bytes: 2188,
+                chunking_strategy: %{
+                  type: "static",
+                  static: %{max_chunk_size_tokens: 800, chunk_overlap_tokens: 400}
+                }
+              }
+            ],
+            object: "list"
+          }
+        }
+
+      %{method: :get, url: "https://api.openai.com/v1/vector_stores/" <> _} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "vs_fxTfuin6XLBEqpIXSykw0bPI",
+            name: "Updated Vector Store Name",
+            status: "completed",
+            object: "vector_store",
+            created_at: 1_731_062_489,
+            usage_bytes: 2188
+          }
+        }
+
+      %{method: :get, url: "https://api.openai.com/v1/files/file-sNDXUc9cysWhFDBF3ftsDnPB"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-sNDXUc9cysWhFDBF3ftsDnPB",
+            filename: "Dev Policies.pdf",
+            bytes: 78_063,
+            object: "file",
+            created_at: 1_731_062_487,
+            purpose: "assistants"
+          }
+        }
+    end)
+
+    {:ok, %Assistant{vector_store_id: vs_id}} =
+      Filesearch.import_assistant("asst_ljpFv60NIlSmXZdnVYHMNuq2", attrs.user.organization_id)
+
+    # Verify that the vector store is the same one
+    assert vs_id == existing_vector_store.id
+
+    # Check that the vector store was updated
+    {:ok, updated_vector_store} = VectorStore.get_vector_store(vs_id)
+    assert updated_vector_store.name == "Updated Vector Store Name"
+    assert updated_vector_store.vector_store_id == existing_vector_store_id
+
+    # Verify that files were updated
+    assert map_size(updated_vector_store.files) == 1
+    assert Map.has_key?(updated_vector_store.files, "file-sNDXUc9cysWhFDBF3ftsDnPB")
+  end
+
+  defp enable_kaapi(attrs) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        }
+      })
+
+    valid_update_attrs = %{
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi"
+    }
+
+    Partners.update_credential(credential, valid_update_attrs)
   end
 end
