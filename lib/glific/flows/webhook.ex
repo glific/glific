@@ -508,27 +508,34 @@ defmodule Glific.Flows.Webhook do
       |> add_signature(context.organization_id, body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    process_call_and_wait(webhook_log.id, fields, headers, action, context, failure_message)
+    process_call_and_wait(%{
+      webhook_log_id: webhook_log.id,
+      fields: fields,
+      headers: headers,
+      action: action,
+      context: context,
+      failure_message: failure_message
+    })
   end
 
-  @spec process_call_and_wait(integer(), map(), list(), map(), FlowContext.t(), Message.t()) ::
+  @spec process_call_and_wait(map()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_call_and_wait(log_id, fields, headers, action, context, failure_message) do
-    response = CommonWebhook.webhook("call_and_wait", fields, headers)
+  defp process_call_and_wait(params) do
+    response = CommonWebhook.webhook("call_and_wait", params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
-        update_log(log_id, data)
-        wait_time = action.wait_time || 60
-        update_context_for_wait(context, wait_time)
+        update_log(params.webhook_log_id, data)
+        wait_time = params.action.wait_time || 60
+        update_context_for_wait(params.context, wait_time)
 
       %{success: false, reason: data} ->
-        update_log(log_id, data)
-        {:ok, context, [failure_message]}
+        update_log(params.webhook_log_id, data)
+        {:ok, params.context, [params.failure_message]}
 
       _ ->
-        update_log(log_id, "Something went wrong")
-        {:ok, context, [failure_message]}
+        update_log(params.webhook_log_id, "Something went wrong")
+        {:ok, params.context, [params.failure_message]}
     end
   end
 
