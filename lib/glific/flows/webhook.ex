@@ -487,33 +487,26 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp do_webhook_and_wait(params, true, failure_message) do
-    %{
-      action: action,
-      context: context,
-      webhook_log: webhook_log,
-      fields: fields,
-      body: body,
-      headers: headers
-    } = params
+    webhook_log_id = params.webhook_log.id
 
     fields =
-      fields
-      |> Map.put("webhook_log_id", webhook_log.id)
-      |> Map.put("result_name", action.result_name)
-      |> Map.put("flow_id", context.flow_id)
-      |> Map.put("contact_id", context.contact_id)
+      params.fields
+      |> Map.put("webhook_log_id", webhook_log_id)
+      |> Map.put("result_name", params.action.result_name)
+      |> Map.put("flow_id", params.context.flow_id)
+      |> Map.put("contact_id", params.context.contact_id)
 
     headers =
-      headers
-      |> add_signature(context.organization_id, body)
+      params.headers
+      |> add_signature(params.context.organization_id, params.body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
     process_call_and_wait(%{
-      webhook_log_id: webhook_log.id,
+      webhook_log_id: webhook_log_id,
       fields: fields,
       headers: headers,
-      action: action,
-      context: context,
+      action: params.action,
+      context: params.context,
       failure_message: failure_message
     })
   end
