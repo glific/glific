@@ -10,7 +10,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners.Credential,
     Providers.Maytapi.Message,
     Providers.Maytapi.WAWorker,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAMessage
   }
 
   setup do
@@ -370,6 +371,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert wa_message.type == :image
   end
 
+  @tag :tt
   test "Handling create_and_send_wa_message/3 failure",
        attrs do
     wa_managed_phone =
@@ -394,12 +396,19 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:ok, _wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
 
     assert_enqueued(worker: WAWorker, prefix: "global")
 
     assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+    wa_message =
+      WAMessage
+      |> where([wa], wa.id == ^wa_message.id)
+      |> Repo.one()
+
+    assert String.contains?(wa_message.errors["message"], ":timeout")
   end
 
   test "Handling create_and_send_wa_message/3 4xx failure",
