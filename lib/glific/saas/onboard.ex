@@ -454,10 +454,13 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp setup_kaapi_for_organization(organization) do
+    open_ai_key = Application.fetch_env!(:glific, :open_ai)
+
     %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
-      project_name: organization.shortcode
+      project_name: organization.shortcode,
+      openai_api_key: open_ai_key
     }
     |> Kaapi.onboard()
   end
