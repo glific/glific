@@ -401,4 +401,34 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
   end
+
+  test "Handling create_and_send_wa_message/3 4xx failure",
+       attrs do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    mock_maytapi_response(
+      400,
+      "{\"success\": false, \"message\": \"You dont own the phone\"}"
+    )
+
+    params = %{
+      wa_group_id: wa_group.id,
+      message: "hi",
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:ok, _wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert_enqueued(worker: WAWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+  end
 end
