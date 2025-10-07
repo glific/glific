@@ -3,6 +3,7 @@ defmodule Glific.StatsTest do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Partners,
     Seeds.SeedsDev,
     Stats
@@ -112,6 +113,43 @@ defmodule Glific.StatsTest do
     org_id = attrs.organization_id
     test_date = Date.utc_today()
 
+    yesterday = DateTime.utc_now() |> DateTime.add(-1, :day)
+    two_days_ago = DateTime.utc_now() |> DateTime.add(-2, :day)
+
+    initial_contacts_list =
+      Contacts.list_contacts(%{filter: %{organization_id: org_id}})
+
+    initial_contacts_today =
+      initial_contacts_list
+      |> Enum.filter(fn contact ->
+        DateTime.to_date(contact.inserted_at) == test_date
+      end)
+      |> length()
+
+    {:ok, old_contact1} =
+      Contacts.create_contact(%{
+        name: "Old Contact 1",
+        phone: "1234567890",
+        organization_id: org_id
+      })
+
+    Repo.update_all(
+      from(c in Contact, where: c.id == ^old_contact1.id),
+      set: [inserted_at: yesterday]
+    )
+
+    {:ok, old_contact2} =
+      Contacts.create_contact(%{
+        name: "Old Contact 2",
+        phone: "1234567891",
+        organization_id: org_id
+      })
+
+    Repo.update_all(
+      from(c in Contact, where: c.id == ^old_contact2.id),
+      set: [inserted_at: two_days_ago]
+    )
+
     contacts_list = Contacts.list_contacts(%{filter: %{organization_id: org_id}})
 
     contacts_created_today =
@@ -120,7 +158,7 @@ defmodule Glific.StatsTest do
         DateTime.to_date(contact.inserted_at) == test_date
       end)
 
-    existing_contacts_today = length(contacts_created_today)
+    assert length(contacts_created_today) == initial_contacts_today
 
     time = DateTime.new!(test_date, ~T[23:00:00], "Etc/UTC")
     Stats.generate_stats([org_id], false, time: time, day: true)
@@ -134,9 +172,9 @@ defmodule Glific.StatsTest do
         }
       })
 
+    # there should be 1 entry each day
     assert length(daily_stats) == 1
     [stat] = daily_stats
-
-    assert stat.contacts == existing_contacts_today
+    assert stat.contacts == length(contacts_created_today)
   end
 end
