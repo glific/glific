@@ -1,4 +1,4 @@
-#credo:disable-for-this-file Credo.Check.Refactor.LongQuoteBlocks
+# credo:disable-for-this-file Credo.Check.Refactor.LongQuoteBlocks
 # Since we are injecting a complete module, keeping it as it is, is more readable than splitting as multiple macros
 defmodule Glific.RepoHelpers do
   @moduledoc """
