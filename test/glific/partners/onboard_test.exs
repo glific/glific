@@ -889,6 +889,10 @@ defmodule Glific.OnboardTest do
     assert organization.is_active
     assert organization.status == :active
     assert organization.shortcode == "oia"
+
+    # Check if the kaapi feature flag is enabled for the new organization
+    assert FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization.id}) ==
+             true
   end
 
   test "onboard setup v2, valid params, but we also pass shortcode" do
