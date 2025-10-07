@@ -463,5 +463,10 @@ defmodule Glific.Saas.Onboard do
       openai_api_key: open_ai_key
     }
     |> Kaapi.onboard()
+
+    FunWithFlags.enable(
+      :is_kaapi_enabled,
+      for_actor: %{organization_id: organization.id}
+    )
   end
 end
