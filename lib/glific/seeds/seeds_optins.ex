@@ -16,20 +16,8 @@ defmodule Glific.Seeds.SeedsOptins do
     import_optin_contacts(organization, [contact_phone, nil])
   end
 
-  defp import_optin_contacts(organization, [contact_phone, _contact_name | _] = contact) do
-    bsp_credentials = organization.services["bsp"]
-
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/app/opt/in/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
-
-    with {:ok, response} <-
-           post(url, %{user: contact_phone}, headers: [{"apikey", api_key}]),
-         true <- response.status == 202 do
-      insert_opted_in_contact(organization, contact)
-    end
+  defp import_optin_contacts(organization, [_contact_phone, _contact_name | _] = contact) do
+    insert_opted_in_contact(organization, contact)
   end
 
   @spec insert_opted_in_contact(map(), list()) :: :ok | any

@@ -196,7 +196,6 @@ defmodule Glific.Seeds.SeedsFlows do
   @spec process_flow_file(String.t(), [Organization.t()]) :: :ok
   defp process_flow_file(flow_file, organizations) do
     full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
-
     {:ok, file_content} = File.read(full_file_path)
     {:ok, import_flow} = Jason.decode(file_content)
 
