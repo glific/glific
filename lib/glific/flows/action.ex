@@ -653,9 +653,9 @@ defmodule Glific.Flows.Action do
     # the node won't be executed again because it only matches when the message list is empty (`[]`)
     if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: context.organization_id}) do
       with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
-           api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key"),
-           updated_headers <- Map.put(action.headers, "X-API-KEY", api_key),
-           updated_action <- %{action | headers: updated_headers} do
+           api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
+        updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
+        updated_action = %{action | headers: updated_headers}
         Webhook.webhook_and_wait(updated_action, context, true)
       else
         {:error, _error} ->
