@@ -51,12 +51,13 @@ defmodule Glific.OpenAI.ChatGPT do
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 1_000]])
     |> handle_response()
   end
 
@@ -118,7 +119,8 @@ defmodule Glific.OpenAI.ChatGPT do
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -170,7 +172,8 @@ defmodule Glific.OpenAI.ChatGPT do
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -238,7 +241,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -274,7 +278,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -312,7 +317,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -348,7 +354,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -373,7 +380,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -420,7 +428,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -525,7 +534,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -550,7 +560,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware
@@ -633,7 +644,8 @@ defmodule Glific.OpenAI.ChatGPT do
     middleware = [
       {Tesla.Middleware.Headers, headers()},
       {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.Telemetry
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
     ]
 
     middleware

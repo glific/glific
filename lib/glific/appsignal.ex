@@ -41,23 +41,41 @@ defmodule Glific.Appsignal do
   def handle_event([:tesla, :request, :stop], measurement, meta, _) do
     # sampling only x% of the total requests processed to reduce cost and noise.
     # The percentage is set as a config value.
-    sampling_rate = :glific |> Application.get_env(:appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
 
-    time = :os.system_time()
-    span = record_tesla_event(measurement, meta, time)
+    sampling_rate =
+      Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
+
+    request_duration_seconds = System.convert_time_unit(measurement.duration, :native, :second)
+
+    status = meta.env.status
 
     if :rand.uniform() < sampling_rate / 100 do
-      # tesla telemetry measurements are in microseconds
-      request_duration_seconds = System.convert_time_unit(measurement.duration, :native, :second)
+      cond do
+        # Errors like timeout from tesla etc, status will be nil
+        is_nil(status) ->
+          Appsignal.increment_counter("tesla_request_error_count", 1, %{
+            provider: meta[:provider],
+            error: meta.error,
+            url: meta.env.opts[:req_url],
+            method: meta.env.method
+          })
 
-      Appsignal.add_distribution_value("tesla_request_data", request_duration_seconds, %{
-        method: meta.method,
-        url: meta.url,
-        status: meta.status
-      })
+        status >= 400 ->
+          Appsignal.increment_counter("tesla_request_error_count", 1, %{
+            provider: meta[:provider],
+            error: status,
+            url: meta.env.opts[:req_url],
+            method: meta.env.method
+          })
+
+        true ->
+          Appsignal.add_distribution_value("tesla_request_response", request_duration_seconds, %{
+            method: meta.env.method,
+            url: meta.env.opts[:req_url],
+            provider: meta[:provider]
+          })
+      end
     end
-
-    @tracer.close_span(span, end_time: time)
   end
 
   def handle_event([:tesla, :request, :exception], measurement, meta, _) do
@@ -69,7 +87,6 @@ defmodule Glific.Appsignal do
 
     @tracer.close_span(span, end_time: time)
   end
-
 
   def handle_event(_, _, _, _), do: nil
 
@@ -143,14 +160,18 @@ defmodule Glific.Appsignal do
 
   @spec record_tesla_event(any(), any(), integer()) :: any()
   defp record_tesla_event(measurement, meta, time) do
-    metadata = %{"method" => meta.env.method, "url" => meta.env.url}
-    request_duration_microseconds = System.convert_time_unit(measurement.duration, :native, :microsecond)
-    host = URI.parse(meta.env.url).host
+    metadata = %{method: meta.env.method, url: meta.env.opts[:req_url]}
+
+    request_duration_microseconds =
+      System.convert_time_unit(measurement.duration, :native, :microsecond)
+
+    host = URI.parse(metadata.url).host
 
     "tesla_request"
-    |> @tracer.create_span(@tracer.current_span(), start_time: time - request_duration_microseconds)
-    |> @span.set_name("Tesla #{meta.method} #{host}")
+    |> @tracer.create_span(@tracer.current_span(),
+      start_time: time - request_duration_microseconds
+    )
+    |> @span.set_name("Tesla #{metadata.method} #{host}")
     |> @span.set_attribute("appsignal:category", "tesla.request")
-    |> @span.set_attribute("appsignal:status", meta.env.status)
   end
 end
