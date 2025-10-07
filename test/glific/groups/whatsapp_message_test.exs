@@ -10,7 +10,8 @@ defmodule Glific.Groups.WhatsappMessageTest do
     Partners.Credential,
     Providers.Maytapi.Message,
     Providers.Maytapi.WAWorker,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAMessage
   }
 
   setup do
@@ -368,5 +369,82 @@ defmodule Glific.Groups.WhatsappMessageTest do
              Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
 
     assert wa_message.type == :image
+  end
+
+  test "Handling create_and_send_wa_message/3 failure",
+       attrs do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post
+      } ->
+        {:error, :timeout}
+    end)
+
+    params = %{
+      wa_group_id: wa_group.id,
+      message: "hi",
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert_enqueued(worker: WAWorker, prefix: "global")
+
+    assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+    wa_message =
+      WAMessage
+      |> where([wa], wa.id == ^wa_message.id)
+      |> Repo.one()
+
+    assert String.contains?(wa_message.errors["message"], ":timeout")
+  end
+
+  test "Handling create_and_send_wa_message/3 4xx failure",
+       attrs do
+    wa_managed_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+    wa_group =
+      Fixtures.wa_group_fixture(%{
+        organization_id: attrs.organization_id,
+        wa_managed_phone_id: wa_managed_phone.id
+      })
+
+    mock_maytapi_response(
+      400,
+      "{\"success\": false, \"message\": \"You dont own the phone\"}"
+    )
+
+    params = %{
+      wa_group_id: wa_group.id,
+      message: "hi",
+      wa_managed_phone_id: wa_managed_phone.id
+    }
+
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+
+    assert_enqueued(worker: WAWorker, prefix: "global")
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+    wa_message =
+      WAMessage
+      |> where([wa], wa.id == ^wa_message.id)
+      |> Repo.one()
+
+    assert wa_message.bsp_status == :error
+    assert String.contains?(wa_message.errors["message"], "You dont own the phone")
   end
 end
