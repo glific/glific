@@ -454,19 +454,26 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp setup_kaapi_for_organization(organization) do
-    open_ai_key = Application.fetch_env!(:glific, :open_ai)
+    open_ai_key = Glific.get_open_ai_key()
 
-    %{
+    attrs = %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
       project_name: organization.shortcode,
       openai_api_key: open_ai_key
     }
-    |> Kaapi.onboard()
 
-    FunWithFlags.enable(
-      :is_kaapi_enabled,
-      for_actor: %{organization_id: organization.id}
-    )
+    case Kaapi.onboard(attrs) do
+      {:ok, _} ->
+        FunWithFlags.enable(
+          :is_kaapi_enabled,
+          for_actor: %{organization_id: organization.id}
+        )
+
+      {:error, reason} ->
+        Logger.error(
+          "Kaapi onboarding failed for organization #{organization.id}. Not enabling the flag."
+        )
+    end
   end
 end
