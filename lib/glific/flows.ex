@@ -23,6 +23,7 @@ defmodule Glific.Flows do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
+    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -1041,6 +1042,7 @@ defmodule Glific.Flows do
              }) do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
+        import_assistants(import_flow, organization_id)
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->
@@ -1147,6 +1149,26 @@ defmodule Glific.Flows do
     template_id
   end
 
+  @spec import_assistants(map(), non_neg_integer()) :: :ok
+  defp import_assistants(import_flow, organization_id) do
+    import_flow["flows"]
+    |> Enum.each(fn flow ->
+      flow["definition"]["nodes"]
+      |> Enum.each(fn node ->
+        get_in(node, ["actions"])
+        |> List.wrap()
+        |> Enum.each(fn action ->
+          with body when is_binary(body) <- action["body"],
+               {:ok, decoded} <- Jason.decode(body),
+               assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
+            Kaapi.ingest_ai_assistant(organization_id, assistant_id)
+          end
+        end)
+      end)
+    end)
+  end
+
+  @spec import_contact_field(map(), non_neg_integer()) :: :ok
   defp import_contact_field(import_flow, organization_id) do
     import_flow["contact_field"]
     |> Enum.each(fn contact_field ->
@@ -1159,6 +1181,7 @@ defmodule Glific.Flows do
     end)
   end
 
+  @spec import_groups(map(), non_neg_integer()) :: :ok
   defp import_groups(import_flow, organization_id) do
     import_flow["collections"]
     |> Enum.each(fn collection ->
