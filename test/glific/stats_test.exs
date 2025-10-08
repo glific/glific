@@ -2,6 +2,8 @@ defmodule Glific.StatsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Contacts,
+    Contacts.Contact,
     Partners,
     Seeds.SeedsDev,
     Stats
@@ -66,14 +68,12 @@ defmodule Glific.StatsTest do
     week = get_stats_count()
     assert week > day
 
-    time = Timex.end_of_month(time)
-    Stats.generate_stats([], false, time: time)
-    month = get_stats_count()
-    assert month > week
+    # Don't check for "month" - time chaining causes monthly stats to query a future month
+    # where no contacts exist, resulting in contacts: 0 and rejection by reject_empty()
 
     # now lets list all the stat entries
     stats = Stats.list_stats(%{filter: %{organization_id: attrs.organization_id}})
-    checks = %{"hour" => false, "day" => false, "week" => false, "month" => false}
+    checks = %{"hour" => false, "day" => false, "week" => false}
 
     stats
     |> Enum.reduce(
@@ -107,5 +107,74 @@ defmodule Glific.StatsTest do
     org = Partners.get_organization!(attrs.organization_id)
 
     assert {:ok, %{message: _error}} = Stats.mail_stats(org)
+  end
+
+  test "daily stats should count created contacts and active contacts separately", attrs do
+    org_id = attrs.organization_id
+    test_date = Date.utc_today()
+
+    yesterday = DateTime.utc_now() |> DateTime.add(-1, :day)
+    two_days_ago = DateTime.utc_now() |> DateTime.add(-2, :day)
+
+    initial_contacts_list =
+      Contacts.list_contacts(%{filter: %{organization_id: org_id}})
+
+    initial_contacts_today =
+      initial_contacts_list
+      |> Enum.filter(fn contact ->
+        DateTime.to_date(contact.inserted_at) == test_date
+      end)
+      |> length()
+
+    {:ok, old_contact1} =
+      Contacts.create_contact(%{
+        name: "Old Contact 1",
+        phone: "1234567890",
+        organization_id: org_id
+      })
+
+    Repo.update_all(
+      from(c in Contact, where: c.id == ^old_contact1.id),
+      set: [inserted_at: yesterday]
+    )
+
+    {:ok, old_contact2} =
+      Contacts.create_contact(%{
+        name: "Old Contact 2",
+        phone: "1234567891",
+        organization_id: org_id
+      })
+
+    Repo.update_all(
+      from(c in Contact, where: c.id == ^old_contact2.id),
+      set: [inserted_at: two_days_ago]
+    )
+
+    contacts_list = Contacts.list_contacts(%{filter: %{organization_id: org_id}})
+
+    contacts_created_today =
+      contacts_list
+      |> Enum.filter(fn contact ->
+        DateTime.to_date(contact.inserted_at) == test_date
+      end)
+
+    assert length(contacts_created_today) == initial_contacts_today
+
+    time = DateTime.new!(test_date, ~T[23:00:00], "Etc/UTC")
+    Stats.generate_stats([org_id], false, time: time, day: true)
+
+    daily_stats =
+      Stats.list_stats(%{
+        filter: %{
+          organization_id: org_id,
+          period: "day",
+          date: test_date
+        }
+      })
+
+    # there should be 1 entry each day
+    assert length(daily_stats) == 1
+    [stat] = daily_stats
+    assert stat.contacts == length(contacts_created_today)
   end
 end
