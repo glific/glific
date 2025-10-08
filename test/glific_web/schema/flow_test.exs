@@ -900,7 +900,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
     assert import_status["flowName"] == "call_and_wait"
-    assert import_status["fstatus"] == "Successfully imported"
+    assert import_status["status"] == "Successfully imported"
   end
 
   defp enable_kaapi(attrs) do
