@@ -470,7 +470,7 @@ defmodule Glific.Saas.Onboard do
           for_actor: %{organization_id: organization.id}
         )
 
-      {:error, reason} ->
+      {:error, _} ->
         Logger.error(
           "Kaapi onboarding failed for organization #{organization.id}. Not enabling the flag."
         )
