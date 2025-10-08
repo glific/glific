@@ -856,7 +856,7 @@ defmodule GlificWeb.Schema.FlowTest do
     )
 
     Tesla.Mock.mock(fn
-      %{method: :post, url: url} = request ->
+      %{method: :post} ->
         %Tesla.Env{
           status: 200,
           body: %{
