@@ -301,7 +301,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
-  @tag :tt
   test "updating an organization with a valid phone number will update the main user and contact phone number",
        %{user: user} do
     organization =

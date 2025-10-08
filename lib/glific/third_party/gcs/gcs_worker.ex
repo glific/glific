@@ -27,7 +27,8 @@ defmodule Glific.GCS.GcsWorker do
     Messages,
     Messages.MessageMedia,
     Partners,
-    Repo
+    Repo,
+    RepoReplica
   }
 
   @provider_shortcode "google_cloud_storage"
@@ -200,7 +201,7 @@ defmodule Glific.GCS.GcsWorker do
     Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
 
     Repo.put_process_state(media["organization_id"])
-
+    RepoReplica.put_process_state(media["organization_id"])
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 

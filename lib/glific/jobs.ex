@@ -7,7 +7,8 @@ defmodule Glific.Jobs do
   alias Glific.{
     BigQuery.BigQueryJob,
     GCS.GcsJob,
-    Repo
+    Repo,
+    RepoReplica
   }
 
   @doc """
@@ -45,7 +46,7 @@ defmodule Glific.Jobs do
   @spec get_bigquery_job(integer, String.t()) :: BigQueryJob.t() | nil
   def get_bigquery_job(organization_id, table),
     do:
-      Repo.get_by(
+      RepoReplica.get_by(
         BigQueryJob,
         %{organization_id: organization_id, table: table}
       )
@@ -77,6 +78,6 @@ defmodule Glific.Jobs do
   def get_bigquery_jobs(organization_id) do
     BigQueryJob
     |> where([bg], bg.organization_id == ^organization_id)
-    |> Repo.all()
+    |> RepoReplica.all()
   end
 end
