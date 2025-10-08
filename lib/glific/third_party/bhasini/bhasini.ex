@@ -35,6 +35,10 @@ defmodule Glific.Bhasini do
     "odia" => %{"iso_639_1" => "or", "iso_639_2" => "ori"}
   }
 
+  @tesla_middlewares [
+    Tesla.Middleware.KeepRequest,
+    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts"}}
+  ]
   @spec get_tts_model(String.t()) :: String.t()
   defp get_tts_model(lang) when lang in ["en", "or"], do: @iit_tts_model
   defp get_tts_model(lang) when lang in ["ta", "kn", "ml", "te"], do: @dravidian_tts_model
@@ -105,7 +109,7 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(@callback_url, Jason.encode!(body),
+    case Tesla.post(Tesla.client(@tesla_middlewares), @callback_url, Jason.encode!(body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
@@ -197,7 +201,7 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(@callback_url, Jason.encode!(body),
+    case Tesla.post(Tesla.client(@tesla_middlewares), @callback_url, Jason.encode!(body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do

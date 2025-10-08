@@ -47,13 +47,10 @@ defmodule Glific.OpenAI.ChatGPT do
         "response_format" => params["response_format"]
       })
 
-    middleware = [
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
+    middleware =
+      [
+        Tesla.Middleware.JSON
+      ] ++ get_tesla_middlewares(api_key)
 
     middleware
     |> Tesla.client()
@@ -115,13 +112,7 @@ defmodule Glific.OpenAI.ChatGPT do
         "response_format" => params["response_format"]
       }
 
-    middleware = [
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
+    middleware = [Tesla.Middleware.JSON] ++ get_tesla_middlewares(api_key)
 
     middleware
     |> Tesla.client()
@@ -168,13 +159,7 @@ defmodule Glific.OpenAI.ChatGPT do
       "voice" => voice
     }
 
-    middleware = [
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
+    middleware = [Tesla.Middleware.JSON] ++ get_tesla_middlewares(api_key)
 
     middleware
     |> Tesla.client()
@@ -238,14 +223,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def create_thread do
     url = @endpoint <> "threads"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, "", opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -275,14 +254,8 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -314,14 +287,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def fetch_thread(%{thread_id: thread_id}) do
     url = @endpoint <> "/threads/#{thread_id}"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -351,14 +318,8 @@ defmodule Glific.OpenAI.ChatGPT do
       }
       |> Jason.encode!()
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -377,14 +338,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def list_thread_messages(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/messages"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -425,14 +380,8 @@ defmodule Glific.OpenAI.ChatGPT do
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 20_000]])
     |> case do
@@ -531,14 +480,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def cancel_run(thread_id, run_id) do
     url = @endpoint <> "/threads/#{thread_id}/runs/#{run_id}/cancel"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, "", opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -557,14 +500,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def retrieve_run(params) do
     url = @endpoint <> "/threads/#{params.thread_id}/runs/#{params.run_id}"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -641,14 +578,8 @@ defmodule Glific.OpenAI.ChatGPT do
   def retrieve_assistant(assistant_id) do
     url = @endpoint <> "/assistants/#{assistant_id}"
 
-    middleware = [
-      {Tesla.Middleware.Headers, headers()},
-      {Tesla.Middleware.BaseUrl, @endpoint},
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openAI"}}
-    ]
-
-    middleware
+    headers()
+    |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
     |> case do
@@ -684,5 +615,24 @@ defmodule Glific.OpenAI.ChatGPT do
       error ->
         error
     end
+  end
+
+  @spec get_tesla_middlewares(String.t() | function()) :: list()
+  defp get_tesla_middlewares(headers) when is_list(headers) do
+    [{Tesla.Middleware.Headers, headers}] ++
+      get_tesla_telemetry_middlewares()
+  end
+
+  defp get_tesla_middlewares(api_key) do
+    [{Tesla.Middleware.Headers, [{"authorization", "Bearer " <> api_key}]}] ++
+      get_tesla_telemetry_middlewares()
+  end
+
+  @spec get_tesla_telemetry_middlewares :: list()
+  defp get_tesla_telemetry_middlewares() do
+    [
+      Tesla.Middleware.KeepRequest,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openai"}}
+    ]
   end
 end
