@@ -393,7 +393,7 @@ defmodule Glific.Contacts.Import do
       %{
         phone: contact.phone,
         error:
-          "Not able to optin the contact #{contact.phone}. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
+          "Not able to optin the contact #{contact.phone}. Either the contact is opted out or invalid"
       }
     end
   end
