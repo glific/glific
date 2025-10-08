@@ -10,8 +10,17 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
+primary_url = env!("DATABASE_URL", :string!)
+
 config :glific, Glific.Repo,
-  url: env!("DATABASE_URL", :string!),
+  url: primary_url,
+  pool_size: env!("POOL_SIZE", :integer, 20),
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
+
+config :glific, Glific.RepoReplica,
+  url: env!("READ_REPLICA_DATABASE_URL", :string!, primary_url),
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   prepare: :named,
