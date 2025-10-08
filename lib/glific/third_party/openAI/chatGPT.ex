@@ -54,7 +54,7 @@ defmodule Glific.OpenAI.ChatGPT do
 
     middleware
     |> Tesla.client()
-    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 1_000]])
+    |> Tesla.post(url, data, opts: [adapter: [recv_timeout: 120_000]])
     |> handle_response()
   end
 
@@ -617,7 +617,7 @@ defmodule Glific.OpenAI.ChatGPT do
     end
   end
 
-  @spec get_tesla_middlewares(String.t() | function()) :: list()
+  @spec get_tesla_middlewares(String.t() | list()) :: list()
   defp get_tesla_middlewares(headers) when is_list(headers) do
     [{Tesla.Middleware.Headers, headers}] ++
       get_tesla_telemetry_middlewares()
@@ -629,10 +629,9 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @spec get_tesla_telemetry_middlewares :: list()
-  defp get_tesla_telemetry_middlewares() do
+  defp get_tesla_telemetry_middlewares do
     [
-      Tesla.Middleware.KeepRequest,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "openai"}}
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "openai", sampling_scale: 8}}
     ]
   end
 end

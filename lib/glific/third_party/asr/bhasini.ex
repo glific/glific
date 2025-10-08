@@ -8,8 +8,7 @@ defmodule Glific.ASR.Bhasini do
   alias Glific.Contacts
 
   @tesla_middlewares [
-    Tesla.Middleware.KeepRequest,
-    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_asr"}}
+    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_asr", sampling_scale: 10}}
   ]
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
@@ -70,7 +69,10 @@ defmodule Glific.ASR.Bhasini do
       "audio" => [%{"audioUri" => url}]
     }
 
-    case Tesla.post(Tesla.client(@tesla_middlewares), @language_detect_url, Jason.encode!(payload),
+    case Tesla.post(
+           Tesla.client(@tesla_middlewares),
+           @language_detect_url,
+           Jason.encode!(payload),
            headers: [
              {"Authorization", bhashini_keys.inference_key},
              {"Content-Type", "application/json"}
@@ -239,7 +241,7 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post(@callback_url, Jason.encode!(asr_post_body),
+    case Tesla.post(Tesla.client(@tesla_middlewares), @callback_url, Jason.encode!(asr_post_body),
            headers: asr_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do

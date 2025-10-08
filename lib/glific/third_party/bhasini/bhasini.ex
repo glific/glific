@@ -36,8 +36,7 @@ defmodule Glific.Bhasini do
   }
 
   @tesla_middlewares [
-    Tesla.Middleware.KeepRequest,
-    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts"}}
+    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts", sampling_scale: 10}}
   ]
   @spec get_tts_model(String.t()) :: String.t()
   defp get_tts_model(lang) when lang in ["en", "or"], do: @iit_tts_model
