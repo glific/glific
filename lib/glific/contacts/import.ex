@@ -189,7 +189,6 @@ defmodule Glific.Contacts.Import do
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
     |> add_language(data["language"])
-    |> add_optin_date(data)
   end
 
   defp get_collection(:import_contact, data, contact_attrs) do
@@ -198,15 +197,6 @@ defmodule Glific.Contacts.Import do
 
   defp get_collection(:move_contact, data, _contact_attrs) do
     data["collection"]
-  end
-
-  @spec add_optin_date(map(), any()) :: map()
-  defp add_optin_date(results, data) do
-    case Map.get(data, "opt_in") do
-      nil -> results
-      "" -> results
-      optin_time -> Map.put(results, :optin_time, optin_time)
-    end
   end
 
   @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
@@ -268,9 +258,6 @@ defmodule Glific.Contacts.Import do
   defp decode_csv_data(params, data, opts) do
     %{organization_id: organization_id, user: _user} = params
     {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
-    IO.inspect(params, label: "params")
-    IO.inspect(data, label: "data")
-    IO.inspect(opts, label: "opts")
 
     user_job_attrs = %{
       status: "pending",
@@ -382,6 +369,14 @@ defmodule Glific.Contacts.Import do
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
   defp optin_contact(user, contact, contact_attrs) do
+    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
+
+    contact_attrs =
+      case Map.get(contact, :optin_time) do
+        nil -> Map.put(contact_attrs, :optin_time, current_time)
+        _ -> contact_attrs
+      end
+
     if should_optin_contact?(user, contact, contact_attrs) do
       contact_attrs
       |> Contacts.contact_opted_in(contact_attrs.organization_id, contact_attrs[:optin_time],
