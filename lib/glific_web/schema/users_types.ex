@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :id, :id
     field :name, :string
     field :phone, :string
+    field :email, :string
     field :roles, list_of(:role_label)
 
     field :inserted_at, :datetime
@@ -71,10 +72,12 @@ defmodule GlificWeb.Schema.UserTypes do
     field :password, :string
     field :otp, :string
     field :language_id, :id
+    field :email, :string
   end
 
   input_object :user_input do
     field :name, :string
+    field :email, :string
     field :roles, list_of(:role_label)
     field :group_ids, list_of(:id)
     field :is_restricted, :boolean

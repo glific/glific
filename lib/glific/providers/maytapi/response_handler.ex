@@ -29,6 +29,7 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
       # Not authorized, Job succeeded, we should return an ok, so we don't retry
       %Tesla.Env{status: status} when status in 400..499 ->
         handle_error_response(response, message)
+        :ok
 
       _ ->
         handle_error_response(response, message)
@@ -39,10 +40,14 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.info(
-      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+      "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
     )
 
-    handle_error_response(%{body: @default_tesla_error}, message)
+    default_error =
+      Jason.decode!(@default_tesla_error)
+      |> put_in(["error"], inspect(error))
+
+    handle_error_response(%{body: Jason.encode!(default_error)}, message)
   end
 
   @spec handle_success_response(Tesla.Env.t(), WAMessage.t()) :: {:ok, WAMessage.t()}

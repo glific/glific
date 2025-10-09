@@ -21,13 +21,14 @@ defmodule Glific.DataCase do
   alias Glific.{
     Fixtures,
     Partners,
-    Repo
+    Repo,
+    RepoReplica
   }
 
   using do
     quote do
       alias Glific.Repo
-
+      alias RepoReplica
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
@@ -44,6 +45,8 @@ defmodule Glific.DataCase do
 
     Repo.put_organization_id(1)
     Repo.put_current_user(Fixtures.user_fixture(%{name: "NGO Test Admin", roles: ["manager"]}))
+
+    RepoReplica.put_organization_id(1)
 
     organization_id = 1
     organization_id |> Partners.get_organization!() |> Partners.fill_cache()

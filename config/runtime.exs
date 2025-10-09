@@ -18,8 +18,17 @@ ssl_opts =
     ],
     else: false
 
+primary_url = env!("DATABASE_URL", :string!)
+
 config :glific, Glific.Repo,
-  url: env!("DATABASE_URL", :string!),
+  url: primary_url,
+  pool_size: env!("POOL_SIZE", :integer, 20),
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
+
+config :glific, Glific.RepoReplica,
+  url: env!("READ_REPLICA_DATABASE_URL", :string!, primary_url),
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   ssl: ssl_opts,
