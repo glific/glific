@@ -385,7 +385,7 @@ defmodule Glific.Contacts.Import do
       %{
         phone: contact.phone,
         error:
-          "Not able to optin the contact #{contact.phone}. Either the contact is opted out or invalid"
+          "Not able to optin the contact #{contact.phone}. Contact is either already opted in, opted out, or you lack permission"
       }
     end
   end
