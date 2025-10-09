@@ -369,13 +369,16 @@ defmodule Glific.Contacts.Import do
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
   defp optin_contact(user, contact, contact_attrs) do
-    {should_optin?, contact_attrs} = should_optin_contact?(user, contact, contact_attrs)
+    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
 
-    if should_optin? do
+    if should_optin_contact?(user, contact, contact_attrs) do
       contact_attrs
-      |> Contacts.contact_opted_in(contact_attrs.organization_id, contact_attrs[:optin_time],
-        method: "Import"
-      )
+      |> Map.put(:optin_time, current_time)
+      |> then(fn attrs ->
+        Contacts.contact_opted_in(attrs, attrs.organization_id, attrs[:optin_time],
+          method: "Import"
+        )
+      end)
       |> case do
         {:ok, contact} ->
           contact
@@ -393,28 +396,23 @@ defmodule Glific.Contacts.Import do
   end
 
   ## later we can have one more column to say that force optin
-  @spec should_optin_contact?(User.t(), Contact.t(), map()) :: {boolean(), map()}
+  @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
   defp should_optin_contact?(user, contact, attrs) do
-    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
-
-    attrs =
-      case Map.get(contact, :optin_time) do
-        nil -> Map.put(attrs, :optin_time, current_time)
-        _ -> attrs
-      end
-
     cond do
+      Map.get(contact, :optin_time) == nil ->
+        true
+
       Map.get(attrs, :optin_time, nil) == nil ->
-        {false, attrs}
+        false
 
       contact.optout_time != nil ->
-        {false, attrs}
+        false
 
       Authorize.valid_role?(user.roles, :manager) || user.upload_contacts ->
-        {true, attrs}
+        true
 
       true ->
-        {false, attrs}
+        false
     end
   end
 
