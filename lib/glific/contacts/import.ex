@@ -399,8 +399,8 @@ defmodule Glific.Contacts.Import do
   @spec should_optin_contact?(User.t(), Contact.t()) :: boolean()
   defp should_optin_contact?(user, contact) do
     cond do
-      Map.get(contact, :optin_time) == nil ->
-        true
+      Map.get(contact, :optin_time) != nil ->
+        false
 
       contact.optout_time != nil ->
         false
