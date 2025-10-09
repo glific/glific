@@ -371,7 +371,7 @@ defmodule Glific.Contacts.Import do
   defp optin_contact(user, contact, contact_attrs) do
     current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
 
-    if should_optin_contact?(user, contact, contact_attrs) do
+    if should_optin_contact?(user, contact) do
       contact_attrs
       |> Map.put(:optin_time, current_time)
       |> then(fn attrs ->
@@ -396,8 +396,8 @@ defmodule Glific.Contacts.Import do
   end
 
   ## later we can have one more column to say that force optin
-  @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
-  defp should_optin_contact?(user, contact, attrs) do
+  @spec should_optin_contact?(User.t(), Contact.t()) :: boolean()
+  defp should_optin_contact?(user, contact) do
     cond do
       Map.get(contact, :optin_time) == nil ->
         true
