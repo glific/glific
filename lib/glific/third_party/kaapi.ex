@@ -43,10 +43,6 @@ defmodule Glific.ThirdParty.Kaapi do
             "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
         })
 
-        Logger.error(
-          "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
-        )
-
         {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
     end
   end
