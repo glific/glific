@@ -1,5 +1,5 @@
-mutation moveContacts($data: String!, $id: ID!, $type: ImportContactsTypeEnum) {
-  moveContacts(data: $data, id: $id, type: $type) {
+mutation moveContacts($data: String!, $type: ImportContactsTypeEnum) {
+  moveContacts(data: $data,type: $type) {
     status
   }
 }

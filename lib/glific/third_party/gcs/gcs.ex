@@ -285,7 +285,7 @@ defmodule Glific.GCS do
 
     MessageMedia
     |> join(:left, [m], orgs in Organization, as: :orgs, on: m.organization_id == orgs.id)
-    |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '7 day'"))
+    |> where([m, _orgs], m.inserted_at >= fragment("NOW() - INTERVAL '14 day'"))
     |> where([m, _orgs], m.inserted_at <= fragment("NOW()"))
     |> where([m, orgs], m.organization_id in subquery(get_active_gcs_orgs))
     |> select([m, orgs], %{
