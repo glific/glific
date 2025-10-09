@@ -456,22 +456,12 @@ defmodule Glific.Saas.Onboard do
   defp setup_kaapi_for_organization(organization) do
     open_ai_key = Glific.get_open_ai_key()
 
-    attrs = %{
+    %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
       project_name: organization.shortcode,
       openai_api_key: open_ai_key
     }
-
-    case Kaapi.onboard(attrs) do
-      {:ok, _} ->
-        FunWithFlags.enable(
-          :is_kaapi_enabled,
-          for_actor: %{organization_id: organization.id}
-        )
-
-      {:error, _} ->
-        :ok
-    end
+    |> Kaapi.onboard()
   end
 end
