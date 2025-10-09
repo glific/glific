@@ -11,7 +11,7 @@ ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
 ssl_opts =
-  if Mix.env() != :test,
+  if Application.get_env(:glific, :environment) != :test,
     do: [
       cacerts: :public_key.cacerts_get(),
       verify: :verify_peer
