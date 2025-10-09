@@ -469,6 +469,9 @@ defmodule Glific.Saas.Onboard do
           :is_kaapi_enabled,
           for_actor: %{organization_id: organization.id}
         )
+
+      {:error, _} ->
+        :ok
     end
   end
 end
