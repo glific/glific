@@ -369,16 +369,11 @@ defmodule Glific.Contacts.Import do
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
   defp optin_contact(user, contact, contact_attrs) do
-    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
+    current_time = DateTime.utc_now()
 
     if should_optin_contact?(user, contact) do
       contact_attrs
-      |> Map.put(:optin_time, current_time)
-      |> then(fn attrs ->
-        Contacts.contact_opted_in(attrs, attrs.organization_id, attrs[:optin_time],
-          method: "Import"
-        )
-      end)
+      |> Contacts.contact_opted_in(contact_attrs.organization_id, current_time, method: "Import")
       |> case do
         {:ok, contact} ->
           contact
