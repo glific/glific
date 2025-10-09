@@ -402,9 +402,6 @@ defmodule Glific.Contacts.Import do
       Map.get(contact, :optin_time) == nil ->
         true
 
-      Map.get(attrs, :optin_time, nil) == nil ->
-        false
-
       contact.optout_time != nil ->
         false
 
