@@ -68,8 +68,12 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Logger.error(
-          "KAAPI_INGEST failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(reason)}"
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Assistant import failed in kaapi: #{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
+          },
+          []
         )
 
         {:error, reason}
@@ -103,7 +107,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}), reason=#{inspect(reason)}"
+              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}, reason=#{inspect(reason)}"
           },
           []
         )
