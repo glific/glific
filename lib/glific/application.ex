@@ -63,6 +63,9 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for swoosh success/failure call:
     attach_mailer_telemetry_event()
 
+    # Add this :telemetry.attach/4 for Tesla success/failure call:
+    attach_tesla_telemetry_event()
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
@@ -121,6 +124,22 @@ defmodule Glific.Application do
     :telemetry.attach(
       "oban-success",
       [:oban, :job, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+  end
+
+  defp attach_tesla_telemetry_event do
+    :telemetry.attach(
+      "tesla-request",
+      [:tesla, :request, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "tesla-failure",
+      [:tesla, :request, :exception],
       &Glific.Appsignal.handle_event/4,
       []
     )
