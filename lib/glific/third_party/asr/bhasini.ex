@@ -66,16 +66,18 @@ defmodule Glific.ASR.Bhasini do
       "audio" => [%{"audioUri" => url}]
     }
 
-    case Tesla.post(
-           Tesla.client(get_tesla_middlewares()),
-           @language_detect_url,
-           Jason.encode!(payload),
-           headers: [
-             {"Authorization", bhashini_keys.inference_key},
-             {"Content-Type", "application/json"}
-           ],
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
+    get_tesla_middlewares()
+    |> Tesla.client()
+    |> Tesla.post(
+      @language_detect_url,
+      Jason.encode!(payload),
+      headers: [
+        {"Authorization", bhashini_keys.inference_key},
+        {"Content-Type", "application/json"}
+      ],
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
       {:ok, %Tesla.Env{status: 200, body: bhashini_response}} ->
         decoded_response = Jason.decode!(bhashini_response)
 
@@ -130,10 +132,13 @@ defmodule Glific.ASR.Bhasini do
 
     url = @config_url <> "/getModelsPipeline"
 
-    case Tesla.post(Tesla.client(get_tesla_middlewares()), url, Jason.encode!(post_body),
-           headers: default_headers,
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
+    get_tesla_middlewares()
+    |> Tesla.client()
+    |> Tesla.post(url, Jason.encode!(post_body),
+      headers: default_headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
       {:ok, response} ->
         {:ok, response}
 
@@ -238,10 +243,15 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post(Tesla.client(get_tesla_middlewares()), @callback_url, Jason.encode!(asr_post_body),
-           headers: asr_headers,
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
+    get_tesla_middlewares()
+    |> Tesla.client()
+    |> Tesla.post(
+      @callback_url,
+      Jason.encode!(asr_post_body),
+      headers: asr_headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
       {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
         # Handle the new API response with status code 200
         decoded_response = Jason.decode!(asr_response_body)
