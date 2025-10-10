@@ -7,9 +7,6 @@ defmodule Glific.ASR.Bhasini do
 
   alias Glific.Contacts
 
-  @tesla_middlewares [
-    {Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_asr", sampling_scale: 10}}
-  ]
   @config_url "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model"
   @meity_pipeline_id "64392f96daac500b55c543cd"
   @language_detect_url "https://dhruva-api.bhashini.gov.in/services/inference/audiolangdetection"
@@ -70,7 +67,7 @@ defmodule Glific.ASR.Bhasini do
     }
 
     case Tesla.post(
-           Tesla.client(@tesla_middlewares),
+           Tesla.client(get_tesla_middlewares()),
            @language_detect_url,
            Jason.encode!(payload),
            headers: [
@@ -133,7 +130,7 @@ defmodule Glific.ASR.Bhasini do
 
     url = @config_url <> "/getModelsPipeline"
 
-    case Tesla.post(Tesla.client(@tesla_middlewares), url, Jason.encode!(post_body),
+    case Tesla.post(Tesla.client(get_tesla_middlewares()), url, Jason.encode!(post_body),
            headers: default_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
@@ -241,7 +238,7 @@ defmodule Glific.ASR.Bhasini do
       }
     }
 
-    case Tesla.post(Tesla.client(@tesla_middlewares), @callback_url, Jason.encode!(asr_post_body),
+    case Tesla.post(Tesla.client(get_tesla_middlewares()), @callback_url, Jason.encode!(asr_post_body),
            headers: asr_headers,
            opts: [adapter: [recv_timeout: 300_000]]
          ) do
@@ -271,5 +268,11 @@ defmodule Glific.ASR.Bhasini do
       _ ->
         nil
     end
+  end
+
+  @spec get_tesla_middlewares :: list()
+  defp get_tesla_middlewares do
+    [{Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_asr", sampling_scale: 10}}] ++
+      Glific.get_tesla_retry_middleware()
   end
 end
