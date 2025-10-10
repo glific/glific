@@ -180,8 +180,6 @@ defmodule Glific.Contacts.Import do
          %{user: _user, organization_id: organization_id} = contact_attrs,
          _date_format
        ) do
-    current_time = NaiveDateTime.utc_now() |> NaiveDateTime.to_string()
-
     %{
       name: data["name"],
       phone: data["phone"],
@@ -191,7 +189,6 @@ defmodule Glific.Contacts.Import do
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
     |> add_language(data["language"])
-    |> add_optin_date(current_time)
   end
 
   defp get_collection(:import_contact, data, contact_attrs) do
@@ -200,11 +197,6 @@ defmodule Glific.Contacts.Import do
 
   defp get_collection(:move_contact, data, _contact_attrs) do
     data["collection"]
-  end
-
-  @spec add_optin_date(map(), any()) :: map()
-  defp add_optin_date(results, current_time) do
-    Map.put(results, :optin_time, current_time)
   end
 
   @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
@@ -377,11 +369,11 @@ defmodule Glific.Contacts.Import do
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
   defp optin_contact(user, contact, contact_attrs) do
-    if should_optin_contact?(user, contact, contact_attrs) do
+    current_time = DateTime.utc_now()
+
+    if should_optin_contact?(user, contact) do
       contact_attrs
-      |> Contacts.contact_opted_in(contact_attrs.organization_id, contact_attrs[:optin_time],
-        method: "Import"
-      )
+      |> Contacts.contact_opted_in(contact_attrs.organization_id, current_time, method: "Import")
       |> case do
         {:ok, contact} ->
           contact
@@ -393,16 +385,16 @@ defmodule Glific.Contacts.Import do
       %{
         phone: contact.phone,
         error:
-          "Not able to optin the contact #{contact.phone}. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
+          "Not able to optin the contact #{contact.phone}. Contact is either already opted in, opted out, or you lack permission"
       }
     end
   end
 
   ## later we can have one more column to say that force optin
-  @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
-  defp should_optin_contact?(user, contact, attrs) do
+  @spec should_optin_contact?(User.t(), Contact.t()) :: boolean()
+  defp should_optin_contact?(user, contact) do
     cond do
-      Map.get(attrs, :optin_time, nil) == nil ->
+      Map.get(contact, :optin_time) != nil ->
         false
 
       contact.optout_time != nil ->
