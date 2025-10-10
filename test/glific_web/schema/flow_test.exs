@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.FlowTest do
     Groups.GroupContacts,
     Groups.WAGroup,
     Groups.WaGroupsCollections,
+    Notifications,
     Partners,
     Partners.Credential,
     Repo,
@@ -901,6 +902,67 @@ defmodule GlificWeb.Schema.FlowTest do
     import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
     assert import_status["flowName"] == "call_and_wait"
     assert import_status["status"] == "Successfully imported"
+  end
+
+  test "import flow with multiple failed assistants creates multiple notifications", %{
+    manager: user
+  } do
+    organization_id = user.organization_id
+
+    # activate kaapi
+    enable_kaapi(%{organization_id: organization_id})
+
+    FunWithFlags.enable(:is_kaapi_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 404,
+          body: %{
+            error: "Assistant not found",
+            data: nil,
+            success: false
+          }
+        }
+    end)
+
+    [flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+    export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
+    data = Jason.decode!(export_data)
+
+    # Delete the flow before importing
+    Flows.list_flows(%{filter: %{id: flow.id}})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    # Clear notifications
+    Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+    |> Enum.each(fn notification -> Repo.delete(notification) end)
+
+    import_flow = Jason.encode!(data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+
+    assert {:ok, query_data} = result
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    assert import_status["status"] == "Successfully imported"
+
+    notifications =
+      Notifications.list_notifications(%{
+        filter: %{
+          category: "Flow",
+          organization_id: organization_id
+        }
+      })
+
+    [notification] = notifications
+    message = notification.message
+
+    assert message ==
+             "Assistant import failed please add the assistant manually in the imported flow"
   end
 
   defp enable_kaapi(attrs) do

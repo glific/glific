@@ -1154,33 +1154,7 @@ defmodule Glific.Flows do
           node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
           acc ++ [node]
 
-        action["type"] == "call_webhook" ->
-          with body when is_binary(body) <- action["body"],
-               {:ok, decoded} <- Jason.decode(body),
-               assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
-            case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
-              {:ok, _result} ->
-                :ok
-
-              {:error, _reason} ->
-                Notifications.create_notification(%{
-                  category: "Flow",
-                  message:
-                    "Assistant import failed please add the assistant manually in the imported flow",
-                  severity: Notifications.types().warning,
-                  organization_id: org_id,
-                  entity: %{
-                    assistant_id: assistant_id,
-                    flow_uuid: flow_info.flow_uuid,
-                    flow_name: flow_info.flow_name
-                  }
-                })
-
-                :ok
-            end
-          end
-
-          acc ++ [node]
+          process_call_webhook_action(action, node, org_id, flow_info, acc)
 
         true ->
           acc ++ [node]
@@ -1435,5 +1409,39 @@ defmodule Glific.Flows do
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
     clean_cached_flow_keywords_map(flow.organization_id)
     :ok
+  end
+
+  @spec process_call_webhook_action(map(), map(), non_neg_integer(), map(), list()) :: list()
+  defp process_call_webhook_action(action, node, org_id, flow_info, acc) do
+    handle_assistant_import(action, org_id, flow_info)
+    acc ++ [node]
+  end
+
+  @spec handle_assistant_import(map(), non_neg_integer(), map()) :: :ok | nil
+  defp handle_assistant_import(action, org_id, flow_info) do
+    with body when is_binary(body) <- action["body"],
+         {:ok, decoded} <- Jason.decode(body),
+         assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
+      case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
+        {:ok, _result} ->
+          :ok
+
+        {:error, _reason} ->
+          Notifications.create_notification(%{
+            category: "Flow",
+            message:
+              "Assistant import failed please add the assistant manually in the imported flow",
+            severity: Notifications.types().warning,
+            organization_id: org_id,
+            entity: %{
+              assistant_id: assistant_id,
+              flow_uuid: flow_info.flow_uuid,
+              flow_name: flow_info.flow_name
+            }
+          })
+
+          :ok
+      end
+    end
   end
 end
