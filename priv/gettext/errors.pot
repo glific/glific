@@ -280,15 +280,15 @@ msgstr ""
 msgid "Error while fetching Quality Rating details"
 msgstr ""
 
-#: lib/glific/flows.ex:748
-#: lib/glific/flows.ex:780
+#: lib/glific/flows.ex:749
+#: lib/glific/flows.ex:781
 #, elixir-autogen, elixir-format
 msgid "Flow is not active"
 msgstr ""
 
-#: lib/glific/flows.ex:721
-#: lib/glific/flows.ex:738
-#: lib/glific/flows.ex:767
+#: lib/glific/flows.ex:722
+#: lib/glific/flows.ex:739
+#: lib/glific/flows.ex:768
 #, elixir-autogen, elixir-format
 msgid "Flow not found"
 msgstr ""

@@ -1154,7 +1154,9 @@ defmodule Glific.Flows do
           node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
           acc ++ [node]
 
-          process_call_webhook_action(action, node, org_id, flow_info, acc)
+        action["type"] == "call_webhook" ->
+          handle_assistant_import(action, org_id, flow_info)
+          acc ++ [node]
 
         true ->
           acc ++ [node]
@@ -1409,12 +1411,6 @@ defmodule Glific.Flows do
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
     clean_cached_flow_keywords_map(flow.organization_id)
     :ok
-  end
-
-  @spec process_call_webhook_action(map(), map(), non_neg_integer(), map(), list()) :: list()
-  defp process_call_webhook_action(action, node, org_id, flow_info, acc) do
-    handle_assistant_import(action, org_id, flow_info)
-    acc ++ [node]
   end
 
   @spec handle_assistant_import(map(), non_neg_integer(), map()) :: :ok | nil

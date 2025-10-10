@@ -904,7 +904,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert import_status["status"] == "Successfully imported"
   end
 
-  test "import flow with multiple failed assistants creates multiple notifications", %{
+  test "import flow with failed assistant creates notification", %{
     manager: user
   } do
     organization_id = user.organization_id
@@ -947,7 +947,10 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
 
     assert {:ok, query_data} = result
-    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    import_status =
+      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
     assert import_status["status"] == "Successfully imported"
 
     notifications =
