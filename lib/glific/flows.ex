@@ -15,6 +15,7 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
+    Notifications,
     Partners,
     Repo,
     Sheets,
@@ -1035,14 +1036,17 @@ defmodule Glific.Flows do
            {:ok, _flow_revision} <-
              FlowRevision.create_flow_revision(%{
                definition:
-                 clean_flow_definition(flow_revision["definition"], interactive_template_list),
+                 clean_flow_definition(
+                   flow_revision["definition"],
+                   interactive_template_list,
+                   organization_id
+                 ),
                flow_id: flow.id,
                organization_id: flow.organization_id,
                user_id: user.id
              }) do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
-        import_assistants(import_flow, organization_id)
         %{flow_name: flow.name, status: "Successfully imported"}
       else
         {:error, error} ->
@@ -1063,22 +1067,40 @@ defmodule Glific.Flows do
     end)
   end
 
-  @spec clean_flow_definition(map(), list()) :: map()
-  defp clean_flow_definition(definition, interactive_template_list) do
+  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: {map(), list()}
+  defp clean_flow_definition(definition, interactive_template_list, organization_id) do
+    flow_info = %{
+      flow_uuid: definition["uuid"],
+      flow_name: definition["name"]
+    }
+
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ process_node_actions(&1, interactive_template_list)))
+      |> Enum.reduce(
+        [],
+        &(&2 ++ process_node_actions(&1, interactive_template_list, flow_info, organization_id))
+      )
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec process_node_actions(map(), list()) :: list()
-  defp process_node_actions(%{"actions" => actions} = node, _interactive_template_list)
+  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: list()
+  defp process_node_actions(
+         %{"actions" => actions} = node,
+         _interactive_template_list,
+         _flow_info,
+         _org_id
+       )
        when actions == [],
        do: [node]
 
-  defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
+  defp process_node_actions(
+         %{"actions" => actions} = node,
+         interactive_template_list,
+         flow_info,
+         org_id
+       ) do
     Enum.reduce(actions, [], fn action, acc ->
       template_uuid = get_in(action, ["templating", "template", "uuid"])
       sheet_url = get_in(action, ["url"])
@@ -1132,6 +1154,34 @@ defmodule Glific.Flows do
           node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
           acc ++ [node]
 
+        action["type"] == "call_webhook" ->
+          with body when is_binary(body) <- action["body"],
+               {:ok, decoded} <- Jason.decode(body),
+               assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
+            case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
+              {:ok, _result} ->
+                :ok
+
+              {:error, _reason} ->
+                Notifications.create_notification(%{
+                  category: "Flow",
+                  message:
+                    "Assistant import failed please add the assistant manually in the imported flow",
+                  severity: Notifications.types().warning,
+                  organization_id: org_id,
+                  entity: %{
+                    assistant_id: assistant_id,
+                    flow_uuid: flow_info.flow_uuid,
+                    flow_name: flow_info.flow_name
+                  }
+                })
+
+                :ok
+            end
+          end
+
+          acc ++ [node]
+
         true ->
           acc ++ [node]
       end
@@ -1147,25 +1197,6 @@ defmodule Glific.Flows do
       end)
 
     template_id
-  end
-
-  @spec import_assistants(map(), non_neg_integer()) :: :ok
-  defp import_assistants(import_flow, organization_id) do
-    import_flow["flows"]
-    |> Enum.each(fn flow ->
-      flow["definition"]["nodes"]
-      |> Enum.each(fn node ->
-        get_in(node, ["actions"])
-        |> List.wrap()
-        |> Enum.each(fn action ->
-          with body when is_binary(body) <- action["body"],
-               {:ok, decoded} <- Jason.decode(body),
-               assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
-            Kaapi.ingest_ai_assistant(organization_id, assistant_id)
-          end
-        end)
-      end)
-    end)
   end
 
   @spec import_contact_field(map(), non_neg_integer()) :: :ok
