@@ -741,7 +741,13 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_context(flow, contact, status, opts \\ []) do
+
+  def init_context(flow, contact, status, opts \\ [])
+
+  def init_context(%{definition: %{"nodes" => []}}, _, _, _),
+    do: {:error, "Cannot start an empty flow"}
+
+  def init_context(flow, contact, status, opts) do
     Glific.Metrics.increment("Flows Started")
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow
@@ -944,7 +950,28 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
-    message = message || handle_nil_message(context)
+    message =
+      if is_nil(message) and
+           FunWithFlags.enabled?(:is_kaapi_enabled,
+             for: %{organization_id: context.organization_id}
+           ) do
+        webhook_log =
+          WebhookLog
+          |> where([w], w.flow_context_id == ^context.id)
+          |> order_by([w], desc: w.inserted_at)
+          |> limit(1)
+          |> Repo.one()
+
+        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+        Messages.create_temp_message(context.organization_id, "Failure")
+      else
+        message
+      end
+
+    message =
+      if is_nil(message),
+        do: Messages.create_temp_message(context.organization_id, "No Response"),
+        else: message
 
     context
     |> FlowContext.load_context(flow)
@@ -1142,23 +1169,4 @@ defmodule Glific.Flows.FlowContext do
   end
 
   defp get_message_media(_msg), do: nil
-
-  @spec handle_nil_message(FlowContext.t()) :: Message.t()
-  defp handle_nil_message(context) do
-    if FunWithFlags.enabled?(:is_kaapi_enabled,
-         for: %{organization_id: context.organization_id}
-       ) do
-      webhook_log =
-        WebhookLog
-        |> where([w], w.flow_context_id == ^context.id)
-        |> order_by([w], desc: w.inserted_at)
-        |> limit(1)
-        |> Repo.one()
-
-      Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
-      Messages.create_temp_message(context.organization_id, "Failure")
-    else
-      Messages.create_temp_message(context.organization_id, "No Response")
-    end
-  end
 end
