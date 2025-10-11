@@ -16,7 +16,8 @@ defmodule Glific.Sheets do
     Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
-    Sheets.SheetData
+    Sheets.SheetData,
+    Sheets.UrlValidationWorker
   }
 
   # zero width unicode characters
@@ -187,10 +188,10 @@ defmodule Glific.Sheets do
     |> where([sd], sd.sheet_id == ^sheet.id)
     |> Repo.delete_all()
 
-    {media_warnings, sync_successful?} =
+    sync_successful? =
       ApiClient.get_csv_content(url: export_url)
-      |> Enum.reduce_while({%{}, true}, fn
-        {:ok, row}, {acc, _} ->
+      |> Enum.reduce_while(true, fn
+        {:ok, row}, _ ->
           parsed_rows = parse_row_values(row)
 
           %{
@@ -203,21 +204,26 @@ defmodule Glific.Sheets do
           }
           |> create_sheet_data()
 
-          {:cont, {Map.merge(acc, parsed_rows.errors), true}}
+          {:cont, true}
 
-        {:error, err}, {acc, _} ->
+        {:error, err}, _ ->
           # If we get any error, we stop executing the current sheet further, log it.
           Logger.error(
             "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
           )
 
           create_sync_fail_notification(sheet)
-          {:halt, {Map.put(acc, export_url, err), false}}
+          {:halt, false}
       end)
 
     case sync_successful? do
-      true -> Glific.Metrics.increment("Google Sheets Sync Success")
-      false -> Glific.Metrics.increment("Google Sheets Sync Failed")
+      true ->
+        Glific.Metrics.increment("Google Sheets Sync Success")
+        # Schedule async URL validation - just pass sheet_id
+        schedule_url_validation(sheet.id, sheet.organization_id)
+
+      false ->
+        Glific.Metrics.increment("Google Sheets Sync Failed")
     end
 
     remove_stale_sheet_data(sheet, last_synced_at)
@@ -229,7 +235,7 @@ defmodule Glific.Sheets do
 
     ## we can move this to top of the function also. We can change that later.
     update_sheet(sheet, %{last_synced_at: last_synced_at, sheet_data_count: sheet_data_count})
-    |> append_warnings(media_warnings)
+    |> append_warnings(%{})
   end
 
   defp append_warnings({:error, _error} = sheet, _media_warnings), do: sheet
@@ -253,22 +259,8 @@ defmodule Glific.Sheets do
         Map.put(acc, key, value |> trim_value())
       end)
 
-    errors =
-      clean_row_values
-      |> Enum.reduce(%{}, fn {_key, value}, acc ->
-        {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
-
-        with true <- media_type != :text,
-             %{is_valid: is_valid, message: message} <-
-               Glific.Messages.validate_media(value, Atom.to_string(media_type)),
-             false <- is_valid do
-          Map.put(acc, value, message)
-        else
-          _ -> acc
-        end
-      end)
-
-    %{values: clean_row_values, errors: errors}
+    # No longer validate URLs during sync - will be done async
+    %{values: clean_row_values}
   end
 
   ## We are removing all the rows which are not refreshed in the last sync.
@@ -429,4 +421,16 @@ defmodule Glific.Sheets do
   end
 
   defp trim_value(value), do: value
+
+  @spec schedule_url_validation(non_neg_integer(), non_neg_integer()) :: :ok
+  defp schedule_url_validation(sheet_id, organization_id) do
+    %{
+      sheet_id: sheet_id,
+      organization_id: organization_id
+    }
+    |> UrlValidationWorker.new()
+    |> Oban.insert()
+
+    :ok
+  end
 end
