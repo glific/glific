@@ -24,6 +24,7 @@ config :glific, Glific.Repo,
   url: primary_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
+  ssl: ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
