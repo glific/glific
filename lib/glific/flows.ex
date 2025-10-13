@@ -15,7 +15,6 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups,
-    Notifications,
     Partners,
     Repo,
     Sheets,
@@ -1164,6 +1163,9 @@ defmodule Glific.Flows do
 
         action["type"] == "call_webhook" ->
           case handle_assistant_import(action, org_id, flow_info) do
+            :ok ->
+              {nodes_acc ++ [node], warnings_acc}
+
             {:error, assistant_id} ->
               warning =
                 "Failed to import assistant in Kaapi\n\n" <>

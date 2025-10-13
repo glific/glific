@@ -16,7 +16,6 @@ defmodule GlificWeb.Schema.FlowTest do
     Groups.GroupContacts,
     Groups.WAGroup,
     Groups.WaGroupsCollections,
-    Notifications,
     Partners,
     Partners.Credential,
     Repo,
@@ -899,7 +898,9 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
     assert {:ok, query_data} = result
 
-    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    import_status =
+      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
     assert import_status["flowName"] == "call_and_wait"
     assert import_status["status"] == "Successfully imported"
   end
@@ -939,10 +940,6 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.list_flows(%{filter: %{id: flow.id}})
     |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
 
-    # Clear notifications
-    Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
-    |> Enum.each(fn notification -> Repo.delete(notification) end)
-
     import_flow = Jason.encode!(data)
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
 
@@ -951,21 +948,8 @@ defmodule GlificWeb.Schema.FlowTest do
     import_status =
       get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
 
-    assert import_status["status"] == "Successfully imported"
-
-    notifications =
-      Notifications.list_notifications(%{
-        filter: %{
-          category: "Flow",
-          organization_id: organization_id
-        }
-      })
-
-    [notification] = notifications
-    message = notification.message
-
-    assert message ==
-             "Assistant import failed please add the assistant manually in the imported flow"
+    assert import_status["status"] ==
+             "Successfully imported with warnings: Failed to import assistant in Kaapi\n\nAssistant ID: asst_pJMbE1OALvgWtZfGfDicrgAD\n\nPlease create this assistant from Glific or add a dummy assistant to run the flow successfully."
   end
 
   defp enable_kaapi(attrs) do
