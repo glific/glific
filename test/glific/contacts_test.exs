@@ -109,6 +109,16 @@ defmodule Glific.ContactsTest do
       bsp_status: :session_and_hsm,
       fields: %{}
     }
+    @valid_attrs_5 %{
+      name: "some name 3",
+      optin_time: ~U[2011-05-18 15:01:01Z],
+      optin_status: true,
+      optout_time: nil,
+      phone: "919917443992",
+      status: :invalid,
+      bsp_status: :session_and_hsm,
+      fields: %{}
+    }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       optin_time: nil,
@@ -530,6 +540,36 @@ defmodule Glific.ContactsTest do
       assert count == 1
     end
 
+    test "import_contact/3 with valid data from string inserts new contacts in the database with the current date and time in his optin_time value" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data =
+        "name,phone,Language\ncontact_test,+919989329297,english\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
+
+      {:ok, contact} = Repo.fetch_by(Contact, phone: "+919989329297")
+
+      current_date = NaiveDateTime.utc_now()
+      assert NaiveDateTime.diff(contact.optin_time, current_date) in -5..5
+
+      assert count == 1
+    end
+
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       user = Map.put(user, :roles, [:glific_admin])
@@ -666,6 +706,39 @@ defmodule Glific.ContactsTest do
                Oban.drain_queue(queue: :default, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid data from string updates existing contacts in the database without changing the optin_time for the contact",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_5))
+
+      data =
+        "name,phone,Language,collection\nupdated,#{contact.phone},english,collection\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(organization.id, %{user: user, type: :import_contact}, data: data)
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      {:ok, contact} = Repo.fetch_by(Contact, name: "updated")
+
+      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
 
       assert count == 1
     end

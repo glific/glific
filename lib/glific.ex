@@ -14,6 +14,7 @@ defmodule Glific do
   @captcha_verify_url "https://www.google.com/recaptcha/api/siteverify"
   @captcha_score_threshold 0.5
   @session_window_time 24
+
   require Logger
 
   alias Glific.{
@@ -531,4 +532,43 @@ defmodule Glific do
   end
 
   def handle_tarams_result(result), do: result
+
+  @doc """
+  Returns a reusable, configurable Tesla retry middleware
+  """
+  @spec get_tesla_retry_middleware(%{
+          retry_error_codes: list(non_neg_integer()),
+          retry_reasons: list(non_neg_integer()),
+          delay: non_neg_integer(),
+          max_retries: non_neg_integer()
+        }) :: list()
+  def get_tesla_retry_middleware(retry_config \\ %{}) do
+    retry_error_codes =
+      [429, 500, 501, 502, 503, 504] ++ Map.get(retry_config, :retry_error_codes, [])
+
+    reasons_to_retry =
+      [:timeout, :connrefused, :nxdomain] ++ Map.get(retry_config, :retry_reasons, [])
+
+    delay = Map.get(retry_config, :delay, 500)
+
+    max_retries = Map.get(retry_config, :max_retries, 3)
+
+    [
+      {
+        Tesla.Middleware.Retry,
+        delay: delay,
+        max_retries: max_retries,
+        should_retry: fn
+          {:ok, %{status: status}}, _, _ ->
+            status in retry_error_codes
+
+          {:error, reason}, _, _ ->
+            reason in reasons_to_retry
+
+          _, _, _ ->
+            false
+        end
+      }
+    ]
+  end
 end
