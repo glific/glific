@@ -632,6 +632,6 @@ defmodule Glific.OpenAI.ChatGPT do
   defp get_tesla_telemetry_middlewares do
     [
       {Tesla.Middleware.Telemetry, metadata: %{provider: "openai", sampling_scale: 8}}
-    ]
+    ] ++ Glific.get_tesla_retry_middleware()
   end
 end
