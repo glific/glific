@@ -905,7 +905,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert import_status["status"] == "Successfully imported"
   end
 
-  test "import flow with failed assistant creates notification", %{
+  test "import flow with failed assistant should add he warning in pop-up", %{
     manager: user
   } do
     organization_id = user.organization_id

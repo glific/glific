@@ -70,7 +70,7 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{reason}"
+            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
         })
 
         {:error, reason}
