@@ -117,6 +117,7 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   defp copy_slide(token, presentation_id) do
     url = "#{@drive_url}/#{presentation_id}/copy?supportsAllDrives=true"
     headers = auth_headers(token)
+
     case Tesla.post(client(), url, "{}",
            headers: headers,
            opts: [adapter: [recv_timeout: @api_timeout]]
