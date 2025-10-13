@@ -63,6 +63,8 @@ defmodule Glific.Flows.Translate.Export do
     language_labels = Settings.locale_label_map(organization_id)
     language_keys = Map.keys(language_labels)
 
+    source_language = determine_source_language(organization_id)
+
     # first collect all the strings that we need to translate
     translations =
       localizable_nodes
@@ -71,7 +73,7 @@ defmodule Glific.Flows.Translate.Export do
         fn {action_uuid, action_text, _node_uuid}, export ->
           localization_map
           |> Map.get(action_uuid, %{})
-          |> collect_strings(language_labels, action_text, export, organization_id)
+          |> collect_strings(language_labels, action_text, export, source_language)
         end
       )
       |> translate_strings(add_translation, organization_id)
@@ -86,7 +88,7 @@ defmodule Glific.Flows.Translate.Export do
         row =
           localization_map
           |> Map.get(action_uuid, %{})
-          |> make_row(language_labels, action_text, translations, organization_id)
+          |> make_row(language_labels, action_text, translations, source_language)
 
         new_row = ["Action", action_uuid] ++ row ++ [node_uuid]
 
@@ -96,10 +98,8 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
-  @spec collect_strings(map(), map(), String.t(), map(), non_neg_integer) :: Keyword.t()
-  defp collect_strings(action_languages, language_labels, default_text, collect, organization_id) do
-    source_language = determine_source_language(organization_id)
-
+  @spec collect_strings(map(), map(), String.t(), map(), String.t()) :: Keyword.t()
+  defp collect_strings(action_languages, language_labels, default_text, collect, source_language) do
     language_labels
     |> Map.keys()
     |> Enum.reduce(
@@ -168,11 +168,8 @@ defmodule Glific.Flows.Translate.Export do
 
   defp handle_async_response({:exit, :timeout}, acc), do: acc
 
-  @spec make_row(map(), map(), String.t(), map(), non_neg_integer) :: list()
-  defp make_row(action_languages, language_labels, default_text, translations, organization_id) do
-    source_language =
-      determine_source_language(organization_id)
-
+  @spec make_row(map(), map(), String.t(), map(), String.t()) :: list()
+  defp make_row(action_languages, language_labels, default_text, translations, source_language) do
     language_labels
     |> Map.keys()
     |> Enum.reduce(

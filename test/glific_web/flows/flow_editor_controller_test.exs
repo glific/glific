@@ -302,6 +302,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       default_language = Enum.find(languages, fn lang -> lang["default"] == true end)
 
       assert organization.default_language.locale == default_language["iso"]
+
       assert length(organization.languages) ==
                length(languages)
     end
