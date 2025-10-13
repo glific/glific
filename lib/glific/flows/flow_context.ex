@@ -745,7 +745,7 @@ defmodule Glific.Flows.FlowContext do
   def init_context(flow, contact, status, opts \\ [])
 
   def init_context(%{definition: %{"nodes" => []}}, _, _, _),
-    do: {:error, "Cannot start an empty flow"}
+    do: {:error, dgettext("errors", "Cannot start an empty flow")}
 
   def init_context(flow, contact, status, opts) do
     Glific.Metrics.increment("Flows Started")
