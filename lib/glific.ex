@@ -538,7 +538,7 @@ defmodule Glific do
   """
   @spec get_tesla_retry_middleware(%{
           optional(:retry_error_codes) => list(non_neg_integer()),
-          optional(:retry_reasons) => list(non_neg_integer()),
+          optional(:retry_reasons) => list(any()),
           optional(:delay) => non_neg_integer(),
           optional(:max_retries) => non_neg_integer()
         }) :: list()
