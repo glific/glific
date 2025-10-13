@@ -537,10 +537,10 @@ defmodule Glific do
   Returns a reusable, configurable Tesla retry middleware
   """
   @spec get_tesla_retry_middleware(%{
-          retry_error_codes: list(non_neg_integer()),
-          retry_reasons: list(non_neg_integer()),
-          delay: non_neg_integer(),
-          max_retries: non_neg_integer()
+          optional(:retry_error_codes) => list(non_neg_integer()),
+          optional(:retry_reasons) => list(non_neg_integer()),
+          optional(:delay) => non_neg_integer(),
+          optional(:max_retries) => non_neg_integer()
         }) :: list()
   def get_tesla_retry_middleware(retry_config \\ %{}) do
     retry_error_codes =

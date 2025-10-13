@@ -43,7 +43,7 @@ defmodule Glific.GlificTest do
     assert opts[:max_retries] == 3
 
     # when adding custom config
-    assert [{_h , opts}] = Glific.get_tesla_retry_middleware(%{max_retries: 5})
+    assert [{_h, opts}] = Glific.get_tesla_retry_middleware(%{max_retries: 5})
     assert opts[:delay] == 500
 
     assert opts[:max_retries] == 5
