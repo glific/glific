@@ -950,28 +950,7 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
-    message =
-      if is_nil(message) and
-           FunWithFlags.enabled?(:is_kaapi_enabled,
-             for: %{organization_id: context.organization_id}
-           ) do
-        webhook_log =
-          WebhookLog
-          |> where([w], w.flow_context_id == ^context.id)
-          |> order_by([w], desc: w.inserted_at)
-          |> limit(1)
-          |> Repo.one()
-
-        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
-        Messages.create_temp_message(context.organization_id, "Failure")
-      else
-        message
-      end
-
-    message =
-      if is_nil(message),
-        do: Messages.create_temp_message(context.organization_id, "No Response"),
-        else: message
+    message = message || handle_nil_message(context)
 
     context
     |> FlowContext.load_context(flow)
@@ -1169,4 +1148,23 @@ defmodule Glific.Flows.FlowContext do
   end
 
   defp get_message_media(_msg), do: nil
+
+  @spec handle_nil_message(FlowContext.t()) :: Message.t()
+  defp handle_nil_message(context) do
+    if FunWithFlags.enabled?(:is_kaapi_enabled,
+         for: %{organization_id: context.organization_id}
+       ) do
+      webhook_log =
+        WebhookLog
+        |> where([w], w.flow_context_id == ^context.id)
+        |> order_by([w], desc: w.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      Messages.create_temp_message(context.organization_id, "Failure")
+    else
+      Messages.create_temp_message(context.organization_id, "No Response")
+    end
+  end
 end
