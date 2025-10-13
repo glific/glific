@@ -68,13 +68,10 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message:
-              "Assistant import failed in kaapi: #{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message:
+            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{reason}"
+        })
 
         {:error, reason}
     end
