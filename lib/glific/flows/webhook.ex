@@ -251,19 +251,21 @@ defmodule Glific.Flows.Webhook do
     action = Map.put(action, :url, parsed_attrs.url)
     webhook_log = create_log(action, map, parsed_attrs.header, context)
 
-    payload = %{
-      method: String.downcase(action.method),
-      url: parsed_attrs.url,
-      result_name: action.result_name,
-      body: body,
-      headers: headers,
-      webhook_log_id: webhook_log.id,
-      # for job uniqueness,
-      context_id: context.id,
-      context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
-      organization_id: context.organization_id,
-      action_id: action.uuid
-    }
+    payload =
+      %{
+        method: String.downcase(action.method),
+        url: parsed_attrs.url,
+        result_name: action.result_name,
+        body: body,
+        headers: headers,
+        webhook_log_id: webhook_log.id,
+        # for job uniqueness,
+        context_id: context.id,
+        context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
+        organization_id: context.organization_id,
+        action_id: action.uuid
+      }
+      |> IO.inspect()
 
     create_oban_changeset(payload)
     |> Oban.insert()

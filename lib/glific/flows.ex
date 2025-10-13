@@ -1027,27 +1027,34 @@ defmodule Glific.Flows do
       with {:ok, flow} <-
              create_flow(%{
                name: flow_revision["definition"]["name"],
-               # we are reusing existing UUIDs against the spirit of UUIDs
-               # however this allows us to support sub flows
                uuid: flow_revision["definition"]["uuid"],
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
+           {cleaned_definition, warnings} =
+             clean_flow_definition(
+               flow_revision["definition"],
+               interactive_template_list,
+               organization_id
+             ),
            {:ok, _flow_revision} <-
              FlowRevision.create_flow_revision(%{
-               definition:
-                 clean_flow_definition(
-                   flow_revision["definition"],
-                   interactive_template_list,
-                   organization_id
-                 ),
+               definition: cleaned_definition,
                flow_id: flow.id,
                organization_id: flow.organization_id,
                user_id: user.id
              }) do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
-        %{flow_name: flow.name, status: "Successfully imported"}
+
+        status =
+          if Enum.empty?(warnings) do
+            "Successfully imported"
+          else
+            "Successfully imported with warnings: " <> Enum.join(warnings, "; ")
+          end
+
+        %{flow_name: flow.name, status: status}
       else
         {:error, error} ->
           flow_name = Map.get(error.changes, :name)
@@ -1074,18 +1081,23 @@ defmodule Glific.Flows do
       flow_name: definition["name"]
     }
 
-    nodes =
+    {nodes, warnings} =
       definition
       |> Map.get("nodes", [])
       |> Enum.reduce(
-        [],
-        &(&2 ++ process_node_actions(&1, interactive_template_list, flow_info, organization_id))
+        {[], []},
+        fn node, {nodes_acc, warnings_acc} ->
+          {processed_nodes, node_warnings} =
+            process_node_actions(node, interactive_template_list, flow_info, organization_id)
+
+          {nodes_acc ++ processed_nodes, warnings_acc ++ node_warnings}
+        end
       )
 
-    put_in(definition, ["nodes"], nodes)
+    {put_in(definition, ["nodes"], nodes), warnings}
   end
 
-  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: list()
+  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list()}
   defp process_node_actions(
          %{"actions" => actions} = node,
          _interactive_template_list,
@@ -1093,7 +1105,7 @@ defmodule Glific.Flows do
          _org_id
        )
        when actions == [],
-       do: [node]
+       do: {[node], []}
 
   defp process_node_actions(
          %{"actions" => actions} = node,
@@ -1101,26 +1113,24 @@ defmodule Glific.Flows do
          flow_info,
          org_id
        ) do
-    Enum.reduce(actions, [], fn action, acc ->
+    Enum.reduce(actions, {[], []}, fn action, {nodes_acc, warnings_acc} ->
       template_uuid = get_in(action, ["templating", "template", "uuid"])
       sheet_url = get_in(action, ["url"])
       sheet_name = get_in(action, ["name"])
 
       cond do
         action["type"] == "send_msg" ->
-          # checking if the imported template is present in database
           template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
           with true <- Map.has_key?(action, "templating"),
                false <- template_uuid in template_uuid_list do
-            # update the node if template uuid in the node is not present in DB
             action =
               action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
 
             node = put_in(node, ["actions"], [action])
-            acc ++ [node]
+            {nodes_acc ++ [node], warnings_acc}
           else
-            _ -> acc ++ [node]
+            _ -> {nodes_acc ++ [node], warnings_acc}
           end
 
         action["type"] == "link_google_sheet" ->
@@ -1144,22 +1154,27 @@ defmodule Glific.Flows do
 
           action = Map.put(action, "sheet_id", sheet.id)
           node = put_in(node, ["actions"], [action])
-          acc ++ [node]
+          {nodes_acc ++ [node], warnings_acc}
 
         action["type"] == "send_interactive_msg" ->
           {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
-
           template_id = find_interactive_template(interactive_template_list, action_id)
-
           node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
-          acc ++ [node]
+          {nodes_acc ++ [node], warnings_acc}
 
         action["type"] == "call_webhook" ->
-          handle_assistant_import(action, org_id, flow_info)
-          acc ++ [node]
+          case handle_assistant_import(action, org_id, flow_info) do
+            {:error, assistant_id} ->
+              warning =
+                "Failed to import assistant in Kaapi\n\n" <>
+                  "Assistant ID: #{assistant_id}\n\n" <>
+                  "Please create this assistant from Glific or add a dummy assistant to run the flow successfully."
+
+              {nodes_acc ++ [node], warnings_acc ++ [warning]}
+          end
 
         true ->
-          acc ++ [node]
+          {nodes_acc ++ [node], warnings_acc}
       end
     end)
   end
@@ -1413,30 +1428,15 @@ defmodule Glific.Flows do
     :ok
   end
 
-  @spec handle_assistant_import(map(), non_neg_integer(), map()) :: :ok | nil
-  defp handle_assistant_import(action, org_id, flow_info) do
+  @spec handle_assistant_import(map(), non_neg_integer(), map()) ::
+          :ok | {:error, String.t()} | nil
+  defp handle_assistant_import(action, org_id, _flow_info) do
     with body when is_binary(body) <- action["body"],
          {:ok, decoded} <- Jason.decode(body),
          assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
       case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
-        {:ok, _result} ->
-          :ok
-
-        {:error, _reason} ->
-          Notifications.create_notification(%{
-            category: "Flow",
-            message:
-              "Assistant import failed please add the assistant manually in the imported flow",
-            severity: Notifications.types().warning,
-            organization_id: org_id,
-            entity: %{
-              assistant_id: assistant_id,
-              flow_uuid: flow_info.flow_uuid,
-              flow_name: flow_info.flow_name
-            }
-          })
-
-          :ok
+        {:ok, _result} -> :ok
+        {:error, _} -> {:error, assistant_id}
       end
     end
   end
