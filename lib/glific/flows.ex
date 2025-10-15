@@ -1030,7 +1030,7 @@ defmodule Glific.Flows do
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
-           {cleaned_definition, warnings} =
+           {cleaned_definition, warnings} <-
              clean_flow_definition(
                flow_revision["definition"],
                interactive_template_list,
