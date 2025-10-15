@@ -36,7 +36,7 @@ defmodule Glific.StateTest do
 
     %{simulator: %{free: free_simulators, busy: busy_simulators}} = full_state[1]
 
-    assert is_nil(full_state[:flow])
+    assert is_nil(full_state[1][:flow])
 
     # we have 5 simulators in our dev seeder
     assert length(free_simulators) == 5

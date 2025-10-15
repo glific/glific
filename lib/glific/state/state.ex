@@ -303,7 +303,7 @@ defmodule Glific.State do
 
   # We don't have to send simulator_release event when a user just reloaded the simulator
   # Since that we will toggle off the simulator in client
-  @spec can_publish_data?(map(), String.t(), :simulators | :flows) :: boolean()
+  @spec can_publish_data?(map(), non_neg_integer(), :simulators | :flows) :: boolean()
   defp can_publish_data?(%{id: id}, id, :simulators), do: false
 
   defp can_publish_data?(_, _, _), do: true
