@@ -949,7 +949,7 @@ defmodule GlificWeb.Schema.FlowTest do
       get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
 
     assert import_status["status"] ==
-             "Successfully imported with warnings: Failed to import assistant\n\nAssistant ID: asst_pJMbE1OALvgWtZfGfDicrgAD\n\nPlease create this assistant from Glific or add a dummy assistant to run the flow successfully."
+             "Successfully imported with warnings: Failed to import assistant\n\nAssistant ID: asst_pJMbE1OALvgWtZfGfDicrgAD"
   end
 
   defp enable_kaapi(attrs) do
