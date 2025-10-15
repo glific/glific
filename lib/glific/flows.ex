@@ -1189,8 +1189,7 @@ defmodule Glific.Flows do
       {:error, assistant_id} ->
         warning =
           "Failed to import assistant\n\n" <>
-            "Assistant ID: #{assistant_id}\n\n" <>
-            "Please create this assistant from Glific or add a dummy assistant to run the flow successfully."
+            "Assistant ID: #{assistant_id}"
 
         {:ok, action, warning}
 
@@ -1208,7 +1207,7 @@ defmodule Glific.Flows do
     with body when is_binary(body) <- action["body"],
          {:ok, decoded} <- Jason.decode(body),
          assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
-      case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
+      case Kaapi.ingest_ai_assistant(org_id, assistant_id) |> IO.inspect() do
         {:ok, _result} -> :ok
         {:error, _} -> {:error, assistant_id}
       end
