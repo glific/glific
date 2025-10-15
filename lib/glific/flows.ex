@@ -1073,7 +1073,7 @@ defmodule Glific.Flows do
     end)
   end
 
-  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: {map(), list()}
+  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: term()
   defp clean_flow_definition(definition, interactive_template_list, organization_id) do
     flow_info = %{
       flow_uuid: definition["uuid"],
