@@ -1207,7 +1207,7 @@ defmodule Glific.Flows do
     with body when is_binary(body) <- action["body"],
          {:ok, decoded} <- Jason.decode(body),
          assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
-      case Kaapi.ingest_ai_assistant(org_id, assistant_id) |> IO.inspect() do
+      case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
         {:ok, _result} -> :ok
         {:error, _} -> {:error, assistant_id}
       end
