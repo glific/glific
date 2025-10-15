@@ -312,3 +312,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "WAGroup not found or permission denied."
 msgstr ""
+
+#: lib/glific/flows/flow_context.ex:748
+#, elixir-autogen, elixir-format
+msgid "Cannot start an empty flow"
+msgstr ""
