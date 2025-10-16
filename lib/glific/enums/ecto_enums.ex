@@ -128,3 +128,9 @@ defenum(
   :certificate_template_type_enum,
   Glific.Enums.certificate_template_type_const()
 )
+
+defenum(
+  Glific.Enums.SheetSyncStatus,
+  :sheet_sync_status_enum,
+  Glific.Enums.sheet_sync_status_const()
+)
