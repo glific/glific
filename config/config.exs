@@ -160,6 +160,14 @@ config :glific, :adaptors, translators: Glific.Flows.Translate.Simple
 
 config :glific, secrets: []
 
+config :ex_audit,
+  ecto_repos: [Glific.Repo],
+  version_schema: Glific.Version,
+  tracked_schemas: [
+    Glific.Flows.Flow,
+    Glific.Triggers.Trigger
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
