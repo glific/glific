@@ -25,7 +25,30 @@ defmodule Glific.StateTest do
     assert Enum.empty?(busy_simulators)
   end
 
-  test "Ensure we can request and get 3 simulator contacts, but the 4th is denied",
+  test "Ensure cache for flows is initialized once reset by reset_flows" do
+    {:error, {_, pid}} = State.start_link()
+    _state = State.state(1)
+
+    # flushing the flow cache
+    _state = State.reset_flows(1)
+
+    full_state = :sys.get_state(pid)
+
+    %{simulator: %{free: free_simulators, busy: busy_simulators}} = full_state[1]
+
+    assert is_nil(full_state[1][:flow])
+
+    # we have 5 simulators in our dev seeder
+    assert length(free_simulators) == 5
+    assert Enum.empty?(busy_simulators)
+
+    # Doing get_state should fill the flow cache again
+    _state = State.state(1)
+
+    assert %{1 => %{flow: _flows, simulator: _}} = :sys.get_state(pid)
+  end
+
+  test "Ensure we can request and get 5 simulator contacts, but the 6th is denied",
        %{organization_id: organization_id} = _attrs do
     1..5
     |> Enum.map(fn x ->
