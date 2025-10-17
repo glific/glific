@@ -1,0 +1,88 @@
+{
+    "webhook": [
+        {
+            "name": "parse_via_chat_gpt",
+            "body": "{\n\"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n\"url\": \"@results.image\",\n\"model\": \"gpt-4o\",\n\"response_format\": {\"type\": \"json_object\"}\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "parse_via_gpt_vision",
+            "body": "{\n  \"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n  \"url\": \"@results.image\",\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": {\"type\": \"json_object\"}\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "Bhashini_Speech_to_Text",
+            "body": "{\n  \"speech\": \"@results.speech.input\",\n  \"contact\": \"@contact\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "bhashini_text_to_speech",
+            "body": "{\n  \"text\": \"@results.result_3\",\n  \"source_language\": \"english\",\n  \"target_language\": \"hindi\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "nmt_tts_with_bhashini",
+            "body": "{\n  \"text\": \"@results.result_3\",\n  \"source_language\": \"english\",\n  \"target_language\": \"hindi\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "openai_tts_with_translation",
+            "body": "{\n  \"text\": \"@results.result_5\",\n  \"source_language\": \"@contact.language\",\n  \"target_language\": \"english\",\n  \"speech_engine\": \"open-ai\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "bhashini_detect_language",
+            "body": "{\n  \"url\": \"@results.audio_url\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "filesearch_gpt",
+            "body": "{\n  \"question\": \"@results.result_5\",\n  \"assistant_id\": \"YOUR_ASSISTANT_ID_HERE\",\n  \"thread_id\": \"@results.gptresponse.thread_id\",\n  \"remove_citation\": true\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "voice_filesearch_gpt",
+            "body": "{\n  \"contact\": \"@contact\",\n  \"speech\": \"@results.audio_query.input\",\n  \"assistant_id\": \"YOUR_ASSISTANT_ID_HERE\",\n  \"remove_citation\": true,\n  \"source_language\": \"@contact.language\",\n  \"target_language\": \"Hindi\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "geolocation",
+            "body": "{\n  \"lat\": \"@results.result_1.latitude\",\n  \"long\": \"@results.result_1.longitude\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "send_wa_group_poll",
+            "body": "{\n  \"wa_group\": \"@wa_group\",\n  \"poll_uuid\": \"0c5c3cfa-2aca-4abe-a9c2-1c1c1c8ccc52\"\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        {
+            "name": "create_certificate",
+            "body": "{\n  \"certificate_id\": 5,\n  \"contact\": \"@contact\",\n  \"replace_texts\": {\n    \"{1}\": \"@contact.name\"\n    // Add more placeholders and variables as needed, e.g.,\n    // \"{2}\": \"@contact.fields.preferred_name\",\n    // \"{3}\": \"@results.course_completion_date\"\n  }\n}",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        }
+    ]
+}
