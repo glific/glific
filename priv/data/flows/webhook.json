@@ -65,7 +65,7 @@
             }
         },
         {
-            "name": "bhashini_detect_language",
+            "name": "detect_language",
             "body": "{\n  \"url\": \"@results.audio_url\"\n}",
             "headers": {
                 "Content-Type": "application/json"
