@@ -129,7 +129,7 @@
         },
         {
             "name": "create_certificate",
-            "body": "{\n  \"certificate_id\": 5,\n  \"contact\": \"@contact\",\n  \"replace_texts\": {\n    \"{1}\": \"@contact.name\"\n    // Add more placeholders and variables as needed, e.g.,\n    // \"{2}\": \"@contact.fields.preferred_name\",\n    // \"{3}\": \"@results.course_completion_date\"\n  }\n}",
+            "body": "{\"certificate_id\": 25, \"contact\": \"@contact\", \"replace_texts\": {\"{1}\": \"@contact.fields.preferred_name\"}}",
             "headers": {
                 "Content-Type": "application/json"
             },
