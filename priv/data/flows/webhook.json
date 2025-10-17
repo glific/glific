@@ -65,13 +65,6 @@
             }
         },
         {
-            "name": "openai_tts_with_translation",
-            "body": "{\n  \"text\": \"@results.result_5\",\n  \"source_language\": \"@contact.language\",\n  \"target_language\": \"english\",\n  \"speech_engine\": \"open-ai\"\n}",
-            "headers": {
-                "Content-Type": "application/json"
-            }
-        },
-        {
             "name": "bhashini_detect_language",
             "body": "{\n  \"url\": \"@results.audio_url\"\n}",
             "headers": {
