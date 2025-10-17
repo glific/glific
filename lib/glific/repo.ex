@@ -7,6 +7,7 @@ defmodule Glific.Repo do
     otp_app: :glific,
     adapter: Ecto.Adapters.Postgres
 
+  use ExAudit.Repo
   use Glific.RepoHelpers
 
   # codebeat:enable[ABC, LOC]
