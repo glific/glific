@@ -24,7 +24,16 @@ defmodule Glific.Version do
 
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:patch, :entity_id, :entity_schema, :action, :recorded_at, :rollback])
-    |> cast(params, [:user_id])
+    |> cast(params, [
+      :patch,
+      :entity_id,
+      :entity_schema,
+      :action,
+      :recorded_at,
+      :rollback,
+      :user_id
+    ])
+    |> validate_required([:entity_id, :entity_schema, :action, :recorded_at])
+    |> foreign_key_constraint(:user_id)
   end
 end
