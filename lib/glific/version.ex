@@ -1,4 +1,8 @@
 defmodule Glific.Version do
+  @moduledoc """
+  Schema for tracking audit history of db changes.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
