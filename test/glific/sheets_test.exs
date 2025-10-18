@@ -1,5 +1,4 @@
 defmodule Glific.SheetsTest do
-  use ExUnit.Case
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 

@@ -37,7 +37,7 @@ defmodule Glific.Sheets.Worker do
   Standard perform method to use Oban worker.
   """
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args, tags: [:media_validation]}) do
+  def perform(%Oban.Job{args: args, tags: ["media_validation"]}) do
     %{"sheet_id" => sheet_id, "organization_id" => organization_id} = args
     RepoReplica.put_process_state(organization_id)
 
@@ -99,7 +99,7 @@ defmodule Glific.Sheets.Worker do
         url: sheet.url,
         id: sheet.id,
         name: sheet.label,
-        validation_warnings: media_warnings
+        media_validation_warnings: media_warnings
       }
     })
   end
