@@ -1,15 +1,16 @@
 defmodule Glific.SheetsTest do
-  import Ecto.Query
-
   use Glific.DataCase
-  use ExUnit.Case
+  use Oban.Pro.Testing, repo: Glific.Repo
+
+  import Ecto.Query
 
   alias Glific.{
     Fixtures,
     Repo,
     Sheets,
     Sheets.Sheet,
-    Sheets.SheetData
+    Sheets.SheetData,
+    Sheets.Worker
   }
 
   describe "sheets" do
@@ -238,8 +239,6 @@ defmodule Glific.SheetsTest do
       assert updated_sheet.failure_reason =~
                "Sheet sync failed due to repeated or missing headers"
 
-      assert updated_sheet.warnings == %{headers: "Headers repeated or missing"}
-
       # No sheet data should be created
       sheet_data_count =
         SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
@@ -273,8 +272,6 @@ defmodule Glific.SheetsTest do
 
       assert updated_sheet.failure_reason =~
                "Sheet sync failed due to repeated or missing headers"
-
-      assert updated_sheet.warnings == %{headers: "Headers repeated or missing"}
 
       # No sheet data should be created
       sheet_data_count =
@@ -337,28 +334,10 @@ defmodule Glific.SheetsTest do
                "Sheet sync failed due to unknown error or empty content"
     end
 
-    test "handles media validation in sheet content", %{organization_id: organization_id} do
-      Tesla.Mock.mock(fn
-        %{method: :get, url: "http://invalid-domain-for-testing.xyz/bad.mp4"} ->
-          %Tesla.Env{
-            status: 200,
-            headers: [{"content-type", "application/octet-stream"}]
-          }
-
-        %{method: :get, url: "http://example.com/video.mp4"} ->
-          %Tesla.Env{
-            status: 200,
-            headers: [{"content-type", "video/mp4"}]
-          }
-
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              "Key,Value,MediaUrl\r\nkey1,val1,http://invalid-domain-for-testing.xyz/bad.mp4\r\nkey2,val2,http://example.com/video.mp4"
-          }
-      end)
-
+    test "schedules a media validation job after syncing a sheet", %{
+      organization_id: organization_id,
+      global_schema: global_schema
+    } do
       attrs = %{
         type: "READ",
         label: "media validation sheet",
@@ -379,10 +358,12 @@ defmodule Glific.SheetsTest do
       # The sync should complete, though there should be warnings
       assert updated_sheet.sync_status == :success
 
-      assert updated_sheet.warnings == %{
-               "http://invalid-domain-for-testing.xyz/bad.mp4" =>
-                 "Media content-type is not valid"
-             }
+      assert_enqueued(
+        worker: Worker,
+        prefix: global_schema,
+        args: %{sheet_id: sheet.id, organization_id: organization_id},
+        tags: ["media_validation"]
+      )
     end
 
     test "handles invalid CSV format gracefully", %{organization_id: organization_id} do
