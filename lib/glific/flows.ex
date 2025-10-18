@@ -23,6 +23,7 @@ defmodule Glific.Flows do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
+    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -1025,23 +1026,34 @@ defmodule Glific.Flows do
       with {:ok, flow} <-
              create_flow(%{
                name: flow_revision["definition"]["name"],
-               # we are reusing existing UUIDs against the spirit of UUIDs
-               # however this allows us to support sub flows
                uuid: flow_revision["definition"]["uuid"],
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
+           {cleaned_definition, warnings} <-
+             clean_flow_definition(
+               flow_revision["definition"],
+               interactive_template_list,
+               organization_id
+             ),
            {:ok, _flow_revision} <-
              FlowRevision.create_flow_revision(%{
-               definition:
-                 clean_flow_definition(flow_revision["definition"], interactive_template_list),
+               definition: cleaned_definition,
                flow_id: flow.id,
                organization_id: flow.organization_id,
                user_id: user.id
              }) do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
-        %{flow_name: flow.name, status: "Successfully imported"}
+
+        status =
+          if Enum.empty?(warnings) do
+            "Successfully imported"
+          else
+            "Successfully imported with warnings: " <> Enum.join(warnings, "; ")
+          end
+
+        %{flow_name: flow.name, status: status}
       else
         {:error, error} ->
           flow_name = Map.get(error.changes, :name)
@@ -1061,79 +1073,169 @@ defmodule Glific.Flows do
     end)
   end
 
-  @spec clean_flow_definition(map(), list()) :: map()
-  defp clean_flow_definition(definition, interactive_template_list) do
-    nodes =
+  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: term()
+  defp clean_flow_definition(definition, interactive_template_list, organization_id) do
+    flow_info = %{
+      flow_uuid: definition["uuid"],
+      flow_name: definition["name"]
+    }
+
+    {nodes, warnings} =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ process_node_actions(&1, interactive_template_list)))
+      |> Enum.reduce(
+        {[], []},
+        fn node, {nodes_acc, warnings_acc} ->
+          {processed_nodes, node_warnings} =
+            process_node_actions(node, interactive_template_list, flow_info, organization_id)
 
-    put_in(definition, ["nodes"], nodes)
+          {nodes_acc ++ processed_nodes, warnings_acc ++ node_warnings}
+        end
+      )
+
+    {put_in(definition, ["nodes"], nodes), warnings}
   end
 
-  @spec process_node_actions(map(), list()) :: list()
-  defp process_node_actions(%{"actions" => actions} = node, _interactive_template_list)
+  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list()}
+  defp process_node_actions(
+         %{"actions" => actions} = node,
+         _interactive_template_list,
+         _flow_info,
+         _org_id
+       )
        when actions == [],
-       do: [node]
+       do: {[node], []}
 
-  defp process_node_actions(%{"actions" => actions} = node, interactive_template_list) do
-    Enum.reduce(actions, [], fn action, acc ->
-      template_uuid = get_in(action, ["templating", "template", "uuid"])
-      sheet_url = get_in(action, ["url"])
-      sheet_name = get_in(action, ["name"])
+  defp process_node_actions(
+         %{"actions" => actions} = node,
+         interactive_template_list,
+         flow_info,
+         org_id
+       ) do
+    {updated_actions, warnings} =
+      Enum.reduce(actions, {[], []}, fn action, {actions_acc, warnings_acc} ->
+        case process_action(action, node, interactive_template_list, flow_info, org_id) do
+          {:ok, updated_action} ->
+            {actions_acc ++ [updated_action], warnings_acc}
 
-      cond do
-        action["type"] == "send_msg" ->
-          # checking if the imported template is present in database
-          template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+          {:ok, updated_action, warning} ->
+            {actions_acc ++ [updated_action], warnings_acc ++ [warning]}
+        end
+      end)
 
-          with true <- Map.has_key?(action, "templating"),
-               false <- template_uuid in template_uuid_list do
-            # update the node if template uuid in the node is not present in DB
-            action =
-              action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+    updated_node = Map.put(node, "actions", updated_actions)
+    {[updated_node], warnings}
+  end
 
-            node = put_in(node, ["actions"], [action])
-            acc ++ [node]
-          else
-            _ -> acc ++ [node]
-          end
+  defp process_action(
+         %{"type" => "send_msg"} = action,
+         _node,
+         _interactive_template_list,
+         _flow_info,
+         _org_id
+       ) do
+    template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-        action["type"] == "link_google_sheet" ->
-          current_user = Repo.get_current_user()
+    if should_update_template?(action, template_uuid) do
+      updated_action =
+        action
+        |> Map.delete("templating")
+        |> put_in(["text"], "Update this with template")
 
-          attrs = %{
-            url: sheet_url,
-            label: sheet_name,
-            organization_id: current_user.organization_id
-          }
+      {:ok, updated_action}
+    else
+      {:ok, action}
+    end
+  end
 
-          sheet =
-            case Repo.fetch_by(Sheet, %{url: sheet_url}) do
-              {:ok, sheet} ->
-                sheet
+  defp process_action(
+         %{"type" => "link_google_sheet"} = action,
+         _node,
+         _interactive_template_list,
+         _flow_info,
+         _org_id
+       ) do
+    sheet_url = action["url"]
+    sheet_name = action["name"]
+    sheet = get_or_create_sheet(sheet_url, sheet_name)
+    updated_action = Map.put(action, "sheet_id", sheet.id)
+    {:ok, updated_action}
+  end
 
-              {:error, _} ->
-                {:ok, sheet} = Sheets.create_sheet(attrs)
-                sheet
-            end
+  defp process_action(
+         %{"type" => "send_interactive_msg"} = action,
+         _node,
+         interactive_template_list,
+         _flow_info,
+         _org_id
+       ) do
+    {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
+    template_id = find_interactive_template(interactive_template_list, action_id)
+    updated_action = Map.put(action, "id", template_id)
+    {:ok, updated_action}
+  end
 
-          action = Map.put(action, "sheet_id", sheet.id)
-          node = put_in(node, ["actions"], [action])
-          acc ++ [node]
+  defp process_action(
+         %{"type" => "call_webhook"} = action,
+         _node,
+         _interactive_template_list,
+         flow_info,
+         org_id
+       ) do
+    case handle_assistant_import(action, org_id, flow_info) do
+      :ok ->
+        {:ok, action}
 
-        action["type"] == "send_interactive_msg" ->
-          {:ok, action_id} = Glific.parse_maybe_integer(action["id"])
+      {:error, assistant_id} ->
+        warning =
+          "Failed to import assistant\n\n" <>
+            "Assistant ID: #{assistant_id}"
 
-          template_id = find_interactive_template(interactive_template_list, action_id)
+        {:ok, action, warning}
 
-          node = put_in(node, ["actions"], [Map.put(action, "id", template_id)])
-          acc ++ [node]
+      nil ->
+        {:ok, action}
+    end
+  end
 
-        true ->
-          acc ++ [node]
+  defp process_action(action, _node, _interactive_template_list, _flow_info, _org_id),
+    do: {:ok, action}
+
+  @spec handle_assistant_import(map(), non_neg_integer(), map()) ::
+          :ok | {:error, String.t()} | nil
+  defp handle_assistant_import(action, org_id, _flow_info) do
+    with body when is_binary(body) <- action["body"],
+         {:ok, decoded} <- Jason.decode(body),
+         assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
+      case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
+        {:ok, _result} -> :ok
+        {:error, _} -> {:error, assistant_id}
       end
-    end)
+    end
+  end
+
+  defp should_update_template?(action, template_uuid) do
+    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+    Map.has_key?(action, "templating") and template_uuid not in template_uuid_list
+  end
+
+  defp get_or_create_sheet(sheet_url, sheet_name) do
+    current_user = Repo.get_current_user()
+
+    attrs = %{
+      url: sheet_url,
+      label: sheet_name,
+      organization_id: current_user.organization_id
+    }
+
+    case Repo.fetch_by(Sheet, %{url: sheet_url}) do
+      {:ok, sheet} ->
+        sheet
+
+      {:error, _} ->
+        {:ok, sheet} = Sheets.create_sheet(attrs)
+        sheet
+    end
   end
 
   @spec find_interactive_template(list(), integer | nil) :: String.t()
@@ -1147,6 +1249,7 @@ defmodule Glific.Flows do
     template_id
   end
 
+  @spec import_contact_field(map(), non_neg_integer()) :: :ok
   defp import_contact_field(import_flow, organization_id) do
     import_flow["contact_field"]
     |> Enum.each(fn contact_field ->
@@ -1159,6 +1262,7 @@ defmodule Glific.Flows do
     end)
   end
 
+  @spec import_groups(map(), non_neg_integer()) :: :ok
   defp import_groups(import_flow, organization_id) do
     import_flow["collections"]
     |> Enum.each(fn collection ->

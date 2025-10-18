@@ -105,10 +105,13 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(@callback_url, Jason.encode!(body),
-           headers: default_headers,
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
+    get_tesla_middlewares()
+    |> Tesla.client()
+    |> Tesla.post(@callback_url, Jason.encode!(body),
+      headers: default_headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
 
@@ -197,10 +200,13 @@ defmodule Glific.Bhasini do
         }
       }
 
-    case Tesla.post(@callback_url, Jason.encode!(body),
-           headers: default_headers,
-           opts: [adapter: [recv_timeout: 300_000]]
-         ) do
+    get_tesla_middlewares()
+    |> Tesla.client()
+    |> Tesla.post(@callback_url, Jason.encode!(body),
+      headers: default_headers,
+      opts: [adapter: [recv_timeout: 300_000]]
+    )
+    |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
         uuid = Ecto.UUID.generate()
@@ -281,5 +287,11 @@ defmodule Glific.Bhasini do
     valid_languages = Map.keys(@language_codes)
 
     source_language in valid_languages and target_language in valid_languages
+  end
+
+  @spec get_tesla_middlewares :: list()
+  defp get_tesla_middlewares do
+    [{Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts", sampling_scale: 10}}] ++
+      Glific.get_tesla_retry_middleware()
   end
 end

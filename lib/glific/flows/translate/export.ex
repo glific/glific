@@ -63,6 +63,8 @@ defmodule Glific.Flows.Translate.Export do
     language_labels = Settings.locale_label_map(organization_id)
     language_keys = Map.keys(language_labels)
 
+    source_language = determine_source_language(organization_id)
+
     # first collect all the strings that we need to translate
     translations =
       localizable_nodes
@@ -71,7 +73,7 @@ defmodule Glific.Flows.Translate.Export do
         fn {action_uuid, action_text, _node_uuid}, export ->
           localization_map
           |> Map.get(action_uuid, %{})
-          |> collect_strings(language_labels, action_text, export)
+          |> collect_strings(language_labels, action_text, export, source_language)
         end
       )
       |> translate_strings(add_translation, organization_id)
@@ -86,7 +88,7 @@ defmodule Glific.Flows.Translate.Export do
         row =
           localization_map
           |> Map.get(action_uuid, %{})
-          |> make_row(language_labels, action_text, translations)
+          |> make_row(language_labels, action_text, translations, source_language)
 
         new_row = ["Action", action_uuid] ++ row ++ [node_uuid]
 
@@ -96,31 +98,33 @@ defmodule Glific.Flows.Translate.Export do
     |> Enum.reverse()
   end
 
-  @spec collect_strings(map(), map(), String.t(), map()) :: Keyword.t()
-  defp collect_strings(action_languages, language_labels, default_text, collect) do
+  @spec collect_strings(map(), map(), String.t(), map(), String.t()) :: Keyword.t()
+  defp collect_strings(action_languages, language_labels, default_text, collect, source_language) do
     language_labels
     |> Map.keys()
     |> Enum.reduce(
       collect,
       fn language, acc ->
-        if language == "en" do
-          acc
-        else
-          translation = Map.get(action_languages, language, "")
+        translation = Map.get(action_languages, language, "")
 
-          if translation == "" do
-            Map.update(
-              acc,
-              {language_labels["en"], language_labels[language]},
-              [default_text],
-              fn curr -> [default_text | curr] end
-            )
-          else
-            acc
-          end
+        if translation == "" and language != source_language do
+          Map.update(
+            acc,
+            {language_labels[source_language], language_labels[language]},
+            [default_text],
+            fn curr -> [default_text | curr] end
+          )
+        else
+          acc
         end
       end
     )
+  end
+
+  @spec determine_source_language(non_neg_integer) :: String.t()
+  defp determine_source_language(organization_id) do
+    organization = Repo.get(Organization, organization_id) |> Repo.preload(:default_language)
+    organization.default_language.locale
   end
 
   @spec translate_strings(map(), boolean(), non_neg_integer()) :: map()
@@ -164,14 +168,14 @@ defmodule Glific.Flows.Translate.Export do
 
   defp handle_async_response({:exit, :timeout}, acc), do: acc
 
-  @spec make_row(map(), map(), String.t(), map()) :: list()
-  defp make_row(action_languages, language_labels, default_text, translations) do
+  @spec make_row(map(), map(), String.t(), map(), String.t()) :: list()
+  defp make_row(action_languages, language_labels, default_text, translations, source_language) do
     language_labels
     |> Map.keys()
     |> Enum.reduce(
       [],
       fn language, acc ->
-        if language == "en" do
+        if language == source_language do
           [default_text | acc]
         else
           translation = Map.get(action_languages, language, "")
@@ -179,11 +183,9 @@ defmodule Glific.Flows.Translate.Export do
           if translation == "" do
             [
               Map.get(
-                # first get all the translations for that specific
-                # src, dst pair
                 Map.get(
                   translations,
-                  {language_labels["en"], language_labels[language]}
+                  {language_labels[source_language], language_labels[language]}
                 ),
                 default_text,
                 ""

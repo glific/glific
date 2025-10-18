@@ -295,7 +295,15 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
       languages = json_response(conn, 200)["results"]
 
-      assert length(Glific.Partners.organization(conn.assigns[:organization_id]).languages) ==
+      organization =
+        Glific.Partners.organization(conn.assigns[:organization_id])
+        |> Glific.Repo.preload(:default_language)
+
+      default_language = Enum.find(languages, fn lang -> lang["default"] == true end)
+
+      assert organization.default_language.locale == default_language["iso"]
+
+      assert length(organization.languages) ==
                length(languages)
     end
 
