@@ -106,7 +106,7 @@ defmodule GlificWeb.Schema.SheetTest do
              "Url: Sheet URL is invalid"
   end
 
-  test "create a sheet only sync partially due to errors in csv decode", %{manager: user} do
+  test "create a sheet does NO sync any fields due to errors in csv decode", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -126,7 +126,7 @@ defmodule GlificWeb.Schema.SheetTest do
     result = auth_query_gql_by(:sync_sheet, user, variables: %{"id" => id})
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 1
+    assert get_in(query_data, [:data, "syncSheet", "sheet", "sheetDataCount"]) == 0
 
     # We get 2 notification, since we are creating and syncing in this test case
     assert length(Notifications.list_notifications(%{filter: %{category: "Google sheets"}})) == 2
