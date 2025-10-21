@@ -582,7 +582,11 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update_all(
       set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
     )
+    
+    nil
   end
+
+  def mark_flows_complete(%Flow{is_active: true}, _opts), do: nil
 
   @doc """
   Set all the flows for a specific context to be completed
