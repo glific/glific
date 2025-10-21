@@ -321,7 +321,7 @@ defmodule Glific.Flows do
            flow_changeset
            |> Repo.update() do
       if flow_changeset.changes[:is_active] == false do
-        FlowContext.mark_flows_complete(flow, [])
+        FlowContext.mark_flows_complete(updated_flow, [])
       end
 
       if Map.has_key?(attrs, :add_role_ids),

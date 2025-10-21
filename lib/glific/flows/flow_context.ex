@@ -571,8 +571,8 @@ defmodule Glific.Flows.FlowContext do
     mark_flows_complete(context.contact_id, context.is_background_flow, opts)
   end
 
-  def mark_flows_complete(%Flow{} = flow, _opts) do
-    event_label = get_event_label("terminate_contact_flows", nil)
+  def mark_flows_complete(%Flow{is_active: false} = flow, _opts) do
+    event_label = "Flow terminated because it has been set to inactive."
 
     now = DateTime.utc_now()
 
