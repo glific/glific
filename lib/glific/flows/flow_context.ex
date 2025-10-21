@@ -582,7 +582,7 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update_all(
       set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
     )
-    
+
     nil
   end
 
