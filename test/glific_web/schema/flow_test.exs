@@ -1,4 +1,5 @@
 defmodule GlificWeb.Schema.FlowTest do
+  alias Glific.Flows.FlowContext
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -974,5 +975,61 @@ defmodule GlificWeb.Schema.FlowTest do
     }
 
     Partners.update_credential(credential, valid_update_attrs)
+  end
+
+  test "terminate inactive flows", attrs do
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: Fixtures.contact_fixture().id,
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        uuid_map: %{},
+        organization_id: attrs.organization_id
+      })
+
+    assert context.id != nil
+    assert is_nil(context.completed_at)
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{id: 1})
+
+    description = "test description"
+
+    # updating the description of flow shouldnt do anything on the flowcontexts
+    result =
+      auth_query_gql_by(:update, attrs.manager,
+        variables: %{
+          "id" => flow.id,
+          "input" => %{"description" => description}
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    fc =
+      FlowContext
+      |> where([fc], fc.id == ^context.id)
+      |> Repo.one()
+
+    assert is_nil(fc.completed_at)
+
+    # updating the is_active to false should kill the running flowcontexts of the flow
+    result =
+      auth_query_gql_by(:update, attrs.manager,
+        variables: %{
+          "id" => flow.id,
+          "input" => %{"is_active" => false}
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    fc =
+      FlowContext
+      |> where([fc], fc.id == ^context.id)
+      |> Repo.one()
+
+    refute is_nil(fc.completed_at)
+    assert fc.is_killed
   end
 end
