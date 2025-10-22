@@ -3,18 +3,22 @@ defmodule Glific.Repo.Migrations.AddVersions do
 
   def change do
     create table(:versions) do
-      add :patch, :binary, comment: "The patch in Erlang External Term Format"
+      add :patch, :binary, null: false, comment: "The patch in Erlang External Term Format"
 
-      add :entity_id, :integer
+      add :entity_id, :integer, null: false
 
-      add :entity_schema, :string, comment: "name of the table the entity is in"
+      add :entity_schema, :string, null: false, comment: "name of the table the entity is in"
 
       add :action, :string,
+        null: false,
         comment: "type of the action that has happened to the entity (created, updated, deleted)"
 
-      add :recorded_at, :utc_datetime, comment: "when has this happened"
+      add :recorded_at, :utc_datetime, null: false, comment: "when has this happened"
 
-      add :rollback, :boolean, default: false, comment: "was this change part of a rollback?"
+      add :rollback, :boolean,
+        null: false,
+        default: false,
+        comment: "was this change part of a rollback?"
 
       add :user_id, references(:users, on_update: :update_all, on_delete: :nilify_all)
 
