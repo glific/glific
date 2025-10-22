@@ -20,6 +20,7 @@ defmodule Glific.Version do
     field :rollback, :boolean, default: false
 
     belongs_to :user, Glific.Users.User
+    belongs_to :organization, Glific.Partners.Organization
   end
 
   def changeset(struct, params \\ %{}) do
@@ -31,9 +32,11 @@ defmodule Glific.Version do
       :action,
       :recorded_at,
       :rollback,
-      :user_id
+      :user_id,
+      :organization_id
     ])
     |> validate_required([:entity_id, :entity_schema, :action, :recorded_at])
     |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end

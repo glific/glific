@@ -17,8 +17,13 @@ defmodule Glific.Repo.Migrations.AddVersions do
       add :rollback, :boolean, default: false, comment: "was this change part of a rollback?"
 
       add :user_id, references(:users, on_update: :update_all, on_delete: :nilify_all)
+
+      add :organization_id, references(:organizations, on_delete: :nilify_all),
+        null: true,
+        comment: "Unique organization ID."
     end
 
     create index(:versions, [:entity_schema, :entity_id])
+    create index(:versions, [:organization_id])
   end
 end

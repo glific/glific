@@ -166,6 +166,9 @@ config :ex_audit,
   tracked_schemas: [
     Glific.Flows.Flow,
     Glific.Triggers.Trigger
+  ],
+  primitive_structs: [
+    DateTime
   ]
 
 # Import environment specific config. This must remain at the bottom
