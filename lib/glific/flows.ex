@@ -315,10 +315,15 @@ defmodule Glific.Flows do
       attrs
       |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
+    flow_changeset = Flow.changeset(flow, attrs)
+
     with {:ok, updated_flow} <-
-           flow
-           |> Flow.changeset(attrs)
+           flow_changeset
            |> Repo.update() do
+      if flow_changeset.changes[:is_active] == false do
+        FlowContext.mark_flows_complete(updated_flow, [])
+      end
+
       if Map.has_key?(attrs, :add_role_ids),
         do: update_flow_roles(attrs, updated_flow),
         else: {:ok, updated_flow}
