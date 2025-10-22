@@ -49,7 +49,7 @@
       }
     },
     {
-      "name": "nmt_tts_with_bhashini",
+      "name": "nmt_tts_with_bhasini",
       "body": "{\n  \"text\": \"@results.result_3\",\n  \"source_language\": \"english\",\n  \"target_language\": \"hindi\"\n}",
       "headers": {
         "Content-Type": "application/json"
