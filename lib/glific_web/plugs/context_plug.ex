@@ -23,6 +23,9 @@ defmodule GlificWeb.ContextPlug do
     current_user = conn.assigns[:current_user]
 
     if current_user != nil do
+      # Track user for ExAudit
+      ExAudit.track(user_id: current_user.id, organization_id: current_user.organization_id)
+
       # Add the current_user to the Process memory
       Glific.Repo.put_current_user(current_user)
 

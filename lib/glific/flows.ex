@@ -315,10 +315,15 @@ defmodule Glific.Flows do
       attrs
       |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
+    flow_changeset = Flow.changeset(flow, attrs)
+
     with {:ok, updated_flow} <-
-           flow
-           |> Flow.changeset(attrs)
+           flow_changeset
            |> Repo.update() do
+      if flow_changeset.changes[:is_active] == false do
+        FlowContext.mark_flows_complete(updated_flow, [])
+      end
+
       if Map.has_key?(attrs, :add_role_ids),
         do: update_flow_roles(attrs, updated_flow),
         else: {:ok, updated_flow}
@@ -813,7 +818,7 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
-      Glific.State.reset(flow.organization_id)
+      Glific.State.reset_flows(flow.organization_id)
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
@@ -994,7 +999,7 @@ defmodule Glific.Flows do
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
   defp clean_cached_flow_keywords_map(organization_id) do
-    Glific.State.reset(organization_id)
+    Glific.State.reset_flows(organization_id)
     Caches.remove(organization_id, ["flow_keywords_map"])
   end
 

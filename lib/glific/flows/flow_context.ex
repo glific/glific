@@ -561,7 +561,7 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed given the flow_context
   """
-  @spec mark_flows_complete(FlowContext.t(), Keyword.t()) :: nil
+  @spec mark_flows_complete(FlowContext.t() | Flow.t(), Keyword.t()) :: nil
   def mark_flows_complete(%FlowContext{wa_group_id: wa_group_id} = context, opts)
       when wa_group_id != nil do
     mark_wa_flows_complete(wa_group_id, context.is_background_flow, opts)
@@ -570,6 +570,23 @@ defmodule Glific.Flows.FlowContext do
   def mark_flows_complete(%FlowContext{} = context, opts) do
     mark_flows_complete(context.contact_id, context.is_background_flow, opts)
   end
+
+  def mark_flows_complete(%Flow{is_active: false} = flow, _opts) do
+    event_label = "Flow terminated because it has been set to inactive."
+
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.flow_id == ^flow.id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.update_all(
+      set: [completed_at: now, updated_at: now, is_killed: true, reason: event_label]
+    )
+
+    nil
+  end
+
+  def mark_flows_complete(%Flow{is_active: true}, _opts), do: nil
 
   @doc """
   Set all the flows for a specific context to be completed

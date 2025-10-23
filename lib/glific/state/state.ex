@@ -47,13 +47,21 @@ defmodule Glific.State do
   @impl true
   @doc false
   def handle_call({:state, organization_id}, _from, state) do
-    {:reply, get_state(state, organization_id), state, :hibernate}
+    org_state = get_state(state, organization_id)
+
+    {:reply, org_state, Map.put(state, organization_id, org_state), :hibernate}
   end
 
   @impl true
   @doc false
   def handle_call({:reset, organization_id}, _from, state) do
     {:reply, :ok, reset_state(organization_id, state), :hibernate}
+  end
+
+  @impl true
+  @doc false
+  def handle_call({:reset_flows, organization_id}, _from, state) do
+    {:reply, :ok, reset_flows(organization_id, state), :hibernate}
   end
 
   @impl true
@@ -134,15 +142,27 @@ defmodule Glific.State do
     GenServer.call(__MODULE__, {:reset, organization_id})
   end
 
+  @doc false
+  def reset_flows(organization_id) do
+    GenServer.call(__MODULE__, {:reset_flows, organization_id})
+  end
+
   @doc """
   initializes the state for this organization
   if not already present
   """
   @spec get_state(map(), non_neg_integer) :: map()
   def get_state(state, organization_id) do
-    if Map.has_key?(state, organization_id),
-      do: state[organization_id],
-      else: init_state(organization_id)
+    cond do
+      Map.has_key?(state, organization_id) == false ->
+        init_state(organization_id)
+
+      Map.has_key?(state[organization_id], :flow) == false ->
+        Map.merge(state[organization_id], Flow.init_state(organization_id))
+
+      true ->
+        state[organization_id]
+    end
   end
 
   @spec init_state(non_neg_integer) :: map()
@@ -155,6 +175,14 @@ defmodule Glific.State do
   @spec reset_state(non_neg_integer(), map()) :: map()
   defp reset_state(organization_id, state) do
     Map.delete(state, organization_id)
+  end
+
+  @spec reset_flows(non_neg_integer(), map()) :: map()
+  defp reset_flows(organization_id, state) do
+    {_, state} =
+      pop_in(state, [organization_id, :flow])
+
+    state
   end
 
   @doc """
@@ -251,13 +279,16 @@ defmodule Glific.State do
       {free, busy},
       fn {{id, fingerprint}, {entity, time}}, {free, busy} ->
         # when user already has entity flow assigned with same fingerprint
+
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
           Logger.info(
             "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id}."
           )
 
-          publish_data(entity.organization_id, id, entity_type)
+          if can_publish_data?(user, id, entity_type) do
+            publish_data(entity.organization_id, id, entity_type)
+          end
 
           {
             [entity | free],
@@ -269,6 +300,13 @@ defmodule Glific.State do
       end
     )
   end
+
+  # We don't have to send simulator_release event when a user just reloaded the simulator
+  # Since that we will toggle off the simulator in client
+  @spec can_publish_data?(map(), non_neg_integer(), :simulators | :flows) :: boolean()
+  defp can_publish_data?(%{id: id}, id, :simulators), do: false
+
+  defp can_publish_data?(_, _, _), do: true
 
   # sending subscription when simulator is released
   @spec publish_data(non_neg_integer, non_neg_integer, atom()) :: any() | nil
