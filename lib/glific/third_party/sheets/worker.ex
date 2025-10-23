@@ -1,6 +1,6 @@
 defmodule Glific.Sheets.Worker do
   @moduledoc """
-  Worker for Google sheet background taks.
+  Worker for Google sheet background tasks.
   """
   require Logger
 
