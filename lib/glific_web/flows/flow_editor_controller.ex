@@ -441,9 +441,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
       |> Jason.decode!()
 
+    webhook =
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
+      |> Jason.decode!()
+
     results = %{
       context: completion,
-      functions: functions
+      functions: functions,
+      webhook: webhook
     }
 
     json(conn, results)
