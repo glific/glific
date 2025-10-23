@@ -280,15 +280,15 @@ msgstr ""
 msgid "Error while fetching Quality Rating details"
 msgstr ""
 
-#: lib/glific/flows.ex:748
-#: lib/glific/flows.ex:780
+#: lib/glific/flows.ex:753
+#: lib/glific/flows.ex:785
 #, elixir-autogen, elixir-format
 msgid "Flow is not active"
 msgstr ""
 
-#: lib/glific/flows.ex:721
-#: lib/glific/flows.ex:738
-#: lib/glific/flows.ex:767
+#: lib/glific/flows.ex:726
+#: lib/glific/flows.ex:743
+#: lib/glific/flows.ex:772
 #, elixir-autogen, elixir-format
 msgid "Flow not found"
 msgstr ""
@@ -313,7 +313,7 @@ msgstr ""
 msgid "WAGroup not found or permission denied."
 msgstr ""
 
-#: lib/glific/flows/flow_context.ex:748
+#: lib/glific/flows/flow_context.ex:765
 #, elixir-autogen, elixir-format
 msgid "Cannot start an empty flow"
 msgstr ""
