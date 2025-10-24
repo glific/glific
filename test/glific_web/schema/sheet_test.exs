@@ -193,7 +193,7 @@ defmodule GlificWeb.Schema.SheetTest do
     assert {:ok, query_data} = result
 
     assert label == get_in(query_data, [:data, "sheet", "sheet", "label"])
-    assert :failed == get_in(query_data, [:data, "sheet", "sheet", "syncStatus"])
+    assert "FAILED" == get_in(query_data, [:data, "sheet", "sheet", "syncStatus"])
     assert "Media sync failed" == get_in(query_data, [:data, "sheet", "sheet", "failureReason"])
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
