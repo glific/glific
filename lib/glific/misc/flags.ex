@@ -319,9 +319,8 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get ask_me bot value for organization flag
+  Get whatsapp flow value for organization flag
   """
-
   def get_whatsapp_flows_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
