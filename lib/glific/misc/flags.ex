@@ -318,6 +318,21 @@ defmodule Glific.Flags do
     end
   end
 
+  def get_whatsapp_flows_enabled(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_whatsapp_forms_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
   @doc """
   Set fun_with_flag toggle for ticketing for an organization
   """
@@ -462,6 +477,15 @@ defmodule Glific.Flags do
     )
   end
 
+  @spec set_is_whatsapp_flows_enabled(map()) :: map()
+  def set_is_whatsapp_flows_enabled(organization) do
+    Map.put(
+      organization,
+      :is_whatsapp_flows_enabled,
+      get_whatsapp_flows_enabled(organization)
+    )
+  end
+
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -481,7 +505,8 @@ defmodule Glific.Flags do
       :is_certificate_enabled,
       :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
-      :is_ask_me_bot_enabled
+      :is_ask_me_bot_enabled,
+      :is_whatsapp_flows_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
