@@ -318,6 +318,10 @@ defmodule Glific.Flags do
     end
   end
 
+  @doc """
+  Get ask_me bot value for organization flag
+  """
+
   def get_whatsapp_flows_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
@@ -477,6 +481,9 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Set fun_with_flag toggle for whatsapp flow enabled for an organization
+  """
   @spec set_is_whatsapp_flows_enabled(map()) :: map()
   def set_is_whatsapp_flows_enabled(organization) do
     Map.put(
