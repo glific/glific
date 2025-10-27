@@ -321,6 +321,7 @@ defmodule Glific.Flags do
   @doc """
   Get whatsapp flow value for organization flag
   """
+  @spec get_whatsapp_flows_enabled(map()) :: boolean
   def get_whatsapp_flows_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
