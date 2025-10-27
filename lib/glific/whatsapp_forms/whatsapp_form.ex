@@ -26,12 +26,11 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   @required_fields [
     :name,
     :meta_flow_id,
-    :status,
     :definition,
     :organization_id
   ]
 
-  @optional_fields [:description]
+  @optional_fields [:description, :status]
 
   schema "whatsapp_forms" do
     field(:name, :string)
@@ -52,5 +51,6 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     whatsapp_form
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:name, :organization_id])
   end
 end
