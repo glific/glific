@@ -13,15 +13,15 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer() | nil,
-          name: String.t(),
+          name: String.t() | nil,
           description: String.t() | nil,
-          meta_flow_id: String.t(),
+          meta_flow_id: String.t() | nil,
           status: String.t(),
           definition: map(),
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
         }
 
   @required_fields [
@@ -37,11 +37,11 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     field(:name, :string)
     field(:description, :string)
     field(:meta_flow_id, :string)
-    field(:status, WhatsappFormStatus)
-    field(:definition, :map)
+    field(:status, WhatsappFormStatus, default: "draft")
+    field(:definition, :map, default: %{})
 
     belongs_to :organization, Organization
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
