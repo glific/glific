@@ -128,3 +128,9 @@ defenum(
   :certificate_template_type_enum,
   Glific.Enums.certificate_template_type_const()
 )
+
+defenum(
+  Glific.Enums.WhatsappFormStatus,
+  :whatsapp_form_status_enum,
+  Glific.Enums.whatsapp_form_status_const()
+)
