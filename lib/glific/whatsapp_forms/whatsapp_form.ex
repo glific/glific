@@ -6,6 +6,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   import Ecto.Query, warn: false
   import Ecto.Changeset
 
+  alias __MODULE__
   alias Glific.Partners.Organization
   alias Glific.Enums.WhatsappFormStatus
 
