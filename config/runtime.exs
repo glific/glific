@@ -9,12 +9,11 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
-certificate = "CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
 
 ssl_opts =
   if Application.get_env(:glific, :environment) != :test,
     do: [
-      cacerts: [certificate],
+      cacerts: ["CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()],
       verify: :verify_peer
     ],
     else: false
