@@ -14,7 +14,9 @@ ssl_opts =
   if Application.get_env(:glific, :environment) != :test,
     do: [
       cacerts: ["CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()],
-      verify: :verify_peer
+      verify: :verify_peer,
+      server_name_indication:
+        env!("DB_SERVER_NAME_INDICATION", :string!, "localhost") |> String.to_charlist()
     ],
     else: false
 
