@@ -321,8 +321,8 @@ defmodule Glific.Flags do
   @doc """
   Get whatsapp form value for organization flag
   """
-  @spec get_whatsapp_forms_enabled(map()) :: boolean
-  def get_whatsapp_forms_enabled(organization) do
+  @spec get_whatsapp_forms_enabled?(map()) :: boolean
+  def get_whatsapp_forms_enabled?(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
@@ -489,7 +489,7 @@ defmodule Glific.Flags do
     Map.put(
       organization,
       :is_whatsapp_forms_enabled,
-      get_whatsapp_forms_enabled(organization)
+      get_whatsapp_forms_enabled?(organization)
     )
   end
 
