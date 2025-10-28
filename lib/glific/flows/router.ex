@@ -243,7 +243,8 @@ defmodule Glific.Flows.Router do
         do: context,
         else: FlowContext.update_recent(context, msg, :recent_inbound)
 
-    {category_uuid, is_checkbox} = find_category(router, context, msg)
+    {category_uuid, is_checkbox} =
+      find_category(router, context, msg)
 
     execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
   end
