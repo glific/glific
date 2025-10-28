@@ -13,7 +13,7 @@ http_port = env!("HTTP_PORT", :integer, 4000)
 ssl_opts =
   if Application.get_env(:glific, :environment) != :test do
     pem = "CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
-    cert_path = "priv/cert/db-server-ca.pem"
+    cert_path = Path.join(:code.priv_dir(:glific), "cert/db-server-ca.pem")
     File.write!(cert_path, pem)
 
     [
