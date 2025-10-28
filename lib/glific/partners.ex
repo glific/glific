@@ -548,7 +548,7 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
-      |> Flags.set_is_whatsapp_flows_enabled()
+      |> Flags.set_is_whatsapp_forms_enabled()
 
     Caches.set(
       @global_organization_id,
