@@ -12,6 +12,8 @@ defmodule Glific.Flows.Translate.Import do
   alias Glific.{
     Flows,
     Flows.Flow,
+    Partners.Organization,
+    Repo,
     Settings
   }
 
@@ -39,6 +41,8 @@ defmodule Glific.Flows.Translate.Import do
 
   @spec collect_by_language(list(), list(), map()) :: map()
   defp collect_by_language(rows, language_keys, flow) do
+    organization = Repo.get(Organization, flow.organization_id) |> Repo.preload(:default_language)
+
     rows
     |> Enum.reduce(%{}, fn row, acc ->
       [_type | [uuid | translations]] = row
@@ -46,12 +50,17 @@ defmodule Glific.Flows.Translate.Import do
       translations
       |> Enum.zip(language_keys)
       |> Enum.reduce(acc, fn {translation, lang_key}, acc ->
-        update_language_map(acc, %{
-          flow: flow,
-          lang_key: lang_key,
-          uuid: uuid,
-          translation: translation
-        })
+        # skip the default language during processing
+        if lang_key == organization.default_language.locale do
+          acc
+        else
+          update_language_map(acc, %{
+            flow: flow,
+            lang_key: lang_key,
+            uuid: uuid,
+            translation: translation
+          })
+        end
       end)
     end)
   end

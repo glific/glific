@@ -850,6 +850,26 @@ defmodule Glific.OnboardTest do
             data: %{name: "name", customer_name: "name"}
           }
         }
+
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "test",
+               project_name: "test",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
     end)
 
     assert %{
@@ -869,6 +889,10 @@ defmodule Glific.OnboardTest do
     assert organization.is_active
     assert organization.status == :active
     assert organization.shortcode == "oia"
+
+    # Check if the kaapi feature flag is enabled for the new organization
+    assert FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization.id}) ==
+             true
   end
 
   test "onboard setup v2, valid params, but we also pass shortcode" do
@@ -886,6 +910,26 @@ defmodule Glific.OnboardTest do
             data: %{name: "name", customer_name: "name"}
           }
         }
+
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "test",
+               project_name: "test",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
     end)
 
     assert %{

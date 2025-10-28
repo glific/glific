@@ -20,8 +20,6 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
   @drive_url "https://www.googleapis.com/drive/v3/files"
   @slide_url "https://slides.googleapis.com/v1/presentations"
 
-  @retry_error_codes [429, 501, 502, 503, 504]
-
   @api_timeout 30_000
   @spec auth_headers(String.t()) :: list()
   defp auth_headers(token) do
@@ -194,26 +192,10 @@ defmodule Glific.ThirdParty.GoogleSlide.Slide do
     end
   end
 
-  # https://hexdocs.pm/tesla/Tesla.Middleware.Retry.html
   @spec client :: Tesla.Client.t()
   defp client do
-    Tesla.client([
-      {
-        Tesla.Middleware.Retry,
-        delay: 500,
-        max_retries: 3,
-        should_retry: fn
-          {:ok, %{status: status}}, _, _ when status in @retry_error_codes ->
-            true
-
-          {:error, reason}, _, _ when reason in [:timeout, :connrefused, :nxdomain] ->
-            true
-
-          _, _, _ ->
-            false
-        end
-      }
-    ])
+    Glific.get_tesla_retry_middleware()
+    |> Tesla.client()
   end
 
   @spec delete_template_copy(String.t(), String.t()) :: any()

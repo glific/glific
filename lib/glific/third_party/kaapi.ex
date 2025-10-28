@@ -35,12 +35,19 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, %{data: %{api_key: api_key}}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
       Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
+
+      FunWithFlags.enable(
+        :is_kaapi_enabled,
+        for_actor: %{organization_id: params.organization_id}
+      )
+
       {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
     else
       {:error, error} ->
-        Logger.error(
-          "KAAPI onboarding failed for org: #{params.organization_id}, reason: #{inspect(error)}"
-        )
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
+        })
 
         {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
     end
@@ -61,9 +68,10 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Logger.error(
-          "KAAPI_INGEST failed for org: #{organization_id}, assistant: #{assistant_id}, reason: #{inspect(reason)}"
-        )
+        Glific.log_exception(%Error{
+          message:
+            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
+        })
 
         {:error, reason}
     end
@@ -96,7 +104,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}), reason=#{inspect(reason)}"
+              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}, reason=#{inspect(reason)}"
           },
           []
         )

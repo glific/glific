@@ -1,4 +1,5 @@
 defmodule GlificWeb.Schema.FlowTest do
+  alias Glific.Flows.FlowContext
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -843,5 +844,192 @@ defmodule GlificWeb.Schema.FlowTest do
       )
 
     assert {:ok, %{data: _}} = result
+  end
+
+  test "import flow with assistant should also import the assistant in kaapi", %{manager: user} do
+    organization_id = user.organization_id
+
+    # activate kaapi
+    enable_kaapi(%{organization_id: organization_id})
+
+    FunWithFlags.enable(:is_kaapi_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            error: nil,
+            data: %{
+              id: 164,
+              name: "test_asst",
+              instructions: "you are a helpful assistant",
+              assistant_id: "asst_gzxxq",
+              model: "gpt-4o",
+              temperature: 0.0,
+              project_id: 86,
+              vector_store_ids: []
+            },
+            success: true,
+            metadata: nil
+          }
+        }
+    end)
+
+    [flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: organization_id})
+
+    result =
+      auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+
+    assert {:ok, query_data} = result
+
+    export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
+    data = Jason.decode!(export_data)
+
+    # Delete the flow before importing
+    Flows.list_flows(%{filter: %{id: flow.id}})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    import_flow = Jason.encode!(data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+
+    import_status =
+      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    assert import_status["flowName"] == "call_and_wait"
+    assert import_status["status"] == "Successfully imported"
+  end
+
+  test "import flow with failed assistant should add he warning in pop-up", %{
+    manager: user
+  } do
+    organization_id = user.organization_id
+
+    # activate kaapi
+    enable_kaapi(%{organization_id: organization_id})
+
+    FunWithFlags.enable(:is_kaapi_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 404,
+          body: %{
+            error: "Assistant not found",
+            data: nil,
+            success: false
+          }
+        }
+    end)
+
+    [flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+    export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
+    data = Jason.decode!(export_data)
+
+    # Delete the flow before importing
+    Flows.list_flows(%{filter: %{id: flow.id}})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    import_flow = Jason.encode!(data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+
+    assert {:ok, query_data} = result
+
+    import_status =
+      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    assert import_status["status"] ==
+             "Successfully imported with warnings: Failed to import assistant\n\nAssistant ID: asst_pJMbE1OALvgWtZfGfDicrgAD"
+  end
+
+  defp enable_kaapi(attrs) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        }
+      })
+
+    valid_update_attrs = %{
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi"
+    }
+
+    Partners.update_credential(credential, valid_update_attrs)
+  end
+
+  test "terminate inactive flows", attrs do
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: Fixtures.contact_fixture().id,
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        uuid_map: %{},
+        organization_id: attrs.organization_id
+      })
+
+    assert context.id != nil
+    assert is_nil(context.completed_at)
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{id: 1})
+
+    description = "test description"
+
+    # updating the description of flow shouldnt do anything on the flowcontexts
+    result =
+      auth_query_gql_by(:update, attrs.manager,
+        variables: %{
+          "id" => flow.id,
+          "input" => %{"description" => description}
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    fc =
+      FlowContext
+      |> where([fc], fc.id == ^context.id)
+      |> Repo.one()
+
+    assert is_nil(fc.completed_at)
+
+    # updating the is_active to false should kill the running flowcontexts of the flow
+    result =
+      auth_query_gql_by(:update, attrs.manager,
+        variables: %{
+          "id" => flow.id,
+          "input" => %{"is_active" => false}
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    fc =
+      FlowContext
+      |> where([fc], fc.id == ^context.id)
+      |> Repo.one()
+
+    refute is_nil(fc.completed_at)
+    assert fc.is_killed
   end
 end

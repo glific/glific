@@ -134,6 +134,18 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.id != nil
   end
 
+  test "init_context/3 will fail if flow is empty",
+       %{organization_id: organization_id} = attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    [keyword | _] = flow.keywords
+
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
+
+    contact = Fixtures.contact_fixture()
+    flow = %{flow | definition: %{"nodes" => []}}
+    {:error, "Cannot start an empty flow"} = FlowContext.init_context(flow, contact, "published")
+  end
+
   test "execute an context for a empty node with return the error" do
     flow_context = flow_context_fixture()
     assert {:error, _message} = FlowContext.execute(flow_context, [])
