@@ -11,14 +11,20 @@ ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
 ssl_opts =
-  if Application.get_env(:glific, :environment) != :test,
-    do: [
-      cacerts: ["CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()],
+  if Application.get_env(:glific, :environment) != :test do
+    pem = "CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
+    cert_path = "priv/cert/db-server-ca.pem"
+    File.write!(cert_path, pem)
+
+    [
+      cacertfile: cert_path,
       verify: :verify_peer,
       server_name_indication:
         env!("DB_SERVER_NAME_INDICATION", :string!, "localhost") |> String.to_charlist()
-    ],
-    else: false
+    ]
+  else
+    false
+  end
 
 primary_url = env!("DATABASE_URL", :string!)
 
