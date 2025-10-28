@@ -181,7 +181,7 @@ defmodule Glific.Partners.Organization do
 
     field(:is_ask_me_bot_enabled, :boolean, default: false, virtual: true)
 
-    field(:is_whatsapp_flows_enabled, :boolean, default: false, virtual: true)
+    field(:is_whatsapp_forms_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
   end

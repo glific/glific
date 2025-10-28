@@ -319,10 +319,10 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get whatsapp flow value for organization flag
+  Get whatsapp form value for organization flag
   """
-  @spec get_whatsapp_flows_enabled(map()) :: boolean
-  def get_whatsapp_flows_enabled(organization) do
+  @spec get_whatsapp_forms_enabled(map()) :: boolean
+  def get_whatsapp_forms_enabled(organization) do
     app_env = Application.get_env(:glific, :environment)
 
     cond do
@@ -482,14 +482,14 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle for whatsapp flow enabled for an organization
+  Set fun_with_flag toggle for whatsapp forms enabled for an organization
   """
-  @spec set_is_whatsapp_flows_enabled(map()) :: map()
-  def set_is_whatsapp_flows_enabled(organization) do
+  @spec set_is_whatsapp_forms_enabled(map()) :: map()
+  def set_is_whatsapp_forms_enabled(organization) do
     Map.put(
       organization,
-      :is_whatsapp_flows_enabled,
-      get_whatsapp_flows_enabled(organization)
+      :is_whatsapp_forms_enabled,
+      get_whatsapp_forms_enabled(organization)
     )
   end
 
@@ -513,7 +513,7 @@ defmodule Glific.Flags do
       :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
       :is_ask_me_bot_enabled,
-      :is_whatsapp_flows_enabled
+      :is_whatsapp_forms_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
