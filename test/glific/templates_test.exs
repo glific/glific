@@ -10,7 +10,6 @@ defmodule Glific.TemplatesTest do
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
-    Partners,
     Providers.Gupshup,
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupEnterprise.Template,

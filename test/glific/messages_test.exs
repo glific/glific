@@ -99,23 +99,6 @@ defmodule Glific.MessagesTest do
       %{sender_id: sender.id, receiver_id: receiver.id, organization_id: sender.organization_id}
     end
 
-    # Update Gupshup Enterprise as default bsp
-    defp enable_gupshup_enterprise(attrs) do
-      updated_attrs = %{
-        is_active: true,
-        organization_id: attrs.organization_id,
-        shortcode: "gupshup"
-      }
-
-      {:ok, cred} =
-        Partners.get_credential(%{
-          organization_id: attrs.organization_id,
-          shortcode: "gupshup"
-        })
-
-      Partners.update_credential(cred, updated_attrs)
-    end
-
     def message_fixture(attrs) do
       valid_attrs = Map.merge(@valid_attrs, foreign_key_constraint(attrs))
 
