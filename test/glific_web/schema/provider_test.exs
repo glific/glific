@@ -42,40 +42,6 @@ defmodule GlificWeb.Schema.ProviderTest do
     refute Enum.any?(providers, fn p -> p["name"] == "Kaapi" end)
   end
 
-  test "count returns the number of providers", %{user: user} do
-    {:ok, query_data} = auth_query_gql_by(:count, user)
-    assert get_in(query_data, [:data, "countProviders"]) > 1
-
-    {:ok, query_data} =
-      auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"name" => "This provider should never ever exist"}}
-      )
-
-    assert get_in(query_data, [:data, "countProviders"]) == 0
-
-    {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup Enterprise"}})
-
-    assert get_in(query_data, [:data, "countProviders"]) == 1
-  end
-
-  test "provider id returns one provider or nil", %{user: user} do
-    name = "Gupshup Enterprise"
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: name})
-
-    result = auth_query_gql_by(:by_id, user, variables: %{"id" => provider.id})
-    assert {:ok, query_data} = result
-
-    provider = get_in(query_data, [:data, "provider", "provider", "name"])
-    assert provider == name
-
-    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
-    assert {:ok, query_data} = result
-
-    message = get_in(query_data, [:data, "provider", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
-  end
-
   test "create a provider and test possible scenarios and errors", %{glific_admin: user} do
     name = "Provider Test Name"
     shortcode = "providershortcode"
@@ -120,59 +86,6 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createProvider", "errors", Access.at(0), "message"])
-    assert message =~ "has already been taken"
-  end
-
-  test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Gupshup Enterprise"})
-
-    name = "Provider Test Name"
-    shortcode = "providershortcode"
-    group = "bsp"
-    keys = "{}"
-    secrets = "{}"
-
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => provider.id,
-          "input" => %{
-            "name" => name
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-
-    new_name = get_in(query_data, [:data, "updateProvider", "provider", "name"])
-    assert new_name == name
-
-    # create a temp provider with a new name
-    auth_query_gql_by(:create, user,
-      variables: %{
-        "input" => %{
-          "name" => "another provider",
-          "shortcode" => shortcode,
-          "group" => group,
-          "keys" => keys,
-          "secrets" => secrets
-        }
-      }
-    )
-
-    # ensure we cannot update an existing provider with the same name
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => provider.id,
-          "input" => %{
-            "name" => "another provider"
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-    message = get_in(query_data, [:data, "updateProvider", "errors", Access.at(0), "message"])
     assert message =~ "has already been taken"
   end
 

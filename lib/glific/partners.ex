@@ -916,13 +916,6 @@ defmodule Glific.Partners do
       non_nil_string(secrets["app_name"]) &&
         non_nil_string(secrets["api_key"])
 
-  defp validate_secrets?(secrets, "gupshup_enterprise"),
-    do:
-      non_nil_string(secrets["hsm_user_id"]) &&
-        non_nil_string(secrets["hsm_password"]) &&
-        non_nil_string(secrets["two_way_user_id"]) &&
-        non_nil_string(secrets["two_way_password"])
-
   defp validate_secrets?(_secrets, _bsp),
     do: false
 
@@ -1003,14 +996,6 @@ defmodule Glific.Partners do
         update_organization(organization, %{bsp_id: credential.provider.id})
         {:ok, credential}
     end
-  end
-
-  defp credential_update_callback(organization, credential, "gupshup_enterprise") do
-    if valid_bsp?(credential) do
-      update_organization(organization, %{bsp_id: credential.provider.id})
-    end
-
-    {:ok, credential}
   end
 
   defp credential_update_callback(organization, credential, "maytapi") do

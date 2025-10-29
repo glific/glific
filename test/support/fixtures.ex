@@ -217,24 +217,6 @@ defmodule Glific.Fixtures do
 
     Partners.create_credential(%{
       organization_id: organization.id,
-      shortcode: "gupshup_enterprise",
-      keys: %{
-        url: "test_url",
-        handler: "Glific.Providers.Gupshup.Enterprise.Message",
-        worker: "Glific.Providers.Gupshup.Enterprise.Worker",
-        bsp_limit: 60
-      },
-      secrets: %{
-        hsm_user_id: "Please enter your HSM account user id here",
-        hsm_password: "Please enter your HSM account password here",
-        two_way_user_id: "Please enter your two way account user id here",
-        two_way_password: "Please enter your two way account password here"
-      },
-      is_active: false
-    })
-
-    Partners.create_credential(%{
-      organization_id: organization.id,
       shortcode: "gupshup",
       keys: %{
         url: "test_url",
