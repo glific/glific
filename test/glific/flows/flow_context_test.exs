@@ -686,6 +686,29 @@ defmodule Glific.Flows.FlowContextTest do
     assert FlowContext.match_outbound(context, "", "https://acme.org/img.jpg") == 2
   end
 
+  test "wakeup_one/1 will process all the context for the contact, without a message from upstream",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "wait_for_result"})
+    [node | _tail] = flow.nodes
+
+    wakeup_at = Timex.shift(Timex.now(), minutes: -3)
+
+    flow_context =
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: wakeup_at,
+        is_background_flow: true,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+    assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context)
+
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.wakeup_at == nil
+    assert flow_context.is_background_flow == false
+  end
+
   defp get_context_details(attrs) do
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     node_uuid = "8b4d2e09-9d72-4436-a01a-8e3def9cf4e5"
