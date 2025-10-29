@@ -71,7 +71,7 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
+    do: list_providers(args) |> length()
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
