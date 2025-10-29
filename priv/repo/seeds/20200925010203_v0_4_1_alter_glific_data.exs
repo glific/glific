@@ -127,9 +127,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_navana_tech()
 
     add_exotel()
-
-    add_gupshup_enterprise()
-
     add_google_asr()
 
     add_google_sheet()
@@ -352,40 +349,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
-  end
-
-  defp add_gupshup_enterprise() do
-    {:ok, gupshup_enterprise} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
-
-    Partners.active_organizations([])
-    |> Enum.each(fn {org_id, _name} ->
-      Glific.Repo.put_organization_id(org_id)
-
-      query =
-        from(c in Credential,
-          where: c.organization_id == ^org_id and c.provider_id == ^gupshup_enterprise.id
-        )
-
-      if !Repo.exists?(query),
-        do:
-          Repo.insert!(%Credential{
-            organization_id: org_id,
-            provider_id: gupshup_enterprise.id,
-            keys: %{
-              url: "https://enterprise.smsgupshup.com/",
-              handler: "Glific.Providers.Gupshup.Enterprise.Message",
-              worker: "Glific.Providers.Gupshup.Enterprise.Worker",
-              bsp_limit: 40
-            },
-            secrets: %{
-              hsm_user_id: "HSM account user id",
-              hsm_password: "HSM account password",
-              two_way_user_id: "Two-Way account user id",
-              two_way_password: "Two-Way account password"
-            },
-            is_active: false
-          })
-    end)
   end
 
   defp add_google_sheet() do
