@@ -124,8 +124,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     add_google_cloud_storage()
 
-    add_navana_tech()
-
     add_exotel()
 
     add_gupshup_enterprise()
@@ -279,37 +277,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
-              default: nil,
-              view_only: false
-            }
-          }
-        })
-  end
-
-  defp add_navana_tech() do
-    query = from(p in Provider, where: p.shortcode == "navana_tech")
-
-    # add only if does not exist
-    if !Repo.exists?(query),
-      do:
-        Repo.insert!(%Provider{
-          name: "Navana Tech",
-          shortcode: "navana_tech",
-          description: "Setup Navana tech APIs for NLP",
-          group: nil,
-          is_required: false,
-          keys: %{
-            url: %{
-              type: :string,
-              label: "Nanava Tech URL",
-              default: "https://speechapi.southeastasia.cloudapp.azure.com",
-              view_only: false
-            }
-          },
-          secrets: %{
-            token: %{
-              type: :string,
-              label: "JWT token",
               default: nil,
               view_only: false
             }
