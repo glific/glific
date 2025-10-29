@@ -40,9 +40,7 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsTables do
     create unique_index(:whatsapp_forms, [:name, :organization_id])
     create index(:whatsapp_forms, [:organization_id])
 
-    create index(:whatsapp_forms_responses, [:whatsapp_form_id])
     create index(:whatsapp_forms_responses, [:organization_id])
-    create index(:whatsapp_forms_responses, [:contact_id])
   end
 
   def down do
