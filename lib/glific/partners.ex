@@ -52,7 +52,15 @@ defmodule Glific.Partners do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
       Enum.member?(
-        ["goth", "kaapi", "gupshup_enterprise", "navana_tech", "google_asr", "dialogflow"],
+        [
+          "goth",
+          "kaapi",
+          "gupshup_enterprise",
+          "navana_tech",
+          "google_asr",
+          "dialogflow",
+          "open_ai"
+        ],
         provider.shortcode
       )
     end)
