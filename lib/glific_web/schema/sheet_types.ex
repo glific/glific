@@ -21,7 +21,6 @@ defmodule GlificWeb.Schema.SheetTypes do
     field(:is_active, :boolean)
     field(:last_synced_at, :datetime)
     field(:auto_sync, :boolean)
-    field(:warnings, :json)
     field(:sync_status, :sheet_sync_status_enum)
     field(:failure_reason, :string)
     field(:sheet_data_count, :integer)

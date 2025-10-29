@@ -53,7 +53,6 @@ defmodule Glific.Sheets.Sheet do
     field(:is_active, :boolean, default: true)
     field(:last_synced_at, :utc_datetime)
     field(:auto_sync, :boolean, default: false)
-    field(:warnings, :map, default: %{}, virtual: true)
     field(:sheet_data_count, :integer)
     field(:sync_status, SheetSyncStatus, default: :pending)
     field(:failure_reason, :string)

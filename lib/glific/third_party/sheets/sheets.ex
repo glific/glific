@@ -270,14 +270,14 @@ defmodule Glific.Sheets do
             {:ok, true}
 
           false ->
-            {:error, handle_sync_failure(sheet, "repeated or missing headers")}
+            {:error, handle_sync_failure(sheet, "Repeated or missing headers")}
         end
 
       [{:error, err}] ->
         {:error, handle_sync_failure(sheet, inspect(err))}
 
       _ ->
-        {:error, handle_sync_failure(sheet, "unknown error or empty content")}
+        {:error, handle_sync_failure(sheet, "Unknown error or empty content")}
     end
   end
 
@@ -326,9 +326,16 @@ defmodule Glific.Sheets do
   end
 
   defp handle_sync_failure(sheet, reason) do
-    message = "Sheet sync failed due to #{reason}"
-    Logger.error("#{message}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}")
-    %{sync_successful?: false, error_message: message}
+    reason =
+      if String.contains?(reason, "Stray escape character on line"),
+        do: "Sheet not found or inaccessible",
+        else: reason
+
+    Logger.error(
+      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
+    )
+
+    %{sync_successful?: false, error_message: reason}
   end
 
   @spec parse_row_values(map()) :: map()

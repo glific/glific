@@ -236,8 +236,7 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason =~
-               "Sheet sync failed due to repeated or missing headers"
+      assert updated_sheet.failure_reason == "Repeated or missing headers"
 
       # No sheet data should be created
       sheet_data_count =
@@ -270,8 +269,7 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason =~
-               "Sheet sync failed due to repeated or missing headers"
+      assert updated_sheet.failure_reason == "Repeated or missing headers"
 
       # No sheet data should be created
       sheet_data_count =
@@ -303,7 +301,7 @@ defmodule Glific.SheetsTest do
       # Should handle the CSV parsing error gracefully
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
-      assert updated_sheet.failure_reason =~ "Sheet sync failed"
+      assert updated_sheet.failure_reason =~ "Escape sequence started on line 2:\\n\\n\\"
     end
 
     test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
@@ -330,8 +328,7 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason ==
-               "Sheet sync failed due to unknown error or empty content"
+      assert updated_sheet.failure_reason == "Unknown error or empty content"
     end
 
     test "schedules a media validation job after syncing a sheet", %{
