@@ -1172,7 +1172,7 @@ defmodule Glific.Flows.FlowContext do
            FunWithFlags.enabled?(:is_kaapi_enabled,
              for: %{organization_id: context.organization_id}
            ),
-         true <- filesearch_node?(flow, context) do
+         true <- current_node_filesearch?(flow, context) do
       webhook_log =
         WebhookLog
         |> where([w], w.flow_context_id == ^context.id)
@@ -1183,12 +1183,13 @@ defmodule Glific.Flows.FlowContext do
       Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
       Messages.create_temp_message(context.organization_id, "Failure")
     else
-      _ -> Messages.create_temp_message(context.organization_id, "No Response")
+      _ ->
+        Messages.create_temp_message(context.organization_id, "No Response")
     end
   end
 
-  @spec filesearch_node?(Flow.t(), FlowContext.t()) :: boolean()
-  defp filesearch_node?(flow, context) do
+  @spec current_node_filesearch?(Flow.t(), FlowContext.t()) :: boolean()
+  defp current_node_filesearch?(flow, context) do
     case Map.fetch(flow.uuid_map, context.node_uuid) do
       {:ok, {:node, node}} ->
         Enum.any?(node.actions, fn action -> action.url == "filesearch-gpt" end)
