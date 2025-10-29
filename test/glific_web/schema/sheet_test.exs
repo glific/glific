@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.SheetTest do
     Notifications,
     Partners,
     Repo,
+    Sheets,
     Sheets.Sheet
   }
 
@@ -181,7 +182,9 @@ defmodule GlificWeb.Schema.SheetTest do
   end
 
   test "sheet id returns one sheet or nil", %{manager: user} = attrs do
-    Fixtures.sheet_fixture(attrs)
+    attrs
+    |> Fixtures.sheet_fixture()
+    |> Sheets.update_sheet(%{sync_status: :failed, failure_reason: "Media sync failed"})
 
     label = "sample sheet"
     {:ok, sheet} = Repo.fetch_by(Sheet, %{label: label, organization_id: user.organization_id})
@@ -190,6 +193,8 @@ defmodule GlificWeb.Schema.SheetTest do
     assert {:ok, query_data} = result
 
     assert label == get_in(query_data, [:data, "sheet", "sheet", "label"])
+    assert "FAILED" == get_in(query_data, [:data, "sheet", "sheet", "syncStatus"])
+    assert "Media sync failed" == get_in(query_data, [:data, "sheet", "sheet", "failureReason"])
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
