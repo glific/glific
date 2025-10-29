@@ -54,13 +54,13 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert get_in(query_data, [:data, "countProviders"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup Enterprise"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup"}})
 
     assert get_in(query_data, [:data, "countProviders"]) == 1
   end
 
   test "provider id returns one provider or nil", %{user: user} do
-    name = "Gupshup Enterprise"
+    name = "Gupshup"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: name})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => provider.id})
@@ -124,7 +124,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   end
 
   test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Gupshup Enterprise"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Gupshup"})
 
     name = "Provider Test Name"
     shortcode = "providershortcode"

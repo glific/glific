@@ -1643,7 +1643,7 @@ defmodule Glific.TemplatesTest do
 
   test "import_templates/1 should not update the uuid of already existing template",
        attrs do
-    enable_gupshup_enterprise(attrs)
+    enable_gupshup(attrs)
 
     data =
       "\"TEMPLATEID\",\"NAME\",\"PREVIOUSCATEGORY\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\",\"LASTUPDATEDON\"\n\"6379781\",\"multiline_daily_status\",\"ACCOUNT_UPDATE\",\"MARKETING\",\"en\",\"TEXT\",\"\",\"Hey there!\nHow is your day today?\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-04-05\",\"2023-04-27 03:05:41\"\n"
@@ -1674,17 +1674,17 @@ defmodule Glific.TemplatesTest do
     assert hsm1.uuid == hsm2.uuid
   end
 
-  defp enable_gupshup_enterprise(attrs) do
+  defp enable_gupshup(attrs) do
     updated_attrs = %{
       is_active: true,
       organization_id: attrs.organization_id,
-      shortcode: "gupshup_enterprise"
+      shortcode: "gupshup"
     }
 
     {:ok, cred} =
       Partners.get_credential(%{
         organization_id: attrs.organization_id,
-        shortcode: "gupshup_enterprise"
+        shortcode: "gupshup"
       })
 
     Partners.update_credential(cred, updated_attrs)

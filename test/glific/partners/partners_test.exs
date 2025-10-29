@@ -961,25 +961,6 @@ defmodule Glific.PartnersTest do
       assert credential.secrets == valid_update_attrs.secrets
     end
 
-    test "update_credential/2 for gupshup enterprise should update credentials",
-         %{organization_id: organization_id} = _attrs do
-      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
-
-      assert {:ok, %Credential{} = credential} =
-               Repo.fetch_by(Credential, %{provider_id: provider.id})
-
-      valid_update_attrs = %{
-        keys: %{},
-        shortcode: provider.shortcode,
-        secrets: %{"user_id" => "updated_user_id", "password" => "updated_password"},
-        organization_id: organization_id
-      }
-
-      {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
-      assert "updated_password" == updated_credential.secrets["password"]
-      assert "updated_user_id" == updated_credential.secrets["user_id"]
-    end
-
     test "update_credential/2 for gupshup  should update credentials",
          %{organization_id: organization_id} = _attrs do
       Tesla.Mock.mock(fn
@@ -1302,25 +1283,6 @@ defmodule Glific.PartnersTest do
       assert global_fields == %{"org_name" => "Glific"}
     end
 
-    test "valid_bsp?/2 for credentials should return true when credentials are valid", _attrs do
-      {:ok, gupshup_provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
-
-      {:ok, gupshup_credentials} = Repo.fetch_by(Credential, %{provider_id: gupshup_provider.id})
-
-      assert true == gupshup_credentials |> Repo.preload([:provider]) |> Partners.valid_bsp?()
-
-      {:ok, gupshup_enterprise_provider} =
-        Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
-
-      assert {:ok, gupshup_enterprise_credentials} =
-               Repo.fetch_by(Credential, %{provider_id: gupshup_enterprise_provider.id})
-
-      assert true ==
-               gupshup_enterprise_credentials
-               |> Repo.preload([:provider])
-               |> Partners.valid_bsp?()
-    end
-
     @default_goth_json """
     {
     "project_id": "DEFAULT PROJECT ID",
@@ -1335,7 +1297,6 @@ defmodule Glific.PartnersTest do
       organization_services = Partners.get_organization_services()
 
       assert organization_services[organization_id]["bigquery"] == false
-      assert organization_services[organization_id]["dialogflow"] == false
       assert organization_services[organization_id]["fun_with_flags"] == true
       assert organization_services[organization_id]["google_cloud_storage"] == false
 
@@ -1350,7 +1311,6 @@ defmodule Glific.PartnersTest do
       updated_organization_services = Partners.get_organization_services()
 
       assert updated_organization_services[organization_id]["bigquery"] == true
-      assert updated_organization_services[organization_id]["dialogflow"] == false
       assert updated_organization_services[organization_id]["fun_with_flags"] == true
       assert updated_organization_services[organization_id]["google_cloud_storage"] == false
     end
