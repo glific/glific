@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   GraphQL Representation of Whatsapp From
   """
   use Absinthe.Schema.Notation
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
