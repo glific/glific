@@ -7,6 +7,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   import Ecto.Changeset
 
   alias __MODULE__
+  alias Glific.Enums.WhatsappFormCategory
   alias Glific.Enums.WhatsappFormStatus
   alias Glific.Partners.Organization
 
@@ -18,6 +19,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
           meta_flow_id: String.t() | nil,
           status: String.t(),
           definition: map(),
+          categories: [],
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: DateTime.t() | nil,
@@ -28,6 +30,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     :name,
     :meta_flow_id,
     :definition,
+    :categories,
     :organization_id
   ]
 
@@ -39,6 +42,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     field(:meta_flow_id, :string)
     field(:status, WhatsappFormStatus, default: "draft")
     field(:definition, :map, default: %{})
+    field(:categories, {:array, WhatsappFormCategory}, default: [])
 
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime_usec)

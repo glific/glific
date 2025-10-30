@@ -10,6 +10,19 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsTables do
       );
     """)
 
+    execute("""
+      CREATE TYPE public.whatsapp_forms_category_enum AS ENUM (
+        'signup_up',
+        'signin',
+        'appointment_booking',
+        'lead_generation',
+        'contact_us',
+        'customer_support',
+        'survey',
+        'other'
+      );
+    """)
+
     create table(:whatsapp_forms) do
       add(:name, :string, null: false, comment: "Name of the form")
       add(:description, :text, comment: "Description of the form")
@@ -22,6 +35,12 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsTables do
       )
 
       add(:definition, :jsonb, default: "{}", comment: "JSON of the form")
+
+      add(:categories, {:array, :whatsapp_forms_category_enum},
+        default: [],
+        comment: "Categories of the form"
+      )
+
       add(:organization_id, references(:organizations, on_delete: :delete_all), null: false)
 
       timestamps(type: :utc_datetime_usec)
@@ -47,6 +66,7 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsTables do
     drop_if_exists(table(:whatsapp_forms_responses))
     drop_if_exists(table(:whatsapp_forms))
 
+    execute("DROP TYPE IF EXISTS public.whatsapp_forms_category_enum;")
     execute("DROP TYPE IF EXISTS public.whatsapp_forms_status_enum;")
   end
 end

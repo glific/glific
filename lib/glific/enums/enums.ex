@@ -114,6 +114,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.WhatsappFormStatus.__enum_map__()
   Glific.Enums.whatsapp_form_status_const()
+
+  iex> Glific.Enums.WhatsappFormCategory.__enum_map__()
+  Glific.Enums.whatsapp_form_category_const()
   """
 
   defmacro api_status_const,
@@ -178,4 +181,7 @@ defmodule Glific.Enums do
 
   defmacro whatsapp_form_status_const,
     do: Macro.expand(@whatsapp_form_status_const, __CALLER__)
+
+  defmacro whatsapp_form_category_const,
+    do: Macro.expand(@whatsapp_form_category_const, __CALLER__)
 end

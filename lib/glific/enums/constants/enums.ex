@@ -117,6 +117,17 @@ defmodule Glific.Enums.Constants do
         :published,
         :inactive
       ]
+
+      @whatsapp_form_category_const [
+        :signup_up,
+        :signin,
+        :appointment_booking,
+        :lead_generation,
+        :contact_us,
+        :customer_support,
+        :survey,
+        :other
+      ]
     end
   end
 end
