@@ -66,6 +66,7 @@ if Code.ensure_loaded?(Plug) do
 
           true ->
             Glific.Repo.put_organization_id(organization_id)
+            Glific.RepoReplica.put_organization_id(organization_id)
             Conn.assign(conn, config.assign, organization_id)
         end
       end
