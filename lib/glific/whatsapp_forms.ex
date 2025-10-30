@@ -2,8 +2,10 @@ defmodule Glific.WhatsappForms do
   @moduledoc """
   WhatsApp Forms context module. This module provides functions for managing WhatsApp forms.
   """
+  require Logger
 
   alias Glific.{
+    Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     WhatsappForms.WhatsappForm
   }
@@ -15,7 +17,8 @@ defmodule Glific.WhatsappForms do
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response),
-         {:ok, whatsapp_form} <- WhatsappForm.create_whatsapp_form(db_attrs) do
+         {:ok, whatsapp_form} <- WhatsappForm.create_whatsapp_form(db_attrs),
+         {:ok, _} <- maybe_set_subscription(attrs.organization_id) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     else
       {:error, reason} -> {:error, reason}
@@ -33,5 +36,24 @@ defmodule Glific.WhatsappForms do
     }
 
     {:ok, db_attrs}
+  end
+
+  defp maybe_set_subscription(organization_id) do
+    # Check if this is the first form for the organization
+    case WhatsappForm.count_by_organization(organization_id) do
+      1 ->
+        case PartnerAPI.set_subscription(organization_id, nil, ["FLOW_MESSAGE"], 3) do
+          {:ok, _response} ->
+            {:ok, "subscription set"}
+
+          {:error, error} ->
+            Logger.error(
+              "Failed to set subscription for org #{organization_id}: #{inspect(error)}"
+            )
+        end
+
+      _ ->
+        {:ok, "no subscription needed"}
+    end
   end
 end

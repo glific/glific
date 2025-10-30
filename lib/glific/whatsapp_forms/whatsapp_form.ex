@@ -72,4 +72,14 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     |> changeset(attrs)
     |> Repo.insert()
   end
+
+  @doc """
+  Counts the number of WhatsApp forms for a given organization
+  """
+  @spec count_by_organization(non_neg_integer()) :: non_neg_integer()
+  def count_by_organization(organization_id) do
+    WhatsappForm
+    |> where([w], w.organization_id == ^organization_id)
+    |> Repo.aggregate(:count, :id)
+  end
 end
