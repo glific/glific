@@ -53,9 +53,9 @@ defmodule Glific.ThirdParty.Meta.ApiClientMeta do
     {:error, "Meta API request failed: #{inspect(reason)}"}
   end
 
-  # @spec extract_error_message(map()) :: String.t()
-  # defp extract_error_message(%{message: message}), do: message
-  # defp extract_error_message(body), do: inspect(body)
+  @spec extract_error_message(map()) :: String.t()
+  defp extract_error_message(%{message: message}), do: message
+  defp extract_error_message(body), do: inspect(body)
 
   defp headers(api_key) do
     [
