@@ -57,13 +57,13 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     {:ok, resp_body}
   end
 
-  defp parse_response({:ok, %Tesla.Env{status: status, body: body}}) do
+  defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
     case Jason.decode(body) do
-      {:ok, %{"error" => error}} ->
-        {:error, "API Error (#{status}): #{error["message"] || "Unknown error"}"}
+      {:ok, %{"message" => message}} when is_binary(message) ->
+        {:error, message}
 
-      {:error, _} ->
-        {:error, "Request failed with status #{status}"}
+      _ ->
+        {:error, "Something went wrong"}
     end
   end
 end
