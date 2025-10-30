@@ -12,14 +12,14 @@ defmodule Glific.ThirdParty.Meta.ApiClientMeta do
 
   defp client() do
     Glific.Metrics.increment("Meta Requests")
-    # api_key_for_meta = Glific.get_meta_keys()
-    api_key_for_meta =
-      Tesla.client([
-        {Tesla.Middleware.BaseUrl, @meta_api_url},
-        {Tesla.Middleware.Headers, headers(api_key_for_meta)},
-        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        Tesla.Middleware.Telemetry
-      ])
+    api_key_for_meta = Glific.get_meta_keys()
+
+    Tesla.client([
+      {Tesla.Middleware.BaseUrl, @meta_api_url},
+      {Tesla.Middleware.Headers, headers(api_key_for_meta)},
+      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+      Tesla.Middleware.Telemetry
+    ])
   end
 
   @doc """
