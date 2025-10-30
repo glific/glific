@@ -16,7 +16,7 @@ defmodule Glific.ThirdParty.Meta.ApiClientMeta do
 
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @meta_api_url},
-      {Tesla.Middleware.Headers, headers(api_key_for_meta)},
+      {Tesla.Middleware.Headers, headers(api_key_for_meta.meta_key)},
       {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
       Tesla.Middleware.Telemetry
     ])

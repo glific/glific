@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   Resolver for Meta API related operations.
   """
 
-  alias Glific.ThirdParty.Meta.ApiClientMeta
+  alias Glific.WhatsappForms
 
   @doc """
   Resolver for publishing a WhatsApp form.

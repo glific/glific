@@ -1,0 +1,11 @@
+
+mutation deactivateWaForm($flowId: ID!){
+  deactivateWaForm(flowId: $flowId) {
+    status
+    form {
+      id
+      name
+      status
+    }
+  }
+}
