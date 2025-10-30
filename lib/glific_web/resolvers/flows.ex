@@ -360,4 +360,24 @@ defmodule GlificWeb.Resolvers.Flows do
     FlowCount.reset_flow_count(flow_id)
     {:ok, %{success: true}}
   end
+
+  @doc """
+  Publish a WhatsApp Flow form to Meta
+  """
+  @spec publish_wa_form(Absinthe.Resolution.t(), %{flow_id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def publish_wa_form(_, %{flow_id: flow_id}, %{context: %{current_user: user}}) do
+    with {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, flow} <-
+           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
+         {:ok, _flow} <- Flows.publish_wa_form(flow, user.id) do
+      {:ok, %{success: true, errors: nil}}
+    else
+      {:errors, errors} ->
+        {:ok, %{success: false, errors: errors}}
+
+      {:error, errors} ->
+        {:ok, %{success: false, errors: make_error(errors)}}
+    end
+  end
 end
