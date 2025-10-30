@@ -1,0 +1,43 @@
+defmodule GlificWeb.Schema.WhatsappFormTypes do
+  @moduledoc """
+  GraphQL Representation of Glific's WhatsApp Form DataType
+  """
+  use Absinthe.Schema.Notation
+
+  alias GlificWeb.Resolvers
+
+  object :whatsapp_form_result do
+    field :whatsapp_form, :whatsapp_form
+    field :errors, list_of(:input_error)
+  end
+
+  object :whatsapp_form do
+    field :id, :string
+    field :name, :string
+    field :status, :string
+    field :definition, :json
+    field :inserted_at, :string
+    field :updated_at, :string
+    field :description, :string
+    field :meta_flow_id, :string
+  end
+
+  input_object :whatsapp_form_input do
+    field :name, non_null(:string)
+    field :flow_json, non_null(:json)
+    field :categories, non_null(list_of(:string))
+    field :description, :string
+  end
+
+  # object :whatsapp_form_queries do
+  #   # Add query fields here if needed in the future
+  # end
+
+  object :whatsapp_form_mutations do
+    @desc "Create a WhatsApp form"
+    field :create_whatsapp_form, :whatsapp_form_result do
+      arg(:input, non_null(:whatsapp_form_input))
+      resolve(&Resolvers.WhatsappForms.create_whatsapp_form/3)
+    end
+  end
+end

@@ -7,9 +7,13 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   import Ecto.Changeset
 
   alias __MODULE__
-  alias Glific.Enums.WhatsappFormCategory
-  alias Glific.Enums.WhatsappFormStatus
-  alias Glific.Partners.Organization
+
+  alias Glific.{
+    Enums.WhatsappFormCategory,
+    Enums.WhatsappFormStatus,
+    Partners.Organization,
+    Repo
+  }
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -57,5 +61,15 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name, :organization_id])
+  end
+
+  @doc """
+  Creates a WhatsApp form record in the database
+  """
+  @spec create_whatsapp_form(map()) :: {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  def create_whatsapp_form(attrs) do
+    %WhatsappForm{}
+    |> changeset(attrs)
+    |> Repo.insert()
   end
 end
