@@ -553,7 +553,13 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # modes can be passed in params,
     # if we want to add a newly introduced event other than
     # the defaults
-    modes = (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
+
+    modes =
+      if modes == [] do
+        (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
+      else
+        Enum.map_join(modes, ",", &String.upcase/1)
+      end
 
     data = %{
       "modes" => modes,
