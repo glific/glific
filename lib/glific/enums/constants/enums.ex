@@ -110,6 +110,24 @@ defmodule Glific.Enums.Constants do
       @certificate_template_type_const [
         :slides
       ]
+
+      # status of whatsapp form
+      @whatsapp_form_status_const [
+        :draft,
+        :published,
+        :inactive
+      ]
+
+      @whatsapp_form_category_const [
+        :signup_up,
+        :signin,
+        :appointment_booking,
+        :lead_generation,
+        :contact_us,
+        :customer_support,
+        :survey,
+        :other
+      ]
     end
   end
 end
