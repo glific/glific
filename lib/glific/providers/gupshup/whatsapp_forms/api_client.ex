@@ -24,8 +24,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
-    resp_body = body |> Jason.decode!()
-    {:ok, resp_body}
+    {:ok, body}
   end
 
   defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
