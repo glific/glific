@@ -17,7 +17,8 @@ defmodule Glific.GCS do
     Partners.Credential,
     Partners.Organization,
     Partners.Saas,
-    Repo
+    Repo,
+    RepoReplica
   }
 
   alias Waffle.Storage.Google.CloudStorage
@@ -52,7 +53,7 @@ defmodule Glific.GCS do
   @doc false
   @spec insert_gcs_jobs(non_neg_integer) :: {:ok, any} | {:error, any}
   def insert_gcs_jobs(organization_id) do
-    Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "incremental"})
+    RepoReplica.fetch_by(GcsJob, %{organization_id: organization_id, type: "incremental"})
     |> case do
       {:ok, gcs_job} ->
         {:ok, gcs_job}
@@ -65,7 +66,7 @@ defmodule Glific.GCS do
         |> Repo.insert()
     end
 
-    Repo.fetch_by(GcsJob, %{organization_id: organization_id, type: "unsynced"})
+    RepoReplica.fetch_by(GcsJob, %{organization_id: organization_id, type: "unsynced"})
     |> case do
       {:ok, gcs_job} ->
         {:ok, gcs_job}
@@ -92,7 +93,7 @@ defmodule Glific.GCS do
     base_query(organization_id)
     |> unsynced_query()
     |> where([m, _msg], is_nil(m.gcs_url))
-    |> Repo.all()
+    |> RepoReplica.all()
     |> do_get_first_unsynced_file(organization_id)
   end
 
@@ -101,7 +102,7 @@ defmodule Glific.GCS do
   defp do_get_first_unsynced_file(media_id, organization_id) when media_id in ["", nil, []] do
     base_query(organization_id)
     |> unsynced_query()
-    |> Repo.all()
+    |> RepoReplica.all()
     |> case do
       [] -> nil
       [%{id: id}] -> id

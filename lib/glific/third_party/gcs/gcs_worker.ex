@@ -87,7 +87,7 @@ defmodule Glific.GCS.GcsWorker do
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> check_phase(organization_id, phase)
-      |> Repo.all()
+      |> RepoReplica.all()
 
     max_id = List.last(data)
 
@@ -144,7 +144,7 @@ defmodule Glific.GCS.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
 
     query
-    |> Repo.all()
+    |> RepoReplica.all()
     |> Enum.reduce(
       [],
       fn row, _acc ->
@@ -353,7 +353,7 @@ defmodule Glific.GCS.GcsWorker do
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp update_gcs_url(gcs_url, id) do
     {:ok, message_media} =
-      Repo.get(MessageMedia, id)
+      RepoReplica.get(MessageMedia, id)
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 

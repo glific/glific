@@ -63,6 +63,7 @@ defmodule GlificWeb.ConnCase do
     manager = Fixtures.user_fixture(%{roles: ["manager"]})
 
     Glific.Repo.put_organization_id(1)
+    Glific.RepoReplica.put_organization_id(1)
     Glific.Repo.put_current_user(manager)
     Fixtures.set_bsp_partner_tokens(organization_id)
 
