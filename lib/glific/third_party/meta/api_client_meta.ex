@@ -6,7 +6,7 @@ defmodule Glific.ThirdParty.Meta.ApiClientMeta do
   require Logger
   use Tesla
 
-  @meta_api_url "https://graph.facebook.com"
+  @meta_api_url "https://partner.gupshup.io/partner/app/"
 
   # client with runtime config (API key / base URL).
 
