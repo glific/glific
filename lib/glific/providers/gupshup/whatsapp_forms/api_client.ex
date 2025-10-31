@@ -39,10 +39,4 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         {:error, "Something went wrong"}
     end
   end
-
-  @spec get_tesla_middlewares :: list()
-  defp get_tesla_middlewares do
-    [{Tesla.Middleware.Telemetry, metadata: %{provider: "Gupshup", sampling_scale: 10}}] ++
-      Glific.get_tesla_retry_middleware()
-  end
 end
