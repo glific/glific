@@ -30,7 +30,7 @@ defmodule Glific.WhatsappForms do
   def list_whatsapp_form_categories() do
     categories =
       WhatsappFormCategory.__enum_map__()
-      |> Enum.map(fn key -> key |> Atom.to_string() |> String.upcase() end)
+      |> Enum.map(Atom.to_string()/1 )
     {:ok, categories}
   end
 
