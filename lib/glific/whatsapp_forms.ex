@@ -41,7 +41,8 @@ defmodule Glific.WhatsappForms do
       definition: validated_attrs.flow_json,
       meta_flow_id: Map.get(api_response, "id"),
       status: "draft",
-      description: Map.get(validated_attrs, :description)
+      description: Map.get(validated_attrs, :description),
+      categories: validated_attrs.categories |> Enum.map(&String.downcase/1)
     }
 
     {:ok, db_attrs}
