@@ -479,6 +479,13 @@ defmodule Glific do
     }
   end
 
+  @spec get_meta_keys() :: map()
+  def get_meta_keys do
+    %{
+      meta_key: Application.get_env(:glific, :meta_key)
+    }
+  end
+
   @doc """
   Get Get Google Maps keys
   """

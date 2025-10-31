@@ -1,0 +1,10 @@
+mutation publishWaForm($flowId: ID!) {
+  publishWaForm(flowId: $flowId) {
+    success
+    errors {
+      key
+      message
+      category
+    }
+  }
+}
