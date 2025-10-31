@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.FilesearchTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
+  import_types(__MODULE__.WhatsappFormTypes)
 
   query do
     import_fields(:profile_queries)
@@ -132,6 +133,8 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_poll_queries)
 
     import_fields(:certificate_queries)
+
+    import_fields(:whatsapp_form_queries)
   end
 
   mutation do
@@ -204,6 +207,8 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_poll_mutations)
 
     import_fields(:certificate_mutations)
+
+    import_fields(:whatsapp_form_mutations)
   end
 
   subscription do

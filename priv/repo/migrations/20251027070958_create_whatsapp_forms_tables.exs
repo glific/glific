@@ -12,8 +12,8 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsTables do
 
     execute("""
       CREATE TYPE public.whatsapp_forms_category_enum AS ENUM (
-        'signup_up',
-        'signin',
+        'sign_up',
+        'sign_in',
         'appointment_booking',
         'lead_generation',
         'contact_us',
