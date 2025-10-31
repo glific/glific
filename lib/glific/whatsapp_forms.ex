@@ -40,7 +40,7 @@ defmodule Glific.WhatsappForms do
   """
   @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(id, attrs) do
-    with flow <- WhatsappForm.get_whatsapp_form_by_id(id),
+    with {:ok, flow} <- WhatsappForm.get_whatsapp_form_by_id(id),
          {:ok, response} <- ApiClient.update_whatsapp_form(flow.meta_flow_id, attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :update),
          {:ok, whatsapp_form} <- WhatsappForm.update_whatsapp_form(id, db_attrs) do

@@ -91,6 +91,6 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   """
   @spec get_whatsapp_form_by_id(non_neg_integer()) :: WhatsappForm.t() | nil
   def get_whatsapp_form_by_id(id) do
-    Repo.get(WhatsappForm, id)
+    {:ok, Repo.get(WhatsappForm, id)}
   end
 end

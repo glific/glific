@@ -6,6 +6,12 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   import Ecto.Query, warn: false
   alias Glific.WhatsappForms
 
+  def whatsapp_form(_, %{id: id}, _) do
+    with {:ok, whatsapp_form} <- WhatsappForms.WhatsappForm.get_whatsapp_form_by_id(id) do
+      {:ok, %{whatsapp_form: whatsapp_form}}
+    end
+  end
+
   @doc """
   Lists all available WhatsApp form categories
   """
