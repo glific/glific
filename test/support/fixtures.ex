@@ -1119,7 +1119,6 @@ defmodule Glific.Fixtures do
     {:ok, wa_managed_phone} =
       attrs
       |> Enum.into(%{
-        is_active: true,
         label: "some label",
         phone: "9829627508",
         phone_id: 242,
