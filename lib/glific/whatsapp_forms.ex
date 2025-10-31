@@ -4,6 +4,7 @@ defmodule Glific.WhatsappForms do
   """
 
   alias Glific.{
+    Enums.WhatsappFormCategory,
     Providers.Gupshup.WhatsappForms.ApiClient,
     WhatsappForms.WhatsappForm
   }
@@ -20,6 +21,17 @@ defmodule Glific.WhatsappForms do
     else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  @doc """
+  Lists all available WhatsApp form categories
+  """
+  @spec list_whatsapp_form_categories() :: {:ok, list(String.t())}
+  def list_whatsapp_form_categories() do
+    categories =
+      WhatsappFormCategory.__enum_map__()
+      |> Enum.map(fn key -> key |> Atom.to_string() |> String.upcase() end)
+    {:ok, categories}
   end
 
   defp prepare_db_attrs(validated_attrs, api_response) do

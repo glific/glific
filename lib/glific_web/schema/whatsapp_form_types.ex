@@ -29,9 +29,12 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :description, :string
   end
 
-  # object :whatsapp_form_queries do
-  #   # Add query fields here if needed in the future
-  # end
+  object :whatsapp_form_queries do
+    @desc "List all available WhatsApp form categories"
+    field :whatsapp_form_categories, list_of(:string) do
+      resolve(&Resolvers.WhatsappForms.list_whatsapp_form_categories/3)
+    end
+  end
 
   object :whatsapp_form_mutations do
     @desc "Create a WhatsApp form"

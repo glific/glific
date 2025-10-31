@@ -119,8 +119,8 @@ defmodule Glific.Enums.Constants do
       ]
 
       @whatsapp_form_category_const [
-        :signup_up,
-        :signin,
+        :sign_up,
+        :sign_in,
         :appointment_booking,
         :lead_generation,
         :contact_us,

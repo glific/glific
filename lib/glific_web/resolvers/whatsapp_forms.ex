@@ -14,4 +14,13 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   def create_whatsapp_form(_, %{input: params}, _) do
     WhatsappForms.create_whatsapp_form(params)
   end
+
+  @doc """
+  Lists all available WhatsApp form categories
+  """
+  @spec list_whatsapp_form_categories(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(String.t())}
+  def list_whatsapp_form_categories(_parent, _args, _resolution) do
+    WhatsappForms.list_whatsapp_form_categories()
+  end
 end
