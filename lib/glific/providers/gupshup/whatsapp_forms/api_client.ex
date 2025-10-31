@@ -14,8 +14,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @endpoint "https://partner.gupshup.io/partner/app/"
 
   defp client(organization_id) do
-    Glific.Metrics.increment("Gupshup Requests")
-
     Tesla.client([
       {Tesla.Middleware.BaseUrl, @endpoint},
       {Tesla.Middleware.Headers, build_headers(organization_id)},
@@ -41,6 +39,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
        ]}
 
     {:error, reason} ->
+      Logger.error("Failed to get partner app token: #{inspect(reason)}")
       {:error, "Failed to get partner app token: #{reason}"}
   end
 
