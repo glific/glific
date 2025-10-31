@@ -51,7 +51,18 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "kaapi"], provider.shortcode)
+      Enum.member?(
+        [
+          "goth",
+          "kaapi",
+          "gupshup_enterprise",
+          "navana_tech",
+          "google_asr",
+          "dialogflow",
+          "open_ai"
+        ],
+        provider.shortcode
+      )
     end)
   end
 
@@ -60,7 +71,7 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
+    do: list_providers(args) |> length()
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
