@@ -30,17 +30,20 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     end
   end
 
-  case PartnerAPI.get_partner_app_token(organization_id) do
-    {:ok, %{partner_app_token: partner_app_token}} ->
-      {:ok,
-       [
-         {"Content-Type", "application/json"},
-         {"token", partner_app_token}
-       ]}
+  @spec build_headers(non_neg_integer()) :: list({String.t(), String.t()})
+  defp build_headers(organization_id) do
+    case PartnerAPI.get_partner_app_token(organization_id) do
+      {:ok, %{partner_app_token: partner_app_token}} ->
+        {:ok,
+         [
+           {"Content-Type", "application/json"},
+           {"token", partner_app_token}
+         ]}
 
-    {:error, reason} ->
-      Logger.error("Failed to get partner app token: #{inspect(reason)}")
-      {:error, "Failed to get partner app token: #{reason}"}
+      {:error, reason} ->
+        Logger.error("Failed to get partner app token: #{inspect(reason)}")
+        {:error, "Failed to get partner app token: #{reason}"}
+    end
   end
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
