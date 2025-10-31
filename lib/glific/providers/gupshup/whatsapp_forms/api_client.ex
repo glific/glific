@@ -32,6 +32,25 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     post(url, payload, headers: headers) |> parse_response()
   end
 
+  @doc """
+  Updates a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  def update_whatsapp_form(meta_flow_id, params) do
+    url = "#{get_url(params.organization_id)}/flows/#{meta_flow_id}"
+    headers = build_headers(params.organization_id)
+
+    payload =
+      %{
+        name: params.name,
+        categories: params.categories,
+        flow_json: params.flow_json
+      }
+      |> Jason.encode!()
+
+    put(url, payload, headers: headers) |> parse_response()
+  end
+
   @spec get_url(non_neg_integer()) :: String.t()
   defp get_url(organization_id) do
     case PartnerAPI.app_id(organization_id) do

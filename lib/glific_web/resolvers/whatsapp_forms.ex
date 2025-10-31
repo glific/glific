@@ -7,6 +7,15 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   alias Glific.WhatsappForms
 
   @doc """
+  Lists all available WhatsApp form categories
+  """
+  @spec list_whatsapp_form_categories(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(String.t())}
+  def list_whatsapp_form_categories(_parent, _args, _resolution) do
+    WhatsappForms.list_whatsapp_form_categories()
+  end
+
+  @doc """
   Creates a WhatsApp form
   """
   @spec create_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -16,11 +25,11 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   end
 
   @doc """
-  Lists all available WhatsApp form categories
+  Updates a WhatsApp form
   """
-  @spec list_whatsapp_form_categories(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, list(String.t())}
-  def list_whatsapp_form_categories(_parent, _args, _resolution) do
-    WhatsappForms.list_whatsapp_form_categories()
+  @spec update_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_whatsapp_form(_, %{id: id, input: params}, _) do
+    WhatsappForms.update_whatsapp_form(id, params)
   end
 end

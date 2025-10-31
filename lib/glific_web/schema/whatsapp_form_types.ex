@@ -42,5 +42,12 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       arg(:input, non_null(:whatsapp_form_input))
       resolve(&Resolvers.WhatsappForms.create_whatsapp_form/3)
     end
+
+    @desc "Update a WhatsApp form"
+    field :update_whatsapp_form, :whatsapp_form_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:whatsapp_form_input))
+      resolve(&Resolvers.WhatsappForms.update_whatsapp_form/3)
+    end
   end
 end
