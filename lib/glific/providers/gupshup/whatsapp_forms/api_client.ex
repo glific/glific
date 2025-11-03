@@ -10,8 +10,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   require Logger
 
-  # client with runtime config (API key / base URL).
-
   @spec client(%{url: String.t(), header: list()}) :: Tesla.Client.t()
   defp client(opts) do
     Tesla.client(
