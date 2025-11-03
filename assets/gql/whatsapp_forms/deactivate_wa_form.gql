@@ -1,0 +1,13 @@
+mutation deactivateWaForm($formId: ID!){
+  deactivateWaForm(formId: $formId) {
+    status
+    body {
+      id
+      name
+      description
+      metaFlowId
+      status
+      categories
+    }
+  }
+}

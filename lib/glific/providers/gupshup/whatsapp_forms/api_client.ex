@@ -11,13 +11,14 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   require Logger
 
-  @endpoint "https://partner.gupshup.io/partner/app/"
+  # client with runtime config (API key / base URL).
 
+  @spec client(%{url: String.t(), header: list()}) :: Tesla.Client.t()
   defp client(opts) do
     Tesla.client(
       [
-        {Tesla.Middleware.BaseUrl, @endpoint},
-        {Tesla.Middleware.Headers, PartnerAPI.headers(:app_token, opts)},
+        {Tesla.Middleware.BaseUrl, opts.url},
+        {Tesla.Middleware.Headers, opts.header},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         {Tesla.Middleware.Telemetry,
          metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
@@ -25,6 +26,30 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     )
   end
 
+  @doc false
+  @spec publish_wa_form(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def publish_wa_form(flow_id, organization_id) do
+    with {:ok, %{partner_app_token: token}} <- PartnerAPI.get_partner_app_token(organization_id),
+         url <- PartnerAPI.app_url!(organization_id),
+         opts = %{
+           url: url,
+           header: [
+             {"Content-Type", "application/json"},
+             {"token", token}
+           ]
+         },
+         {:ok, %Tesla.Env{} = response} <-
+           Tesla.post(client(opts), "/flows/#{flow_id}/publish", %{}),
+         {:ok, parsed} <- parse_response({:ok, response}) do
+      {:ok, parsed}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
+          {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}
