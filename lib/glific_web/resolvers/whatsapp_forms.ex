@@ -16,9 +16,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
          {:ok, updated_form} <- WhatsappForms.publish_whatsapp_form(form) do
       {:ok, %{status: "success", body: updated_form}}
     else
-      nil ->
-        {:error, "WhatsApp Form not found"}
-
       {:error, reason} ->
         {:error, "Failed to publish WhatsApp Form: #{reason}"}
     end

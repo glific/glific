@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Seeds.SeedsDev
   }
@@ -19,6 +20,8 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     "assets/gql/whatsapp_forms/deactivate_wa_form.gql"
   )
 
+  @flow_id "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+  @org_id 1
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -93,6 +96,19 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         variables: %{"id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df"}
       )
 
-    assert error.message == "WhatsApp Form not found"
+    assert error.message == "Failed to publish WhatsApp Form: WhatsApp Form not found"
+  end
+
+  test "returns {:error, body} when API returns 400 with error message" do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{"error" => "Invalid flow ID"}
+        }
+    end)
+
+    assert {:error, body} = ApiClient.publish_wa_form(@flow_id, @org_id)
+    assert body["error"] == "Invalid flow ID"
   end
 end

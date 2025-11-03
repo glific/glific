@@ -33,7 +33,7 @@ defmodule Glific.WhatsappForms do
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   def deactivate_wa_form(meta_form_id) do
     case get_whatsapp_form_by_meta_flow_id(meta_form_id) do
-      nil ->
+      {:error, _} ->
         {:error, "WhatsApp form not found"}
 
       %WhatsappForm{} = form ->
@@ -51,7 +51,7 @@ defmodule Glific.WhatsappForms do
         form
 
       {:error, _} ->
-        nil
+        {:error, "WhatsApp Form not found"}
     end
   end
 
