@@ -265,7 +265,7 @@ defmodule Glific.SheetsTest do
 
       {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 
-      # Sync should fail due to invalid headers
+      # Sync should fail due to missing headers
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
@@ -298,7 +298,7 @@ defmodule Glific.SheetsTest do
 
       {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 
-      # Sync should fail due to invalid headers
+      # Sync should fail due to duplicate keys
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
@@ -312,7 +312,7 @@ defmodule Glific.SheetsTest do
     end
 
     test "handles errors when key is missing", %{organization_id: organization_id} do
-      # Mock a CSV with duplicate keys
+      # Mock a CSV with missing "key" column
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -331,7 +331,7 @@ defmodule Glific.SheetsTest do
 
       {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 
-      # Sync should fail due to invalid headers
+      # Sync should fail due to missing "key" column
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
