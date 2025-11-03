@@ -428,7 +428,7 @@ if Code.ensure_loaded?(Faker) do
           name: "sign_up_form",
           description: "Simple signup flow to collect name and email",
           meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
-          status: "published",
+          status: :published,
           definition: %{
             "version" => "1.0",
             "screens" => [
@@ -451,7 +451,7 @@ if Code.ensure_loaded?(Faker) do
           name: "contact_us_form",
           description: "Feedback and queries collection form",
           meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
-          status: "draft",
+          status: :draft,
           definition: %{
             "version" => "1.0",
             "screens" => [
@@ -478,7 +478,7 @@ if Code.ensure_loaded?(Faker) do
           name: "feedback_form",
           description: "Inactive form for collecting customer satisfaction feedback",
           meta_flow_id: "flow-7a12cd90-c6e4-4e56-9a23-001f89b2a8b1",
-          status: "inactive",
+          status: :inactive,
           definition: %{
             "version" => "1.0",
             "screens" => [
