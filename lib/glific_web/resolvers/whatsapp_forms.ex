@@ -12,7 +12,8 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @spec publish_whatsapp_form(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id}, _resolution) do
-    with %WhatsappForm{} = form <- WhatsappForms.get_whatsapp_form_by_meta_flow_id(id),
+    with {:ok, %WhatsappForm{}} = {:ok, form} <-
+           WhatsappForms.get_whatsapp_form_by_meta_flow_id(id),
          {:ok, updated_form} <- WhatsappForms.publish_whatsapp_form(form) do
       {:ok, %{status: "success", body: updated_form}}
     else
