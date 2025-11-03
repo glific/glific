@@ -99,7 +99,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert error.message == "Failed to publish WhatsApp Form: WhatsApp Form not found"
   end
 
-  test "returns {:error, body} when API returns 400 with error message" do
+  test "fails to publish WhatsApp form due to invalid request" do
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
