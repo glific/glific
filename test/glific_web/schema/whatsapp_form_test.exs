@@ -80,4 +80,19 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert error.message == "WhatsApp form not found"
   end
+
+  test "fails to published WhatsApp form if the form does not exist",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{"status" => "success"}}
+    end)
+
+    {:ok, %{errors: [error | _]}} =
+      auth_query_gql_by(:publish_whatsapp_form, user,
+        variables: %{"id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df"}
+      )
+
+    assert error.message == "WhatsApp Form not found"
+  end
 end
