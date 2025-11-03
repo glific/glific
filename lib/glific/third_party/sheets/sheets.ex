@@ -181,17 +181,9 @@ defmodule Glific.Sheets do
     export_url = build_export_url(sheet.url)
 
     sync_result =
-      try do
-        [url: export_url]
-        |> ApiClient.get_csv_content()
-        |> run_sync_transaction(sheet, last_synced_at)
-      rescue
-        Postgrex.Error ->
-          %{
-            sync_successful?: false,
-            error_message: "Duplicate keys found, ensure keys are unique"
-          }
-      end
+      [url: export_url]
+      |> ApiClient.get_csv_content()
+      |> run_sync_transaction(sheet, last_synced_at)
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
@@ -313,8 +305,13 @@ defmodule Glific.Sheets do
     row_values
     |> prepare_sheet_data_attrs(sheet, last_synced_at)
     |> create_sheet_data()
+    |> case do
+      {:ok, _} ->
+        {:cont, acc}
 
-    {:cont, acc}
+      {:error, changeset} ->
+        {:halt, %{sync_successful?: false, error_message: generate_error_message(changeset)}}
+    end
   end
 
   @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
@@ -511,4 +508,19 @@ defmodule Glific.Sheets do
   end
 
   defp trim_value(value), do: value
+
+  defp generate_error_message(changeset) do
+    changeset.errors
+    |> Enum.map(fn
+      {key, {_, [constraint: :unique, constraint_name: _]}} ->
+        "Key is repeated. Repeated key: #{changeset.changes[key]}"
+
+      {key, {_, [validation: :required]}} ->
+        "Required value is missing. Missing value: #{key}"
+
+      _ ->
+        "Invalid data format"
+    end)
+    |> Enum.join(", ")
+  end
 end

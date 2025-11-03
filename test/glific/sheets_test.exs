@@ -277,14 +277,14 @@ defmodule Glific.SheetsTest do
 
       assert sheet_data_count == 0
     end
-    
+
     test "handles duplicate key errors", %{organization_id: organization_id} do
       # Mock a CSV with duplicate keys
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "Key,Key,Value\r\nkey1,val1,Hello\r\nkey1,val2,World"
+            body: "Key,Value,Message\r\nkey1,val1,Hello\r\nkey1,val2,World"
           }
       end)
 
@@ -302,7 +302,40 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Duplicate keys found, ensure keys are unique"
+      assert updated_sheet.failure_reason == "Key is repeated. Repeated key: key1"
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles errors when key is missing", %{organization_id: organization_id} do
+      # Mock a CSV with duplicate keys
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Value,Message\r\nval1,Hello\r\nval2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "keys missing sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should fail due to invalid headers
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason == "Required value is missing. Missing value: key"
 
       # No sheet data should be created
       sheet_data_count =
