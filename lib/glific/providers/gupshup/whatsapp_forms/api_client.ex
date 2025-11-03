@@ -25,8 +25,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     )
   end
 
-  @spec build_opts(String.t(), String.t()) :: %{url: String.t(), header: list()}
-  defp build_opts(url, token) do
+  @spec build_header(String.t(), String.t()) :: %{url: String.t(), header: list()}
+  defp build_header(url, token) do
     %{
       url: url,
       header: [
@@ -42,7 +42,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   def publish_wa_form(flow_id, organization_id) do
     with {:ok, %{partner_app_token: token}} <- PartnerAPI.get_partner_app_token(organization_id),
          url <- PartnerAPI.app_url!(organization_id),
-         opts <- build_opts(url, token),
+         opts <- build_header(url, token),
          {:ok, %Tesla.Env{} = response} <-
            Tesla.post(client(opts), "/flows/#{flow_id}/publish", %{}) do
       parse_response({:ok, response})
