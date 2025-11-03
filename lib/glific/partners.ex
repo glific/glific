@@ -29,6 +29,7 @@ defmodule Glific.Partners do
     Providers.Gupshup.PartnerAPI,
     Providers.Maytapi.WAWorker,
     Repo,
+    RepoReplica,
     Settings.Language,
     Stats,
     Users.User
@@ -846,7 +847,7 @@ defmodule Glific.Partners do
   @spec perform_handler((... -> nil), map() | nil, non_neg_integer(), String.t() | nil) :: any
   defp perform_handler(handler, handler_args, org_id, org_name) do
     Repo.put_process_state(org_id)
-
+    RepoReplica.put_process_state(org_id)
     Logger.info("Starting processes for org id: #{org_id}")
 
     if is_nil(handler_args) do
