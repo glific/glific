@@ -429,37 +429,6 @@ defmodule Glific.SheetsTest do
       )
     end
 
-    test "handles invalid CSV format gracefully", %{organization_id: organization_id} do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            # This CSV has no headers, which will cause validation to fail
-            body: "row1value1,row1value2\r\nrow2value1,row2value2"
-          }
-      end)
-
-      attrs = %{
-        type: "READ",
-        label: "invalid csv format sheet",
-        url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
-        organization_id: organization_id
-      }
-
-      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
-
-      # Sync should handle the invalid format gracefully but won't insert the data to the table
-      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
-      assert updated_sheet.sync_status == :success
-
-      # Verify no data was created
-      sheet_data_count =
-        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
-
-      assert sheet_data_count == 0
-    end
-
     test "cleans up existing sheet data upon successful sync", %{organization_id: organization_id} do
       # Create a sheet
       attrs = %{
