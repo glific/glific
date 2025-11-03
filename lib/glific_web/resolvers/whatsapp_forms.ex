@@ -5,7 +5,10 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   alias Glific.WhatsappForms
   alias Glific.WhatsappForms.WhatsappForm
 
-  @doc false
+  @doc """
+    Publishes a WhatsApp form using its Meta Flow ID.
+
+  """
   @spec publish_whatsapp_form(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id}, _resolution) do
@@ -21,7 +24,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
     end
   end
 
-  @doc false
+  @doc """
+  Deactivates an existing WhatsApp form.
+  """
   @spec deactivate_wa_form(any(), %{form_id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}
   def deactivate_wa_form(_parent, %{form_id: form_id}, _resolution) do

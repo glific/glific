@@ -10,7 +10,9 @@ defmodule Glific.WhatsappForms do
 
   require Logger
 
-  @doc false
+  @doc """
+    Publishes a WhatsApp form through the configured provider (e.g., Gupshup).
+  """
   @spec publish_whatsapp_form(WhatsappForm.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   def publish_whatsapp_form(%WhatsappForm{} = form) do
@@ -24,7 +26,9 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @doc false
+  @doc """
+  Deactivates a WhatsApp form by its Meta Flow ID.
+  """
   @spec deactivate_wa_form(String.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   def deactivate_wa_form(meta_form_id) do
@@ -37,10 +41,18 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @doc false
+  @doc """
+  Fetches a WhatsApp form from the database using its Meta Flow ID.
+  """
   @spec get_whatsapp_form_by_meta_flow_id(String.t()) :: WhatsappForm.t() | nil
   def get_whatsapp_form_by_meta_flow_id(meta_flow_id) do
-    Repo.get_by(WhatsappForm, meta_flow_id: meta_flow_id)
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: meta_flow_id}) do
+      {:ok, form} ->
+        form
+
+      {:error, _} ->
+        nil
+    end
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
@@ -49,12 +61,5 @@ defmodule Glific.WhatsappForms do
     form
     |> Ecto.Changeset.change(status: new_status)
     |> Repo.update()
-    |> case do
-      {:ok, updated_form} ->
-        {:ok, updated_form}
-
-      {:error, changeset} ->
-        {:error, "Failed to update form status: #{inspect(changeset.errors)}"}
-    end
   end
 end
