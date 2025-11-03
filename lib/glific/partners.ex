@@ -9,7 +9,6 @@ defmodule Glific.Partners do
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
-  alias Glific.RepoReplica
   alias __MODULE__
 
   alias Glific.{
@@ -30,6 +29,7 @@ defmodule Glific.Partners do
     Providers.Gupshup.PartnerAPI,
     Providers.Maytapi.WAWorker,
     Repo,
+    RepoReplica,
     Settings.Language,
     Stats,
     Users.User
