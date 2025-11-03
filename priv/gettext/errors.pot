@@ -93,7 +93,7 @@ msgstr ""
 msgid "must be equal to %{number}"
 msgstr ""
 
-#: lib/glific_web/schema.ex:280
+#: lib/glific_web/schema.ex:283
 #, elixir-format, elixir-autogen
 msgid "Auth Credentials mismatch"
 msgstr ""
@@ -115,7 +115,7 @@ msgstr ""
 msgid "Contact status is not valid."
 msgstr ""
 
-#: lib/glific/flows/router.ex:266
+#: lib/glific/flows/router.ex:267
 #, elixir-format, elixir-autogen
 msgid "Could not find category for: %{body}"
 msgstr ""
