@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     SeedsDev.seed_whatsapp_forms(organization)
   end
 
-  test "seed_whatsapp_forms creates forms that are visible during the test",
+  test "published a whatsapp form and updates its status to published",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -45,11 +45,11 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert sign_up_form.status == :published
   end
 
-  test "seed_whatsapp_forms creates forms that are visible during the test qand akfwdfa",
+  test "deactivates a whatsapp form and updates its status to inactive",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :post} ->
-        %Tesla.Env{status: 200, body: %{"status" => "sucesss"}}
+        %Tesla.Env{status: 200, body: %{"status" => "sucess"}}
     end)
 
     _result =
