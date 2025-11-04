@@ -7,7 +7,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
   @doc """
     Publishes a WhatsApp form using its Meta Flow ID.
-
   """
   @spec publish_whatsapp_form(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}

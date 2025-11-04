@@ -2,7 +2,6 @@ defmodule Glific.WhatsappForms do
   @moduledoc """
   WhatsApp Forms context module. This module provides functions for managing WhatsApp forms.
   """
-
   import Ecto.Query, warn: false
   alias Glific.Providers.Gupshup.WhatsappForms.ApiClient
   alias Glific.Repo
