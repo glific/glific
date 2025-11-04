@@ -386,12 +386,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @doc """
-  Retrieves the partner app token for the given organization ID.
-  """
   @spec get_partner_app_token(non_neg_integer) ::
           {:error, String.t()} | {:ok, %{partner_app_token: any}}
-  def get_partner_app_token(org_id) do
+  defp get_partner_app_token(org_id) do
     {:ok, partner_app_token} = Caches.get(org_id, "partner_app_token", refresh_cache: false)
 
     if partner_app_token,

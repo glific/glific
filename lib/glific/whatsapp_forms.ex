@@ -18,7 +18,6 @@ defmodule Glific.WhatsappForms do
   def publish_whatsapp_form(%WhatsappForm{} = form) do
     case ApiClient.publish_wa_form(form.meta_flow_id, form.organization_id) do
       {:ok, _response} ->
-        IO.inspect("reach")
         update_form_status(form, :published)
 
       {:error, reason} ->
