@@ -510,17 +510,23 @@ defmodule Glific.Sheets do
   defp trim_value(value), do: value
 
   defp generate_error_message(changeset) do
-    changeset.errors
-    |> Enum.map(fn
-      {key, {_, [constraint: :unique, constraint_name: _]}} ->
-        "Key is repeated. Repeated key: #{changeset.changes[key]}"
+    changeset
+    |> Ecto.Changeset.traverse_errors(&format_error/1)
+    |> Enum.map_join(", ", &format_field_error(&1, changeset))
+  end
 
-      {key, {_, [validation: :required]}} ->
-        "Required value is missing. Missing value: #{key}"
-
-      _ ->
-        "Invalid data format"
+  defp format_error({msg, opts}) do
+    Enum.reduce(opts, msg, fn {key, value}, acc ->
+      String.replace(acc, "%{#{key}}", to_string(value))
     end)
-    |> Enum.join(", ")
+  end
+
+  defp format_field_error({field, message}, changeset) do
+    field_name = field |> Atom.to_string() |> String.capitalize()
+
+    case Map.get(changeset.changes, field) do
+      nil -> "#{field_name}: #{message}"
+      value -> "#{field_name}: #{message} (Value: #{value})"
+    end
   end
 end
