@@ -28,8 +28,8 @@ defmodule Glific.WhatsappForms do
   @doc """
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
-  @spec deactivate_wa_form(String.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, list()}
+  @spec deactivate_wa_form(WhatsappForm.t()) ::
+          {:ok, WhatsappForm.t()} | {:error, String.t()}
   def deactivate_wa_form(form) do
     update_form_status(form, :inactive)
   end
@@ -38,7 +38,7 @@ defmodule Glific.WhatsappForms do
   Fetches a WhatsApp form from the database using its whatsapp form ID.
   """
   @spec get_whatsapp_form_by_id(String.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, list()}
+          {:ok, WhatsappForm.t()} | {:error, any()}
   def get_whatsapp_form_by_id(form_id) do
     Repo.fetch_by(WhatsappForm, %{id: form_id})
   end
