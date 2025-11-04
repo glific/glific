@@ -17,8 +17,8 @@ defmodule Glific.Stats do
     Partners,
     Partners.Saas,
     Repo,
-    Reports,
     RepoReplica,
+    Reports,
     Stats.Stat,
     Users.User
   }
