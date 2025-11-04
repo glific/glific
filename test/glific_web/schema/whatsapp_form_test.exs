@@ -43,7 +43,6 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     _result =
       auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
-    # Refetch the form from database to see the updated status
     {:ok, updated_form} =
       Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
