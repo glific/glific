@@ -32,10 +32,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    case Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{}) do
-      {:ok, %Tesla.Env{} = response} -> parse_response({:ok, response})
-      {:error, reason} -> {:error, reason}
-    end
+    Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
+    |> parse_response()
   end
 
   @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
@@ -48,4 +46,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
     {:error, body}
   end
+
+  defp parse_response({:error, reason}),
+    do: {:error, inspect(reason)}
 end
