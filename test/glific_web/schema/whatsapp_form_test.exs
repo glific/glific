@@ -73,12 +73,11 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
   test "fails to deactivate WhatsApp form if the form does not exist",
        %{manager: user} do
-    result =
-      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"formId" => "231222222"})
+    {:ok, %{errors: [error | _]}} =
+      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"formId" => "231222df222"})
 
-    IO.inspect(result, label: "result")
-
-    # assert error.message == "WhatsApp form not found"
+    assert error.message ==
+             "Something unexpected has happened, please reach out to Glific team over discord to get this resolved"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",
