@@ -13,7 +13,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id}, _resolution) do
     with {:ok, %WhatsappForm{}} = {:ok, form} <-
-           WhatsappForms.get_whatsapp_form_by_meta_flow_id(id),
+           WhatsappForms.get_whatsapp_form_by_id(id),
          {:ok, updated_form} <- WhatsappForms.publish_whatsapp_form(form) do
       {:ok, %{status: "success", body: updated_form}}
     else

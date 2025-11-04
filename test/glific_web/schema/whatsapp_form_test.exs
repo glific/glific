@@ -35,17 +35,21 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         %Tesla.Env{status: 200, body: %{"status" => "success"}}
     end)
 
-    _result =
-      auth_query_gql_by(:publish_whatsapp_form, user,
-        variables: %{"id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"}
-      )
-
     {:ok, sign_up_form} =
       Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
-    assert sign_up_form.status == :published
+    _result =
+      auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
+
+    # Refetch the form from database to see the updated status
+    {:ok, updated_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
+    assert updated_form.status == :published
   end
 
   test "deactivates a whatsapp form and updates its status to inactive",
@@ -55,18 +59,20 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         %Tesla.Env{status: 200, body: %{"status" => "sucess"}}
     end)
 
-    _result =
-      auth_query_gql_by(:deactivate_wa_form, user,
-        variables: %{"formId" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"}
-      )
-
-    {:ok, contact_form} =
+    {:ok, sign_up_form} =
       Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
-    assert contact_form != nil
-    assert contact_form.status == :inactive
+    _result =
+      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"formId" => sign_up_form.id})
+
+    {:ok, updated_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
+    assert updated_form.status == :inactive
   end
 
   test "fails to deactivate WhatsApp form if the form does not exist",
@@ -76,10 +82,13 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         %Tesla.Env{status: 200, body: %{"status" => "sucess"}}
     end)
 
+    {:ok, _sign_up_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
     {:ok, %{errors: [error | _]}} =
-      auth_query_gql_by(:deactivate_wa_form, user,
-        variables: %{"formId" => "flow-8f91de44-b123-482e-bb52-77f1c3a78"}
-      )
+      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"formId" => "231222222"})
 
     assert error.message == "WhatsApp form not found"
   end
@@ -91,10 +100,13 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         %Tesla.Env{status: 200, body: %{"status" => "success"}}
     end)
 
+    {:ok, _sign_up_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
     {:ok, %{errors: [error | _]}} =
-      auth_query_gql_by(:publish_whatsapp_form, user,
-        variables: %{"id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df"}
-      )
+      auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
     assert error.message == "Failed to publish WhatsApp Form: WhatsApp Form not found"
   end

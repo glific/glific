@@ -18,6 +18,7 @@ defmodule Glific.WhatsappForms do
   def publish_whatsapp_form(%WhatsappForm{} = form) do
     case ApiClient.publish_wa_form(form.meta_flow_id, form.organization_id) do
       {:ok, _response} ->
+        IO.inspect("reach")
         update_form_status(form, :published)
 
       {:error, reason} ->
@@ -31,8 +32,8 @@ defmodule Glific.WhatsappForms do
   """
   @spec deactivate_wa_form(String.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  def deactivate_wa_form(meta_form_id) do
-    case get_whatsapp_form_by_meta_flow_id(meta_form_id) do
+  def deactivate_wa_form(form_id) do
+    case get_whatsapp_form_by_id(form_id) do
       {:error, _} ->
         {:error, "WhatsApp form not found"}
 
@@ -42,12 +43,12 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  Fetches a WhatsApp form from the database using its Meta Flow ID.
+  Fetches a WhatsApp form from the database using its whatsapp form ID.
   """
-  @spec get_whatsapp_form_by_meta_flow_id(String.t()) ::
+  @spec get_whatsapp_form_by_id(String.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  def get_whatsapp_form_by_meta_flow_id(meta_flow_id) do
-    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: meta_flow_id}) do
+  def get_whatsapp_form_by_id(form_id) do
+    case Repo.fetch_by(WhatsappForm, %{id: form_id}) do
       {:ok, form} ->
         {:ok, form}
 
