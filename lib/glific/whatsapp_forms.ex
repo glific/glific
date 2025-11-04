@@ -29,11 +29,11 @@ defmodule Glific.WhatsappForms do
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
   @spec deactivate_wa_form(String.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, WhatsappForm.t()} | {:error, list()}
   def deactivate_wa_form(form_id) do
     case get_whatsapp_form_by_id(form_id) do
-      {:error, _} ->
-        {:error, "WhatsApp form not found"}
+      {:error, reason} ->
+        {:error, reason}
 
       {:ok, %WhatsappForm{}} = {:ok, form} ->
         update_form_status(form, :inactive)
@@ -44,15 +44,9 @@ defmodule Glific.WhatsappForms do
   Fetches a WhatsApp form from the database using its whatsapp form ID.
   """
   @spec get_whatsapp_form_by_id(String.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, WhatsappForm.t()} | {:error, list()}
   def get_whatsapp_form_by_id(form_id) do
-    case Repo.fetch_by(WhatsappForm, %{id: form_id}) do
-      {:ok, form} ->
-        {:ok, form}
-
-      {:error, _} ->
-        {:error, "WhatsApp Form not found"}
-    end
+    Repo.fetch_by(WhatsappForm, %{id: form_id})
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
