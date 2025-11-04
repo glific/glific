@@ -25,14 +25,15 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   Deactivates an existing WhatsApp form.
   """
   @spec deactivate_wa_form(any(), %{form_id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, String.t()}
+          {:ok, %{status: String.t(), body: WhatsappForm.t()}} | {:error, any()}
   def deactivate_wa_form(_parent, %{form_id: form_id}, _resolution) do
-    case WhatsappForms.deactivate_wa_form(form_id) do
-      {:ok, updated_form} ->
-        {:ok, %{status: "success", body: updated_form}}
-
-      {:error, msg} ->
-        {:error, msg}
+    with {:ok, %WhatsappForm{}} = {:ok, form} <-
+           WhatsappForms.get_whatsapp_form_by_id(form_id),
+         {:ok, updated_form} <- WhatsappForms.deactivate_wa_form(form) do
+      {:ok, %{status: "success", body: updated_form}}
+    else
+      {:error, reason} ->
+        {:error, "Failed to publish WhatsApp Form: #{reason}"}
     end
   end
 end

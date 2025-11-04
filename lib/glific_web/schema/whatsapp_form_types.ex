@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   GraphQL Representation of Glific's WhatsApp Form DataType
   """
   use Absinthe.Schema.Notation
+
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 

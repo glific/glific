@@ -30,14 +30,8 @@ defmodule Glific.WhatsappForms do
   """
   @spec deactivate_wa_form(String.t()) ::
           {:ok, WhatsappForm.t()} | {:error, list()}
-  def deactivate_wa_form(form_id) do
-    case get_whatsapp_form_by_id(form_id) do
-      {:error, reason} ->
-        {:error, reason}
-
-      {:ok, %WhatsappForm{}} = {:ok, form} ->
-        update_form_status(form, :inactive)
-    end
+  def deactivate_wa_form(form) do
+    update_form_status(form, :inactive)
   end
 
   @doc """
