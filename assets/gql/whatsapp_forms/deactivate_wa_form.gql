@@ -1,5 +1,5 @@
-mutation deactivateWaForm($formId: ID!) {
-  deactivateWaForm(formId: $formId) {
+mutation deactivateWaForm($id: ID!) {
+  deactivateWaForm(id: $id) {
     status
     body {
       id

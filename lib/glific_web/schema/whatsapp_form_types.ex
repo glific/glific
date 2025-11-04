@@ -32,7 +32,8 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
 
     @desc "Deactivate a WhatsApp Form"
     field :deactivate_wa_form, type: :wa_form_response do
-      arg(:form_id, non_null(:id))
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.deactivate_wa_form/3)
     end
   end
