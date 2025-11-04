@@ -9,7 +9,7 @@
   },
   {
     "name": "parse_via_gpt_vision",
-    "body": "{\n  \"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n  \"url\": \"@results.image\",\n  \"model\": \"gpt-4o-mini\"\n}",
+    "body": "{\n\"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n  \"url\": \"@results.image\",\n  \"model\": \"gpt-4o-mini\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
