@@ -302,7 +302,7 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Key is repeated. Repeated key: key1"
+      assert updated_sheet.failure_reason == "Key: has already been taken (Value: key1)"
 
       # No sheet data should be created
       sheet_data_count =
@@ -335,7 +335,7 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Required value is missing. Missing value: key"
+      assert updated_sheet.failure_reason == "Key: can't be blank"
 
       # No sheet data should be created
       sheet_data_count =
