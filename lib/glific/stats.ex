@@ -17,6 +17,7 @@ defmodule Glific.Stats do
     Partners,
     Partners.Saas,
     Repo,
+    RepoReplica,
     Reports,
     Stats.Stat,
     Users.User
@@ -53,12 +54,12 @@ defmodule Glific.Stats do
   """
   @spec list_stats(map()) :: list()
   def list_stats(args) do
-    Repo.list_filter(args, Stat, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    RepoReplica.list_filter(args, Stat, &RepoReplica.opts_with_inserted_at/2, &filter_with/2)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    query = Repo.filter_with(query, filter)
+    query = RepoReplica.filter_with(query, filter)
     # these filters are specific to stats only.
     # We might want to move them in the repo in the future.
 
@@ -82,7 +83,7 @@ defmodule Glific.Stats do
   """
   @spec count_stats(map()) :: integer
   def count_stats(args),
-    do: Repo.count_filter(args, Stat, &filter_with/2)
+    do: RepoReplica.count_filter(args, Stat, &filter_with/2)
 
   @doc """
   Top level function to generate stats for all active organizations
@@ -215,7 +216,7 @@ defmodule Glific.Stats do
   @spec make_result(map(), Ecto.Query.t(), tuple(), atom()) :: map()
   defp make_result(result, query, period_date, key) do
     query
-    |> Repo.all(skip_organization_id: true, timeout: 120_000)
+    |> RepoReplica.all(skip_organization_id: true, timeout: 120_000)
     |> Enum.reduce(
       result,
       fn [cnt, org_id], result -> add(result, {period_date, org_id}, key, cnt) end
@@ -491,7 +492,7 @@ defmodule Glific.Stats do
       messages: sum(s.messages),
       users: max(s.users)
     })
-    |> Repo.one()
+    |> RepoReplica.one()
   end
 
   @spec clean_data(any()) :: {:safe, [any()]}
