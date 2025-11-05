@@ -10,12 +10,14 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, base_url},
-      {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-      Tesla.Middleware.Telemetry
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, base_url},
+        {Tesla.Middleware.Headers, headers(api_key)},
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
+      ] ++ Glific.get_tesla_retry_middleware()
+    )
   end
 
   @doc """
