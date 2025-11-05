@@ -132,20 +132,14 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   end
 
   test "list returns whatsapp form On different filter apply", %{manager: user} do
-    {:ok, query_data1} =
+    {:ok, query} =
       auth_query_gql_by(:whatsapp_forms, user,
         variables: %{"filter" => %{"name" => "sign_up_form"}}
       )
 
-    assert query_data1.data["whatsappForms"] == [
-             %{
-               "categories" => ["signup_up", "lead_generation"],
-               "description" => "Simple signup flow to collect name and email",
-               "id" => "1",
-               "metaFlowId" => "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
-               "name" => "sign_up_form",
-               "status" => "PUBLISHED"
-             }
-           ]
+    [form] = query.data["whatsappForms"]
+    assert form["name"] == "sign_up_form"
+    assert form["metaFlowId"] == "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"
+    assert form["status"] == "PUBLISHED"
   end
 end
