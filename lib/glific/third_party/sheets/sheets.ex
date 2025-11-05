@@ -509,18 +509,21 @@ defmodule Glific.Sheets do
 
   defp trim_value(value), do: value
 
+  @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
   defp generate_error_message(changeset) do
     changeset
     |> Ecto.Changeset.traverse_errors(&format_error/1)
     |> Enum.map_join(", ", &format_field_error(&1, changeset))
   end
 
+  @spec format_error({String.t(), Keyword.t()}) :: String.t()
   defp format_error({msg, opts}) do
     Enum.reduce(opts, msg, fn {key, value}, acc ->
       String.replace(acc, "%{#{key}}", to_string(value))
     end)
   end
 
+  @spec format_field_error({atom(), String.t()}, Ecto.Changeset.t()) :: String.t()
   defp format_field_error({field, message}, changeset) do
     field_name = field |> Atom.to_string() |> String.capitalize()
 
