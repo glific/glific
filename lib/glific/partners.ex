@@ -29,6 +29,7 @@ defmodule Glific.Partners do
     Providers.Gupshup.PartnerAPI,
     Providers.Maytapi.WAWorker,
     Repo,
+    RepoReplica,
     Settings.Language,
     Stats,
     Users.User
@@ -548,6 +549,7 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
+      |> Flags.set_is_whatsapp_forms_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -846,7 +848,7 @@ defmodule Glific.Partners do
   @spec perform_handler((... -> nil), map() | nil, non_neg_integer(), String.t() | nil) :: any
   defp perform_handler(handler, handler_args, org_id, org_name) do
     Repo.put_process_state(org_id)
-
+    RepoReplica.put_process_state(org_id)
     Logger.info("Starting processes for org id: #{org_id}")
 
     if is_nil(handler_args) do
@@ -1280,6 +1282,7 @@ defmodule Glific.Partners do
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
+      "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),

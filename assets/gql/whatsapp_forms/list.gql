@@ -1,0 +1,10 @@
+query whatsapp_forms($filter: WhatsappFormFilter) {
+  whatsappForms(filter: $filter) {
+    id
+    name
+    status
+    description
+    metaFlowId
+    categories
+  }
+}

@@ -415,6 +415,172 @@ if Code.ensure_loaded?(Faker) do
       {contact, user}
     end
 
+    @doc """
+    Seeds sample WhatsApp Forms (Flows) for the given organization.
+    These mimic Meta Playground JSON definitions.
+    """
+    @spec seed_whatsapp_forms(Organization.t() | nil) :: :ok
+    def seed_whatsapp_forms(organization \\ nil) do
+      organization = get_organization(organization)
+
+      forms = [
+        %{
+          name: "sign_up_form",
+          description: "Simple signup flow to collect name and email",
+          meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
+          status: :published,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Sign Up",
+                "description" => "Please enter your details",
+                "fields" => [
+                  %{"id" => "name", "label" => "Full Name", "type" => "text", "required" => true},
+                  %{"id" => "email", "label" => "Email", "type" => "email", "required" => true}
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Submit"}]
+              }
+            ]
+          },
+          categories: [:signup_up, :lead_generation],
+          organization_id: organization.id
+        },
+        %{
+          name: "contact_us_form",
+          description: "Feedback and queries collection form",
+          meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
+          status: :draft,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Contact Us",
+                "description" => "Tell us how we can help you",
+                "fields" => [
+                  %{
+                    "id" => "query",
+                    "label" => "Your Query",
+                    "type" => "text",
+                    "required" => true
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Send"}]
+              }
+            ]
+          },
+          categories: [:contact_us],
+          organization_id: organization.id
+        },
+        %{
+          name: "feedback_form",
+          description: "Inactive form for collecting customer satisfaction feedback",
+          meta_flow_id: "flow-7a12cd90-c6e4-4e56-9a23-001f89b2a8b1",
+          status: :inactive,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Feedback",
+                "description" => "We’d love to hear your thoughts",
+                "fields" => [
+                  %{
+                    "id" => "rating",
+                    "label" => "Rate your experience (1-5)",
+                    "type" => "number",
+                    "required" => true
+                  },
+                  %{
+                    "id" => "comments",
+                    "label" => "Additional Comments",
+                    "type" => "text",
+                    "required" => false
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Submit Feedback"}]
+              }
+            ]
+          },
+          categories: [:survey, :customer_support],
+          organization_id: organization.id
+        },
+        %{
+          name: "newsletter_subscription_form",
+          description: "Draft form to collect email subscriptions for newsletters",
+          meta_flow_id: "flow-2a73be22-0a11-4a6d-bb77-8c21df5cdb92",
+          status: :draft,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Subscribe",
+                "description" => "Join our newsletter to stay updated",
+                "fields" => [
+                  %{
+                    "id" => "email",
+                    "label" => "Email Address",
+                    "type" => "email",
+                    "required" => true
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Subscribe"}]
+              }
+            ]
+          },
+          categories: [:customer_support],
+          organization_id: organization.id
+        },
+        %{
+          name: "event_registration_form",
+          description: "Form for users to register for upcoming events or webinars",
+          meta_flow_id: "flow-6c45ae11-8f76-4e9c-ae56-9f6d9a2b4a90",
+          status: :published,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Event Registration",
+                "description" => "Register for our upcoming event",
+                "fields" => [
+                  %{
+                    "id" => "full_name",
+                    "label" => "Full Name",
+                    "type" => "text",
+                    "required" => true
+                  },
+                  %{
+                    "id" => "email",
+                    "label" => "Email Address",
+                    "type" => "email",
+                    "required" => true
+                  },
+                  %{
+                    "id" => "event_choice",
+                    "label" => "Select Event",
+                    "type" => "dropdown",
+                    "required" => true,
+                    "options" => ["Webinar", "Workshop", "Conference"]
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Register"}]
+              }
+            ]
+          },
+          categories: [:customer_support],
+          organization_id: organization.id
+        }
+      ]
+
+      Enum.each(forms, fn form ->
+        Repo.insert!(struct(Glific.WhatsappForms.WhatsappForm, form))
+      end)
+    end
+
     @doc false
     @spec seed_users(Organization.t() | nil) :: Users.User.t()
     def seed_users(organization \\ nil) do
