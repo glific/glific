@@ -119,8 +119,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   # Private
-  @spec parse_kaapi_response(Tesla.Env.result()) ::
-          {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, any()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}

@@ -71,9 +71,12 @@ defmodule Glific.Clients.CommonWebhook do
         {:ok, body} ->
           Map.merge(%{success: true}, body)
 
-        {:error, reason} ->
-          result = Jason.encode!(reason.body)
+        {:error, %{status: _status, body: body}} ->
+          result = Jason.encode!(body)
           %{success: false, reason: result}
+
+        {:error, reason} ->
+          %{success: false, reason: inspect(reason)}
       end
     else
       do_call_and_wait(fields, headers)
