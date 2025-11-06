@@ -416,8 +416,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Builds and returns the request headers for the given authentication type.
+  """
   @spec headers(atom(), Keyword.t()) :: list()
-  defp headers(:app_token, opts) do
+  def headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
     case get_partner_app_token(org_id) do
@@ -431,7 +434,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  defp headers(:partner_token, _opts) do
+  def headers(:partner_token, _opts) do
     get_partner_token()
     |> case do
       {:ok, %{partner_token: partner_token}} ->
@@ -577,12 +580,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     app_id
   end
 
+  @doc """
+  Returns the complete application URL for the given organization.
+  """
   @spec app_url!(non_neg_integer()) :: String.t()
-  defp app_url!(org_id),
-    do: @app_url <> app_id!(org_id)
+  def app_url!(org_id), do: @app_url <> app_id!(org_id)
 
   @spec app_url(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
-  defp app_url(org_id) do
+  def app_url(org_id) do
     with {:ok, app_id} <- app_id(org_id) do
       {:ok, @app_url <> app_id}
     end

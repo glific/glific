@@ -133,6 +133,8 @@ defmodule GlificWeb.Schema do
     import_fields(:wa_poll_queries)
 
     import_fields(:certificate_queries)
+
+    import_fields(:whatsapp_form_queries)
   end
 
   mutation do

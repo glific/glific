@@ -11,59 +11,83 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   require Logger
 
-  @endpoint "https://partner.gupshup.io/partner/app/"
+  @spec client(keyword()) :: Tesla.Client.t()
+  defp client(opts) do
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, Keyword.fetch!(opts, :url)},
+        {Tesla.Middleware.Headers, Keyword.fetch!(opts, :headers)},
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Telemetry,
+         metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
+      ] ++ Glific.get_tesla_retry_middleware()
+    )
+  end
 
   @doc """
   Creates a WhatsApp form via Gupshup Partner API.
   """
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(params) do
-    url = "#{get_url(params.organization_id)}/flows"
-    headers = build_headers(params.organization_id)
+    url = PartnerAPI.app_url!(params.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
 
     payload =
       %{
         name: params.name,
-        categories: params.categories,
-        flow_json: params.flow_json
+        categories: Enum.map(params.categories, &String.upcase/1),
+        flow_json: params.form_json
       }
-      |> Jason.encode!()
 
-    post(url, payload, headers: headers) |> parse_response()
+    client(url: url, headers: headers)
+    |> Tesla.post("/flows", payload, headers: headers)
+    |> parse_response()
   end
 
-  @spec get_url(non_neg_integer()) :: String.t()
-  defp get_url(organization_id) do
-    case PartnerAPI.app_id(organization_id) do
-      {:ok, app_id} -> @endpoint <> "#{app_id}"
-      {:error, reason} -> raise "Unable to get app_id: #{reason}"
-    end
+  @doc """
+  Updates a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  def update_whatsapp_form(meta_flow_id, params) do
+    url = PartnerAPI.app_url!(params.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
+
+    payload =
+      %{
+        name: params.name,
+        categories: Enum.map(params.categories, &String.upcase/1),
+        flow_json: params.form_json
+      }
+
+    client([url: url, headers: headers])
+    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> parse_response()
   end
 
-  @spec build_headers(non_neg_integer()) :: list({String.t(), String.t()})
-  defp build_headers(organization_id) do
-    {:ok, %{partner_app_token: partner_app_token}} =
-      PartnerAPI.get_partner_app_token(organization_id)
+  @doc """
+  Publishes a WhatsApp Flow Form for a given organization via the Gupshup Partner API.
+  """
+  @spec publish_wa_form(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def publish_wa_form(flow_id, organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    [
-      {"Content-Type", "application/json"},
-      {"token", partner_app_token}
-    ]
+    post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
+    |> parse_response()
   end
 
+  @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
+          {:ok, map()} | {:error, String.t()}
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
-    resp_body = body |> Jason.decode!()
-    {:ok, resp_body}
+    {:ok, body}
   end
 
   defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
-    case Jason.decode(body) do
-      {:ok, %{"message" => message}} when is_binary(message) ->
-        {:error, message}
-
-      _ ->
-        {:error, "Something went wrong"}
-    end
+    {:error, body}
   end
+
+  defp parse_response({:error, reason}),
+    do: {:error, inspect(reason)}
 end

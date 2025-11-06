@@ -74,6 +74,27 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   end
 
   @doc """
+  Updates a WhatsApp form record in the database
+  """
+  @spec update_whatsapp_form(non_neg_integer(), map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  def update_whatsapp_form(id, attrs) do
+    whatsapp_form = Repo.get!(WhatsappForm, id)
+
+    whatsapp_form
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Fetches a WhatsApp form by its ID
+  """
+  @spec get_whatsapp_form_by_id(non_neg_integer()) :: {:ok, WhatsappForm.t()} | {:error, any()}
+  def get_whatsapp_form_by_id(id) do
+    Repo.fetch_by(WhatsappForm, %{id: id})
+  end
+
+  @doc """
   Counts the number of WhatsApp forms for a given organization
   """
   @spec count_by_organization(non_neg_integer()) :: non_neg_integer()
