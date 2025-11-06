@@ -14,8 +14,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
   @spec whatsapp_form(any(), %{id: non_neg_integer()}, Absinthe.Resolution.t()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, any()}
-  def whatsapp_form(_, %{id: id}, _) do
-    with {:ok, whatsapp_form} <- WhatsappForms.WhatsappForm.get_whatsapp_form_by_id(id) do
+  def whatsapp_form(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, whatsapp_form} <-
+           Repo.fetch_by(WhatsappForm, %{id: id, organization_id: user.organization_id}) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -43,8 +44,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
   @spec update_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_whatsapp_form(_, %{id: id, input: params}, _) do
-    with {:ok, form} <- Repo.fetch_by(WhatsappForm, %{id: id}) do
+  def update_whatsapp_form(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, form} <-
+           Repo.fetch_by(WhatsappForm, %{id: id, organization_id: user.organization_id}) do
       WhatsappForms.update_whatsapp_form(form, params)
     end
   end
