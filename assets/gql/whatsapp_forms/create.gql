@@ -1,0 +1,18 @@
+mutation CreateWhatsappForm($input: WhatsappFormInput!) {
+  createWhatsappForm(input: $input) {
+    errors {
+      message
+    }
+    whatsappForm {
+      categories
+      definition
+      description
+      id
+      insertedAt
+      metaFlowId
+      name
+      status
+      updatedAt
+    }
+  }
+}

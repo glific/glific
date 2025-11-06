@@ -1,93 +1,151 @@
 defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
   use GlificWeb.ConnCase
+  use Wormwood.GQLCase
 
   alias Glific.{
-    Providers.Gupshup.WhatsappForms.ApiClient
+    Providers.Gupshup.WhatsappForms.ApiClient,
+    WhatsappForms
   }
 
-  @meta_flow_id "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
   @org_id 1
+  @meta_flow_id "1234567890"
   @form_json %{
-    version: "7.2",
-    screens: [
+    "version" => "7.2",
+    "screens" => [
       %{
-        id: "RECOMMEND",
-        title: "Feedback 1 of 2",
-        data: %{},
-        layout: %{},
+        "id" => "RECOMMEND",
+        "title" => "Feedback 1 of 2",
+        "data" => %{},
+        "layout" => %{}
       },
       %{
-        id: "RATE",
-        title: "Feedback 2 of 2",
-        data: %{},
-        terminal: true,
-        success: true,
-        layout: %{},
-      },
-    ],
+        "id" => "RATE",
+        "title" => "Feedback 2 of 2",
+        "data" => %{},
+        "terminal" => true,
+        "success" => true,
+        "layout" => %{}
+      }
+    ]
   }
 
-  test "successfully creates WhatsApp form" do
-    form_params = %{
-      name: "Test Form",
-      categories: ["other"],
-      description: "This is a test form",
-      form_json: @form_json,
-      organization_id: @org_id
+  load_gql(
+    :create_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/create.gql"
+  )
+
+  load_gql(
+    :update_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/update.gql"
+  )
+
+  load_gql(
+    :whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/form_by_id.gql"
+  )
+
+  test "creates a whatsapp form", %{user: user} do
+    valid_attrs = %{
+      "name" => "Test Form",
+      "formJson" => Jason.encode!(@form_json),
+      "description" => "A test WhatsApp form",
+      "categories" => ["other"]
     }
 
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
           status: 201,
-          body: %{
-            status: "success",
-            body: %{
-              id: 1,
-              name: "Test Form",
-              categories: ["other"],
-              meta_flow_id: @meta_flow_id
-            }
-          }
+          body: %{id: "1519604592614438", status: "success", validation_errors: []}
         }
     end)
 
-    assert {:ok, response} = ApiClient.create_whatsapp_form(form_params)
-    assert response.status == "success"
-    assert response.body.name == "Test Form"
-    assert response.body.categories == ["other"]
+    result =
+      auth_query_gql_by(:create_whatsapp_form, user,
+        variables: %{
+          "input" => valid_attrs
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert "Test Form" = query_data.data["createWhatsappForm"]["whatsappForm"]["name"]
   end
 
-  test "successfully updates WhatsApp form" do
-    form_id = 1
-    update_params = %{
-      name: "Updated Test Form",
-      description: "This is an updated test form",
-      categories: ["customer_support"],
-      form_json: @form_json,
-      organization_id: @org_id
+  test "updates a whatsapp form", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 201,
+          body: %{id: "1519604592614438", status: "success", validation_errors: []}
+        }
+    end)
 
+    {:ok, %{whatsapp_form: whatsapp_form}} =
+      WhatsappForms.create_whatsapp_form(%{
+        name: "Initial Form",
+        form_json: @form_json,
+        description: "Initial description",
+        categories: ["other"],
+        organization_id: user.organization_id
+      })
+
+    valid_update_attrs = %{
+      "name" => "Updated Test Form",
+      "formJson" => Jason.encode!(@form_json),
+      "description" => "An updated test WhatsApp form",
+      "categories" => ["other"]
     }
 
     Tesla.Mock.mock(fn
       %{method: :put} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            status: "success",
-            body: %{
-              id: form_id,
-              name: "Updated Test Form",
-              description: "This is an updated test form",
-              categories: ["customer_support"]
-            }
-          }
+          body: %{status: "success", success: true}
         }
     end)
 
-    assert {:ok, response} = ApiClient.update_whatsapp_form(form_id, update_params)
-    assert response.status == "success"
-    assert response.body.name == "Updated Test Form"
+    result =
+      auth_query_gql_by(:update_whatsapp_form, user,
+        variables: %{
+          "updateWhatsappFormId" => whatsapp_form.id,
+          "input" => valid_update_attrs
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert "Updated Test Form" = query_data.data["updateWhatsappForm"]["whatsappForm"]["name"]
+  end
+
+  test "get whatsapp form", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 201,
+          body: %{id: "1519604592614438", status: "success", validation_errors: []}
+        }
+    end)
+
+    {:ok, %{whatsapp_form: whatsapp_form}} =
+      WhatsappForms.create_whatsapp_form(%{
+        name: "Initial Form",
+        form_json: @form_json,
+        description: "Initial description",
+        categories: ["other"],
+        organization_id: user.organization_id
+      })
+
+    result =
+      auth_query_gql_by(:whatsapp_form, user,
+        variables: %{
+          "whatsappFormId" => whatsapp_form.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert "Initial Form" = query_data.data["whatsappForm"]["whatsappForm"]["name"]
   end
 
   test "successfully publishes WhatsApp form" do
@@ -98,7 +156,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
           body: %{
             status: "success",
             body: %{
-              meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+              meta_flow_id: "1234567890"
             }
           }
         }

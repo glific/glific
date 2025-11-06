@@ -1,0 +1,18 @@
+query WhatsappForm($whatsappFormId: ID!) {
+  whatsappForm(id: $whatsappFormId) {
+    whatsappForm {
+      categories
+      definition
+      description
+      id
+      insertedAt
+      metaFlowId
+      name
+      status
+      updatedAt
+    }
+    errors {
+      message
+    }
+  }
+}
