@@ -53,7 +53,6 @@ defmodule Glific.WhatsappForms do
   @spec prepare_db_attrs(map(), map(), :create | :update) ::
           {:ok, map()}
   defp prepare_db_attrs(validated_attrs, api_response, :create) do
-
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
@@ -63,7 +62,6 @@ defmodule Glific.WhatsappForms do
       description: Map.get(validated_attrs, :description),
       categories: validated_attrs.categories |> Enum.map(&String.downcase/1)
     }
-
 
     {:ok, db_attrs}
   end
