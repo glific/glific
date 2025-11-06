@@ -6,7 +6,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   using the Gupshup Partner API endpoints.
   """
 
-  use Tesla
   alias Glific.Providers.Gupshup.PartnerAPI
 
   require Logger
@@ -59,7 +58,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         flow_json: params.form_json
       }
 
-    client([url: url, headers: headers])
+    client(url: url, headers: headers)
     |> Tesla.put("/flows/#{meta_flow_id}", payload)
     |> parse_response()
   end
@@ -73,7 +72,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
+    Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
     |> parse_response()
   end
 

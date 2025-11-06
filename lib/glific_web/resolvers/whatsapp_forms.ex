@@ -4,6 +4,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
 
   alias Glific.{
+    Repo,
     WhatsappForms,
     WhatsappForms.WhatsappForm
   }
@@ -11,7 +12,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @doc """
   Retrieves a WhatsApp form by ID
   """
-@spec whatsapp_form(any(), %{id: non_neg_integer()}, Absinthe.Resolution.t()) ::
+  @spec whatsapp_form(any(), %{id: non_neg_integer()}, Absinthe.Resolution.t()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, any()}
   def whatsapp_form(_, %{id: id}, _) do
     with {:ok, whatsapp_form} <- WhatsappForms.WhatsappForm.get_whatsapp_form_by_id(id) do
@@ -43,7 +44,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @spec update_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_whatsapp_form(_, %{id: id, input: params}, _) do
-    WhatsappForms.update_whatsapp_form(id, params)
+    with {:ok, form} <- Repo.fetch_by(WhatsappForm, %{id: id}) do
+      WhatsappForms.update_whatsapp_form(form, params)
+    end
   end
 
   @doc """

@@ -444,7 +444,7 @@ if Code.ensure_loaded?(Faker) do
               }
             ]
           },
-          categories: [:signup_up, :lead_generation],
+          categories: [:sign_up, :lead_generation],
           organization_id: organization.id
         },
         %{
