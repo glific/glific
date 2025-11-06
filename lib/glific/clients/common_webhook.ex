@@ -36,7 +36,6 @@ defmodule Glific.Clients.CommonWebhook do
       {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
       {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-      kaapi_config = Application.fetch_env!(:glific, ApiClient)
 
       signature_payload = %{
         "organization_id" => organization_id,
@@ -68,33 +67,13 @@ defmodule Glific.Clients.CommonWebhook do
         |> maybe_put_response_id(fields)
         |> Jason.encode!()
 
-      Glific.Metrics.increment("Kaapi Requests")
-
-      client =
-        Tesla.client([
-          {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-          {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
-        ])
-
-      client
-      |> Tesla.post(
-        "api/v1/responses",
-        payload,
-        headers: headers,
-        opts: [adapter: [recv_timeout: 300_000]]
-      )
-      |> case do
-        {:ok, %Tesla.Env{status: 200, body: body}} ->
+      case ApiClient.send_response(payload) do
+        {:ok, body} ->
           Map.merge(%{success: true}, body)
 
-        {:ok, %Tesla.Env{status: _status, body: body}} ->
-          Glific.Metrics.increment("Kaapi Failed")
-          reason = Jason.encode!(body)
-          %{success: false, reason: reason}
-
         {:error, reason} ->
-          if reason == :timeout, do: Glific.Metrics.increment("Kaapi Timeout")
-          %{success: false, reason: inspect(reason)}
+          result = Jason.encode!(reason.body)
+          %{success: false, reason: result}
       end
     else
       do_call_and_wait(fields, headers)

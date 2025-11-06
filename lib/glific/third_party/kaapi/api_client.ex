@@ -49,6 +49,20 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Send a response payload to Kaapi
+  """
+  @spec send_response(String.t()) :: {:ok, any()} | {:error, any()}
+  def send_response(payload) do
+    api_key = kaapi_config(:kaapi_api_key)
+    opts = [adapter: [recv_timeout: 300_000]]
+
+    api_key
+    |> client()
+    |> Tesla.post("/api/v1/responses", payload, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Create an assistant in Kaapi
   """
   @spec create_assistant(map(), binary()) :: {:ok, map()} | {:error, String.t()}
