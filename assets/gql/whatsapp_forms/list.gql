@@ -1,10 +1,11 @@
-query whatsapp_forms($filter: WhatsappFormFilter) {
-  whatsappForms(filter: $filter) {
+query list_whatsapp_forms($filter: WhatsappFormFilter) {
+  listWhatsappForms(filter: $filter) {
     id
     name
     status
     description
     metaFlowId
     categories
+    definition
   }
 }

@@ -12,6 +12,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :name, :string
     field :status, :whatsapp_form_status_enum
     field :description, :string
+    field :definition, :json
     field :meta_flow_id, :string
     field :categories, list_of(:string)
   end
@@ -32,24 +33,28 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
 
     @desc "Match the status"
     field(:status, :whatsapp_form_status_enum)
-
-    @desc "Match the categories"
-    field :categories, list_of(:string)
   end
 
   object :whatsapp_form_queries do
-    @desc "Get a count of all contacts filtered by various criteria"
+    @desc "Get a count of all whatsapp forms filtered by various criteria"
     field :count_whatsapp_forms, :integer do
       arg(:filter, :whatsapp_form_filter)
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.count_whatsapp_forms/3)
     end
 
+    @desc "get the details of one whatsapp form by id"
+    field :get_whatsapp_form_by_id, :whatsapp_form do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WhatsappForms.get_whatsapp_form_by_id/3)
+    end
+
     @desc "Get a list of all whatsapp forms filtered by various criteria"
-    field :whatsapp_forms, list_of(:whatsapp_form) do
+    field :list_whatsapp_forms, list_of(:whatsapp_form) do
       arg(:filter, :whatsapp_form_filter)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.WhatsappForms.whatsapp_form/3)
+      resolve(&Resolvers.WhatsappForms.list_whatsapp_forms/3)
     end
   end
 

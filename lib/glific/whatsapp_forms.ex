@@ -51,7 +51,7 @@ defmodule Glific.WhatsappForms do
     do: Repo.list_filter(args, WhatsappForm, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
-  Return the count of whatsapp forms, using the same filter as list_contacts
+  Return the count of whatsapp forms
   """
   @spec count_whatsapp_forms(map()) :: integer
   def count_whatsapp_forms(args),
@@ -70,9 +70,6 @@ defmodule Glific.WhatsappForms do
 
       {:meta_flow_id, meta_flow_id}, query ->
         from(q in query, where: q.meta_flow_id == ^meta_flow_id)
-
-      {:categories, categories}, query ->
-        from(q in query, where: q.categories == ^categories)
     end)
   end
 

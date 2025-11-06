@@ -32,9 +32,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @doc """
   Get the list of whatsapp forms filtered by args
   """
-  @spec whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec list_whatsapp_forms(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def whatsapp_form(_, args, _) do
+  def list_whatsapp_forms(_, args, _) do
     {:ok, WhatsappForms.list_whatsapp_forms(args)}
   end
 
@@ -52,5 +52,14 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
       {:error, reason} ->
         {:error, "Failed to publish WhatsApp Form: #{reason}"}
     end
+  end
+
+  @doc """
+  Get a specific whatsapp form by id
+  """
+  @spec get_whatsapp_form_by_id(any(), %{id: String.t()}, any()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def get_whatsapp_form_by_id(_, %{id: id}, _) do
+    WhatsappForms.get_whatsapp_form_by_id(id)
   end
 end
