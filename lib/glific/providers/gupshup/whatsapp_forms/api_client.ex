@@ -36,7 +36,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
       %{
         name: params.name,
         categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.flow_json
+        flow_json: params.form_json
       }
 
     client(url: url, headers: headers)
@@ -49,18 +49,32 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   """
   @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(meta_flow_id, params) do
-    url = "#{PartnerAPI.app_url!(params.organization_id)}/flows/#{meta_flow_id}"
+    url = PartnerAPI.app_url!(params.organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
 
     payload =
       %{
         name: params.name,
-        categories: params.categories,
-        flow_json: params.flow_json
+        categories: Enum.map(params.categories, &String.upcase/1),
+        flow_json: params.form_json
       }
-      |> Jason.encode!()
 
-    put(url, payload, headers: headers) |> parse_response()
+    client([url: url, headers: headers])
+    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> parse_response()
+  end
+
+  @doc """
+  Publishes a WhatsApp Flow Form for a given organization via the Gupshup Partner API.
+  """
+  @spec publish_wa_form(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def publish_wa_form(flow_id, organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
+    |> parse_response()
   end
 
   @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
@@ -71,12 +85,9 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   end
 
   defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
-    case body do
-      %{:message => message} when is_binary(message) ->
-        {:error, message}
-
-      _ ->
-        {:error, "Something went wrong"}
-    end
+    {:error, body}
   end
+
+  defp parse_response({:error, reason}),
+    do: {:error, inspect(reason)}
 end
