@@ -1,7 +1,6 @@
 mutation publishWhatsappForm($id: ID!) {
   publishWhatsappForm(id: $id) {
-    status
-    body {
+    whatsappForm {
       id
       name
       description

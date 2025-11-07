@@ -1,7 +1,6 @@
 mutation deactivateWaForm($id: ID!) {
   deactivateWaForm(id: $id) {
-    status
-    body {
+    whatsappForm {
       id
       name
       description
