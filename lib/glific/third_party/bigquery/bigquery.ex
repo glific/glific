@@ -45,7 +45,8 @@ defmodule Glific.BigQuery do
     Trackers.Tracker,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -86,6 +87,7 @@ defmodule Glific.BigQuery do
     "wa_messages" => :wa_message_schema,
     "wa_reactions" => :wa_reactions_schema,
     "whatsapp_forms" => :whatsapp_form_schema,
+    "whatsapp_forms_responses" => :whatsapp_form_response_schema,
     "certificate_templates" => :certificate_templates_schema,
     "issued_certificates" => :issued_certificates_schema
   }
@@ -229,6 +231,7 @@ defmodule Glific.BigQuery do
     "wa_messages" => WAMessage,
     "wa_reactions" => WaReaction,
     "whatsapp_forms" => WhatsappForm,
+    "whatsapp_forms_responses" => WhatsappFormResponse,
     "certificate_templates" => CertificateTemplate,
     "issued_certificates" => IssuedCertificate
   }

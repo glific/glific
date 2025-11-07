@@ -3022,4 +3022,85 @@ defmodule Glific.BigQuery.Schema do
       }
     ]
   end
+
+  @doc """
+  Schema for WhatsApp Form Responses table
+  """
+  @spec whatsapp_form_response_schema() :: list(map())
+  def whatsapp_form_response_schema() do
+    [
+      %{
+        description: "Unique ID for the WhatsApp Form Response",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Raw response data from the WhatsApp Form",
+        name: "raw_response",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the form was submitted",
+        name: "submitted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "ID of the WhatsApp Form",
+        name: "whatsapp_form_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the WhatsApp Form",
+        name: "whatsapp_form_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Contact ID who submitted the form",
+        name: "contact_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Phone number of the contact who submitted the form",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the contact who submitted the form",
+        name: "contact_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
 end
