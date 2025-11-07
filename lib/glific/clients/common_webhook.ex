@@ -67,7 +67,7 @@ defmodule Glific.Clients.CommonWebhook do
         |> maybe_put_response_id(fields)
         |> Jason.encode!()
 
-      case ApiClient.send_response(payload) do
+      case ApiClient.send_response_to_kaapi(payload) do
         {:ok, body} ->
           Map.merge(%{success: true}, body)
 

@@ -51,8 +51,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Send a response payload to Kaapi
   """
-  @spec send_response(String.t()) :: {:ok, any()} | {:error, any()}
-  def send_response(payload) do
+  @spec send_response_to_kaapi(String.t()) :: {:ok, any()} | {:error, any()}
+  def send_response_to_kaapi(payload) do
     api_key = kaapi_config(:kaapi_api_key)
     opts = [adapter: [recv_timeout: 300_000]]
 
@@ -119,7 +119,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   # Private
-  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, any()} | {:error, any()}
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}
