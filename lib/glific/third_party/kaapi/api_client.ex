@@ -49,7 +49,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Calls Kaapi's Responses API with the given payload.
+  Calls Kaapi Responses API with the given payload.
   """
   @spec call_kaapi_responses_api(String.t()) :: {:ok, any()} | {:error, any()}
   def call_kaapi_responses_api(payload) do
