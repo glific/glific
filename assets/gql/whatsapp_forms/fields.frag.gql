@@ -1,0 +1,20 @@
+fragment WhatsappFormFields on WhatsappFormResult {
+  whatsappForm {
+    categories
+    definition
+    description
+    id
+    insertedAt
+    metaFlowId
+    name
+    status
+    updatedAt
+  }
+}
+
+fragment WhatsappFormErrorFields on WhatsappFormResult {
+  errors {
+    key
+    message
+  }
+}

@@ -1,21 +1,11 @@
+#import "./fields.frag.gql"
+
 mutation UpdateWhatsappForm(
   $updateWhatsappFormId: ID!
   $input: WhatsappFormInput!
 ) {
   updateWhatsappForm(id: $updateWhatsappFormId, input: $input) {
-    whatsappForm {
-      categories
-      definition
-      description
-      id
-      insertedAt
-      metaFlowId
-      name
-      status
-      updatedAt
-    }
-    errors {
-      message
-    }
+    ...WhatsappFormFields
+    ...WhatsappFormErrorFields
   }
 }
