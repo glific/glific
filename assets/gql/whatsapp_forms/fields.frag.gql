@@ -1,13 +1,13 @@
 fragment WhatsappFormFields on WhatsappFormResult {
   whatsappForm {
+    id
+    name
+    status
     categories
     definition
     description
-    id
-    insertedAt
     metaFlowId
-    name
-    status
+    insertedAt
     updatedAt
   }
 }

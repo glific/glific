@@ -79,7 +79,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   @spec update_whatsapp_form(non_neg_integer(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   def update_whatsapp_form(id, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id)
+    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id, attrs.organization_id)
 
     whatsapp_form
     |> changeset(attrs)
@@ -89,8 +89,9 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   @doc """
   Fetches a WhatsApp form by its ID
   """
-  @spec get_whatsapp_form_by_id(non_neg_integer()) :: {:ok, WhatsappForm.t()} | {:error, any()}
-  def get_whatsapp_form_by_id(id) do
-    Repo.fetch_by(WhatsappForm, %{id: id})
+  @spec get_whatsapp_form_by_id(non_neg_integer(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def get_whatsapp_form_by_id(id, org_id) do
+    Repo.fetch_by(WhatsappForm, %{id: id, organization_id: org_id})
   end
 end

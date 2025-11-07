@@ -76,15 +76,6 @@ defmodule Glific.WhatsappForms do
     update_form_status(form, :inactive)
   end
 
-  @doc """
-  Fetches a WhatsApp form from the database using its whatsapp form ID.
-  """
-  @spec get_whatsapp_form_by_id(String.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, any()}
-  def get_whatsapp_form_by_id(form_id) do
-    Repo.fetch_by(WhatsappForm, %{id: form_id})
-  end
-
   @spec update_form_status(WhatsappForm.t(), atom()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   defp update_form_status(%WhatsappForm{} = form, new_status) do
@@ -114,7 +105,8 @@ defmodule Glific.WhatsappForms do
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
-      categories: validated_attrs.categories |> Enum.map(&String.downcase/1)
+      categories: validated_attrs.categories |> Enum.map(&String.downcase/1),
+      organization_id: validated_attrs.organization_id
     }
 
     {:ok, db_attrs}
