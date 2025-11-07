@@ -33,7 +33,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :description, :string
   end
 
-
   object :whatsapp_form_queries do
     @desc "Get a WhatsApp form by ID"
     field :whatsapp_form, :whatsapp_form_result do
