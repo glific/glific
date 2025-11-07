@@ -32,7 +32,7 @@ defmodule Glific.WhatsappForms do
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- WhatsappForm.create_whatsapp_form(db_attrs) do
+         {:ok, whatsapp_form} <- create_whatsapp_form_entry(db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     else
       {:error, reason} -> {:error, reason}
@@ -46,7 +46,7 @@ defmodule Glific.WhatsappForms do
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :update),
-         {:ok, whatsapp_form} <- WhatsappForm.update_whatsapp_form(form.id, db_attrs) do
+         {:ok, whatsapp_form} <- update_whatsapp_form_entry(form.id, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -74,6 +74,15 @@ defmodule Glific.WhatsappForms do
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   def deactivate_wa_form(form) do
     update_form_status(form, :inactive)
+  end
+
+  @doc """
+  Fetches a WhatsApp form by its ID
+  """
+  @spec get_whatsapp_form_by_id(non_neg_integer(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def get_whatsapp_form_by_id(id, org_id) do
+    Repo.fetch_by(WhatsappForm, %{id: id, organization_id: org_id})
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
@@ -110,5 +119,23 @@ defmodule Glific.WhatsappForms do
     }
 
     {:ok, db_attrs}
+  end
+
+  @spec create_whatsapp_form_entry(map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  defp create_whatsapp_form_entry(attrs) do
+    %WhatsappForm{}
+    |> WhatsappForm.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec update_whatsapp_form_entry(non_neg_integer(), map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  defp update_whatsapp_form_entry(id, attrs) do
+    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id, attrs.organization_id)
+
+    whatsapp_form
+    |> WhatsappForm.changeset(attrs)
+    |> Repo.update()
   end
 end

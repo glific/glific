@@ -11,8 +11,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   alias Glific.{
     Enums.WhatsappFormCategory,
     Enums.WhatsappFormStatus,
-    Partners.Organization,
-    Repo
+    Partners.Organization
   }
 
   @type t() :: %__MODULE__{
@@ -61,37 +60,5 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name, :organization_id])
-  end
-
-  @doc """
-  Creates a WhatsApp form record in the database
-  """
-  @spec create_whatsapp_form(map()) :: {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  def create_whatsapp_form(attrs) do
-    %WhatsappForm{}
-    |> changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Updates a WhatsApp form record in the database
-  """
-  @spec update_whatsapp_form(non_neg_integer(), map()) ::
-          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  def update_whatsapp_form(id, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id, attrs.organization_id)
-
-    whatsapp_form
-    |> changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Fetches a WhatsApp form by its ID
-  """
-  @spec get_whatsapp_form_by_id(non_neg_integer(), non_neg_integer()) ::
-          {:ok, WhatsappForm.t()} | {:error, any()}
-  def get_whatsapp_form_by_id(id, org_id) do
-    Repo.fetch_by(WhatsappForm, %{id: id, organization_id: org_id})
   end
 end
