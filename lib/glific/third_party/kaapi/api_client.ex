@@ -49,10 +49,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Send a response payload to Kaapi
+  Calls Kaapi's Responses API with the given payload.
   """
-  @spec send_response_to_kaapi(String.t()) :: {:ok, any()} | {:error, any()}
-  def send_response_to_kaapi(payload) do
+  @spec call_kaapi_responses_api(String.t()) :: {:ok, any()} | {:error, any()}
+  def call_kaapi_responses_api(payload) do
     api_key = kaapi_config(:kaapi_api_key)
     opts = [adapter: [recv_timeout: 300_000]]
 
