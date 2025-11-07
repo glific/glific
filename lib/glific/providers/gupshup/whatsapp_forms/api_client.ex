@@ -39,7 +39,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
       }
 
     client(url: url, headers: headers)
-    |> Tesla.post("/flows", payload, headers: headers)
+    |> Tesla.post("/flows", payload)
     |> parse_response()
   end
 
