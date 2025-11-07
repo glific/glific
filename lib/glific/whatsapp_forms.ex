@@ -34,7 +34,7 @@ defmodule Glific.WhatsappForms do
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- WhatsappForm.create_whatsapp_form(db_attrs),
+         {:ok, whatsapp_form} <- create_whatsapp_form_entry(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     else
@@ -45,15 +45,12 @@ defmodule Glific.WhatsappForms do
   @doc """
   Updates a WhatsApp form
   """
-  @spec update_whatsapp_form(non_neg_integer(), map()) :: {:ok, map()} | {:error, any()}
-  def update_whatsapp_form(id, attrs) do
-    with {:ok, flow} <- WhatsappForm.get_whatsapp_form_by_id(id),
-         {:ok, response} <- ApiClient.update_whatsapp_form(flow.meta_flow_id, attrs),
+  @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
+  def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
+    with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
          {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :update),
-         {:ok, whatsapp_form} <- WhatsappForm.update_whatsapp_form(id, db_attrs) do
+         {:ok, whatsapp_form} <- update_whatsapp_form_entry(form.id, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -83,12 +80,12 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  Fetches a WhatsApp form from the database using its whatsapp form ID.
+  Fetches a WhatsApp form by its ID
   """
-  @spec get_whatsapp_form_by_id(String.t()) ::
+  @spec get_whatsapp_form_by_id(non_neg_integer(), non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
-  def get_whatsapp_form_by_id(form_id) do
-    Repo.fetch_by(WhatsappForm, %{id: form_id})
+  def get_whatsapp_form_by_id(id, org_id) do
+    Repo.fetch_by(WhatsappForm, %{id: id, organization_id: org_id})
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
@@ -120,15 +117,34 @@ defmodule Glific.WhatsappForms do
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
-      categories: validated_attrs.categories |> Enum.map(&String.downcase/1)
+      categories: validated_attrs.categories |> Enum.map(&String.downcase/1),
+      organization_id: validated_attrs.organization_id
     }
 
     {:ok, db_attrs}
   end
 
+  @spec create_whatsapp_form_entry(map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  defp create_whatsapp_form_entry(attrs) do
+    %WhatsappForm{}
+    |> WhatsappForm.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec update_whatsapp_form_entry(non_neg_integer(), map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  defp update_whatsapp_form_entry(id, attrs) do
+    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id, attrs.organization_id)
+
+    whatsapp_form
+    |> WhatsappForm.changeset(attrs)
+    |> Repo.update()
+  end
+
   defp maybe_set_subscription(organization_id) do
     # Check if this is the first form for the organization
-    case WhatsappForm.count_by_organization(organization_id) do
+    case count_by_organization(organization_id) do
       1 ->
         case PartnerAPI.set_subscription(organization_id, nil, ["FLOW_MESSAGE"], 3) do
           {:ok, _response} ->
@@ -144,5 +160,15 @@ defmodule Glific.WhatsappForms do
       _ ->
         :ok
     end
+  end
+
+    @doc """
+  Counts the number of WhatsApp forms for a given organization
+  """
+  @spec count_by_organization(non_neg_integer()) :: non_neg_integer()
+  defp count_by_organization(organization_id) do
+    WhatsappForm
+    |> where([w], w.organization_id == ^organization_id)
+    |> Repo.aggregate(:count, :id)
   end
 end

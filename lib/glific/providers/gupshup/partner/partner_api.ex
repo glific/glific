@@ -386,12 +386,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @doc """
-  Fetches partner app token for an organization
-  """
   @spec get_partner_app_token(non_neg_integer) ::
           {:error, String.t()} | {:ok, %{partner_app_token: any}}
-  def get_partner_app_token(org_id) do
+  defp get_partner_app_token(org_id) do
     {:ok, partner_app_token} = Caches.get(org_id, "partner_app_token", refresh_cache: false)
 
     if partner_app_token,
@@ -587,7 +584,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   def app_url!(org_id), do: @app_url <> app_id!(org_id)
 
   @spec app_url(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
-  def app_url(org_id) do
+  defp app_url(org_id) do
     with {:ok, app_id} <- app_id(org_id) do
       {:ok, @app_url <> app_id}
     end
