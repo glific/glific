@@ -58,13 +58,13 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer(), organization_id: non_neg_integer()},
           Absinthe.Resolution.t()
         ) ::
-          {:ok, %{:status => String.t(), :body => Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
           | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id, organization_id: organization_id}, _) do
     with {:ok, %WhatsappForm{} = form} <-
            WhatsappForm.get_whatsapp_form_by_id(id, organization_id),
          {:ok, updated_form} <- WhatsappForms.publish_whatsapp_form(form) do
-      {:ok, %{status: "success", body: updated_form}}
+      {:ok, %{whatsapp_form: updated_form}}
     else
       {:error, reason} ->
         {:error, "Failed to publish WhatsApp Form: #{reason}"}
@@ -79,16 +79,16 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer(), organization_id: non_neg_integer()},
           Absinthe.Resolution.t()
         ) ::
-          {:ok, %{:status => String.t(), :body => Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
           | {:error, any()}
   def deactivate_wa_form(_parent, %{id: form_id, organization_id: organization_id}, _) do
     with {:ok, %WhatsappForm{} = form} <-
            WhatsappForm.get_whatsapp_form_by_id(form_id, organization_id),
          {:ok, updated_form} <- WhatsappForms.deactivate_wa_form(form) do
-      {:ok, %{status: "success", body: updated_form}}
+      {:ok, %{whatsapp_form: updated_form}}
     else
       {:error, reason} ->
-        {:error, "Failed to publish WhatsApp Form: #{reason}"}
+        {:error, "Failed to deactivate WhatsApp Form: #{reason}"}
     end
   end
 end

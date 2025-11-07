@@ -33,11 +33,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :description, :string
   end
 
-  object :wa_form_response do
-    field :status, :string
-    field :body, :whatsapp_form
-    field(:errors, list_of(:input_error))
-  end
 
   object :whatsapp_form_queries do
     @desc "Get a WhatsApp form by ID"
@@ -67,14 +62,14 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     end
 
     @desc "Publish a WhatsApp form to Meta"
-    field :publish_whatsapp_form, :wa_form_response do
+    field :publish_whatsapp_form, :whatsapp_form_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.publish_whatsapp_form/3)
     end
 
     @desc "Deactivate a WhatsApp Form"
-    field :deactivate_wa_form, type: :wa_form_response do
+    field :deactivate_wa_form, type: :whatsapp_form_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.deactivate_wa_form/3)
