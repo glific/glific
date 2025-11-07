@@ -158,4 +158,11 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert query.data["getWhatsappFormById"]["description"] ==
              "Draft form to collect email subscriptions for newsletters"
   end
+
+  test "retrieves a WhatsApp form by ID if not found", %{manager: user} do
+    {:ok, %{data: %{"getWhatsappFormById" => %{"errors" => [%{"message" => message}]}}}} =
+      auth_query_gql_by(:get_whatsapp_form_by_id, user, variables: %{"id" => "712398717432"})
+
+    assert message == "Resource not found"
+  end
 end

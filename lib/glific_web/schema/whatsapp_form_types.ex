@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :definition, :json
     field :meta_flow_id, :string
     field :categories, list_of(:string)
+    field(:errors, list_of(:input_error))
   end
 
   object :wa_form_response do
