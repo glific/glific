@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field(:errors, list_of(:input_error))
   end
 
-  @desc "Filtering options for contacts"
+  @desc "Filtering options for WhatsApp forms"
   input_object :whatsapp_form_filter do
     @desc "Match the name"
     field(:name, :string)
