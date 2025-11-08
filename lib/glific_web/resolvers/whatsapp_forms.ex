@@ -74,17 +74,17 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @doc """
   Deactivates an existing WhatsApp form.
   """
-  @spec deactivate_wa_form(
+  @spec deactivate_whatsapp_form(
           any(),
           %{id: non_neg_integer(), organization_id: non_neg_integer()},
           Absinthe.Resolution.t()
         ) ::
           {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
           | {:error, any()}
-  def deactivate_wa_form(_parent, %{id: form_id, organization_id: organization_id}, _) do
+  def deactivate_whatsapp_form(_parent, %{id: form_id, organization_id: organization_id}, _) do
     with {:ok, %WhatsappForm{} = form} <-
            WhatsappForms.get_whatsapp_form_by_id(form_id, organization_id),
-         {:ok, updated_form} <- WhatsappForms.deactivate_wa_form(form) do
+         {:ok, updated_form} <- WhatsappForms.deactivate_whatsapp_form(form) do
       {:ok, %{whatsapp_form: updated_form}}
     else
       {:error, reason} ->

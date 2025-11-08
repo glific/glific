@@ -31,11 +31,9 @@ defmodule Glific.WhatsappForms do
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
-         {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :create),
+         {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
          {:ok, whatsapp_form} <- create_whatsapp_form_entry(db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -45,7 +43,7 @@ defmodule Glific.WhatsappForms do
   @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
-         {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :update),
+         {:ok, db_attrs} <- prepare_attrs(attrs, response, :update),
          {:ok, whatsapp_form} <- update_whatsapp_form_entry(form.id, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
@@ -70,9 +68,9 @@ defmodule Glific.WhatsappForms do
   @doc """
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
-  @spec deactivate_wa_form(WhatsappForm.t()) ::
+  @spec deactivate_whatsapp_form(WhatsappForm.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  def deactivate_wa_form(form) do
+  def deactivate_whatsapp_form(form) do
     update_form_status(form, :inactive)
   end
 
@@ -93,9 +91,9 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
-  @spec prepare_db_attrs(map(), map(), :create | :update) ::
+  @spec prepare_attrs(map(), map(), :create | :update) ::
           {:ok, map()}
-  defp prepare_db_attrs(validated_attrs, api_response, :create) do
+  defp prepare_attrs(validated_attrs, api_response, :create) do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
@@ -109,7 +107,7 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
-  defp prepare_db_attrs(validated_attrs, _, :update) do
+  defp prepare_attrs(validated_attrs, _, :update) do
     db_attrs = %{
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
