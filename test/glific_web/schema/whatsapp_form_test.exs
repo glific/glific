@@ -10,13 +10,13 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   load_gql(
     :publish_whatsapp_form,
     GlificWeb.Schema,
-    "assets/gql/whatsapp_forms/publish_wa_form.gql"
+    "assets/gql/whatsapp_forms/publish_whatsapp_form.gql"
   )
 
   load_gql(
-    :deactivate_wa_form,
+    :deactivate_whatsapp_form,
     GlificWeb.Schema,
-    "assets/gql/whatsapp_forms/deactivate_wa_form.gql"
+    "assets/gql/whatsapp_forms/deactivate_whatsapp_form.gql"
   )
 
   setup do
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       })
 
     _result =
-      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"id" => sign_up_form.id})
+      auth_query_gql_by(:deactivate_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
     {:ok, updated_form} =
       Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
@@ -73,19 +73,21 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
   test "fails to deactivate WhatsApp form if the form does not exist",
        %{manager: user} do
-    {:ok, %{errors: [error | _]}} =
-      auth_query_gql_by(:deactivate_wa_form, user, variables: %{"id" => "318182039810832"})
+    {:ok, %{data: %{"deactivateWhatsappForm" => %{"errors" => [error | _]}}}} =
+      auth_query_gql_by(:deactivate_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error.message ==
-             "Failed to deactivate WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
+    assert error["message"] ==
+             "Resource not found"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",
        %{manager: user} do
-    {:ok, %{errors: [error | _]}} =
+    {:ok, %{data: %{"publishWhatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error.message ==
-             "Failed to publish WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
+    # IO.inspect(response)
+
+    assert error["message"] ==
+             "Resource not found"
   end
 end
