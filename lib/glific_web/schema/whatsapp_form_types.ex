@@ -51,7 +51,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   end
 
   object :whatsapp_form_queries do
-
     @desc "Get a WhatsApp form by ID"
     field :whatsapp_form, :whatsapp_form_result do
       arg(:id, non_null(:id))
@@ -70,7 +69,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       resolve(&Resolvers.WhatsappForms.count_whatsapp_forms/3)
     end
 
-    @desc "get the details of one whatsapp form by id"
+    @desc "Get a WhatsApp form by ID"
     field :get_whatsapp_form_by_id, :whatsapp_form do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
@@ -86,7 +85,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   end
 
   object :whatsapp_form_mutations do
-
     @desc "Create a WhatsApp form"
     field :create_whatsapp_form, :whatsapp_form_result do
       arg(:input, non_null(:whatsapp_form_input))
@@ -99,7 +97,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       arg(:input, non_null(:whatsapp_form_input))
       resolve(&Resolvers.WhatsappForms.update_whatsapp_form/3)
     end
-
 
     @desc "Publish a WhatsApp form to Meta"
     field :publish_whatsapp_form, :whatsapp_form_result do
