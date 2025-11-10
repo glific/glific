@@ -4,7 +4,8 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
   alias Glific.{
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WhatsappForms.WhatsappForm
   }
 
   load_gql(
@@ -17,6 +18,24 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     :deactivate_wa_form,
     GlificWeb.Schema,
     "assets/gql/whatsapp_forms/deactivate_wa_form.gql"
+  )
+
+  load_gql(
+    :count_whatsapp_forms,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/count.gql"
+  )
+
+  load_gql(
+    :list_whatsapp_forms,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/list.gql"
+  )
+
+  load_gql(
+    :get_whatsapp_form_by_id,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/by_id.gql"
   )
 
   setup do
@@ -77,7 +96,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:deactivate_wa_form, user, variables: %{"id" => "318182039810832"})
 
     assert error.message ==
-             "Failed to publish WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
+             "Failed to deactivate WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",
@@ -87,5 +106,63 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert error.message ==
              "Failed to publish WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
+  end
+
+  test "count returns the number of whatsapp forms", %{manager: user} do
+    {:ok, query_data1} =
+      auth_query_gql_by(:count_whatsapp_forms, user,
+        variables: %{"filter" => %{"name" => "sign_up_form"}}
+      )
+
+    assert query_data1.data["countWhatsappForms"] == 1
+
+    {:ok, query_data3} =
+      auth_query_gql_by(:count_whatsapp_forms, user,
+        variables: %{"filter" => %{"meta_flow_id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"}}
+      )
+
+    assert query_data3.data["countWhatsappForms"] == 1
+
+    {:ok, query_data4} =
+      auth_query_gql_by(:count_whatsapp_forms, user,
+        variables: %{"filter" => %{"status" => "DRAFT"}}
+      )
+
+    assert query_data4.data["countWhatsappForms"] == 2
+  end
+
+  test "list WhatsApp forms with different filters applied", %{manager: user} do
+    {:ok, query} =
+      auth_query_gql_by(:list_whatsapp_forms, user,
+        variables: %{"filter" => %{"name" => "sign_up_form"}}
+      )
+
+    [form] = query.data["listWhatsappForms"]
+    assert form["name"] == "sign_up_form"
+    assert form["metaFlowId"] == "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"
+    assert form["status"] == "PUBLISHED"
+  end
+
+  test "retrieves a WhatsApp form by ID", %{manager: user} do
+    {:ok, answer} = Repo.fetch_by(WhatsappForm, %{name: "newsletter_subscription_form"})
+
+    {:ok, query} =
+      auth_query_gql_by(:get_whatsapp_form_by_id, user, variables: %{"id" => answer.id})
+
+    assert query.data["getWhatsappFormById"]["metaFlowId"] ==
+             "flow-2a73be22-0a11-4a6d-bb77-8c21df5cdb92"
+
+    assert query.data["getWhatsappFormById"]["status"] == "DRAFT"
+    assert query.data["getWhatsappFormById"]["id"] == "#{answer.id}"
+
+    assert query.data["getWhatsappFormById"]["description"] ==
+             "Draft form to collect email subscriptions for newsletters"
+  end
+
+  test "returns an error when a WhatsApp form with the given ID is not found", %{manager: user} do
+    {:ok, %{data: %{"getWhatsappFormById" => %{"errors" => [%{"message" => message}]}}}} =
+      auth_query_gql_by(:get_whatsapp_form_by_id, user, variables: %{"id" => "712398717432"})
+
+    assert message == "Resource not found"
   end
 end

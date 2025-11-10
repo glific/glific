@@ -43,6 +43,36 @@ defmodule Glific.WhatsappForms do
     Repo.fetch_by(WhatsappForm, %{id: form_id})
   end
 
+  @doc """
+  Returns the list of whatsapp forms.
+  """
+  @spec list_whatsapp_forms(map()) :: [WhatsappForm.t()]
+  def list_whatsapp_forms(args),
+    do: Repo.list_filter(args, WhatsappForm, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of whatsapp forms
+  """
+  @spec count_whatsapp_forms(map()) :: integer
+  def count_whatsapp_forms(args),
+    do: Repo.count_filter(args, WhatsappForm, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:status, status}, query ->
+        from(q in query, where: q.status == ^status)
+
+      {:name, name}, query ->
+        from(q in query, where: q.name == ^name)
+
+      {:meta_flow_id, meta_flow_id}, query ->
+        from(q in query, where: q.meta_flow_id == ^meta_flow_id)
+    end)
+  end
+
   @spec update_form_status(WhatsappForm.t(), atom()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   defp update_form_status(%WhatsappForm{} = form, new_status) do

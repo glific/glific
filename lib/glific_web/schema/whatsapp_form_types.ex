@@ -12,14 +12,51 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :name, :string
     field :status, :whatsapp_form_status_enum
     field :description, :string
+    field :definition, :json
     field :meta_flow_id, :string
     field :categories, list_of(:string)
+    field(:errors, list_of(:input_error))
   end
 
   object :wa_form_response do
     field :status, :string
     field :body, :whatsapp_form
     field(:errors, list_of(:input_error))
+  end
+
+  @desc "Filtering options for WhatsApp forms"
+  input_object :whatsapp_form_filter do
+    @desc "Match the name"
+    field(:name, :string)
+
+    @desc "Match the meta flow id"
+    field(:meta_flow_id, :string)
+
+    @desc "Match the status"
+    field(:status, :whatsapp_form_status_enum)
+  end
+
+  object :whatsapp_form_queries do
+    @desc "Get a count of all whatsapp forms filtered by various criteria"
+    field :count_whatsapp_forms, :integer do
+      arg(:filter, :whatsapp_form_filter)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WhatsappForms.count_whatsapp_forms/3)
+    end
+
+    @desc "get the details of one whatsapp form by id"
+    field :get_whatsapp_form_by_id, :whatsapp_form do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WhatsappForms.get_whatsapp_form_by_id/3)
+    end
+
+    @desc "Get a list of all whatsapp forms filtered by various criteria"
+    field :list_whatsapp_forms, list_of(:whatsapp_form) do
+      arg(:filter, :whatsapp_form_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.WhatsappForms.list_whatsapp_forms/3)
+    end
   end
 
   object :whatsapp_form_mutations do

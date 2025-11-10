@@ -22,6 +22,23 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   end
 
   @doc """
+  Get the count of whatsapp forms filtered by args
+  """
+  @spec count_whatsapp_forms(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_whatsapp_forms(_, args, _) do
+    {:ok, WhatsappForms.count_whatsapp_forms(args)}
+  end
+
+  @doc """
+  Get the list of whatsapp forms filtered by args
+  """
+  @spec list_whatsapp_forms(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def list_whatsapp_forms(_, args, _) do
+    {:ok, WhatsappForms.list_whatsapp_forms(args)}
+  end
+
+  @doc """
   Deactivates an existing WhatsApp form.
   """
   @spec deactivate_wa_form(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
@@ -33,7 +50,16 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
       {:ok, %{status: "success", body: updated_form}}
     else
       {:error, reason} ->
-        {:error, "Failed to publish WhatsApp Form: #{reason}"}
+        {:error, "Failed to deactivate WhatsApp Form: #{reason}"}
     end
+  end
+
+  @doc """
+  Get a specific whatsapp form by id
+  """
+  @spec get_whatsapp_form_by_id(any(), %{id: String.t()}, any()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def get_whatsapp_form_by_id(_, %{id: id}, _) do
+    WhatsappForms.get_whatsapp_form_by_id(id)
   end
 end
