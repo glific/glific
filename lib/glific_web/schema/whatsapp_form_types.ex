@@ -33,6 +33,19 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :description, :string
   end
 
+  input_object :whatsapp_form_response_input do
+    field :whatsapp_form_id, non_null(:id)
+  end
+
+  object :whatsapp_form_response do
+    field :id, :id
+    field :raw_response, :json
+    field :submitted_at, :string
+    field :contact_id, :json
+    field :inserted_at, :string
+    field :updated_at, :string
+  end
+
   object :whatsapp_form_queries do
     @desc "Get a WhatsApp form by ID"
     field :whatsapp_form, :whatsapp_form_result do
@@ -43,6 +56,12 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     @desc "List all available WhatsApp form categories"
     field :whatsapp_form_categories, list_of(:string) do
       resolve(&Resolvers.WhatsappForms.list_whatsapp_form_categories/3)
+    end
+
+    @desc "Get a whatsapp form response"
+    field :whatsapp_form_response, :whatsapp_form_response do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.WhatsappForms.whatsapp_form_response/3)
     end
   end
 

@@ -4,9 +4,18 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
 
   alias Glific.{
+    Repo,
     WhatsappForms,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse
   }
+
+  def whatsapp_form_response(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, whatsapp_form_response} <-
+           Repo.fetch_by(WhatsappFormResponse, %{id: id, organization_id: user.organization_id}) do
+      {:ok, whatsapp_form_response}
+    end
+  end
 
   @doc """
   Retrieves a WhatsApp form by ID

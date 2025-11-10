@@ -63,6 +63,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/*unknown", DefaultController, :unknown)
     end
 
+    scope "/whatsapp" do
+      post("/webhook", WhatsAppController, :webhook)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
     scope "/billing-event" do
       post("/conversations", BillingEventController, :conversations)
       post("/*unknown", DefaultController, :unknown)
