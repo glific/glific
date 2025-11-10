@@ -2958,7 +2958,7 @@ defmodule Glific.BigQuery.Schema do
   Schema for WhatsApp Forms table
   """
   @spec whatsapp_form_schema() :: list(map())
-  def whatsapp_form_schema() do
+  def whatsapp_form_schema do
     [
       %{
         description: "Unique ID for the WhatsApp Form",
@@ -3027,7 +3027,7 @@ defmodule Glific.BigQuery.Schema do
   Schema for WhatsApp Form Responses table
   """
   @spec whatsapp_form_response_schema() :: list(map())
-  def whatsapp_form_response_schema() do
+  def whatsapp_form_response_schema do
     [
       %{
         description: "Unique ID for the WhatsApp Form Response",
