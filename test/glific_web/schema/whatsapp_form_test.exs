@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:deactivate_wa_form, user, variables: %{"id" => "318182039810832"})
 
     assert error.message ==
-             "Failed to publish WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
+             "Failed to deactivate WhatsApp Form: Elixir.Glific.WhatsappForms.WhatsappFormResource not found"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",

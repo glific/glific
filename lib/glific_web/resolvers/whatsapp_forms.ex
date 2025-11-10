@@ -50,7 +50,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
       {:ok, %{status: "success", body: updated_form}}
     else
       {:error, reason} ->
-        {:error, "Failed to publish WhatsApp Form: #{reason}"}
+        {:error, "Failed to deactivate WhatsApp Form: #{reason}"}
     end
   end
 
