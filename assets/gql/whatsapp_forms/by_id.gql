@@ -1,0 +1,14 @@
+query get_whatsapp_form_by_id($id: ID!) {
+  getWhatsappFormById(id: $id) {
+    id
+    name
+    status
+    description
+    metaFlowId
+    categories
+    definition
+    errors {
+      message
+    }
+  }
+}

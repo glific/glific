@@ -506,6 +506,73 @@ if Code.ensure_loaded?(Faker) do
           },
           categories: [:survey, :customer_support],
           organization_id: organization.id
+        },
+        %{
+          name: "newsletter_subscription_form",
+          description: "Draft form to collect email subscriptions for newsletters",
+          meta_flow_id: "flow-2a73be22-0a11-4a6d-bb77-8c21df5cdb92",
+          status: :draft,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Subscribe",
+                "description" => "Join our newsletter to stay updated",
+                "fields" => [
+                  %{
+                    "id" => "email",
+                    "label" => "Email Address",
+                    "type" => "email",
+                    "required" => true
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Subscribe"}]
+              }
+            ]
+          },
+          categories: [:customer_support],
+          organization_id: organization.id
+        },
+        %{
+          name: "event_registration_form",
+          description: "Form for users to register for upcoming events or webinars",
+          meta_flow_id: "flow-6c45ae11-8f76-4e9c-ae56-9f6d9a2b4a90",
+          status: :published,
+          definition: %{
+            "version" => "1.0",
+            "screens" => [
+              %{
+                "id" => "screen_1",
+                "title" => "Event Registration",
+                "description" => "Register for our upcoming event",
+                "fields" => [
+                  %{
+                    "id" => "full_name",
+                    "label" => "Full Name",
+                    "type" => "text",
+                    "required" => true
+                  },
+                  %{
+                    "id" => "email",
+                    "label" => "Email Address",
+                    "type" => "email",
+                    "required" => true
+                  },
+                  %{
+                    "id" => "event_choice",
+                    "label" => "Select Event",
+                    "type" => "dropdown",
+                    "required" => true,
+                    "options" => ["Webinar", "Workshop", "Conference"]
+                  }
+                ],
+                "actions" => [%{"type" => "submit", "label" => "Register"}]
+              }
+            ]
+          },
+          categories: [:customer_support],
+          organization_id: organization.id
         }
       ]
 

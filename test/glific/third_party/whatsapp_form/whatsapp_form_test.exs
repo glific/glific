@@ -1,4 +1,4 @@
-defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
+defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
