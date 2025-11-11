@@ -6,7 +6,6 @@ defmodule Glific.Repo.Migrations.AddSyncStatusToSheets do
 
     alter table(:sheets) do
       add :sync_status, Glific.Enums.SheetSyncStatus.type(),
-        default: "pending",
         comment: "Status of the sync operation"
 
       add :failure_reason, :text

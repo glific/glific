@@ -265,11 +265,77 @@ defmodule Glific.SheetsTest do
 
       {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 
-      # Sync should fail due to invalid headers
+      # Sync should fail due to missing headers
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
       assert updated_sheet.failure_reason == "Repeated or missing headers"
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles duplicate key errors", %{organization_id: organization_id} do
+      # Mock a CSV with duplicate keys
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Value,Message\r\nkey1,val1,Hello\r\nkey1,val2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "duplicate keys sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should fail due to duplicate keys
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason == "Key: has already been taken (Value: key1)"
+
+      # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles errors when key is missing", %{organization_id: organization_id} do
+      # Mock a CSV with missing "key" column
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "Value,Message\r\nval1,Hello\r\nval2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "keys missing sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Sync should fail due to missing "key" column
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason == "Key: can't be blank"
 
       # No sheet data should be created
       sheet_data_count =
@@ -363,38 +429,7 @@ defmodule Glific.SheetsTest do
       )
     end
 
-    test "handles invalid CSV format gracefully", %{organization_id: organization_id} do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            # This CSV has no headers, which will cause validation to fail
-            body: "row1value1,row1value2\r\nrow2value1,row2value2"
-          }
-      end)
-
-      attrs = %{
-        type: "READ",
-        label: "invalid csv format sheet",
-        url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
-        organization_id: organization_id
-      }
-
-      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
-
-      # Sync should handle the invalid format gracefully but won't insert the data to the table
-      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
-      assert updated_sheet.sync_status == :success
-
-      # Verify no data was created
-      sheet_data_count =
-        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
-
-      assert sheet_data_count == 0
-    end
-
-    test "cleans up existing sheet data before syncing", %{organization_id: organization_id} do
+    test "cleans up existing sheet data upon successful sync", %{organization_id: organization_id} do
       # Create a sheet
       attrs = %{
         type: "READ",
