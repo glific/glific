@@ -54,11 +54,13 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     @desc "Get a WhatsApp form by ID"
     field :whatsapp_form, :whatsapp_form_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.whatsapp_form/3)
     end
 
     @desc "List all available WhatsApp form categories"
     field :whatsapp_form_categories, list_of(:string) do
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.list_whatsapp_form_categories/3)
     end
 
@@ -88,6 +90,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     @desc "Create a WhatsApp form"
     field :create_whatsapp_form, :whatsapp_form_result do
       arg(:input, non_null(:whatsapp_form_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.create_whatsapp_form/3)
     end
 
@@ -95,6 +98,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :update_whatsapp_form, :whatsapp_form_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:whatsapp_form_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.update_whatsapp_form/3)
     end
 
