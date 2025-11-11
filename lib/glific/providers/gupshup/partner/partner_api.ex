@@ -539,7 +539,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           String.t() | nil,
           list(String.t()),
           non_neg_integer(),
-          String.t()
+          String.t() | nil
         ) ::
           tuple()
   def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2, tag \\ nil)

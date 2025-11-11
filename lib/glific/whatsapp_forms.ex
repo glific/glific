@@ -195,9 +195,6 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @doc """
-  Counts the number of WhatsApp forms for a given organization
-  """
   @spec count_by_organization(non_neg_integer()) :: non_neg_integer()
   defp count_by_organization(organization_id) do
     WhatsappForm
