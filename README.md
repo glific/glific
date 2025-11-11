@@ -339,6 +339,31 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  SELECT * FROM pg_stat_ssl WHERE pid=pg_backend_pid();
  ```
 
+ 9. Configure SSL environment variables:
+ 
+ After setting up SSL for Postgres, you need to add the following environment variables to your `config/.env.dev` file:
+
+ **Required for primary database:**
+ ```env
+ PRIMARY_CACERT_ENCODED=<base64_encoded_root_certificate>
+ PRIMARY_DB_SERVER_NAME_INDICATION=localhost
+ ```
+
+ **Optional for read replica (only if using a separate read replica database):**
+ ```env
+ REPLICA_CACERT_ENCODED=<base64_encoded_root_certificate>
+ REPLICA_DB_SERVER_NAME_INDICATION=localhost
+ ```
+
+ To get the base64 encoded certificate, run:
+ ```bash
+ base64 -i $(mkcert -CAROOT)/rootCA.pem
+ ```
+ 
+ Copy the output and paste it as the value for `PRIMARY_CACERT_ENCODED`. If you're using a read replica with the same SSL setup, use the same value for `REPLICA_CACERT_ENCODED`.
+
+ **Note:** If you're not using a read replica (or your read replica URL is the same as your primary database URL), you can skip the `REPLICA_*` environment variables. The replica configuration will automatically fall back to using the primary SSL settings.
+
  Run `mix setup` again.
 
  - Run `iex -S mix phx.server`
