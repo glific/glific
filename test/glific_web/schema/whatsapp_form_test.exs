@@ -33,9 +33,9 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   )
 
   load_gql(
-    :get_whatsapp_form_by_id,
+    :whatsapp_form,
     GlificWeb.Schema,
-    "assets/gql/whatsapp_forms/by_id.gql"
+    "assets/gql/whatsapp_forms/get.gql"
   )
 
   setup do
@@ -147,22 +147,22 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, answer} = Repo.fetch_by(WhatsappForm, %{name: "newsletter_subscription_form"})
 
     {:ok, query} =
-      auth_query_gql_by(:get_whatsapp_form_by_id, user, variables: %{"id" => answer.id})
+      auth_query_gql_by(:whatsapp_form, user, variables: %{"whatsappFormId" => answer.id})
 
-    assert query.data["getWhatsappFormById"]["metaFlowId"] ==
+    assert query.data["whatsappForm"]["whatsappForm"]["metaFlowId"] ==
              "flow-2a73be22-0a11-4a6d-bb77-8c21df5cdb92"
 
-    assert query.data["getWhatsappFormById"]["status"] == "DRAFT"
-    assert query.data["getWhatsappFormById"]["id"] == "#{answer.id}"
+    assert query.data["whatsappForm"]["whatsappForm"]["status"] == "DRAFT"
+    assert query.data["whatsappForm"]["whatsappForm"]["id"] == "#{answer.id}"
 
-    assert query.data["getWhatsappFormById"]["description"] ==
+    assert query.data["whatsappForm"]["whatsappForm"]["description"] ==
              "Draft form to collect email subscriptions for newsletters"
   end
 
   test "returns an error when a WhatsApp form with the given ID is not found", %{manager: user} do
-    {:ok, %{data: %{"getWhatsappFormById" => %{"errors" => [%{"message" => message}]}}}} =
-      auth_query_gql_by(:get_whatsapp_form_by_id, user, variables: %{"id" => "712398717432"})
+    {:ok, %{data: %{"whatsappForm" => %{"errors" => [error | _]}}}} =
+      auth_query_gql_by(:whatsapp_form, user, variables: %{"whatsappFormId" => "712398717432"})
 
-    assert message == "Resource not found"
+    assert error["message"] == "Resource not found"
   end
 end

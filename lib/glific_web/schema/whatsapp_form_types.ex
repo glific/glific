@@ -71,13 +71,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       resolve(&Resolvers.WhatsappForms.count_whatsapp_forms/3)
     end
 
-    @desc "Get a WhatsApp form by ID"
-    field :get_whatsapp_form_by_id, :whatsapp_form do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.WhatsappForms.get_whatsapp_form_by_id/3)
-    end
-
     @desc "Get a list of all whatsapp forms filtered by various criteria"
     field :list_whatsapp_forms, list_of(:whatsapp_form) do
       arg(:filter, :whatsapp_form_filter)
