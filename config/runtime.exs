@@ -10,18 +10,35 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
-ssl_opts =
+primary_db_ssl_opts =
   if Application.get_env(:glific, :environment) != :test do
-    pem = "CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
+    pem = "PRIMARY_CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
     File.mkdir(Path.join(:code.priv_dir(:glific), "cert"))
-    cert_path = Path.join(:code.priv_dir(:glific), "cert/db-server-ca.pem")
+    cert_path = Path.join(:code.priv_dir(:glific), "cert/primary-db-server-ca.pem")
     File.write!(cert_path, pem)
 
     [
       cacertfile: cert_path,
       verify: :verify_peer,
       server_name_indication:
-        env!("DB_SERVER_NAME_INDICATION", :string!, "localhost") |> String.to_charlist()
+        env!("PRIMARY_DB_SERVER_NAME_INDICATION", :string!, "localhost") |> String.to_charlist()
+    ]
+  else
+    false
+  end
+
+replica_db_ssl_opts =
+  if Application.get_env(:glific, :environment) != :test do
+    pem = "REPLICA_CACERT_ENCODED" |> env!(:string!) |> Base.decode64!()
+    File.mkdir(Path.join(:code.priv_dir(:glific), "cert"))
+    cert_path = Path.join(:code.priv_dir(:glific), "cert/replica-db-server-ca.pem")
+    File.write!(cert_path, pem)
+
+    [
+      cacertfile: cert_path,
+      verify: :verify_peer,
+      server_name_indication:
+        env!("REPLICA_DB_SERVER_NAME_INDICATION", :string!, "localhost") |> String.to_charlist()
     ]
   else
     false
@@ -33,7 +50,7 @@ config :glific, Glific.Repo,
   url: primary_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: ssl_opts,
+  ssl: primary_db_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
@@ -41,7 +58,7 @@ config :glific, Glific.RepoReplica,
   url: env!("READ_REPLICA_DATABASE_URL", :string!, primary_url),
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: ssl_opts,
+  ssl: replica_db_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
