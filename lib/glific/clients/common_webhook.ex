@@ -67,7 +67,9 @@ defmodule Glific.Clients.CommonWebhook do
         |> maybe_put_response_id(fields)
         |> Jason.encode!()
 
-      case ApiClient.call_responses_api(payload) do
+      {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+
+      case ApiClient.call_responses_api(payload, org_api_key) do
         {:ok, body} ->
           Map.merge(%{success: true}, body)
 
