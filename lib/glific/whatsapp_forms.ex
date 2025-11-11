@@ -32,7 +32,7 @@ defmodule Glific.WhatsappForms do
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- create_whatsapp_form_entry(db_attrs) do
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -44,7 +44,7 @@ defmodule Glific.WhatsappForms do
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
          {:ok, db_attrs} <- prepare_attrs(attrs, response, :update),
-         {:ok, whatsapp_form} <- update_whatsapp_form_entry(form, db_attrs) do
+         {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -151,17 +151,17 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
-  @spec create_whatsapp_form_entry(map()) ::
+  @spec do_create_whatsapp_form(map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp create_whatsapp_form_entry(attrs) do
+  defp do_create_whatsapp_form(attrs) do
     %WhatsappForm{}
     |> WhatsappForm.changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec update_whatsapp_form_entry(WhatsappForm.t(), map()) ::
+  @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp update_whatsapp_form_entry(form, attrs) do
+  defp do_update_whatsapp_form(form, attrs) do
     {:ok, whatsapp_form} = get_whatsapp_form_by_id(form.id)
 
     whatsapp_form
