@@ -58,6 +58,24 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
+  def call(
+        %Conn{params: %{"object" => "whatsapp_business_account", "entry" => _entry}} = conn,
+        opts
+      ) do
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["meta", "wa_form"],
+          else: ["not_active_or_approved"]
+
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
+  end
+
+  @doc false
   def call(%Conn{params: %{"type" => type}} = conn, opts) do
     conn
     |> change_path_info(["gupshup", type, "unknown"])

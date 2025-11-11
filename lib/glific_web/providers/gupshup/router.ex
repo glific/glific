@@ -68,6 +68,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/*unknown", DefaultController, :unknown)
     end
 
+    scope "/meta" do
+      post("/wa_form", WhatsappFormController, :wa_form)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
     post("/*unknown", DefaultController, :unknown)
   end
 end

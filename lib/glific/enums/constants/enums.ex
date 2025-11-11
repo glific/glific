@@ -63,7 +63,8 @@ defmodule Glific.Enums.Constants do
         :video,
         :sticker,
         :location_request_message,
-        :poll
+        :poll,
+        :wa_form
       ]
 
       # the different possible types of interactive message

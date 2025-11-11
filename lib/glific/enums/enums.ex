@@ -42,7 +42,7 @@ defmodule Glific.Enums do
   [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out, :reached, :seen, :played, :deleted]
 
   iex> Glific.Enums.message_type_const()
-  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll]
+  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll, :wa_form]
 
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
@@ -117,7 +117,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.WhatsappFormCategory.__enum_map__()
   Glific.Enums.whatsapp_form_category_const()
+
   """
+
 
   defmacro api_status_const,
     do: Macro.expand(@api_status_const, __CALLER__)
