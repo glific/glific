@@ -174,21 +174,23 @@ defmodule Glific.WhatsappForms do
 
   defp maybe_set_subscription(organization_id) do
     # Check if this is the first form for the organization
-    case count_by_organization(organization_id) do
-      1 ->
-        case PartnerAPI.set_subscription(organization_id, nil, ["FLOW_MESSAGE"], 3) do
-          {:ok, _response} ->
-            :ok
+    with 1 <- count_by_organization(organization_id),
+         {:ok, _response} <-
+           PartnerAPI.set_subscription(
+             organization_id,
+             nil,
+             ["FLOW_MESSAGE"],
+             3,
+             "whatsapp_forms_webhook"
+           ) do
+      :ok
+    else
+      {:error, error} ->
+        Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(error)}")
+        :ok
 
-          {:error, error} ->
-            Logger.error(
-              "Failed to set subscription for org #{organization_id}: #{inspect(error)}"
-            )
-
-            :ok
-        end
-
-      _ ->
+      # Any other count (not 1) means it's not the first form
+      _count ->
         :ok
     end
   end
