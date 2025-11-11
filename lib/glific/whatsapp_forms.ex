@@ -33,12 +33,10 @@ defmodule Glific.WhatsappForms do
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
-         {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- create_whatsapp_form_entry(db_attrs),
+         {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       {:ok, %{whatsapp_form: whatsapp_form}}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -48,8 +46,8 @@ defmodule Glific.WhatsappForms do
   @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
-         {:ok, db_attrs} <- prepare_db_attrs(attrs, response, :update),
-         {:ok, whatsapp_form} <- update_whatsapp_form_entry(form.id, db_attrs) do
+         {:ok, db_attrs} <- prepare_attrs(attrs, response, :update),
+         {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -57,35 +55,67 @@ defmodule Glific.WhatsappForms do
   @doc """
     Publishes a WhatsApp form through the configured provider (e.g., Gupshup).
   """
-  @spec publish_whatsapp_form(WhatsappForm.t()) ::
+  @spec publish_whatsapp_form(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  def publish_whatsapp_form(%WhatsappForm{} = form) do
-    case ApiClient.publish_wa_form(form.meta_flow_id, form.organization_id) do
-      {:ok, _response} ->
-        update_form_status(form, :published)
 
-      {:error, reason} ->
-        Logger.error("Failed to publish WhatsApp form #{form.id}: #{inspect(reason)}")
-        {:error, reason}
+  def publish_whatsapp_form(id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, _response} <-
+           ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
+         {:ok, updated_form} <- update_form_status(form, :published) do
+      {:ok, %{whatsapp_form: updated_form}}
     end
   end
 
   @doc """
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
-  @spec deactivate_wa_form(WhatsappForm.t()) ::
+  @spec deactivate_whatsapp_form(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
-  def deactivate_wa_form(form) do
-    update_form_status(form, :inactive)
+  def deactivate_whatsapp_form(id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, updated_form} <- update_form_status(form, :inactive) do
+      {:ok, %{whatsapp_form: updated_form}}
+    end
   end
 
   @doc """
   Fetches a WhatsApp form by its ID
   """
-  @spec get_whatsapp_form_by_id(non_neg_integer(), non_neg_integer()) ::
+  @spec get_whatsapp_form_by_id(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
-  def get_whatsapp_form_by_id(id, org_id) do
-    Repo.fetch_by(WhatsappForm, %{id: id, organization_id: org_id})
+  def get_whatsapp_form_by_id(id) do
+    Repo.fetch_by(WhatsappForm, %{id: id})
+  end
+
+  @doc """
+  Returns the list of whatsapp forms.
+  """
+  @spec list_whatsapp_forms(map()) :: [WhatsappForm.t()]
+  def list_whatsapp_forms(args),
+    do: Repo.list_filter(args, WhatsappForm, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of whatsapp forms
+  """
+  @spec count_whatsapp_forms(map()) :: integer
+  def count_whatsapp_forms(args),
+    do: Repo.count_filter(args, WhatsappForm, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:status, status}, query ->
+        from(q in query, where: q.status == ^status)
+
+      {:name, name}, query ->
+        from(q in query, where: q.name == ^name)
+
+      {:meta_flow_id, meta_flow_id}, query ->
+        from(q in query, where: q.meta_flow_id == ^meta_flow_id)
+    end)
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
@@ -96,46 +126,46 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
-  @spec prepare_db_attrs(map(), map(), :create | :update) ::
+  @spec prepare_attrs(map(), map(), :create | :update) ::
           {:ok, map()}
-  defp prepare_db_attrs(validated_attrs, api_response, :create) do
+  defp prepare_attrs(validated_attrs, api_response, :create) do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
       definition: validated_attrs.form_json,
-      meta_flow_id: Map.get(api_response, :id),
+      meta_flow_id: api_response.id,
       status: "draft",
-      description: Map.get(validated_attrs, :description),
-      categories: validated_attrs.categories |> Enum.map(&String.downcase/1)
+      description: validated_attrs.description,
+      categories: validated_attrs.categories
     }
 
     {:ok, db_attrs}
   end
 
-  defp prepare_db_attrs(validated_attrs, _, :update) do
+  defp prepare_attrs(validated_attrs, _, :update) do
     db_attrs = %{
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
-      categories: validated_attrs.categories |> Enum.map(&String.downcase/1),
+      categories: validated_attrs.categories,
       organization_id: validated_attrs.organization_id
     }
 
     {:ok, db_attrs}
   end
 
-  @spec create_whatsapp_form_entry(map()) ::
+  @spec do_create_whatsapp_form(map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp create_whatsapp_form_entry(attrs) do
+  defp do_create_whatsapp_form(attrs) do
     %WhatsappForm{}
     |> WhatsappForm.changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec update_whatsapp_form_entry(non_neg_integer(), map()) ::
+  @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp update_whatsapp_form_entry(id, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(id, attrs.organization_id)
+  defp do_update_whatsapp_form(form, attrs) do
+    {:ok, whatsapp_form} = get_whatsapp_form_by_id(form.id)
 
     whatsapp_form
     |> WhatsappForm.changeset(attrs)
@@ -154,6 +184,7 @@ defmodule Glific.WhatsappForms do
             Logger.error(
               "Failed to set subscription for org #{organization_id}: #{inspect(error)}"
             )
+
             :ok
         end
 
@@ -162,7 +193,7 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-    @doc """
+  @doc """
   Counts the number of WhatsApp forms for a given organization
   """
   @spec count_by_organization(non_neg_integer()) :: non_neg_integer()

@@ -66,9 +66,9 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @doc """
   Publishes a WhatsApp Flow Form for a given organization via the Gupshup Partner API.
   """
-  @spec publish_wa_form(String.t(), non_neg_integer()) ::
+  @spec publish_whatsapp_form(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
-  def publish_wa_form(flow_id, organization_id) do
+  def publish_whatsapp_form(flow_id, organization_id) do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 

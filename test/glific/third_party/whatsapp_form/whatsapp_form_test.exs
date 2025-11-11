@@ -1,4 +1,4 @@
-defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
+defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -162,7 +162,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
         }
     end)
 
-    assert {:ok, response} = ApiClient.publish_wa_form(@meta_flow_id, @org_id)
+    assert {:ok, response} = ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
     assert response.status == "success"
     assert response.body.meta_flow_id == @meta_flow_id
   end
@@ -176,7 +176,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
         }
     end)
 
-    assert {:error, body} = ApiClient.publish_wa_form(@meta_flow_id, @org_id)
+    assert {:error, body} = ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
     assert body.error == "Invalid flow ID"
   end
 
@@ -189,7 +189,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
         }
     end)
 
-    assert {:error, body} = ApiClient.publish_wa_form(@meta_flow_id, @org_id)
+    assert {:error, body} = ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
     assert body.error == "Internal server error"
   end
 
@@ -200,7 +200,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
     end)
 
     assert {:error, "%Tesla.Error{env: nil, stack: [], reason: :timeout}"} =
-             ApiClient.publish_wa_form(@meta_flow_id, @org_id)
+             ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
   end
 
   test "handles unexpected HTTP status codes" do
@@ -212,7 +212,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClienTest do
         }
     end)
 
-    assert {:error, body} = ApiClient.publish_wa_form(@meta_flow_id, @org_id)
+    assert {:error, body} = ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
     assert body.error == "Unauthorized request"
   end
 end
