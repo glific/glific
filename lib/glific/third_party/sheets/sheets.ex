@@ -523,7 +523,7 @@ defmodule Glific.Sheets do
     end)
   end
 
-  @spec format_field_error({atom(), String.t()}, Ecto.Changeset.t()) :: String.t()
+  @spec format_field_error({atom(), list(String.t())}, Ecto.Changeset.t()) :: String.t()
   defp format_field_error({field, message}, changeset) do
     field_name = field |> Atom.to_string() |> String.capitalize()
 
