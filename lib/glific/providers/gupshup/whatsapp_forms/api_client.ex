@@ -24,11 +24,51 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   end
 
   @doc """
+  Creates a WhatsApp form via Gupshup Partner API.
+  """
+  @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
+  def create_whatsapp_form(params) do
+    url = PartnerAPI.app_url!(params.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
+
+    payload =
+      %{
+        name: params.name,
+        categories: Enum.map(params.categories, &String.upcase/1),
+        flow_json: params.form_json
+      }
+
+    client(url: url, headers: headers)
+    |> Tesla.post("/flows", payload)
+    |> parse_response()
+  end
+
+  @doc """
+  Updates a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
+  def update_whatsapp_form(meta_flow_id, params) do
+    url = PartnerAPI.app_url!(params.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
+
+    payload =
+      %{
+        name: params.name,
+        categories: Enum.map(params.categories, &String.upcase/1),
+        flow_json: params.form_json
+      }
+
+    client(url: url, headers: headers)
+    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> parse_response()
+  end
+
+  @doc """
   Publishes a WhatsApp Flow Form for a given organization via the Gupshup Partner API.
   """
-  @spec publish_wa_form(String.t(), non_neg_integer()) ::
+  @spec publish_whatsapp_form(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
-  def publish_wa_form(flow_id, organization_id) do
+  def publish_whatsapp_form(flow_id, organization_id) do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
