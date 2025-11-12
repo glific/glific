@@ -86,7 +86,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :context_id, :string
     field :message_broadcast_id, :string
 
-    field :whatsapp_response_id, :integer
+    field :whatsapp_flow_response_id, :id
 
     field :context_message, :message do
       resolve(dataloader(Repo, use_parent: true))
