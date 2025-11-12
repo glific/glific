@@ -64,7 +64,7 @@ defmodule Glific.Enums.Constants do
         :sticker,
         :location_request_message,
         :poll,
-        :wa_form
+        :whatsapp_form_response
       ]
 
       # the different possible types of interactive message

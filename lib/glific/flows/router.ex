@@ -12,7 +12,8 @@ defmodule Glific.Flows.Router do
     Contacts,
     Flows,
     Messages,
-    Messages.Message
+    Messages.Message,
+    Repo
   }
 
   alias Glific.Flows.{
@@ -385,6 +386,13 @@ defmodule Glific.Flows.Router do
             |> Map.merge(msg.extra)
             |> Map.put("interactive", msg.interactive_content)
 
+          %{key => json}
+
+        msg.type in [:whatsapp_form_response] ->
+          msg = Repo.preload(msg, :whatsapp_form_response)
+
+          json =
+            default_results
           %{key => json}
 
         is_checkbox ->

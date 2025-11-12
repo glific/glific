@@ -7,7 +7,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   alias Glific.{
     Communications,
-    Providers.Gupshup
+    Providers.Gupshup,
+    WhatsappFormResponses
   }
 
   @doc false
@@ -114,5 +115,20 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     message_payload
     |> Map.put(:organization_id, params.organization_id)
     |> put_in([:sender, :contact_type], "WABA")
+  end
+
+  @spec whatsapp_form_response(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def whatsapp_form_response(conn, params) do
+    extract_message_from_webhook(params)
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.recieve_whatsapp_form_response()
+
+    handler(conn, params, "whatsapp_form_response handler")
+  end
+
+  defp extract_message_from_webhook(%{
+         "entry" => [%{"changes" => [%{"value" => %{"messages" => [message | _]}}]}]
+       }) do
+    message
   end
 end

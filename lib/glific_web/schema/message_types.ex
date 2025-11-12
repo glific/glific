@@ -80,7 +80,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :interactive_content, :json
 
-    field :wa_form_id, :id
+    field :whatsapp_form_response_id, :id
 
     # the context of this message if applicable
     # basically links to the message which the user

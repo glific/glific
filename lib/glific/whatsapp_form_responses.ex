@@ -18,8 +18,7 @@ defmodule Glific.WhatsappFormResponses do
     with {:ok, contact} <- get_contact_by_phone(phone_number),
          {:ok, raw_response} <- Jason.decode(response_json),
          {:ok, submitted_at} <- parse_timestamp(timestamp),
-         {:ok, form_response} <- create_form_response(contact, raw_response, submitted_at),
-         {:ok, _message} <- create_message(contact, attrs["id"], form_response.id) do
+         {:ok, form_response} <- create_form_response(contact, raw_response, submitted_at) do
       {:ok, form_response}
     else
       error -> error
@@ -62,25 +61,5 @@ defmodule Glific.WhatsappFormResponses do
     %WhatsappFormResponse{}
     |> WhatsappFormResponse.changeset(response_attrs)
     |> Repo.insert()
-  end
-
-  @spec create_message(Contacts.Contact.t(), String.t(), non_neg_integer()) ::
-          {:ok, Messages.Message.t()} | {:error, any()}
-  defp create_message(contact, message_id, wa_form_id) do
-    organization = Partners.organization(Repo.get_organization_id())
-
-    message_attrs = %{
-      body: "",
-      type: :wa_form,
-      flow: :inbound,
-      contact_id: contact.id,
-      bsp_message_id: message_id,
-      sender_id: contact.id,
-      receiver_id: "1",
-      wa_form_id: wa_form_id,
-      organization_id: organization.id
-    }
-
-    Messages.create_message(message_attrs)
   end
 end
