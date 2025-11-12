@@ -13,7 +13,8 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    WhatsappFormsResponses
   }
 
   @doc false
@@ -275,6 +276,27 @@ defmodule Glific.Communications.Message do
     |> process_message()
 
     :ok
+  end
+
+  def recieve_whatsapp_form_response(message_params) do
+    {:ok, form_response} = WhatsappFormsResponses.create_whatsapp_form_response(message_params)
+
+    message_attrs = %{
+      flow: :inbound,
+      type: :whatsapp_form_response,
+      organization_id: message_params.organization_id,
+      sender_id: form_response.contact_id,
+      receiver_id: Partners.organization_contact_id(message_params.organization_id),
+      contact_id: form_response.contact_id,
+      body: "",
+      whatsapp_form_response_id: form_response.id
+    }
+
+    {:ok, message} = Messages.create_message(message_attrs)
+
+    message
+    |> publish_data(:received_message)
+    |> process_message()
   end
 
   # preload the context message if it exists, so frontend can do the right thing

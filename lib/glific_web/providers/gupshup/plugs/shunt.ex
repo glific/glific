@@ -58,6 +58,38 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
+  def call(
+        %Conn{
+          params: %{
+            "entry" => [
+              %{
+                "changes" => [
+                  %{
+                    "value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}
+                  }
+                  | _
+                ]
+              }
+              | _
+            ]
+          }
+        } = conn,
+        opts
+      ) do
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["message", "whatsapp_form_response"],
+          else: ["not_active_or_approved"]
+
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
+  end
+
+  @doc false
   def call(%Conn{params: %{"type" => type}} = conn, opts) do
     conn
     |> change_path_info(["gupshup", type, "unknown"])
