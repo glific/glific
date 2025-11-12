@@ -10,12 +10,14 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, base_url},
-      {Tesla.Middleware.Headers, headers(api_key)},
-      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-      Tesla.Middleware.Telemetry
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, base_url},
+        {Tesla.Middleware.Headers, headers(api_key)},
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
+      ] ++ Glific.get_tesla_retry_middleware()
+    )
   end
 
   @doc """
@@ -43,6 +45,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     api_key
     |> client()
     |> Tesla.post("/api/v1/onboard", body, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Calls Kaapi Responses API with the given payload.
+  """
+  @spec call_responses_api(String.t(), binary()) :: {:ok, any()} | {:error, any()}
+  def call_responses_api(payload, org_api_key) do
+    opts = [adapter: [recv_timeout: 300_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/responses", payload, opts: opts)
     |> parse_kaapi_response()
   end
 
@@ -103,8 +118,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   # Private
-  @spec parse_kaapi_response(Tesla.Env.result()) ::
-          {:ok, %{data: %{api_key: String.t()}}} | {:error, String.t()}
+  @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}
