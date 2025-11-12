@@ -572,7 +572,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     data = %{
       "modes" => modes,
       "tag" => tag,
-      "url" => "https://14d3d16209da.ngrok-free.app/gupshup",
+      "url" => callback_url,
       "version" => version
     }
 
