@@ -38,6 +38,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     "assets/gql/whatsapp_forms/get.gql"
   )
 
+  load_gql(
+    :delete_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/delete.gql"
+  )
+
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -162,6 +168,24 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   test "returns an error when a WhatsApp form with the given ID is not found", %{manager: user} do
     {:ok, %{data: %{"whatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:whatsapp_form, user, variables: %{"whatsappFormId" => "712398717432"})
+
+    assert error["message"] == "Resource not found"
+  end
+
+  test "deletes a WhatsApp form by ID", %{manager: user} do
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{name: "newsletter_subscription_form"})
+
+    {:ok, query} =
+      auth_query_gql_by(:delete_whatsapp_form, user, variables: %{"id" => form.id})
+
+    assert query.data["deleteWhatsappForm"]["whatsappForm"]["id"] == "#{form.id}"
+
+    {:error, _} = Repo.fetch_by(WhatsappForm, %{id: form.id})
+  end
+
+  test "delete a whatsApp form that does not exist returns an error", %{manager: user} do
+    {:ok, %{data: %{"deleteWhatsappForm" => %{"errors" => [error | _]}}}} =
+      auth_query_gql_by(:delete_whatsapp_form, user, variables: %{"id" => "9999999"})
 
     assert error["message"] == "Resource not found"
   end

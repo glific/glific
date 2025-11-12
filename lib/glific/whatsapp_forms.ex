@@ -168,4 +168,15 @@ defmodule Glific.WhatsappForms do
     |> WhatsappForm.changeset(attrs)
     |> Repo.update()
   end
+
+  @spec delete_whatsapp_form(non_neg_integer(), non_neg_integer()) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+  def delete_whatsapp_form(id, organization_id) do
+    with {:ok, whatsapp_form} <-
+           Repo.fetch_by(WhatsappForm, %{id: id, organization_id: organization_id}),
+         {:ok, delete_form} <-
+           Repo.delete(whatsapp_form) do
+      {:ok, %{whatsapp_form: delete_form}}
+    end
+  end
 end
