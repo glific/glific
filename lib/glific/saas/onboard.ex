@@ -16,8 +16,8 @@ defmodule Glific.Saas.Onboard do
     Mails.NewPartnerOnboardedMail,
     Notion,
     Partners,
-    Partners.Credential,
     Partners.Billing,
+    Partners.Credential,
     Partners.Organization,
     Partners.Saas,
     Registrations,
@@ -60,7 +60,6 @@ defmodule Glific.Saas.Onboard do
   Optionally we can provide "shortcode" too, incase system generated shortcode
   has any validation issue.
   """
-  @spec setup_v2(setup_params()) :: map()
   @spec setup_v2(setup_params()) :: map()
   def setup_v2(params) do
     params =
