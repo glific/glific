@@ -108,7 +108,7 @@ defmodule Glific.WhatsappForms do
         from(q in query, where: q.status == ^status)
 
       {:name, name}, query ->
-        from(q in query, where: q.name == ^name)
+        from(q in query, where: ilike(q.name, ^"%#{name}%"))
 
       {:meta_flow_id, meta_flow_id}, query ->
         from(q in query, where: q.meta_flow_id == ^meta_flow_id)
@@ -169,6 +169,9 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
+  @doc """
+  Deletes a WhatsApp form belonging to a specific organization by its ID.
+  """
   @spec delete_whatsapp_form(non_neg_integer(), non_neg_integer()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
   def delete_whatsapp_form(id, organization_id) do

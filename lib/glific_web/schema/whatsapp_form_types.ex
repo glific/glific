@@ -25,12 +25,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :wa_form_response do
-    field :status, :string
-    field :body, :whatsapp_form
-    field(:errors, list_of(:input_error))
-  end
-
   input_object :whatsapp_form_input do
     field :name, non_null(:string)
     field :form_json, non_null(:json)

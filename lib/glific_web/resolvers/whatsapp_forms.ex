@@ -104,6 +104,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
     WhatsappForms.deactivate_whatsapp_form(id)
   end
 
+  @doc """
+    Deletes a WhatsApp form belonging to a specific organization by its ID.
+  """
   @spec delete_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_whatsapp_form(_, %{id: id}, %{context: %{current_user: user}}) do
