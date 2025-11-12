@@ -172,6 +172,7 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
+  @spec maybe_set_subscription(non_neg_integer()) :: :ok
   defp maybe_set_subscription(organization_id) do
     # Check if this is the first form for the organization
     with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
