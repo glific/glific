@@ -54,7 +54,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert get_in(query_data, [:data, "countProviders"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup Enterprise"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup"}})
 
     assert get_in(query_data, [:data, "countProviders"]) == 1
   end
