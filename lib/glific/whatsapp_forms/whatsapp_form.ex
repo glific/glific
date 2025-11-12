@@ -7,9 +7,12 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   import Ecto.Changeset
 
   alias __MODULE__
-  alias Glific.Enums.WhatsappFormCategory
-  alias Glific.Enums.WhatsappFormStatus
-  alias Glific.Partners.Organization
+
+  alias Glific.{
+    Enums.WhatsappFormCategory,
+    Enums.WhatsappFormStatus,
+    Partners.Organization
+  }
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
