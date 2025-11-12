@@ -174,7 +174,7 @@ defmodule Glific.WhatsappForms do
 
   defp maybe_set_subscription(organization_id) do
     # Check if this is the first form for the organization
-    with 1 <- count_by_organization(organization_id),
+    with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
          {:ok, _response} <-
            PartnerAPI.set_subscription(
              organization_id,
@@ -193,12 +193,5 @@ defmodule Glific.WhatsappForms do
       _count ->
         :ok
     end
-  end
-
-  @spec count_by_organization(non_neg_integer()) :: non_neg_integer()
-  defp count_by_organization(organization_id) do
-    WhatsappForm
-    |> where([w], w.organization_id == ^organization_id)
-    |> Repo.aggregate(:count, :id)
   end
 end

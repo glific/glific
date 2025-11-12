@@ -564,7 +564,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     modes =
       if modes == [] do
-        modes = @modes
+        @modes
       else
         Enum.map_join(modes, ",", &String.upcase/1)
       end
