@@ -104,7 +104,8 @@ defmodule Glific.Processor.ConsumerWorker do
     body = Glific.string_clean(message.body)
 
     # Since contact and language are the required fields in many places, lets preload them
-    message = Repo.preload(message, [:location, :media, contact: [:language]])
+    message =
+      Repo.preload(message, [:location, :media, :whatsapp_form_response, contact: [:language]])
 
     {message, state}
     |> ConsumerTagger.process_message(body)

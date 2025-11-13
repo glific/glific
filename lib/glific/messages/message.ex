@@ -166,7 +166,10 @@ defmodule Glific.Messages.Message do
 
     belongs_to(:template, SessionTemplate)
     belongs_to(:interactive_template, InteractiveTemplate)
-    belongs_to(:whatsapp_form_response, WhatsappFormResponse, foreign_key: :whatsapp_form_response_id)
+
+    belongs_to(:whatsapp_form_response, WhatsappFormResponse,
+      foreign_key: :whatsapp_form_response_id
+    )
 
     many_to_many(:tags, Tag, join_through: "messages_tags", on_replace: :delete)
 
@@ -211,7 +214,15 @@ defmodule Glific.Messages.Message do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location, :list, :quick_reply, :location_request_message, :whatsapp_form_response] ->
+      type in [
+        nil,
+        :text,
+        :location,
+        :list,
+        :quick_reply,
+        :location_request_message,
+        :whatsapp_form_response
+      ] ->
         changeset
 
       media_id == nil ->
