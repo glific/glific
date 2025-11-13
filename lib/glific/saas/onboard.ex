@@ -478,11 +478,17 @@ defmodule Glific.Saas.Onboard do
   defp setup_gcs(trial_org) do
     org_id = Saas.organization_id()
 
-    {:ok, cred} =
-      Partners.get_credential(%{
-        organization_id: org_id,
-        shortcode: "google_cloud_storage"
-      })
+    task =
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+
+        Partners.get_credential(%{
+          organization_id: org_id,
+          shortcode: "google_cloud_storage"
+        })
+      end)
+
+    {:ok, cred} = Task.await(task)
 
     Partners.create_credential(%{
       organization_id: trial_org.id,
@@ -496,7 +502,6 @@ defmodule Glific.Saas.Onboard do
   @spec is_trial_account?(String.t()) :: boolean()
   def is_trial_account?(org_name) when is_binary(org_name) do
     org_name
-    |> String.downcase()
     |> String.contains?("trial")
   end
 end
