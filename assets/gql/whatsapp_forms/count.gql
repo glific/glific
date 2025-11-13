@@ -1,0 +1,3 @@
+query count_whatsapp_forms($filter: WhatsappFormFilter) {
+  countWhatsappForms(filter: $filter)
+}

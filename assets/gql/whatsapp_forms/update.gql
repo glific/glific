@@ -1,0 +1,11 @@
+#import "./fields.frag.gql"
+
+mutation UpdateWhatsappForm(
+  $updateWhatsappFormId: ID!
+  $input: WhatsappFormInput!
+) {
+  updateWhatsappForm(id: $updateWhatsappFormId, input: $input) {
+    ...WhatsappFormFields
+    ...WhatsappFormErrorFields
+  }
+}
