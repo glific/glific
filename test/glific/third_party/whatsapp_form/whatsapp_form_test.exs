@@ -44,7 +44,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   load_gql(
     :whatsapp_form,
     GlificWeb.Schema,
-    "assets/gql/whatsapp_forms/form_by_id.gql"
+    "assets/gql/whatsapp_forms/get.gql"
   )
 
   test "creates a whatsapp form", %{user: user} do

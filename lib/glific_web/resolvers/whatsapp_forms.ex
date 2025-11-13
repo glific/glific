@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.WhatsappForms do
   @moduledoc """
-  Resolver for publishing a WhatsApp form.
+    Resolvers for managing WhatsApp forms, including creation, updates, publishing, deactivation, and querying.
   """
 
   alias Glific.{

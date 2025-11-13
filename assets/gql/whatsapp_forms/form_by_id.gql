@@ -1,8 +1,0 @@
-#import "./fields.frag.gql"
-
-query WhatsappForm($whatsappFormId: ID!) {
-  whatsappForm(id: $whatsappFormId) {
-    ...WhatsappFormFields
-    ...WhatsappFormErrorFields
-  }
-}

@@ -162,11 +162,11 @@ defmodule Glific.WhatsappForms do
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_whatsapp_form(form, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(form.id)
-
-    whatsapp_form
-    |> WhatsappForm.changeset(attrs)
-    |> Repo.update()
+    with {:ok, whatsapp_form} <- get_whatsapp_form_by_id(form.id) do
+      whatsapp_form
+      |> WhatsappForm.changeset(attrs)
+      |> Repo.update()
+    end
   end
 
   @doc """
