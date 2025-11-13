@@ -766,6 +766,10 @@ defmodule Glific.Templates do
 
   defp do_parse_buttons(type, button) when type in ["QUICK_REPLY", "OTP"], do: button["text"]
 
+  defp do_parse_buttons("FLOW", button) do
+    button["text"]
+  end
+
   @doc """
   List of available categories provided by whatsapp
   """
