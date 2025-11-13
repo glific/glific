@@ -109,6 +109,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     handler(conn, params, "location handler")
   end
 
+  @doc """
+  Handler for WhatsApp Form Response messages
+  """
   @spec whatsapp_form_response(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def whatsapp_form_response(conn, params) do
     extract_message_from_webhook(params)
@@ -119,6 +122,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     handler(conn, params, "whatsapp_form_response handler")
   end
 
+  @spec extract_message_from_webhook(map()) :: {map(), map(), String.t()}
   defp extract_message_from_webhook(%{
          "entry" => [
            %{

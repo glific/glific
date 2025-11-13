@@ -279,7 +279,8 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
-  def receive_whatsapp_form_response(message_params) do
+  @spec receive_whatsapp_form_response(map()) :: :ok
+  defp receive_whatsapp_form_response(message_params) do
     {:ok, form_response} =
       message_params
       |> Map.put(:organization_id, message_params.organization_id)
