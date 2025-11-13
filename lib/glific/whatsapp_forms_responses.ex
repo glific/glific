@@ -3,7 +3,7 @@ defmodule Glific.WhatsappFormsResponses do
   Module to handle WhatsApp Form Responses
   """
 
-  alias Glific.{Contacts, Partners, Messages, WhatsappForms.WhatsappFormResponse, Repo}
+  alias Glific.{Repo, WhatsappForms.WhatsappFormResponse}
 
   @doc """
   Create a WhatsApp form response from the given attributes
