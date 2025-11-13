@@ -196,7 +196,8 @@ defmodule Glific.Processor.ConsumerFlow do
         media: message.media,
         media_id: message.media_id,
         location: message.location,
-        interactive_content: message.interactive_content
+        interactive_content: message.interactive_content,
+        whatsapp_form_response: message.whatsapp_form_response
       )
     )
 
