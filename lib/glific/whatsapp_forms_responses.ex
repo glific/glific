@@ -10,29 +10,19 @@ defmodule Glific.WhatsappFormsResponses do
   """
   @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
   def create_whatsapp_form_response(attrs) do
-    phone_number = attrs["from"]
-    nfm_reply = attrs["interactive"]["nfm_reply"]
-    response_json = nfm_reply["response_json"]
-    timestamp = attrs["timestamp"]
-
-    with {:ok, contact} <- get_contact_by_phone(phone_number),
-         {:ok, raw_response} <- Jason.decode(response_json),
-         {:ok, submitted_at} <- parse_timestamp(timestamp),
-         {:ok, form_response} <- do_create_whatsapp_form_response(contact, raw_response, submitted_at) do
-      {:ok, form_response}
+    with {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
+         {:ok, decoded_response} <- Jason.decode(attrs.raw_response) do
+      %{
+        raw_response: decoded_response,
+        contact_id: attrs.sender_id,
+        submitted_at: parsed_timestamp,
+        whatsapp_form_id: "1",
+        organization_id: attrs.organization_id
+      }
+      |> do_create_whatsapp_form_response()
     else
       error -> error
     end
-  end
-
-  @spec get_contact_by_phone(String.t()) :: {:ok, Contacts.Contact.t()} | {:error, atom()}
-  defp get_contact_by_phone(phone_number) do
-    case Contacts.get_contact_by_phone!(phone_number) do
-      nil -> {:error, :contact_not_found}
-      contact -> {:ok, contact}
-    end
-  rescue
-    _ -> {:error, :contact_not_found}
   end
 
   @spec parse_timestamp(String.t()) :: {:ok, DateTime.t()} | {:error, atom()}
@@ -45,21 +35,11 @@ defmodule Glific.WhatsappFormsResponses do
     _ -> {:error, :invalid_timestamp}
   end
 
-  @spec do_create_whatsapp_form_response(Contacts.Contact.t(), map(), DateTime.t()) ::
+  @spec do_create_whatsapp_form_response(any()) ::
           {:ok, WhatsappFormResponse.t()} | {:error, any()}
-  defp do_create_whatsapp_form_response(contact, raw_response, submitted_at) do
-    organization = Partners.organization(Repo.get_organization_id())
-
-    response_attrs = %{
-      raw_response: raw_response,
-      submitted_at: submitted_at,
-      contact_id: contact.id,
-      whatsapp_form_id: "1",
-      organization_id: organization.id
-    }
-
+  defp do_create_whatsapp_form_response(attrs) do
     %WhatsappFormResponse{}
-    |> WhatsappFormResponse.changeset(response_attrs)
+    |> WhatsappFormResponse.changeset(attrs)
     |> Repo.insert()
   end
 end

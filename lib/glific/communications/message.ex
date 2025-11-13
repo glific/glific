@@ -230,6 +230,7 @@ defmodule Glific.Communications.Message do
     cond do
       type in [:quick_reply, :list, :text] -> receive_text(message_params)
       type == :location -> receive_location(message_params)
+      type == :whatsapp_form_response -> receive_whatsapp_form_response(message_params)
       true -> receive_media(message_params)
     end
   end
@@ -278,8 +279,11 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
-  def recieve_whatsapp_form_response(message_params) do
-    {:ok, form_response} = WhatsappFormsResponses.create_whatsapp_form_response(message_params)
+  def receive_whatsapp_form_response(message_params) do
+    {:ok, form_response} =
+      message_params
+      |> Map.put(:organization_id, message_params.organization_id)
+      |> WhatsappFormsResponses.create_whatsapp_form_response()
 
     message_attrs = %{
       flow: :inbound,
