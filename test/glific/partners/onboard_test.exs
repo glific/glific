@@ -1029,9 +1029,6 @@ defmodule Glific.OnboardTest do
     assert organization.is_active
 
     assert organization.is_trial_org == true
-    assert organization.expiration_date != nil
-
-    days_until_expiration = DateTime.diff(organization.expiration_date, DateTime.utc_now(), :day)
-    assert days_until_expiration >= 13 and days_until_expiration <= 14
+    assert organization.expiration_date == nil
   end
 end

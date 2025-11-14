@@ -228,8 +228,6 @@ defmodule Glific.Saas.Queries do
         skip_organization_id: true
       )
 
-    expiration_date = if is_trial, do: DateTime.utc_now() |> DateTime.add(14, :day), else: nil
-
     attrs = %{
       name: org_name,
       shortcode: String.downcase(params["shortcode"]),
@@ -242,7 +240,6 @@ defmodule Glific.Saas.Queries do
       is_approved: false,
       parent_org: params["name"],
       is_trial_org: is_trial,
-      expiration_date: expiration_date,
       setting: %{
         "send_warning_mail" => false,
         "run_flow_each_time" => false,
