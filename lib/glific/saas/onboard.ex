@@ -17,6 +17,7 @@ defmodule Glific.Saas.Onboard do
     Notion,
     Partners,
     Partners.Billing,
+    Partners.Credential,
     Partners.Organization,
     Partners.Saas,
     Registrations,
@@ -82,6 +83,11 @@ defmodule Glific.Saas.Onboard do
       org = status(result.organization.id, :active)
       notify_saas_team(result.organization)
       setup_kaapi_for_organization(result.organization)
+
+      if is_trial_account?(result.organization.name) do
+        setup_gcs(result.organization)
+      end
+
       Map.put(result, :organization, org)
     end
   end
@@ -274,19 +280,21 @@ defmodule Glific.Saas.Onboard do
 
   @spec notify_saas_team(Organization.t()) :: map()
   defp notify_saas_team(org) do
-    NewPartnerOnboardedMail.new_mail(org)
-    |> Mailer.send(%{
-      category: "new_partner_onboarded",
-      organization_id: org.id
-    })
-    |> case do
-      {:ok, _} ->
-        org
+    if !is_trial_account?(org.name) do
+      NewPartnerOnboardedMail.new_mail(org)
+      |> Mailer.send(%{
+        category: "new_partner_onboarded",
+        organization_id: org.id
+      })
+      |> case do
+        {:ok, _} ->
+          org
 
-      error ->
-        Glific.log_error(
-          "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(org.id)}"
-        )
+        error ->
+          Glific.log_error(
+            "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(org.id)}"
+          )
+      end
     end
   end
 
@@ -463,5 +471,40 @@ defmodule Glific.Saas.Onboard do
       openai_api_key: open_ai_key
     }
     |> Kaapi.onboard()
+  end
+
+  @spec setup_gcs(Organization.t()) ::
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  defp setup_gcs(trial_org) do
+    org_id = Saas.organization_id()
+
+    task =
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+
+        Partners.get_credential(%{
+          organization_id: org_id,
+          shortcode: "google_cloud_storage"
+        })
+      end)
+
+    {:ok, cred} = Task.await(task)
+
+    Partners.create_credential(%{
+      organization_id: trial_org.id,
+      shortcode: "google_cloud_storage",
+      keys: %{},
+      secrets: cred.secrets,
+      is_active: true
+    })
+  end
+
+  @doc """
+  check the trial org
+  """
+  @spec is_trial_account?(String.t()) :: boolean()
+  def is_trial_account?(org_name) when is_binary(org_name) do
+    org_name
+    |> String.contains?("trial")
   end
 end
