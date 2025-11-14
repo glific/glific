@@ -1,27 +1,21 @@
-defmodule GlificWeb.WordpressController do
+defmodule GlificWeb.API.V1.TrialAccountController do
   use GlificWeb, :controller
 
   alias Glific.{Repo, Partners.Organization}
   import Ecto.Query
 
-  def trial(conn, params) do
-    IO.inspect(params, label: "Received params")
-
-    # Verify token
+  def trial(conn, _params) do
     token = get_req_header(conn, "x-api-key") |> List.first()
     expected_token = "8fSLZ035pPUOMpGZUTvS2swm5xrRLhVxb79f"
 
     if token == expected_token do
-      case allocate_trial_account(params) do
+      case get_available_trial_account() |> IO.inspect() do
         {:ok, organization} ->
           json(conn, %{
             success: true,
-            message: "Trial account allocated successfully",
             data: %{
-              organization_id: organization.id,
-              organization_name: organization.name,
-              login_url: "https://glific.test:3000/users/log_in",
-              expires_at: organization.trial_expiration_date
+              login_url: "https://#{organization.name}.glific.com",
+              expires_at: organization.expiration_date
             }
           })
 
@@ -32,11 +26,6 @@ defmodule GlificWeb.WordpressController do
             success: false,
             error: "No trial accounts available at the moment"
           })
-
-        {:error, reason} ->
-          conn
-          |> put_status(:internal_server_error)
-          |> json(%{success: false, error: "Failed to allocate account"})
       end
     else
       conn
@@ -45,37 +34,18 @@ defmodule GlificWeb.WordpressController do
     end
   end
 
-  defp allocate_trial_account(params) do
-    Repo.transaction(fn ->
-      available_org =
-        from(o in Organization,
-          where: o.is_trial_account == true,
-          where: is_nil(o.trial_expiration_date),
-          limit: 1,
-          lock: "FOR UPDATE"
-        )
-        |> Repo.one()
+  defp get_available_trial_account do
+    available_org =
+      from(o in Organization,
+        where: o.is_trial_org == true,
+        where: is_nil(o.expiration_date),
+        limit: 1
+      )
+      |> Repo.one(skip_organization_id: true)
 
-      case available_org do
-        nil ->
-          Repo.rollback(:no_available_accounts)
-
-        org ->
-          expiration_date = DateTime.utc_now() |> DateTime.add(14, :day)
-
-          changeset =
-            Organization.changeset(org, %{
-              trial_expiration_date: expiration_date,
-              trial_user_name: params["name"],
-              trial_user_email: params["email"],
-              trial_user_phone: params["phone"]
-            })
-
-          case Repo.update(changeset) do
-            {:ok, updated_org} -> updated_org
-            {:error, changeset} -> Repo.rollback(changeset)
-          end
-      end
-    end)
+    case available_org do
+      nil -> {:error, :no_available_accounts}
+      org -> {:ok, org}
+    end
   end
 end
