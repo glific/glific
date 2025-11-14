@@ -22,7 +22,7 @@ defmodule Glific.Sheets.ApiClient do
   def get_csv_content(_opts), do: [ok: %{}]
 
   @spec get_tesla_middlewares :: list()
-  defp get_tesla_middlewares() do
+  defp get_tesla_middlewares do
     [
       Tesla.Middleware.FollowRedirects,
       {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets", sampling_scale: 20}}
