@@ -9,7 +9,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     expected_token = "8fSLZ035pPUOMpGZUTvS2swm5xrRLhVxb79f"
 
     if token == expected_token do
-      case get_available_trial_account() |> IO.inspect() do
+      case get_available_trial_account() do
         {:ok, organization} ->
           json(conn, %{
             success: true,
@@ -44,8 +44,15 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       |> Repo.one(skip_organization_id: true)
 
     case available_org do
-      nil -> {:error, :no_available_accounts}
-      org -> {:ok, org}
+      nil ->
+        {:error, :no_available_accounts}
+
+      org ->
+        expiration_date = DateTime.utc_now() |> DateTime.add(14, :day)
+
+        org
+        |> Organization.changeset(%{expiration_date: expiration_date})
+        |> Repo.update()
     end
   end
 end
