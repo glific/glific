@@ -499,6 +499,9 @@ defmodule Glific.Saas.Onboard do
     })
   end
 
+  @doc """
+  check the trial org
+  """
   @spec is_trial_account?(String.t()) :: boolean()
   def is_trial_account?(org_name) when is_binary(org_name) do
     org_name
