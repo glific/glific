@@ -103,7 +103,7 @@ ls -1  # Check that glific.test+1-key.pem and glific.test+1.pem exist
 
 Check port 4001:
 ```bash
-sudo lsof -n -i:4001 | grep LISTEN 
+sudo lsof -n -i:4001 | grep LISTEN
 ```
 should return nothing.
 
@@ -162,27 +162,27 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  Oban is **required** before running mix for Glific to operate.
 
  **For contributors on social impact projects (including NGOs):**
- 
+
   Please get in touch with the team on Discord and request a limited-time Oban Pro key.
   Once provided, run the following command to add the Oban repository with your credentials:
    ```bash
   mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
    ```
-  
+
  **For others, if you want to use the free Oban solution**
  People have contributed code changes to allow Glific to work with the free version of Oban. You can view the details here: https://github.com/glific/glific/pull/2391
 
  **For production use:**
- 
+
   *You must purchase a license for Oban Pro to use advanced features in production.
-  
+
   *Note: Oban Web is now open source and does not require a license.
-  
+
   *If you're using Oban Pro, after purchasing the license:
-      
+
 
    Go to your Oban account dashboard.
-   
+
    Run the following command inside your glific_backend directory:
 
   ```bash
@@ -198,7 +198,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
    ```
 
      Name        URL                             Public key                                          Auth key
-     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc    
+     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc
      oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
    If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
@@ -247,7 +247,126 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  sudo -u postgres psql
  ALTER USER postgres WITH PASSWORD 'postgres';
  ```
- Exit the PostgreSQL terminal by typing `\q` and pressing Enter. Run `mix setup` again.
+ Exit the PostgreSQL terminal by typing `\q` and pressing Enter.
+
+#### Setting up SSL for Postgres (Optional but recommended)
+
+SSL (Secure Sockets Layer) provides encrypted connections between Glific and your PostgreSQL database. In Glific, SSL is enabled by default for all environments except test to ensure secure database communications. While optional, it's recommended for production deployments. You can disable SSL by setting the `ENABLE_DB_SSL` environment variable to `false`. If you are disabling SSL, skip to the end of this section.
+
+ To enable SSL connections to Postgres:
+
+ 1. Find your Postgres data directory:
+ ```bash
+ psql -U postgres -c "SHOW data_directory;"
+ ```
+
+ 2. Create SSL certificates using mkcert:
+ ```bash
+ mkcert -cert-file server.crt -key-file server.key postgres localhost 127.0.0.1 ::1
+ ```
+ In case you get the following error/warning:
+
+ ```
+ Note: the local CA is not installed in the Java trust store.
+ Run "mkcert -install" for certificates to be trusted automatically ⚠️
+ ```
+
+ Run `mkcert -install` and then run the above command again.
+
+ 3. Move the certificates to Postgres data directory and set the permissions:
+ ```bash
+ sudo mv server.crt /path/to/postgres/data/directory/
+ sudo mv server.key /path/to/postgres/data/directory/
+ sudo chmod 600 /path/to/postgres/data/directory/server.key
+ ```
+
+ If you installed Postgres using the Postgress.app,
+ ```bash
+ sudo chown username:_postgres /path/to/postgres/data/directory/server.key
+ ```
+
+ 4. Configure Postgres to use SSL. Edit postgresql.conf:
+ ```bash
+ sudo nano /path/to/postgres/data/directory/postgresql.conf
+ ```
+ Add:
+ ```conf
+ ssl = on
+ ssl_cert_file = 'server.crt'
+ ssl_key_file = 'server.key'
+ ```
+
+ 5. Configure client authentication. Edit pg_hba.conf:
+ ```bash
+ sudo nano /path/to/postgres/data/directory/pg_hba.conf
+ ```
+ Add:
+ ```conf
+ hostssl glific_dev      all             127.0.0.1/32            trust
+ hostssl glific_test     all             127.0.0.1/32            trust
+ hostssl postgres        all             127.0.0.1/32            trust
+ ```
+
+ 6. Restart Postgres:
+ ```bash
+ # For Linux:
+ sudo systemctl restart postgresql
+ # For MacOS:
+ brew services restart postgresql
+ # For MacOS, if you installed Postgres with Postgres.app, quit and run Postgres.app
+ ```
+
+ If you get errors, try selecting the correct postgres version in your device
+
+ ```bash
+ # For Linux:
+ sudo systemctl restart postgresql@<version>
+ # For MacOS:
+ brew services restart postgresql@<version>
+ ```
+
+ 8. Test SSL connection:
+ First get the mkcert root path
+ ```bash
+ echo "$(mkcert -CAROOT)"
+ ```
+
+ ```bash
+ psql "sslmode=verify-full dbname=glific_dev host=localhost sslrootcert=path/to/mkcert/rootCA.pem"
+ ```
+
+ You should see SSL connection details. Verify with:
+ ```sql
+ SHOW ssl;
+ SELECT * FROM pg_stat_ssl WHERE pid=pg_backend_pid();
+ ```
+
+ 9. Configure SSL environment variables:
+ 
+ After setting up SSL for Postgres, you need to add the following environment variables to your `config/.env.dev` file:
+
+ **Required for primary database:**
+ ```env
+ PRIMARY_CACERT_ENCODED=<base64_encoded_root_certificate>
+ PRIMARY_DB_SERVER_NAME_INDICATION=localhost
+ ```
+
+ **Optional for read replica (only if using a separate read replica database):**
+ ```env
+ REPLICA_CACERT_ENCODED=<base64_encoded_root_certificate>
+ REPLICA_DB_SERVER_NAME_INDICATION=localhost
+ ```
+
+ To get the base64 encoded certificate, run:
+ ```bash
+ base64 -i "$(mkcert -CAROOT)"/rootCA.pem
+ ```
+ 
+ Copy the output and paste it as the value for `PRIMARY_CACERT_ENCODED`. If you're using a read replica with the same SSL setup, use the same value for `REPLICA_CACERT_ENCODED`.
+
+ **Note:** If you're not using a read replica (or your read replica URL is the same as your primary database URL), you can skip the `REPLICA_*` environment variables. The replica configuration will automatically fall back to using the primary SSL settings.
+
+ Run `mix setup` again.
 
  - Run `iex -S mix phx.server`
 
@@ -300,7 +419,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
    - Go to Settings -> Gupshup Settings
    - Click on "Save" button
    - Wait for confirmation that settings were synced successfully.
-    
+
   This step is crucial as it fetches and stores your Gupshup `app_id` in the database, which is required for proper functioning of various APIs including the wallet API.
 
 
@@ -310,7 +429,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  ```bash
  mix test_full
  ```
-  To run Specific test File 
+  To run Specific test File
   ```bash
  mix test Path_to_the_specific_test_file_you_want_to_run.
  ```
@@ -328,7 +447,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
  * Download: [ngrok](https://ngrok.com/download)
  * Run:
- 
+
  ```bash
  ngrok http 4000 --host-header=glific.test:4000
   ```
