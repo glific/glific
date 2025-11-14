@@ -48,7 +48,7 @@ defmodule Glific.Appsignal do
     # For ex for openai api,  sampling_scale is 5. For a default of 10% sampling rate,
     # 50% of openai requests will go to appsignal
     sampling_scale = meta[:sampling_scale] || 1
-    request_duration_seconds = System.convert_time_unit(measurement.duration, :native, :second)
+    request_duration_seconds = System.convert_time_unit(measurement.duration, :native, :millisecond)
 
     status = meta.env.status
 
