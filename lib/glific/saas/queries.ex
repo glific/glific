@@ -228,7 +228,7 @@ defmodule Glific.Saas.Queries do
         skip_organization_id: true
       )
 
-    expiration_date = is_trial && DateTime.utc_now() |> DateTime.add(14, :day)
+    expiration_date = if is_trial, do: DateTime.utc_now() |> DateTime.add(14, :day), else: nil
 
     attrs = %{
       name: org_name,
