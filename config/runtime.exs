@@ -12,7 +12,7 @@ http_port = env!("HTTP_PORT", :integer, 4000)
 
 # Helper function to create SSL opts
 db_ssl_opts = fn db_type ->
-  if Application.get_env(:glific, :environment) != :test do
+  if Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true) do
     pem = "#{db_type}_CACERT_ENCODED" |> env!(:string) |> Base.decode64!()
     File.mkdir_p(Path.join(:code.priv_dir(:glific), "cert"))
 

@@ -251,6 +251,8 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
 #### Setting up SSL for Postgres (Optional but recommended)
 
+SSL (Secure Sockets Layer) provides encrypted connections between Glific and your PostgreSQL database. In Glific, SSL is enabled by default for all environments except test to ensure secure database communications. While optional, it's recommended for production deployments. You can disable SSL by setting the `ENABLE_DB_SSL` environment variable to `false`. If you are disabling SSL, skip to the end of this section.
+
  To enable SSL connections to Postgres:
 
  1. Find your Postgres data directory:
