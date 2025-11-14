@@ -387,6 +387,11 @@ defmodule Glific.Flows.Router do
 
           %{key => json}
 
+        msg.type in [:whatsapp_form_response] ->
+          json = msg.whatsapp_form_response.raw_response
+
+          %{key => json}
+
         is_checkbox ->
           %{
             key =>
