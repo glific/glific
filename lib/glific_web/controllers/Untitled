@@ -1,0 +1,15 @@
+curl -X POST https://d3288a64a73b.ngrok-free.app/wordpress/trial \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: 8fSLZ035pPUOMpGZUTvS2swm5xrRLhVxb79f" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "+1234567890"
+  }'
+  
+  
+  
+  curl -X POST https://api.glific.test:4001/api/v1/trial \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: 8fSLZ035pPUOMpGZUTvS2swm5xrRLhVxb79f"
+  }'
