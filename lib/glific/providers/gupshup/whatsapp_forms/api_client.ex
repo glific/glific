@@ -40,7 +40,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     client(url: url, headers: headers)
     |> Tesla.post("/flows", payload)
-    |> parse_response()
+    |> parse_response("create_whatsapp_form", params.organization_id)
   end
 
   @doc """
@@ -60,7 +60,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     client(url: url, headers: headers)
     |> Tesla.put("/flows/#{meta_flow_id}", payload)
-    |> parse_response()
+    |> parse_response("update_whatsapp_form", params.organization_id)
   end
 
   @doc """
@@ -73,20 +73,39 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
     Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
-    |> parse_response()
+    |> parse_response("publish_whatsapp_form", organization_id)
   end
 
-  @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
-          {:ok, map()} | {:error, String.t()}
-  defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
+  @spec parse_response(
+          {:ok, Tesla.Env.t()} | {:error, any()},
+          String.t(),
+          non_neg_integer()
+        ) :: {:ok, map()} | {:error, String.t()}
+  defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, _action, _org_id)
        when status in 200..299 do
     {:ok, body}
   end
 
-  defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
+  defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, action, org_id) do
+    Logger.error("""
+    [Gupshup WhatsAppForms API Error]
+    Action: #{action}
+    Org ID: #{org_id}
+    Status: #{status}
+    Response Body: #{inspect(body)}
+    """)
+
     {:error, body}
   end
 
-  defp parse_response({:error, reason}),
-    do: {:error, inspect(reason)}
+  defp parse_response({:error, reason}, action, org_id) do
+    Logger.error("""
+    [Gupshup WhatsAppForms API Request Failed]
+    Action: #{action}
+    Org ID: #{org_id}
+    Reason: #{inspect(reason)}
+    """)
+
+    {:error, inspect(reason)}
+  end
 end

@@ -108,7 +108,7 @@ defmodule Glific.WhatsappForms do
         from(q in query, where: q.status == ^status)
 
       {:name, name}, query ->
-        from(q in query, where: q.name == ^name)
+        from(q in query, where: ilike(q.name, ^"%#{name}%"))
 
       {:meta_flow_id, meta_flow_id}, query ->
         from(q in query, where: q.meta_flow_id == ^meta_flow_id)
@@ -162,10 +162,24 @@ defmodule Glific.WhatsappForms do
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_whatsapp_form(form, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(form.id)
+    with {:ok, whatsapp_form} <- get_whatsapp_form_by_id(form.id) do
+      whatsapp_form
+      |> WhatsappForm.changeset(attrs)
+      |> Repo.update()
+    end
+  end
 
-    whatsapp_form
-    |> WhatsappForm.changeset(attrs)
-    |> Repo.update()
+  @doc """
+  Deletes a WhatsApp form belonging to a specific organization by its ID.
+  """
+  @spec delete_whatsapp_form(non_neg_integer(), non_neg_integer()) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+  def delete_whatsapp_form(id, organization_id) do
+    with {:ok, whatsapp_form} <-
+           Repo.fetch_by(WhatsappForm, %{id: id, organization_id: organization_id}),
+         {:ok, delete_form} <-
+           Repo.delete(whatsapp_form) do
+      {:ok, %{whatsapp_form: delete_form}}
+    end
   end
 end

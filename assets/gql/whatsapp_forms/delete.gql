@@ -1,7 +1,7 @@
 #import "./fields.frag.gql"
 
-query WhatsappForm($whatsappFormId: ID!) {
-  whatsappForm(id: $whatsappFormId) {
+mutation deleteWhatsappForm($id: ID!) {
+  deleteWhatsappForm(id: $id) {
     ...WhatsappFormFields
     ...WhatsappFormErrorFields
   }
