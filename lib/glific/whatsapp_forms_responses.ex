@@ -15,9 +15,6 @@ defmodule Glific.WhatsappFormsResponses do
   """
   @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
   def create_whatsapp_form_response(attrs) do
-    IO.inspect(attrs, label: "Creating WhatsApp Form Response with attrs")
-    get_wa_form_id(attrs.template_id)
-
     with {:ok, whatsapp_form_id} <- get_wa_form_id(attrs.template_id),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
          {:ok, decoded_response} <- Jason.decode(attrs.raw_response) do
@@ -34,6 +31,7 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
+  @spec get_wa_form_id(String.t()) :: {:ok, non_neg_integer()} | nil
   defp get_wa_form_id(template_id) do
     with template when not is_nil(template) <-
            Repo.get_by(SessionTemplate, %{bsp_id: template_id}),
