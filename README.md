@@ -326,7 +326,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  8. Test SSL connection:
  First get the mkcert root path
  ```bash
- echo $(mkcert -CAROOT)
+ echo "$(mkcert -CAROOT)"
  ```
 
  ```bash
@@ -357,7 +357,7 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
  To get the base64 encoded certificate, run:
  ```bash
- base64 -i $(mkcert -CAROOT)/rootCA.pem
+ base64 -i "$(mkcert -CAROOT)"/rootCA.pem
  ```
  
  Copy the output and paste it as the value for `PRIMARY_CACERT_ENCODED`. If you're using a read replica with the same SSL setup, use the same value for `REPLICA_CACERT_ENCODED`.
