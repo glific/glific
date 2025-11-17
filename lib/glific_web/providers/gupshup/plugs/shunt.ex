@@ -79,18 +79,6 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     end
   end
 
-  defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
-    case change do
-      %{"value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}} ->
-        true
-
-      _ ->
-        false
-    end
-  end
-
-  defp nfm_reply_message?(_), do: false
-
   @doc false
   def call(%Conn{params: %{"type" => type}} = conn, opts) do
     conn
@@ -104,6 +92,18 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     |> change_path_info(["gupshup", "unknown", "unknown"])
     |> Router.call(opts)
   end
+
+  defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
+    case change do
+      %{"value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}} ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  defp nfm_reply_message?(_), do: false
 
   @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()
