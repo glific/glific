@@ -721,7 +721,7 @@ defmodule Glific.TemplatesTest do
         example: "Your conference ticket no. [1234]",
         organization_id: attrs.organization_id,
         has_buttons: true,
-        button_type: "whatsapp_form",
+        button_type: :whatsapp_form,
         buttons: [%{"text" => "confirm", "type" => "FLOW"}]
       }
 
@@ -1172,6 +1172,55 @@ defmodule Glific.TemplatesTest do
       assert hsm.buttons == [
                %{"text" => "cold ", "type" => "QUICK_REPLY"},
                %{"text" => "warm", "type" => "QUICK_REPLY"}
+             ]
+    end
+
+    test "update_hsms/1 should insert newly received whatsapp form button HSM with type as whatsapp_form",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ACCOUNT_UPDATE",
+                    "createdOn" => 1_595_904_220_495,
+                    "data" => "Your conference ticket no. {{1}}",
+                    "elementName" => "conference_ticket_status",
+                    "id" => whatspp_hsm_uuid,
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => true,
+                    "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                    "modifiedOn" => 1_595_904_220_495,
+                    "status" => "PENDING",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON",
+                    "buttonSupported" => "FLOW",
+                    "containerMeta" =>
+                      Jason.encode!(%{
+                        "buttons" => [%{"text" => "confirm", "type" => "FLOW"}]
+                      })
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: whatspp_hsm_uuid})
+
+      assert hsm.button_type == :whatsapp_form
+
+      assert hsm.buttons == [
+               %{"text" => "confirm", "type" => "FLOW"}
              ]
     end
 
