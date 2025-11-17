@@ -560,7 +560,7 @@ defmodule Glific.Templates do
         |> Map.put(:buttons, buttons)
 
       {:error, reason} ->
-        Logger.error("FLOW button extraction failed: #{inspect(reason)}")
+        Logger.error("FLOW button extraction failed: #{reason}")
         template
     end
   end
