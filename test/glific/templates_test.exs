@@ -1261,8 +1261,6 @@ defmodule Glific.TemplatesTest do
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{shortcode: "missing_meta_flow_template"})
 
-      IO.inspect(hsm, label: "hsm")
-
       refute hsm.has_buttons
       assert hsm.button_type == nil
       assert hsm.buttons == []
