@@ -3,25 +3,44 @@ defmodule Glific.WhatsappFormsResponses do
   Module to handle WhatsApp Form Responses
   """
 
-  alias Glific.{Repo, WhatsappForms.WhatsappFormResponse}
+  alias Glific.{
+    Repo,
+    Templates.SessionTemplate,
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse
+  }
 
   @doc """
   Create a WhatsApp form response from the given attributes
   """
   @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
   def create_whatsapp_form_response(attrs) do
-    with {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
+    IO.inspect(attrs, label: "Creating WhatsApp Form Response with attrs")
+    get_wa_form_id(attrs.template_id)
+
+    with {:ok, whatsapp_form_id} <- get_wa_form_id(attrs.template_id),
+         {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
          {:ok, decoded_response} <- Jason.decode(attrs.raw_response) do
       %{
         raw_response: decoded_response,
         contact_id: attrs.sender_id,
         submitted_at: parsed_timestamp,
-        whatsapp_form_id: "1",
+        whatsapp_form_id: whatsapp_form_id,
         organization_id: attrs.organization_id
       }
       |> do_create_whatsapp_form_response()
     else
       error -> error
+    end
+  end
+
+  defp get_wa_form_id(template_id) do
+    with template when not is_nil(template) <-
+           Repo.get_by(SessionTemplate, %{bsp_id: template_id}),
+         [template_button | _] <- template.buttons,
+         %{"flow_id" => flow_id} <- template_button,
+         wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
+      {:ok, wa_form.id}
     end
   end
 
