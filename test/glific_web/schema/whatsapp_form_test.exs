@@ -21,6 +21,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   )
 
   load_gql(
+    :activate_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/activate.gql"
+  )
+
+  load_gql(
     :count_whatsapp_forms,
     GlificWeb.Schema,
     "assets/gql/whatsapp_forms/count.gql"
@@ -94,6 +100,38 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       })
 
     assert updated_form.status == :inactive
+  end
+
+  test "activates a whatsapp form and updates its status to published",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{"status" => "success"}}
+    end)
+
+    {:ok, sign_up_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
+    _result =
+      auth_query_gql_by(:activate_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
+
+    {:ok, updated_form} =
+      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+      })
+
+    assert updated_form.status == :published
+  end
+
+  test "fails to activate WhatsApp form if the form does not exist",
+       %{manager: user} do
+    {:ok, %{data: %{"activateWhatsappForm" => %{"errors" => [error | _]}}}} =
+      auth_query_gql_by(:activate_whatsapp_form, user, variables: %{"id" => "318182039810832"})
+
+    assert error["message"] ==
+             "Resource not found"
   end
 
   test "fails to deactivate WhatsApp form if the form does not exist",
