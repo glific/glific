@@ -672,7 +672,7 @@ defmodule Glific.TemplatesTest do
               ]} = Templates.create_session_template(attrs)
     end
 
-    test "create_session_template/1 for HSM button template should submit it for approval if  the button  type is whatsapp form",
+    test "create_session_template/1 for HSM button template should submit it for approval if the button type is whatsapp form",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
 
@@ -734,7 +734,6 @@ defmodule Glific.TemplatesTest do
       assert session_template.uuid == whatspp_hsm_uuid
       assert session_template.language_id == language.id
 
-      # Applying for button template with incomplete field should return error
       attrs = %{
         body: "Your train ticket no. {{1}}",
         label: "New Label",
