@@ -22,7 +22,6 @@ defmodule Glific.Saas.Queries do
     Registrations,
     Registrations.Registration,
     Repo,
-    Saas.Onboard,
     Seeds.Seeder,
     Seeds.SeedsMigration,
     Users
@@ -201,7 +200,7 @@ defmodule Glific.Saas.Queries do
 
   defp organization(result, params) do
     org_name = String.trim(params["name"])
-    is_trial = Onboard.is_trial_account?(org_name)
+    is_trial = String.contains?(org_name, "trial")
 
     # Skip ERP check for trial accounts
     erp_result =
