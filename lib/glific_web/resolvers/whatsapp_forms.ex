@@ -105,6 +105,20 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   end
 
   @doc """
+  activate WhatsApp form.
+  """
+  @spec activate_whatsapp_form(
+          Absinthe.Resolution.t(),
+          %{id: non_neg_integer()},
+          %{context: map()}
+        ) ::
+          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          | {:error, any()}
+  def activate_whatsapp_form(_parent, %{id: id}, _) do
+    WhatsappForms.activate_whatsapp_form(id)
+  end
+
+  @doc """
     Deletes a WhatsApp form belonging to a specific organization by its ID.
   """
   @spec delete_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::

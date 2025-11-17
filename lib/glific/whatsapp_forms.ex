@@ -77,6 +77,18 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
+  activate a WhatsApp form by its Meta Flow ID.
+  """
+  @spec activate_whatsapp_form(non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, String.t()}
+  def activate_whatsapp_form(id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, updated_form} <- update_form_status(form, :published) do
+      {:ok, %{whatsapp_form: updated_form}}
+    end
+  end
+
+  @doc """
   Fetches a WhatsApp form by its ID
   """
   @spec get_whatsapp_form_by_id(non_neg_integer()) ::
