@@ -67,7 +67,8 @@ defmodule Glific.Saas.Onboard do
         "phone" => @dummy_phone_number,
         "api_key" => nil,
         "app_name" => nil,
-        "app_id" => nil
+        "app_id" => nil,
+        "is_trial" => Map.get(params, "is_trial", false)
       })
 
     result = %{is_valid: true, messages: %{}}
@@ -84,7 +85,7 @@ defmodule Glific.Saas.Onboard do
       notify_saas_team(result.organization)
       setup_kaapi_for_organization(result.organization)
 
-      if result.organization.is_trial_org do
+      if params["is_trial"] do
         setup_gcs(result.organization)
       end
 

@@ -6,7 +6,7 @@ defmodule Glific.Repo.Migrations.AddStatusEnumToUsers do
       add :trial_metadata, :map,
         default: fragment("'{\"status\": \"active\"}'::jsonb"),
         null: false,
-        comment: "Indicates whether the user account is active or expired"
+        comment: "Stores the trial account related information"
     end
   end
 end

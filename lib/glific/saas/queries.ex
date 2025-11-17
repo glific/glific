@@ -200,7 +200,7 @@ defmodule Glific.Saas.Queries do
 
   defp organization(result, params) do
     org_name = String.trim(params["name"])
-    is_trial = String.contains?(org_name, "trial")
+    is_trial = params["is_trial"] == true
 
     # Skip ERP check for trial accounts
     erp_result =
