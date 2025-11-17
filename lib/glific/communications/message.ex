@@ -283,7 +283,6 @@ defmodule Glific.Communications.Message do
   defp receive_whatsapp_form_response(message_params) do
     {:ok, form_response} =
       message_params
-      |> Map.put(:organization_id, message_params.organization_id)
       |> WhatsappFormsResponses.create_whatsapp_form_response()
 
     message_attrs = %{
@@ -294,7 +293,8 @@ defmodule Glific.Communications.Message do
       receiver_id: Partners.organization_contact_id(message_params.organization_id),
       contact_id: form_response.contact_id,
       body: "",
-      whatsapp_form_response_id: form_response.id
+      whatsapp_form_response_id: form_response.id,
+      bsp_message_id: message_params.bsp_message_id
     }
 
     {:ok, message} = Messages.create_message(message_attrs)
