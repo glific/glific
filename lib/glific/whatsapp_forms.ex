@@ -186,9 +186,17 @@ defmodule Glific.WhatsappForms do
            ) do
       :ok
     else
+      {:error, %Tesla.Env{body: body, status: 400}} ->
+        if String.contains?(body, "Duplicate component tag") do
+          :ok
+        else
+          Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(body)}")
+          {:error, body}
+        end
+
       {:error, error} ->
         Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(error)}")
-        :ok
+        {:error, error}
 
       # Any other count (not 1) means it's not the first form
       _count ->
