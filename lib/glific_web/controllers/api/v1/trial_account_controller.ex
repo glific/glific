@@ -6,7 +6,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
 
   def trial(conn, _params) do
     token = get_req_header(conn, "x-api-key") |> List.first()
-    expected_token = "8fSLZ035pPUOMpGZUTvS2swm5xrRLhVxb79f"
+    expected_token = get_token()
 
     if token == expected_token do
       case get_available_trial_account() do
@@ -65,4 +65,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       end
     end)
   end
+
+  defp get_token, do: Application.fetch_env!(:glific, __MODULE__)[:trial_account_token]
 end
