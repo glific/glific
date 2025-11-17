@@ -14,8 +14,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
           json(conn, %{
             success: true,
             data: %{
-              login_url: "https://#{organization.name}.glific.com",
-              expires_at: organization.expiration_date
+              login_url: "https://#{organization.shortcode}.glific.com",
+              expires_at: organization.trial_expiration_date
             }
           })
 
@@ -34,25 +34,35 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end
   end
 
-  defp get_available_trial_account do
-    available_org =
-      from(o in Organization,
-        where: o.is_trial_org == true,
-        where: is_nil(o.expiration_date),
-        limit: 1
-      )
-      |> Repo.one(skip_organization_id: true)
+  defp get_available_trial_account() do
+    Repo.transaction(fn ->
+      available_org =
+        from(o in Organization,
+          where: o.is_trial_org == true,
+          where: is_nil(o.trial_expiration_date),
+          limit: 1,
+          lock: "FOR UPDATE"
+        )
+        |> Repo.one(skip_organization_id: true)
 
-    case available_org do
-      nil ->
-        {:error, :no_available_accounts}
+      case available_org do
+        nil ->
+          Repo.rollback(:no_available_accounts)
 
-      org ->
-        expiration_date = DateTime.utc_now() |> DateTime.add(14, :day)
+        org ->
+          expiration_date =
+            DateTime.utc_now()
+            |> DateTime.truncate(:second)
+            |> DateTime.add(14, :day)
 
-        org
-        |> Organization.changeset(%{expiration_date: expiration_date})
-        |> Repo.update()
-    end
+          case Ecto.Changeset.change(org, %{
+                 trial_expiration_date: expiration_date
+               })
+               |> Repo.update() do
+            {:ok, updated_org} -> updated_org
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+      end
+    end)
   end
 end
