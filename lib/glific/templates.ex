@@ -559,7 +559,8 @@ defmodule Glific.Templates do
         |> Map.put(:button_type, :whatsapp_form)
         |> Map.put(:buttons, buttons)
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error("FLOW button extraction failed: #{inspect(reason)}")
         template
     end
   end
