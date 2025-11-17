@@ -1,9 +1,14 @@
 defmodule GlificWeb.API.V1.TrialAccountController do
+  @moduledoc """
+  Controller for allocating trial accounts to users via an API endpoint.
+  """
+
   use GlificWeb, :controller
 
-  alias Glific.{Repo, Partners.Organization}
+  alias Glific.{Partners.Organization, Repo}
   import Ecto.Query
 
+  @doc false
   def trial(conn, _params) do
     token = get_req_header(conn, "x-api-key") |> List.first()
     expected_token = get_token()
@@ -34,7 +39,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end
   end
 
-  defp get_available_trial_account() do
+  defp get_available_trial_account do
     Repo.transaction(fn ->
       available_org =
         from(o in Organization,
