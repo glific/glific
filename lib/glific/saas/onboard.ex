@@ -56,6 +56,7 @@ defmodule Glific.Saas.Onboard do
   V2 of setup/1, where email and name are the only mandatory values we need to provide
 
   example argument %{"email" => "foo@bar.com", "name" => "test"}
+  for trial org %{"email" => "foo@bar.com", "name" => "trial_org", "is_trial" => true}
 
   Optionally we can provide "shortcode" too, incase system generated shortcode
   has any validation issue.

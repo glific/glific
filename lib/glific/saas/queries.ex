@@ -280,6 +280,13 @@ defmodule Glific.Saas.Queries do
     {:ok, password} =
       Passgen.create!(length: 15, numbers: true, uppercase: true, lowercase: true, symbols: true)
 
+    trial_metadata =
+      if result.organization.is_trial_org do
+        %{"status" => "active"}
+      else
+        %{}
+      end
+
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->
         {:ok, _user} =
@@ -291,7 +298,8 @@ defmodule Glific.Saas.Queries do
               contact_id: contact.id,
               last_login_at: DateTime.utc_now(),
               last_login_from: "127.0.0.1",
-              organization_id: result.organization.id
+              organization_id: result.organization.id,
+              trial_metadata: trial_metadata
             })
           )
 

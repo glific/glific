@@ -4,7 +4,7 @@ defmodule Glific.Repo.Migrations.AddStatusEnumToUsers do
   def change do
     alter table(:users) do
       add :trial_metadata, :map,
-        default: fragment("'{\"status\": \"active\"}'::jsonb"),
+        default: fragment("'{}'::jsonb"),
         null: false,
         comment: "Stores the trial account related information"
     end
