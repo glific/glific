@@ -1224,6 +1224,50 @@ defmodule Glific.TemplatesTest do
              ]
     end
 
+    test "update_hsms/1 should handle whatsapp form responses when containerMeta is empty",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ACCOUNT_UPDATE",
+                    "createdOn" => 1_595_904_220_495,
+                    "data" => "Body without buttons",
+                    "elementName" => "missing_meta_flow_template",
+                    "id" => "0f7c7e51-f611-4dbf-b4d3-4962f8f79351",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => true,
+                    "meta" => "{\"example\":\"Body without buttons\"}",
+                    "modifiedOn" => 1_595_904_220_495,
+                    "status" => "PENDING",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON",
+                    "buttonSupported" => "FLOW",
+                    "containerMeta" => Jason.encode!(%{})
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{shortcode: "missing_meta_flow_template"})
+
+      IO.inspect(hsm, label: "hsm")
+
+      refute hsm.has_buttons
+      assert hsm.button_type == nil
+      assert hsm.buttons == []
+    end
+
     test "update_hsms/1 should handle whatsapp form responses without containerMeta gracefully",
          attrs do
       Tesla.Mock.mock(fn
