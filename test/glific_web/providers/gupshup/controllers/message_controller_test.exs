@@ -4,7 +4,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   alias Glific.{
     Contacts,
     Contacts.Location,
-    Messages,
     Messages.Message,
     Repo,
     Seeds.SeedsDev,
