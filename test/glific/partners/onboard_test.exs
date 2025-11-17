@@ -1029,6 +1029,6 @@ defmodule Glific.OnboardTest do
     assert organization.is_active
 
     assert organization.is_trial_org == true
-    assert organization.expiration_date == nil
+    assert organization.trial_expiration_date == nil
   end
 end

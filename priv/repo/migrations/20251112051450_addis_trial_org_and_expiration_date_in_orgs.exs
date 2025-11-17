@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.AddisTrialOrgAndExpirationDateInOrgs do
         default: false,
         comment: "whether this is a trial org"
 
-      add :expiration_date, :utc_datetime,
+      add :trial_expiration_date, :utc_datetime,
         default: nil,
         comment: "When the trial period for this org ends"
     end

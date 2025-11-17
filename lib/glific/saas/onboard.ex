@@ -84,7 +84,7 @@ defmodule Glific.Saas.Onboard do
       notify_saas_team(result.organization)
       setup_kaapi_for_organization(result.organization)
 
-      if is_trial_account?(result.organization.name) do
+      if result.organization.is_trial_org do
         setup_gcs(result.organization)
       end
 
@@ -280,7 +280,7 @@ defmodule Glific.Saas.Onboard do
 
   @spec notify_saas_team(Organization.t()) :: map()
   defp notify_saas_team(org) do
-    if !is_trial_account?(org.name) do
+    if !org.is_trial_org do
       NewPartnerOnboardedMail.new_mail(org)
       |> Mailer.send(%{
         category: "new_partner_onboarded",
@@ -497,14 +497,5 @@ defmodule Glific.Saas.Onboard do
       secrets: cred.secrets,
       is_active: true
     })
-  end
-
-  @doc """
-  check the trial org
-  """
-  @spec is_trial_account?(String.t()) :: boolean()
-  def is_trial_account?(org_name) when is_binary(org_name) do
-    org_name
-    |> String.contains?("trial")
   end
 end
