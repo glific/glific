@@ -58,36 +58,38 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
-  def call(
-        %Conn{
-          params: %{
-            "entry" => [
-              %{
-                "changes" => [
-                  %{
-                    "value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}
-                  }
-                  | _
-                ]
-              }
-              | _
-            ]
-          }
-        } = conn,
-        opts
-      ) do
-    organization = build_context(conn)
+  def call(%Conn{params: %{"entry" => entries}} = conn, opts)
+      when is_list(entries) do
+    if nfm_reply_message?(entries) do
+      organization = build_context(conn)
 
-    path =
-      ["gupshup"] ++
-        if Glific.safe_string_to_atom(organization.status) == :active,
-          do: ["message", "whatsapp_form_response"],
-          else: ["not_active_or_approved"]
+      path =
+        ["gupshup"] ++
+          if Glific.safe_string_to_atom(organization.status) == :active,
+            do: ["message", "whatsapp_form_response"],
+            else: ["not_active_or_approved"]
 
-    conn
-    |> change_path_info(path)
-    |> Router.call(opts)
+      conn
+      |> change_path_info(path)
+      |> Router.call(opts)
+    else
+      conn
+      |> change_path_info(["gupshup", "entry", "unknown"])
+      |> Router.call(opts)
+    end
   end
+
+  defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
+    case change do
+      %{"value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}} ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  defp nfm_reply_message?(_), do: false
 
   @doc false
   def call(%Conn{params: %{"type" => type}} = conn, opts) do
