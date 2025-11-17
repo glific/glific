@@ -26,8 +26,6 @@ defmodule Glific.WhatsappFormsResponses do
         organization_id: attrs.organization_id
       }
       |> do_create_whatsapp_form_response()
-    else
-      error -> error
     end
   end
 
@@ -44,12 +42,7 @@ defmodule Glific.WhatsappFormsResponses do
 
   @spec parse_timestamp(String.t()) :: {:ok, DateTime.t()} | {:error, atom()}
   defp parse_timestamp(timestamp) do
-    case DateTime.from_unix(String.to_integer(timestamp)) do
-      {:ok, dt} -> {:ok, dt}
-      error -> error
-    end
-  rescue
-    _ -> {:error, :invalid_timestamp}
+    DateTime.from_unix(String.to_integer(timestamp))
   end
 
   @spec do_create_whatsapp_form_response(any()) ::

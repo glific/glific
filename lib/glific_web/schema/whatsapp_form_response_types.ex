@@ -15,9 +15,5 @@ defmodule GlificWeb.Schema.WhatsappFormResponseTypes do
     field :submitted_at, :string
     field :inserted_at, :datetime
     field :updated_at, :datetime
-
-    field :message, :message do
-      resolve(dataloader(Repo, use_parent: true))
-    end
   end
 end

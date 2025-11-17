@@ -93,6 +93,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     |> Router.call(opts)
   end
 
+  @spec nfm_reply_message?(list()) :: boolean()
   defp nfm_reply_message?([%{"changes" => [change | _]} | _]) do
     case change do
       %{"value" => %{"messages" => [%{"interactive" => %{"type" => "nfm_reply"}} | _]}} ->
