@@ -9,8 +9,6 @@ defmodule GlificWeb.API.V1.AskmeController do
   @doc false
   @spec ask(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def ask(conn, params) do
-    IO.inspect(params)
-
     with %User{organization_id: org_id} <- conn.assigns.current_user,
          {:ok, text} <- AskmeBot.askme(params, org_id) do
       json(conn, %{response: text})
