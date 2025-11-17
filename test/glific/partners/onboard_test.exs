@@ -989,7 +989,8 @@ defmodule Glific.OnboardTest do
 
     attrs = %{
       "name" => "trial account",
-      "email" => "foo@gmail.com"
+      "email" => "foo@gmail.com",
+      "is_trial" => true
     }
 
     Tesla.Mock.mock(fn

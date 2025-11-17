@@ -59,8 +59,9 @@ defmodule Glific.Partners do
     end)
   end
 
+  @spec get_excluded_providers(non_neg_integer()) :: [String.t()]
   defp get_excluded_providers(org_id) do
-    provides = [
+    providers = [
       "goth",
       "kaapi",
       "gupshup_enterprise",
@@ -72,10 +73,10 @@ defmodule Glific.Partners do
 
     case get_organization!(org_id) do
       %{is_trial_org: true} ->
-        ["google_cloud_storage" | provides]
+        ["google_cloud_storage" | providers]
 
       _ ->
-        provides
+        providers
     end
   end
 

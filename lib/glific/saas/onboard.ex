@@ -56,6 +56,7 @@ defmodule Glific.Saas.Onboard do
   V2 of setup/1, where email and name are the only mandatory values we need to provide
 
   example argument %{"email" => "foo@bar.com", "name" => "test"}
+  for trial org %{"email" => "foo@bar.com", "name" => "trial_org", "is_trial" => true}
 
   Optionally we can provide "shortcode" too, incase system generated shortcode
   has any validation issue.
@@ -67,7 +68,8 @@ defmodule Glific.Saas.Onboard do
         "phone" => @dummy_phone_number,
         "api_key" => nil,
         "app_name" => nil,
-        "app_id" => nil
+        "app_id" => nil,
+        "is_trial" => Map.get(params, "is_trial", false)
       })
 
     result = %{is_valid: true, messages: %{}}
@@ -84,7 +86,7 @@ defmodule Glific.Saas.Onboard do
       notify_saas_team(result.organization)
       setup_kaapi_for_organization(result.organization)
 
-      if result.organization.is_trial_org do
+      if params["is_trial"] do
         setup_gcs(result.organization)
       end
 
