@@ -381,4 +381,121 @@ defmodule Glific.Flows.ContactActionTest do
     assert notification.entity["flow_uuid"] == flow.uuid
     assert notification.entity["node_uuid"] == node_uuid
   end
+
+  test "notification should be created when template has inactive form in buttons", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    meta_flow_id = "12345678"
+
+    {:ok, _whatsapp_form} =
+      Glific.Repo.insert(%Glific.WhatsappForms.WhatsappForm{
+        name: "Test Inactive Form",
+        description: "Test form that is inactive",
+        meta_flow_id: meta_flow_id,
+        status: :inactive,
+        definition: %{},
+        categories: ["other"],
+        organization_id: attrs.organization_id
+      })
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    # Create a session template with buttons containing the inactive form
+    session_template =
+      template
+      |> Map.put(:buttons, [
+        %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
+      ])
+
+    templating = %Templating{
+      template: session_template,
+      variables: ["var_1", "var_2", "var_3"]
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    notifications = Notifications.list_notifications(%{filter: %{category: "Flow"}})
+
+    notification =
+      Enum.find(notifications, fn n ->
+        String.contains?(n.message, "Whatsapp form with id #{meta_flow_id} is inactive")
+      end)
+
+    assert notification != nil
+    assert notification.message == "Whatsapp form with id #{meta_flow_id} is inactive."
+    assert notification.entity["contact_id"] == contact.id
+    assert notification.entity["flow_id"] == context.flow_id
+  end
+
+  test "template message should be sent when form is active", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    meta_flow_id = "12345678"
+
+    {:ok, _whatsapp_form} =
+      Glific.Repo.insert(%Glific.WhatsappForms.WhatsappForm{
+        name: "Test Active Form",
+        description: "Test form that is active",
+        meta_flow_id: meta_flow_id,
+        status: :published,
+        definition: %{},
+        categories: ["other"],
+        organization_id: attrs.organization_id
+      })
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    session_template =
+      template
+      |> Map.put(:buttons, [
+        %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
+      ])
+
+    templating = %Templating{
+      template: session_template,
+      variables: ["var_1", "var_2", "var_3"]
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message != nil
+    assert message.flow_id == context.flow_id
+    assert message.is_hsm == true
+  end
 end
