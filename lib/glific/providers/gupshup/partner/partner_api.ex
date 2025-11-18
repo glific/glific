@@ -560,7 +560,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # if we want to add a newly introduced event other than
     # the defaults
 
-    tag = if is_nil(tag), do: "webhook_#{organization.shortcode}", else: "#{tag}_#{organization.shortcode}"
+    tag =
+      if is_nil(tag),
+        do: "webhook_#{organization.shortcode}",
+        else: "#{tag}_#{organization.shortcode}"
 
     modes =
       if modes == [] do
