@@ -528,8 +528,20 @@ defmodule Glific.Processor.ConsumerFlowTest do
          conn: conn
        } = attrs do
     Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{status: 200, body: %{status: "success", id: "1787478395302778"}}
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1787478395302778", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
     end)
 
     {:ok, _temp} =
