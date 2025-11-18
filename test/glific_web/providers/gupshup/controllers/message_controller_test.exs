@@ -6,7 +6,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     Contacts.Location,
     Messages.Message,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Templates,
+    WhatsappForms,
+    WhatsappForms.WhatsappFormResponse
   }
 
   @message_request_params %{
@@ -490,6 +493,196 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]
+    end
+  end
+
+  describe "whatsapp_form_response" do
+    test "Incoming WhatsApp form response should be stored in the database with whatsapp_response_id",
+         %{conn: conn} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{status: "success", id: "1787478395302778"}}
+      end)
+
+      {:ok, _temp} =
+        Templates.create_session_template(%{
+          label: "Whatsapp Form Template",
+          type: :text,
+          body: "Hello World",
+          language_id: 1,
+          organization_id: conn.assigns[:organization_id],
+          uuid: "3982792f-a178-442d-be4b-3eadbb804726",
+          buttons: [
+            %{
+              "text" => "RATE",
+              "type" => "FLOW",
+              "flow_id" => "1787478395302778",
+              "flow_action" => "NAVIGATE",
+              "navigate_screen" => "RATE"
+            }
+          ]
+        })
+
+      {:ok, _wa_form} =
+        WhatsappForms.create_whatsapp_form(%{
+          name: "Customer Feedback Form",
+          meta_flow_id: "1787478395302778",
+          form_json: %{
+            "screens" => []
+          },
+          categories: ["other"],
+          description: "A form to collect customer feedback",
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      payload = %{
+        "entry" => [
+          %{
+            "changes" => [
+              %{
+                "field" => "messages",
+                "value" => %{
+                  "contacts" => [
+                    %{
+                      "profile" => %{"name" => "Smit"},
+                      "wa_id" => "919917443994"
+                    }
+                  ],
+                  "messages" => [
+                    %{
+                      "context" => %{
+                        "from" => "919917443994",
+                        "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+                        "id" => "031AGDymvDNTGOEfndITwW",
+                        "meta_msg_id" =>
+                          "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAERgSNzY4MjM3OEU5RDBFQUY1MDNFAA=="
+                      },
+                      "from" => "919917443994",
+                      "id" => "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
+                      "interactive" => %{
+                        "nfm_reply" => %{
+                          "body" => "Sent",
+                          "name" => "flow",
+                          "response_json" =>
+                            "{\"screen_1_Purchase_experience_0\":\"0_Excellent\",\"screen_1_Delivery_and_setup_1\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"0_Excellent\"}"
+                        },
+                        "type" => "nfm_reply"
+                      },
+                      "timestamp" => "1763015605",
+                      "type" => "interactive"
+                    }
+                  ]
+                }
+              }
+            ],
+            "id" => "122037724131744"
+          }
+        ],
+        "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+      }
+
+      conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
+      assert conn2.halted
+
+      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA"
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:sender, :media])
+      assert_receive :received_message_to_process
+
+      assert message.whatsapp_form_response_id != nil
+      assert message.flow == :inbound
+      assert message.sender.phone == "919917443994"
+
+      {:ok, form_response} =
+        Repo.fetch_by(WhatsappFormResponse, %{id: message.whatsapp_form_response_id})
+
+      assert form_response.raw_response != nil
+    end
+
+    test "WhatsApp form response with no matching form should not be stored", %{conn: conn} do
+      {:ok, _temp} =
+        Templates.create_session_template(%{
+          label: "Whatsapp Form Template",
+          type: :text,
+          body: "Hello World",
+          language_id: 1,
+          organization_id: conn.assigns[:organization_id],
+          bsp_id: "3982792f-a178-442d-be4b-3eadbb804726",
+          buttons: [
+            %{
+              "text" => "RATE",
+              "type" => "FLOW",
+              "flow_id" => "1787478395302778",
+              "flow_action" => "NAVIGATE",
+              "navigate_screen" => "RATE"
+            }
+          ]
+        })
+
+      payload = %{
+        "entry" => [
+          %{
+            "changes" => [
+              %{
+                "field" => "messages",
+                "value" => %{
+                  "contacts" => [
+                    %{
+                      "profile" => %{"name" => "Smit"},
+                      "wa_id" => "919917443994"
+                    }
+                  ],
+                  "messages" => [
+                    %{
+                      "context" => %{
+                        "from" => "919917443994",
+                        "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+                        "id" => "031AGDymvDNTGOEfndITwW",
+                        "meta_msg_id" =>
+                          "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAERgSNzY4MjM3OEU5RDBFQUY1MDNFAA=="
+                      },
+                      "from" => "919917443994",
+                      "id" => "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
+                      "interactive" => %{
+                        "nfm_reply" => %{
+                          "body" => "Sent",
+                          "name" => "flow",
+                          "response_json" =>
+                            "{\"screen_1_Purchase_experience_0\":\"0_Excellent\",\"screen_1_Delivery_and_setup_1\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"0_Excellent\"}"
+                        },
+                        "type" => "nfm_reply"
+                      },
+                      "timestamp" => "1763015605",
+                      "type" => "interactive"
+                    }
+                  ]
+                }
+              }
+            ],
+            "id" => "122037724131744"
+          }
+        ],
+        "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+      }
+
+      conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
+      assert conn2.halted
+
+      bsp_message_id = "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA"
+
+      {:error, error} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      assert error == ["Elixir.Glific.Messages.Message", "Resource not found"]
     end
   end
 end
