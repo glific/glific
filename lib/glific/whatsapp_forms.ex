@@ -2,10 +2,12 @@ defmodule Glific.WhatsappForms do
   @moduledoc """
   WhatsApp Forms context module. This module provides functions for managing WhatsApp forms.
   """
+  require Logger
   import Ecto.Query, warn: false
 
   alias Glific.{
     Enums.WhatsappFormCategory,
+    Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     WhatsappForms.WhatsappForm
@@ -32,7 +34,8 @@ defmodule Glific.WhatsappForms do
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs) do
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
+         :ok <- maybe_set_subscription(attrs.organization_id) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end
@@ -192,6 +195,38 @@ defmodule Glific.WhatsappForms do
          {:ok, delete_form} <-
            Repo.delete(whatsapp_form) do
       {:ok, %{whatsapp_form: delete_form}}
+    end
+  end
+
+  @spec maybe_set_subscription(non_neg_integer()) :: :ok
+  defp maybe_set_subscription(organization_id) do
+    # Check if this is the first form for the organization
+    with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
+         {:ok, _response} <-
+           PartnerAPI.set_subscription(
+             organization_id,
+             nil,
+             ["FLOW_MESSAGE"],
+             3,
+             "whatsapp_forms_webhook"
+           ) do
+      :ok
+    else
+      {:error, %Tesla.Env{body: body, status: 400}} ->
+        if String.contains?(body, "Duplicate component tag") do
+          :ok
+        else
+          Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(body)}")
+          {:error, body}
+        end
+
+      {:error, error} ->
+        Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(error)}")
+        {:error, error}
+
+      # Any other count (not 1) means it's not the first form
+      _count ->
+        :ok
     end
   end
 end
