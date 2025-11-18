@@ -292,7 +292,9 @@ defmodule Glific.Communications.Message do
           contact_id: form_response.contact_id,
           body: "",
           whatsapp_form_response_id: form_response.id,
-          bsp_message_id: message_params.bsp_message_id
+          bsp_message_id: message_params.bsp_message_id,
+          bsp_status: :delivered,
+          status: :received,
         }
 
         {:ok, message} = Messages.create_message(message_attrs)
