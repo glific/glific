@@ -56,11 +56,20 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     }
 
     Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 201,
-          body: %{id: "1519604592614438", status: "success", validation_errors: []}
-        }
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
     end)
 
     result =
@@ -76,11 +85,20 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
   test "updates a whatsapp form", %{user: user} do
     Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 201,
-          body: %{id: "1519604592614438", status: "success", validation_errors: []}
-        }
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
     end)
 
     {:ok, %{whatsapp_form: whatsapp_form}} =
@@ -121,11 +139,20 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
   test "get whatsapp form", %{user: user} do
     Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 201,
-          body: %{id: "1519604592614438", status: "success", validation_errors: []}
-        }
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
     end)
 
     {:ok, %{whatsapp_form: whatsapp_form}} =
@@ -214,5 +241,105 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     assert {:error, body} = ApiClient.publish_whatsapp_form(@meta_flow_id, @org_id)
     assert body.error == "Unauthorized request"
+  end
+
+  test "creates whatsapp form and handles duplicate tag error gracefully", %{user: user} do
+    valid_attrs = %{
+      name: "Test Form",
+      form_json: @form_json,
+      description: "A test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "form123", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "/subscription") ->
+            %Tesla.Env{status: 400, body: "Duplicate component tag"}
+        end
+    end)
+
+    result = WhatsappForms.create_whatsapp_form(valid_attrs)
+    # Should still succeed and create the form
+    assert {:ok, %{whatsapp_form: whatsapp_form}} = result
+    assert whatsapp_form.name == "Test Form"
+  end
+
+  test "does not create whatsapp form if subscription API fails with other error", %{user: user} do
+    valid_attrs = %{
+      name: "Test Form",
+      form_json: @form_json,
+      description: "A test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "form123", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "/subscription") ->
+            %Tesla.Env{status: 500, body: "Internal server error"}
+        end
+    end)
+
+    result = WhatsappForms.create_whatsapp_form(valid_attrs)
+    assert {:error, %Tesla.Env{status: 500, body: "Internal server error"}} = result
+  end
+
+  test "should create the second form without calling subscription api", %{user: user} do
+    valid_attrs1 = %{
+      name: "Test Form",
+      form_json: @form_json,
+      description: "A test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    valid_attrs2 = %{
+      name: "Test Form 2",
+      form_json: @form_json,
+      description: "Another test WhatsApp form",
+      categories: ["other"],
+      organization_id: user.organization_id
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "form123", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
+    end)
+
+    result = WhatsappForms.create_whatsapp_form(valid_attrs1)
+    assert {:ok, %{whatsapp_form: whatsapp_form}} = result
+    assert whatsapp_form.name == "Test Form"
+
+    result2 = WhatsappForms.create_whatsapp_form(valid_attrs2)
+    # Should still succeed and create the form
+    assert {:ok, %{whatsapp_form: whatsapp_form2}} = result2
+    assert whatsapp_form2.name == "Test Form 2"
   end
 end

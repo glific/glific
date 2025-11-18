@@ -534,9 +534,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   - modes - Different modes we want to listen to, check `@modes` for defaults
   - version - Payload format, by default its v2 (gupshup format)
   """
-  @spec set_subscription(non_neg_integer(), String.t() | nil, list(String.t()), non_neg_integer()) ::
+  @spec set_subscription(
+          non_neg_integer(),
+          String.t() | nil,
+          list(String.t()),
+          non_neg_integer(),
+          String.t() | nil
+        ) ::
           tuple()
-  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
+  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2, tag \\ nil)
       when is_list(modes) do
     url = app_url!(org_id) <> "/subscription"
     organization = Partners.organization(org_id)
@@ -553,11 +559,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # modes can be passed in params,
     # if we want to add a newly introduced event other than
     # the defaults
-    modes = (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
+
+    tag =
+      if is_nil(tag),
+        do: "webhook_#{organization.shortcode}",
+        else: "#{tag}_#{organization.shortcode}"
+
+    modes =
+      if modes == [] do
+        @modes
+      else
+        Enum.map_join(modes, ",", &String.upcase/1)
+      end
 
     data = %{
       "modes" => modes,
-      "tag" => "webhook_#{organization.shortcode}",
+      "tag" => tag,
       "url" => callback_url,
       "version" => version
     }
