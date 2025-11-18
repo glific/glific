@@ -62,6 +62,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
+  import_types(__MODULE__.WhatsappFormResponseTypes)
 
   query do
     import_fields(:profile_queries)
