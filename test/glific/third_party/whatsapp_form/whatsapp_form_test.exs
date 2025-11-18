@@ -7,10 +7,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     WhatsappForms
   }
 
-  alias GlificWeb.{
-    Schema
-  }
-
   @org_id 1
   @meta_flow_id "1234567890"
   @form_json %{
@@ -35,19 +31,19 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
   load_gql(
     :create_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/create.gql"
   )
 
   load_gql(
     :update_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/update.gql"
   )
 
   load_gql(
     :whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/get.gql"
   )
 
