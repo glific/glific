@@ -64,7 +64,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     end)
 
     {:ok, sign_up_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
@@ -72,7 +72,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
     {:ok, updated_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     end)
 
     {:ok, sign_up_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
@@ -95,7 +95,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:deactivate_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
     {:ok, updated_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     end)
 
     {:ok, sign_up_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:activate_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
     {:ok, updated_form} =
-      Repo.fetch_by(Glific.WhatsappForms.WhatsappForm, %{
+      Repo.fetch_by(WhatsappForm, %{
         meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
       })
 
