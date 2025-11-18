@@ -510,7 +510,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
           body: "Hello World",
           language_id: 1,
           organization_id: conn.assigns[:organization_id],
-          bsp_id: "3982792f-a178-442d-be4b-3eadbb804726",
+          uuid: "3982792f-a178-442d-be4b-3eadbb804726",
           buttons: [
             %{
               "text" => "RATE",

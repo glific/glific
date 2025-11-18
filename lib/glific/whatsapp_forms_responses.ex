@@ -32,7 +32,7 @@ defmodule Glific.WhatsappFormsResponses do
   @spec get_wa_form_id(String.t()) :: {:ok, non_neg_integer()} | nil
   defp get_wa_form_id(template_id) do
     with template when not is_nil(template) <-
-           Repo.get_by(SessionTemplate, %{bsp_id: template_id}),
+           Repo.get_by(SessionTemplate, %{uuid: template_id}),
          [%{"flow_id" => flow_id}] <- template.buttons,
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form.id}
