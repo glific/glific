@@ -13,7 +13,10 @@ defmodule Glific.Processor.ConsumerFlowTest do
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Templates,
+    WhatsappForms,
+    WhatsappForms.WhatsappFormResponse
   }
 
   setup do
@@ -530,7 +533,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     end)
 
     {:ok, _temp} =
-      Glific.Templates.create_session_template(%{
+      Templates.create_session_template(%{
         label: "Whatsapp Form Template",
         type: :text,
         body: "Hello World",
@@ -549,7 +552,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
       })
 
     {:ok, _wa_form} =
-      Glific.WhatsappForms.create_whatsapp_form(%{
+      WhatsappForms.create_whatsapp_form(%{
         name: "Customer Feedback Form",
         meta_flow_id: "1787478395302778",
         form_json: %{
@@ -611,12 +614,12 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     # Fetch the contact by phone
     contact =
-      Repo.get_by(Glific.Contacts.Contact, phone: "9876543210_1")
+      Repo.get_by(Contact, phone: "9876543210_1")
 
     # Fetch the created WhatsAppFormResponse from DB using contact.id
     form_response =
       Repo.one(
-        from wfr in Glific.WhatsappForms.WhatsappFormResponse,
+        from wfr in WhatsappFormResponse,
           where: wfr.contact_id == ^contact.id
       )
 
@@ -626,7 +629,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     message =
       Repo.one(
-        from m in Glific.Messages.Message,
+        from m in Message,
           where:
             m.bsp_message_id == "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
           preload: [:whatsapp_form_response]

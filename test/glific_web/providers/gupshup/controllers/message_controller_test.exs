@@ -8,6 +8,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     Repo,
     Seeds.SeedsDev,
     Templates,
+    WhatsappForms,
     WhatsappForms.WhatsappFormResponse
   }
 
@@ -523,7 +524,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       {:ok, _wa_form} =
-        Glific.WhatsappForms.create_whatsapp_form(%{
+        WhatsappForms.create_whatsapp_form(%{
           name: "Customer Feedback Form",
           meta_flow_id: "1787478395302778",
           form_json: %{
