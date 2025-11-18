@@ -128,7 +128,7 @@ defmodule Glific.WhatsappForms do
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp update_form_status(%WhatsappForm{} = form, new_status) do
     form
     |> Ecto.Changeset.change(status: new_status)
