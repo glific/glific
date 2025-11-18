@@ -71,7 +71,7 @@ defmodule Glific.WhatsappForms do
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
   @spec deactivate_whatsapp_form(non_neg_integer()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
   def deactivate_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, updated_form} <- update_form_status(form, :inactive) do
@@ -83,7 +83,7 @@ defmodule Glific.WhatsappForms do
   activate a WhatsApp form by its Meta Flow ID.
   """
   @spec activate_whatsapp_form(non_neg_integer()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
   def activate_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, updated_form} <- update_form_status(form, :published) do
@@ -187,11 +187,11 @@ defmodule Glific.WhatsappForms do
   @doc """
   Deletes a WhatsApp form belonging to a specific organization by its ID.
   """
-  @spec delete_whatsapp_form(non_neg_integer(), non_neg_integer()) ::
+  @spec delete_whatsapp_form(non_neg_integer()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
-  def delete_whatsapp_form(id, organization_id) do
+  def delete_whatsapp_form(id) do
     with {:ok, whatsapp_form} <-
-           Repo.fetch_by(WhatsappForm, %{id: id, organization_id: organization_id}),
+           Repo.fetch_by(WhatsappForm, %{id: id}),
          {:ok, delete_form} <-
            Repo.delete(whatsapp_form) do
       {:ok, %{whatsapp_form: delete_form}}

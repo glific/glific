@@ -8,49 +8,45 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     WhatsappForms.WhatsappForm
   }
 
-  alias GlificWeb.{
-    Schema
-  }
-
   load_gql(
     :publish_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/publish_whatsapp_form.gql"
   )
 
   load_gql(
     :deactivate_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/deactivate_whatsapp_form.gql"
   )
 
   load_gql(
     :activate_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/activate.gql"
   )
 
   load_gql(
     :count_whatsapp_forms,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/count.gql"
   )
 
   load_gql(
     :list_whatsapp_forms,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/list.gql"
   )
 
   load_gql(
     :whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/get.gql"
   )
 
   load_gql(
     :delete_whatsapp_form,
-    Schema,
+    GlificWeb.Schema,
     "assets/gql/whatsapp_forms/delete.gql"
   )
 

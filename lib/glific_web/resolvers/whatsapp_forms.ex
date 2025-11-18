@@ -123,7 +123,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
   @spec delete_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_whatsapp_form(_, %{id: id}, %{context: %{current_user: user}}) do
-    WhatsappForms.delete_whatsapp_form(id, user.organization_id)
+  def delete_whatsapp_form(_, %{id: id}, _) do
+    WhatsappForms.delete_whatsapp_form(id)
   end
 end
