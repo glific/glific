@@ -25,7 +25,7 @@ defmodule Glific.Sheets.ApiClient do
   defp get_tesla_middlewares do
     [
       Tesla.Middleware.FollowRedirects,
-      {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets", sampling_scale: 5}}
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets", sampling_scale: 10}}
     ] ++
       Glific.get_tesla_retry_middleware()
   end
