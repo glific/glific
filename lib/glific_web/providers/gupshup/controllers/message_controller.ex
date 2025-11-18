@@ -123,30 +123,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   end
 
   @spec extract_message_from_webhook(map()) :: {map(), map(), String.t()}
-  defp extract_message_from_webhook(params) do
-    message =
-      get_in(params, [
-        "entry",
-        Access.at(0),
-        "changes",
-        Access.at(0),
-        "value",
-        "messages",
-        Access.at(0)
-      ])
-
-    contact =
-      get_in(params, [
-        "entry",
-        Access.at(0),
-        "changes",
-        Access.at(0),
-        "value",
-        "contacts",
-        Access.at(0)
-      ])
-
-    template_id = get_in(params, ["gsMetadata", "X-GS-T-ID"])
+  defp extract_message_from_webhook(%{
+         "entry" => [change | _],
+         "gsMetadata" => %{"X-GS-T-ID" => template_id}
+       }) do
+    %{"changes" => [%{"value" => %{"messages" => [message | _], "contacts" => [contact | _]}}]} =
+      change
 
     {message, contact, template_id}
   end

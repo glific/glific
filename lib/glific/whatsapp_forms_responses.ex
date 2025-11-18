@@ -37,6 +37,8 @@ defmodule Glific.WhatsappFormsResponses do
          %{"flow_id" => flow_id} <- template_button,
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form.id}
+    else
+      _ -> {:error, "WhatsApp Form not found for the given template_id"}
     end
   end
 

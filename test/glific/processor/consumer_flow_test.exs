@@ -519,4 +519,136 @@ defmodule Glific.Processor.ConsumerFlowTest do
       for_actor: %{organization_id: attrs.organization_id}
     )
   end
+
+  test "handles whatsapp form response correctly and includes and whatsapp response in the results map",
+       %{
+         conn: conn
+       } = attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{status: "success", id: "1787478395302778"}}
+    end)
+
+    {:ok, _temp} =
+      Glific.Templates.create_session_template(%{
+        label: "Whatsapp Form Template",
+        type: :text,
+        body: "Hello World",
+        language_id: 1,
+        organization_id: conn.assigns[:organization_id],
+        bsp_id: "3982792f-a178-442d-be4b-3eadbb804726",
+        buttons: [
+          %{
+            "text" => "RATE",
+            "type" => "FLOW",
+            "flow_id" => "1787478395302778",
+            "flow_action" => "NAVIGATE",
+            "navigate_screen" => "RATE"
+          }
+        ]
+      })
+
+    {:ok, _wa_form} =
+      Glific.WhatsappForms.create_whatsapp_form(%{
+        name: "Customer Feedback Form",
+        meta_flow_id: "1787478395302778",
+        form_json: %{
+          "screens" => []
+        },
+        categories: ["other"],
+        description: "A form to collect customer feedback",
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    payload = %{
+      "entry" => [
+        %{
+          "changes" => [
+            %{
+              "field" => "messages",
+              "value" => %{
+                "contacts" => [
+                  %{
+                    "profile" => %{"name" => "Smit"},
+                    "wa_id" => "9876543210_1"
+                  }
+                ],
+                "messages" => [
+                  %{
+                    "context" => %{
+                      "from" => "9876543210_1",
+                      "gs_id" => "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+                      "id" => "031AGDymvDNTGOEfndITwW",
+                      "meta_msg_id" =>
+                        "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAERgSNzY4MjM3OEU5RDBFQUY1MDNFAA=="
+                    },
+                    "from" => "9876543210_1",
+                    "id" => "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
+                    "interactive" => %{
+                      "nfm_reply" => %{
+                        "body" => "Sent",
+                        "name" => "flow",
+                        "response_json" =>
+                          "{\"screen_1_Purchase_experience_0\":\"0_Excellent\",\"screen_1_Delivery_and_setup_1\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"0_Excellent\"}"
+                      },
+                      "type" => "nfm_reply"
+                    },
+                    "timestamp" => "1763015605",
+                    "type" => "interactive"
+                  }
+                ]
+              }
+            }
+          ],
+          "id" => "122037724131744"
+        }
+      ],
+      "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+    }
+
+    conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
+    assert conn2.halted
+
+    # Fetch the contact by phone
+    contact =
+      Repo.get_by(Glific.Contacts.Contact, phone: "9876543210_1")
+
+    # Fetch the created WhatsAppFormResponse from DB using contact.id
+    form_response =
+      Repo.one(
+        from wfr in Glific.WhatsappForms.WhatsappFormResponse,
+          where: wfr.contact_id == ^contact.id
+      )
+
+    assert form_response != nil
+    assert form_response.raw_response["screen_0_Choose_one_0"] == "0_Yes"
+    assert form_response.raw_response["screen_1_Customer_service_2"] == "0_Excellent"
+
+    message =
+      Repo.one(
+        from m in Glific.Messages.Message,
+          where:
+            m.bsp_message_id == "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
+          preload: [:whatsapp_form_response]
+      )
+
+    assert message != nil
+    assert message.type == :whatsapp_form_response
+
+    flow =
+      Flow.get_loaded_flow(attrs.organization_id, "published", %{
+        uuid: "0633e385-0625-4432-98f7-e780a73944aa"
+      })
+
+    contact = Fixtures.contact_fixture()
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+    assert is_tuple(ConsumerFlow.continue_current_context(flow_context, message, "body", state))
+
+    new_context =
+      Repo.get_by(FlowContext, contact_id: contact.id, flow_id: flow.id)
+
+    assert new_context.results["result_1"]["screen_0_Choose_one_0"] == "0_Yes"
+    assert new_context.results["result_1"]["screen_1_Customer_service_2"] == "0_Excellent"
+  end
 end

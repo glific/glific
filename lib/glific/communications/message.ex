@@ -279,29 +279,32 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
-  @spec receive_whatsapp_form_response(map()) :: :ok
+  @spec receive_whatsapp_form_response(map()) :: :ok | {:error, any()}
   defp receive_whatsapp_form_response(message_params) do
-    {:ok, form_response} =
-      message_params
-      |> WhatsappFormsResponses.create_whatsapp_form_response()
+    case WhatsappFormsResponses.create_whatsapp_form_response(message_params) do
+      {:ok, form_response} ->
+        message_attrs = %{
+          flow: :inbound,
+          type: :whatsapp_form_response,
+          organization_id: message_params.organization_id,
+          sender_id: form_response.contact_id,
+          receiver_id: Partners.organization_contact_id(message_params.organization_id),
+          contact_id: form_response.contact_id,
+          body: "",
+          whatsapp_form_response_id: form_response.id,
+          bsp_message_id: message_params.bsp_message_id
+        }
 
-    message_attrs = %{
-      flow: :inbound,
-      type: :whatsapp_form_response,
-      organization_id: message_params.organization_id,
-      sender_id: form_response.contact_id,
-      receiver_id: Partners.organization_contact_id(message_params.organization_id),
-      contact_id: form_response.contact_id,
-      body: "",
-      whatsapp_form_response_id: form_response.id,
-      bsp_message_id: message_params.bsp_message_id
-    }
+        {:ok, message} = Messages.create_message(message_attrs)
 
-    {:ok, message} = Messages.create_message(message_attrs)
+        message
+        |> publish_data(:received_message)
+        |> process_message()
 
-    message
-    |> publish_data(:received_message)
-    |> process_message()
+      {:error, reason} ->
+        Logger.error("Failed to create WhatsApp form response: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   # preload the context message if it exists, so frontend can do the right thing
