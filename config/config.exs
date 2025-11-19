@@ -32,7 +32,7 @@ oban_queues = [
   crontab: 10,
   default: [
     limit: 10,
-    rate_limit: [allowed: 10, period: {1, :minute}, partition: [:worker, args: :organization_id]]
+    rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
   dialogflow: 5,
   gcs: 10,
