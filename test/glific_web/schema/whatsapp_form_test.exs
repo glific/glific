@@ -111,15 +111,17 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     {:ok, sign_up_form} =
       Repo.fetch_by(WhatsappForm, %{
-        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+        meta_flow_id: "flow-7a12cd90-c6e4-4e56-9a23-001f89b2a8b1"
       })
+
+    assert sign_up_form.status == :inactive
 
     _result =
       auth_query_gql_by(:activate_whatsapp_form, user, variables: %{"id" => sign_up_form.id})
 
     {:ok, updated_form} =
       Repo.fetch_by(WhatsappForm, %{
-        meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"
+        meta_flow_id: "flow-7a12cd90-c6e4-4e56-9a23-001f89b2a8b1"
       })
 
     assert updated_form.status == :published
