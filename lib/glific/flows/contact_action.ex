@@ -298,7 +298,7 @@ defmodule Glific.Flows.ContactAction do
          flow_label: flow_label
        }) do
     with {:ok, _form} <-
-           check_buttons_for_active_forms(session_template.buttons, context, messages) do
+           check_buttons_for_active_forms(session_template.buttons, context) do
       attachments = Localization.get_translation(context, action, :attachments)
 
       {type, media_id} =
@@ -336,7 +336,11 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  defp check_buttons_for_active_forms(buttons, context, _messages) do
+  @spec check_buttons_for_active_forms(
+          [map()] | nil,
+          FlowContext.t()
+        ) :: {:ok, WhatsappForm.t()} | {:error, String.t()} | {:ok, nil}
+  defp check_buttons_for_active_forms(buttons, context) do
     buttons
     |> Enum.find_value({:ok, nil}, fn button ->
       form_id = extract_form_id(button)
@@ -352,25 +356,28 @@ defmodule Glific.Flows.ContactAction do
     end)
   end
 
+  @spec extract_form_id(map()) :: String.t() | nil
   defp extract_form_id(%{"type" => "FLOW", "flow_id" => flow_id}) when not is_nil(flow_id),
     do: flow_id
 
   defp extract_form_id(%{type: "FLOW", flow_id: flow_id}) when not is_nil(flow_id), do: flow_id
   defp extract_form_id(_), do: nil
 
+  @spec validate_form_status(String.t(), FlowContext.t()) ::
+          {:ok, WhatsappForm.t()} | {:error, String.t()}
   defp validate_form_status(form_id, context) do
-    with {:ok, form} <- Repo.fetch_by(WhatsappForm, %{meta_flow_id: form_id}),
-         :ok <- check_form_active(form, form_id, context) do
-      {:ok, form}
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form_id}) do
+      {:ok, %{status: :inactive}} ->
+        FlowContext.notification(context, "Whatsapp form with id #{form_id} is inactive.")
+        {:error, "Form is inactive"}
+
+      {:ok, form} ->
+        {:ok, form}
+
+      error ->
+        error
     end
   end
-
-  defp check_form_active(%{status: :inactive}, form_id, context) do
-    FlowContext.notification(context, "Whatsapp form with id #{form_id} is inactive.")
-    {:error, "Form is inactive"}
-  end
-
-  defp check_form_active(_form, _form_id, _context), do: :ok
 
   @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
   defp process_labels(context, %{labels: nil} = action), do: {context, action}
