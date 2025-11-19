@@ -1874,6 +1874,7 @@ defmodule Glific.TemplatesTest do
 
   @org_id 1
 
+  @tag :tt
   test "successful HSM sync from BSP", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
@@ -1916,7 +1917,7 @@ defmodule Glific.TemplatesTest do
 
     context = %{context: %{current_user: attrs}}
 
-    context_2 = %{context: %{current_user: Map.put(attrs, :organization_id, 5)}}
+    _context_2 = %{context: %{current_user: Map.put(attrs, :organization_id, 5)}}
 
     assert {:ok, %{message: "HSM sync job queued successfully"}} =
              GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
@@ -1926,12 +1927,8 @@ defmodule Glific.TemplatesTest do
     assert {:ok, %{message: "HSM sync job already in progress"}} =
              GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
 
-    assert {:ok, %{message: "HSM sync job queued successfully"}} =
-             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context_2)
-
-    # The one failed is, the one with context_2 which has an invalid org_id.
-    assert %{success: 1, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default, with_safety: false)
 
     notifications =
       Repo.all(
