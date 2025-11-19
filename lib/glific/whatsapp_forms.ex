@@ -81,6 +81,8 @@ defmodule Glific.WhatsappForms do
 
   @doc """
   Activate a WhatsApp form by its Meta Flow ID.
+
+  Publishing a form makes the flow live and ready for use.
   If a form has been previously deactivated (which temporarily prevents NGOs from using it),
   this function activates it again and makes it available for use.
   """
