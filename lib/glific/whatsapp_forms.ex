@@ -80,7 +80,9 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  activate a WhatsApp form by its Meta Flow ID.
+  Activate a WhatsApp form by its Meta Flow ID.
+  If a form has been previously deactivated (which temporarily prevents NGOs from using it),
+  this function activates it again and makes it available for use.
   """
   @spec activate_whatsapp_form(non_neg_integer()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
