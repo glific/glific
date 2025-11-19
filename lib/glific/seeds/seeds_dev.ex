@@ -40,7 +40,8 @@ if Code.ensure_loaded?(Faker) do
       Users,
       WAGroup.WAManagedPhone,
       WAGroup.WAMessage,
-      WAManagedPhones
+      WAManagedPhones,
+      WhatsappForms.WhatsappForm
     }
 
     alias Faker.Lorem.Shakespeare
@@ -577,7 +578,7 @@ if Code.ensure_loaded?(Faker) do
       ]
 
       Enum.each(forms, fn form ->
-        Repo.insert!(struct(Glific.WhatsappForms.WhatsappForm, form))
+        Repo.insert!(struct(WhatsappForm, form))
       end)
     end
 
