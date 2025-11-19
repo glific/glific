@@ -165,7 +165,8 @@ config :ex_audit,
   version_schema: Glific.Version,
   tracked_schemas: [
     Glific.Flows.Flow,
-    Glific.Triggers.Trigger
+    Glific.Triggers.Trigger,
+    Glific.WhatsappForms.WhatsappForm
   ],
   primitive_structs: [
     DateTime
