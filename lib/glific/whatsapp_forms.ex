@@ -194,10 +194,8 @@ defmodule Glific.WhatsappForms do
   @spec delete_whatsapp_form(non_neg_integer()) ::
           {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
   def delete_whatsapp_form(id) do
-    with {:ok, whatsapp_form} <-
-           Repo.fetch_by(WhatsappForm, %{id: id}),
-         {:ok, delete_form} <-
-           Repo.delete(whatsapp_form) do
+    with {:ok, whatsapp_form} <- Repo.fetch_by(WhatsappForm, %{id: id}),
+         {:ok, delete_form} <- Repo.delete(whatsapp_form) do
       {:ok, %{whatsapp_form: delete_form}}
     end
   end
