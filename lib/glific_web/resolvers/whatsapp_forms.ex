@@ -58,7 +58,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer()},
           %{context: map()}
         ) ::
-          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
           | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id}, _) do
     WhatsappForms.publish_whatsapp_form(id)
@@ -98,7 +98,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer()},
           %{context: map()}
         ) ::
-          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
           | {:error, any()}
   def deactivate_whatsapp_form(_parent, %{id: id}, _) do
     WhatsappForms.deactivate_whatsapp_form(id)
@@ -112,7 +112,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer()},
           %{context: map()}
         ) ::
-          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
           | {:error, any()}
   def activate_whatsapp_form(_parent, %{id: id}, _) do
     WhatsappForms.activate_whatsapp_form(id)
