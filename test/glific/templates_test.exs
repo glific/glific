@@ -1874,7 +1874,6 @@ defmodule Glific.TemplatesTest do
 
   @org_id 1
 
-  @tag :tt
   test "successful HSM sync from BSP", attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
@@ -1916,8 +1915,6 @@ defmodule Glific.TemplatesTest do
     end)
 
     context = %{context: %{current_user: attrs}}
-
-    _context_2 = %{context: %{current_user: Map.put(attrs, :organization_id, 5)}}
 
     assert {:ok, %{message: "HSM sync job queued successfully"}} =
              GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
