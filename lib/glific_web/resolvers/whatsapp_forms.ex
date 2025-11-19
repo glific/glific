@@ -1,6 +1,6 @@
 defmodule GlificWeb.Resolvers.WhatsappForms do
   @moduledoc """
-  Resolver for publishing a WhatsApp form.
+    Resolvers for managing WhatsApp forms, including creation, updates, publishing, deactivation, and querying.
   """
 
   alias Glific.{
@@ -58,7 +58,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer()},
           %{context: map()}
         ) ::
-          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
           | {:error, String.t()}
   def publish_whatsapp_form(_parent, %{id: id}, _) do
     WhatsappForms.publish_whatsapp_form(id)
@@ -98,9 +98,32 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
           %{id: non_neg_integer()},
           %{context: map()}
         ) ::
-          {:ok, %{whatsapp_form: Glific.WhatsappForms.WhatsappForm.t()}}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
           | {:error, any()}
   def deactivate_whatsapp_form(_parent, %{id: id}, _) do
     WhatsappForms.deactivate_whatsapp_form(id)
+  end
+
+  @doc """
+  activate WhatsApp form.
+  """
+  @spec activate_whatsapp_form(
+          Absinthe.Resolution.t(),
+          %{id: non_neg_integer()},
+          %{context: map()}
+        ) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}}
+          | {:error, any()}
+  def activate_whatsapp_form(_parent, %{id: id}, _) do
+    WhatsappForms.activate_whatsapp_form(id)
+  end
+
+  @doc """
+    Deletes a WhatsApp form belonging to a specific organization by its ID.
+  """
+  @spec delete_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_whatsapp_form(_, %{id: id}, _) do
+    WhatsappForms.delete_whatsapp_form(id)
   end
 end

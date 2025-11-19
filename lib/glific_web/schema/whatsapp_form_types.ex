@@ -25,12 +25,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :wa_form_response do
-    field :status, :string
-    field :body, :whatsapp_form
-    field(:errors, list_of(:input_error))
-  end
-
   input_object :whatsapp_form_input do
     field :name, non_null(:string)
     field :form_json, non_null(:json)
@@ -107,6 +101,20 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.deactivate_whatsapp_form/3)
+    end
+
+    @desc "Activate a WhatsApp Form"
+    field :activate_whatsapp_form, type: :whatsapp_form_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WhatsappForms.activate_whatsapp_form/3)
+    end
+
+    @desc "Delete a WhatsApp Form"
+    field :delete_whatsapp_form, :whatsapp_form_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WhatsappForms.delete_whatsapp_form/3)
     end
   end
 end

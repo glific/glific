@@ -40,7 +40,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     client(url: url, headers: headers)
     |> Tesla.post("/flows", payload)
-    |> parse_response()
+    |> parse_response("create_whatsapp_form")
   end
 
   @doc """
@@ -60,7 +60,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     client(url: url, headers: headers)
     |> Tesla.put("/flows/#{meta_flow_id}", payload)
-    |> parse_response()
+    |> parse_response("update_whatsapp_form")
   end
 
   @doc """
@@ -73,20 +73,36 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
     Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
-    |> parse_response()
+    |> parse_response("publish_whatsapp_form")
   end
 
-  @spec parse_response({:ok, Tesla.Env.t()} | {:error, any()}) ::
-          {:ok, map()} | {:error, String.t()}
-  defp parse_response({:ok, %Tesla.Env{status: status, body: body}})
+  @spec parse_response(
+          {:ok, Tesla.Env.t()} | {:error, any()},
+          String.t()
+        ) :: {:ok, map()} | {:error, String.t()}
+  defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, _action)
        when status in 200..299 do
     {:ok, body}
   end
 
-  defp parse_response({:ok, %Tesla.Env{status: _status, body: body}}) do
+  defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, action) do
+    Logger.error("""
+    [Gupshup WhatsAppForms API Error]
+    Action: #{action}
+    Status: #{status}
+    Response Body: #{inspect(body)}
+    """)
+
     {:error, body}
   end
 
-  defp parse_response({:error, reason}),
-    do: {:error, inspect(reason)}
+  defp parse_response({:error, reason}, action) do
+    Logger.error("""
+    [Gupshup WhatsAppForms API Request Failed]
+    Action: #{action}
+    Reason: #{inspect(reason)}
+    """)
+
+    {:error, inspect(reason)}
+  end
 end

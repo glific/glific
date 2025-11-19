@@ -71,10 +71,26 @@ defmodule Glific.WhatsappForms do
   Deactivates a WhatsApp form by its Meta Flow ID.
   """
   @spec deactivate_whatsapp_form(non_neg_integer()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
   def deactivate_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, updated_form} <- update_form_status(form, :inactive) do
+      {:ok, %{whatsapp_form: updated_form}}
+    end
+  end
+
+  @doc """
+  Activate a WhatsApp form by its Meta Flow ID.
+
+  Publishing a form makes the flow live and ready for use.
+  If a form has been previously deactivated (which temporarily prevents NGOs from using it),
+  this function activates it again and makes it available for use.
+  """
+  @spec activate_whatsapp_form(non_neg_integer()) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+  def activate_whatsapp_form(id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, updated_form} <- update_form_status(form, :published) do
       {:ok, %{whatsapp_form: updated_form}}
     end
   end
@@ -111,7 +127,7 @@ defmodule Glific.WhatsappForms do
         from(q in query, where: q.status == ^status)
 
       {:name, name}, query ->
-        from(q in query, where: q.name == ^name)
+        from(q in query, where: ilike(q.name, ^"%#{name}%"))
 
       {:meta_flow_id, meta_flow_id}, query ->
         from(q in query, where: q.meta_flow_id == ^meta_flow_id)
@@ -119,7 +135,7 @@ defmodule Glific.WhatsappForms do
   end
 
   @spec update_form_status(WhatsappForm.t(), atom()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp update_form_status(%WhatsappForm{} = form, new_status) do
     form
     |> Ecto.Changeset.change(status: new_status)
@@ -165,11 +181,23 @@ defmodule Glific.WhatsappForms do
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_whatsapp_form(form, attrs) do
-    {:ok, whatsapp_form} = get_whatsapp_form_by_id(form.id)
+    with {:ok, whatsapp_form} <- get_whatsapp_form_by_id(form.id) do
+      whatsapp_form
+      |> WhatsappForm.changeset(attrs)
+      |> Repo.update()
+    end
+  end
 
-    whatsapp_form
-    |> WhatsappForm.changeset(attrs)
-    |> Repo.update()
+  @doc """
+  Deletes a WhatsApp form belonging to a specific organization by its ID.
+  """
+  @spec delete_whatsapp_form(non_neg_integer()) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+  def delete_whatsapp_form(id) do
+    with {:ok, whatsapp_form} <- Repo.fetch_by(WhatsappForm, %{id: id}),
+         {:ok, delete_form} <- Repo.delete(whatsapp_form) do
+      {:ok, %{whatsapp_form: delete_form}}
+    end
   end
 
   @spec maybe_set_subscription(non_neg_integer()) :: :ok
