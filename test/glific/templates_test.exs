@@ -2135,8 +2135,11 @@ defmodule Glific.TemplatesTest do
 
     assert_enqueued(worker: TemplateWorker, prefix: "global")
 
+    assert {:ok, %{message: "HSM sync job already in progress"}} =
+             GlificWeb.Resolvers.Templates.sync_hsm_template(nil, %{}, context)
+
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :default, with_safety: false)
 
     notifications =
       Repo.all(

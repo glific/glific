@@ -25,6 +25,21 @@ defmodule Glific.Templates.TemplateWorker do
     end)
   end
 
+  @doc """
+  Create HSM sync job
+  """
+  @spec create_hsm_sync_job(non_neg_integer()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset()} | term()
+  def create_hsm_sync_job(organization_id) do
+    __MODULE__.new(%{"organization_id" => organization_id, "sync_hsm" => true},
+      unique: [
+        keys: [:organization_id],
+        states: [:available, :scheduled, :executing]
+      ]
+    )
+    |> Oban.insert()
+  end
+
   @impl Oban.Worker
   @doc """
   Standard perform method to use Oban worker
