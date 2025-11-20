@@ -416,6 +416,7 @@ defmodule Glific.Flows.ContactActionTest do
     # Create a session template with buttons containing the inactive form
     session_template =
       template
+      |> Map.put(:button_type, :whatsapp_form)
       |> Map.put(:buttons, [
         %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
       ])
@@ -433,11 +434,10 @@ defmodule Glific.Flows.ContactActionTest do
 
     notification =
       Enum.find(notifications, fn n ->
-        String.contains?(n.message, "Whatsapp form with id #{meta_flow_id} is inactive")
+        String.contains?(n.message, "Whatsapp form with id #{meta_flow_id} is not active.")
       end)
 
     assert notification != nil
-    assert notification.message == "Whatsapp form with id #{meta_flow_id} is inactive."
     assert notification.entity["contact_id"] == contact.id
     assert notification.entity["flow_id"] == context.flow_id
   end
@@ -475,6 +475,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     session_template =
       template
+      |> Map.put(:button_type, :whatsapp_form)
       |> Map.put(:buttons, [
         %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
       ])

@@ -298,7 +298,7 @@ defmodule Glific.Flows.ContactAction do
          flow_label: flow_label
        }) do
     with {:ok, _form} <-
-           check_buttons_for_active_forms(session_template.buttons, context) do
+           check_buttons_for_active_forms(session_template, context) do
       attachments = Localization.get_translation(context, action, :attachments)
 
       {type, media_id} =
@@ -337,42 +337,29 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @spec check_buttons_for_active_forms(
-          [map()] | nil,
+          map(),
           FlowContext.t()
         ) :: {:ok, WhatsappForm.t()} | {:error, String.t()} | {:ok, nil}
-  defp check_buttons_for_active_forms(buttons, context) do
-    buttons
-    |> Enum.find_value({:ok, nil}, fn button ->
-      form_id = extract_form_id(button)
-
-      if form_id do
-        case validate_form_status(form_id, context) do
-          {:ok, _form} -> false
-          error -> error
-        end
-      else
-        false
-      end
-    end)
+  defp check_buttons_for_active_forms(
+         %{button_type: button_type, buttons: [%{"type" => "FLOW", "flow_id" => form_id} | _]},
+         context
+       )
+       when button_type in [:whatsapp_form, "whatsapp_form"] and not is_nil(form_id) do
+    validate_form_status(form_id, context)
   end
 
-  @spec extract_form_id(map()) :: String.t() | nil
-  defp extract_form_id(%{"type" => "FLOW", "flow_id" => flow_id}) when not is_nil(flow_id),
-    do: flow_id
-
-  defp extract_form_id(%{type: "FLOW", flow_id: flow_id}) when not is_nil(flow_id), do: flow_id
-  defp extract_form_id(_), do: nil
+  defp check_buttons_for_active_forms(_template, _context), do: {:ok, nil}
 
   @spec validate_form_status(String.t(), FlowContext.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
   defp validate_form_status(form_id, context) do
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form_id}) do
-      {:ok, %{status: :inactive}} ->
-        FlowContext.notification(context, "Whatsapp form with id #{form_id} is inactive.")
-        {:error, "Form is inactive"}
-
-      {:ok, form} ->
+      {:ok, %{status: :published} = form} ->
         {:ok, form}
+
+      {:ok, error} ->
+        error(context, error, %{}, "Whatsapp form with id #{form_id} is not active.")
+        {:error, "Form is not active"}
 
       error ->
         error
