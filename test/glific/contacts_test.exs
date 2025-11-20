@@ -478,7 +478,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -508,7 +508,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
@@ -533,7 +533,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
 
@@ -558,7 +558,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
 
@@ -598,7 +598,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -637,7 +637,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -674,7 +674,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -703,7 +703,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -732,7 +732,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -772,7 +772,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -810,7 +810,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -849,7 +849,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true, with_safety: false)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true, with_safety: false)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -888,7 +888,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -931,7 +931,7 @@ defmodule Glific.ContactsTest do
         assert_enqueued(worker: ImportWorker, prefix: "global")
 
         assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-                 Oban.drain_queue(queue: :default, with_scheduled: true)
+                 Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
         assert_not_called(Contacts.optin_contact())
       end
@@ -1492,7 +1492,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
@@ -1516,7 +1516,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "abcdef"}})
       assert count == 0
@@ -1539,7 +1539,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
@@ -1562,7 +1562,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       count = Contacts.count_contacts(%{filter: %{phone: "+919876543210"}})
       assert count == 1
@@ -1585,7 +1585,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 1
@@ -1608,7 +1608,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 2
@@ -1631,7 +1631,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       [contact | _] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
       assert contact.language_id == 1
@@ -1666,7 +1666,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       imported_contact = Contacts.get_contact_by_phone!(contact.phone)
 
@@ -1698,7 +1698,7 @@ defmodule Glific.ContactsTest do
       assert_enqueued(worker: ImportWorker, prefix: "global")
 
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default, with_scheduled: true)
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
       contact_history =
         Contacts.list_contact_history(Map.merge(attrs, %{filter: %{contact_id: contact.id}}))

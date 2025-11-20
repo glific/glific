@@ -5,9 +5,9 @@ defmodule Glific.Contacts.ImportWorker do
   require Logger
 
   use Oban.Worker,
-    queue: :default,
+    queue: :contact_import,
     max_attempts: 2,
-    priority: 2
+    priority: 1
 
   alias Glific.{
     Contacts,

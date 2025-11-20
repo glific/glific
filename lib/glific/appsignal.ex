@@ -48,7 +48,9 @@ defmodule Glific.Appsignal do
     # For ex for openai api,  sampling_scale is 5. For a default of 10% sampling rate,
     # 50% of openai requests will go to appsignal
     sampling_scale = meta[:sampling_scale] || 1
-    request_duration_milliseconds = System.convert_time_unit(measurement.duration, :native, :millisecond)
+
+    request_duration_milliseconds =
+      System.convert_time_unit(measurement.duration, :native, :millisecond)
 
     status = meta.env.status
 
@@ -72,11 +74,15 @@ defmodule Glific.Appsignal do
           })
 
         true ->
-          Appsignal.add_distribution_value("tesla_request_response", request_duration_milliseconds, %{
-            method: meta.env.method,
-            url: meta.env.url,
-            provider: meta[:provider]
-          })
+          Appsignal.add_distribution_value(
+            "tesla_request_response",
+            request_duration_milliseconds,
+            %{
+              method: meta.env.method,
+              url: meta.env.url,
+              provider: meta[:provider]
+            }
+          )
       end
     end
   end
