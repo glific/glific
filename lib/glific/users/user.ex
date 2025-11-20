@@ -45,7 +45,8 @@ defmodule Glific.Users.User do
           last_login_from: String.t() | nil,
           upload_contacts: boolean() | false,
           consent_for_updates: boolean(),
-          confirmed_at: :utc_datetime | nil
+          confirmed_at: :utc_datetime | nil,
+          organization_name: String.t() | nil
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
@@ -60,7 +61,8 @@ defmodule Glific.Users.User do
     :confirmed_at,
     :email,
     :consent_for_updates,
-    :trial_metadata
+    :trial_metadata,
+    :organization_name
   ]
 
   @password_opts [
@@ -96,6 +98,7 @@ defmodule Glific.Users.User do
     field(:last_login_from, :string, default: nil)
     field(:last_login_at, :utc_datetime)
     field(:confirmed_at, :utc_datetime)
+    field(:organization_name, :string, default: nil)
 
     belongs_to(:contact, Contact)
     belongs_to(:language, Language)
@@ -154,7 +157,8 @@ defmodule Glific.Users.User do
       :last_login_at,
       :last_login_from,
       :language_id,
-      :email
+      :email,
+      :organization_name
     ])
     |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
