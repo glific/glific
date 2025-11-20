@@ -60,7 +60,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Trackers.Tracker,
     Users.User,
     WAGroup.WAMessage,
-    WAGroup.WaReaction
+    WAGroup.WaReaction,
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse
   }
 
   @per_min_limit 500
@@ -112,6 +114,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         "wa_groups_collections",
         "wa_messages",
         "wa_reactions",
+        "whatsapp_forms",
+        "whatsapp_forms_responses",
         "certificate_templates",
         "issued_certificates"
       ]
@@ -659,6 +663,72 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_reactions, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("whatsapp_forms", organization_id, attrs) do
+    Logger.info(
+      "Fetching whatsapp_forms data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("whatsapp_forms", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: to_string(row.id),
+            name: row.name,
+            description: row.description,
+            meta_flow_id: row.meta_flow_id,
+            status: row.status,
+            categories: BigQuery.format_json(row.categories),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :whatsapp_forms, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("whatsapp_forms_responses", organization_id, attrs) do
+    Logger.info(
+      "Fetching whatsapp_forms_responses data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("whatsapp_forms_responses", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            raw_response: BigQuery.format_json(row.raw_response),
+            submitted_at: BigQuery.format_date(row.submitted_at, organization_id),
+            whatsapp_form_id: row.whatsapp_form_id,
+            whatsapp_form_name: if(!is_nil(row.whatsapp_form), do: row.whatsapp_form.name),
+            contact_id: row.contact_id,
+            contact_phone: if(!is_nil(row.contact), do: row.contact.phone),
+            contact_name: if(!is_nil(row.contact), do: row.contact.name),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :whatsapp_forms_responses, organization_id, attrs))
 
     :ok
   end
@@ -1798,6 +1868,21 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :wa_group
       ])
+
+  defp get_query("whatsapp_forms", organization_id, attrs),
+    do:
+      WhatsappForm
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+
+  defp get_query("whatsapp_forms_responses", organization_id, attrs),
+    do:
+      WhatsappFormResponse
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:contact, :whatsapp_form])
 
   defp get_query("certificate_templates", organization_id, attrs),
     do:

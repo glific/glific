@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+mutation CreateWhatsappForm($input: WhatsappFormInput!) {
+  createWhatsappForm(input: $input) {
+    ...WhatsappFormFields
+    ...WhatsappFormErrorFields
+  }
+}

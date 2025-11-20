@@ -1,4 +1,4 @@
-defmodule Glific.ThirdParty.Kaapi.ApiClienTest do
+defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
   use GlificWeb.ConnCase
   import Tesla.Mock
   alias Glific.ThirdParty.Kaapi.ApiClient

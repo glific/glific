@@ -672,6 +672,88 @@ defmodule Glific.TemplatesTest do
               ]} = Templates.create_session_template(attrs)
     end
 
+    test "create_session_template/1 for HSM button template should submit it for approval if the button type is whatsapp form",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your conference ticket no. {{1}}",
+                  "elementName" => "conference_ticket_status",
+                  "id" => whatspp_hsm_uuid,
+                  "languageCode" => "en",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: :whatsapp_form,
+        buttons: [%{"text" => "confirm", "type" => "FLOW"}]
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "conference_ticket_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true
+      }
+
+      assert {:error,
+              [
+                "Button Template",
+                "for Button Templates has_buttons, button_type and buttons fields are required"
+              ]} = Templates.create_session_template(attrs)
+    end
+
     test "create_session_template/1 for HSM data wrong data should return BSP status and error message",
          attrs do
       Tesla.Mock.mock(fn
@@ -1091,6 +1173,138 @@ defmodule Glific.TemplatesTest do
                %{"text" => "cold ", "type" => "QUICK_REPLY"},
                %{"text" => "warm", "type" => "QUICK_REPLY"}
              ]
+    end
+
+    test "update_hsms/1 should insert newly received whatsapp form button HSM with type as whatsapp_form",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ACCOUNT_UPDATE",
+                    "createdOn" => 1_595_904_220_495,
+                    "data" => "Your conference ticket no. {{1}}",
+                    "elementName" => "conference_ticket_status",
+                    "id" => whatspp_hsm_uuid,
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => true,
+                    "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                    "modifiedOn" => 1_595_904_220_495,
+                    "status" => "PENDING",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON",
+                    "buttonSupported" => "FLOW",
+                    "containerMeta" =>
+                      Jason.encode!(%{
+                        "buttons" => [%{"text" => "confirm", "type" => "FLOW"}]
+                      })
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: whatspp_hsm_uuid})
+
+      assert hsm.button_type == :whatsapp_form
+
+      assert hsm.buttons == [
+               %{"text" => "confirm", "type" => "FLOW"}
+             ]
+    end
+
+    test "update_hsms/1 should handle whatsapp form responses when containerMeta is empty",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ACCOUNT_UPDATE",
+                    "createdOn" => 1_595_904_220_495,
+                    "data" => "Body without buttons",
+                    "elementName" => "missing_meta_flow_template",
+                    "id" => "0f7c7e51-f611-4dbf-b4d3-4962f8f79351",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => true,
+                    "meta" => "{\"example\":\"Body without buttons\"}",
+                    "modifiedOn" => 1_595_904_220_495,
+                    "status" => "PENDING",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON",
+                    "buttonSupported" => "FLOW",
+                    "containerMeta" => Jason.encode!(%{})
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{shortcode: "missing_meta_flow_template"})
+
+      refute hsm.has_buttons
+      assert hsm.button_type == nil
+      assert hsm.buttons == []
+    end
+
+    test "update_hsms/1 should handle whatsapp form responses without containerMeta gracefully",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ACCOUNT_UPDATE",
+                    "createdOn" => 1_595_904_220_495,
+                    "data" => "Body without buttons",
+                    "elementName" => "missing_meta_flow_template",
+                    "id" => "0f7c7e51-f611-4dbf-b4d3-4962f8f79351",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => true,
+                    "meta" => "{\"example\":\"Body without buttons\"}",
+                    "modifiedOn" => 1_595_904_220_495,
+                    "status" => "PENDING",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON",
+                    "buttonSupported" => "FLOW"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{shortcode: "missing_meta_flow_template"})
+
+      refute hsm.has_buttons
+      assert hsm.button_type == nil
+      assert hsm.buttons == []
     end
 
     test "update_hsms/1 should return error in case of error response", attrs do

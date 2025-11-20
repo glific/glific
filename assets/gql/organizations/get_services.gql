@@ -13,6 +13,7 @@ query organizationServices {
     certificate_enabled
     kaapi_enabled
     ask_me_bot_enabled
+    whatsapp_forms_enabled
     errors {
       key
       message

@@ -17,7 +17,8 @@ defmodule Glific.Messages.Message do
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.SessionTemplate,
-    Users.User
+    Users.User,
+    WhatsappForms.WhatsappFormResponse
   }
 
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
@@ -70,6 +71,7 @@ defmodule Glific.Messages.Message do
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
+          whatsapp_form_response_id: non_neg_integer | nil,
           updated_at: :utc_datetime_usec | nil
         }
 
@@ -106,7 +108,8 @@ defmodule Glific.Messages.Message do
     :template_id,
     :interactive_template_id,
     :updated_at,
-    :profile_id
+    :profile_id,
+    :whatsapp_form_response_id
   ]
 
   schema "messages" do
@@ -164,6 +167,10 @@ defmodule Glific.Messages.Message do
     belongs_to(:template, SessionTemplate)
     belongs_to(:interactive_template, InteractiveTemplate)
 
+    belongs_to(:whatsapp_form_response, WhatsappFormResponse,
+      foreign_key: :whatsapp_form_response_id
+    )
+
     many_to_many(:tags, Tag, join_through: "messages_tags", on_replace: :delete)
 
     timestamps(type: :utc_datetime_usec)
@@ -207,7 +214,15 @@ defmodule Glific.Messages.Message do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location, :list, :quick_reply, :location_request_message] ->
+      type in [
+        nil,
+        :text,
+        :location,
+        :list,
+        :quick_reply,
+        :location_request_message,
+        :whatsapp_form_response
+      ] ->
         changeset
 
       media_id == nil ->
