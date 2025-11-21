@@ -13,7 +13,8 @@ defmodule Glific.Flows.ContactAction do
     Repo,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    WhatsappForms.WhatsappForm
   }
 
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
@@ -296,40 +297,73 @@ defmodule Glific.Flows.ContactAction do
          params: params,
          flow_label: flow_label
        }) do
-    attachments = Localization.get_translation(context, action, :attachments)
+    with {:ok, _form} <-
+           check_buttons_for_active_forms(session_template, context) do
+      attachments = Localization.get_translation(context, action, :attachments)
 
-    {type, media_id} =
-      if is_nil(attachments) or attachments == %{},
-        do: {session_template.type, session_template.message_media_id},
-        else: get_media_from_attachment(attachments, "", context, cid)
+      {type, media_id} =
+        if is_nil(attachments) or attachments == %{},
+          do: {session_template.type, session_template.message_media_id},
+          else: get_media_from_attachment(attachments, "", context, cid)
 
-    session_template =
-      session_template
-      |> Map.merge(%{message_media_id: media_id, type: type})
+      session_template =
+        session_template
+        |> Map.merge(%{message_media_id: media_id, type: type})
 
-    ## This is bit expansive and we will optimize it bit more
-    # session_template =
-    if Flows.media_type?(type) and media_id != nil do
-      message_media = Messages.get_message_media!(media_id)
+      ## This is bit expansive and we will optimize it bit more
+      # session_template =
+      if Flows.media_type?(type) and media_id != nil do
+        message_media = Messages.get_message_media!(media_id)
 
-      Messages.update_message_media(message_media, %{
-        caption: get_caption(type, message_media.url, session_template.body)
-      })
+        Messages.update_message_media(message_media, %{
+          caption: get_caption(type, message_media.url, session_template.body)
+        })
+      end
+
+      attrs = %{
+        receiver_id: cid,
+        uuid: action.node_uuid,
+        flow_id: context.flow_id,
+        message_broadcast_id: context.message_broadcast_id,
+        is_hsm: true,
+        flow_label: flow_label,
+        send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
+        params: params
+      }
+
+      Messages.create_and_send_session_template(session_template, attrs)
+      |> handle_message_result(context, messages, attrs)
     end
+  end
 
-    attrs = %{
-      receiver_id: cid,
-      uuid: action.node_uuid,
-      flow_id: context.flow_id,
-      message_broadcast_id: context.message_broadcast_id,
-      is_hsm: true,
-      flow_label: flow_label,
-      send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
-      params: params
-    }
+  @spec check_buttons_for_active_forms(
+          map(),
+          FlowContext.t()
+        ) :: {:ok, WhatsappForm.t()} | {:error, String.t()} | {:ok, nil}
+  defp check_buttons_for_active_forms(
+         %{button_type: button_type, buttons: [%{"type" => "FLOW", "flow_id" => form_id} | _]},
+         context
+       )
+       when button_type in [:whatsapp_form, "whatsapp_form"] and not is_nil(form_id) do
+    validate_form_status(form_id, context)
+  end
 
-    Messages.create_and_send_session_template(session_template, attrs)
-    |> handle_message_result(context, messages, attrs)
+  defp check_buttons_for_active_forms(_template, _context), do: {:ok, nil}
+
+  @spec validate_form_status(String.t(), FlowContext.t()) ::
+          {:ok, WhatsappForm.t()} | {:error, String.t()}
+  defp validate_form_status(form_id, context) do
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form_id}) do
+      {:ok, %{status: :published} = form} ->
+        {:ok, form}
+
+      {:ok, error} ->
+        error(context, error, %{}, "Whatsapp form with id #{form_id} is not active.")
+        {:error, "Form is not active"}
+
+      error ->
+        error
+    end
   end
 
   @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
