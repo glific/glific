@@ -10,6 +10,7 @@ body:
     validations:
       required: true
   - type: textarea
+    id: steps-to-reproduce
     attributes:
       label: Steps to Reproduce
       description: Step by step guide to reproduce the bug
