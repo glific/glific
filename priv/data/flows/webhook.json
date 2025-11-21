@@ -1,7 +1,7 @@
 [
   {
     "name": "parse_via_chat_gpt",
-    "body": "{\n\"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n\"url\": \"@results.image\",\n\"model\": \"gpt-4o\"\n}",
+    "body": "{\n\"question_text\": \"\",\n\"gpt_model\": \"\",\n\"prompt\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -9,7 +9,7 @@
   },
   {
     "name": "parse_via_gpt_vision",
-    "body": "{\n\"prompt\": \"**Enter the prompt you want to give to the LLM to extract data from the image/document here**\",\n  \"url\": \"@results.image\",\n  \"model\": \"gpt-4o-mini\"\n}",
+    "body": "{\n\"prompt\": \"\",\n\"url\": \"\",\n\"model\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -17,7 +17,7 @@
   },
   {
     "name": "speech_to_text_with_bhasini",
-    "body": "{\n  \"speech\": \"@results.speech.input\",\n  \"contact\": \"@contact\"\n}",
+    "body": "{\n\"speech\": \"\",\n\"contact\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -25,7 +25,7 @@
   },
   {
     "name": "text_to_speech_with_bhasini",
-    "body": "{\n  \"text\": \"@results.result_3\",\n  \"source_language\": \"english\",\n  \"target_language\": \"hindi\"\n}",
+    "body": "{\n\"text\": \"\",\n\"source_language\": \"\",\n\"target_language\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -33,7 +33,7 @@
   },
   {
     "name": "nmt_tts_with_bhasini",
-    "body": "{\n  \"text\": \"@results.result_3\",\n  \"source_language\": \"english\",\n  \"target_language\": \"hindi\"\n}",
+    "body": "{\n\"text\": \"\",\n\"source_language\": \"\",\n\"target_language\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -41,7 +41,7 @@
   },
   {
     "name": "filesearch-gpt",
-    "body": "{\n  \"question\": \"@results.result_5\",\n  \"assistant_id\": \"YOUR_ASSISTANT_ID_HERE\",\n  \"thread_id\": \"@results.gptresponse.thread_id\",\n  \"remove_citation\": true\n}",
+    "body": "{\n\"question\": \"\",\n\"assistant_id\": \"\"}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -49,7 +49,7 @@
   },
   {
     "name": "voice-filesearch-gpt",
-    "body": "{\n  \"contact\": \"@contact\",\n  \"speech\": \"@results.audio_query.input\",\n  \"assistant_id\": \"YOUR_ASSISTANT_ID_HERE\",\n  \"remove_citation\": true,\n  \"source_language\": \"@contact.language\",\n  \"target_language\": \"Hindi\"\n}",
+    "body": "{\n\"contact\": \"\",\n\"speech\": \"\",\n\"assistant_id\": \"\",\n\"source_language\": \"\",\n\"target_language\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -57,7 +57,7 @@
   },
   {
     "name": "geolocation",
-    "body": "{\n  \"lat\": \"@results.result_1.latitude\",\n  \"long\": \"@results.result_1.longitude\"\n}",
+    "body": "{\n\"lat\": \"\",\n\"long\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -65,7 +65,7 @@
   },
   {
     "name": "send_wa_group_poll",
-    "body": "{\n  \"wa_group\": \"@wa_group\",\n  \"poll_uuid\": \"0c5c3cfa-2aca-4abe-a9c2-1c1c1c8ccc52\"\n}",
+    "body": "{\n\"wa_group\": \"\",\n\"poll_uuid\": \"\"\n}",
     "headers": {
       "Content-Type": "application/json"
     },
@@ -73,7 +73,7 @@
   },
   {
     "name": "create_certificate",
-    "body": "{\"certificate_id\": 25, \"contact\": \"@contact\", \"replace_texts\": {\"{1}\": \"@contact.fields.preferred_name\"}}",
+    "body": "{\n\"certificate_id\": \"\",\n\"contact\": \"\",\n\"replace_texts\": {}\n}",
     "headers": {
       "Content-Type": "application/json"
     },
