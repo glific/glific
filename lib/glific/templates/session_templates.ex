@@ -45,7 +45,7 @@ defmodule Glific.Templates.SessionTemplate do
           updated_at: :utc_datetime | nil,
           translations: map() | nil,
           has_buttons: boolean(),
-          button_type: String.t() | nil,
+          button_type: String.t() | atom() | nil,
           buttons: [map()] | [],
           bsp_id: String.t() | nil,
           reason: String.t() | nil

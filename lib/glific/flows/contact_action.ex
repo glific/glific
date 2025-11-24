@@ -339,20 +339,11 @@ defmodule Glific.Flows.ContactAction do
   @spec validate_template_buttons(
           map(),
           FlowContext.t()
-        ) :: {:ok, WhatsappForm.t()} | {:error, String.t()} | {:ok, nil}
+        ) :: {:ok, WhatsappForm.t() | nil} | {:error, String.t()}
   defp validate_template_buttons(
-         %{button_type: button_type, buttons: [%{"type" => "FLOW", "flow_id" => form_id} | _]},
+         %{button_type: :whatsapp_form, buttons: [%{"type" => "FLOW", "flow_id" => form_id} | _]},
          context
-       )
-       when button_type in ["whatsapp_form"] do
-    validate_form_status(form_id, context)
-  end
-
-  defp validate_template_buttons(_template, _context), do: {:ok, nil}
-
-  @spec validate_form_status(String.t(), FlowContext.t()) ::
-          {:ok, WhatsappForm.t()} | {:error, String.t()}
-  defp validate_form_status(form_id, context) do
+       ) do
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form_id}) do
       {:ok, %{status: :published} = form} ->
         {:ok, form}
@@ -366,6 +357,8 @@ defmodule Glific.Flows.ContactAction do
         error
     end
   end
+
+  defp validate_template_buttons(_template, _context), do: {:ok, nil}
 
   @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
   defp process_labels(context, %{labels: nil} = action), do: {context, action}
