@@ -416,7 +416,7 @@ defmodule Glific.Flows.ContactActionTest do
     # Create a session template with buttons containing the inactive form
     session_template =
       template
-      |> Map.put(:button_type, :whatsapp_form)
+      |> Map.put(:button_type, "whatsapp_form")
       |> Map.put(:buttons, [
         %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
       ])
@@ -475,7 +475,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     session_template =
       template
-      |> Map.put(:button_type, :whatsapp_form)
+      |> Map.put(:button_type, "whatsapp_form")
       |> Map.put(:buttons, [
         %{"type" => "FLOW", "flow_id" => meta_flow_id, "text" => "Fill Form"}
       ])

@@ -298,7 +298,7 @@ defmodule Glific.Flows.ContactAction do
          flow_label: flow_label
        }) do
     with {:ok, _form} <-
-           check_buttons_for_active_forms(session_template, context) do
+           validate_template_buttons(session_template, context) do
       attachments = Localization.get_translation(context, action, :attachments)
 
       {type, media_id} =
@@ -336,19 +336,19 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  @spec check_buttons_for_active_forms(
+  @spec validate_template_buttons(
           map(),
           FlowContext.t()
         ) :: {:ok, WhatsappForm.t()} | {:error, String.t()} | {:ok, nil}
-  defp check_buttons_for_active_forms(
+  defp validate_template_buttons(
          %{button_type: button_type, buttons: [%{"type" => "FLOW", "flow_id" => form_id} | _]},
          context
        )
-       when button_type in [:whatsapp_form, "whatsapp_form"] and not is_nil(form_id) do
+       when button_type in ["whatsapp_form"] do
     validate_form_status(form_id, context)
   end
 
-  defp check_buttons_for_active_forms(_template, _context), do: {:ok, nil}
+  defp validate_template_buttons(_template, _context), do: {:ok, nil}
 
   @spec validate_form_status(String.t(), FlowContext.t()) ::
           {:ok, WhatsappForm.t()} | {:error, String.t()}
@@ -362,6 +362,7 @@ defmodule Glific.Flows.ContactAction do
         {:error, "Form is not active"}
 
       error ->
+        error(context, error, %{}, "Could not find Whatsapp form with id #{form_id}.")
         error
     end
   end
