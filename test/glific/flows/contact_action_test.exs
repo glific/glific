@@ -11,7 +11,8 @@ defmodule Glific.Flows.ContactActionTest do
     Messages.Message,
     Notifications,
     Seeds.SeedsDev,
-    Templates
+    Templates,
+    WhatsappForms
   }
 
   setup do
@@ -380,5 +381,219 @@ defmodule Glific.Flows.ContactActionTest do
 
     assert notification.entity["flow_uuid"] == flow.uuid
     assert notification.entity["node_uuid"] == node_uuid
+  end
+
+  test "notification should be created when template has inactive form in buttons", attrs do
+    Tesla.Mock.mock(fn env ->
+      case {env.method, env.url} do
+        {:get, "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "data" => %{
+                  "partner_app_token" => "fake-token"
+                }
+              })
+          }
+
+        {:post, url} ->
+          cond do
+            String.contains?(url, "/flows") ->
+              %Tesla.Env{
+                status: 201,
+                body: %{id: "1519604592614438", status: "success", validation_errors: []}
+              }
+
+            String.contains?(url, "subscription") ->
+              %Tesla.Env{
+                status: 200,
+                body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+              }
+
+            String.contains?(url, "/login") ->
+              %Tesla.Env{
+                status: 200,
+                body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+              }
+
+            String.contains?(url, "/templates") ->
+              uuid = Ecto.UUID.generate()
+
+              %Tesla.Env{
+                status: 200,
+                body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+              }
+          end
+      end
+    end)
+
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, %{whatsapp_form: whatsapp_form}} =
+      WhatsappForms.create_whatsapp_form(%{
+        name: "Initial Form",
+        form_json: %{},
+        description: "Initial description",
+        categories: ["other"],
+        organization_id: attrs.organization_id
+      })
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    {:ok, session_template} =
+      Templates.create_session_template(%{
+        name: "Test Template with Active Form",
+        body: "Hello World",
+        example: "Hello World",
+        shortcode: "test_active_form",
+        label: "Form Template",
+        category: "UTILITY",
+        is_hsm: true,
+        buttons: [
+          %{"type" => "FLOW", "flow_id" => whatsapp_form.meta_flow_id, "text" => "Fill Form"}
+        ],
+        organization_id: attrs.organization_id,
+        language_id: 1,
+        type: :text,
+        button_type: "whatsapp_form"
+      })
+
+    templating = %Templating{
+      template: session_template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    notifications = Notifications.list_notifications(%{filter: %{category: "Flow"}})
+
+    notification =
+      Enum.find(notifications, fn n ->
+        String.contains?(
+          n.message,
+          "Whatsapp form with id #{whatsapp_form.meta_flow_id} is not active."
+        )
+      end)
+
+    assert notification != nil
+    assert notification.entity["contact_id"] == contact.id
+    assert notification.entity["flow_id"] == context.flow_id
+  end
+
+  test "template message should be sent when form is active", attrs do
+    Tesla.Mock.mock(fn env ->
+      case {env.method, env.url} do
+        {:get, "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "data" => %{
+                  "partner_app_token" => "fake-token"
+                }
+              })
+          }
+
+        {:post, url} ->
+          cond do
+            String.contains?(url, "/flows") ->
+              %Tesla.Env{
+                status: 201,
+                body: %{id: "1519604592614438", status: "success", validation_errors: []}
+              }
+
+            String.contains?(url, "subscription") ->
+              %Tesla.Env{
+                status: 200,
+                body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+              }
+
+            String.contains?(url, "/login") ->
+              %Tesla.Env{
+                status: 200,
+                body: Jason.encode!(%{"token" => "sk_test_partner_token"})
+              }
+
+            String.contains?(url, "/templates") ->
+              uuid = Ecto.UUID.generate()
+
+              %Tesla.Env{
+                status: 200,
+                body: "{\"template\":{\"id\":\"#{uuid}\"}}"
+              }
+          end
+      end
+    end)
+
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, %{whatsapp_form: whatsapp_form}} =
+      WhatsappForms.create_whatsapp_form(%{
+        name: "Initial Form",
+        form_json: %{},
+        description: "Initial description",
+        categories: ["other"],
+        organization_id: attrs.organization_id
+      })
+
+    {:ok, session_template} =
+      Templates.create_session_template(%{
+        name: "Test Template with Active Form",
+        body: "Hello World",
+        example: "Hello World",
+        shortcode: "test_active_form",
+        label: "Form Template",
+        category: "UTILITY",
+        is_hsm: true,
+        buttons: [
+          %{"type" => "FLOW", "flow_id" => whatsapp_form.meta_flow_id, "text" => "Fill Form"}
+        ],
+        organization_id: attrs.organization_id,
+        language_id: 1,
+        type: :text,
+        button_type: "whatsapp_form"
+      })
+
+    WhatsappForms.publish_whatsapp_form(whatsapp_form.id)
+
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    templating = %Templating{
+      template: session_template,
+      variables: []
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message != nil
+    assert message.flow_id == context.flow_id
+    assert message.is_hsm == true
   end
 end
