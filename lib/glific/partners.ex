@@ -561,6 +561,7 @@ defmodule Glific.Partners do
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1301,7 +1302,8 @@ defmodule Glific.Partners do
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
       "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
-      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
+      high_trigger_tps_enabled: Flags.get_flag_enabled(:high_trigger_tps_enabled, organization)
     }
   end
 
