@@ -20,6 +20,21 @@ defmodule Glific.Providers.Gupshup.Worker do
   }
 
   @doc """
+  Creates a Oban job changeset with args and Oban job options
+  """
+  @spec create_changeset(map(), Partners.Organization.t(), Keyword.t()) :: Oban.Job.changeset()
+  def create_changeset(args, organization, opts) do
+    if organization.high_trigger_tps_enabled do
+      __MODULE__.new(
+        args,
+        Keyword.merge(opts, queue: :gupshup_high_tps, max_attempts: 2, priority: 0)
+      )
+    else
+      __MODULE__.new(args, opts)
+    end
+  end
+
+  @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker

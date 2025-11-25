@@ -308,13 +308,23 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.preload([:flow])
   end
 
-  @spec broadcast_per_minute_count() :: integer()
-  defp broadcast_per_minute_count do
+  @spec broadcast_per_minute_count(non_neg_integer()) :: integer()
+  defp broadcast_per_minute_count(organization_id) do
     default_limit = 100
 
-    Application.fetch_env!(:glific, :broadcast_contact_count)
-    |> Glific.parse_maybe_integer()
-    |> case do
+    count_result =
+      if FunWithFlags.enabled?(
+           :high_trigger_tps_enabled,
+           for: %{organization_id: organization_id}
+         ) do
+        Application.fetch_env!(:glific, :broadcast_contact_count_high_tps)
+        |> Glific.parse_maybe_integer()
+      else
+        Application.fetch_env!(:glific, :broadcast_contact_count)
+        |> Glific.parse_maybe_integer()
+      end
+
+    case count_result do
       {:ok, nil} -> default_limit
       {:ok, count} -> count
       _ -> default_limit
@@ -322,7 +332,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   defp unprocessed_contacts(message_broadcast) do
-    contact_limit = broadcast_per_minute_count()
+    contact_limit = broadcast_per_minute_count(message_broadcast.organization_id)
 
     broadcast_contacts_query(message_broadcast)
     |> limit(^contact_limit)
