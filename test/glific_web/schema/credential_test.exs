@@ -94,4 +94,28 @@ defmodule GlificWeb.Schema.CredentialTest do
     secrets = get_in(query_data, [:data, "updateCredential", "credential", "secrets"])
     assert secrets == "{}"
   end
+
+  test "update a gcs credential and and set it to inactive", %{user: user} do
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:create, user,
+        variables: %{"input" => %{"shortcode" => provider.shortcode}}
+      )
+
+    credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => credential_id,
+          "input" => %{"is_active" => false}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert %{"isActive" => false} = get_in(query_data, [:data, "updateCredential", "credential"])
+  end
 end
