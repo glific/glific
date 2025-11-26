@@ -982,10 +982,15 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
-    with {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
+    with true <- credential.is_active,
+         {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
          {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
       {:ok, credential}
     else
+      false ->
+        # credential set to inactive, so no further processing
+        {:ok, credential}
+
       {:error, %{body: %{"error" => %{"message" => message}}}} ->
         {:error, message}
 
