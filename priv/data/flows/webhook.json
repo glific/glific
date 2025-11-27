@@ -24,14 +24,6 @@
     "response_format_example": "{\"success\": true, \"asr_response_text\": \"so , let's get started . you you i'm out . you you you\"}"
   },
   {
-    "name": "text_to_speech_with_bhasini",
-    "body": "{\n\"text\": \"\",\n\"source_language\": \"\",\n\"target_language\": \"\"\n}",
-    "headers": {
-      "Content-Type": "application/json"
-    },
-    "response_format_example": "{\"success\": true, \"media_url\": \"https://storage.googleapis.com/glific-media-bucket/Bhasini/outbound/ae4b2c60-8a23-4f2e-b95b-5c68b7cb71c1.mp3\", \"translated_text\": \"नमस्ते, यह ग्लिफिक द्वारा बनाया गया एक वॉयस संदेश है।\"}"
-  },
-  {
     "name": "nmt_tts_with_bhasini",
     "body": "{\n\"text\": \"\",\n\"source_language\": \"\",\n\"target_language\": \"\"\n}",
     "headers": {
