@@ -70,4 +70,10 @@ defmodule GlificWeb.Schema.EnumTypes do
 
   @desc "The Certificate template Types enum"
   enum(:certificate_template_type_enum, values: Glific.Enums.certificate_template_type_const())
+
+  @desc "The WhatsApp Form Status enum"
+  enum(:whatsapp_form_status_enum, values: Glific.Enums.whatsapp_form_status_const())
+
+  @desc "The WhatsApp Form Category enum"
+  enum(:whatsapp_form_category_enum, values: Glific.Enums.whatsapp_form_category_const())
 end
