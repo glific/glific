@@ -280,9 +280,12 @@ defmodule Glific.Communications.Message do
   end
 
   @spec receive_whatsapp_form_response(map()) :: :ok | {:error, any()}
-  defp receive_whatsapp_form_response(message_params) do
+  defp receive_whatsapp_form_response(%{organization_id: organization_id} = message_params) do
     case WhatsappFormsResponses.create_whatsapp_form_response(message_params) do
       {:ok, form_response} ->
+        # Track metric for WhatsApp form response received
+        Glific.Metrics.increment("WhatsApp Form Response Received", organization_id)
+
         message_attrs = %{
           flow: :inbound,
           type: :whatsapp_form_response,
