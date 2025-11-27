@@ -425,4 +425,25 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert message =~ "has already been taken"
   end
+
+  test "create a session template with whatsapp form button", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "label" => "WA Form Template",
+            "body" => "Template with WA Form Button",
+            "type" => "TEXT",
+            "languageId" => 1,
+            "buttons" =>
+              "[{\"type\":\"FLOW\",\"navigate_screen\":\"RECOMMEND\",\"text\":\"open\",\"flow_id\":\"850015687410293\",\"flow_action\":\"NAVIGATE\"}]",
+            "buttonType" => "WHATSAPP_FORM"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    label = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "label"])
+    assert label == "WA Form Template"
+  end
 end

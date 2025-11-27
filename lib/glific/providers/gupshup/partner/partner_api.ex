@@ -413,8 +413,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Builds and returns the request headers for the given authentication type.
+  """
   @spec headers(atom(), Keyword.t()) :: list()
-  defp headers(:app_token, opts) do
+  def headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
 
     case get_partner_app_token(org_id) do
@@ -428,7 +431,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  defp headers(:partner_token, _opts) do
+  def headers(:partner_token, _opts) do
     get_partner_token()
     |> case do
       {:ok, %{partner_token: partner_token}} ->
@@ -531,9 +534,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   - modes - Different modes we want to listen to, check `@modes` for defaults
   - version - Payload format, by default its v2 (gupshup format)
   """
-  @spec set_subscription(non_neg_integer(), String.t() | nil, list(String.t()), non_neg_integer()) ::
+  @spec set_subscription(
+          non_neg_integer(),
+          String.t() | nil,
+          list(String.t()),
+          non_neg_integer(),
+          String.t() | nil
+        ) ::
           tuple()
-  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2)
+  def set_subscription(org_id, callback_url \\ nil, modes \\ [], version \\ 2, tag \\ nil)
       when is_list(modes) do
     url = app_url!(org_id) <> "/subscription"
     organization = Partners.organization(org_id)
@@ -550,11 +559,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # modes can be passed in params,
     # if we want to add a newly introduced event other than
     # the defaults
-    modes = (@modes ++ Enum.map(modes, &String.upcase/1)) |> Enum.uniq() |> Enum.join(",")
+
+    tag =
+      if is_nil(tag),
+        do: "webhook_#{organization.shortcode}",
+        else: "#{tag}_#{organization.shortcode}"
+
+    modes =
+      if modes == [] do
+        @modes
+      else
+        Enum.map_join(modes, ",", &String.upcase/1)
+      end
 
     data = %{
       "modes" => modes,
-      "tag" => "webhook_#{organization.shortcode}",
+      "tag" => tag,
       "url" => callback_url,
       "version" => version
     }
@@ -568,9 +588,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     app_id
   end
 
+  @doc """
+  Returns the complete application URL for the given organization.
+  """
   @spec app_url!(non_neg_integer()) :: String.t()
-  defp app_url!(org_id),
-    do: @app_url <> app_id!(org_id)
+  def app_url!(org_id), do: @app_url <> app_id!(org_id)
 
   @spec app_url(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
   defp app_url(org_id) do
