@@ -337,13 +337,34 @@ defmodule Glific.Messages do
       })
       |> create_message()
 
-    Communications.Message.send_message(message, attrs)
+    result = Communications.Message.send_message(message, attrs)
+
+    # Track metric for WhatsApp form dispatched when HSM has flow buttons
+    if attrs[:is_hsm] && has_whatsapp_form_button?(attrs) do
+      Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+    end
+
+    result
   end
 
   defp do_send_message({:error, reason}, attrs) do
     notify(attrs, reason)
     {:error, reason}
   end
+
+  @spec has_whatsapp_form_button?(map()) :: boolean()
+  defp has_whatsapp_form_button?(%{template_id: template_id}) do
+    case Repo.fetch(SessionTemplate, template_id) do
+      {:ok, template} ->
+        template.buttons
+        |> Enum.any?(fn button -> Map.has_key?(button, "flow_id") end)
+
+      _ ->
+        false
+    end
+  end
+
+  defp has_whatsapp_form_button?(_), do: false
 
   @doc """
   Create and insert a notification for this error when sending a message.
