@@ -3,9 +3,11 @@ defmodule Glific.PartnersTest do
   use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
   import Mock
+  import Swoosh.TestAssertions
 
   alias Glific.{
     Fixtures,
+    Mails.MailLog,
     Notifications,
     Notifications.Notification,
     Partners,
@@ -1112,6 +1114,48 @@ defmodule Glific.PartnersTest do
       {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
       assert "some_app" == updated_credential.secrets["app_name"]
       assert "app_id" == updated_credential.secrets["app_id"]
+    end
+
+    test "update_credential/2 for gupshup should send email notification to support",
+         %{organization_id: organization_id} = _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body:
+               Jason.encode!(%{
+                 "partnerAppsList" => [%{"id" => "test_app_id", "name" => "test_app"}]
+               })
+           }}
+
+        %{method: :post} ->
+          {:error, %Tesla.Env{status: 400, body: %{"error" => "Re-linking"}}}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "test_app", "api_key" => "test_key"},
+        organization_id: organization_id
+      }
+
+      {:ok, _updated_credential} = Partners.update_credential(credential, valid_update_attrs)
+      # Assert that an email was sent to support
+      assert_email_sent(fn email ->
+        email.subject =~ "New Gupshup App Setup" and
+          email.to == [Glific.Communications.Mailer.glific_support()]
+      end)
+
+      # Verify email was logged
+      assert MailLog.count_mail_logs(%{
+               filter: %{organization_id: organization_id, category: "Gupshup Setup"}
+             }) == 1
     end
 
     test "update_credential/2 for bigquery should call create bigquery dataset",
