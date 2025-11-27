@@ -244,8 +244,10 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec format_sender(Message.t(), Glific.Partners.Organization.t()) :: map()
-  defp format_sender(message, organization) do
+  @spec format_sender(Message.t()) :: map()
+  defp format_sender(message) do
+    organization = Partners.organization(message.organization_id)
+
     %{
       "source" => message.sender.phone,
       "src.name" => organization.services["bsp"].secrets["app_name"]
@@ -276,11 +278,9 @@ defmodule Glific.Providers.Gupshup.Message do
     # receive the response incase of a particular message
     payload = Map.put(payload, "msgid", message.uuid)
 
-    organization = Partners.organization(message.organization_id)
-
     request_body =
       %{"channel" => @channel}
-      |> Map.merge(format_sender(message, organization))
+      |> Map.merge(format_sender(message))
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
@@ -290,7 +290,7 @@ defmodule Glific.Providers.Gupshup.Message do
         do: Map.put(attrs, :caption, ""),
         else: attrs
 
-    create_oban_job(message, request_body, attrs, organization)
+    create_oban_job(message, request_body, attrs)
   end
 
   @doc false
@@ -299,14 +299,14 @@ defmodule Glific.Providers.Gupshup.Message do
     Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm, :template_type])
   end
 
-  @spec create_oban_job(Message.t(), map(), map(), Partners.Organization.t()) ::
+  @spec create_oban_job(Message.t(), map(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp create_oban_job(message, request_body, attrs, organization) do
+  defp create_oban_job(message, request_body, attrs) do
     attrs = to_minimal_map(attrs)
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
-    worker_module.create_changeset(worker_args, organization, scheduled_at: message.send_at)
+    worker_module.create_changeset(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end
