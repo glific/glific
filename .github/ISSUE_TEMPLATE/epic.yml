@@ -1,0 +1,23 @@
+name: Epic Feature
+description: Create an epic feature issue.
+title: "[Epic]: "
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the epic
+    validations:
+      required: true
+  - type: input
+    id: prd
+    attributes:
+      label: PRD Link
+    validations:
+      required: true
+  - type: input
+    id: tech-design-doc
+    attributes:
+      label: Tech Design Doc Link
+    validations:
+      required: true
