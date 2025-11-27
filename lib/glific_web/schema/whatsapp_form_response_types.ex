@@ -1,0 +1,16 @@
+defmodule GlificWeb.Schema.WhatsappFormResponseTypes do
+  @moduledoc """
+  GraphQL Representation of Glific's WhatsApp Form Response DataType
+  """
+  use Absinthe.Schema.Notation
+
+  object :whatsapp_form_response do
+    field :id, :id
+    field :contact_id, :id
+    field :raw_response, :json
+    field :whatsapp_form_id, :id
+    field :submitted_at, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+end

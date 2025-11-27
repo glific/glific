@@ -109,6 +109,30 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     handler(conn, params, "location handler")
   end
 
+  @doc """
+  Handler for WhatsApp Form Response messages
+  """
+  @spec whatsapp_form_response(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def whatsapp_form_response(conn, params) do
+    extract_message_from_webhook(params)
+    |> Gupshup.Message.receive_whatsapp_form_response()
+    |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
+    |> Communications.Message.receive_message(:whatsapp_form_response)
+
+    handler(conn, params, "whatsapp_form_response handler")
+  end
+
+  @spec extract_message_from_webhook(map()) :: {map(), map(), String.t()}
+  defp extract_message_from_webhook(%{
+         "entry" => [change | _],
+         "gsMetadata" => %{"X-GS-T-ID" => template_id}
+       }) do
+    %{"changes" => [%{"value" => %{"messages" => [message | _], "contacts" => [contact | _]}}]} =
+      change
+
+    {message, contact, template_id}
+  end
+
   @spec update_message_params(map(), map()) :: map()
   defp update_message_params(message_payload, params) do
     message_payload

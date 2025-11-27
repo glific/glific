@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+mutation publishWhatsappForm($id: ID!) {
+  publishWhatsappForm(id: $id) {
+    ...WhatsappFormFields
+    ...WhatsappFormErrorFields
+  }
+}
