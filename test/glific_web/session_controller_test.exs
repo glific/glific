@@ -168,7 +168,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
         |> post(Routes.api_v1_session_path(conn, :name))
 
       assert json = json_response(conn, 200)
-      assert json["data"] == %{"name" => "Glific", "status" => "active"}
+      assert json["data"] == %{"name" => "Glific", "status" => "active", "is_trial" => false}
     end
   end
 end
