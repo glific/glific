@@ -432,7 +432,7 @@ defmodule Glific.CommunicationsTest do
 
     # Verify job scheduled in correct queue
     refute_enqueued(
-      queue: :gupsuhp,
+      queue: :gupshup,
       worker: Worker,
       prefix: global_schema
     )
