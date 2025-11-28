@@ -111,7 +111,8 @@ config :glific,
 
 config :glific,
   gcs_file_count: env!("GCS_FILE_COUNT", :integer, 5),
-  broadcast_contact_count: env!("BROADCAST_CONTACT_COUNT", :integer, 100)
+  broadcast_contact_count: env!("BROADCAST_CONTACT_COUNT", :integer, 100),
+  broadcast_contact_count_high_tps: env!("BROADCAST_CONTACT_COUNT_HIGH_TPS", :integer, 300)
 
 config :glific,
   open_ai: env!("OPEN_AI_KEY", :string!, "This is not a secret")
