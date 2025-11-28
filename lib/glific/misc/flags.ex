@@ -318,11 +318,18 @@ defmodule Glific.Flags do
     end
   end
 
+  @doc """
+  Get the status of given flag for the organization
+  """
   @spec get_flag_enabled(atom(), map()) :: boolean
   def get_flag_enabled(flag, organization) do
     FunWithFlags.enabled?(flag, for: %{organization_id: organization.id})
   end
 
+  @doc """
+  Adds given flag to the organization map
+  """
+  @spec set_flag_enabled(map(), atom()) :: map()
   def set_flag_enabled(organization, flag) do
     Map.put(organization, flag, get_flag_enabled(flag, organization))
   end
