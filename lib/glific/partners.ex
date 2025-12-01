@@ -573,6 +573,7 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
+      |> Flags.set_is_whatsapp_forms_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1305,6 +1306,7 @@ defmodule Glific.Partners do
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
+      "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),

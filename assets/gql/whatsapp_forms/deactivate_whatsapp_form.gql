@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+mutation deactivateWhatsappForm($id: ID!) {
+  deactivateWhatsappForm(id: $id) {
+    ...WhatsappFormFields
+    ...WhatsappFormErrorFields
+  }
+}

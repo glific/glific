@@ -60,6 +60,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/video", MessageController, :video)
       post("/sticker", MessageController, :sticker)
       post("/location", MessageController, :location)
+      post("/whatsapp_form_response", MessageController, :whatsapp_form_response)
       post("/*unknown", DefaultController, :unknown)
     end
 
