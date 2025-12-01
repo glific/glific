@@ -128,7 +128,13 @@ defmodule GlificWeb.API.V1.SessionController do
       |> Partners.get_organization!()
 
     conn
-    |> json(%{data: %{name: organization.name, status: organization.status}})
+    |> json(%{
+      data: %{
+        name: organization.name,
+        status: organization.status,
+        is_trial: organization.is_trial_org
+      }
+    })
   end
 
   @doc """

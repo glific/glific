@@ -62,13 +62,20 @@ defmodule GlificWeb.API.V1.RegistrationController do
     {:ok, contact} =
       Repo.fetch_by(Contact, %{phone: user_params["phone"], organization_id: organization_id})
 
+    trial_metadata =
+      case user_params["organization_name"] do
+        nil -> %{}
+        org_name -> %{organization_name: org_name}
+      end
+
     updated_user_params =
       user_params
       |> Map.merge(%{
         "password_confirmation" => user_params["password"],
         "contact_id" => contact.id,
         "organization_id" => organization_id,
-        "language_id" => contact.language_id
+        "language_id" => contact.language_id,
+        "trial_metadata" => trial_metadata
       })
 
     conn
