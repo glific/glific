@@ -48,7 +48,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   end
 
   @spec get_available_trial_account() ::
-          {:ok, Organization.t()} | {:error, map()}
+          {:ok, Organization.t()} | {:error, :no_available_accounts | Ecto.Changeset.t()}
   defp get_available_trial_account do
     Repo.transaction(fn ->
       available_org =

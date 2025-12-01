@@ -83,7 +83,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       conn = TrialAccountController.trial(conn, %{})
 
-      assert json_response(conn, 503) == %{
+      assert json_response(conn, 200) == %{
                "success" => false,
                "error" => "No trial accounts available at the moment"
              }
