@@ -134,9 +134,10 @@ defmodule GlificWeb.Resolvers.Templates do
 
   @spec queue_hsm_sync(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   defp queue_hsm_sync(organization_id) do
-    args = %{"organization_id" => organization_id, "sync_hsm" => true}
+    case TemplateWorker.create_hsm_sync_job(organization_id) do
+      {:ok, %{conflict?: true} = _response} ->
+        {:ok, %{message: "HSM sync job already in progress"}}
 
-    case Oban.insert(TemplateWorker.new(args)) do
       {:ok, _job} ->
         Notifications.create_notification(%{
           category: "HSM template",
