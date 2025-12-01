@@ -16,13 +16,10 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
 
-    # Mock the token
-    Application.put_env(:glific, GlificWeb.API.V1.TrialAccountController,
-      trial_account_token: @valid_token
-    )
+    Application.put_env(:glific, TrialAccountController, trial_account_token: @valid_token)
 
     on_exit(fn ->
-      Application.delete_env(:glific, GlificWeb.API.V1.TrialAccountController)
+      Application.delete_env(:glific, TrialAccountController)
     end)
 
     :ok

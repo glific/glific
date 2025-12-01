@@ -8,7 +8,10 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   alias Glific.{Partners.Organization, Repo}
   import Ecto.Query
 
-  @doc false
+  @doc """
+  Allocates a trial account to a user.
+  """
+  @spec trial(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def trial(conn, _params) do
     token = get_req_header(conn, "x-api-key") |> List.first()
     expected_token = get_token()
@@ -25,11 +28,16 @@ defmodule GlificWeb.API.V1.TrialAccountController do
           })
 
         {:error, :no_available_accounts} ->
-          conn
-          |> put_status(:service_unavailable)
-          |> json(%{
+          json(conn, %{
             success: false,
             error: "No trial accounts available at the moment"
+          })
+
+        {:error, _} ->
+          conn
+          |> json(%{
+            success: false,
+            error: "Something went wrong"
           })
       end
     else
@@ -39,6 +47,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end
   end
 
+  @spec get_available_trial_account() ::
+          {:ok, Organization.t()} | {:error, map()}
   defp get_available_trial_account do
     Repo.transaction(fn ->
       available_org =
@@ -71,5 +81,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end)
   end
 
+  @spec get_token() :: String.t()
   defp get_token, do: Application.fetch_env!(:glific, __MODULE__)[:trial_account_token]
 end
