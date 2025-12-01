@@ -1148,7 +1148,7 @@ defmodule Glific.PartnersTest do
       {:ok, _updated_credential} = Partners.update_credential(credential, valid_update_attrs)
       # Assert that an email was sent to support
       assert_email_sent(fn email ->
-        email.subject =~ "New Gupshup App Setup" and
+        email.subject =~ "Gupshup Setup Completed" and
           email.to == [Glific.Communications.Mailer.glific_support()]
       end)
 
