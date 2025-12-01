@@ -18,8 +18,7 @@ defmodule Glific.UsersTest do
       consent_for_updates: false,
       password: @password,
       password_confirmation: @password,
-      roles: ["admin"],
-      organization_name: "some organization name"
+      roles: ["admin"]
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -136,7 +135,6 @@ defmodule Glific.UsersTest do
       assert user.phone == "some phone"
       assert user.email == "some_name@gmail.com"
       assert user.roles == [:admin]
-      assert user.organization_name == "some organization name"
       assert user.consent_for_updates == false
     end
 
