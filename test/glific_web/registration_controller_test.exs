@@ -10,7 +10,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     Partners.Saas,
     Repo,
     Seeds.SeedsDev,
-    Users
+    Users,
+    Users.User
   }
 
   @password "Secret1234!"
@@ -59,6 +60,42 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           phone: receiver.phone,
           organization_id: conn.assigns[:organization_id]
         })
+    end
+
+    test "adds organization_name to trial_metadata during user registration", %{conn: conn} do
+      receiver = Fixtures.contact_fixture()
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
+
+      valid_params1 = %{
+        "user" => %{
+          "phone" => receiver.phone,
+          "name" => "trail name",
+          "password" => @password,
+          "otp" => otp,
+          "organization_name" => "org_name"
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, valid_params1))
+
+      assert json = json_response(conn, 200)
+      assert json["data"]["access_token"]
+      assert json["data"]["renewal_token"]
+      assert json["data"]["token_expiry_time"]
+
+      {:ok, _contact} =
+        Repo.fetch_by(Contact, %{
+          phone: receiver.phone,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      {:ok, user} =
+        Repo.fetch_by(User, %{
+          organization_id: 1,
+          name: "trail name"
+        })
+
+      assert user.trial_metadata["organization_name"] == "org_name"
     end
 
     test "with password less than minimum characters should give error",
