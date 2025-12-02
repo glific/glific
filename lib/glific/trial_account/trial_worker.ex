@@ -54,9 +54,7 @@ defmodule Glific.TrialAccount.TrialWorker do
       |> Repo.update()
     end)
 
-    Logger.info(
-      "Updated #{length(users)} user(s) trial status to expired for org #{organization_id}"
-    )
+    Logger.info("Updated users trial status to expired for org #{organization_id}")
   end
 
   @spec trial_org?(Organization.t()) :: boolean()
