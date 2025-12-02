@@ -50,7 +50,7 @@ defmodule Glific.TrialAccount.TrialWorker do
         |> Map.put("status", "expired")
 
       user
-      |> User.changeset(%{trial_metadata: updated_metadata})
+      |> Ecto.Changeset.change(%{trial_metadata: updated_metadata})
       |> Repo.update()
     end)
 
@@ -59,14 +59,14 @@ defmodule Glific.TrialAccount.TrialWorker do
     )
   end
 
-  @spec is_trial_org?(Organization.t()) :: boolean()
-  defp is_trial_org?(organization) do
+  @spec trial_org?(Organization.t()) :: boolean()
+  defp trial_org?(organization) do
     not is_nil(organization.trial_expiration_date)
   end
 
   @spec should_cleanup?(Organization.t()) :: boolean()
   defp should_cleanup?(organization) do
-    is_trial_org?(organization) and
-      Date.compare(organization.trial_expiration_date, Date.utc_today()) == :lt
+    trial_org?(organization) and
+      DateTime.compare(organization.trial_expiration_date, DateTime.utc_now()) == :lt
   end
 end
