@@ -3,19 +3,43 @@
     "nodes": {
       "601e9bfe-0a2d-4ba5-8548-a09e212ade8f": {
         "type": "wait_for_result",
-        "config": { "cases": {} },
-        "position": { "top": 40, "left": 80 }
+        "config": {
+          "cases": {}
+        },
+        "position": {
+          "top": 0,
+          "left": 80
+        }
+      },
+      "6b28cf20-9d58-4702-9d67-1110f5738f59": {
+        "type": "execute_actions",
+        "position": {
+          "top": 600,
+          "left": 340
+        }
       },
       "c56b1d5d-a046-4ba3-a861-1ed3f166b692": {
         "type": "execute_actions",
-        "position": { "top": 400, "left": 280 }
+        "position": {
+          "top": 220,
+          "left": 300
+        }
+      },
+      "dcf84723-88b7-44a8-a250-29f6e30ff3aa": {
+        "type": "execute_actions",
+        "position": {
+          "top": 380,
+          "left": 280
+        }
       }
     }
   },
   "name": "Wait for result",
   "type": "messaging",
-  "uuid": "6a0bd92c-3e6e-4cd5-84b2-d4e140175a90",
-  "vars": ["6a0bd92c-3e6e-4cd5-84b2-d4e140175a90"],
+  "uuid": "60238b1d-bfbf-4013-ab5a-285e095b9f7a",
+  "vars": [
+    "60238b1d-bfbf-4013-ab5a-285e095b9f7a"
+  ],
   "nodes": [
     {
       "uuid": "601e9bfe-0a2d-4ba5-8548-a09e212ade8f",
@@ -51,7 +75,7 @@
       "exits": [
         {
           "uuid": "b2ea6cbd-8b05-4d39-9d55-857205a1083c",
-          "destination_uuid": null
+          "destination_uuid": "dcf84723-88b7-44a8-a250-29f6e30ff3aa"
         }
       ],
       "actions": [
@@ -64,10 +88,63 @@
           "quick_replies": []
         }
       ]
+    },
+    {
+      "uuid": "dcf84723-88b7-44a8-a250-29f6e30ff3aa",
+      "exits": [
+        {
+          "uuid": "aa14ec67-6dd6-4b16-967c-b4fa476610a5",
+          "destination_uuid": "6b28cf20-9d58-4702-9d67-1110f5738f59"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_contact_groups",
+          "uuid": "a86e8568-38ec-44eb-987b-37319480b6b0",
+          "groups": [
+            {
+              "name": "new_col_25",
+              "type": "group",
+              "uuid": 9
+            },
+            {
+              "name": "new_col_26",
+              "type": "group",
+              "uuid": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "uuid": "6b28cf20-9d58-4702-9d67-1110f5738f59",
+      "exits": [
+        {
+          "uuid": "68e0132e-47ff-4e4a-b84e-84612eada1da",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "type": "remove_contact_groups",
+          "uuid": "513d17c3-e68e-484c-b492-ac8cf046f391",
+          "groups": [
+            {
+              "name": "new_col_26",
+              "uuid": "10"
+            },
+            {
+              "name": "Restricted Group",
+              "uuid": "5"
+            }
+          ],
+          "all_groups": false
+        }
+      ]
     }
   ],
   "language": "base",
   "localization": {},
-  "spec_version": "13.2.0",
+  "spec_version": "14.3.0",
   "expire_after_minutes": 10080
 }
