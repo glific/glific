@@ -14,25 +14,46 @@ defmodule Glific.TrialAccount.TrialWorker do
   require Logger
 
   @doc """
-  Cleanup expired trials - called daily
-  Removes all data except user records
+  Fetches all trial organizations where expiration date has passed
   """
-  @spec cleanup_expired_trials(non_neg_integer) :: :ok
-  def cleanup_expired_trials(organization_id) do
-    organization = Repo.get!(Organization, organization_id)
+  @spec cleanup_expired_trials() :: :ok
+  def cleanup_expired_trials do
+    Logger.info("Starting expired trial account cleanup")
 
-    if should_cleanup?(organization) do
-      Logger.info("Cleaning up expired trial: organization_id: '#{organization_id}'")
-      Erase.delete_organization_data(organization_id)
+    expired_trial_orgs =
+      Organization
+      |> where([o], o.is_trial == true)
+      |> where([o], not is_nil(o.trial_expiration_date))
+      |> where([o], o.trial_expiration_date < ^DateTime.utc_now())
+      |> Repo.all(skip_organization_id: true)
 
-      # Reset org for reallocation
+    Enum.each(expired_trial_orgs, fn org ->
+      cleanup_trial_organization(org)
+    end)
+
+    Logger.info("Completed expired trial account cleanup")
+    :ok
+  end
+
+  @spec cleanup_trial_organization(Organization.t()) :: :ok
+  defp cleanup_trial_organization(organization) do
+    Logger.info("Cleaning up expired trial: organization_id: '#{organization.id}'")
+
+    Repo.put_process_state(organization.id)
+
+    Erase.delete_organization_data(organization.id)
+
+    update_user_trial_status(organization.id)
+
+    # Reload and reset org for reallocation
+    organization = Repo.get!(Organization, organization.id)
+
+    {:ok, _org} =
       organization
       |> Organization.changeset(%{trial_expiration_date: nil})
       |> Repo.update()
 
-      update_user_trial_status(organization.id)
-    end
-
+    Logger.info("Successfully cleaned up trial organization: #{organization.id}")
     :ok
   end
 
@@ -54,17 +75,6 @@ defmodule Glific.TrialAccount.TrialWorker do
       |> Repo.update()
     end)
 
-    Logger.info("Updated users trial status to expired for org #{organization_id}")
-  end
-
-  @spec trial_org?(Organization.t()) :: boolean()
-  defp trial_org?(organization) do
-    not is_nil(organization.trial_expiration_date)
-  end
-
-  @spec should_cleanup?(Organization.t()) :: boolean()
-  defp should_cleanup?(organization) do
-    trial_org?(organization) and
-      DateTime.compare(organization.trial_expiration_date, DateTime.utc_now()) == :lt
+    :ok
   end
 end

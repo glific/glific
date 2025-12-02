@@ -131,7 +131,7 @@ defmodule Glific.Jobs.MinuteWorker do
           only_recent: true
         )
 
-        Partners.perform_all(&TrialWorker.cleanup_expired_trials/1, nil, [])
+        TrialWorker.cleanup_expired_trials()
 
         Erase.perform_daily()
 

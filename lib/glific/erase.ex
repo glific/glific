@@ -376,32 +376,33 @@ defmodule Glific.Erase do
 
     Logger.info("Deleting trial data for organization_id: #{organization_id}")
 
-    queries = [
-      # Delete messages
-      "DELETE FROM messages WHERE organization_id = #{organization_id}",
-      "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
+    queries =
+      [
+        # Delete messages
+        "DELETE FROM messages WHERE organization_id = #{organization_id}",
+        "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
 
-      # Delete contacts and related data
-      "DELETE FROM contacts WHERE organization_id = #{organization_id}",
-      "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
-      "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
+        # Delete contacts and related data
+        "DELETE FROM contacts WHERE organization_id = #{organization_id}",
+        "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
+        "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
 
-      # Delete flows and related data
-      "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
-      "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
-      "DELETE FROM flow_revisions WHERE organization_id = #{organization_id}",
-      "DELETE FROM flows WHERE organization_id = #{organization_id}",
+        # Delete flows and related data
+        "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_revisions WHERE organization_id = #{organization_id}",
+        "DELETE FROM flows WHERE organization_id = #{organization_id}",
 
-      # Delete interactive templates
-      "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
+        # Delete interactive templates
+        "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
 
-      # Delete triggers
-      "DELETE FROM triggers WHERE organization_id = #{organization_id}",
+        # Delete triggers
+        "DELETE FROM triggers WHERE organization_id = #{organization_id}",
 
-      # Delete other data
-      "DELETE FROM notifications WHERE organization_id = #{organization_id}",
-      "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
-    ]
+        # Delete other data
+        "DELETE FROM notifications WHERE organization_id = #{organization_id}",
+        "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
+      ]
 
     Enum.each(queries, fn query ->
       Repo.query!(query, [], timeout: 300_000, skip_organization_id: true)

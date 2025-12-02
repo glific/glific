@@ -97,7 +97,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
              |> Repo.aggregate(:count) >= 1
 
       # Execute cleanup
-      assert :ok = TrialWorker.cleanup_expired_trials(trial_org_id)
+      assert :ok = TrialWorker.cleanup_expired_trials()
 
       assert Message
              |> where([m], m.organization_id == ^trial_org_id)
