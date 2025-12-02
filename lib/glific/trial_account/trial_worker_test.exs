@@ -8,11 +8,11 @@ defmodule Glific.Jobs.TrialWorkerTest do
     Flows.Flow,
     Flows.FlowRevision,
     Flows.WebhookLog,
-    TrialAccount.TrialWorker,
     Messages.Message,
     Notifications.Notification,
     Partners.Organization,
     Repo,
+    TrialAccount.TrialWorker,
     Users.User
   }
 
