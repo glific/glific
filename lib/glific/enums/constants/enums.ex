@@ -63,7 +63,8 @@ defmodule Glific.Enums.Constants do
         :video,
         :sticker,
         :location_request_message,
-        :poll
+        :poll,
+        :whatsapp_form_response
       ]
 
       # the different possible types of interactive message
@@ -88,7 +89,7 @@ defmodule Glific.Enums.Constants do
       @user_roles_const [:none, :staff, :manager, :admin, :glific_admin]
 
       # Template button types
-      @template_button_type_const [:call_to_action, :quick_reply, :otp]
+      @template_button_type_const [:call_to_action, :quick_reply, :otp, :whatsapp_form]
 
       # organization status types
       @organization_status_const [
@@ -115,6 +116,24 @@ defmodule Glific.Enums.Constants do
       @sheet_sync_status_const [
         :success,
         :failed
+      ]
+
+      # status of whatsapp form
+      @whatsapp_form_status_const [
+        :draft,
+        :published,
+        :inactive
+      ]
+
+      @whatsapp_form_category_const [
+        :sign_up,
+        :sign_in,
+        :appointment_booking,
+        :lead_generation,
+        :contact_us,
+        :customer_support,
+        :survey,
+        :other
       ]
     end
   end

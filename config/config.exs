@@ -30,7 +30,10 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 oban_queues = [
   bigquery: 10,
   crontab: 10,
-  default: 10,
+  default: [
+    limit: 10,
+    rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
+  ],
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
@@ -39,7 +42,9 @@ oban_queues = [
   wa_group: 5,
   purge: 1,
   custom_certificate: 10,
-  gpt_webhook_queue: 20
+  gpt_webhook_queue: 20,
+  contact_import: 10,
+  gupshup_high_tps: 10
 ]
 
 oban_crontab = [
@@ -165,7 +170,8 @@ config :ex_audit,
   version_schema: Glific.Version,
   tracked_schemas: [
     Glific.Flows.Flow,
-    Glific.Triggers.Trigger
+    Glific.Triggers.Trigger,
+    Glific.WhatsappForms.WhatsappForm
   ],
   primitive_structs: [
     DateTime

@@ -10,19 +10,50 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 ssl_port = env!("SSL_PORT", :integer, 443)
 http_port = env!("HTTP_PORT", :integer, 4000)
 
+# Helper function to create SSL opts
+db_ssl_opts = fn db_type ->
+  if Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true) do
+    pem = "#{db_type}_CACERT_ENCODED" |> env!(:string) |> Base.decode64!()
+    File.mkdir_p(Path.join(:code.priv_dir(:glific), "cert"))
+
+    cert_path =
+      Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
+
+    File.write!(cert_path, pem)
+
+    [
+      cacertfile: cert_path,
+      verify: :verify_peer,
+      server_name_indication:
+        env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
+        |> String.to_charlist()
+    ]
+  else
+    false
+  end
+end
+
 primary_url = env!("DATABASE_URL", :string!)
+primary_ssl_opts = db_ssl_opts.("PRIMARY")
 
 config :glific, Glific.Repo,
   url: primary_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
+  ssl: primary_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
+replica_url = env!("READ_REPLICA_DATABASE_URL", :string!, primary_url)
+
+replica_ssl_opts =
+  if primary_url != replica_url, do: db_ssl_opts.("REPLICA"), else: primary_ssl_opts
+
 config :glific, Glific.RepoReplica,
-  url: env!("READ_REPLICA_DATABASE_URL", :string!, primary_url),
+  url: replica_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
+  ssl: replica_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
@@ -80,7 +111,8 @@ config :glific,
 
 config :glific,
   gcs_file_count: env!("GCS_FILE_COUNT", :integer, 5),
-  broadcast_contact_count: env!("BROADCAST_CONTACT_COUNT", :integer, 100)
+  broadcast_contact_count: env!("BROADCAST_CONTACT_COUNT", :integer, 100),
+  broadcast_contact_count_high_tps: env!("BROADCAST_CONTACT_COUNT_HIGH_TPS", :integer, 300)
 
 config :glific,
   open_ai: env!("OPEN_AI_KEY", :string!, "This is not a secret")
