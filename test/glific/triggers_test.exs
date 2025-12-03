@@ -8,6 +8,7 @@ defmodule Glific.TriggersTest do
   alias Glific.{
     Fixtures,
     Flows,
+    Flows.Broadcast,
     Groups,
     Messages,
     Repo,
@@ -378,6 +379,22 @@ defmodule Glific.TriggersTest do
     )
 
     Triggers.execute_triggers(attrs.organization_id)
+  end
+
+  test "broadcast_per_minute count depending on high trigger tps enabled", attrs do
+    FunWithFlags.enable(:high_trigger_tps_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+
+    assert 300 = Broadcast.broadcast_per_minute_count(attrs.organization_id)
+
+    FunWithFlags.disable(:high_trigger_tps_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+  end
+
+  test "broadcast_per_minute count depending on high trigger tps not enabled", attrs do
+    assert 100 = Broadcast.broadcast_per_minute_count(attrs.organization_id)
   end
 
   defp create_wa_group_trigger(attrs, trigger_attrs) do
