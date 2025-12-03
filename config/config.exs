@@ -169,6 +169,7 @@ config :ex_audit,
   version_schema: Glific.Version,
   tracked_schemas: [
     Glific.Flows.Flow,
+    Glific.Partners.Credential,
     Glific.Triggers.Trigger,
     Glific.WhatsappForms.WhatsappForm
   ],
