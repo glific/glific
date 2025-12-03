@@ -25,6 +25,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
       email: "trial@example.com",
       bsp_id: 1,
       is_active: true,
+      is_trial_org: true,
       timezone: "Asia/Kolkata"
     }
 
