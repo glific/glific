@@ -112,6 +112,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.certificate_template_type_const()
   [:slides]
 
+  iex> Glific.Enums.SheetSyncStatus.__enum_map__()
+  Glific.Enums.sheet_sync_status_const()
+
   iex> Glific.Enums.WhatsappFormStatus.__enum_map__()
   Glific.Enums.whatsapp_form_status_const()
 
