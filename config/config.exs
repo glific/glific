@@ -43,7 +43,8 @@ oban_queues = [
   purge: 1,
   custom_certificate: 10,
   gpt_webhook_queue: 20,
-  contact_import: 10
+  contact_import: 10,
+  gupshup_high_tps: 10
 ]
 
 oban_crontab = [
@@ -169,6 +170,7 @@ config :ex_audit,
   version_schema: Glific.Version,
   tracked_schemas: [
     Glific.Flows.Flow,
+    Glific.Partners.Credential,
     Glific.Triggers.Trigger,
     Glific.WhatsappForms.WhatsappForm
   ],

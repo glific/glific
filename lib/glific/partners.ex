@@ -562,6 +562,7 @@ defmodule Glific.Partners do
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -983,10 +984,15 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
-    with {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
+    with true <- credential.is_active,
+         {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
          {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
       {:ok, credential}
     else
+      false ->
+        # credential set to inactive, so no further processing
+        {:ok, credential}
+
       {:error, %{body: %{"error" => %{"message" => message}}}} ->
         {:error, message}
 
@@ -1309,7 +1315,9 @@ defmodule Glific.Partners do
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
       "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
-      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
+      "high_trigger_tps_enabled" =>
+        Flags.get_flag_enabled(:high_trigger_tps_enabled, organization)
     }
   end
 

@@ -1630,6 +1630,23 @@ defmodule Glific.PartnersTest do
       assert {:ok, %{message: _error}} =
                Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
     end
+
+    test "credentials should be audited with ExAudit",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_key: "test_audit_value"},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      # History should not have secrets in the patch
+      [created_history] = Repo.history(credential, skip_organization_id: true)
+      assert :secrets not in Map.keys(created_history.patch)
+    end
   end
 
   describe "get_resource_local_path/2" do
