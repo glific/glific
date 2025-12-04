@@ -376,9 +376,6 @@ defmodule Glific.Erase do
 
     Logger.info("Deleting trial data for organization_id: #{organization_id}")
 
-    # NOTE: We intentionally DO NOT delete contacts for trial orgs because
-    # users.contact_id has NOT NULL constraint and contacts have ON DELETE CASCADE to users
-    # since we need user details for future
     queries =
       [
         # Delete messages
@@ -386,6 +383,7 @@ defmodule Glific.Erase do
         "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
 
         # Delete contacts and related data
+        "DELETE FROM contacts WHERE organization_id = #{organization_id}",
         "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
         "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
 

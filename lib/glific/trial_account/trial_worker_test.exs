@@ -104,6 +104,10 @@ defmodule Glific.Jobs.TrialWorkerTest do
              |> where([m], m.organization_id == ^trial_org_id)
              |> Repo.aggregate(:count) == 0
 
+      assert Contact
+             |> where([c], c.organization_id == ^trial_org_id)
+             |> Repo.aggregate(:count) == 0
+
       assert Flow
              |> where([f], f.organization_id == ^trial_org_id)
              |> Repo.aggregate(:count) == 0
