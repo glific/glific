@@ -366,4 +366,56 @@ defmodule Glific.Erase do
       )
     end
   end
+
+  @doc """
+  Deletes all data associated with a trial organization except user records.
+  """
+  @spec delete_organization_data(non_neg_integer) :: :ok
+  def delete_organization_data(organization_id) do
+    Repo.put_process_state(organization_id)
+
+    Logger.info("Deleting trial data for organization_id: #{organization_id}")
+
+    queries =
+      [
+        # Delete messages
+        "DELETE FROM messages WHERE organization_id = #{organization_id}",
+        "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
+
+        # Delete contacts and related data
+        "DELETE FROM contacts WHERE organization_id = #{organization_id}",
+        "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
+        "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
+
+        # Delete flows and related data
+        "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_revisions WHERE organization_id = #{organization_id}",
+        "DELETE FROM flows WHERE organization_id = #{organization_id}",
+
+        # Delete interactive templates
+        "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
+
+        # Delete triggers
+        "DELETE FROM triggers WHERE organization_id = #{organization_id}",
+
+        # Delete other data
+        "DELETE FROM notifications WHERE organization_id = #{organization_id}",
+        "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
+      ]
+
+    Enum.each(queries, fn query ->
+      case Repo.query(query, [], timeout: 300_000, skip_organization_id: true) do
+        {:ok, result} ->
+          Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
+
+        {:error, error} ->
+          Logger.error("Failed to delete for org #{organization_id}: #{inspect(error)}")
+          raise "Query failed: #{inspect(error)}"
+      end
+    end)
+
+    Logger.info("Completed data deletion for organization_id: #{organization_id}")
+    :ok
+  end
 end
