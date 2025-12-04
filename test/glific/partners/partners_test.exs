@@ -6,6 +6,7 @@ defmodule Glific.PartnersTest do
   import Swoosh.TestAssertions
 
   alias Glific.{
+    Communications.Mailer,
     Fixtures,
     Mails.MailLog,
     Notifications,
@@ -1149,7 +1150,7 @@ defmodule Glific.PartnersTest do
       # Assert that an email was sent to support
       assert_email_sent(fn email ->
         email.subject =~ "Gupshup Setup Completed" and
-          email.to == [Glific.Communications.Mailer.glific_support()]
+          email.to == [Mailer.glific_support()]
       end)
 
       # Verify email was logged

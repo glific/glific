@@ -6,6 +6,9 @@ defmodule Glific.Mails.GupshupSetupMail do
   alias Glific.Communications.Mailer
   alias Glific.Partners.Organization
 
+  @doc """
+  Send a Gupshup setup completion email to the support team.
+  """
   @spec send_gupshup_setup_completion_mail(Organization.t()) :: {:ok, any()} | {:error, any()}
   def send_gupshup_setup_completion_mail(organization) do
     subject = "Gupshup Setup Completed - #{organization.name}"
