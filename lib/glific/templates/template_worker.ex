@@ -33,6 +33,8 @@ defmodule Glific.Templates.TemplateWorker do
   def create_hsm_sync_job(organization_id) do
     __MODULE__.new(%{"organization_id" => organization_id, "sync_hsm" => true},
       unique: [
+        # 5 mins
+        period: 60 * 5,
         keys: [:organization_id],
         states: [:available, :scheduled, :executing]
       ]
