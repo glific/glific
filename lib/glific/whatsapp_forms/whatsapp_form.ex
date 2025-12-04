@@ -11,7 +11,8 @@ defmodule Glific.WhatsappForms.WhatsappForm do
   alias Glific.{
     Enums.WhatsappFormCategory,
     Enums.WhatsappFormStatus,
-    Partners.Organization
+    Partners.Organization,
+    Sheets.Sheet
   }
 
   @type t() :: %__MODULE__{
@@ -25,6 +26,8 @@ defmodule Glific.WhatsappForms.WhatsappForm do
           categories: [],
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          sheet_id: non_neg_integer() | nil,
+          sheet: Sheet.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
         }
@@ -34,7 +37,8 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     :meta_flow_id,
     :definition,
     :categories,
-    :organization_id
+    :organization_id,
+    :sheet_id
   ]
 
   @optional_fields [:description, :status]
@@ -48,6 +52,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     field(:categories, {:array, WhatsappFormCategory}, default: [])
 
     belongs_to :organization, Organization
+    belongs_to :sheet, Sheet
     timestamps(type: :utc_datetime_usec)
   end
 
