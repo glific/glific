@@ -11,6 +11,7 @@ defmodule Glific.WhatsappForms do
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Sheets,
+    Sheets.GoogleSheets,
     WhatsappForms.WhatsappForm
   }
 
@@ -67,7 +68,8 @@ defmodule Glific.WhatsappForms do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, _response} <-
            ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
-         {:ok, updated_form} <- update_form_status(form, :published) do
+         {:ok, updated_form} <- update_form_status(form, :published),
+         {:ok, _} <- append_headers_to_sheet(form) do
       {:ok, %{whatsapp_form: updated_form}}
     end
   end
@@ -288,5 +290,74 @@ defmodule Glific.WhatsappForms do
         Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  @spec append_headers_to_sheet(WhatsappForm.t()) :: {:ok, any()} | {:error, any()}
+  defp append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
+
+  defp append_headers_to_sheet(%{
+         definition: %{"screens" => screens},
+         sheet: %{url: url},
+         organization_id: organization_id
+       }) do
+    with {:ok, complete_payload} <- extract_complete_payload(screens),
+         {:ok, spreadsheet_id} <- extract_spreadsheet_id(url),
+         headers <- build_headers(complete_payload),
+         {:ok, _result} <- insert_headers(organization_id, spreadsheet_id, headers) do
+      {:ok, headers}
+    end
+  end
+
+  defp append_headers_to_sheet(_), do: {:error, "Invalid form structure"}
+
+  @spec extract_complete_payload(list()) :: {:ok, map()} | {:error, String.t()}
+  defp extract_complete_payload(screens) do
+    payload =
+      screens
+      |> Enum.find_value(&find_complete_action/1)
+
+    case payload do
+      nil -> {:error, "No complete action payload found"}
+      payload -> {:ok, payload}
+    end
+  end
+
+  defp find_complete_action(%{"layout" => %{"children" => children}}) do
+    children
+    |> Enum.flat_map(fn child ->
+      get_in(child, ["children"]) || []
+    end)
+    |> Enum.find_value(&extract_payload_from_child/1)
+  end
+
+  defp find_complete_action(_), do: nil
+
+  defp extract_payload_from_child(%{
+         "on-click-action" => %{"name" => "complete", "payload" => payload}
+       }),
+       do: payload
+
+  defp extract_payload_from_child(_), do: nil
+
+  @spec extract_spreadsheet_id(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  defp extract_spreadsheet_id(url) do
+    case Regex.run(~r/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, url) do
+      [_, spreadsheet_id] -> {:ok, spreadsheet_id}
+      _ -> {:error, "Invalid Google Sheets URL"}
+    end
+  end
+
+  defp build_headers(complete_payload) do
+    default_headers = ["timestamp", "contact_id", "whatsapp_form_id"]
+    form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
+
+    default_headers ++ form_headers
+  end
+
+  defp insert_headers(organization_id, spreadsheet_id, headers) do
+    GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
+      range: "A1",
+      data: [headers]
+    })
   end
 end
