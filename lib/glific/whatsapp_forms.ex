@@ -10,6 +10,7 @@ defmodule Glific.WhatsappForms do
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
+    Sheets,
     WhatsappForms.WhatsappForm
   }
 
@@ -33,7 +34,8 @@ defmodule Glific.WhatsappForms do
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs) do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
-         {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
+         {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response, :create),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
@@ -48,7 +50,8 @@ defmodule Glific.WhatsappForms do
   @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
-         {:ok, db_attrs} <- prepare_attrs(attrs, response, :update),
+         {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response, :update),
          {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
@@ -103,7 +106,13 @@ defmodule Glific.WhatsappForms do
   @spec get_whatsapp_form_by_id(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
   def get_whatsapp_form_by_id(id) do
-    Repo.fetch_by(WhatsappForm, %{id: id})
+    case Repo.fetch_by(WhatsappForm, %{id: id}) do
+      {:ok, whatsapp_form} ->
+        {:ok, Repo.preload(whatsapp_form, [:sheet])}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -154,7 +163,8 @@ defmodule Glific.WhatsappForms do
       meta_flow_id: api_response.id,
       status: "draft",
       description: validated_attrs.description,
-      categories: validated_attrs.categories
+      categories: validated_attrs.categories,
+      sheet_id: validated_attrs.sheet_id
     }
 
     {:ok, db_attrs}
@@ -166,7 +176,8 @@ defmodule Glific.WhatsappForms do
       definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
       categories: validated_attrs.categories,
-      organization_id: validated_attrs.organization_id
+      organization_id: validated_attrs.organization_id,
+      sheet_id: validated_attrs.sheet_id
     }
 
     {:ok, db_attrs}
@@ -231,6 +242,46 @@ defmodule Glific.WhatsappForms do
       # Any other count (not 1) means it's not the first form
       _count ->
         :ok
+    end
+  end
+
+  defp maybe_create_google_sheet(attrs) do
+    case Map.get(attrs, :google_sheet_url) do
+      nil ->
+        {:ok, Map.put(attrs, :sheet_id, nil)}
+
+      "" ->
+        {:ok, Map.put(attrs, :sheet_id, nil)}
+
+      url when is_binary(url) ->
+        fetch_or_create_sheet(attrs, url)
+    end
+  end
+
+
+  defp fetch_or_create_sheet(attrs, url) do
+    case Repo.fetch_by(Sheets.Sheet, %{url: url, organization_id: attrs.organization_id}) do
+      {:ok, sheet} ->
+        {:ok, Map.put(attrs, :sheet_id, sheet.id)}
+
+      {:error, _} ->
+        create_new_sheet(attrs, url)
+    end
+  end
+
+  defp create_new_sheet(attrs, url) do
+    case Sheets.create_sheet(%{
+      label: "WhatsApp Form - #{attrs.name}",
+      organization_id: attrs.organization_id,
+      url: url,
+      type: "WRITE"
+    }) do
+      {:ok, sheet} ->
+        {:ok, Map.put(attrs, :google_sheet_url, sheet.id)}
+
+      {:error, reason} ->
+        Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 end
