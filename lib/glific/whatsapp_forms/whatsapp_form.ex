@@ -37,11 +37,10 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     :meta_flow_id,
     :definition,
     :categories,
-    :organization_id,
-    :sheet_id
+    :organization_id
   ]
 
-  @optional_fields [:description, :status]
+  @optional_fields [:description, :status, :sheet_id]
 
   schema "whatsapp_forms" do
     field(:name, :string)
