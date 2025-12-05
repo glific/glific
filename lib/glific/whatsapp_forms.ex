@@ -245,6 +245,8 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @spec maybe_create_google_sheet(map()) ::
+          {:ok, map()} | {:error, any()}
   defp maybe_create_google_sheet(attrs) do
     case Map.get(attrs, :google_sheet_url) do
       nil ->
@@ -258,7 +260,8 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-
+@spec fetch_or_create_sheet(map(), String.t()) ::
+          {:ok, map()} | {:error, any()}
   defp fetch_or_create_sheet(attrs, url) do
     case Repo.fetch_by(Sheets.Sheet, %{url: url, organization_id: attrs.organization_id}) do
       {:ok, sheet} ->
@@ -269,6 +272,8 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @spec create_new_sheet(map(), String.t()) ::
+          {:ok, map()} | {:error, any()}
   defp create_new_sheet(attrs, url) do
     case Sheets.create_sheet(%{
       label: "WhatsApp Form - #{attrs.name}",
