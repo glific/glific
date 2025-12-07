@@ -1,6 +1,6 @@
 defmodule Glific.TrialAccount.TrialWorker do
   @moduledoc """
-  Module for managing trial account lifecycle - expiration reminders and cleanup
+  Module for managing trial account lifecycle - expiration, reminders, and cleanup
   """
   import Ecto.Query
 
@@ -14,7 +14,7 @@ defmodule Glific.TrialAccount.TrialWorker do
   require Logger
 
   @doc """
-  Fetches all trial organizations where expiration date has passed
+  Cleans up all trial organization data where expiration date has passed
   """
   @spec cleanup_expired_trials() :: :ok
   def cleanup_expired_trials do
@@ -23,7 +23,6 @@ defmodule Glific.TrialAccount.TrialWorker do
     expired_trial_orgs =
       Organization
       |> where([o], o.is_trial_org == true)
-      |> where([o], not is_nil(o.trial_expiration_date))
       |> where([o], o.trial_expiration_date < ^DateTime.utc_now())
       |> Repo.all(skip_organization_id: true)
 
