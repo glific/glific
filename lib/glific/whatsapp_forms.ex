@@ -58,11 +58,11 @@ defmodule Glific.WhatsappForms do
   Syncs a WhatsApp form from Gupshup
   """
   @spec sync_whatsapp_form(non_neg_integer()) ::
-          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+          :ok | {:error, String.t()}
   def sync_whatsapp_form(organization_id) do
     with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
          :ok <- handle_single_form(forms, organization_id) do
-      {:ok, %{message: "sync as been done "}}
+      :ok
     else
       {:error, reason} ->
         {:error, reason}
