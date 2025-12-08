@@ -1,11 +1,14 @@
 defmodule Glific.WhatsappForms.WhatsappFormWorker do
+  @moduledoc """
+  Oban worker to sync WhatsApp forms for an organization.
+  """
   require Logger
 
   alias Glific.{
-    Repo,
     Notification,
     Notifications,
     Notifications.Notification,
+    Repo,
     WhatsappForms
   }
 

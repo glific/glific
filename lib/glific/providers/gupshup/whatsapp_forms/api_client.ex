@@ -65,14 +65,20 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    with {:ok, [assert]} <-
-           client(url: url, headers: headers)
-           |> Tesla.get("/flows/#{flow_id}/assets")
-           |> parse_response("get_whatsapp_form_assets") do
-      download(assert.download_url)
-    else
+    response =
+      client(url: url, headers: headers)
+      |> Tesla.get("/flows/#{flow_id}/assets")
+      |> parse_response("get_whatsapp_form_assets")
+
+    case response do
+      {:ok, [assert]} ->
+        download(assert.download_url)
+
       {:error, error} ->
         {:error, error}
+
+      _unexpected ->
+        {:error, "Invalid response format from BSP"}
     end
   end
 
