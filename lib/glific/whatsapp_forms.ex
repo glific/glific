@@ -180,6 +180,8 @@ defmodule Glific.WhatsappForms do
   @doc """
   Saves or updates a single form from WBM.
   """
+  @spec sync_single_form(map(), map(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   def sync_single_form(form, form_json, organization_id) do
     attrs = %{
       name: form.name,
