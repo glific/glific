@@ -76,9 +76,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
       {:error, error} ->
         {:error, error}
-
-      _unexpected ->
-        {:error, "Invalid response format"}
     end
   end
 
