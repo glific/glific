@@ -49,7 +49,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def list_whatsapp_forms(organization_id) do
     url = PartnerAPI.app_url!(organization_id)
-    IO.inspect("king")
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
     client(url: url, headers: headers)
@@ -66,11 +65,11 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    with {:ok, [%{asset_type: "FLOW_JSON", download_url: download_url}]} <-
+    with {:ok, [assert]} <-
            client(url: url, headers: headers)
            |> Tesla.get("/flows/#{flow_id}/assets")
            |> parse_response("get_whatsapp_form_assets") do
-      download(download_url)
+      download(assert.download_url)
     else
       {:error, error} ->
         {:error, error}

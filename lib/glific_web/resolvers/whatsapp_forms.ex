@@ -4,7 +4,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
 
   alias Glific.{
-    Partners,
     Notifications,
     WhatsappForms,
     WhatsappForms.WhatsappForm,
