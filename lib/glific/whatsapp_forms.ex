@@ -69,6 +69,10 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @doc """
+  Handles syncing of a single WhatsApp form.
+  """
+  @spec handle_single_form(list(map()), non_neg_integer()) :: :ok | {:error, String.t()}
   def handle_single_form(forms, organization_id) do
     Enum.each(forms, fn form ->
       with {:ok, form_json} <- ApiClient.get_whatsapp_form_assets(form.id, organization_id),

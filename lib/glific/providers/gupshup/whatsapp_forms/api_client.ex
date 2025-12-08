@@ -46,7 +46,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @doc """
   Lists all WhatsApp forms via Gupshup Partner API.
   """
-  @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
   def list_whatsapp_forms(organization_id) do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
@@ -125,7 +125,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @spec parse_response(
           {:ok, Tesla.Env.t()} | {:error, any()},
           String.t()
-        ) :: {:ok, map()} | {:error, String.t()}
+        ) :: {:ok, map()} | {:ok, list(map())} | {:error, String.t()}
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, _action)
        when status in 200..299 do
     {:ok, body}

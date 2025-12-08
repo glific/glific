@@ -14,6 +14,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     max_attempts: 2,
     priority: 2
 
+  @spec create_forms_sync_job(non_neg_integer()) :: {:ok, Oban.Job.t()} | {:error, any()}
   def create_forms_sync_job(org_id) do
     __MODULE__.new(
       %{"organization_id" => org_id, "sync_forms" => true},
@@ -29,7 +30,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
   @impl Oban.Worker
 
-  @spec perform(Oban.Job.t()) :: {:error, any()} | {:ok, any()}
+  @spec perform(Oban.Job.t()) :: {:error, any()} | :ok
   def perform(%Oban.Job{args: %{"organization_id" => org_id, "sync_forms" => true}}) do
     Repo.put_process_state(org_id)
 
