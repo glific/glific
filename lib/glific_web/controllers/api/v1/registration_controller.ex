@@ -42,7 +42,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, []}
-  defp verify_otp(phone, otp) do
+  def verify_otp(phone, otp) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
         # Remove otp code
@@ -50,6 +50,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
         {:ok, "verified"}
 
       {:error, error} ->
+        IO.inspect("going here")
+
         # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
         {:error, [Atom.to_string(error)]}
     end
@@ -187,7 +189,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   """
   @spec create_and_send_verification_code(Contact.t()) :: {:ok, String.t()}
   def create_and_send_verification_code(contact) do
-    code = PasswordlessAuth.generate_code(contact.phone)
+    code = PasswordlessAuth.generate_code(contact.phone) |> IO.inspect()
     Glific.Messages.create_and_send_otp_verification_message(contact, code)
     {:ok, code}
   end

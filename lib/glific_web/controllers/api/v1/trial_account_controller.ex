@@ -2,29 +2,50 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   @moduledoc """
   Controller for allocating trial accounts to users via an API endpoint.
   """
-
   use GlificWeb, :controller
 
-  alias Glific.{Partners.Organization, Repo}
+  alias Glific.{
+    Partners.Organization,
+    Repo,
+    Users,
+    Users.User,
+    Contacts,
+    Contacts.Contact
+  }
+
+  alias GlificWeb.API.V1.RegistrationController
+
   import Ecto.Query
 
   @doc """
   Allocates a trial account to a user.
   """
   @spec trial(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def trial(conn, _params) do
+  def trial(conn, params) do
     token = get_req_header(conn, "x-api-key") |> List.first()
     expected_token = get_token()
 
     if token == expected_token do
-      case get_available_trial_account() do
-        {:ok, organization} ->
-          json(conn, %{
-            success: true,
-            data: %{
-              login_url: "https://#{organization.shortcode}.glific.com",
-              expires_at: organization.trial_expiration_date
-            }
+      phone = params["phone"]
+
+      with {:ok, _message} <-
+             RegistrationController.verify_otp(phone, params["otp"]),
+           {:ok, organization} <- get_available_trial_account(),
+           {:ok, contact} <- create_trial_contact(organization, phone, params),
+           {:ok, _user} <-
+             create_trial_user(organization, contact, phone, params) do
+        json(conn, %{
+          success: true,
+          data: %{
+            login_url: "https://#{organization.shortcode}.glific.com"
+          }
+        })
+      else
+        {:error, error_list} when is_list(error_list) ->
+          conn
+          |> json(%{
+            success: false,
+            error: "Invalid OTP"
           })
 
         {:error, :no_available_accounts} ->
@@ -79,6 +100,38 @@ defmodule GlificWeb.API.V1.TrialAccountController do
           end
       end
     end)
+  end
+
+  @spec create_trial_contact(Organization.t(), String.t(), map()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp create_trial_contact(organization, phone, params) do
+    contact_params = %{
+      phone: phone,
+      name: params["name"],
+      organization_id: organization.id,
+      language_id: organization.default_language_id
+    }
+
+    Contacts.create_contact(contact_params)
+  end
+
+  @spec create_trial_user(Organization.t(), Contact.t(), String.t(), map()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  defp create_trial_user(organization, contact, phone, params) do
+    user_params = %{
+      name: params["name"],
+      phone: phone,
+      password: params["password"],
+      confirm_password: params["password"],
+      roles: ["admin"],
+      organization_id: organization.id,
+      language_id: organization.default_language_id,
+      last_login_at: DateTime.utc_now(),
+      last_login_from: "127.0.0.1",
+      contact_id: contact.id
+    }
+
+    Users.create_user(user_params)
   end
 
   @spec get_token() :: String.t()
