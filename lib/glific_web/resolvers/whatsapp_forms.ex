@@ -51,6 +51,15 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   end
 
   @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def sync_whatsapp_form(_, %{organization_id: organization_id}, _) do
+    WhatsappForms.sync_whatsapp_form(organization_id)
+  end
+
+  @doc """
     Publishes a WhatsApp form using its Meta Flow ID.
   """
   @spec publish_whatsapp_form(

@@ -1,0 +1,9 @@
+mutation syncWhatsappForm($organization_id: ID!) {
+  syncWhatsappForm(organizationId: $organization_id) {
+    message
+    errors {
+      key
+      message
+    }
+  }
+}

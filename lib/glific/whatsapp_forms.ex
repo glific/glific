@@ -55,6 +55,35 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(non_neg_integer()) ::
+          {:ok, %{whatsapp_form: WhatsappForm.t()}} | {:error, String.t()}
+  def sync_whatsapp_form(organization_id) do
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
+         :ok <- handle_single_form(forms, organization_id) do
+      {:ok, %{message: "sync as been done "}}
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def handle_single_form(forms, organization_id) do
+    Enum.each(forms, fn form ->
+      with {:ok, form_json} <- ApiClient.get_whatsapp_form_assets(form.id, organization_id),
+           {:ok, _form} <-
+             sync_single_form(form, form_json, organization_id) do
+        :ok
+      else
+        {:error, reason} ->
+          Logger.error("Failed to fetch assets for #{form.id}: #{reason}")
+          {:error, reason}
+      end
+    end)
+  end
+
+  @doc """
     Publishes a WhatsApp form through the configured provider (e.g., Gupshup).
   """
   @spec publish_whatsapp_form(non_neg_integer()) ::
@@ -142,6 +171,29 @@ defmodule Glific.WhatsappForms do
     form
     |> Ecto.Changeset.change(status: new_status)
     |> Repo.update()
+  end
+
+  @doc """
+  Saves or updates a single form from WBM.
+  """
+  def sync_single_form(form, form_json, organization_id) do
+    attrs = %{
+      name: form.name,
+      status: normalize_status(form.status),
+      categories: normalize_categories(form.categories),
+      definition: form_json,
+      description: Map.get(form, :description, ""),
+      meta_flow_id: form.id,
+      organization_id: organization_id
+    }
+
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form.id, organization_id: organization_id}) do
+      {:ok, existing_form} ->
+        do_update_whatsapp_form(existing_form, attrs)
+
+      {:error, _} ->
+        do_create_whatsapp_form(attrs)
+    end
   end
 
   @spec prepare_attrs(map(), map(), :create | :update) ::
@@ -232,5 +284,29 @@ defmodule Glific.WhatsappForms do
       _count ->
         :ok
     end
+  end
+
+  @spec normalize_status(any()) :: atom() | String.t()
+  defp normalize_status(nil), do: "draft"
+  defp normalize_status(status) when is_atom(status), do: status
+
+  defp normalize_status(status) when is_binary(status) do
+    status
+    |> String.downcase()
+  end
+
+  defp normalize_status(_), do: "draft"
+
+  @spec normalize_categories(any()) :: list(atom() | String.t())
+  defp normalize_categories(nil), do: []
+  defp normalize_categories([]), do: []
+
+  defp normalize_categories(categories) when is_list(categories) do
+    categories
+    |> Enum.map(fn
+      category ->
+        category
+        |> String.downcase()
+    end)
   end
 end

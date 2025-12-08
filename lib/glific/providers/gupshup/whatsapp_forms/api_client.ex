@@ -44,6 +44,53 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   end
 
   @doc """
+  Lists all WhatsApp forms via Gupshup Partner API.
+  """
+  @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def list_whatsapp_forms(organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    IO.inspect("king")
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    client(url: url, headers: headers)
+    |> Tesla.get("/flows")
+    |> parse_response("list_whatsapp_forms")
+  end
+
+  @doc """
+  Fetches WhatsApp Flow JSON (full form definition) from Gupshup.
+  """
+  @spec get_whatsapp_form_assets(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_whatsapp_form_assets(flow_id, organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    with {:ok, [%{asset_type: "FLOW_JSON", download_url: download_url}]} <-
+           client(url: url, headers: headers)
+           |> Tesla.get("/flows/#{flow_id}/assets")
+           |> parse_response("get_whatsapp_form_assets") do
+      download(download_url)
+    else
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Downloads a file from a given URL.
+  """
+  @spec download(String.t()) :: {:ok, map()} | {:error, any()}
+  def download(url) do
+    with {:ok, body} <- Tesla.get(url) |> parse_response("download_whatsapp_form_json"),
+         {:ok, decoded_body} <- Jason.decode(body) do
+      {:ok, decoded_body}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
   Updates a WhatsApp form via Gupshup Partner API.
   """
   @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
