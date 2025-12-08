@@ -4,6 +4,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
 
   alias Glific.{
+    Partners,
     Notifications,
     WhatsappForms,
     WhatsappForms.WhatsappForm,
@@ -60,7 +61,9 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @spec sync_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def sync_whatsapp_form(_, %{organization_id: organization_id}, _) do
-    queue_whatsapp_form_sync(organization_id)
+    organization_id
+    |> normalize_id()
+    |> queue_whatsapp_form_sync()
   end
 
   @spec queue_whatsapp_form_sync(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
@@ -86,6 +89,15 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
         Logger.error(error_message)
         {:error, error_message}
+    end
+  end
+
+  defp normalize_id(id) when is_integer(id), do: id
+
+  defp normalize_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {value, ""} -> value
+      _ -> id
     end
   end
 

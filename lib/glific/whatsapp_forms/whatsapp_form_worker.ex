@@ -2,10 +2,10 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   require Logger
 
   alias Glific.{
+    Repo,
     Notification,
     Notifications,
     Notifications.Notification,
-    Templates,
     WhatsappForms
   }
 
@@ -28,8 +28,11 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   end
 
   @impl Oban.Worker
+
   @spec perform(Oban.Job.t()) :: {:error, any()} | {:ok, any()}
   def perform(%Oban.Job{args: %{"organization_id" => org_id, "sync_forms" => true}}) do
+    Repo.put_process_state(org_id)
+
     case WhatsappForms.sync_whatsapp_form(org_id) do
       :ok ->
         Logger.info("Whatsapp Form sync completed successfully for org_id: #{org_id}")
