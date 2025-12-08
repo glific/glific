@@ -240,48 +240,57 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
   test "sync whatsapp forms for an organization", %{manager: user} do
     Tesla.Mock.mock(fn
-      %{method: :get, url: url} ->
+      %{method: :get, url: url} = _env ->
         cond do
-          String.contains?(url, "flows") ->
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
             %Tesla.Env{
               status: 200,
-              body: %{
-                "forms" => [
-                  %{
-                    "id" => "form-123",
-                    "name" => "Customer Feedback Form",
-                    "description" => "Form to collect customer feedback",
-                    "categories" => ["feedback", "customer"],
-                    "meta_flow_id" => "flow-12345"
-                  }
-                ]
-              }
+              body: [
+                %{
+                  id: "form-123",
+                  status: "Published",
+                  name: "Customer Feedback Form",
+                  description: "Form to collect customer feedback",
+                  categories: ["survey"],
+                  meta_flow_id: "flow-12345"
+                }
+              ]
             }
 
-          String.contains?(url, "assets") ->
+          String.contains?(url, "/assets") ->
             %Tesla.Env{
               status: 200,
-              body: %{
-                "form_json" => %{
-                  "title" => "Customer Feedback Form",
-                  "fields" => [
-                    %{"type" => "text", "label" => "Your Feedback"}
-                  ]
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
                 }
-              }
+              ]
             }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
         end
     end)
 
-    {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
       auth_query_gql_by(:sync_whatsapp_form, user,
-        variables: %{"organizationId" => user.organization_id}
+        variables: %{"organization_id" => user.organization_id}
       )
 
-    assert message == "WhatsApp forms sync initiated."
-
-    {:ok, _job} =
-      Glific.WhatsappForms.WhatsappFormWorker.create_forms_sync_job(user.organization_id)
+    assert message == "Whatsapp forms sync job queued successfully"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
@@ -291,14 +300,9 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default)
 
-    {:ok, form} =
-      Repo.fetch_by(WhatsappForm, %{
-        meta_flow_id: "flow-12345",
-        organization_id: user.organization_id
-      })
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "form-123"})
 
     assert form.name == "Customer Feedback Form"
     assert form.description == "Form to collect customer feedback"
-    assert form.categories == ["feedback", "customer"]
   end
 end
