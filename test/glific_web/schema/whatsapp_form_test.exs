@@ -56,7 +56,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     SeedsDev.seed_whatsapp_forms(organization)
   end
 
-  test "published a whatsapp form and updates its status to published",
+  test "publishes a whatsapp form and updates its status to published",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -141,8 +141,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, %{data: %{"deactivateWhatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:deactivate_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error["message"] ==
-             "Resource not found"
+    assert error["message"] == "Resource not found"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",
@@ -150,8 +149,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, %{data: %{"publishWhatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error["message"] ==
-             "Resource not found"
+    assert error["message"] == "Resource not found"
   end
 
   test "count returns the number of whatsapp forms", %{manager: user} do

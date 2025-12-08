@@ -51,13 +51,13 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
   test "creates a whatsapp form", %{user: user} do
     sheet_url = "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
+
     valid_attrs = %{
       "name" => "Test Form",
       "formJson" => Jason.encode!(@form_json),
       "description" => "A test WhatsApp form",
       "categories" => ["other"],
       "google_sheet_url" => sheet_url
-
     }
 
     Tesla.Mock.mock(fn
@@ -112,7 +112,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
       assert "Test Form" = query_data.data["createWhatsappForm"]["whatsappForm"]["name"]
       assert nil != query_data.data["createWhatsappForm"]["whatsappForm"]["sheetId"]
-
     end
   end
 
