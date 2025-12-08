@@ -1,11 +1,13 @@
 defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Repo,
     Seeds.SeedsDev,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker
   }
 
   load_gql(
@@ -48,6 +50,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     :delete_whatsapp_form,
     GlificWeb.Schema,
     "assets/gql/whatsapp_forms/delete.gql"
+  )
+
+  load_gql(
+    :sync_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/sync.gql"
   )
 
   setup do
@@ -228,5 +236,69 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:delete_whatsapp_form, user, variables: %{"id" => "9999999"})
 
     assert error["message"] == "Resource not found"
+  end
+
+  test "sync whatsapp forms for an organization", %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} ->
+        cond do
+          String.contains?(url, "flows") ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "forms" => [
+                  %{
+                    "id" => "form-123",
+                    "name" => "Customer Feedback Form",
+                    "description" => "Form to collect customer feedback",
+                    "categories" => ["feedback", "customer"],
+                    "meta_flow_id" => "flow-12345"
+                  }
+                ]
+              }
+            }
+
+          String.contains?(url, "assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "form_json" => %{
+                  "title" => "Customer Feedback Form",
+                  "fields" => [
+                    %{"type" => "text", "label" => "Your Feedback"}
+                  ]
+                }
+              }
+            }
+        end
+    end)
+
+    {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
+      auth_query_gql_by(:sync_whatsapp_form, user,
+        variables: %{"organizationId" => user.organization_id}
+      )
+
+    assert message == "WhatsApp forms sync initiated."
+
+    {:ok, _job} =
+      Glific.WhatsappForms.WhatsappFormWorker.create_forms_sync_job(user.organization_id)
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    {:ok, form} =
+      Repo.fetch_by(WhatsappForm, %{
+        meta_flow_id: "flow-12345",
+        organization_id: user.organization_id
+      })
+
+    assert form.name == "Customer Feedback Form"
+    assert form.description == "Form to collect customer feedback"
+    assert form.categories == ["feedback", "customer"]
   end
 end
