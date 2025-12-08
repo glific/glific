@@ -284,7 +284,7 @@ defmodule Glific.WhatsappForms do
            type: "WRITE"
          }) do
       {:ok, sheet} ->
-        {:ok, Map.put(attrs, :google_sheet_url, sheet.id)}
+        {:ok, Map.put(attrs, :sheet_id, sheet.id)}
 
       {:error, reason} ->
         Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")

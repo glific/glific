@@ -1,9 +1,11 @@
 defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  import Mock
 
   alias Glific.{
     Providers.Gupshup.WhatsappForms.ApiClient,
+    Partners,
     WhatsappForms
   }
 
@@ -48,11 +50,14 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   )
 
   test "creates a whatsapp form", %{user: user} do
+    sheet_url = "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
     valid_attrs = %{
       "name" => "Test Form",
       "formJson" => Jason.encode!(@form_json),
       "description" => "A test WhatsApp form",
-      "categories" => ["other"]
+      "categories" => ["other"],
+      "google_sheet_url" => sheet_url
+
     }
 
     Tesla.Mock.mock(fn
@@ -72,15 +77,43 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
         end
     end)
 
-    result =
-      auth_query_gql_by(:create_whatsapp_form, user,
-        variables: %{
-          "input" => valid_attrs
-        }
-      )
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      sheet_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: user.organization_id
+      }
 
-    assert {:ok, query_data} = result
-    assert "Test Form" = query_data.data["createWhatsappForm"]["whatsappForm"]["name"]
+      Partners.create_credential(sheet_attrs)
+
+      result =
+        auth_query_gql_by(:create_whatsapp_form, user,
+          variables: %{
+            "input" => valid_attrs
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      assert "Test Form" = query_data.data["createWhatsappForm"]["whatsappForm"]["name"]
+      assert nil != query_data.data["createWhatsappForm"]["whatsappForm"]["sheetId"]
+
+    end
   end
 
   test "updates a whatsapp form", %{user: user} do

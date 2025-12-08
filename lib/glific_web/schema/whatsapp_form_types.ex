@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :definition, :json
     field :meta_flow_id, :string
     field :categories, list_of(:string)
+    field :sheet_id, :id
     field :inserted_at, :string
     field :updated_at, :string
 
