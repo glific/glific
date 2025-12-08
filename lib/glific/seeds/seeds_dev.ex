@@ -2097,6 +2097,7 @@ if Code.ensure_loaded?(Faker) do
       end)
     end
 
+    @doc false
     @spec seed_sheets(Organization.t() | nil) :: :ok
     def seed_sheets(organization \\ nil) do
       organization = get_organization(organization)

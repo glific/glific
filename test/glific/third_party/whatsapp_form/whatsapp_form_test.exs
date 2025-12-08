@@ -4,8 +4,8 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   import Mock
 
   alias Glific.{
-    Providers.Gupshup.WhatsappForms.ApiClient,
     Partners,
+    Providers.Gupshup.WhatsappForms.ApiClient,
     WhatsappForms
   }
 
