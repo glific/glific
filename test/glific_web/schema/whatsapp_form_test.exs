@@ -2,8 +2,10 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
   use Oban.Pro.Testing, repo: Glific.Repo
+  import Ecto.Query
 
   alias Glific.{
+    Notifications.Notification,
     Repo,
     Seeds.SeedsDev,
     WhatsappForms.WhatsappForm,
@@ -307,7 +309,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert form.description == "Form to collect customer feedback"
   end
 
-  test "sync WhatsApp forms for an organization when there are no new forms to sync",
+  test "syncs WhatsApp forms for an organization that exist in our database from Business Manager",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} = _env ->
@@ -323,6 +325,82 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
                   description: "Form to collect customer feedback",
                   categories: ["survey"],
                   meta_flow_id: "flow-9e3bf"
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok, previous_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert previous_form.name == "sign_up_form"
+    assert previous_form.description == "Simple signup flow to collect name and email"
+
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
+      auth_query_gql_by(:sync_whatsapp_form, user,
+        variables: %{"organization_id" => user.organization_id}
+      )
+
+    assert message == "Whatsapp forms sync job queued successfully"
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    {:ok, updated_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert updated_form.name == "Customer Feedback Form"
+    assert updated_form.description === "Form to collect customer feedback"
+  end
+
+  test "syncs WhatsApp forms for an organization fail",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "form-123",
+                  status: "Published",
+                  name: "Customer Feedback Form",
+                  description: "Form to collect customer feedback",
+                  categories: ["option"],
+                  meta_flow_id: "flow-12345"
                 }
               ]
             }
@@ -370,11 +448,15 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default)
 
-    {:ok, form} =
-      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+    [notifications] =
+      Repo.all(
+        from n in Notification,
+          where:
+            n.organization_id == ^user.organization_id and
+              n.severity == "Critical"
+      )
 
-    assert form.name == "Customer Feedback Form"
-    assert form.description === "Form to collect customer feedback"
+    assert notifications.message == "Failed to sync whatsapp forms: \"BSP Couldn't connect\""
   end
 
   test "sync whatsapp fornm with business manager if it doesn't establish a connection with gupshup",
