@@ -1,8 +1,8 @@
-defmodule Glific.Repo.Migrations.Addtrialorgdata do
+defmodule Glific.Repo.Migrations.AddtrialUser do
   use Ecto.Migration
 
   def change do
-    create table(:trial_org_data) do
+    create table(:trial_users) do
       add :username, :string, null: false
       add :email, :string, null: false
       add :phone, :string, null: false
@@ -12,8 +12,8 @@ defmodule Glific.Repo.Migrations.Addtrialorgdata do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:trial_org_data, [:phone, :email])
-    create index(:trial_org_data, [:email])
-    create index(:trial_org_data, [:phone])
+    create unique_index(:trial_users, [:phone, :email])
+    create index(:trial_users, [:email])
+    create index(:trial_users, [:phone])
   end
 end

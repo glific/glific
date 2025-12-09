@@ -1,4 +1,4 @@
-defmodule Glific.TrialOrgData do
+defmodule Glific.TrialUsers do
   @moduledoc """
   Schema for trial organization data
   """
@@ -29,7 +29,7 @@ defmodule Glific.TrialOrgData do
     :otp_entered
   ]
 
-  schema "organization_data" do
+  schema "trial_users" do
     field :username, :string
     field :organization_name, :string
     field :email, :string
@@ -41,7 +41,7 @@ defmodule Glific.TrialOrgData do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(TrialOrgData.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(TrialUsers.t(), map()) :: Ecto.Changeset.t()
   def changeset(trial_org_data, attrs) do
     trial_org_data
     |> cast(attrs, @required_fields ++ @optional_fields)
