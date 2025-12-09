@@ -347,6 +347,7 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @spec build_headers(map()) :: list(String.t())
   defp build_headers(complete_payload) do
     default_headers = ["timestamp", "contact_id", "whatsapp_form_id"]
     form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
@@ -354,6 +355,8 @@ defmodule Glific.WhatsappForms do
     default_headers ++ form_headers
   end
 
+  @spec insert_headers(non_neg_integer(), String.t(), list(String.t())) ::
+          {:ok, any()} | {:error, any()}
   defp insert_headers(organization_id, spreadsheet_id, headers) do
     GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
       range: "A1",
