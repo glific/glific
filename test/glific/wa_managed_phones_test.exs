@@ -16,7 +16,7 @@ defmodule Glific.WAManagedPhonesTest do
   describe "wa_managed_phones" do
     import Glific.Fixtures
 
-    @invalid_attrs %{label: nil, phone: nil, is_active: nil}
+    @invalid_attrs %{label: nil, phone: nil}
 
     test "list_wa_managed_phones/0 returns all wa_managed_phones", attrs do
       wa_managed_phone =
@@ -37,7 +37,6 @@ defmodule Glific.WAManagedPhonesTest do
       valid_attrs = %{
         label: "some label",
         phone: "some phone",
-        is_active: true,
         phone_id: 242,
         product_id: "5a441f2-f033-40f4-8a6sd34ns-a8sr58",
         organization_id: 1,
@@ -50,7 +49,6 @@ defmodule Glific.WAManagedPhonesTest do
 
       assert wa_managed_phone.label == "some label"
       assert wa_managed_phone.phone == "some phone"
-      assert wa_managed_phone.is_active == true
       assert wa_managed_phone.product_id == "5a441f2-f033-40f4-8a6sd34ns-a8sr58"
     end
 
@@ -63,8 +61,7 @@ defmodule Glific.WAManagedPhonesTest do
 
       update_attrs = %{
         label: "some updated label",
-        phone: "some updated phone",
-        is_active: false
+        phone: "some updated phone"
       }
 
       assert {:ok, %WAManagedPhone{} = wa_managed_phone} =
@@ -72,7 +69,6 @@ defmodule Glific.WAManagedPhonesTest do
 
       assert wa_managed_phone.label == "some updated label"
       assert wa_managed_phone.phone == "some updated phone"
-      assert wa_managed_phone.is_active == false
     end
 
     test "update_wa_managed_phone/2 with invalid data returns error changeset", attrs do
