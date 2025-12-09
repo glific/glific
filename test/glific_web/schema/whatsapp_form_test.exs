@@ -384,10 +384,10 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     user = Map.put(user, :organization_id, nil)
     result = auth_query_gql_by(:sync_whatsapp_form, user)
     assert {:ok, query_data} = result
-    session_templates = get_in(query_data, [:errors])
-    template_error = List.first(session_templates)
+    forms = get_in(query_data, [:errors])
+    forms_error = List.first(forms)
 
-    assert template_error.message ==
-             "In argument \"organizationId\": Expected type \"ID!\", found null"
+    assert forms_error.message ==
+             "In argument \"organizationId\": Expected type \"ID!\", found null."
   end
 end
