@@ -25,7 +25,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     __MODULE__.new(
       %{"organization_id" => org_id, "sync_forms" => true},
       unique: [
-        # Avoid running the same sync multiple times within 5 minutes
         period: 60 * 5,
         keys: [:organization_id],
         states: [:available, :scheduled, :executing]
