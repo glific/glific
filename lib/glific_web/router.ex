@@ -74,6 +74,7 @@ defmodule GlificWeb.Router do
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post "/askme", AskmeController, :ask
+    post("/get-embed-token", SupersetController, :embed_token)
   end
 
   # Enables LiveDashboard only for development
