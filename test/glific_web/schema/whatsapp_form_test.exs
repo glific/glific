@@ -376,4 +376,18 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert form.name == "Customer Feedback Form"
     assert form.description === "Form to collect customer feedback"
   end
+
+  test "sync whatsapp fornm with business manager if it doesn't establish a connection with gupshup",
+       %{
+         manager: user
+       } do
+    user = Map.put(user, :organization_id, nil)
+    result = auth_query_gql_by(:sync_whatsapp_form, user)
+    assert {:ok, query_data} = result
+    session_templates = get_in(query_data, [:errors])
+    template_error = List.first(session_templates)
+
+    assert template_error.message ==
+             "In argument \"organizationId\": Expected type \"ID!\", found null"
+  end
 end
