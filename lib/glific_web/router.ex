@@ -75,6 +75,8 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
+    post("/askme", AskmeController, :ask)
+    post("/get-embed-token", SupersetController, :embed_token)
   end
 
   # Enables LiveDashboard only for development

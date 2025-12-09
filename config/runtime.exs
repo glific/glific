@@ -205,3 +205,9 @@ search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
 config :glific, Glific.Searches, repo_module: search_repo_module
+
+config :glific,
+  superset_username: env!("SUPERSET_USERNAME", :string, "superset_username")
+
+config :glific,
+  superset_password: env!("SUPERSET_PASSWORD", :string, "superset_password")
