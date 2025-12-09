@@ -322,6 +322,7 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @spec find_complete_action(map()) :: map() | nil
   defp find_complete_action(%{"layout" => %{"children" => children}}) do
     children
     |> Enum.flat_map(fn child ->
@@ -332,6 +333,7 @@ defmodule Glific.WhatsappForms do
 
   defp find_complete_action(_), do: nil
 
+  @spec extract_payload_from_child(map()) :: map() | nil
   defp extract_payload_from_child(%{
          "on-click-action" => %{"name" => "complete", "payload" => payload}
        }),
