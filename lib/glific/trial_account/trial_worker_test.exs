@@ -66,8 +66,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
       test_user =
         Fixtures.user_fixture(%{
           organization_id: trial_org_id,
-          name: "Test User",
-          trial_metadata: %{"status" => "active", "organization_name" => "Trial Org"}
+          name: "Test User"
         })
 
       flow = Fixtures.flow_fixture(%{organization_id: trial_org_id})
@@ -127,9 +126,8 @@ defmodule Glific.Jobs.TrialWorkerTest do
       updated_org = Repo.get!(Organization, trial_org_id)
       assert is_nil(updated_org.trial_expiration_date)
 
-      updated_user = Repo.get!(User, test_user.id)
-      assert updated_user.trial_metadata["status"] == "expired"
-      assert updated_user.trial_metadata["organization_name"] == "Trial Org"
+      user = Repo.get!(Organization, trial_org_id)
+      assert user.name == "NGO Main Account"
     end
   end
 end

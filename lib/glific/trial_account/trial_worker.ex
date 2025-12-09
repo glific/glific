@@ -7,8 +7,7 @@ defmodule Glific.TrialAccount.TrialWorker do
   alias Glific.{
     Erase,
     Partners.Organization,
-    Repo,
-    Users.User
+    Repo
   }
 
   require Logger
@@ -37,47 +36,35 @@ defmodule Glific.TrialAccount.TrialWorker do
   @spec cleanup_trial_organization(Organization.t()) :: :ok | {:error, any()}
   defp cleanup_trial_organization(organization) do
     Logger.info("Cleaning up expired trial: organization_id: '#{organization.id}'")
-
     Repo.put_process_state(organization.id)
 
-    Repo.transaction(
-      fn ->
-        Erase.delete_organization_data(organization.id)
-
-        update_user_trial_status(organization.id)
+    case Erase.delete_organization_data(organization.id) do
+      :ok ->
+        Logger.info("Successfully cleaned up data for trial organization: #{organization.id}")
 
         organization
         |> Repo.reload()
         |> Organization.changeset(%{trial_expiration_date: nil})
-        |> Repo.update!()
-      end,
-      timeout: 300_000
-    )
-    |> case do
-      {:ok, _org} ->
-        Logger.info("Successfully cleaned up trial organization: #{organization.id}")
-        :ok
+        |> Repo.update()
+        |> case do
+          {:ok, _org} ->
+            Logger.info(
+              "Successfully updated expiration status for trial organization: #{organization.id}"
+            )
+
+            :ok
+
+          {:error, error} ->
+            Logger.error(
+              "Failed to update expiration status for trial organization #{organization.id}: #{inspect(error)}"
+            )
+
+            {:error, error}
+        end
 
       {:error, error} ->
         Logger.error("Failed to cleanup trial organization #{organization.id}: #{inspect(error)}")
         {:error, error}
     end
-  end
-
-  @spec update_user_trial_status(non_neg_integer) :: :ok
-  defp update_user_trial_status(organization_id) do
-    {count, _} =
-      User
-      |> where([u], u.organization_id == ^organization_id)
-      |> where([u], u.name not in ["NGO Main Account", "Saas Admin"])
-      |> update([u],
-        set: [
-          trial_metadata: fragment("jsonb_set(trial_metadata, '{status}', '\"expired\"', true)")
-        ]
-      )
-      |> Repo.update_all([])
-
-    Logger.info("Updated #{count} users for organization #{organization_id}")
-    :ok
   end
 end

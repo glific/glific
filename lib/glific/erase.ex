@@ -12,6 +12,16 @@ defmodule Glific.Erase do
     queue: :purge,
     max_attempts: 1
 
+  defmodule Error do
+    @moduledoc """
+    Custom error module for trial account cleanup failures.
+    Since trial cleanup is an automated background process,
+    reporting these failures to AppSignal lets us detect and fix problems
+    before they impact trial account availability.
+    """
+    defexception [:message, :reason]
+  end
+
   @batch_sleep 10_000
   @no_of_months 2
 
@@ -370,52 +380,72 @@ defmodule Glific.Erase do
   @doc """
   Deletes all data associated with a trial organization except user records.
   """
-  @spec delete_organization_data(non_neg_integer) :: :ok
+  @spec delete_organization_data(non_neg_integer) :: :ok | {:error, any()}
   def delete_organization_data(organization_id) do
     Repo.put_process_state(organization_id)
-
     Logger.info("Deleting trial data for organization_id: #{organization_id}")
 
-    queries =
-      [
-        # Delete messages
-        "DELETE FROM messages WHERE organization_id = #{organization_id}",
-        "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
+    try do
+      queries =
+        [
+          # Delete messages
+          "DELETE FROM messages WHERE organization_id = #{organization_id}",
+          "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
 
-        # Delete contacts and related data
-        "DELETE FROM contacts WHERE organization_id = #{organization_id}",
-        "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
-        "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
+          # Delete contacts except the one linked to NGO Main Account user
+          "DELETE FROM contacts
+                   WHERE organization_id = #{organization_id}
+                   AND id NOT IN (
+                     SELECT contact_id FROM users
+                     WHERE organization_id = #{organization_id}
+                     AND name = 'NGO Main Account'
+                   )",
+          "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
+          "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
 
-        # Delete flows and related data
-        "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
-        "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
-        "DELETE FROM flow_revisions WHERE organization_id = #{organization_id}",
-        "DELETE FROM flows WHERE organization_id = #{organization_id}",
+          # Delete flows and related data
+          "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
+          "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
+          "DELETE FROM flow_revisions WHERE organization_id = #{organization_id}",
+          "DELETE FROM flows WHERE organization_id = #{organization_id}",
 
-        # Delete interactive templates
-        "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
+          # Delete interactive templates
+          "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
 
-        # Delete triggers
-        "DELETE FROM triggers WHERE organization_id = #{organization_id}",
+          # Delete triggers
+          "DELETE FROM triggers WHERE organization_id = #{organization_id}",
 
-        # Delete other data
-        "DELETE FROM notifications WHERE organization_id = #{organization_id}",
-        "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
-      ]
+          # Delete other data
+          "DELETE FROM notifications WHERE organization_id = #{organization_id}",
+          "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
+        ]
 
-    Enum.each(queries, fn query ->
-      case Repo.query(query, [], timeout: 300_000, skip_organization_id: true) do
-        {:ok, result} ->
-          Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
+      Enum.each(queries, fn query ->
+        case Repo.query(query, [], timeout: 300_000, skip_organization_id: true) do
+          {:ok, result} ->
+            Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
 
-        {:error, error} ->
-          Logger.error("Failed to delete for org #{organization_id}: #{inspect(error)}")
-          raise "Query failed: #{inspect(error)}"
-      end
-    end)
+          {:error, error} ->
+            Logger.error("Failed to delete for org #{organization_id}: #{inspect(error)}")
+            raise "Query failed: #{inspect(error)}"
+        end
+      end)
 
-    Logger.info("Completed data deletion for organization_id: #{organization_id}")
-    :ok
+      Logger.info("Completed data deletion for organization_id: #{organization_id}")
+      :ok
+    rescue
+      error ->
+        Logger.error("Error during cleanup for org #{organization_id}: #{inspect(error)}")
+
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+          },
+          []
+        )
+
+        {:error, error}
+    end
   end
 end
