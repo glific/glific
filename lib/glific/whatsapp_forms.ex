@@ -74,17 +74,29 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok | {:error, String.t()}
   def handle_single_form(forms, organization_id) do
-    Enum.each(forms, fn form ->
-      with {:ok, form_json} <- ApiClient.get_whatsapp_form_assets(form.id, organization_id),
-           {:ok, _form} <-
-             sync_single_form(form, form_json, organization_id) do
-        :ok
-      else
-        {:error, reason} ->
-          Logger.error("Failed to fetch assets for #{form.id}: #{reason}")
-          {:error, reason}
-      end
-    end)
+    result =
+      Enum.reduce(forms, nil, fn form, acc_error ->
+        case ApiClient.get_whatsapp_form_assets(form.id, organization_id) do
+          {:ok, form_json} ->
+            case sync_single_form(form, form_json, organization_id) do
+              {:ok, _form} ->
+                acc_error
+
+              {:error, reason} ->
+                Logger.error("Failed to sync form #{form.id}: #{reason}")
+                reason
+            end
+
+          {:error, reason} ->
+            Logger.error("Failed to fetch assets for #{form.id}: #{reason}")
+            reason
+        end
+      end)
+
+    case result do
+      nil -> :ok
+      _reason -> {:error, "BSP Couldn't connect"}
+    end
   end
 
   @doc """
