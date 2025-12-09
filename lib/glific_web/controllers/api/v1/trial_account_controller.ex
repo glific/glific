@@ -5,12 +5,12 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   use GlificWeb, :controller
 
   alias Glific.{
+    Contacts,
+    Contacts.Contact,
     Partners.Organization,
     Repo,
     Users,
-    Users.User,
-    Contacts,
-    Contacts.Contact
+    Users.User
   }
 
   alias GlificWeb.API.V1.RegistrationController

@@ -2,10 +2,10 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.{
+    Contacts.Contact,
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
-    Contacts.Contact,
     Users.User
   }
 
