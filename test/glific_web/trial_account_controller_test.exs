@@ -107,7 +107,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       conn = TrialAccountController.trial(conn, params)
 
-      assert json_response(conn, 200) == %{
+      assert json_response(conn, 400) == %{
                "success" => false,
                "error" => "Invalid OTP"
              }
@@ -163,7 +163,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       conn = TrialAccountController.trial(conn, params)
 
-      assert json_response(conn, 200) == %{
+      assert json_response(conn, 503) == %{
                "success" => false,
                "error" => "No trial accounts available at the moment"
              }
@@ -184,10 +184,12 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       conn = TrialAccountController.trial(conn, params)
 
-      response = json_response(conn, 200)
+      response = json_response(conn, 500)
 
-      assert response["success"] == false
-      assert response["error"] == "Something went wrong"
+      assert response == %{
+               "success" => false,
+               "error" => "Something went wrong"
+             }
     end
 
     test "sets trial expiration date to 14 days from now", %{
