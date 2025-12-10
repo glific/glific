@@ -44,7 +44,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc """
   verify the otp
   """
-  @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, []}
+  @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, [String.t()]}
   def verify_otp(phone, otp) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->

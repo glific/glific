@@ -56,14 +56,15 @@ defmodule GlificWeb.API.V1.TrialUsersController do
         error: "User with this email or phone already exists"
       })
     else
-      resend_otp_to_existing_user(conn, existing_user) |> IO.inspect()
+      resend_otp_to_existing_user(conn, existing_user)
     end
   end
 
   @spec resend_otp_to_existing_user(Conn.t(), TrialUsers.t()) :: Conn.t()
   defp resend_otp_to_existing_user(conn, trial_user) do
+    username = trial_user.username
     code = PasswordlessAuth.generate_code(trial_user.phone)
-    send_otp_email(conn, trial_user, code)
+    send_otp_email(conn, trial_user, code, username)
   end
 
   @spec create_and_send_otp(Conn.t(), String.t(), String.t(), String.t(), String.t()) ::
@@ -80,7 +81,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
 
     case TrialUsers.create_trial_user(trial_user_attrs) do
       {:ok, trial_user} ->
-        send_otp_email(conn, trial_user, code)
+        send_otp_email(conn, trial_user, code, username)
 
       {:error, changeset} ->
         Logger.error(
@@ -96,11 +97,12 @@ defmodule GlificWeb.API.V1.TrialUsersController do
     end
   end
 
-  @spec send_otp_email(Conn.t(), TrialUsers.t(), String.t()) :: Conn.t()
-  defp send_otp_email(conn, trial_user, code) do
+  @spec send_otp_email(Conn.t(), TrialUsers.t(), String.t(), String.t()) :: Conn.t()
+  defp send_otp_email(conn, trial_user, code, username) do
     org = Saas.organization_id() |> Partners.get_organization!()
+    email = trial_user.email
 
-    TrialAccountMail.otp_verification_mail(org, trial_user.email, code)
+    TrialAccountMail.otp_verification_mail(org, email, code, username)
     |> Mailer.send(%{
       category: "trial_otp_verification",
       organization_id: org.id
@@ -121,10 +123,8 @@ defmodule GlificWeb.API.V1.TrialUsersController do
         conn
         |> put_status(500)
         |> json(%{
-          error: %{
-            success: false,
-            error: "Failed to send OTP email"
-          }
+          success: false,
+          error: "Failed to send OTP email"
         })
     end
   end
