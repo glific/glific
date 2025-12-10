@@ -42,14 +42,29 @@ defmodule Glific.Jobs.TrialWorkerTest do
   end
 
   describe "cleanup_expired_trials/1" do
-    test "deletes all trial org data when trial has expired", %{
+    test "deletes trial org data but preserves system users, simulators, and template flows", %{
       trial_org: _trial_org,
       trial_org_id: trial_org_id
     } do
       Repo.put_process_state(trial_org_id)
 
-      contact_1 = Fixtures.contact_fixture(%{organization_id: trial_org_id})
-      contact_2 = Fixtures.contact_fixture(%{organization_id: trial_org_id})
+      contact_1 =
+        Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Regular Contact 1"})
+
+      contact_2 =
+        Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Regular Contact 2"})
+
+      _simulator_1 =
+        Fixtures.contact_fixture(%{
+          organization_id: trial_org_id,
+          name: "Glific Simulator 1"
+        })
+
+      _simulator_2 =
+        Fixtures.contact_fixture(%{
+          organization_id: trial_org_id,
+          name: "Glific Simulator 2"
+        })
 
       _message_1 =
         Fixtures.message_fixture(%{
@@ -63,19 +78,42 @@ defmodule Glific.Jobs.TrialWorkerTest do
           organization_id: trial_org_id
         })
 
-      test_user =
+      _test_user =
         Fixtures.user_fixture(%{
           organization_id: trial_org_id,
           name: "Test User"
         })
 
-      flow = Fixtures.flow_fixture(%{organization_id: trial_org_id})
+      regular_flow =
+        Fixtures.flow_fixture(%{
+          name: "Regular Flow",
+          organization_id: trial_org_id,
+          is_template: false,
+          keywords: []
+        })
+
+      template_flow =
+        Fixtures.flow_fixture(%{
+          name: "Template Flow",
+          organization_id: trial_org_id,
+          is_template: true,
+          keywords: []
+        })
+
       user = Repo.get_current_user()
 
-      {:ok, _flow_revision} =
+      {:ok, _flow_revision1} =
         FlowRevision.create_flow_revision(%{
-          definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id,
+          definition: FlowRevision.default_definition(regular_flow),
+          flow_id: regular_flow.id,
+          user_id: user.id,
+          organization_id: trial_org_id
+        })
+
+      {:ok, _flow_revision2} =
+        FlowRevision.create_flow_revision(%{
+          definition: FlowRevision.default_definition(template_flow),
+          flow_id: template_flow.id,
           user_id: user.id,
           organization_id: trial_org_id
         })
@@ -83,37 +121,54 @@ defmodule Glific.Jobs.TrialWorkerTest do
       _notification = Fixtures.notification_fixture(%{organization_id: trial_org_id})
       _webhook_log = Fixtures.webhook_log_fixture(%{organization_id: trial_org_id})
 
-      # Verify data exists before cleanup
-      assert Message
-             |> where([m], m.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) >= 2
+      initial_contacts_count =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
 
-      assert Contact
-             |> where([c], c.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) >= 2
+      initial_simulator_count =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> where([c], like(c.name, "Glific Simulator%"))
+        |> Repo.aggregate(:count)
 
-      assert Flow
-             |> where([f], f.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) >= 1
+      assert initial_simulator_count == 2
 
-      # Execute cleanup
       assert :ok = TrialWorker.cleanup_expired_trials()
 
+      # Verify messages are deleted
       assert Message
              |> where([m], m.organization_id == ^trial_org_id)
              |> Repo.aggregate(:count) == 0
 
-      assert Contact
-             |> where([c], c.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) == 0
+      non_template_flows =
+        Flow
+        |> where([f], f.organization_id == ^trial_org_id)
+        |> where([f], f.is_template == false)
+        |> Repo.aggregate(:count)
 
-      assert Flow
-             |> where([f], f.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) == 0
+      assert non_template_flows == 0
+      refute Repo.get(Flow, regular_flow.id)
 
-      assert FlowRevision
-             |> where([fr], fr.organization_id == ^trial_org_id)
-             |> Repo.aggregate(:count) == 0
+      assert Repo.get!(Flow, template_flow.id).is_template == true
+
+      non_template_flow_revisions =
+        FlowRevision
+        |> join(:inner, [fr], f in Flow, on: fr.flow_id == f.id)
+        |> where([fr, f], fr.organization_id == ^trial_org_id)
+        |> where([fr, f], f.is_template == false)
+        |> Repo.aggregate(:count)
+
+      assert non_template_flow_revisions == 0
+
+      template_flow_revisions =
+        FlowRevision
+        |> join(:inner, [fr], f in Flow, on: fr.flow_id == f.id)
+        |> where([fr, f], fr.organization_id == ^trial_org_id)
+        |> where([fr, f], f.is_template == true)
+        |> Repo.aggregate(:count)
+
+      assert template_flow_revisions > 0
 
       assert Notification
              |> where([n], n.organization_id == ^trial_org_id)
@@ -126,8 +181,27 @@ defmodule Glific.Jobs.TrialWorkerTest do
       updated_org = Repo.get!(Organization, trial_org_id)
       assert is_nil(updated_org.trial_expiration_date)
 
-      user = Repo.get!(Organization, trial_org_id)
-      assert user.name == "NGO Main Account"
+      remaining_users =
+        User
+        |> where([u], u.organization_id == ^trial_org_id)
+        |> Repo.all()
+
+      assert length(remaining_users) > 0
+
+      simulator_contacts =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> where([c], like(c.name, "Glific Simulator%"))
+        |> Repo.all()
+
+      assert length(simulator_contacts) == 2
+
+      final_contacts_count =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      assert final_contacts_count < initial_contacts_count
     end
   end
 end

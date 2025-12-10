@@ -43,7 +43,6 @@ defmodule Glific.TrialAccount.TrialWorker do
         Logger.info("Successfully cleaned up data for trial organization: #{organization.id}")
 
         organization
-        |> Repo.reload()
         |> Organization.changeset(%{trial_expiration_date: nil})
         |> Repo.update()
         |> case do
