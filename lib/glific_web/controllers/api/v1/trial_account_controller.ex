@@ -14,7 +14,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   }
 
   alias GlificWeb.API.V1.RegistrationController
-
   import Ecto.Query
 
   @doc """
@@ -31,9 +30,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       with {:ok, _message} <-
              RegistrationController.verify_otp(phone, params["otp"]),
            {:ok, organization} <- get_available_trial_account(),
-           {:ok, contact} <- create_trial_contact(organization, phone, params),
+           {:ok, contact} <- create_contact(organization, phone, params),
            {:ok, _user} <-
-             create_trial_user(organization, contact, phone, params) do
+             create_user(organization, contact, phone, params) do
         json(conn, %{
           success: true,
           data: %{
@@ -43,19 +42,23 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       else
         {:error, error_list} when is_list(error_list) ->
           conn
+          |> put_status(400)
           |> json(%{
             success: false,
             error: "Invalid OTP"
           })
 
         {:error, :no_available_accounts} ->
-          json(conn, %{
+          conn
+          |> put_status(503)
+          |> json(%{
             success: false,
             error: "No trial accounts available at the moment"
           })
 
         {:error, _} ->
           conn
+          |> put_status(500)
           |> json(%{
             success: false,
             error: "Something went wrong"
@@ -103,9 +106,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end)
   end
 
-  @spec create_trial_contact(Organization.t(), String.t(), map()) ::
+  @spec create_contact(Organization.t(), String.t(), map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp create_trial_contact(organization, phone, params) do
+  defp create_contact(organization, phone, params) do
     contact_params = %{
       phone: phone,
       name: params["name"],
@@ -116,9 +119,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Contacts.create_contact(contact_params)
   end
 
-  @spec create_trial_user(Organization.t(), Contact.t(), String.t(), map()) ::
+  @spec create_user(Organization.t(), Contact.t(), String.t(), map()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  defp create_trial_user(organization, contact, phone, params) do
+  defp create_user(organization, contact, phone, params) do
     user_params = %{
       name: params["name"],
       phone: phone,
