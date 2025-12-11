@@ -4,6 +4,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
 
   alias Glific.{
     Contacts.Contact,
+    Erase,
     Fixtures,
     Flows.Flow,
     Flows.FlowRevision,
@@ -205,6 +206,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
     end
 
     test "continues cleanup even if one organization fails", %{trial_org_id: trial_org_id} do
+      # Create a second expired trial organization
       trial_org_2_attrs = %{
         name: "Second Trial Org",
         shortcode: "trial_test_2",
@@ -224,18 +226,21 @@ defmodule Glific.Jobs.TrialWorkerTest do
         })
         |> Repo.update()
 
+      # Add data to first org
       Repo.put_process_state(trial_org_id)
       contact_1 = Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Contact 1"})
 
       _message_1 =
         Fixtures.message_fixture(%{sender_id: contact_1.id, organization_id: trial_org_id})
 
+      # Add data to second org
       Repo.put_process_state(trial_org_2.id)
       contact_2 = Fixtures.contact_fixture(%{organization_id: trial_org_2.id, name: "Contact 2"})
 
       _message_2 =
         Fixtures.message_fixture(%{sender_id: contact_2.id, organization_id: trial_org_2.id})
 
+      # Verify messages exist before cleanup (use skip_organization_id for counting across orgs)
       messages_org_1_before =
         Message
         |> where([m], m.organization_id == ^trial_org_id)
@@ -249,9 +254,11 @@ defmodule Glific.Jobs.TrialWorkerTest do
       assert messages_org_1_before > 0, "Org 1 should have messages before cleanup"
       assert messages_org_2_before > 0, "Org 2 should have messages before cleanup"
 
+      # Run cleanup
       result = TrialWorker.cleanup_expired_trials()
       assert :ok = result
 
+      # Verify data was deleted from both orgs
       messages_org_1_after =
         Message
         |> where([m], m.organization_id == ^trial_org_id)
@@ -327,6 +334,7 @@ defmodule Glific.Jobs.TrialWorkerTest do
 
       assert :ok = TrialWorker.cleanup_expired_trials()
 
+      # Verify expired org was cleaned
       expired_org_messages_after =
         Message
         |> where([m], m.organization_id == ^trial_org_id)
@@ -343,6 +351,92 @@ defmodule Glific.Jobs.TrialWorkerTest do
              "Non-expired org messages should not be deleted"
 
       assert Repo.get(Message, message_2.id, skip_organization_id: true) != nil
+    end
+  end
+
+  describe "Erase.delete_organization_data/1" do
+    test "directly calls delete_organization_data and verifies deletion", %{
+      trial_org_id: trial_org_id
+    } do
+      Repo.put_process_state(trial_org_id)
+
+      contact = Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Test Contact"})
+
+      _simulator =
+        Fixtures.contact_fixture(%{
+          organization_id: trial_org_id,
+          name: "Glific Simulator 1"
+        })
+
+      _message =
+        Fixtures.message_fixture(%{sender_id: contact.id, organization_id: trial_org_id})
+
+      _notification = Fixtures.notification_fixture(%{organization_id: trial_org_id})
+      _webhook_log = Fixtures.webhook_log_fixture(%{organization_id: trial_org_id})
+
+      # Create flows
+      regular_flow =
+        Fixtures.flow_fixture(%{
+          name: "Regular Flow",
+          organization_id: trial_org_id,
+          is_template: false,
+          keywords: []
+        })
+
+      template_flow =
+        Fixtures.flow_fixture(%{
+          name: "Template Flow",
+          organization_id: trial_org_id,
+          is_template: true,
+          keywords: []
+        })
+
+      # Verify data exists before deletion
+      messages_before =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      contacts_before =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      assert messages_before > 0
+      assert contacts_before > 1
+
+      assert :ok = Erase.delete_organization_data(trial_org_id)
+
+      messages_after =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      assert messages_after == 0
+
+      simulator_contacts =
+        Contact
+        |> where([c], c.organization_id == ^trial_org_id)
+        |> where([c], like(c.name, "Glific Simulator%"))
+        |> Repo.aggregate(:count)
+
+      assert simulator_contacts == 1
+
+      refute Repo.get(Flow, regular_flow.id)
+      assert Repo.get(Flow, template_flow.id) != nil
+
+      notifications_after =
+        Notification
+        |> where([n], n.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      webhook_logs_after =
+        WebhookLog
+        |> where([w], w.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count)
+
+      assert notifications_after == 0
+      assert webhook_logs_after == 0
     end
   end
 end
