@@ -137,7 +137,6 @@ defmodule Glific.Jobs.TrialWorkerTest do
 
       assert :ok = TrialWorker.cleanup_expired_trials()
 
-      # Verify messages are deleted
       assert Message
              |> where([m], m.organization_id == ^trial_org_id)
              |> Repo.aggregate(:count) == 0
@@ -206,7 +205,6 @@ defmodule Glific.Jobs.TrialWorkerTest do
     end
 
     test "continues cleanup even if one organization fails", %{trial_org_id: trial_org_id} do
-      # Create a second expired trial organization
       trial_org_2_attrs = %{
         name: "Second Trial Org",
         shortcode: "trial_test_2",
@@ -226,21 +224,18 @@ defmodule Glific.Jobs.TrialWorkerTest do
         })
         |> Repo.update()
 
-      # Add data to first org
       Repo.put_process_state(trial_org_id)
       contact_1 = Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Contact 1"})
 
       _message_1 =
         Fixtures.message_fixture(%{sender_id: contact_1.id, organization_id: trial_org_id})
 
-      # Add data to second org
       Repo.put_process_state(trial_org_2.id)
       contact_2 = Fixtures.contact_fixture(%{organization_id: trial_org_2.id, name: "Contact 2"})
 
       _message_2 =
         Fixtures.message_fixture(%{sender_id: contact_2.id, organization_id: trial_org_2.id})
 
-      # Verify messages exist before cleanup (use skip_organization_id for counting across orgs)
       messages_org_1_before =
         Message
         |> where([m], m.organization_id == ^trial_org_id)
@@ -254,7 +249,6 @@ defmodule Glific.Jobs.TrialWorkerTest do
       assert messages_org_1_before > 0, "Org 1 should have messages before cleanup"
       assert messages_org_2_before > 0, "Org 2 should have messages before cleanup"
 
-      # Run cleanup
       result = TrialWorker.cleanup_expired_trials()
       assert :ok = result
 
@@ -374,7 +368,6 @@ defmodule Glific.Jobs.TrialWorkerTest do
       _notification = Fixtures.notification_fixture(%{organization_id: trial_org_id})
       _webhook_log = Fixtures.webhook_log_fixture(%{organization_id: trial_org_id})
 
-      # Create flows
       regular_flow =
         Fixtures.flow_fixture(%{
           name: "Regular Flow",
