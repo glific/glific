@@ -13,8 +13,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Users.User
   }
 
-  alias GlificWeb.API.V1.RegistrationController
   alias Ecto.Multi
+  alias GlificWeb.API.V1.RegistrationController
+
   import Ecto.Query
 
   @doc """
