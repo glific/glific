@@ -2,10 +2,8 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
   use Oban.Pro.Testing, repo: Glific.Repo
-  import Ecto.Query
 
   alias Glific.{
-    Notifications.Notification,
     Repo,
     Seeds.SeedsDev,
     WhatsappForms.WhatsappForm,
@@ -309,7 +307,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert form.description == "Form to collect customer feedback"
   end
 
-  test "syncs WhatsApp forms for an organization that exist in our database from Business Manager",
+  test "Syncs WhatsApp forms for an organization that exist in our database. Published forms will not be updated.",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} = _env ->
@@ -379,11 +377,38 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, updated_form} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
 
-    assert updated_form.name == "Customer Feedback Form"
-    assert updated_form.description === "Form to collect customer feedback"
+    assert updated_form.name == "sign_up_form"
+    assert updated_form.description === "Simple signup flow to collect name and email"
   end
 
-  test "syncs WhatsApp forms for an organization fail",
+  # %{
+  #   name: "contact_us_form",
+  #   description: "Feedback and queries collection form",
+  #   meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
+  #   status: :draft,
+  #   definition: %{
+  #     "version" => "1.0",
+  #     "screens" => [
+  #       %{
+  #         "id" => "screen_1",
+  #         "title" => "Contact Us",
+  #         "description" => "Tell us how we can help you",
+  #         "fields" => [
+  #           %{
+  #             "id" => "query",
+  #             "label" => "Your Query",
+  #             "type" => "text",
+  #             "required" => true
+  #           }
+  #         ],
+  #         "actions" => [%{"type" => "submit", "label" => "Send"}]
+  #       }
+  #     ]
+  #   },
+  #   categories: [:contact_us],
+  #   organization_id: organization.id
+  # },
+  test "Syncs WhatsApp forms for an organization that exist in our database. Non Published forms will be get updated.",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} = _env ->
@@ -393,12 +418,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
               status: 200,
               body: [
                 %{
-                  id: "form-123",
+                  id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
                   status: "Published",
                   name: "Customer Feedback Form",
                   description: "Form to collect customer feedback",
-                  categories: ["option"],
-                  meta_flow_id: "flow-12345"
+                  categories: ["survey"],
+                  meta_flow_id: "flow-9e3bf"
                 }
               ]
             }
@@ -424,6 +449,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         end
     end)
 
+    {:ok, previous_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    assert previous_form.name == "contact_us_form"
+    assert previous_form.description == "Feedback and queries collection form"
+
     {:ok,
      %{
        data: %{
@@ -444,15 +475,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default)
 
-    [notifications] =
-      Repo.all(
-        from n in Notification,
-          where:
-            n.organization_id == ^user.organization_id and
-              n.severity == "Critical"
-      )
+    {:ok, updated_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-    assert notifications.message == "Failed to sync whatsapp forms: \"BSP Couldn't connect\""
+    assert updated_form.name == "Customer Feedback Form"
+    assert updated_form.status == :published
+    assert updated_form.description === "Form to collect customer feedback"
   end
 
   test "sync whatsapp form with business manager if organization_id is nil",
