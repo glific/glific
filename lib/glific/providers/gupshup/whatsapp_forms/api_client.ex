@@ -71,8 +71,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
       |> parse_response("get_whatsapp_form_assets")
 
     case response do
-      {:ok, [assert]} ->
-        download(assert.download_url)
+      {:ok, [asset]} ->
+        download(asset.download_url)
 
       {:error, error} ->
         {:error, error}
@@ -88,7 +88,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
          {:ok, decoded_body} <- Jason.decode(body) do
       {:ok, decoded_body}
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

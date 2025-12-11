@@ -72,31 +72,25 @@ defmodule Glific.WhatsappForms do
   @doc """
   Handles syncing of a single WhatsApp form.
   """
-  @spec handle_single_form(list(map()), non_neg_integer()) :: :ok | {:error, String.t()}
+  @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, organization_id) do
-    result =
-      Enum.reduce(forms, nil, fn form, acc_error ->
-        case ApiClient.get_whatsapp_form_assets(form.id, organization_id) do
-          {:ok, form_json} ->
-            case sync_single_form(form, form_json, organization_id) do
-              {:ok, _form} ->
-                acc_error
+    Enum.each(forms, fn form ->
+      case ApiClient.get_whatsapp_form_assets(form.id, organization_id) do
+        {:ok, form_json} ->
+          case sync_single_form(form, form_json, organization_id) do
+            {:ok, _form} ->
+              :ok
 
-              {:error, reason} ->
-                Logger.error("Failed to sync form #{form.id}: #{reason}")
-                reason
-            end
+            {:error, reason} ->
+              Logger.error("Failed to sync form #{form.id}: #{inspect(reason)}")
+          end
 
-          {:error, reason} ->
-            Logger.error("Failed to fetch assets for #{form.id}: #{reason}")
-            reason
-        end
-      end)
+        {:error, reason} ->
+          Logger.error("Failed to fetch assets for #{form.id}: #{inspect(reason)}")
+      end
+    end)
 
-    case result do
-      nil -> :ok
-      _reason -> {:error, "BSP Couldn't connect"}
-    end
+    :ok
   end
 
   @doc """
@@ -207,7 +201,7 @@ defmodule Glific.WhatsappForms do
 
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form.id, organization_id: organization_id}) do
       {:ok, existing_form} ->
-        if(existing_form.status == :published) do
+        if existing_form.status == :published do
           {:ok, existing_form}
         else
           do_update_whatsapp_form(existing_form, attrs)
