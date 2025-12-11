@@ -292,6 +292,6 @@ defmodule Glific.Bhasini do
   @spec get_tesla_middlewares :: list()
   defp get_tesla_middlewares do
     [{Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts", sampling_scale: 10}}] ++
-      Glific.get_tesla_retry_middleware(%{max_retries: 2})
+      Glific.get_tesla_retry_middleware()
   end
 end
