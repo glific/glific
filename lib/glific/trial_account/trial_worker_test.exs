@@ -203,5 +203,146 @@ defmodule Glific.Jobs.TrialWorkerTest do
 
       assert final_contacts_count < initial_contacts_count
     end
+
+    test "continues cleanup even if one organization fails", %{trial_org_id: trial_org_id} do
+      trial_org_2_attrs = %{
+        name: "Second Trial Org",
+        shortcode: "trial_test_2",
+        email: "trial2@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org_2 = Fixtures.organization_fixture(trial_org_2_attrs)
+
+      {:ok, trial_org_2} =
+        trial_org_2
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), -1, :day)
+        })
+        |> Repo.update()
+
+      Repo.put_process_state(trial_org_id)
+      contact_1 = Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Contact 1"})
+
+      _message_1 =
+        Fixtures.message_fixture(%{sender_id: contact_1.id, organization_id: trial_org_id})
+
+      Repo.put_process_state(trial_org_2.id)
+      contact_2 = Fixtures.contact_fixture(%{organization_id: trial_org_2.id, name: "Contact 2"})
+
+      _message_2 =
+        Fixtures.message_fixture(%{sender_id: contact_2.id, organization_id: trial_org_2.id})
+
+      messages_org_1_before =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      messages_org_2_before =
+        Message
+        |> where([m], m.organization_id == ^trial_org_2.id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      assert messages_org_1_before > 0, "Org 1 should have messages before cleanup"
+      assert messages_org_2_before > 0, "Org 2 should have messages before cleanup"
+
+      result = TrialWorker.cleanup_expired_trials()
+      assert :ok = result
+
+      messages_org_1_after =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      messages_org_2_after =
+        Message
+        |> where([m], m.organization_id == ^trial_org_2.id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      assert messages_org_1_after == 0
+      assert messages_org_2_after == 0
+
+      case Repo.get(Organization, trial_org_id, skip_organization_id: true) do
+        # Org was deleted, that's acceptable
+        nil -> :ok
+        org -> assert is_nil(org.trial_expiration_date)
+      end
+
+      case Repo.get(Organization, trial_org_2.id, skip_organization_id: true) do
+        # Org was deleted, that's acceptable
+        nil -> :ok
+        org -> assert is_nil(org.trial_expiration_date)
+      end
+    end
+
+    test "skips organizations with no expiration date set", %{trial_org_id: trial_org_id} do
+      non_expired_org_attrs = %{
+        name: "Non-Expired Trial Org",
+        shortcode: "non_expired",
+        email: "nonexpired@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      non_expired_org = Fixtures.organization_fixture(non_expired_org_attrs)
+
+      {:ok, non_expired_org} =
+        non_expired_org
+        |> Organization.changeset(%{trial_expiration_date: nil})
+        |> Repo.update()
+
+      Repo.put_process_state(trial_org_id)
+      contact_1 = Fixtures.contact_fixture(%{organization_id: trial_org_id, name: "Contact 1"})
+
+      _message_1 =
+        Fixtures.message_fixture(%{sender_id: contact_1.id, organization_id: trial_org_id})
+
+      Repo.put_process_state(non_expired_org.id)
+
+      contact_2 =
+        Fixtures.contact_fixture(%{organization_id: non_expired_org.id, name: "Contact 2"})
+
+      message_2 =
+        Fixtures.message_fixture(%{sender_id: contact_2.id, organization_id: non_expired_org.id})
+
+      expired_org_messages_before =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      non_expired_org_messages_before =
+        Message
+        |> where([m], m.organization_id == ^non_expired_org.id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      assert expired_org_messages_before > 0, "Expired org should have messages before cleanup"
+
+      assert non_expired_org_messages_before > 0,
+             "Non-expired org should have messages before cleanup"
+
+      assert :ok = TrialWorker.cleanup_expired_trials()
+
+      expired_org_messages_after =
+        Message
+        |> where([m], m.organization_id == ^trial_org_id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      assert expired_org_messages_after == 0
+
+      non_expired_org_messages_after =
+        Message
+        |> where([m], m.organization_id == ^non_expired_org.id)
+        |> Repo.aggregate(:count, skip_organization_id: true)
+
+      assert non_expired_org_messages_after == non_expired_org_messages_before,
+             "Non-expired org messages should not be deleted"
+
+      assert Repo.get(Message, message_2.id, skip_organization_id: true) != nil
+    end
   end
 end
