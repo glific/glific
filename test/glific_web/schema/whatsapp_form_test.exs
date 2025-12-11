@@ -381,34 +381,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert updated_form.description === "Simple signup flow to collect name and email"
   end
 
-  # %{
-  #   name: "contact_us_form",
-  #   description: "Feedback and queries collection form",
-  #   meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
-  #   status: :draft,
-  #   definition: %{
-  #     "version" => "1.0",
-  #     "screens" => [
-  #       %{
-  #         "id" => "screen_1",
-  #         "title" => "Contact Us",
-  #         "description" => "Tell us how we can help you",
-  #         "fields" => [
-  #           %{
-  #             "id" => "query",
-  #             "label" => "Your Query",
-  #             "type" => "text",
-  #             "required" => true
-  #           }
-  #         ],
-  #         "actions" => [%{"type" => "submit", "label" => "Send"}]
-  #       }
-  #     ]
-  #   },
-  #   categories: [:contact_us],
-  #   organization_id: organization.id
-  # },
-  test "Syncs WhatsApp forms for an organization that exist in our database. Non Published forms will be get updated.",
+  test "syncs whatsapp forms will only updates non published ones in db",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} = _env ->
