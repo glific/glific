@@ -46,6 +46,7 @@ defmodule Glific.TrialUsers do
     trial_org_data
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:phone, :email])
+    |> unique_constraint(:phone)
+    |> unique_constraint(:email)
   end
 end

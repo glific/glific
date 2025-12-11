@@ -221,6 +221,105 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       diff = DateTime.diff(updated_org.trial_expiration_date, expected_date)
       assert abs(diff) <= 2
     end
+
+    test "rolls back organization allocation when contact creation fails", %{
+      conn: conn,
+      trial_org_1: trial_org_1,
+      valid_otp: valid_otp
+    } do
+      org_before = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
+      assert org_before.trial_expiration_date == nil
+
+      params = %{
+        "phone" => @valid_phone,
+        "otp" => valid_otp,
+        "name" => nil,
+        "password" => @password
+      }
+
+      conn =
+        conn
+        |> put_req_header("x-api-key", @valid_token)
+
+      conn = TrialAccountController.trial(conn, params)
+
+      response = json_response(conn, 500)
+
+      assert response == %{
+               "success" => false,
+               "error" => "Something went wrong"
+             }
+
+      org_after = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
+
+      assert org_after.trial_expiration_date == nil,
+             "Organization should not be allocated when transaction fails"
+
+      # Verify no contact was created
+      contact =
+        Repo.get_by(Contact, [phone: @valid_phone, organization_id: trial_org_1.id],
+          skip_organization_id: true
+        )
+
+      assert contact == nil, "Contact should not exist when transaction fails"
+
+      # Verify no user was created
+      user =
+        Repo.get_by(User, [phone: @valid_phone, organization_id: trial_org_1.id],
+          skip_organization_id: true
+        )
+
+      assert user == nil, "User should not exist when transaction fails"
+    end
+
+    test "rolls back organization allocation when user creation fails", %{
+      conn: conn,
+      trial_org_1: trial_org_1,
+      valid_otp: valid_otp
+    } do
+      org_before = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
+      assert org_before.trial_expiration_date == nil
+
+      params = %{
+        "phone" => @valid_phone,
+        "otp" => valid_otp,
+        "name" => "Test User",
+        # Invalid password will cause user creation to fail
+        "password" => "weak"
+      }
+
+      conn =
+        conn
+        |> put_req_header("x-api-key", @valid_token)
+
+      conn = TrialAccountController.trial(conn, params)
+
+      response = json_response(conn, 500)
+
+      assert response == %{
+               "success" => false,
+               "error" => "Something went wrong"
+             }
+
+      org_after = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
+
+      assert org_after.trial_expiration_date == nil,
+             "Organization should not be allocated when transaction fails"
+
+      contact =
+        Repo.get_by(Contact, [phone: @valid_phone, organization_id: trial_org_1.id],
+          skip_organization_id: true
+        )
+
+      assert contact == nil, "Contact should not exist when transaction rolls back"
+
+      user =
+        Repo.get_by(User, [phone: @valid_phone, organization_id: trial_org_1.id],
+          skip_organization_id: true
+        )
+
+      assert user == nil, "User should not exist when transaction fails"
+    end
   end
 
   @spec insert_trial_organization(String.t(), map()) :: Organization.t()

@@ -12,8 +12,7 @@ defmodule Glific.Repo.Migrations.AddtrialUser do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:trial_users, [:phone, :email])
-    create index(:trial_users, [:email])
-    create index(:trial_users, [:phone])
+    create unique_index(:trial_users, [:phone])
+    create unique_index(:trial_users, [:email])
   end
 end

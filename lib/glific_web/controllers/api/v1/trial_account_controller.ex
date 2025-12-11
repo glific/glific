@@ -14,6 +14,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   }
 
   alias GlificWeb.API.V1.RegistrationController
+  alias Ecto.Multi
   import Ecto.Query
 
   @doc """
@@ -27,16 +28,14 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     if token == expected_token do
       phone = params["phone"]
 
-      with {:ok, _message} <-
-             RegistrationController.verify_otp(phone, params["otp"]),
-           {:ok, organization} <- get_available_trial_account(),
-           {:ok, contact} <- create_contact(organization, phone, params),
-           {:ok, _user} <-
-             create_user(organization, contact, phone, params) do
+      with {:ok, _message} <- RegistrationController.verify_otp(phone, params["otp"]),
+           {:ok, result} <- allocate_trial_account(phone, params) do
+        shortcode = result.update_organization.shortcode
+
         json(conn, %{
           success: true,
           data: %{
-            login_url: "https://#{organization.shortcode}.glific.com"
+            login_url: "https://#{shortcode}.glific.com"
           }
         })
       else
@@ -48,7 +47,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
             error: "Invalid OTP"
           })
 
-        {:error, :no_available_accounts} ->
+        {:error, :organization, :no_available_accounts, _changes} ->
           conn
           |> put_status(503)
           |> json(%{
@@ -56,7 +55,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
             error: "No trial accounts available at the moment"
           })
 
-        {:error, _} ->
+        # All other Multi errors
+        {:error, _failed_step, _reason, _changes} ->
           conn
           |> put_status(500)
           |> json(%{
@@ -71,39 +71,55 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end
   end
 
-  @spec get_available_trial_account() ::
-          {:ok, Organization.t()} | {:error, :no_available_accounts | Ecto.Changeset.t()}
-  defp get_available_trial_account do
-    Repo.transaction(fn ->
-      available_org =
-        from(o in Organization,
-          where: o.is_trial_org == true,
-          where: is_nil(o.trial_expiration_date),
-          order_by: [asc: o.id],
-          limit: 1,
-          lock: "FOR UPDATE"
-        )
-        |> Repo.one(skip_organization_id: true)
-
-      case available_org do
-        nil ->
-          Repo.rollback(:no_available_accounts)
-
-        org ->
-          expiration_date =
-            DateTime.utc_now()
-            |> DateTime.truncate(:second)
-            |> DateTime.add(14, :day)
-
-          case Ecto.Changeset.change(org, %{
-                 trial_expiration_date: expiration_date
-               })
-               |> Repo.update() do
-            {:ok, updated_org} -> updated_org
-            {:error, changeset} -> Repo.rollback(changeset)
-          end
-      end
+  @spec allocate_trial_account(String.t(), map()) ::
+          {:ok, map()} | {:error, atom(), any(), map()}
+  defp allocate_trial_account(phone, params) do
+    Multi.new()
+    |> Multi.run(:organization, fn _repo, _changes ->
+      get_and_lock_trial_org()
     end)
+    |> Multi.run(:update_organization, fn _repo, %{organization: org} ->
+      update_trial_expiration(org)
+    end)
+    |> Multi.run(:contact, fn _repo, %{update_organization: org} ->
+      create_contact(org, phone, params)
+    end)
+    |> Multi.run(:user, fn _repo, %{update_organization: org, contact: contact} ->
+      create_user(org, contact, phone, params)
+    end)
+    |> Repo.transaction()
+  end
+
+  @spec get_and_lock_trial_org() ::
+          {:ok, Organization.t()} | {:error, :no_available_accounts}
+  defp get_and_lock_trial_org do
+    available_org =
+      from(o in Organization,
+        where: o.is_trial_org == true,
+        where: is_nil(o.trial_expiration_date),
+        order_by: [asc: o.id],
+        limit: 1,
+        lock: "FOR UPDATE"
+      )
+      |> Repo.one(skip_organization_id: true)
+
+    case available_org do
+      nil -> {:error, :no_available_accounts}
+      org -> {:ok, org}
+    end
+  end
+
+  @spec update_trial_expiration(Organization.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp update_trial_expiration(org) do
+    expiration_date =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+      |> DateTime.add(14, :day)
+
+    org
+    |> Ecto.Changeset.change(%{trial_expiration_date: expiration_date})
+    |> Repo.update()
   end
 
   @spec create_contact(Organization.t(), String.t(), map()) ::
