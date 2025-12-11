@@ -88,7 +88,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
 
     @desc "Sync a WhatsApp form from Gupshup"
     field :sync_whatsapp_form, :sync_whatsapp_form do
-      arg(:organization_id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.sync_whatsapp_form/3)
     end

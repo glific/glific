@@ -364,9 +364,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
          }
        }
      }} =
-      auth_query_gql_by(:sync_whatsapp_form, user,
-        variables: %{"organization_id" => user.organization_id}
-      )
+      auth_query_gql_by(:sync_whatsapp_form, user)
 
     assert message == "Whatsapp forms sync job queued successfully"
 
@@ -434,9 +432,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
          }
        }
      }} =
-      auth_query_gql_by(:sync_whatsapp_form, user,
-        variables: %{"organization_id" => user.organization_id}
-      )
+      auth_query_gql_by(:sync_whatsapp_form, user)
 
     assert message == "Whatsapp forms sync job queued successfully"
 
@@ -470,6 +466,6 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     forms_error = List.first(forms)
 
     assert forms_error.message ==
-             "In argument \"organizationId\": Expected type \"ID!\", found null."
+             "organization_id is not given"
   end
 end

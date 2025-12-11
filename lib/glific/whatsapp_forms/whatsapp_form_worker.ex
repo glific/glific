@@ -5,7 +5,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   require Logger
 
   alias Glific.{
-    Notification,
     Notifications,
     Notifications.Notification,
     Repo,

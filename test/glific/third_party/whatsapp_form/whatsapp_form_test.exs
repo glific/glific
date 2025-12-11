@@ -175,7 +175,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     assert "Initial Form" = query_data.data["whatsappForm"]["whatsappForm"]["name"]
   end
 
-  test "eturns error when WhatsApp Form assets fetch fails during sync" do
+  test "returns error when WhatsApp Form assets fetch fails during sync" do
     Tesla.Mock.mock(fn
       %{method: :get} = _env ->
         %Tesla.Env{
