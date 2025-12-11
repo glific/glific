@@ -41,7 +41,10 @@ oban_queues = [
   broadcast: 5,
   wa_group: 5,
   purge: 1,
-  custom_certificate: 10,
+  custom_certificate: [
+    limit: 10,
+    rate_limit: [allowed: 60, period: {1, :minute}, partition: [:worker, args: :organization_id]]
+  ],
   gpt_webhook_queue: 20,
   contact_import: 10,
   gupshup_high_tps: 10
