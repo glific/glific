@@ -207,7 +207,11 @@ defmodule Glific.WhatsappForms do
 
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form.id, organization_id: organization_id}) do
       {:ok, existing_form} ->
-        do_update_whatsapp_form(existing_form, attrs)
+        if(existing_form.status == :published) do
+          {:ok, existing_form}
+        else
+          do_update_whatsapp_form(existing_form, attrs)
+        end
 
       {:error, _} ->
         do_create_whatsapp_form(attrs)

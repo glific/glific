@@ -455,7 +455,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert notifications.message == "Failed to sync whatsapp forms: \"BSP Couldn't connect\""
   end
 
-  test "sync whatsapp fornm with business manager if it doesn't establish a connection with gupshup",
+  test "sync whatsapp form with business manager if organization_id is nil",
        %{
          manager: user
        } do

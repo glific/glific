@@ -78,7 +78,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
       {:ok, _job} ->
         Notifications.create_notification(%{
-          category: "Whatsapp Form",
+          category: "Whatsapp Forms",
           message: "Syncing of whatsapp form templates has started in the background.",
           severity: Notifications.types().info,
           organization_id: organization_id,
