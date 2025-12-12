@@ -229,4 +229,103 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert error["message"] == "Resource not found"
   end
+
+  test "retrieves a WhatsApp form with sheet details when sheet is associated", %{
+    manager: user,
+    organization_id: organization_id
+  } do
+    Tesla.Mock.mock(fn %{method: :get} -> %Tesla.Env{status: 200, body: ""} end)
+
+    # Create a sheet
+    {:ok, sheet} =
+      Glific.Sheets.create_sheet(%{
+        label: "WhatsApp Form Responses",
+        url: "https://docs.google.com/spreadsheets/d/test-sheet-id/edit",
+        type: "READ",
+        organization_id: organization_id
+      })
+
+    # Get an existing form and associate it with the sheet
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{name: "newsletter_subscription_form"})
+
+    {:ok, updated_form} =
+      form
+      |> Ecto.Changeset.change(%{sheet_id: sheet.id})
+      |> Repo.update()
+
+    # Query the form
+    {:ok, query} =
+      auth_query_gql_by(:whatsapp_form, user, variables: %{"whatsappFormId" => updated_form.id})
+
+    # Verify sheet details are returned
+    sheet_data = query.data["whatsappForm"]["whatsappForm"]["sheet"]
+    assert sheet_data != nil
+    assert sheet_data["id"] == "#{sheet.id}"
+    assert sheet_data["label"] == "WhatsApp Form Responses"
+    assert sheet_data["url"] == "https://docs.google.com/spreadsheets/d/test-sheet-id/edit"
+    assert sheet_data["isActive"] == true
+  end
+
+  test "retrieves a WhatsApp form with null sheet when no sheet is associated", %{
+    manager: user
+  } do
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{name: "sign_up_form"})
+
+    {:ok, query} =
+      auth_query_gql_by(:whatsapp_form, user, variables: %{"whatsappFormId" => form.id})
+
+    # Verify sheet is null when not associated
+    assert query.data["whatsappForm"]["whatsappForm"]["sheet"] == nil
+  end
+
+  test "lists WhatsApp forms with sheet details when sheets are associated", %{
+    manager: user,
+    organization_id: organization_id
+  } do
+    Tesla.Mock.mock(fn %{method: :get} -> %Tesla.Env{status: 200, body: ""}end)
+
+    # Create sheets
+    {:ok, sheet1} =
+      Glific.Sheets.create_sheet(%{
+        label: "Sign Up Responses",
+        url: "https://docs.google.com/spreadsheets/d/test-sheet-1/edit",
+        type: "READ",
+        organization_id: organization_id
+      })
+
+    {:ok, sheet2} =
+      Glific.Sheets.create_sheet(%{
+        label: "Contact Responses",
+        url: "https://docs.google.com/spreadsheets/d/test-sheet-2/edit",
+        type: "READ",
+        organization_id: organization_id
+      })
+
+    # Associate forms with sheets
+    {:ok, form1} = Repo.fetch_by(WhatsappForm, %{name: "sign_up_form"})
+    {:ok, form2} = Repo.fetch_by(WhatsappForm, %{name: "contact_us_form"})
+
+    form1 |> Ecto.Changeset.change(%{sheet_id: sheet1.id}) |> Repo.update()
+    form2 |> Ecto.Changeset.change(%{sheet_id: sheet2.id}) |> Repo.update()
+
+    # List forms
+    {:ok, query} = auth_query_gql_by(:list_whatsapp_forms, user, variables: %{})
+
+    forms = query.data["listWhatsappForms"]
+
+    # Find the forms with sheets
+    form_with_sheet1 = Enum.find(forms, fn f -> f["name"] == "sign_up_form" end)
+    form_with_sheet2 = Enum.find(forms, fn f -> f["name"] == "contact_us_form" end)
+    form_without_sheet = Enum.find(forms, fn f -> f["name"] == "feedback_form" end)
+
+    # Verify sheet details are present for associated forms
+    assert form_with_sheet1["sheet"]["id"] == "#{sheet1.id}"
+    assert form_with_sheet1["sheet"]["label"] == "Sign Up Responses"
+
+    assert form_with_sheet2["sheet"]["id"] == "#{sheet2.id}"
+    assert form_with_sheet2["sheet"]["label"] == "Contact Responses"
+
+    # Verify sheet is null for form without association
+    assert form_without_sheet["sheet"] == nil
+  end
 end

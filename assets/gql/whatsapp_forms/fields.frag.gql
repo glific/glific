@@ -9,6 +9,13 @@ fragment WhatsappFormFields on WhatsappFormResult {
     metaFlowId
     insertedAt
     updatedAt
+    sheet {
+      id
+      label
+      url
+      isActive
+      sheetDataCount
+    }
   }
 }
 
