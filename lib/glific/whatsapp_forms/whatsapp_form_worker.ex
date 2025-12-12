@@ -85,12 +85,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
       {:error, reason} ->
         Logger.error("Failed to fetch assets for form #{current_form["id"]}: #{inspect(reason)}")
-
-        send_notification(
-          org_id,
-          "Failed to fetch whatsapp form assets #{current_form["id"]}: #{inspect(reason)}",
-          Notifications.types().critical
-        )
     end
 
     case remaining_forms do
@@ -101,7 +95,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
           "forms" => rest,
           "sync_single" => true
         })
-        |> Oban.insert(schedule_in: @delay_ms / 1000)
+        |> Oban.insert(schedule_in: {:milliseconds, @delay_ms})
 
       [] ->
         Logger.info("[WORKER] All forms processed for org #{org_id}")
