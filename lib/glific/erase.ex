@@ -5,6 +5,7 @@ defmodule Glific.Erase do
   import Ecto.Query
 
   alias Glific.Contacts.Contact
+  alias Glific.Notifications
   alias Glific.Partners
   alias Glific.Partners.Organization
   alias Glific.Repo
@@ -110,10 +111,12 @@ defmodule Glific.Erase do
         "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
       )
 
+      send_success_notification(deleted_organization)
       :ok
     else
       {:error, [_, "Resource not found"]} ->
         Logger.error("Organization with ID #{organization_id} not found")
+        send_failure_notification(organization_id, "Organization not found")
         {:error, "Organization not found"}
 
       {:error, reason} ->
@@ -121,6 +124,7 @@ defmodule Glific.Erase do
           "Failed to delete organization ID: #{organization_id}, reason: #{inspect(reason)}"
         )
 
+        send_failure_notification(organization_id, inspect(reason))
         {:error, reason}
     end
   end
@@ -404,5 +408,33 @@ defmodule Glific.Erase do
         total_rows_deleted
       )
     end
+  end
+
+  @spec send_success_notification(Organization.t()) :: :ok
+  defp send_success_notification(organization) do
+    Notifications.create_notification(%{
+      category: "Organization",
+      message:
+        "Organization '#{organization.name}' (ID: #{organization.id}) has been successfully deleted.",
+      severity: :info,
+      organization_id: Repo.get_organization_id(),
+      entity: %{
+        id: organization.id,
+        name: organization.name
+      }
+    })
+  end
+
+  @spec send_failure_notification(non_neg_integer(), String.t()) :: :ok
+  defp send_failure_notification(organization_id, reason) do
+    Notifications.create_notification(%{
+      category: "Organization",
+      message: "Failed to delete organization with ID #{organization_id}. Error: #{reason}",
+      severity: :critical,
+      organization_id: Repo.get_organization_id(),
+      entity: %{
+        id: organization_id
+      }
+    })
   end
 end

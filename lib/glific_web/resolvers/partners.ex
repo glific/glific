@@ -94,9 +94,9 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_organization(_, %{id: id}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id) do
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true) do
       Erase.delete_organization(id)
-      {:ok, organization}
+      {:ok, %{organization: organization}}
     end
   end
 
