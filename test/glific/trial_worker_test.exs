@@ -4,7 +4,6 @@ defmodule Glific.TrialWorkerTest do
 
   alias Glific.{
     Contacts.Contact,
-    Erase,
     Fixtures,
     Flows.Flow,
     Flows.FlowRevision,
