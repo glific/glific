@@ -74,21 +74,20 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, organization_id) do
-    Enum.each(forms, fn form ->
-      case ApiClient.get_whatsapp_form_assets(form.id, organization_id) do
-        {:ok, form_json} ->
-          case sync_single_form(form, form_json, organization_id) do
-            {:ok, _form} ->
-              :ok
+    case forms do
+      [first | rest] ->
+        # Enqueue the first form job immediately, pass the remaining forms for recursion
+        Glific.WhatsappForms.WhatsappFormWorker.new(%{
+          "organization_id" => organization_id,
+          "form" => first,
+          "forms" => rest,
+          "sync_single" => true
+        })
+        |> Oban.insert(schedule_in: 0)
 
-            {:error, reason} ->
-              Logger.error("Failed to sync form #{form.id}: #{inspect(reason)}")
-          end
-
-        {:error, reason} ->
-          Logger.error("Failed to fetch assets for #{form.id}: #{inspect(reason)}")
-      end
-    end)
+      [] ->
+        Logger.info("No WhatsApp forms found for org #{organization_id}")
+    end
 
     :ok
   end
@@ -190,16 +189,16 @@ defmodule Glific.WhatsappForms do
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   def sync_single_form(form, form_json, organization_id) do
     attrs = %{
-      name: form.name,
-      status: normalize_status(form.status),
-      categories: normalize_categories(form.categories),
+      name: form["name"],
+      status: normalize_status(form["status"]),
+      categories: normalize_categories(form["categories"]),
       definition: form_json,
-      description: Map.get(form, :description, ""),
-      meta_flow_id: form.id,
+      description: Map.get(form, "description", ""),
+      meta_flow_id: form["id"],
       organization_id: organization_id
     }
 
-    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form.id, organization_id: organization_id}) do
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
       {:ok, existing_form} ->
         if existing_form.status == :published do
           {:ok, existing_form}

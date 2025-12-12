@@ -8,13 +8,17 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     Notifications,
     Notifications.Notification,
     Repo,
-    WhatsappForms
+    WhatsappForms,
+    Providers.Gupshup.WhatsappForms.ApiClient
   }
 
   use Oban.Worker,
     queue: :default,
     max_attempts: 2,
     priority: 2
+
+  @rate_limit_per_sec 5
+  @delay_ms div(1000, @rate_limit_per_sec)
 
   @doc """
   Create a job to sync WhatsApp forms for the given organization ID.
@@ -44,12 +48,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
       :ok ->
         Logger.info("Whatsapp Form sync completed successfully for org_id: #{org_id}")
 
-        send_notification(
-          org_id,
-          "Whatsapp form sync completed successfully.",
-          Notifications.types().info
-        )
-
       {:error, reason} ->
         Logger.error(
           "Failed to sync whatsapp form for org_id: #{org_id}, reason: #{inspect(reason)}"
@@ -59,6 +57,59 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
           org_id,
           "Failed to sync whatsapp forms: #{inspect(reason)}",
           Notifications.types().critical
+        )
+    end
+
+    :ok
+  end
+
+  def perform(%Oban.Job{
+        args: %{
+          "organization_id" => org_id,
+          "form" => current_form,
+          "forms" => remaining_forms,
+          "sync_single" => true
+        }
+      }) do
+    Repo.put_process_state(org_id)
+
+    case ApiClient.get_whatsapp_form_assets(current_form["id"], org_id) do
+      {:ok, form_json} ->
+        case WhatsappForms.sync_single_form(current_form, form_json, org_id) do
+          {:ok, _} ->
+            Logger.info("[WORKER] Form #{current_form["id"]} synced successfully")
+
+          {:error, reason} ->
+            Logger.error("Failed to sync form #{current_form["id"]}: #{inspect(reason)}")
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to fetch assets for form #{current_form["id"]}: #{inspect(reason)}")
+
+        send_notification(
+          org_id,
+          "Failed to fetch whatsapp form assets #{current_form["id"]}: #{inspect(reason)}",
+          Notifications.types().critical
+        )
+    end
+
+    case remaining_forms do
+      [next | rest] ->
+        __MODULE__.new(%{
+          "organization_id" => org_id,
+          "form" => next,
+          "forms" => rest,
+          "sync_single" => true
+        })
+        |> Oban.insert(schedule_in: @delay_ms / 1000)
+
+      [] ->
+        Logger.info("[WORKER] All forms processed for org #{org_id}")
+
+        send_notification(
+          org_id,
+          "Whatsapp form sync completed successfully.",
+          Notifications.types().info
         )
     end
 
