@@ -1,11 +1,13 @@
 defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Repo,
     Seeds.SeedsDev,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker
   }
 
   load_gql(
@@ -48,6 +50,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     :delete_whatsapp_form,
     GlificWeb.Schema,
     "assets/gql/whatsapp_forms/delete.gql"
+  )
+
+  load_gql(
+    :sync_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/sync.gql"
   )
 
   setup do
@@ -228,5 +236,237 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       auth_query_gql_by(:delete_whatsapp_form, user, variables: %{"id" => "9999999"})
 
     assert error["message"] == "Resource not found"
+  end
+
+  test "syncs WhatsApp forms for an organization that does not exist in the database from Business Manager",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "form-123",
+                  status: "Published",
+                  name: "Customer Feedback Form",
+                  description: "Form to collect customer feedback",
+                  categories: ["survey"],
+                  meta_flow_id: "flow-12345"
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
+      auth_query_gql_by(:sync_whatsapp_form, user,
+        variables: %{"organization_id" => user.organization_id}
+      )
+
+    assert message == "Whatsapp forms sync job queued successfully"
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "form-123"})
+
+    assert form.name == "Customer Feedback Form"
+    assert form.description == "Form to collect customer feedback"
+  end
+
+  test "Syncs WhatsApp forms for an organization that exist in our database. Published forms will not be updated.",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
+                  status: "Published",
+                  name: "Customer Feedback Form",
+                  description: "Form to collect customer feedback",
+                  categories: ["survey"],
+                  meta_flow_id: "flow-9e3bf"
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok, previous_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert previous_form.name == "sign_up_form"
+    assert previous_form.description == "Simple signup flow to collect name and email"
+
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
+      auth_query_gql_by(:sync_whatsapp_form, user)
+
+    assert message == "Whatsapp forms sync job queued successfully"
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    {:ok, updated_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert updated_form.name == "sign_up_form"
+    assert updated_form.description === "Simple signup flow to collect name and email"
+  end
+
+  test "syncs whatsapp forms will only updates non published ones in db",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
+                  status: "Published",
+                  name: "Customer Feedback Form",
+                  description: "Form to collect customer feedback",
+                  categories: ["survey"],
+                  meta_flow_id: "flow-9e3bf"
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok, previous_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    assert previous_form.name == "contact_us_form"
+    assert previous_form.description == "Feedback and queries collection form"
+
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
+      auth_query_gql_by(:sync_whatsapp_form, user)
+
+    assert message == "Whatsapp forms sync job queued successfully"
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default)
+
+    {:ok, updated_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    assert updated_form.name == "Customer Feedback Form"
+    assert updated_form.status == :published
+    assert updated_form.description === "Form to collect customer feedback"
+  end
+
+  test "sync whatsapp form with business manager if organization_id is nil",
+       %{
+         manager: user
+       } do
+    user = Map.put(user, :organization_id, nil)
+    result = auth_query_gql_by(:sync_whatsapp_form, user)
+    assert {:ok, query_data} = result
+    forms = get_in(query_data, [:errors])
+    forms_error = List.first(forms)
+
+    assert forms_error.message ==
+             "organization_id is not given"
   end
 end

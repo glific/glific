@@ -55,6 +55,44 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(non_neg_integer()) ::
+          :ok | {:error, String.t()}
+  def sync_whatsapp_form(organization_id) do
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
+         :ok <- handle_single_form(forms, organization_id) do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Handles syncing of a single WhatsApp form.
+  """
+  @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
+  def handle_single_form(forms, organization_id) do
+    case forms do
+      [first | rest] ->
+        # Enqueue the first form job immediately, pass the remaining forms for recursion
+        Glific.WhatsappForms.WhatsappFormWorker.new(%{
+          "organization_id" => organization_id,
+          "form" => first,
+          "forms" => rest,
+          "sync_single" => true
+        })
+        |> Oban.insert(schedule_in: 0)
+
+      [] ->
+        Logger.info("No WhatsApp forms found for org #{organization_id}")
+    end
+
+    :ok
+  end
+
+  @doc """
     Publishes a WhatsApp form through the configured provider (e.g., Gupshup).
   """
   @spec publish_whatsapp_form(non_neg_integer()) ::
@@ -142,6 +180,35 @@ defmodule Glific.WhatsappForms do
     form
     |> Ecto.Changeset.change(status: new_status)
     |> Repo.update()
+  end
+
+  @doc """
+  Saves or updates a single form from WBM.
+  """
+  @spec sync_single_form(map(), map(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  def sync_single_form(form, form_json, organization_id) do
+    attrs = %{
+      name: form["name"],
+      status: normalize_status(form["status"]),
+      categories: normalize_categories(form["categories"]),
+      definition: form_json,
+      description: Map.get(form, "description", ""),
+      meta_flow_id: form["id"],
+      organization_id: organization_id
+    }
+
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
+      {:ok, existing_form} ->
+        if existing_form.status == :published do
+          {:ok, existing_form}
+        else
+          do_update_whatsapp_form(existing_form, attrs)
+        end
+
+      {:error, _} ->
+        do_create_whatsapp_form(attrs)
+    end
   end
 
   @spec prepare_attrs(map(), map(), :create | :update) ::
@@ -232,5 +299,25 @@ defmodule Glific.WhatsappForms do
       _count ->
         :ok
     end
+  end
+
+  @spec normalize_status(any()) :: atom() | String.t()
+  defp normalize_status(status) when is_atom(status), do: status
+
+  defp normalize_status(status) when is_binary(status) do
+    status
+    |> String.downcase()
+  end
+
+  @spec normalize_categories(any()) :: list(atom() | String.t())
+  defp normalize_categories([]), do: []
+
+  defp normalize_categories(categories) when is_list(categories) do
+    categories
+    |> Enum.map(fn
+      category ->
+        category
+        |> String.downcase()
+    end)
   end
 end
