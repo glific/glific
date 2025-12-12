@@ -5,6 +5,8 @@ defmodule Glific.Erase do
   import Ecto.Query
 
   alias Glific.Contacts.Contact
+  alias Glific.Partners
+  alias Glific.Partners.Organization
   alias Glific.Repo
   require Logger
 
@@ -56,6 +58,17 @@ defmodule Glific.Erase do
   end
 
   @doc """
+  Creates an Oban job for deleting an organization.
+  This prevents UI timeouts when deleting organizations with large amounts of data.
+  """
+  @spec delete_organization(non_neg_integer()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def delete_organization(organization_id) do
+    __MODULE__.new(%{organization_id: organization_id})
+    |> Oban.insert()
+  end
+
+  @doc """
   Do the daily DB cleaner tasks
   """
   @spec perform_daily() :: any
@@ -84,6 +97,32 @@ defmodule Glific.Erase do
         }
       }) do
     delete_old_messages(batch_size, max_rows_to_delete, sleep_after_delete?)
+  end
+
+  @impl Oban.Worker
+  def perform(%Oban.Job{args: %{"organization_id" => organization_id}}) do
+    Logger.info("Starting background deletion for organization #{organization_id}")
+
+    with {:ok, organization} <-
+           Repo.fetch(Organization, organization_id, skip_organization_id: true),
+         {:ok, deleted_organization} <- Partners.delete_organization(organization) do
+      Logger.info(
+        "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
+      )
+
+      :ok
+    else
+      {:error, [_, "Resource not found"]} ->
+        Logger.error("Organization with ID #{organization_id} not found")
+        {:error, "Organization not found"}
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to delete organization ID: #{organization_id}, reason: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
   end
 
   @spec refresh_tables() :: any
