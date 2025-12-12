@@ -82,7 +82,10 @@ oban_plugins = [
   # Prune jobs after 5 mins, gives us some time to go investigate if needed
   {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
-  Oban.Pro.Plugins.DynamicLifeline
+  Oban.Pro.Plugins.DynamicLifeline,
+  # only repriortizing for gpt_webhook_queue for now
+  {Oban.Pro.Plugins.DynamicPrioritizer,
+   after: :infinity, queue_overrides: [gpt_webhook_queue: :timer.minutes(5)], max_priority: 1}
 ]
 
 config :glific, Oban,
