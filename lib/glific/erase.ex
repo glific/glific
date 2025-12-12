@@ -419,8 +419,6 @@ defmodule Glific.Erase do
       :ok
     rescue
       error ->
-        Logger.error("Error during cleanup for org #{organization_id}: #{inspect(error)}")
-
         Glific.log_exception(%Error{
           message: "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
         })
