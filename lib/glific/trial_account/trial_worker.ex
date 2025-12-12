@@ -38,31 +38,16 @@ defmodule Glific.TrialAccount.TrialWorker do
     Logger.info("Cleaning up expired trial: organization_id: '#{organization.id}'")
     Repo.put_process_state(organization.id)
 
-    case Erase.delete_organization_data(organization.id) do
-      :ok ->
-        Logger.info("Successfully cleaned up data for trial organization: #{organization.id}")
-
-        organization
-        |> Organization.changeset(%{trial_expiration_date: nil})
-        |> Repo.update()
-        |> case do
-          {:ok, _org} ->
-            Logger.info(
-              "Successfully updated expiration status for trial organization: #{organization.id}"
-            )
-
-            :ok
-
-          {:error, error} ->
-            Logger.error(
-              "Failed to update expiration status for trial organization #{organization.id}: #{inspect(error)}"
-            )
-
-            {:error, error}
-        end
-
+    with :ok <- Erase.delete_organization_data(organization.id),
+         {:ok, _org} <-
+           organization
+           |> Organization.changeset(%{trial_expiration_date: nil})
+           |> Repo.update() do
+      Logger.info("Successfully cleaned up and reset trial organization: #{organization.id}")
+      :ok
+    else
       {:error, error} ->
-        Logger.error("Failed to cleanup trial organization #{organization.id}: #{inspect(error)}")
+        Logger.error("Failed to process trial organization #{organization.id}: #{inspect(error)}")
         {:error, error}
     end
   end

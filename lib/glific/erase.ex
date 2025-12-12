@@ -411,14 +411,8 @@ defmodule Glific.Erase do
       ]
 
       Enum.each(queries, fn query ->
-        case Repo.query(query, [], timeout: 300_000, skip_organization_id: true) do
-          {:ok, result} ->
-            Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
-
-          {:error, error} ->
-            Logger.error("Failed to delete for org #{organization_id}: #{inspect(error)}")
-            raise "Query failed: #{inspect(error)}"
-        end
+        result = Repo.query!(query, [], timeout: 300_000, skip_organization_id: true)
+        Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
       end)
 
       Logger.info("Completed data deletion for organization_id: #{organization_id}")
