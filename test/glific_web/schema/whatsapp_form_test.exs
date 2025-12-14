@@ -531,7 +531,9 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     notification =
       Repo.all(
         from n in Notification,
-          where: n.organization_id == ^@org_id and n.category == "WhatsApp Forms",
+          where:
+            n.organization_id == ^@org_id and n.category == "WhatsApp Forms" and
+              n.severity == "Critical",
           order_by: [desc: n.inserted_at]
       )
       |> List.first()
