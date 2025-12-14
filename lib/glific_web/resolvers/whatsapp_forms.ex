@@ -66,7 +66,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
   def sync_whatsapp_form(_, _, %{context: %{current_user: user}}) do
     user.organization_id
-    |> normalize_id()
     |> queue_whatsapp_form_sync()
   end
 
@@ -93,15 +92,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
         Logger.error(error_message)
         {:error, error_message}
-    end
-  end
-
-  defp normalize_id(id) when is_integer(id), do: id
-
-  defp normalize_id(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {value, ""} -> value
-      _ -> id
     end
   end
 
