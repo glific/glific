@@ -287,19 +287,21 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
          }
        }
      }} =
-      auth_query_gql_by(:sync_whatsapp_form, user,
-        variables: %{"organization_id" => user.organization_id}
-      )
+      auth_query_gql_by(:sync_whatsapp_form, user)
 
     assert message == "Whatsapp forms sync job queued successfully"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
+      queue: :whatsapp_form,
       prefix: "global"
     )
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
 
     {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "form-123"})
 
@@ -353,6 +355,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert previous_form.name == "sign_up_form"
     assert previous_form.description == "Simple signup flow to collect name and email"
+    assert previous_form.status == :published
 
     {:ok,
      %{
@@ -368,11 +371,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert_enqueued(
       worker: WhatsappFormWorker,
+      queue: :whatsapp_form,
       prefix: "global"
     )
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :whatsapp_form)
 
     {:ok, updated_form} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
@@ -391,12 +395,11 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
               status: 200,
               body: [
                 %{
-                  id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
-                  status: "Published",
-                  name: "Customer Feedback Form",
-                  description: "Form to collect customer feedback",
-                  categories: ["survey"],
-                  meta_flow_id: "flow-9e3bf"
+                  "id" => "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
+                  "status" => "published",
+                  "name" => "Customer Feedback Form",
+                  "description" => "Form to collect customer feedback",
+                  "categories" => ["survey"]
                 }
               ]
             }
@@ -442,11 +445,15 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert_enqueued(
       worker: WhatsappFormWorker,
+      queue: :whatsapp_form,
       prefix: "global"
     )
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :default)
+             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
 
     {:ok, updated_form} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})

@@ -10,7 +10,8 @@ defmodule Glific.WhatsappForms do
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker
   }
 
   require Logger
@@ -73,22 +74,8 @@ defmodule Glific.WhatsappForms do
   Handles syncing of a single WhatsApp form.
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
-  def handle_single_form(forms, organization_id) do
-    case forms do
-      [first | rest] ->
-        # Enqueue the first form job immediately, pass the remaining forms for recursion
-        Glific.WhatsappForms.WhatsappFormWorker.new(%{
-          "organization_id" => organization_id,
-          "form" => first,
-          "forms" => rest,
-          "sync_single" => true
-        })
-        |> Oban.insert(schedule_in: 0)
-
-      [] ->
-        Logger.info("No WhatsApp forms found for org #{organization_id}")
-    end
-
+  def handle_single_form(forms, org_id) do
+    WhatsappFormWorker.create_single_form_sync_job(forms, org_id)
     :ok
   end
 

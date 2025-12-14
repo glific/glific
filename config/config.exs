@@ -35,6 +35,10 @@ oban_queues = [
     rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
   dialogflow: 5,
+  whatsapp_form: [
+    limit: 5,
+    rate_limit: [allowed: 20, period: {1, :minute}, partition: [:worker, args: :organization_id]]
+  ],
   gcs: 10,
   gupshup: 10,
   webhook: 20,
