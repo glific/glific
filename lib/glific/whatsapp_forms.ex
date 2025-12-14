@@ -289,7 +289,6 @@ defmodule Glific.WhatsappForms do
   end
 
   @spec normalize_status(any()) :: atom() | String.t()
-  defp normalize_status(status) when is_atom(status), do: status
 
   defp normalize_status(status) when is_binary(status) do
     status
@@ -297,7 +296,6 @@ defmodule Glific.WhatsappForms do
   end
 
   @spec normalize_categories(any()) :: list(atom() | String.t())
-  defp normalize_categories([]), do: []
 
   defp normalize_categories(categories) when is_list(categories) do
     categories

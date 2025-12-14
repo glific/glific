@@ -3,7 +3,10 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   use Wormwood.GQLCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Ecto.Query
+
   alias Glific.{
+    Notifications.Notification,
     Repo,
     Seeds.SeedsDev,
     WhatsappForms.WhatsappForm,
@@ -58,6 +61,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     "assets/gql/whatsapp_forms/sync.gql"
   )
 
+  @org_id 1
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -461,6 +465,83 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert updated_form.name == "Customer Feedback Form"
     assert updated_form.status == :published
     assert updated_form.description === "Form to collect customer feedback"
+  end
+
+  test "creates a critical notification when whatsapp form sync fails",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 404,
+              body: %{
+                error: "something went wrong"
+              }
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok, previous_form} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    assert previous_form.name == "contact_us_form"
+    assert previous_form.description == "Feedback and queries collection form"
+
+    {:ok,
+     %{
+       data: %{
+         "syncWhatsappForm" => %{
+           "message" => message
+         }
+       }
+     }} =
+      auth_query_gql_by(:sync_whatsapp_form, user)
+
+    assert message == "Whatsapp forms sync job queued successfully"
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      queue: :whatsapp_form,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
+
+    notification =
+      Repo.all(
+        from n in Notification,
+          where: n.organization_id == ^@org_id and n.category == "WhatsApp Forms",
+          order_by: [desc: n.inserted_at]
+      )
+      |> List.first()
+
+    assert notification.category == "WhatsApp Forms"
+
+    assert notification.message ==
+             "Failed to sync whatsapp forms: %{error: \"something went wrong\"}"
+
+    assert notification.severity == "Critical"
   end
 
   test "sync whatsapp form with business manager if organization_id is nil",
