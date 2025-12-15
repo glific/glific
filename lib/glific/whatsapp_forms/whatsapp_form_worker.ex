@@ -17,9 +17,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     max_attempts: 2,
     priority: 2
 
-  @rate_limit_per_sec 5
-  @delay_ms div(1000, @rate_limit_per_sec)
-
   @doc """
   Create a job to sync WhatsApp forms for the given organization ID.
   """
@@ -30,10 +27,11 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   end
 
   @doc """
-  Create a job to sync WhatsApp form JSON for all forms of a given organization.
+  Schedules the next WhatsApp form sync job for an organization.
+  Takes a list of remaining forms and schedules the next job with rate limiting.
   """
-  @spec create_single_form_sync_job(list(map()), non_neg_integer()) :: :ok
-  def create_single_form_sync_job(forms, org_id) do
+  @spec schedule_next_form_sync(list(map()), non_neg_integer()) :: :ok
+  def schedule_next_form_sync(forms, org_id) do
     case forms do
       [first | rest] ->
         __MODULE__.new(%{
@@ -42,11 +40,16 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
           "forms" => rest,
           "sync_single" => true
         })
-        |> Oban.insert(schedule_in: {:milliseconds, @delay_ms})
+        |> Oban.insert(schedule_in: 1)
 
       [] ->
-        Logger.info("[WORKER] No WhatsApp forms found for org #{org_id}")
-        :ok
+        Logger.info("[WORKER] All forms processed for org #{org_id}")
+
+        send_notification(
+          org_id,
+          "Whatsapp form sync completed successfully.",
+          Notifications.types().info
+        )
     end
 
     :ok
@@ -97,26 +100,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
         Logger.error("Failed to process form #{current_form["id"]}: #{inspect(reason)}")
     end
 
-    case remaining_forms do
-      [next | rest] ->
-        __MODULE__.new(%{
-          "organization_id" => org_id,
-          "form" => next,
-          "forms" => rest,
-          "sync_single" => true
-        })
-        |> Oban.insert(schedule_in: {:milliseconds, @delay_ms})
-
-      [] ->
-        Logger.info("[WORKER] All forms processed for org #{org_id}")
-
-        send_notification(
-          org_id,
-          "Whatsapp form sync completed successfully.",
-          Notifications.types().info
-        )
-    end
-
+    schedule_next_form_sync(remaining_forms, org_id)
     :ok
   end
 

@@ -74,7 +74,7 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, org_id) do
-    WhatsappFormWorker.create_single_form_sync_job(forms, org_id)
+    WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
     :ok
   end
 
