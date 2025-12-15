@@ -34,9 +34,11 @@ defmodule Glific.WhatsappForms do
   """
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs) do
+    attrs = Map.put(attrs, :operation, :create)
+
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
-         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response, :create),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
@@ -50,9 +52,14 @@ defmodule Glific.WhatsappForms do
   """
   @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
+    attrs =
+      attrs
+      |> Map.put(:operation, :update)
+      |> Map.put(:sheet_id, form.sheet_id)
+
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
-         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response, :update),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
@@ -155,9 +162,8 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
-  @spec prepare_attrs(map(), map(), :create | :update) ::
-          {:ok, map()}
-  defp prepare_attrs(validated_attrs, api_response, :create) do
+  @spec prepare_attrs(map(), map()) :: {:ok, map()}
+  defp prepare_attrs(%{operation: :create} = validated_attrs, api_response) do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
@@ -172,7 +178,7 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
-  defp prepare_attrs(validated_attrs, _, :update) do
+  defp prepare_attrs(%{operation: :update} = validated_attrs, _api_response) do
     db_attrs = %{
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
@@ -250,28 +256,29 @@ defmodule Glific.WhatsappForms do
   @spec maybe_create_google_sheet(map()) ::
           {:ok, map()} | {:error, any()}
   defp maybe_create_google_sheet(attrs) do
-    case Map.get(attrs, :google_sheet_url) do
-      nil ->
-        {:ok, Map.put(attrs, :sheet_id, nil)}
 
-      "" ->
+    case Map.get(attrs, :google_sheet_url) do
+      url when url in [nil, ""] ->
         {:ok, Map.put(attrs, :sheet_id, nil)}
 
       url when is_binary(url) ->
-        fetch_or_create_sheet(attrs, url)
+        handle_google_sheet(attrs, url)
     end
   end
 
-  @spec fetch_or_create_sheet(map(), String.t()) ::
-          {:ok, map()} | {:error, any()}
-  defp fetch_or_create_sheet(attrs, url) do
-    case Repo.fetch_by(Sheets.Sheet, %{url: url, organization_id: attrs.organization_id}) do
-      {:ok, sheet} ->
-        {:ok, Map.put(attrs, :sheet_id, sheet.id)}
+  @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp handle_google_sheet(%{operation: :create} = attrs, url) do
+    create_new_sheet(attrs, url)
+  end
 
-      {:error, _} ->
-        create_new_sheet(attrs, url)
-    end
+  @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp handle_google_sheet(%{operation: :update, sheet_id: sheet_id} = attrs, url)
+       when not is_nil(sheet_id) do
+    update_existing_sheet(attrs, url, sheet_id)
+  end
+
+  defp handle_google_sheet(%{operation: :update} = attrs, url) do
+    create_new_sheet(attrs, url)
   end
 
   @spec create_new_sheet(map(), String.t()) ::
@@ -289,6 +296,27 @@ defmodule Glific.WhatsappForms do
       {:error, reason} ->
         Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
         {:error, reason}
+    end
+  end
+
+  @spec update_existing_sheet(map(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  defp update_existing_sheet(attrs, url, sheet_id) do
+    case Sheets.get_sheet!(sheet_id) do
+      sheet ->
+        case Sheets.update_sheet(sheet, %{
+               url: url,
+               label: "WhatsApp Form - #{attrs.name}",
+               type: "WRITE",
+               organization_id: attrs.organization_id
+             }) do
+          {:ok, updated_sheet} ->
+            {:ok, Map.put(attrs, :sheet_id, updated_sheet.id)}
+
+          {:error, reason} ->
+            Logger.error("Failed to update Google Sheet for WhatsApp form: #{inspect(reason)}")
+            {:error, reason}
+        end
     end
   end
 

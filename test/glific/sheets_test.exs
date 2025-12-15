@@ -16,6 +16,9 @@ defmodule Glific.SheetsTest do
   describe "sheets" do
     setup do
       Tesla.Mock.mock(fn
+        %{method: :get, url: nil} ->
+          {:error, :invalid_url}
+
         %{method: :get} ->
           %Tesla.Env{
             status: 200,

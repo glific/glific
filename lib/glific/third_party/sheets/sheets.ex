@@ -49,23 +49,25 @@ defmodule Glific.Sheets do
 
   @spec validate_sheet(map()) :: {:ok, true} | {:error, String.t()}
   defp validate_sheet(%{type: "WRITE"} = attrs) do
-    GoogleSheets.fetch_credentials(attrs.organization_id)
-    |> case do
-      {:ok, _credentials} ->
-        {:ok, true}
-
-      {:error, _error} ->
+    with {:ok, _credentials} <- GoogleSheets.fetch_credentials(attrs.organization_id),
+         {:ok, true} <- check_edit_access(attrs) do
+      {:ok, true}
+    else
+      {:error, "Google API is not active"} ->
         {:error, "Please add the credentials for google sheet from the settings menu"}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  defp validate_sheet(attrs) do
+  defp validate_sheet(%{url: url} = _attrs) when not is_nil(url) do
     client =
       Tesla.client([
         {Tesla.Middleware.FollowRedirects, max_redirects: 5}
       ])
 
-    Tesla.get(client, attrs.url)
+    Tesla.get(client, url)
     |> case do
       # Accept both 200s and 300s
       {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
@@ -74,6 +76,29 @@ defmodule Glific.Sheets do
       _ ->
         {:error,
          "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
+    end
+  end
+
+  defp validate_sheet(_attrs), do: {:ok, true}
+
+  @spec check_edit_access(map()) :: {:ok, true} | {:error, String.t()}
+  defp check_edit_access(attrs) do
+    spreadsheet_id = extract_spreadsheet_id(attrs.url)
+
+    GoogleSheets.insert_row(attrs.organization_id, spreadsheet_id, %{
+      range: "A1",
+      data: [[]]
+    })
+    |> case do
+      {:ok, _} ->
+        {:ok, true}
+
+      {:error, %Tesla.Env{status: 403}} ->
+        {:error,
+         "No edit access to the Google Sheet. Please ensure the service account has editor permissions."}
+
+      {:error, reason} ->
+        {:error, "Failed to verify edit access: #{inspect(reason)}"}
     end
   end
 
@@ -91,7 +116,8 @@ defmodule Glific.Sheets do
   """
   @spec update_sheet(Sheet.t(), map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def update_sheet(%Sheet{} = sheet, attrs) do
-    with {:ok, sheet} <-
+    with {:ok, true} <- validate_sheet(attrs),
+         {:ok, sheet} <-
            sheet
            |> Sheet.changeset(attrs)
            |> Repo.update() do
@@ -207,6 +233,14 @@ defmodule Glific.Sheets do
       error ->
         error
     end
+  end
+
+  @spec extract_spreadsheet_id(String.t()) :: String.t()
+  defp extract_spreadsheet_id(sheet_url) do
+    sheet_url
+    |> String.replace("https://docs.google.com/spreadsheets/d/", "")
+    |> String.split("/")
+    |> List.first()
   end
 
   @spec build_export_url(String.t()) :: String.t()
@@ -407,11 +441,7 @@ defmodule Glific.Sheets do
   """
   @spec execute(Action.t() | any(), FlowContext.t()) :: {FlowContext.t(), Messages.Message.t()}
   def execute(%{action_type: "WRITE"} = action, context) do
-    spreadsheet_id =
-      action.url
-      |> String.replace("https://docs.google.com/spreadsheets/d/", "")
-      |> String.split("/")
-      |> List.first()
+    spreadsheet_id = extract_spreadsheet_id(action.url)
 
     fields = FlowContext.get_vars_to_parse(context)
 
