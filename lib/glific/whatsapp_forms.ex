@@ -74,7 +74,6 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, org_id) do
-    IO.inspect(forms, label: "forms")
     WhatsappFormWorker.create_single_form_sync_job(forms, org_id)
     :ok
   end
@@ -313,8 +312,7 @@ defmodule Glific.WhatsappForms do
     comparable_fields = [:name, :definition, :categories, :status]
 
     Enum.any?(comparable_fields, fn field ->
-      a = Map.get(existing_form, field) != Map.get(attrs, field)
-      IO.inspect(a, label: field)
+      Map.get(existing_form, field) != Map.get(attrs, field)
     end)
   end
 end
