@@ -235,8 +235,11 @@ defmodule Glific.Sheets do
     end
   end
 
+  @doc """
+  Extracts the spreadsheet ID from a Google Sheets URL.
+  """
   @spec extract_spreadsheet_id(String.t()) :: String.t()
-  defp extract_spreadsheet_id(sheet_url) do
+  def extract_spreadsheet_id(sheet_url) do
     sheet_url
     |> String.replace("https://docs.google.com/spreadsheets/d/", "")
     |> String.split("/")

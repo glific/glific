@@ -256,7 +256,6 @@ defmodule Glific.WhatsappForms do
   @spec maybe_create_google_sheet(map()) ::
           {:ok, map()} | {:error, any()}
   defp maybe_create_google_sheet(attrs) do
-
     case Map.get(attrs, :google_sheet_url) do
       url when url in [nil, ""] ->
         {:ok, Map.put(attrs, :sheet_id, nil)}
@@ -320,23 +319,24 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @doc false
   @spec append_headers_to_sheet(WhatsappForm.t()) :: {:ok, any()} | {:error, any()}
-  defp append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
+  def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
 
-  defp append_headers_to_sheet(%{
-         definition: %{"screens" => screens},
-         sheet: %{url: url},
-         organization_id: organization_id
-       }) do
+  def append_headers_to_sheet(%{
+        definition: %{"screens" => screens},
+        sheet: %{url: url},
+        organization_id: organization_id
+      }) do
     with {:ok, complete_payload} <- extract_complete_payload(screens),
-         {:ok, spreadsheet_id} <- extract_spreadsheet_id(url),
+         spreadsheet_id <- Sheets.extract_spreadsheet_id(url),
          headers <- build_headers(complete_payload),
          {:ok, _result} <- insert_headers(organization_id, spreadsheet_id, headers) do
       {:ok, headers}
     end
   end
 
-  defp append_headers_to_sheet(_), do: {:error, "Invalid form structure"}
+  def append_headers_to_sheet(_), do: {:error, "Invalid form structure"}
 
   @spec extract_complete_payload(list()) :: {:ok, map()} | {:error, String.t()}
   defp extract_complete_payload(screens) do
@@ -369,17 +369,15 @@ defmodule Glific.WhatsappForms do
 
   defp extract_payload_from_child(_), do: nil
 
-  @spec extract_spreadsheet_id(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  defp extract_spreadsheet_id(url) do
-    case Regex.run(~r/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, url) do
-      [_, spreadsheet_id] -> {:ok, spreadsheet_id}
-      _ -> {:error, "Invalid Google Sheets URL"}
-    end
-  end
-
   @spec build_headers(map()) :: list(String.t())
   defp build_headers(complete_payload) do
-    default_headers = ["timestamp", "contact_phone_number", "whatsapp_form_id", "whatsapp_form_name"]
+    default_headers = [
+      "timestamp",
+      "contact_phone_number",
+      "whatsapp_form_id",
+      "whatsapp_form_name"
+    ]
+
     form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
 
     default_headers ++ form_headers

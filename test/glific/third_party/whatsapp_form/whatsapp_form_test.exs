@@ -15,18 +15,54 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     "version" => "7.2",
     "screens" => [
       %{
-        "id" => "RECOMMEND",
         "title" => "Feedback 1 of 2",
-        "data" => %{},
-        "layout" => %{}
+        "layout" => %{
+          "type" => "SingleColumnLayout",
+          "children" => []
+        },
+        "id" => "RECOMMEND",
+        "data" => %{}
       },
       %{
-        "id" => "RATE",
         "title" => "Feedback 2 of 2",
-        "data" => %{},
         "terminal" => true,
         "success" => true,
-        "layout" => %{}
+        "layout" => %{
+          "type" => "SingleColumnLayout",
+          "children" => [
+            %{
+              "type" => "Form",
+              "name" => "form",
+              "children" => [
+                %{
+                  "type" => "Footer",
+                  "on-click-action" => %{
+                    "payload" => %{
+                      "screen_1_Purchase_experience_0" => "${form.Purchase_experience}",
+                      "screen_1_Delivery_and_setup_1" => "${form.Delivery_and_setup}",
+                      "screen_1_Customer_service_2" => "${form.Customer_service}",
+                      "screen_0_Leave_a_comment_1" => "${data.screen_0_Leave_a_comment_1}",
+                      "screen_0_Choose_one_0" => "${data.screen_0_Choose_one_0}"
+                    },
+                    "name" => "complete"
+                  },
+                  "label" => "Done"
+                }
+              ]
+            }
+          ]
+        },
+        "id" => "RATE",
+        "data" => %{
+          "screen_0_Leave_a_comment_1" => %{
+            "type" => "string",
+            "__example__" => "Example"
+          },
+          "screen_0_Choose_one_0" => %{
+            "type" => "string",
+            "__example__" => "Example"
+          }
+        }
       }
     ]
   }
@@ -62,16 +98,10 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
-        cond do
-          String.contains?(url, "docs.google.com/spreadsheets") ->
-            %Tesla.Env{
-              status: 200,
-              body: "Key,Value\ntest1,value1\ntest2,value2"
-            }
-
-          true ->
-            %Tesla.Env{status: 200}
-        end
+        %Tesla.Env{
+          status: 200,
+          body: "Key,Value\ntest1,value1\ntest2,value2"
+        }
 
       %{method: :get, url: nil} ->
         {:error, :invalid_url}
@@ -81,16 +111,17 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
           String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
             %Tesla.Env{
               status: 200,
-              body: Jason.encode!(%{
-                "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
-                "updates" => %{
+              body:
+                Jason.encode!(%{
                   "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
-                  "updatedRange" => "A1:A1",
-                  "updatedRows" => 1,
-                  "updatedColumns" => 1,
-                  "updatedCells" => 1
-                }
-              })
+                  "updates" => %{
+                    "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                    "updatedRange" => "A1:A1",
+                    "updatedRows" => 1,
+                    "updatedColumns" => 1,
+                    "updatedCells" => 1
+                  }
+                })
             }
 
           String.contains?(url, "/flows") ->
@@ -403,5 +434,76 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     # Should still succeed and create the form
     assert {:ok, %{whatsapp_form: whatsapp_form2}} = result2
     assert whatsapp_form2.name == "Test Form 2"
+  end
+
+  test "returns correct headers extracted from real form structure", %{
+    organization_id: organization_id
+  } do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "spreadsheetId" => "test_id",
+              "updates" => %{
+                "updatedRange" => "A1:Z1",
+                "updatedRows" => 1
+              }
+            })
+        }
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      valid_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: organization_id
+      }
+
+      Partners.create_credential(valid_attrs)
+
+      # Create a form with the complete structure from @form_json
+      form = %WhatsappForms.WhatsappForm{
+        sheet_id: 1,
+        definition: @form_json,
+        sheet: %{
+          url: "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
+        },
+        organization_id: organization_id
+      }
+
+      assert {:ok, headers} = WhatsappForms.append_headers_to_sheet(form)
+
+      assert length(headers) == 9
+
+      # Verify default headers are present
+      assert "timestamp" in headers
+      assert "contact_phone_number" in headers
+      assert "whatsapp_form_id" in headers
+      assert "whatsapp_form_name" in headers
+
+      # Verify form fields extracted from form_json payload are present
+      assert "screen_1_Purchase_experience_0" in headers
+      assert "screen_1_Delivery_and_setup_1" in headers
+      assert "screen_1_Customer_service_2" in headers
+      assert "screen_0_Leave_a_comment_1" in headers
+      assert "screen_0_Choose_one_0" in headers
+    end
   end
 end
