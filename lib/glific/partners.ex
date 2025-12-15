@@ -20,6 +20,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
+    Mails.GupshupSetupMail,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -1008,20 +1009,27 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "gupshup") do
-    cond do
-      not valid_bsp?(credential) ->
-        Glific.Metrics.increment("Gupshup Credential Update Failed")
-        {:error, "App Name and API Key can't be empty"}
+    result =
+      cond do
+        not valid_bsp?(credential) ->
+          Glific.Metrics.increment("Gupshup Credential Update Failed")
+          {:error, "App Name and API Key can't be empty"}
 
-      credential.is_active ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
+        credential.is_active ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
 
-        set_bsp_app_id(organization, "gupshup")
+          set_bsp_app_id(organization, "gupshup")
 
-      true ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
-        {:ok, credential}
+        true ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+          {:ok, credential}
+      end
+
+    with {:ok, _} <- result do
+      GupshupSetupMail.send_gupshup_setup_completion_mail(organization)
     end
+
+    result
   end
 
   defp credential_update_callback(organization, credential, "gupshup_enterprise") do
