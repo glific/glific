@@ -375,6 +375,14 @@ defmodule Glific.WhatsappForms do
 
   defp extract_payload_from_child(_), do: nil
 
+  @spec extract_spreadsheet_id(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def extract_spreadsheet_id(url) do
+    case Regex.run(~r/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, url) do
+      [_, spreadsheet_id] -> {:ok, spreadsheet_id}
+      _ -> {:error, "Invalid Google Sheets URL"}
+    end
+  end
+
   @spec build_headers(map()) :: list(String.t())
   defp build_headers(complete_payload) do
     default_headers = [
