@@ -445,7 +445,7 @@ defmodule Glific.Flows.Webhook do
     if url == "nmt_tts_with_bhasini" do
       __MODULE__.new(payload, Keyword.merge(opts, priority: 2))
     else
-      __MODULE__.new(payload, queue: :gpt_webhook_queue, unique: nil)
+      __MODULE__.new(payload, opts)
     end
   end
 
