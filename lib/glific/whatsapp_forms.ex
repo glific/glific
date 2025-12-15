@@ -379,7 +379,7 @@ defmodule Glific.WhatsappForms do
 
   @spec build_headers(map()) :: list(String.t())
   defp build_headers(complete_payload) do
-    default_headers = ["timestamp", "contact_id", "whatsapp_form_id"]
+    default_headers = ["timestamp", "contact_phone_number", "whatsapp_form_id", "whatsapp_form_name"]
     form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
 
     default_headers ++ form_headers
