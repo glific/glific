@@ -319,7 +319,9 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @doc false
+  @doc """
+    Appends headers to the Google Sheet associated with the WhatsApp form.
+  """
   @spec append_headers_to_sheet(WhatsappForm.t()) :: {:ok, any()} | {:error, any()}
   def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
 
