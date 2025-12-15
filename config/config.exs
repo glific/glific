@@ -85,7 +85,7 @@ oban_plugins = [
   Oban.Pro.Plugins.DynamicLifeline,
   # only reprioritizing for gpt_webhook_queue for now
   {Oban.Pro.Plugins.DynamicPrioritizer,
-   after: :infinity, queue_overrides: [gpt_webhook_queue: :timer.minutes(5)], max_priority: 1}
+   after: :infinity, queue_overrides: [gpt_webhook_queue: :timer.minutes(5)]}
 ]
 
 config :glific, Oban,

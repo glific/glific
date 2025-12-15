@@ -15,7 +15,7 @@ defmodule Glific.Flows.Webhook do
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 1,
+    priority: 0,
     unique: [
       period: 60,
       fields: [:args, :worker],
