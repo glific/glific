@@ -72,9 +72,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @spec queue_whatsapp_form_sync(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   defp queue_whatsapp_form_sync(organization_id) do
     case WhatsappFormWorker.create_forms_sync_job(organization_id) do
-      {:ok, %{conflict?: true} = _response} ->
-        {:ok, %{message: "Whatsapp forms sync job already in progress"}}
-
       {:ok, _job} ->
         Notifications.create_notification(%{
           category: "WhatsApp Forms",

@@ -253,7 +253,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
               body: [
                 %{
                   id: "form-123",
-                  status: "Published",
+                  status: "draft",
                   name: "Customer Feedback Form",
                   description: "Form to collect customer feedback",
                   categories: ["survey"],

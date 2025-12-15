@@ -61,9 +61,8 @@ defmodule Glific.WhatsappForms do
   @spec sync_whatsapp_form(non_neg_integer()) ::
           :ok | {:error, String.t()}
   def sync_whatsapp_form(organization_id) do
-    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
-         :ok <- handle_single_form(forms, organization_id) do
-      :ok
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id) do
+      handle_single_form(forms, organization_id)
     else
       {:error, reason} ->
         {:error, reason}
@@ -75,6 +74,7 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, org_id) do
+    IO.inspect(forms, label: "forms")
     WhatsappFormWorker.create_single_form_sync_job(forms, org_id)
     :ok
   end
@@ -187,10 +187,12 @@ defmodule Glific.WhatsappForms do
 
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
       {:ok, existing_form} ->
-        if existing_form.status == :published do
-          {:ok, existing_form}
-        else
-          do_update_whatsapp_form(existing_form, attrs)
+        case is_form_changed?(existing_form, attrs) do
+          false ->
+            {:ok, existing_form}
+
+          true ->
+            do_update_whatsapp_form(existing_form, attrs)
         end
 
       {:error, _} ->
@@ -293,16 +295,26 @@ defmodule Glific.WhatsappForms do
   defp normalize_status(status) when is_binary(status) do
     status
     |> String.downcase()
+    |> String.to_existing_atom()
   end
 
   @spec normalize_categories(any()) :: list(atom() | String.t())
 
   defp normalize_categories(categories) when is_list(categories) do
-    categories
-    |> Enum.map(fn
-      category ->
-        category
-        |> String.downcase()
+    Enum.map(categories, fn category ->
+      category
+      |> to_string()
+      |> String.downcase()
+      |> String.to_existing_atom()
+    end)
+  end
+
+  defp is_form_changed?(%WhatsappForm{} = existing_form, attrs) do
+    comparable_fields = [:name, :definition, :categories, :status]
+
+    Enum.any?(comparable_fields, fn field ->
+      a = Map.get(existing_form, field) != Map.get(attrs, field)
+      IO.inspect(a, label: field)
     end)
   end
 end
