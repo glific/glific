@@ -423,7 +423,7 @@ defmodule Glific.Flows.WebhookTest do
     assert Webhook.execute(action, context) == nil
     assert Webhook.execute(action, context) == nil
 
-    [%{priority: 1, queue: "gpt_webhook_queue"} | _] =
+    [%{priority: 0, queue: "gpt_webhook_queue"} | _] =
       jobs = all_enqueued(worker: Webhook, prefix: "global")
 
     assert 2 == length(jobs)
