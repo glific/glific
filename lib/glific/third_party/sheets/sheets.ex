@@ -97,6 +97,10 @@ defmodule Glific.Sheets do
         {:error,
          "No edit access to the Google Sheet. Please ensure the service account has editor permissions."}
 
+      {:error, %Tesla.Env{status: 404}} ->
+        {:error,
+         "Google Sheet not found. Please ensure the URL is correct and the service account has access."}
+
       {:error, reason} ->
         {:error, "Failed to verify edit access: #{inspect(reason)}"}
     end
