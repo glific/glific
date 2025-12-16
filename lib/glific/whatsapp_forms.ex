@@ -62,10 +62,11 @@ defmodule Glific.WhatsappForms do
   @spec sync_whatsapp_form(non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def sync_whatsapp_form(organization_id) do
-    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id) do
-      {handle_single_form(forms, organization_id),
-       %{message: "Syncing of the form as been started in the background"}}
-    else
+    case ApiClient.list_whatsapp_forms(organization_id) do
+      {:ok, forms} ->
+        {handle_single_form(forms, organization_id),
+         %{message: "Syncing of the form as been started in the background"}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -213,7 +214,7 @@ defmodule Glific.WhatsappForms do
 
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
       {:ok, existing_form} ->
-        case is_form_changed?(existing_form, attrs) do
+        case form_changed?(existing_form, attrs) do
           false ->
             {:ok, existing_form}
 
@@ -335,7 +336,8 @@ defmodule Glific.WhatsappForms do
     end)
   end
 
-  defp is_form_changed?(%WhatsappForm{} = existing_form, attrs) do
+  @spec form_changed?(map(), map()) :: boolean()
+  defp form_changed?(%WhatsappForm{} = existing_form, attrs) do
     comparable_fields = [:name, :definition, :categories, :status]
 
     Enum.any?(comparable_fields, fn field ->

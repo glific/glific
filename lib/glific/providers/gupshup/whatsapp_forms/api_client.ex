@@ -84,11 +84,9 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   """
   @spec download(String.t()) :: {:ok, map()} | {:error, any()}
   def download(url) do
-    with {:ok, body} <- Tesla.get(url) |> parse_response("download_whatsapp_form_json") do
-      Jason.decode(body)
-    else
-      {:error, reason} ->
-        {:error, reason}
+    case Tesla.get(url) |> parse_response("download_whatsapp_form_json") do
+      {:ok, body} -> Jason.decode(body)
+      {:error, reason} -> {:error, reason}
     end
   end
 
