@@ -60,28 +60,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   Standard perform method to use Oban worker
   """
   @spec perform(Oban.Job.t()) :: {:error, any()} | :ok
-  def perform(%Oban.Job{args: %{"organization_id" => org_id, "sync_forms" => true}}) do
-    Repo.put_process_state(org_id)
-
-    case WhatsappForms.sync_whatsapp_form(org_id) do
-      :ok ->
-        Logger.info("Whatsapp Form sync completed successfully for org_id: #{org_id}")
-
-      {:error, reason} ->
-        Logger.error(
-          "Failed to sync whatsapp form for org_id: #{org_id}, reason: #{inspect(reason)}"
-        )
-
-        send_notification(
-          org_id,
-          "Failed to sync whatsapp forms: #{inspect(reason)}",
-          Notifications.types().critical
-        )
-    end
-
-    :ok
-  end
-
   def perform(%Oban.Job{
         args: %{
           "organization_id" => org_id,

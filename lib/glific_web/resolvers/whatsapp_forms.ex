@@ -4,10 +4,8 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
 
   alias Glific.{
-    Notifications,
     WhatsappForms,
-    WhatsappForms.WhatsappForm,
-    WhatsappForms.WhatsappFormWorker
+    WhatsappForms.WhatsappForm
   }
 
   require Logger
@@ -66,30 +64,7 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
 
   def sync_whatsapp_form(_, _, %{context: %{current_user: user}}) do
     user.organization_id
-    |> queue_whatsapp_form_sync()
-  end
-
-  @spec queue_whatsapp_form_sync(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
-  defp queue_whatsapp_form_sync(organization_id) do
-    case WhatsappFormWorker.create_forms_sync_job(organization_id) do
-      {:ok, _job} ->
-        Notifications.create_notification(%{
-          category: "WhatsApp Forms",
-          message: "Syncing of whatsapp form templates has started in the background.",
-          severity: Notifications.types().info,
-          organization_id: organization_id,
-          entity: %{Provider: "Gupshup"}
-        })
-
-        {:ok, %{message: "Whatsapp forms sync job queued successfully"}}
-
-      {:error, reason} ->
-        error_message =
-          "Failed to queue whatsapp form sync job for organization #{organization_id}: #{inspect(reason)}"
-
-        Logger.error(error_message)
-        {:error, error_message}
-    end
+    WhatsappForms.sync_whatsapp_form(user.organization_id)
   end
 
   @doc """

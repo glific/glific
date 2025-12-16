@@ -7,6 +7,7 @@ defmodule Glific.WhatsappForms do
 
   alias Glific.{
     Enums.WhatsappFormCategory,
+    Notifications,
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
@@ -59,10 +60,11 @@ defmodule Glific.WhatsappForms do
   Syncs a WhatsApp form from Gupshup
   """
   @spec sync_whatsapp_form(non_neg_integer()) ::
-          :ok | {:error, String.t()}
+          {:ok, String.t()} | {:error, String.t()}
   def sync_whatsapp_form(organization_id) do
     with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id) do
-      handle_single_form(forms, organization_id)
+      {handle_single_form(forms, organization_id),
+       %{message: "Syncing of the form as been started in the background"}}
     else
       {:error, reason} ->
         {:error, reason}
@@ -75,6 +77,15 @@ defmodule Glific.WhatsappForms do
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, org_id) do
     WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
+
+    Notifications.create_notification(%{
+      category: "WhatsApp Forms",
+      message: "Syncing of whatsapp form templates has started in the background.",
+      severity: Notifications.types().info,
+      organization_id: org_id,
+      entity: %{Provider: "Gupshup"}
+    })
+
     :ok
   end
 
