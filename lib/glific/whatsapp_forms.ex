@@ -76,6 +76,22 @@ defmodule Glific.WhatsappForms do
   """
   @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
   def handle_single_form(forms, org_id) do
+    meta_flow_ids =
+      forms
+      |> Enum.map(fn form -> form.id end)
+
+    published_ids =
+      WhatsappForm
+      |> where([w], w.meta_flow_id in ^meta_flow_ids and w.status == :published)
+      |> select([w], w.meta_flow_id)
+      |> Repo.all()
+      |> MapSet.new()
+
+    forms =
+      Enum.reject(forms, fn form ->
+        MapSet.member?(published_ids, form.id)
+      end)
+
     WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
 
     Notifications.create_notification(%{
