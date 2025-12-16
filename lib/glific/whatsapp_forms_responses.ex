@@ -15,20 +15,32 @@ defmodule Glific.WhatsappFormsResponses do
   @doc """
   Create a WhatsApp form response from the given attributes
   """
-  @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
+  @spec create_whatsapp_form_response(map()) ::
+          {:ok, WhatsappFormResponse.t()} | {:error, Ecto.Changeset.t() | String.t() | any()}
   def create_whatsapp_form_response(attrs) do
     with {:ok, whatsapp_form} <- get_wa_form(attrs.template_id),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
-         {:ok, decoded_response} <- Jason.decode(attrs.raw_response) do
-      %{
-        raw_response: decoded_response,
-        contact_id: attrs.sender_id,
-        submitted_at: parsed_timestamp,
-        whatsapp_form_id: whatsapp_form.id,
-        organization_id: attrs.organization_id
-      }
-      |> do_create_whatsapp_form_response()
-      |> write_to_google_sheet(whatsapp_form)
+         {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
+         {:ok, result} <-
+           do_create_whatsapp_form_response(%{
+             raw_response: decoded_response,
+             contact_id: attrs.sender_id,
+             submitted_at: parsed_timestamp,
+             whatsapp_form_id: whatsapp_form.id,
+             organization_id: attrs.organization_id
+           }) do
+      payload =
+        result
+        |> Map.from_struct()
+        |> Map.put(:whatsapp_form_name, whatsapp_form.name)
+        |> Map.put(:contact_number, attrs.sender.phone)
+
+      Task.start(fn ->
+        Repo.put_process_state(attrs.organization_id)
+        write_to_google_sheet(payload, whatsapp_form)
+      end)
+
+      {:ok, result}
     end
   end
 
@@ -57,51 +69,55 @@ defmodule Glific.WhatsappFormsResponses do
     |> Repo.insert()
   end
 
-  defp write_to_google_sheet({:ok, response}, whatsapp_form) do
-    organization_id = response.organization_id
-
-    payload =
-      response.raw_response
-      |> Map.delete("flow_token")
-      |> Map.put("contact_id", to_string(response.contact_id))
-      |> Map.put("timestamp", response.submitted_at |> DateTime.to_string())
-      |> Map.put("whatsapp_form_id", to_string(response.whatsapp_form_id))
-
-    with {:ok, spreadsheet_id} <- get_spreadsheet_id(whatsapp_form),
-         {:ok, headers} <- GoogleSheets.get_headers(organization_id, spreadsheet_id),
-         {:ok, ordered_row} <- prepare_row_from_headers(payload, headers) do
-      GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
-        range: "A:A",
-        data: [ordered_row]
-      })
+  @spec write_to_google_sheet(map(), WhatsappForm.t()) ::
+          {:ok, WhatsappFormResponse.t()} | {:error, any()}
+  defp write_to_google_sheet(response, %{sheet_id: sheet_id} = whatsapp_form)
+       when not is_nil(sheet_id) do
+    with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
+         {:ok, ordered_row} <- prepare_row_from_headers(response, spreadsheet_id),
+         {:ok, _result} <-
+           insert_row_in_sheet(response.organization_id, spreadsheet_id, ordered_row) do
+      {:ok, response}
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp get_spreadsheet_id(whatsapp_form) do
-    whatsapp_form = Repo.preload(whatsapp_form, [:sheet])
-    url = whatsapp_form.sheet.url
-
-    WhatsappForms.extract_spreadsheet_id(url)
+  defp write_to_google_sheet(response, _whatsapp_form) do
+    {:ok, response}
   end
 
-  defp write_to_google_sheet(error, _whatsapp_form), do: error
+  @spec get_spreadsheet_id(WhatsappForm.t()) :: String.t()
+  defp get_spreadsheet_id(whatsapp_form) do
+    whatsapp_form = Repo.preload(whatsapp_form, [:sheet])
+    Sheets.extract_spreadsheet_id(whatsapp_form.sheet.url)
+  end
 
-  @spec prepare_row_from_headers(map(), list(String.t())) ::
-          {:ok, list(String.t())} | {:error, String.t()}
-  defp prepare_row_from_headers(payload, headers) do
-    payload_keys = MapSet.new(Map.keys(payload))
-    header_keys = MapSet.new(headers)
+  @spec insert_row_in_sheet(non_neg_integer(), String.t(), list(String.t())) ::
+          {:ok, any()} | {:error, any()}
+  defp insert_row_in_sheet(organization_id, spreadsheet_id, values) do
+    GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
+      range: "A:A",
+      data: [values]
+    })
+  end
 
-    # Check if all payload keys exist in headers
-    missing_keys = MapSet.difference(payload_keys, header_keys)
+  @doc false
+  @spec prepare_row_from_headers(map(), String.t()) ::
+          {:ok, list(String.t())} | {:error, any()}
+  defp prepare_row_from_headers(response, spreadsheet_id) do
+    organization_id = response.organization_id
 
-    if MapSet.size(missing_keys) > 0 do
-      {:error,
-       "Response keys do not match Google Sheet headers. Missing headers: #{Enum.join(missing_keys, ", ")}"}
-    else
-      # Create ordered row based on headers
+    payload =
+      response.raw_response
+      |> Map.delete("flow_token")
+      |> Map.put("contact_phone_number", to_string(response.contact_number))
+      |> Map.put("timestamp", response.submitted_at |> DateTime.to_string())
+      |> Map.put("whatsapp_form_id", to_string(response.whatsapp_form_id))
+      |> Map.put("whatsapp_form_name", response.whatsapp_form_name)
+
+
+    with {:ok, headers} <- GoogleSheets.get_headers(organization_id, spreadsheet_id) do
       ordered_row =
         Enum.map(headers, fn header ->
           Map.get(payload, header, "")
