@@ -256,12 +256,12 @@ defmodule Glific.WhatsappForms do
   @spec maybe_create_google_sheet(map()) ::
           {:ok, map()} | {:error, any()}
   defp maybe_create_google_sheet(attrs) do
-    case Map.get(attrs, :google_sheet_url) do
-      url when url in [nil, ""] ->
-        {:ok, Map.put(attrs, :sheet_id, nil)}
+    url = Map.get(attrs, :google_sheet_url)
 
-      url when is_binary(url) ->
-        handle_google_sheet(attrs, url)
+    if url in [nil, ""] do
+      {:ok, Map.put(attrs, :sheet_id, nil)}
+    else
+      handle_google_sheet(attrs, url)
     end
   end
 
