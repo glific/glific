@@ -13,18 +13,9 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   }
 
   use Oban.Worker,
-    queue: :whatsapp_form,
+    queue: :default,
     max_attempts: 2,
     priority: 2
-
-  @doc """
-  Create a job to sync WhatsApp forms for the given organization ID.
-  """
-  @spec create_forms_sync_job(non_neg_integer()) :: {:ok, Oban.Job.t()} | {:error, any()}
-  def create_forms_sync_job(org_id) do
-    __MODULE__.new(%{"organization_id" => org_id, "sync_forms" => true})
-    |> Oban.insert()
-  end
 
   @doc """
   Schedules the next WhatsApp form sync job for an organization.
@@ -34,13 +25,16 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   def schedule_next_form_sync(forms, org_id) do
     case forms do
       [first | rest] ->
-        __MODULE__.new(%{
-          "organization_id" => org_id,
-          "form" => first,
-          "forms" => rest,
-          "sync_single" => true
-        })
-        |> Oban.insert(schedule_in: 1)
+        __MODULE__.new(
+          %{
+            "organization_id" => org_id,
+            "form" => first,
+            "forms" => rest,
+            "sync_single" => true
+          },
+          schedule_in: 1
+        )
+        |> Oban.insert()
 
       [] ->
         Logger.info("[WORKER] All forms processed for org #{org_id}")
