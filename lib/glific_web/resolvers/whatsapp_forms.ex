@@ -63,7 +63,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   end
 
   def sync_whatsapp_form(_, _, %{context: %{current_user: user}}) do
-    user.organization_id
     WhatsappForms.sync_whatsapp_form(user.organization_id)
   end
 

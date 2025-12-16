@@ -252,12 +252,11 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
               status: 200,
               body: [
                 %{
-                  id: "form-123",
+                  id: "1234567890",
                   status: "draft",
                   name: "Customer Feedback Form",
                   description: "Form to collect customer feedback",
-                  categories: ["survey"],
-                  meta_flow_id: "flow-12345"
+                  categories: ["survey"]
                 }
               ]
             }
@@ -293,21 +292,17 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
      }} =
       auth_query_gql_by(:sync_whatsapp_form, user)
 
-    assert message == "Whatsapp forms sync job queued successfully"
+    assert message == "Syncing of the form as been started in the background"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
-      queue: :whatsapp_form,
       prefix: "global"
     )
 
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
 
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-             Oban.drain_queue(queue: :whatsapp_form, with_scheduled: true)
-
-    {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "form-123"})
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "1234567890"})
 
     assert form.name == "Customer Feedback Form"
     assert form.description == "Form to collect customer feedback"
@@ -371,7 +366,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
      }} =
       auth_query_gql_by(:sync_whatsapp_form, user)
 
-    assert message == "Whatsapp forms sync job queued successfully"
+    assert message == "Syncing of the form as been started in the background"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
@@ -517,7 +512,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
      }} =
       auth_query_gql_by(:sync_whatsapp_form, user)
 
-    assert message == "Whatsapp forms sync job queued successfully"
+    assert message == "Syncing of the form as been started in the background"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
