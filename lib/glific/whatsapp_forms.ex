@@ -12,6 +12,7 @@ defmodule Glific.WhatsappForms do
     Repo,
     Sheets,
     Sheets.GoogleSheets,
+    Sheets.Sheet,
     WhatsappForms.WhatsappForm
   }
 
@@ -266,17 +267,13 @@ defmodule Glific.WhatsappForms do
   end
 
   @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
-  defp handle_google_sheet(%{operation: :create} = attrs, url) do
-    create_new_sheet(attrs, url)
-  end
-
-  @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
   defp handle_google_sheet(%{operation: :update, sheet_id: sheet_id} = attrs, url)
        when not is_nil(sheet_id) do
     update_existing_sheet(attrs, url, sheet_id)
   end
 
-  defp handle_google_sheet(%{operation: :update} = attrs, url) do
+  defp handle_google_sheet(%{operation: operation} = attrs, url)
+       when operation in [:create, :update] do
     create_new_sheet(attrs, url)
   end
 
@@ -301,8 +298,8 @@ defmodule Glific.WhatsappForms do
   @spec update_existing_sheet(map(), String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
   defp update_existing_sheet(attrs, url, sheet_id) do
-    case Sheets.get_sheet!(sheet_id) do
-      sheet ->
+    case Repo.fetch_by(Sheet, %{id: sheet_id}) do
+      {:ok, sheet} ->
         case Sheets.update_sheet(sheet, %{
                url: url,
                label: "WhatsApp Form - #{attrs.name}",
@@ -316,6 +313,13 @@ defmodule Glific.WhatsappForms do
             Logger.error("Failed to update Google Sheet for WhatsApp form: #{inspect(reason)}")
             {:error, reason}
         end
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to fetch existing Google Sheet for WhatsApp form: #{inspect(reason)}"
+        )
+
+        {:error, reason}
     end
   end
 

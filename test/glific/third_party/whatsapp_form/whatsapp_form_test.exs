@@ -97,15 +97,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     }
 
     Tesla.Mock.mock(fn
-      %{method: :get, url: url} when is_binary(url) ->
-        %Tesla.Env{
-          status: 200,
-          body: "Key,Value\ntest1,value1\ntest2,value2"
-        }
-
-      %{method: :get, url: nil} ->
-        {:error, :invalid_url}
-
       %{method: :post, url: url} ->
         cond do
           String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
