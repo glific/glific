@@ -3,6 +3,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   Controller for allocating trial accounts to users via an API endpoint.
   """
   use GlificWeb, :controller
+  require Logger
 
   alias Glific.{
     Contacts,
@@ -23,52 +24,47 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   """
   @spec trial(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def trial(conn, params) do
-    token = get_req_header(conn, "x-api-key") |> List.first()
-    expected_token = get_token()
+    phone = params["phone"]
 
-    if token == expected_token do
-      phone = params["phone"]
+    with {:ok, _message} <-
+           RegistrationController.verify_otp(phone, params["otp"]),
+         {:ok, result} <- allocate_trial_account(phone, params) do
+      shortcode = result.update_organization.shortcode
 
-      with {:ok, _message} <- RegistrationController.verify_otp(phone, params["otp"]),
-           {:ok, result} <- allocate_trial_account(phone, params) do
-        shortcode = result.update_organization.shortcode
-
-        json(conn, %{
-          success: true,
-          data: %{
-            login_url: "https://#{shortcode}.glific.com"
-          }
-        })
-      else
-        {:error, error_list} when is_list(error_list) ->
-          conn
-          |> put_status(400)
-          |> json(%{
-            success: false,
-            error: "Invalid OTP"
-          })
-
-        {:error, :organization, :no_available_accounts, _changes} ->
-          conn
-          |> put_status(503)
-          |> json(%{
-            success: false,
-            error: "No trial accounts available at the moment"
-          })
-
-        # All other Multi errors
-        {:error, _failed_step, _reason, _changes} ->
-          conn
-          |> put_status(500)
-          |> json(%{
-            success: false,
-            error: "Something went wrong"
-          })
-      end
+      json(conn, %{
+        success: true,
+        data: %{
+          login_url: "https://#{shortcode}.glific.com"
+        }
+      })
     else
-      conn
-      |> put_status(:unauthorized)
-      |> json(%{success: false, error: "Invalid API token"})
+      {:error, error_list} when is_list(error_list) ->
+        conn
+        |> put_status(400)
+        |> json(%{
+          success: false,
+          error: "Invalid OTP"
+        })
+
+      {:error, :organization, :no_available_accounts, _changes} ->
+        conn
+        |> json(%{
+          success: false,
+          error: "No trial accounts available at the moment"
+        })
+
+      # All other Multi errors
+      {:error, failed_step, reason, _changes} ->
+        Logger.error(
+          "Trial account allocation failed at #{failed_step}, reason: #{inspect(reason)}"
+        )
+
+        conn
+        |> put_status(500)
+        |> json(%{
+          success: false,
+          error: "Something went wrong"
+        })
     end
   end
 
@@ -147,14 +143,11 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       roles: ["admin"],
       organization_id: organization.id,
       language_id: organization.default_language_id,
-      last_login_at: DateTime.utc_now(),
+      last_login_at: nil,
       last_login_from: "127.0.0.1",
       contact_id: contact.id
     }
 
     Users.create_user(user_params)
   end
-
-  @spec get_token() :: String.t()
-  defp get_token, do: Application.fetch_env!(:glific, __MODULE__)[:trial_account_token]
 end
