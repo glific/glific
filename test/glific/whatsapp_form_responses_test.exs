@@ -120,7 +120,7 @@ defmodule Glific.WhatsappFormResponsesTest do
              Jason.decode!(attrs.raw_response)
   end
 
-  test "prepare_row_from_headers/1 creates a correct headers",
+  test "prepare_row_from_headers/2 returns the correct headers",
        %{organization_id: organization_id} do
     with_mock(
       Goth.Token,
