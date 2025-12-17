@@ -4,6 +4,7 @@ defmodule Glific.Contacts.Import do
   """
   import Ecto.Query, warn: false
 
+  require Logger
   alias Glific.Settings.Language
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -25,6 +26,8 @@ defmodule Glific.Contacts.Import do
   }
 
   use Publicist
+
+  @contact_job_chunk_size 100
 
   @doc """
   This method allows importing of contacts to a particular organization and group
@@ -174,7 +177,12 @@ defmodule Glific.Contacts.Import do
     |> Repo.all()
   end
 
-  @spec cleanup_contact_data(map(), map(), String.t()) :: map()
+  @spec cleanup_contact_data(map() | String.t(), map(), String.t()) :: map()
+  defp cleanup_contact_data(%{"phone" => phone} = data, _contact_attrs, _date_format)
+       when phone in ["", nil] do
+    data
+  end
+
   defp cleanup_contact_data(
          data,
          %{user: _user, organization_id: organization_id} = contact_attrs,
@@ -189,6 +197,10 @@ defmodule Glific.Contacts.Import do
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
     |> add_language(data["language"])
+  end
+
+  defp cleanup_contact_data(_data, _contact_attrs, _date_format) do
+    nil
   end
 
   defp get_collection(:import_contact, data, contact_attrs) do
@@ -281,7 +293,7 @@ defmodule Glific.Contacts.Import do
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
       |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-      |> Stream.chunk_every(opts[:bsp_limit])
+      |> Stream.chunk_every(@contact_job_chunk_size)
       |> Stream.with_index()
       |> Enum.map(fn {chunk, index} ->
         ImportWorker.make_job(chunk, params, user_job.id, index * 2)
