@@ -352,7 +352,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
      }} =
       auth_query_gql_by(:sync_whatsapp_form, user)
 
-    assert message == "Syncing of the form as been started in the background"
+    assert message == "Syncing of the form has been started in the background"
 
     assert_enqueued(
       worker: WhatsappFormWorker,
