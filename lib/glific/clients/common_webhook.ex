@@ -231,11 +231,11 @@ defmodule Glific.Clients.CommonWebhook do
     speech_engine = Map.get(fields, "speech_engine", "")
 
     cond do
-      speech_engine == "open_ai" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
       speech_engine == "bhashini" && source_language == target_language ->
         Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+
+      speech_engine == "open_ai" && source_language == target_language ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       source_language == target_language && source_language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
