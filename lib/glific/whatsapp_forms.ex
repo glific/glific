@@ -65,7 +65,7 @@ defmodule Glific.WhatsappForms do
     case ApiClient.list_whatsapp_forms(organization_id) do
       {:ok, forms} ->
         {handle_single_form(forms, organization_id),
-         %{message: "Syncing of the form as been started in the background"}}
+         %{message: "Syncing of the form has been started in the background"}}
 
       {:error, reason} ->
         {:error, reason}
