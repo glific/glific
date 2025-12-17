@@ -184,7 +184,7 @@ defmodule Glific.Contacts.Import do
   end
 
   defp cleanup_contact_data(
-         data,
+         %{} = data,
          %{user: _user, organization_id: organization_id} = contact_attrs,
          _date_format
        ) do
@@ -199,8 +199,9 @@ defmodule Glific.Contacts.Import do
     |> add_language(data["language"])
   end
 
+  # Handling parsing errors for particular rows
   defp cleanup_contact_data(_data, _contact_attrs, _date_format) do
-    nil
+    %{}
   end
 
   defp get_collection(:import_contact, data, contact_attrs) do
