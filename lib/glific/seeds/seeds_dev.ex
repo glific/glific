@@ -2097,7 +2097,6 @@ if Code.ensure_loaded?(Faker) do
       end)
     end
 
-    @doc false
     @spec seed_sheets(Organization.t()) :: :ok
     defp seed_sheets(organization) do
       sheets = [
