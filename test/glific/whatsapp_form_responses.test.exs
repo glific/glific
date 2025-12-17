@@ -3,8 +3,8 @@ defmodule Glific.WhatsappFormResponsesTest do
   import Mock
 
   alias Glific.{
-    Repo,
     Partners,
+    Repo,
     Seeds.SeedsDev,
     Templates,
     WhatsappForms.WhatsappForm,
