@@ -2,6 +2,9 @@ defmodule Glific.WhatsappFormsResponses do
   @moduledoc """
   Module to handle WhatsApp Form Responses
   """
+  import Ecto.Query, warn: false
+  use Publicist
+  require Logger
 
   alias Glific.{
     Sheets.GoogleSheets,
@@ -37,7 +40,16 @@ defmodule Glific.WhatsappFormsResponses do
 
       Task.start(fn ->
         Repo.put_process_state(attrs.organization_id)
-        write_to_google_sheet(payload, whatsapp_form)
+
+        case write_to_google_sheet(payload, whatsapp_form) do
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.error(
+              "Failed to write WhatsApp form response to Google Sheet: #{inspect(reason)}"
+            )
+        end
       end)
 
       {:ok, result}
@@ -70,7 +82,7 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   @spec write_to_google_sheet(map(), WhatsappForm.t()) ::
-          {:ok, WhatsappFormResponse.t()} | {:error, any()}
+          {:ok, map()} | {:error, any()}
   defp write_to_google_sheet(response, %{sheet_id: sheet_id} = whatsapp_form)
        when not is_nil(sheet_id) do
     with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
