@@ -58,10 +58,6 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   @spec sync_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
 
-  def sync_whatsapp_form(_, _, %{context: %{current_user: %{organization_id: nil}}}) do
-    {:error, "organization_id is not given"}
-  end
-
   def sync_whatsapp_form(_, _, %{context: %{current_user: user}}) do
     WhatsappForms.sync_whatsapp_form(user.organization_id)
   end

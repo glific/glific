@@ -303,7 +303,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
               body: [
                 %{
                   id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
-                  status: "draft",
+                  status: "published",
                   name: "Customer Feedback Form",
                   categories: ["survey"]
                 },
@@ -337,10 +337,17 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
         end
     end)
 
-    {:ok, previous_form} =
+    {:ok, existing_form1} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-    assert previous_form.status == :draft
+    {:ok, existing_form2} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert existing_form1.status == :draft
+
+    {:ok, existing_form2}
+    assert existing_form2.status == :published
+    assert existing_form2.name == "sign_up_form"
 
     {:ok,
      %{
@@ -362,24 +369,14 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :default, with_scheduled: true)
 
-    {:ok, updated_form} =
+    {:ok, updated_form1} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-    assert updated_form.status == :published
-    assert updated_form.name == "Customer"
-  end
+    {:ok, updated_form2} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
 
-  test "sync whatsapp form with business manager if organization_id is nil",
-       %{
-         manager: user
-       } do
-    user = Map.put(user, :organization_id, nil)
-    result = auth_query_gql_by(:sync_whatsapp_form, user)
-    assert {:ok, query_data} = result
-    forms = get_in(query_data, [:errors])
-    forms_error = List.first(forms)
-
-    assert forms_error.message ==
-             "organization_id is not given"
+    assert updated_form1.status == :published
+    assert updated_form1.name == "Customer"
+    assert updated_form2.name == "sign_up_form"
   end
 end
