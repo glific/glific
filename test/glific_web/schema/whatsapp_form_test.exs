@@ -345,7 +345,6 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
 
     assert existing_form1.status == :draft
 
-    {:ok, existing_form2}
     assert existing_form2.status == :published
     assert existing_form2.name == "sign_up_form"
 
