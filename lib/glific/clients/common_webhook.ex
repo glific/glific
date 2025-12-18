@@ -384,7 +384,7 @@ defmodule Glific.Clients.CommonWebhook do
   defp normalize_language(nil), do: ""
   defp normalize_language(language), do: String.downcase(language)
 
-  @spec handle_tts_only(String.t(), String.t(), String.t(), String.t()) :: map()
+  @spec handle_tts_only(String.t(), String.t(), String.t(), String.t()) :: map() | String.t()
   defp handle_tts_only(language, org_id, text, speech_engine) do
     cond do
       speech_engine == "bhashini" ->
