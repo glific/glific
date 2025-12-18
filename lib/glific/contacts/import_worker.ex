@@ -105,7 +105,7 @@ defmodule Glific.Contacts.ImportWorker do
     end
   end
 
-  defp validate_contact(_), do: %{"error" => "Failed to parse row"}
+  defp validate_contact(_), do: %{"error" => "Failed to parse some rows"}
 
   @spec validate_name(String.t(), String.t()) :: map()
   defp validate_name(name, phone) when name in [nil, ""] do

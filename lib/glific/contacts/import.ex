@@ -4,7 +4,6 @@ defmodule Glific.Contacts.Import do
   """
   import Ecto.Query, warn: false
 
-  require Logger
   alias Glific.Settings.Language
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -45,7 +44,6 @@ defmodule Glific.Contacts.Import do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
-    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     contact_attrs = %{
@@ -62,8 +60,6 @@ defmodule Glific.Contacts.Import do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
-
-    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
@@ -199,7 +195,7 @@ defmodule Glific.Contacts.Import do
     |> add_language(data["language"])
   end
 
-  # Handling parsing errors for particular rows
+  # Handling csv parsing errors for rows
   defp cleanup_contact_data(_data, _contact_attrs, _date_format) do
     %{}
   end
@@ -472,20 +468,5 @@ defmodule Glific.Contacts.Import do
   defp add_default_language(results) do
     {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
     Map.put(results, :language_id, en.id)
-  end
-
-  @spec get_bsp_limit(non_neg_integer()) :: non_neg_integer()
-  defp get_bsp_limit(organization_id) do
-    case Partners.organization(organization_id) do
-      {:error, _} ->
-        30
-
-      organization ->
-        bsp_limit = organization.services["bsp"].keys["bsp_limit"]
-        bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
-
-        # lets do 80% of organization bsp limit to allow replies to come in and be processed
-        div(bsp_limit * 80, 100)
-    end
   end
 end
