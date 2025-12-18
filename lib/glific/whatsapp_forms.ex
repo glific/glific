@@ -204,7 +204,7 @@ defmodule Glific.WhatsappForms do
   def sync_single_form(form, form_json, organization_id) do
     attrs = %{
       name: form["name"],
-      status: normalize_status(form["status"]),
+      status: form["status"] |> String.downcase(),
       categories: normalize_categories(form["categories"]),
       definition: form_json,
       description: Map.get(form, "description", ""),
@@ -317,14 +317,6 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @spec normalize_status(any()) :: atom() | String.t()
-
-  defp normalize_status(status) when is_binary(status) do
-    status
-    |> String.downcase()
-    |> String.to_existing_atom()
-  end
-
   @spec normalize_categories(any()) :: list(atom() | String.t())
 
   defp normalize_categories(categories) when is_list(categories) do
@@ -332,7 +324,6 @@ defmodule Glific.WhatsappForms do
       category
       |> to_string()
       |> String.downcase()
-      |> String.to_existing_atom()
     end)
   end
 
