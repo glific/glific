@@ -180,10 +180,11 @@ defmodule Glific.Contacts.Import do
   end
 
   defp cleanup_contact_data(
-         %{} = data,
+         data,
          %{user: _user, organization_id: organization_id} = contact_attrs,
          _date_format
-       ) do
+       )
+       when is_map(data) do
     %{
       name: data["name"],
       phone: data["phone"],
