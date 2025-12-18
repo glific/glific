@@ -33,7 +33,7 @@
   },
   {
     "name": "call_and_wait",
-    "body": "{\n  \"question\": \"\",\n  \"flow_id\": \"\",\n  \"endpoint\": \"\",\n  \"contact_id\": \"\",\n  \"callback_url\": \"\",\n  \"assistant_id\": \"\"\n}",
+    "body": "{\n  \"question\": \"\",\n  \"flow_id\": \"\",\n \"project_id\": \"\",\n \"endpoint\": \"\",\n  \"contact_id\": \"\",\n  \"callback_url\": \"\",\n  \"assistant_id\": \"\"\n}",
     "headers": "{\n  \"Content-Type\": \"application/json\",\n  \"X-API-KEY\": \"<organization_api_key>\"\n}",
     "response_format_example": "{\"success\": true, \"result\": {\"status\": \"completed\", \"message\": \"Callback will resume the flow\"}}"
   },
