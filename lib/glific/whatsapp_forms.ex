@@ -64,7 +64,7 @@ defmodule Glific.WhatsappForms do
   def sync_whatsapp_form(organization_id) do
     case ApiClient.list_whatsapp_forms(organization_id) do
       {:ok, forms} ->
-        {handle_single_form(forms, organization_id),
+        {sync_all_forms_for_org(forms, organization_id),
          %{message: "Syncing of the form has been started in the background"}}
 
       {:error, reason} ->
@@ -73,10 +73,10 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  Handles syncing of a single WhatsApp form.
+  Handles syncing of a all WhatsApp form.
   """
-  @spec handle_single_form(list(map()), non_neg_integer()) :: :ok
-  def handle_single_form(forms, org_id) do
+  @spec sync_all_forms_for_org(list(map()), non_neg_integer()) :: :ok
+  def sync_all_forms_for_org(forms, org_id) do
     meta_flow_ids =
       forms
       |> Enum.map(fn form -> form.id end)
@@ -93,7 +93,7 @@ defmodule Glific.WhatsappForms do
         MapSet.member?(published_ids, form.id)
       end)
 
-    WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
+    :ok = WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
 
     Notifications.create_notification(%{
       category: "WhatsApp Forms",
