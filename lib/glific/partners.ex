@@ -51,21 +51,34 @@ defmodule Glific.Partners do
   """
   @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
+    org_id = Repo.get_organization_id()
+    excluded_providers = get_excluded_providers(org_id)
+
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(
-        [
-          "goth",
-          "kaapi",
-          "gupshup_enterprise",
-          "navana_tech",
-          "google_asr",
-          "dialogflow",
-          "open_ai"
-        ],
-        provider.shortcode
-      )
+      Enum.member?(excluded_providers, provider.shortcode)
     end)
+  end
+
+  @spec get_excluded_providers(non_neg_integer()) :: [String.t()]
+  defp get_excluded_providers(org_id) do
+    providers = [
+      "goth",
+      "kaapi",
+      "gupshup_enterprise",
+      "navana_tech",
+      "google_asr",
+      "dialogflow",
+      "open_ai"
+    ]
+
+    case get_organization!(org_id) do
+      %{is_trial_org: true} ->
+        ["google_cloud_storage" | providers]
+
+      _ ->
+        providers
+    end
   end
 
   @doc """
