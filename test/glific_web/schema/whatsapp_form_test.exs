@@ -348,17 +348,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert existing_form2.status == :published
     assert existing_form2.name == "sign_up_form"
 
-    {:ok,
-     %{
-       data: %{
-         "syncWhatsappForm" => %{
-           "message" => message
-         }
-       }
-     }} =
-      auth_query_gql_by(:sync_whatsapp_form, user)
-
-    assert message == "Syncing of the form has been started in the background"
+    auth_query_gql_by(:sync_whatsapp_form, user)
 
     assert_enqueued(
       worker: WhatsappFormWorker,

@@ -21,7 +21,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   Schedules the next WhatsApp form sync job for an organization.
   Takes a list of remaining forms and schedules the next job with rate limiting.
   """
-  @spec schedule_next_form_sync(list(map()), non_neg_integer()) :: :ok
+  @spec schedule_next_form_sync(list(map()), non_neg_integer()) :: {:ok, any()} | {:error, any()}
   def schedule_next_form_sync(forms, org_id) do
     case forms do
       [first | rest] ->
@@ -45,8 +45,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
           Notifications.types().info
         )
     end
-
-    :ok
   end
 
   @impl Oban.Worker

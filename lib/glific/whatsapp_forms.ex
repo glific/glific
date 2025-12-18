@@ -60,22 +60,18 @@ defmodule Glific.WhatsappForms do
   Syncs a WhatsApp form from Gupshup
   """
   @spec sync_whatsapp_form(non_neg_integer()) ::
-          {:ok, String.t()} | {:error, String.t()}
+          {:ok, String.t()} | {:error, any()}
   def sync_whatsapp_form(organization_id) do
-    case ApiClient.list_whatsapp_forms(organization_id) do
-      {:ok, forms} ->
-        {sync_all_forms_for_org(forms, organization_id),
-         %{message: "Syncing of the form has been started in the background"}}
-
-      {:error, reason} ->
-        {:error, reason}
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
+         {:ok, _} <- sync_all_forms_for_org(forms, organization_id) do
+      {:ok, %{message: "Syncing of WhatsApp forms has started in the background."}}
     end
   end
 
   @doc """
   Handles syncing of a all WhatsApp form.
   """
-  @spec sync_all_forms_for_org(list(map()), non_neg_integer()) :: :ok
+  @spec sync_all_forms_for_org(list(map()), non_neg_integer()) :: {:ok, any()} | {:error, any()}
   def sync_all_forms_for_org(forms, org_id) do
     meta_flow_ids =
       forms
@@ -93,8 +89,6 @@ defmodule Glific.WhatsappForms do
         MapSet.member?(published_ids, form.id)
       end)
 
-    :ok = WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
-
     Notifications.create_notification(%{
       category: "WhatsApp Forms",
       message: "Syncing of whatsapp form templates has started in the background.",
@@ -103,7 +97,7 @@ defmodule Glific.WhatsappForms do
       entity: %{Provider: "Gupshup"}
     })
 
-    :ok
+    WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
   end
 
   @doc """
