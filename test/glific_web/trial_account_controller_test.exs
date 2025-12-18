@@ -11,7 +11,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
   alias GlificWeb.API.V1.TrialAccountController
 
-  @valid_token "test-trial-token-12345"
   @valid_phone "9876543210"
   @password "Secret1234!"
 
@@ -19,12 +18,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
-
-    Application.put_env(:glific, TrialAccountController, trial_account_token: @valid_token)
-
-    on_exit(fn ->
-      Application.delete_env(:glific, TrialAccountController)
-    end)
 
     :ok
   end
@@ -60,10 +53,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         "name" => "Test User",
         "password" => @password
       }
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
 
       conn = TrialAccountController.trial(conn, params)
       response = json_response(conn, 200)
@@ -101,35 +90,11 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         "password" => @password
       }
 
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
-
       conn = TrialAccountController.trial(conn, params)
 
       assert json_response(conn, 400) == %{
                "success" => false,
                "error" => "Invalid OTP"
-             }
-    end
-
-    test "returns error with invalid API token", %{conn: conn, valid_otp: valid_otp} do
-      params = %{
-        "phone" => @valid_phone,
-        "otp" => valid_otp,
-        "name" => "Test User",
-        "password" => @password
-      }
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", "invalid-token")
-
-      conn = TrialAccountController.trial(conn, params)
-
-      assert json_response(conn, 401) == %{
-               "success" => false,
-               "error" => "Invalid API token"
              }
     end
 
@@ -157,13 +122,9 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         "password" => @password
       }
 
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
-
       conn = TrialAccountController.trial(conn, params)
 
-      assert json_response(conn, 503) == %{
+      assert json_response(conn, 200) == %{
                "success" => false,
                "error" => "No trial accounts available at the moment"
              }
@@ -177,10 +138,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         "name" => nil,
         "password" => @password
       }
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
 
       conn = TrialAccountController.trial(conn, params)
 
@@ -205,10 +162,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       }
 
       before_allocation = DateTime.utc_now() |> DateTime.truncate(:second)
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
 
       TrialAccountController.trial(conn, params)
 
@@ -236,10 +189,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         "name" => nil,
         "password" => @password
       }
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
 
       conn = TrialAccountController.trial(conn, params)
 
@@ -287,10 +236,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
         # Invalid password will cause user creation to fail
         "password" => "weak"
       }
-
-      conn =
-        conn
-        |> put_req_header("x-api-key", @valid_token)
 
       conn = TrialAccountController.trial(conn, params)
 
