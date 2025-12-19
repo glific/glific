@@ -48,11 +48,12 @@ defmodule Glific.Sheets do
   end
 
   @spec validate_sheet(map()) :: {:ok, true} | {:error, String.t()}
-  defp validate_sheet(%{type: "WRITE"} = attrs) do
-    with {:ok, _credentials} <- GoogleSheets.fetch_credentials(attrs.organization_id),
-         {:ok, true} <- check_edit_access(attrs) do
-      {:ok, true}
-    else
+  defp validate_sheet(%{url: url, type: type} = attrs)
+       when not is_nil(url) and type in ["WRITE", "ALL"] do
+    case GoogleSheets.fetch_credentials(attrs.organization_id) do
+      {:ok, _credentials} ->
+        check_edit_access(attrs)
+
       {:error, "Google API is not active"} ->
         {:error, "Please add the credentials for google sheet from the settings menu"}
 
@@ -61,7 +62,7 @@ defmodule Glific.Sheets do
     end
   end
 
-  defp validate_sheet(%{url: url} = _attrs) when not is_nil(url) do
+  defp validate_sheet(%{type: "READ", url: url} = _attrs) when not is_nil(url) do
     client =
       Tesla.client([
         {Tesla.Middleware.FollowRedirects, max_redirects: 5}
@@ -78,6 +79,8 @@ defmodule Glific.Sheets do
          "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
     end
   end
+
+  defp validate_sheet(_), do: {:error, "Invalid sheet URL"}
 
   @spec check_edit_access(map()) :: {:ok, true} | {:error, String.t()}
   defp check_edit_access(attrs) do
@@ -118,7 +121,8 @@ defmodule Glific.Sheets do
   """
   @spec update_sheet(Sheet.t(), map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def update_sheet(%Sheet{} = sheet, attrs) do
-    with {:ok, true} <- if(Map.has_key?(attrs, :url), do: validate_sheet(attrs), else: {:ok, true}),
+    with {:ok, true} <-
+           if(Map.has_key?(attrs, :url), do: validate_sheet(attrs), else: {:ok, true}),
          {:ok, sheet} <-
            sheet
            |> Sheet.changeset(attrs)
