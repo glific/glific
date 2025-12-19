@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   GraphQL Representation of Glific's WhatsApp Form DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
@@ -26,6 +26,10 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     end
 
     field(:errors, list_of(:input_error))
+
+    field :sheet, :sheet do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   object :whatsapp_form_result do
