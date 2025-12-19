@@ -120,7 +120,7 @@ defmodule Glific.Sheets do
   """
   @spec update_sheet(Sheet.t(), map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
   def update_sheet(%Sheet{} = sheet, attrs) do
-    with {:ok, true} <- validate_sheet(attrs),
+    with {:ok, true} <- if(Map.has_key?(attrs, :url), do: validate_sheet(attrs), else: {:ok, true}),
          {:ok, sheet} <-
            sheet
            |> Sheet.changeset(attrs)
