@@ -79,8 +79,6 @@ defmodule Glific.Sheets do
     end
   end
 
-  defp validate_sheet(_attrs), do: {:ok, true}
-
   @spec check_edit_access(map()) :: {:ok, true} | {:error, String.t()}
   defp check_edit_access(attrs) do
     spreadsheet_id = extract_spreadsheet_id(attrs.url)
