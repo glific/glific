@@ -21,10 +21,6 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :inserted_at, :string
     field :updated_at, :string
 
-    field :sheet, :sheet do
-      resolve(dataloader(Repo))
-    end
-
     field(:errors, list_of(:input_error))
 
     field :sheet, :sheet do
