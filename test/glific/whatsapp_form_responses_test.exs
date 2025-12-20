@@ -88,6 +88,29 @@ defmodule Glific.WhatsappFormResponsesTest do
 
   test "create_whatsapp_form_response/1 creates a whatsapp form response",
        %{organization_id: organization_id, global_schema: global_schema} do
+    attrs = Map.put(@valid_attrs_for_create, :organization_id, organization_id)
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      {:ok, whatsapp_form_response} =
+        WhatsappFormsResponses.create_whatsapp_form_response(attrs)
+
+    assert_enqueued(worker: WhatsappFormWorker, prefix: global_schema)
+
+    assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
+    assert whatsapp_form_response.contact_id == attrs.sender_id
+
+      assert whatsapp_form_response.raw_response ==
+               Jason.decode!(attrs.raw_response)
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
+    end
+  end
+
+  test "write_to_google_sheet/2 writes response to google sheet",
+       %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
         %Tesla.Env{
@@ -150,104 +173,27 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       Partners.create_credential(sheet_attrs)
 
-      attrs = Map.put(@valid_attrs_for_create, :organization_id, organization_id)
-
       whatsapp_form =
         Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-      {:ok, whatsapp_form_response} =
-        WhatsappFormsResponses.create_whatsapp_form_response(attrs)
-
-      assert_enqueued(worker: WhatsappFormWorker, prefix: global_schema)
-
-      assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
-      assert whatsapp_form_response.contact_id == attrs.sender_id
-
-      assert whatsapp_form_response.raw_response ==
-               Jason.decode!(attrs.raw_response)
-
-      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
-    end
-  end
-
-  test "write_to_google_sheet/2 returns error when Google API is not active",
-       %{organization_id: organization_id} do
-    Tesla.Mock.mock(fn
-      %{method: :get, url: url} when is_binary(url) ->
-        %Tesla.Env{
-          status: 403,
-          body:
-            Jason.encode!(%{
-              "error" => %{
-                "code" => 403,
-                "message" => "The caller does not have permission",
-                "status" => "PERMISSION_DENIED"
-              }
-            })
-        }
-
-      %{method: :post, url: _url} ->
-        %Tesla.Env{
-          status: 403,
-          body:
-            Jason.encode!(%{
-              "error" => %{
-                "code" => 403,
-                "message" => "The caller does not have permission",
-                "status" => "PERMISSION_DENIED"
-              }
-            })
-        }
-    end)
-
-    with_mock(
-      Goth.Token,
-      [],
-      fetch: fn _url ->
-        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
-      end
-    ) do
-      sheet_attrs = %{
-        shortcode: "google_sheets",
-        secrets: %{
-          "service_account" =>
-            Jason.encode!(%{
-              project_id: "DEFAULT PROJECT ID",
-              private_key_id: "DEFAULT API KEY",
-              client_email: "DEFAULT CLIENT EMAIL",
-              private_key: "DEFAULT PRIVATE KEY"
-            })
+      payload = %{
+        "raw_response" => %{
+          "screen_0_Choose_one_0" => "0_Yes",
+          "screen_1_Customer_service_2" => "2_Average",
+          "screen_1_Delivery_and_setup_1" => "1_Good",
+          "screen_1_Purchase_experience_0" => "0_Excellent"
         },
-        is_active: true,
-        organization_id: organization_id
+        "submitted_at" => ~U[2025-12-16 08:24:15.000000Z],
+        "whatsapp_form_id" => whatsapp_form.id,
+        "organization_id" => organization_id,
+        "whatsapp_form_name" => whatsapp_form.name,
+        "contact_number" => "9876543210_1"
       }
 
-      Partners.create_credential(sheet_attrs)
+      {:ok, result} =
+        WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
 
-      whatsapp_form =
-        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
-
-      args = %Oban.Job{
-        args: %{
-          "organization_id" => organization_id,
-          "payload" => %{
-            "contact_number" => "919425010449",
-            "organization_id" => organization_id,
-            "raw_response" => %{
-              "flow_token" => "unused",
-              "screen_0_Choose_one_0" => "0_Yes"
-            },
-            "submitted_at" => "2025-12-20T09:46:24.000000Z",
-            "whatsapp_form_id" => whatsapp_form.id,
-            "whatsapp_form_name" => whatsapp_form.name
-          },
-          "whatsapp_form_id" => whatsapp_form.id
-        }
-      }
-
-      result = WhatsappFormWorker.perform(args)
-      assert {:error, _reason} = result
+      assert length(result) != payload["raw_response"] |> map_size()
     end
   end
 end

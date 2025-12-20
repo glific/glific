@@ -84,9 +84,9 @@ defmodule Glific.WhatsappFormsResponses do
 
     with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
          {:ok, ordered_row} <- prepare_row_from_headers(response, spreadsheet_id),
-         {:ok, _result} <-
+         {:ok, values} <-
            insert_row_in_sheet(organization_id, spreadsheet_id, ordered_row) do
-      {:ok, response}
+      {:ok, values}
     else
       {:error, reason} -> {:error, reason}
     end

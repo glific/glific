@@ -11,8 +11,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
   alias Glific.{
     Repo,
-    Sheets,
-    Sheets.GoogleSheets,
     WhatsappForms.WhatsappForm,
     WhatsappFormsResponses
   }
