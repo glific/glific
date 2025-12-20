@@ -12,7 +12,8 @@ defmodule Glific.WhatsappFormsResponses do
     Templates.SessionTemplate,
     WhatsappForms,
     WhatsappForms.WhatsappForm,
-    WhatsappForms.WhatsappFormResponse
+    WhatsappForms.WhatsappFormResponse,
+    WhatsappForms.WhatsappFormWorker
   }
 
   @doc """
@@ -32,32 +33,23 @@ defmodule Glific.WhatsappFormsResponses do
              whatsapp_form_id: whatsapp_form.id,
              organization_id: attrs.organization_id
            }) do
-      payload =
-        result
-        |> Map.from_struct()
-        |> Map.put(:whatsapp_form_name, whatsapp_form.name)
-        |> Map.put(:contact_number, attrs.sender.phone)
+      payload = %{
+        raw_response: result.raw_response,
+        submitted_at: result.submitted_at,
+        whatsapp_form_id: result.whatsapp_form_id,
+        organization_id: result.organization_id,
+        whatsapp_form_name: whatsapp_form.name,
+        contact_number: attrs.sender.phone
+      }
 
-      Task.start(fn ->
-        Repo.put_process_state(attrs.organization_id)
-
-        case write_to_google_sheet(payload, whatsapp_form) do
-          {:ok, _} ->
-            :ok
-
-          {:error, reason} ->
-            Logger.error(
-              "Failed to write WhatsApp form response to Google Sheet: #{inspect(reason)}"
-            )
-        end
-      end)
+      WhatsappFormWorker.enqueue_write_to_sheet(whatsapp_form, payload)
 
       {:ok, result}
     end
   end
 
-  @spec get_wa_form(String.t()) :: {:ok, non_neg_integer()} | nil
-  defp get_wa_form(template_id) do
+  @spec get_whatsapp_form(String.t()) :: {:ok, WhatsappForm.t()} | {:error, String.t()}
+  defp get_whatsapp_form(template_id) do
     with template when not is_nil(template) <-
            Repo.get_by(SessionTemplate, %{uuid: template_id}),
          [%{"flow_id" => flow_id}] <- template.buttons,
@@ -90,19 +82,17 @@ defmodule Glific.WhatsappFormsResponses do
       when not is_nil(sheet_id) do
     organization_id = response["organization_id"]
 
-    Glific.Metrics.increment("Whatsapp Form Response Sheet Write", organization_id)
-
     with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
          {:ok, ordered_row} <- prepare_row_from_headers(response, spreadsheet_id),
-         {:ok, values} <-
+         {:ok, _result} <-
            insert_row_in_sheet(organization_id, spreadsheet_id, ordered_row) do
-      {:ok, values}
+      {:ok, response}
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp write_to_google_sheet(response, _whatsapp_form) do
+  def write_to_google_sheet(response, _whatsapp_form) do
     {:ok, response}
   end
 
@@ -123,20 +113,19 @@ defmodule Glific.WhatsappFormsResponses do
     {:ok, values}
   end
 
-  @doc false
   @spec prepare_row_from_headers(map(), String.t()) ::
           {:ok, list(String.t())} | {:error, any()}
   defp prepare_row_from_headers(response, spreadsheet_id) do
-    organization_id = response.organization_id
+    organization_id = response["organization_id"]
+    raw_response = response["raw_response"]
 
     payload =
-      response.raw_response
+      raw_response
       |> Map.delete("flow_token")
-      |> Map.put("contact_phone_number", to_string(response.contact_number))
-      |> Map.put("timestamp", response.submitted_at |> DateTime.to_string())
-      |> Map.put("whatsapp_form_id", to_string(response.whatsapp_form_id))
-      |> Map.put("whatsapp_form_name", response.whatsapp_form_name)
-
+      |> Map.put("contact_phone_number", response["contact_number"])
+      |> Map.put("timestamp", response["submitted_at"])
+      |> Map.put("whatsapp_form_id", response["whatsapp_form_id"])
+      |> Map.put("whatsapp_form_name", response["whatsapp_form_name"])
 
     with {:ok, headers} <- GoogleSheets.get_headers(organization_id, spreadsheet_id) do
       ordered_row =
