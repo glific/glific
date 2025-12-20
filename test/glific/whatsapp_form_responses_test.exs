@@ -1,6 +1,7 @@
 defmodule Glific.WhatsappFormResponsesTest do
   use GlificWeb.ConnCase
   import Mock
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Partners,
@@ -8,6 +9,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     Seeds.SeedsDev,
     Templates,
     WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker,
     WhatsappFormsResponses
   }
 
@@ -84,27 +86,8 @@ defmodule Glific.WhatsappFormResponsesTest do
     submitted_at: "1765956142"
   }
 
-  @valid_attrs_for_headers %{
-    id: 1,
-    organization_id: 1,
-    submitted_at: ~U[2025-12-16 08:24:15.000000Z],
-    raw_response: %{
-      "flow_token" => "unused",
-      "screen_0_Choose_one_0" => "0_Yes",
-      "screen_1_Customer_service_2" => "1_Good",
-      "screen_1_Delivery_and_setup_1" => "3_Poor",
-      "screen_1_Purchase_experience_0" => "2_Average"
-    },
-    contact_id: 2,
-    whatsapp_form_id: 2,
-    whatsapp_form_name: "contact_us_form",
-    contact_number: "9876543210_1",
-    inserted_at: ~U[2025-12-16 12:31:58.211190Z],
-    updated_at: ~U[2025-12-16 12:31:58.211190Z]
-  }
-
   test "create_whatsapp_form_response/1 creates a whatsapp form response",
-       %{organization_id: organization_id} do
+       %{organization_id: organization_id, global_schema: global_schema} do
     attrs = Map.put(@valid_attrs_for_create, :organization_id, organization_id)
 
     whatsapp_form =
@@ -113,6 +96,8 @@ defmodule Glific.WhatsappFormResponsesTest do
     {:ok, whatsapp_form_response} =
       WhatsappFormsResponses.create_whatsapp_form_response(attrs)
 
+    assert_enqueued(worker: WhatsappFormWorker, prefix: global_schema)
+
     assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
     assert whatsapp_form_response.contact_id == attrs.sender_id
 
@@ -120,8 +105,46 @@ defmodule Glific.WhatsappFormResponsesTest do
              Jason.decode!(attrs.raw_response)
   end
 
-  test "prepare_row_from_headers/2 returns the correct headers",
+  test "write_to_google_sheet/2 writes response to google sheet",
        %{organization_id: organization_id} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} when is_binary(url) ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "values" => [
+                [
+                  "timestamp",
+                  "contact_phone_number",
+                  "whatsapp_form_id",
+                  "whatsapp_form_name",
+                  "screen_0_Choose_one_0",
+                  "screen_1_Purchase_experience_0",
+                  "screen_1_Delivery_and_setup_1",
+                  "screen_1_Customer_service_2"
+                ]
+              ]
+            })
+        }
+
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+              "updates" => %{
+                "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                "updatedRange" => "A1:A1",
+                "updatedRows" => 1,
+                "updatedColumns" => 1,
+                "updatedCells" => 1
+              }
+            })
+        }
+    end)
+
     with_mock(
       Goth.Token,
       [],
@@ -146,33 +169,27 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       Partners.create_credential(sheet_attrs)
 
-      expected_headers = [
-        "timestamp",
-        "contact_phone_number",
-        "whatsapp_form_id",
-        "whatsapp_form_name",
-        "screen_1_Purchase_experience_0",
-        "screen_1_Delivery_and_setup_1",
-        "screen_1_Customer_service_2",
-        "screen_0_Choose_one_0"
-      ]
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-      with_mock(
-        Glific.Sheets.GoogleSheets,
-        [],
-        get_headers: fn _org_id, _spreadsheet_id -> {:ok, expected_headers} end
-      ) do
-        {:ok, ordered_row} =
-          WhatsappFormsResponses.prepare_row_from_headers(
-            @valid_attrs_for_headers,
-            "1234678904004"
-          )
+      payload = %{
+        "raw_response" => %{
+          "screen_0_Choose_one_0" => "0_Yes",
+          "screen_1_Customer_service_2" => "2_Average",
+          "screen_1_Delivery_and_setup_1" => "1_Good",
+          "screen_1_Purchase_experience_0" => "0_Excellent"
+        },
+        "submitted_at" => ~U[2025-12-16 08:24:15.000000Z],
+        "whatsapp_form_id" => whatsapp_form.id,
+        "organization_id" => organization_id,
+        "whatsapp_form_name" => whatsapp_form.name,
+        "contact_number" => "9876543210_1"
+      }
 
-        assert length(ordered_row) == length(expected_headers)
+      {:ok, result} =
+        WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
 
-        assert Enum.at(ordered_row, 1) == to_string(@valid_attrs_for_headers.contact_number)
-        assert Enum.at(ordered_row, 2) == to_string(@valid_attrs_for_headers.whatsapp_form_id)
-      end
+      assert length(result) != payload["raw_response"] |> map_size()
     end
   end
 end

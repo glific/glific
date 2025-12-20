@@ -81,15 +81,18 @@ defmodule Glific.WhatsappFormsResponses do
     |> Repo.insert()
   end
 
+  @doc """
+  Write WhatsApp form response to Google Sheet.
+  """
   @spec write_to_google_sheet(map(), WhatsappForm.t()) ::
           {:ok, map()} | {:error, any()}
   defp write_to_google_sheet(response, %{sheet_id: sheet_id} = whatsapp_form)
        when not is_nil(sheet_id) do
     with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
          {:ok, ordered_row} <- prepare_row_from_headers(response, spreadsheet_id),
-         {:ok, _result} <-
-           insert_row_in_sheet(response.organization_id, spreadsheet_id, ordered_row) do
-      {:ok, response}
+         {:ok, values} <-
+           insert_row_in_sheet(organization_id, spreadsheet_id, ordered_row) do
+      {:ok, values}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -112,6 +115,8 @@ defmodule Glific.WhatsappFormsResponses do
       range: "A:A",
       data: [values]
     })
+
+    {:ok, values}
   end
 
   @doc false
