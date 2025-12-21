@@ -6,6 +6,8 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   alias Glific.{
     Partners,
     Providers.Gupshup.WhatsappForms.ApiClient,
+    Repo,
+    Sheets.Sheet,
     WhatsappForms
   }
 
@@ -219,6 +221,117 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     assert {:ok, query_data} = result
     assert "Updated Test Form" = query_data.data["updateWhatsappForm"]["whatsappForm"]["name"]
+  end
+
+  test "updating a whatsapp form's URL should modify the corresponding sheet record", %{
+    user: user
+  } do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                  "updates" => %{
+                    "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                    "updatedRange" => "A1:A1",
+                    "updatedRows" => 1,
+                    "updatedColumns" => 1,
+                    "updatedCells" => 1
+                  }
+                })
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
+
+      %{method: :put} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{status: "success", success: true}
+        }
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      sheet_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: user.organization_id
+      }
+
+      Partners.create_credential(sheet_attrs)
+
+      {:ok, %{whatsapp_form: whatsapp_form}} =
+        WhatsappForms.create_whatsapp_form(%{
+          name: "Initial Form",
+          form_json: @form_json,
+          description: "Initial description",
+          categories: ["other"],
+          organization_id: user.organization_id,
+          google_sheet_url: "https://docs.google.com/spreadsheets/d/OLD/edit#gid=0"
+        })
+
+      {:ok, sheet_before_update} =
+        Repo.fetch_by(Sheet, %{
+          id: whatsapp_form.sheet_id
+        })
+
+      sheet_url = "https://docs.google.com/spreadsheets/d/NEW"
+
+      update_attrs = %{
+        "name" => "Updated Test Form",
+        "formJson" => Jason.encode!(@form_json),
+        "description" => "An updated test WhatsApp form",
+        "categories" => ["other"],
+        "google_sheet_url" => sheet_url
+      }
+
+      result =
+        auth_query_gql_by(:update_whatsapp_form, user,
+          variables: %{
+            "updateWhatsappFormId" => whatsapp_form.id,
+            "input" => update_attrs
+          }
+        )
+
+      assert {:ok, _query_data} = result
+
+      {:ok, sheet_after_update} =
+        Repo.fetch_by(Sheet, %{
+          id: whatsapp_form.sheet_id
+        })
+
+      assert sheet_before_update.url != sheet_after_update.url
+      assert sheet_after_update.url == sheet_url
+    end
   end
 
   test "get whatsapp form", %{user: user} do
