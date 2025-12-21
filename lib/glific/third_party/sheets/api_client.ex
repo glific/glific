@@ -3,18 +3,16 @@ defmodule Glific.Sheets.ApiClient do
   Http API client to interact with Gupshup
   """
 
-  # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
-
-  use Tesla
-
-  plug Tesla.Middleware.FollowRedirects
-
   @doc """
   Get the CSV content from the url.
   """
   @spec get_csv_content(Keyword.t()) :: Keyword.t()
   def get_csv_content([url: url] = _opts) do
-    {:ok, response} = get(url)
+    {:ok, response} =
+      get_tesla_middlewares()
+      |> Tesla.client()
+      |> Tesla.get(url)
+
     {:ok, stream} = StringIO.open(response.body)
 
     IO.binstream(stream, :line)
@@ -22,4 +20,13 @@ defmodule Glific.Sheets.ApiClient do
   end
 
   def get_csv_content(_opts), do: [ok: %{}]
+
+  @spec get_tesla_middlewares :: list()
+  defp get_tesla_middlewares do
+    [
+      Tesla.Middleware.FollowRedirects,
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets", sampling_scale: 10}}
+    ] ++
+      Glific.get_tesla_retry_middleware()
+  end
 end
