@@ -10,6 +10,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Contacts.Contact,
     Partners.Organization,
     Repo,
+    TrialUsers,
     Users,
     Users.User
   }
@@ -27,8 +28,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     phone = params["phone"]
 
     with {:ok, _message} <-
-           RegistrationController.verify_otp(phone, params["otp"]) |> IO.inspect(),
-         {:ok, result} <- allocate_trial_account(phone, params) |> IO.inspect() do
+           RegistrationController.verify_otp(phone, params["otp"]),
+         {:ok, result} <- allocate_trial_account(phone, params) do
       shortcode = result.update_organization.shortcode
 
       json(conn, %{
@@ -126,7 +127,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   defp create_contact(organization, phone, params) do
     contact_params = %{
       phone: phone,
-      name: params["name"],
+      name: params["username"],
       organization_id: organization.id,
       language_id: organization.default_language_id
     }
