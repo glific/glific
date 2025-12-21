@@ -681,7 +681,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert get_in(query_data, [:data, "deleteOrganization", "errors"]) == nil
 
     # Organization should still exist immediately after mutation
-    assert {:ok, _org} = Repo.fetch(Glific.Partners.Organization, organization.id)
+    assert {:ok, _org} = Repo.fetch(Organization, organization.id)
 
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :purge, with_safety: false)
     result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})

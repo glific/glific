@@ -63,7 +63,7 @@ defmodule Glific.Erase do
   This prevents UI timeouts when deleting organizations with large amounts of data.
   """
   @spec delete_organization(non_neg_integer()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset()}
   def delete_organization(organization_id) do
     __MODULE__.new(%{organization_id: organization_id})
     |> Oban.insert()
@@ -410,7 +410,8 @@ defmodule Glific.Erase do
     end
   end
 
-  @spec send_success_notification(Organization.t()) :: :ok
+  @spec send_success_notification(Organization.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp send_success_notification(organization) do
     Notifications.create_notification(%{
       category: "Organization",
@@ -425,7 +426,8 @@ defmodule Glific.Erase do
     })
   end
 
-  @spec send_failure_notification(non_neg_integer(), String.t()) :: :ok
+  @spec send_failure_notification(non_neg_integer(), String.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp send_failure_notification(organization_id, reason) do
     Notifications.create_notification(%{
       category: "Organization",

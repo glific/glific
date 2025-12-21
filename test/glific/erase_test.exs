@@ -208,13 +208,8 @@ defmodule Glific.EraseTest do
     assert {:ok, job} = Erase.delete_organization(organization.id)
     assert %Oban.Job{args: %{"organization_id" => organization_id}} = job
     assert organization_id == organization.id
-
-    # Perform the job
     assert :ok = perform_job(Erase, job.args)
-
-    # Verify organization was deleted
-    assert {:error, [_module, "Resource not found"]} =
-             Repo.fetch(Glific.Partners.Organization, organization.id)
+    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
   end
 
   test "handles non-existent organization gracefully" do
@@ -247,7 +242,6 @@ defmodule Glific.EraseTest do
 
     assert :ok = perform_job(Erase, job.args)
 
-    assert {:error, [_module, "Resource not found"]} =
-             Repo.fetch(Glific.Partners.Organization, organization.id)
+    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
   end
 end
