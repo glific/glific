@@ -233,4 +233,12 @@ defmodule Glific.WhatsappForms do
         :ok
     end
   end
+
+  def update_revision_number(whatsapp_form_id, revision_id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id) do
+      form
+      |> WhatsappForm.changeset(%{revision_id: revision_id})
+      |> Repo.update()
+    end
+  end
 end
