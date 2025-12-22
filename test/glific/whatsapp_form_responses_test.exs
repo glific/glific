@@ -88,29 +88,6 @@ defmodule Glific.WhatsappFormResponsesTest do
 
   test "create_whatsapp_form_response/1 creates a whatsapp form response",
        %{organization_id: organization_id, global_schema: global_schema} do
-    attrs = Map.put(@valid_attrs_for_create, :organization_id, organization_id)
-
-      whatsapp_form =
-        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
-
-      {:ok, whatsapp_form_response} =
-        WhatsappFormsResponses.create_whatsapp_form_response(attrs)
-
-    assert_enqueued(worker: WhatsappFormWorker, prefix: global_schema)
-
-    assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
-    assert whatsapp_form_response.contact_id == attrs.sender_id
-
-      assert whatsapp_form_response.raw_response ==
-               Jason.decode!(attrs.raw_response)
-
-      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
-               Oban.drain_queue(queue: :default)
-    end
-  end
-
-  test "write_to_google_sheet/2 writes response to google sheet",
-       %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
         %Tesla.Env{
@@ -173,33 +150,24 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       Partners.create_credential(sheet_attrs)
 
+      attrs = Map.put(@valid_attrs_for_create, :organization_id, organization_id)
+
       whatsapp_form =
         Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
-      args = %Oban.Job{
-        args: %{
-          "organization_id" => 1,
-          "payload" => %{
-            "contact_number" => "919425010449",
-            "organization_id" => 1,
-            "raw_response" => %{
-              "flow_token" => "unused",
-              "screen_0_Choose_one_0" => "0_Yes",
-              "screen_0_Leave_a_comment_1" => "hvbmk",
-              "screen_1_Customer_service_2" => "1_Good",
-              "screen_1_Delivery_and_setup_1" => "0_Excellent",
-              "screen_1_Purchase_experience_0" => "1_Good"
-            },
-            "submitted_at" => "2025-12-20T09:46:24.000000Z",
-            "whatsapp_form_id" => whatsapp_form.id,
-            "whatsapp_form_name" => whatsapp_form.name
-          },
-          "whatsapp_form_id" => whatsapp_form.id
-        }
-      }
+      {:ok, whatsapp_form_response} =
+        WhatsappFormsResponses.create_whatsapp_form_response(attrs)
 
-      result = WhatsappFormWorker.perform(args)
-      assert result == :ok
+      assert_enqueued(worker: WhatsappFormWorker, prefix: global_schema)
+
+      assert whatsapp_form_response.whatsapp_form_id == whatsapp_form.id
+      assert whatsapp_form_response.contact_id == attrs.sender_id
+
+      assert whatsapp_form_response.raw_response ==
+               Jason.decode!(attrs.raw_response)
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :default)
     end
   end
 
