@@ -54,7 +54,7 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
         TrialUsers.create_trial_user(%{
           username: "john_doe",
           email: "john@example.com",
-          phone: "+919719266288",
+          phone: "919719266288",
           organization_name: "Test Org",
           otp_entered: false
         })
@@ -101,11 +101,56 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
         "organization_name" => "New Org"
       }
 
+      with_mocks(mock_email_services()) do
+        result = TrialUsersController.create_trial_user(conn, params)
+
+        response = json_response(result, 200)
+        assert response["success"] == false
+        assert response["error"] == "User with this email or phone already exists"
+      end
+    end
+
+    test "returns error when both email and phone exist for different users", %{conn: conn} do
+      # Create user with email
+      {:ok, _user1} =
+        TrialUsers.create_trial_user(%{
+          username: "user1",
+          email: "email1@example.com",
+          phone: "919222222222",
+          organization_name: "Org1",
+          otp_entered: true
+        })
+
+      params = %{
+        "username" => "new_user",
+        "email" => "email1@example.com",
+        "phone" => "919222222222",
+        "organization_name" => "New Org"
+      }
+
+      with_mocks(mock_email_services()) do
+        result = TrialUsersController.create_trial_user(conn, params)
+
+        response = json_response(result, 200)
+        assert response["success"] == false
+        assert response["error"] == "User with this email or phone already exists"
+      end
+    end
+
+    test "returns error when trial user creation fails due to validation", %{conn: conn} do
+      params = %{
+        "username" => "test_user",
+        "email" => "test",
+        "phone" => "+919719266288",
+        "organization_name" => "Test Org"
+      }
+
       result = TrialUsersController.create_trial_user(conn, params)
 
-      response = json_response(result, 200)
-      assert response["success"] == false
-      assert response["error"] == "User with this email or phone already exists"
+      assert json_response(result, 400) == %{
+               "error" => "Failed to create trial account",
+               "success" => false
+             }
     end
 
     test "returns error when email sending fails", %{conn: conn} do
