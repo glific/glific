@@ -12,7 +12,8 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     Enums.WhatsappFormCategory,
     Enums.WhatsappFormStatus,
     Partners.Organization,
-    Sheets.Sheet
+    Sheets.Sheet,
+    WhatsappForms.WhatsappFormRevision
   }
 
   @type t() :: %__MODULE__{
@@ -28,6 +29,8 @@ defmodule Glific.WhatsappForms.WhatsappForm do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           sheet_id: non_neg_integer() | nil,
           sheet: Sheet.t() | Ecto.Association.NotLoaded.t() | nil,
+          revision_id: non_neg_integer() | nil,
+          revision: WhatsappFormRevision.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
         }
@@ -40,7 +43,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
     :organization_id
   ]
 
-  @optional_fields [:description, :status, :sheet_id]
+  @optional_fields [:description, :status, :sheet_id, :revision_id]
 
   schema "whatsapp_forms" do
     field(:name, :string)
@@ -52,6 +55,7 @@ defmodule Glific.WhatsappForms.WhatsappForm do
 
     belongs_to :organization, Organization
     belongs_to :sheet, Sheet
+    belongs_to :revision, WhatsappFormRevision
     timestamps(type: :utc_datetime_usec)
   end
 

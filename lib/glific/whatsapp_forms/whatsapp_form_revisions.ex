@@ -6,6 +6,7 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
   import Ecto.Changeset
 
   alias __MODULE__
+  alias Glific.Partners.Organization
   alias Glific.Users.User
   alias Glific.WhatsappForms.WhatsappForm
 
@@ -16,12 +17,13 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
           definition: map(),
           whatsapp_form_id: non_neg_integer(),
           user_id: non_neg_integer() | nil,
+          organization_id: non_neg_integer() | nil,
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
         }
 
-  @required_fields [:revision_number, :definition, :whatsapp_form_id, :user_id]
-  @optional_fields []
+  @required_fields [:definition, :whatsapp_form_id, :user_id, :organization_id]
+  @optional_fields [:revision_number]
 
   schema "whatsapp_form_revisions" do
     field(:revision_number, :integer)
@@ -29,6 +31,7 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
 
     belongs_to :whatsapp_form, WhatsappForm
     belongs_to :user, User
+    belongs_to :organization, Organization
 
     timestamps()
   end
