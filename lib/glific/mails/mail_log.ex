@@ -75,9 +75,9 @@ defmodule Glific.Mails.MailLog do
   Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the mail logs itself.
   """
-  @spec list_mail_logs(map()) :: list()
-  def list_mail_logs(args) do
-    Repo.list_filter(args, MailLog, &Repo.opts_with_inserted_at/2, &filter_with/2)
+  @spec list_mail_logs(map(), list()) :: list()
+  def list_mail_logs(args, opts \\ []) do
+    Repo.list_filter(args, MailLog, &Repo.opts_with_inserted_at/2, &filter_with/2, opts)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
