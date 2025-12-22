@@ -70,7 +70,7 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
 
     tesla_opts = [
       headers: remove_content_type(headers()),
-      opts: [adapter: [recv_timeout: 10_000]]
+      opts: [adapter: [recv_timeout: 20_000]]
     ]
 
     url
