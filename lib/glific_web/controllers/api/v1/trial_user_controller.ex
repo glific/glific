@@ -3,14 +3,13 @@ defmodule GlificWeb.API.V1.TrialUsersController do
   Controller for allocating trial users to users via an API endpoint.
   """
   use GlificWeb, :controller
-
   require Logger
-
   alias PasswordlessAuth
   alias Plug.Conn
 
   alias Glific.{
     Communications.Mailer,
+    Contacts,
     Mails.TrialAccountMail,
     Partners,
     Partners.Saas,
@@ -33,17 +32,53 @@ defmodule GlificWeb.API.V1.TrialUsersController do
           "organization_name" => organization_name
         }
       ) do
-    existing_user =
+    case Contacts.parse_phone_number(phone) do
+      {:ok, phone} ->
+        check_existing_users_and_proceed(
+          conn,
+          username,
+          email,
+          phone,
+          organization_name
+        )
+
+      {:error, error_message} ->
+        conn
+        |> put_status(400)
+        |> json(%{
+          success: false,
+          error: error_message
+        })
+    end
+  end
+
+  @spec check_existing_users_and_proceed(Conn.t(), String.t(), String.t(), String.t(), String.t()) ::
+          Conn.t()
+  defp check_existing_users_and_proceed(
+         conn,
+         username,
+         email,
+         phone,
+         organization_name
+       ) do
+    existing_users =
       TrialUsers
       |> where([t], t.email == ^email or t.phone == ^phone)
-      |> Repo.one(skip_organization_id: true)
+      |> Repo.all(skip_organization_id: true)
 
-    case existing_user do
-      nil ->
+    case existing_users do
+      [] ->
         create_and_send_otp(conn, username, email, phone, organization_name)
 
-      user ->
-        handle_existing_user(conn, user, email, phone)
+      [single_user] ->
+        handle_existing_user(conn, single_user, email, phone)
+
+      _multiple_users ->
+        conn
+        |> json(%{
+          success: false,
+          error: "Email or phone already registered with different account"
+        })
     end
   end
 
