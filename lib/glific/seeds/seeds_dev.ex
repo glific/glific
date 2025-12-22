@@ -427,9 +427,15 @@ if Code.ensure_loaded?(Faker) do
 
       seed_sheets(organization)
 
-      {:ok, sheet} =
+      {:ok, sheet_1} =
         Repo.fetch_by(Sheet, %{
           label: "Responses Sheet",
+          organization_id: organization.id
+        })
+
+      {:ok, sheet_2} =
+        Repo.fetch_by(Sheet, %{
+          label: "User Data Sheet",
           organization_id: organization.id
         })
 
@@ -503,7 +509,7 @@ if Code.ensure_loaded?(Faker) do
           },
           categories: [:contact_us],
           organization_id: organization.id,
-          sheet_id: sheet.id
+          sheet_id: sheet_1.id
         },
         %{
           name: "feedback_form",
@@ -565,7 +571,7 @@ if Code.ensure_loaded?(Faker) do
           },
           categories: [:customer_support],
           organization_id: organization.id,
-          sheet_id: nil
+          sheet_id: sheet_2.id
         },
         %{
           name: "event_registration_form",
@@ -2103,6 +2109,12 @@ if Code.ensure_loaded?(Faker) do
         %{
           label: "Responses Sheet",
           sheet_id: 1,
+          url: "https://docs.google.com/spreadsheets/d/#{Faker.String.base64(10)}",
+          organization_id: organization.id
+        },
+        %{
+          label: "User Data Sheet",
+          sheet_id: 2,
           url: "https://docs.google.com/spreadsheets/d/#{Faker.String.base64(10)}",
           organization_id: organization.id
         }

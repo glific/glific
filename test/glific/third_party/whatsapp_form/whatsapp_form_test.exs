@@ -169,6 +169,119 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end
   end
 
+  test "if sheet url is already associated with another form, create and update should fail", %{
+    user: user
+  } do
+    sheet_url = "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
+
+    valid_attrs = %{
+      "name" => "Test Form",
+      "formJson" => Jason.encode!(@form_json),
+      "description" => "A test WhatsApp form",
+      "categories" => ["other"],
+      "google_sheet_url" => sheet_url
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                  "updates" => %{
+                    "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                    "updatedRange" => "A1:A1",
+                    "updatedRows" => 1,
+                    "updatedColumns" => 1,
+                    "updatedCells" => 1
+                  }
+                })
+            }
+
+          String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                  "updates" => %{
+                    "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                    "updatedRange" => "A1:A1",
+                    "updatedRows" => 1,
+                    "updatedColumns" => 1,
+                    "updatedCells" => 1
+                  }
+                })
+            }
+
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      sheet_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: user.organization_id
+      }
+
+      Partners.create_credential(sheet_attrs)
+
+      {:ok, _result} =
+        auth_query_gql_by(:create_whatsapp_form, user,
+          variables: %{
+            "input" => valid_attrs
+          }
+        )
+
+      attrs_2 = %{
+        "name" => "Test Form 2",
+        "formJson" => Jason.encode!(@form_json),
+        "description" => "A test WhatsApp form",
+        "categories" => ["other"],
+        "google_sheet_url" => sheet_url
+      }
+
+      {:ok, result_2} =
+        auth_query_gql_by(:create_whatsapp_form, user,
+          variables: %{
+            "input" => attrs_2
+          }
+        )
+
+      assert "Url: has already been taken" ==
+               Enum.at(result_2.data["createWhatsappForm"]["errors"], 0)["message"]
+    end
+  end
+
   test "updates a whatsapp form", %{user: user} do
     Tesla.Mock.mock(fn
       %{method: :post, url: url} ->
