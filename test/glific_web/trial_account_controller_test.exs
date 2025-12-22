@@ -3,6 +3,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
   alias Glific.{
     Contacts.Contact,
+    Mails.MailLog,
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
@@ -98,6 +99,37 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       assert user.name == "Test User"
       assert user.contact_id == contact.id
       assert user.roles == [:admin]
+    end
+
+    test "sends emails to trial user and biz dev on succesfully assigning trial account", %{
+      conn: conn,
+      trial_org_1: trial_org_1,
+      valid_otp: valid_otp
+    } do
+      params = %{
+        "phone" => @valid_phone,
+        "otp" => valid_otp,
+        "username" => "Test User",
+        "password" => @password
+      }
+
+      conn = TrialAccountController.trial(conn, params)
+      response = json_response(conn, 200)
+
+      assert response["success"] == true
+      assert response["data"]["login_url"] == "https://#{trial_org_1.shortcode}.glific.com/login"
+
+      assert [_ | _] =
+               MailLog.list_mail_logs(
+                 %{organization_id: trial_org_1.id, category: "trial_user_welcome"},
+                 skip_organization_id: true
+               )
+
+      assert [_ | _] =
+               MailLog.list_mail_logs(
+                 %{organization_id: trial_org_1.id, category: "new_trial_account_allocated"},
+                 skip_organization_id: true
+               )
     end
 
     test "returns error with invalid OTP", %{conn: conn} do
