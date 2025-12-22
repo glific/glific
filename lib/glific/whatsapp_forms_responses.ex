@@ -86,8 +86,12 @@ defmodule Glific.WhatsappFormsResponses do
   """
   @spec write_to_google_sheet(map(), WhatsappForm.t()) ::
           {:ok, map()} | {:error, any()}
-  defp write_to_google_sheet(response, %{sheet_id: sheet_id} = whatsapp_form)
-       when not is_nil(sheet_id) do
+  def write_to_google_sheet(response, %{sheet_id: sheet_id} = whatsapp_form)
+      when not is_nil(sheet_id) do
+    organization_id = response["organization_id"]
+
+    Glific.Metrics.increment("Whatsapp Form Response Sheet Write", organization_id)
+
     with spreadsheet_id <- get_spreadsheet_id(whatsapp_form),
          {:ok, ordered_row} <- prepare_row_from_headers(response, spreadsheet_id),
          {:ok, values} <-
