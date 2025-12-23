@@ -1,10 +1,14 @@
 defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+  import Mock
 
   alias Glific.{
+    Partners,
     Repo,
     Seeds.SeedsDev,
+    Sheets.Sheet,
+    WhatsappForms,
     WhatsappForms.WhatsappForm
   }
 
@@ -56,7 +60,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     SeedsDev.seed_whatsapp_forms(organization)
   end
 
-  test "published a whatsapp form and updates its status to published",
+  test "publishes a whatsapp form and updates its status to published",
        %{manager: user} do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -141,8 +145,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, %{data: %{"deactivateWhatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:deactivate_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error["message"] ==
-             "Resource not found"
+    assert error["message"] == "Resource not found"
   end
 
   test "fails to publish WhatsApp form if the form does not exist",
@@ -150,8 +153,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, %{data: %{"publishWhatsappForm" => %{"errors" => [error | _]}}}} =
       auth_query_gql_by(:publish_whatsapp_form, user, variables: %{"id" => "318182039810832"})
 
-    assert error["message"] ==
-             "Resource not found"
+    assert error["message"] == "Resource not found"
   end
 
   test "count returns the number of whatsapp forms", %{manager: user} do
@@ -316,5 +318,80 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert form_with_sheet2["sheet"]["label"] == "Contact Responses"
 
     assert form_without_sheet["sheet"] == nil
+  end
+
+  test "if an existing sheet is associated with a WhatsApp form, updating the form updates the sheet details",
+       %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :put} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{status: "success", success: true}
+        }
+
+      %{method: :post, url: url} when is_binary(url) ->
+        cond do
+          String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                  "updates" => %{
+                    "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                    "updatedRange" => "A1:A1",
+                    "updatedRows" => 1,
+                    "updatedColumns" => 1,
+                    "updatedCells" => 1
+                  }
+                })
+            }
+        end
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      sheet_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: user.organization_id
+      }
+
+      Partners.create_credential(sheet_attrs)
+
+      {:ok, whatsapp_form_1} =
+        Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      {:ok, sheet} = Repo.fetch_by(Sheet, %{label: "User Data Sheet"})
+
+      whatsapp_form_1 = Repo.preload(whatsapp_form_1, [:sheet])
+
+      valid_attrs = %{
+        name: whatsapp_form_1.name,
+        description: whatsapp_form_1.description,
+        form_json: whatsapp_form_1.definition,
+        categories: ["other"],
+        organization_id: whatsapp_form_1.organization_id,
+        google_sheet_url: sheet.url
+      }
+
+      result = WhatsappForms.update_whatsapp_form(whatsapp_form_1, valid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} = result
+    end
   end
 end
