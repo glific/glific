@@ -7,10 +7,10 @@ defmodule Glific.WhatsappFormsResponses do
   require Logger
 
   alias Glific.{
+    Sheets,
     Sheets.GoogleSheets,
     Repo,
     Templates.SessionTemplate,
-    WhatsappForms,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker
@@ -22,7 +22,7 @@ defmodule Glific.WhatsappFormsResponses do
   @spec create_whatsapp_form_response(map()) ::
           {:ok, WhatsappFormResponse.t()} | {:error, Ecto.Changeset.t() | String.t() | any()}
   def create_whatsapp_form_response(attrs) do
-    with {:ok, whatsapp_form} <- get_wa_form(attrs.template_id),
+    with {:ok, whatsapp_form} <- get_whatsapp_form(attrs.template_id),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
          {:ok, decoded_response} <- Jason.decode(attrs.raw_response),
          {:ok, result} <-
