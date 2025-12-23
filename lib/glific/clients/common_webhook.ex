@@ -22,6 +22,8 @@ defmodule Glific.Clients.CommonWebhook do
 
   require Logger
 
+  @dialyzer {:nowarn_function, handle_tts_only: 4}
+
   @doc """
   Create a webhook with different signatures along with header, so we can easily implement
   additional functionality as needed
@@ -36,7 +38,6 @@ defmodule Glific.Clients.CommonWebhook do
       {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
       {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-      kaapi_config = Application.fetch_env!(:glific, ApiClient)
 
       signature_payload = %{
         "organization_id" => organization_id,
@@ -68,32 +69,17 @@ defmodule Glific.Clients.CommonWebhook do
         |> maybe_put_response_id(fields)
         |> Jason.encode!()
 
-      Glific.Metrics.increment("Kaapi Requests")
+      {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
-      client =
-        Tesla.client([
-          {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-          {Tesla.Middleware.BaseUrl, kaapi_config[:kaapi_endpoint]}
-        ])
-
-      client
-      |> Tesla.post(
-        "api/v1/responses",
-        payload,
-        headers: headers,
-        opts: [adapter: [recv_timeout: 300_000]]
-      )
-      |> case do
-        {:ok, %Tesla.Env{status: 200, body: body}} ->
+      case ApiClient.call_responses_api(payload, org_api_key) do
+        {:ok, body} ->
           Map.merge(%{success: true}, body)
 
-        {:ok, %Tesla.Env{status: _status, body: body}} ->
-          Glific.Metrics.increment("Kaapi Failed")
-          reason = Jason.encode!(body)
-          %{success: false, reason: reason}
+        {:error, %{status: _status, body: body}} ->
+          result = Jason.encode!(body)
+          %{success: false, reason: result}
 
         {:error, reason} ->
-          if reason == :timeout, do: Glific.Metrics.increment("Kaapi Timeout")
           %{success: false, reason: inspect(reason)}
       end
     else
@@ -233,33 +219,16 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("nmt_tts_with_bhasini", fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
-
-    source_language =
-      fields
-      |> Map.get("source_language", nil)
-      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
-
-    target_language =
-      fields
-      |> Map.get("target_language", nil)
-      |> then(&if(!is_nil(&1), do: String.downcase(&1)))
-
+    source_language = normalize_language(fields["source_language"])
+    target_language = normalize_language(fields["target_language"])
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    cond do
-      speech_engine == "bhashini" && source_language == target_language ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
-
-      source_language == target_language && source_language == "english" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-      source_language == target_language ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
-
-      true ->
-        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
-          speech_engine: speech_engine
-        )
+    if source_language == target_language do
+      handle_tts_only(source_language, org_id, text, speech_engine)
+    else
+      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+        speech_engine: speech_engine
+      )
     end
   end
 
@@ -410,6 +379,25 @@ defmodule Glific.Clients.CommonWebhook do
 
       false ->
         %{success: false, reason: "Language not supported in Bhashini"}
+    end
+  end
+
+  @spec normalize_language(String.t() | nil) :: String.t() | nil
+  defp normalize_language(nil), do: ""
+  defp normalize_language(language), do: String.downcase(language)
+
+  @spec handle_tts_only(String.t(), String.t(), String.t(), String.t()) :: map() | String.t()
+  # Dialyzer warning: handle_tts_only/4 success response is wrong
+  defp handle_tts_only(language, org_id, text, speech_engine) do
+    cond do
+      speech_engine == "bhashini" ->
+        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
+
+      speech_engine == "open_ai" || language == "english" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      true ->
+        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
     end
   end
 

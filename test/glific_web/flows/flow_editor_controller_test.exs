@@ -338,7 +338,15 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
         |> Jason.decode!()
 
-      assert json_response(conn, 200) == %{"context" => completion, "functions" => functions}
+      webhook =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
+        |> Jason.decode!()
+
+      assert json_response(conn, 200) == %{
+               "context" => completion,
+               "functions" => functions,
+               "webhook" => webhook
+             }
     end
 
     test "activity", %{conn: conn, access_token: token} do

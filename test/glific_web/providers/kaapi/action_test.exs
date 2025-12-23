@@ -15,6 +15,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
 
   setup do
     SeedsDev.seed_organizations()
+
     :ok
   end
 
@@ -150,6 +151,44 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       update_webhook_log = Repo.get_by(WebhookLog, %{id: webhook_log.id})
 
       assert update_webhook_log.response_json["message"] == @kaapi_response
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "wakeup_one/1 will process all the context for the contact, without a message from upstream when kaapi enabled",
+         %{organization_id: organization_id} = _attrs do
+      # activate kaapi
+      enable_kaapi(%{organization_id: organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      contact = Fixtures.contact_fixture()
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "wait_for_result"})
+      [node | _tail] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          node_uuid: node.uuid
+        })
+
+      assert {:ok, _context, []} = FlowContext.wakeup_one(context)
+
+      context = Repo.get!(FlowContext, context.id)
+      assert context.wakeup_at == nil
+      assert context.is_background_flow == false
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
     end
 
     test "logs descriptive error when webhook endpoint does not exist", %{conn: conn} do
@@ -220,6 +259,10 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
       assert flow_context.id == context.id
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
     end
 
     test "logs descriptive error when assistant id is invalid", %{conn: conn} do
@@ -296,6 +339,10 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
       assert flow_context.id == context.id
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
     end
 
     test "Send to failure category if no response is received from Kaapi after waiting for 60 seconds",
@@ -388,6 +435,10 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         |> Repo.one()
 
       assert webhook_log.error == "Timeout: taking long to process response"
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
     end
 
     test "logs descriptive error when kaapi is not active", %{conn: conn} do
@@ -450,6 +501,10 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
       assert flow_context.id == context.id
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
     end
   end
 

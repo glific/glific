@@ -407,6 +407,47 @@ defmodule Glific.CommunicationsTest do
     end
   end
 
+  test "send message in high tps queue if flag enabled for the org",
+       %{global_schema: global_schema} = attrs do
+    FunWithFlags.enable(:high_trigger_tps_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+
+    scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
+
+    message =
+      %{send_at: scheduled_time}
+      |> Map.merge(attrs)
+      |> message_fixture()
+
+    Communications.Message.send_message(message)
+
+    message = Messages.get_message!(message.id)
+
+    assert message.status == :enqueued
+    assert message.bsp_message_id == nil
+    assert message.sent_at == nil
+    assert message.bsp_status == nil
+    assert message.flow == :outbound
+
+    # Verify job scheduled in correct queue
+    refute_enqueued(
+      queue: :gupshup,
+      worker: Worker,
+      prefix: global_schema
+    )
+
+    assert_enqueued(
+      queue: :gupshup_high_tps,
+      worker: Worker,
+      prefix: global_schema
+    )
+
+    FunWithFlags.disable(:high_trigger_tps_enabled,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
+  end
+
   describe "mailer" do
     alias Swoosh.Email
     import Swoosh.TestAssertions

@@ -319,6 +319,41 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get the status of given flag for the organization
+  """
+  @spec get_flag_enabled(atom(), map()) :: boolean
+  def get_flag_enabled(flag, organization) do
+    FunWithFlags.enabled?(flag, for: %{organization_id: organization.id})
+  end
+
+  @doc """
+  Adds given flag to the organization map
+  """
+  @spec set_flag_enabled(map(), atom()) :: map()
+  def set_flag_enabled(organization, flag) do
+    Map.put(organization, flag, get_flag_enabled(flag, organization))
+  end
+
+  @doc """
+  Get whatsapp form value for organization flag
+  """
+  @spec get_whatsapp_forms_enabled?(map()) :: boolean
+  def get_whatsapp_forms_enabled?(organization) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:is_whatsapp_forms_enabled, for: %{organization_id: organization.id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization.id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Set fun_with_flag toggle for ticketing for an organization
   """
   @spec set_ticketing_enabled(map()) :: map()
@@ -462,6 +497,18 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Set fun_with_flag toggle for whatsapp forms enabled for an organization
+  """
+  @spec set_is_whatsapp_forms_enabled(map()) :: map()
+  def set_is_whatsapp_forms_enabled(organization) do
+    Map.put(
+      organization,
+      :is_whatsapp_forms_enabled,
+      get_whatsapp_forms_enabled?(organization)
+    )
+  end
+
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -481,7 +528,9 @@ defmodule Glific.Flags do
       :is_certificate_enabled,
       :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
-      :is_ask_me_bot_enabled
+      :is_ask_me_bot_enabled,
+      :is_whatsapp_forms_enabled,
+      :high_trigger_tps_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

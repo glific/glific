@@ -42,7 +42,7 @@ defmodule Glific.Enums do
   [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out, :reached, :seen, :played, :deleted]
 
   iex> Glific.Enums.message_type_const()
-  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll]
+  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll, :whatsapp_form_response]
 
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
@@ -111,6 +111,15 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.certificate_template_type_const()
   [:slides]
+
+  iex> Glific.Enums.SheetSyncStatus.__enum_map__()
+  Glific.Enums.sheet_sync_status_const()
+
+  iex> Glific.Enums.WhatsappFormStatus.__enum_map__()
+  Glific.Enums.whatsapp_form_status_const()
+
+  iex> Glific.Enums.WhatsappFormCategory.__enum_map__()
+  Glific.Enums.whatsapp_form_category_const()
   """
 
   defmacro api_status_const,
@@ -172,4 +181,13 @@ defmodule Glific.Enums do
 
   defmacro certificate_template_type_const,
     do: Macro.expand(@certificate_template_type_const, __CALLER__)
+
+  defmacro sheet_sync_status_const,
+    do: Macro.expand(@sheet_sync_status_const, __CALLER__)
+
+  defmacro whatsapp_form_status_const,
+    do: Macro.expand(@whatsapp_form_status_const, __CALLER__)
+
+  defmacro whatsapp_form_category_const,
+    do: Macro.expand(@whatsapp_form_category_const, __CALLER__)
 end

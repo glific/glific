@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.CredentialTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/credentials/update.gql")
 
   test "credential by shortcode returns one credential or nil", %{user: user} do
-    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "gupshup_enterprise"}})
+    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "gupshup"}})
 
     auth_query_gql_by(:create, user,
       variables: %{"input" => %{"shortcode" => provider.shortcode}}
@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.CredentialTest do
     credential = get_in(query_data, [:data, "credential", "credential"])
     # this will contain app_name and api_key
     assert credential["secrets"] != "{}"
-    assert credential["provider"] == %{"shortcode" => "gupshup_enterprise"}
+    assert credential["provider"] == %{"shortcode" => "gupshup"}
 
     result =
       auth_query_gql_by(:by_shortcode, user, variables: %{"shortcode" => "wrong shortcode"})
@@ -93,5 +93,126 @@ defmodule GlificWeb.Schema.CredentialTest do
 
     secrets = get_in(query_data, [:data, "updateCredential", "credential", "secrets"])
     assert secrets == "{}"
+  end
+
+  test "update a gcs credential and and set it to inactive", %{user: user} do
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:create, user,
+        variables: %{"input" => %{"shortcode" => provider.shortcode}}
+      )
+
+    credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => credential_id,
+          "input" => %{"is_active" => false}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert %{"isActive" => false} = get_in(query_data, [:data, "updateCredential", "credential"])
+  end
+
+  test "update a gcs credential and and set it to active with correct creds", %{user: user} do
+    Tesla.Mock.mock(fn
+      _ -> %Tesla.Env{status: 200}
+    end)
+
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "shortcode" => provider.shortcode,
+            "secrets" => Jason.encode!(%{"bucket" => "bucket"})
+          }
+        }
+      )
+
+    credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => credential_id,
+          "input" => %{"is_active" => true}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert %{"isActive" => true} = get_in(query_data, [:data, "updateCredential", "credential"])
+  end
+
+  test "update a gcs credential and and set it to active, but bucket is missing", %{user: user} do
+    Tesla.Mock.mock(fn
+      _ -> %Tesla.Env{status: 200}
+    end)
+
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "shortcode" => provider.shortcode,
+            "secrets" => Jason.encode!(%{"buckets" => "bucket"})
+          }
+        }
+      )
+
+    credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => credential_id,
+          "input" => %{"is_active" => true}
+        }
+      )
+
+    assert {:ok, %{errors: [%{message: "Invalid Credentials"}]}} = result
+  end
+
+  test "update a gcs credential and and set it to active, error in setting bucket logs", %{
+    user: user
+  } do
+    Tesla.Mock.mock(fn
+      _ -> %Tesla.Env{status: 400, body: %{"error" => %{"message" => "something went wrong"}}}
+    end)
+
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "shortcode" => provider.shortcode,
+            "secrets" => Jason.encode!(%{"bucket" => "bucket"})
+          }
+        }
+      )
+
+    credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => credential_id,
+          "input" => %{"is_active" => true}
+        }
+      )
+
+    assert {:ok, %{errors: [%{message: "something went wrong"}]}} = result
   end
 end

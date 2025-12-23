@@ -243,7 +243,8 @@ defmodule Glific.Flows.Router do
         do: context,
         else: FlowContext.update_recent(context, msg, :recent_inbound)
 
-    {category_uuid, is_checkbox} = find_category(router, context, msg)
+    {category_uuid, is_checkbox} =
+      find_category(router, context, msg)
 
     execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
   end
@@ -383,6 +384,11 @@ defmodule Glific.Flows.Router do
             default_results
             |> Map.merge(msg.extra)
             |> Map.put("interactive", msg.interactive_content)
+
+          %{key => json}
+
+        msg.type in [:whatsapp_form_response] ->
+          json = msg.whatsapp_form_response.raw_response
 
           %{key => json}
 

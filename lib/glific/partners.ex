@@ -20,6 +20,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
+    Mails.GupshupSetupMail,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -29,6 +30,7 @@ defmodule Glific.Partners do
     Providers.Gupshup.PartnerAPI,
     Providers.Maytapi.WAWorker,
     Repo,
+    RepoReplica,
     Settings.Language,
     Stats,
     Users.User
@@ -51,7 +53,18 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "kaapi"], provider.shortcode)
+      Enum.member?(
+        [
+          "goth",
+          "kaapi",
+          "gupshup_enterprise",
+          "navana_tech",
+          "google_asr",
+          "dialogflow",
+          "open_ai"
+        ],
+        provider.shortcode
+      )
     end)
   end
 
@@ -60,7 +73,7 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
+    do: list_providers(args) |> length()
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
@@ -548,6 +561,8 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
+      |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -846,7 +861,7 @@ defmodule Glific.Partners do
   @spec perform_handler((... -> nil), map() | nil, non_neg_integer(), String.t() | nil) :: any
   defp perform_handler(handler, handler_args, org_id, org_name) do
     Repo.put_process_state(org_id)
-
+    RepoReplica.put_process_state(org_id)
     Logger.info("Starting processes for org id: #{org_id}")
 
     if is_nil(handler_args) do
@@ -969,10 +984,15 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
-    with {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
+    with true <- credential.is_active,
+         {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
          {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
       {:ok, credential}
     else
+      false ->
+        # credential set to inactive, so no further processing
+        {:ok, credential}
+
       {:error, %{body: %{"error" => %{"message" => message}}}} ->
         {:error, message}
 
@@ -989,20 +1009,27 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "gupshup") do
-    cond do
-      not valid_bsp?(credential) ->
-        Glific.Metrics.increment("Gupshup Credential Update Failed")
-        {:error, "App Name and API Key can't be empty"}
+    result =
+      cond do
+        not valid_bsp?(credential) ->
+          Glific.Metrics.increment("Gupshup Credential Update Failed")
+          {:error, "App Name and API Key can't be empty"}
 
-      credential.is_active ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
+        credential.is_active ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
 
-        set_bsp_app_id(organization, "gupshup")
+          set_bsp_app_id(organization, "gupshup")
 
-      true ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
-        {:ok, credential}
+        true ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+          {:ok, credential}
+      end
+
+    with {:ok, _} <- result do
+      GupshupSetupMail.send_gupshup_setup_completion_mail(organization)
     end
+
+    result
   end
 
   defp credential_update_callback(organization, credential, "gupshup_enterprise") do
@@ -1280,6 +1307,7 @@ defmodule Glific.Partners do
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
+      "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
       "auto_translation_enabled" =>
         Flags.get_open_ai_auto_translation_enabled(organization) or
           Flags.get_google_auto_translation_enabled(organization),
@@ -1287,7 +1315,9 @@ defmodule Glific.Partners do
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
       "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
-      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
+      "high_trigger_tps_enabled" =>
+        Flags.get_flag_enabled(:high_trigger_tps_enabled, organization)
     }
   end
 

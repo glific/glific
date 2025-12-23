@@ -528,7 +528,9 @@ defmodule Glific.Templates do
         status: template["status"],
         is_active: is_active,
         number_parameters: number_of_parameter,
-        bsp_id: template["bsp_id"] || template["id"]
+        bsp_id: template["bsp_id"] || template["id"],
+        buttonType: template["buttonSupported"],
+        containerMeta: template["containerMeta"]
       }
       |> check_for_button_template()
 
@@ -549,6 +551,20 @@ defmodule Glific.Templates do
   end
 
   @spec check_for_button_template(map()) :: map()
+  defp check_for_button_template(%{buttonType: "FLOW"} = template) do
+    case extract_flow_buttons(template) do
+      {:ok, buttons} ->
+        template
+        |> Map.put(:has_buttons, true)
+        |> Map.put(:button_type, :whatsapp_form)
+        |> Map.put(:buttons, buttons)
+
+      {:error, reason} ->
+        Logger.error("FLOW button extraction failed: #{reason}")
+        template
+    end
+  end
+
   defp check_for_button_template(%{body: template_body} = template) do
     [body | buttons] = template_body |> String.split(["| ["])
 
@@ -560,6 +576,24 @@ defmodule Glific.Templates do
       |> Map.put(:has_buttons, true)
       |> update_template_buttons(buttons)
     end
+  end
+
+  @spec extract_flow_buttons(map()) :: {:ok, list()} | {:error, String.t()}
+  defp extract_flow_buttons(%{containerMeta: container_meta}) when is_binary(container_meta) do
+    case Jason.decode(container_meta) do
+      {:ok, %{"buttons" => buttons}} when is_list(buttons) ->
+        {:ok, buttons}
+
+      {:ok, _decoded} ->
+        {:error, "No buttons found in containerMeta"}
+
+      {:error, reason} ->
+        {:error, "Failed to decode containerMeta: #{inspect(reason)}"}
+    end
+  end
+
+  defp extract_flow_buttons(_template) do
+    {:error, "No containerMeta found"}
   end
 
   @spec update_template_buttons(map(), list()) :: map()
@@ -771,7 +805,8 @@ defmodule Glific.Templates do
   defp do_parse_buttons("PHONE_NUMBER", button),
     do: button["text"] <> ", " <> button["phone_number"]
 
-  defp do_parse_buttons(type, button) when type in ["QUICK_REPLY", "OTP"], do: button["text"]
+  defp do_parse_buttons(type, button) when type in ["QUICK_REPLY", "OTP", "FLOW"],
+    do: button["text"]
 
   @doc """
   List of available categories provided by whatsapp

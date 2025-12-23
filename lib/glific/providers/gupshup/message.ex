@@ -227,6 +227,23 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
+  @spec receive_whatsapp_form_response({map(), map(), String.t()}) :: map()
+  def receive_whatsapp_form_response({message, contact, template_id}) do
+    %{
+      bsp_message_id: message["id"],
+      body: "",
+      context_id: context_id(message),
+      raw_response: message["interactive"]["nfm_reply"]["response_json"],
+      submitted_at: message["timestamp"],
+      template_id: template_id,
+      sender: %{
+        phone: contact["wa_id"],
+        name: contact["profile"]["name"]
+      }
+    }
+  end
+
+  @doc false
   @spec format_sender(Message.t()) :: map()
   defp format_sender(message) do
     organization = Partners.organization(message.organization_id)
@@ -289,7 +306,7 @@ defmodule Glific.Providers.Gupshup.Message do
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
-    worker_module.new(worker_args, scheduled_at: message.send_at)
+    worker_module.create_changeset(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end
