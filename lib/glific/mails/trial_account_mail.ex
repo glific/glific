@@ -5,7 +5,8 @@ defmodule Glific.Mails.TrialAccountMail do
   alias Glific.{
     Communications.Mailer,
     Partners.Organization,
-    Partners.Saas
+    Partners.Saas,
+    TrialUsers
   }
 
   @glific_email {"Glific Team", "connect@glific.org"}
@@ -148,7 +149,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends day 14 follow-up email to trial users on their last day
   """
-  @spec day_14_followup(Organization.t(), TrialUserS.t()) :: Swoosh.Email.t()
+  @spec day_14_followup(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def day_14_followup(organization, trial_user) do
     subject = "Your Glific trial ends today – what's next?"
     body = create_day_14_followup_body(organization.shortcode, trial_user)
@@ -190,7 +191,8 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  def create_welcome_mail_body(shortcode, trial_user) do
+  @spec create_welcome_mail_body(String.t(), TrialUsers.t()) :: String.t()
+  defp create_welcome_mail_body(shortcode, trial_user) do
     """
     Hi #{trial_user.username},<br><br>
 
@@ -218,7 +220,8 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  def create_trial_account_allocated_body(shortcode, trial_user) do
+  @spec create_trial_account_allocated_body(String.t(), TrialUsers.t()) :: String.t()
+  defp create_trial_account_allocated_body(shortcode, trial_user) do
     """
     A new trial account has been allocated. Details of trial account user:<br><br>
 
@@ -235,7 +238,7 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  @spec create_day_3_followup_body(String.t(), map()) :: String.t()
+  @spec create_day_3_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_3_followup_body(_shortcode, trial_user) do
     """
     Hi #{trial_user.username},<br><br>
@@ -261,7 +264,7 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  @spec create_day_6_followup_body(String.t(), map()) :: String.t()
+  @spec create_day_6_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_6_followup_body(_shortcode, trial_user) do
     """
     Hi #{trial_user.username},<br><br>
@@ -287,7 +290,7 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  @spec create_day_12_followup_body(String.t(), map()) :: String.t()
+  @spec create_day_12_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_12_followup_body(_shortcode, trial_user) do
     """
     Hi #{trial_user.username},<br><br>
@@ -308,7 +311,7 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  @spec create_day_14_followup_body(String.t(), map()) :: String.t()
+  @spec create_day_14_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_14_followup_body(_shortcode, trial_user) do
     """
     Hi #{trial_user.username},<br><br>
