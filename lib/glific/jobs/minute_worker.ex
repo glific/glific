@@ -133,6 +133,7 @@ defmodule Glific.Jobs.MinuteWorker do
 
         TrialWorker.cleanup_expired_trials()
         TrialWorker.send_day_3_followup_emails()
+        TrialWorker.send_day_6_followup_emails()
 
         Erase.perform_daily()
 
