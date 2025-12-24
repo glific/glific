@@ -83,7 +83,30 @@ defmodule Glific.Mails.TrialAccountMail do
       subject,
       body,
       send_to: recipients,
-      from_email: {"Team Glific", "connect@glific.org"},
+      from_email: @glific_email,
+      ignore_cc_support: true,
+      in_cc: []
+    )
+  end
+
+  @doc """
+  Sends day 6 follow-up email to trial users with social proof and case studies
+  """
+  @spec day_6_followup(Organization.t(), map()) :: Swoosh.Email.t()
+  def day_6_followup(organization, trial_user) do
+    subject = "How other NGOs are using Glific (ideas for your trial)"
+    body = create_day_6_followup_body(organization.shortcode, trial_user)
+
+    recipients = [
+      {"#{trial_user.username}", trial_user.email}
+    ]
+
+    Mailer.common_send(
+      organization,
+      subject,
+      body,
+      send_to: recipients,
+      from_email: @glific_email,
       ignore_cc_support: true,
       in_cc: []
     )
@@ -176,6 +199,32 @@ defmodule Glific.Mails.TrialAccountMail do
     You can also follow this <a href="https://glific.org/quick-start-guide/">quick start guide</a>.<br><br>
 
     Best,<br>
+    Team Glific<br><br>
+
+    <i>Built for nonprofits. Designed for impact.</i>
+    """
+  end
+
+  @spec create_day_6_followup_body(String.t(), map()) :: String.t()
+  defp create_day_6_followup_body(_shortcode, trial_user) do
+    """
+    Hi #{trial_user.username},<br><br>
+
+    Sharing a few ways NGOs like yours use Glific:<br>
+
+    <strong>Antarang Foundation</strong> — Uses a WhatsApp chatbot to scale career guidance for students. (<a href="https://glific.org/antarang-foundation/">See full case study</a>)<br>
+
+    <strong>Reap Benefit</strong> — Runs a WhatsApp-bot powered "Solve Ninja" programme for youth civic & climate engagement via nudges, data collection & follow-up. (<a href="https://glific.org/reap-benefit/">See full case study</a>)<br>
+
+    <strong>The Apprentice Project (TAP)</strong> — Uses the "TAP Buddy" WhatsApp chatbot to deliver self-learning electives & build 21st-century skills for underserved students. (<a href="https://glific.org/the-apprentice-project/">See TAP Buddy in action</a>)<br>
+
+    Here's a link showing <a href="https://glific.org/case-studies/">how similar NGOs are using Glific</a> — along with examples you can explore.<br><br>
+
+    Tell us what you're trying to achieve, and we'll recommend the flow, templates, and setup steps that will help you get there faster.<br>
+
+    You can book a 30 min conversation with us here: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a>. Or if you have any questions, write to us by replying to this email.<br><br>
+
+    Regards,<br>
     Team Glific<br><br>
 
     <i>Built for nonprofits. Designed for impact.</i>
