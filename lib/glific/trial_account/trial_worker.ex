@@ -64,24 +64,10 @@ defmodule Glific.TrialAccount.TrialWorker do
   def send_day_3_followup_emails do
     Logger.info("Starting day 3 follow-up email task")
 
-    # Calculate the date range for trials that started 3 days ago
-    # Since trial is 14 days, day 3 means 11 days remaining
-    # We check for trials expiring in 11-12 days to catch the day 3 window
-    now = DateTime.utc_now()
-    eleven_days = DateTime.add(now, 11, :day)
-    twelve_days = DateTime.add(now, 12, :day)
-
-    day_3_trial_orgs =
-      Organization
-      |> where([o], o.is_trial_org == true)
-      |> where([o], not is_nil(o.trial_expiration_date))
-      |> where([o], o.trial_expiration_date >= ^eleven_days)
-      |> where([o], o.trial_expiration_date < ^twelve_days)
-      |> Repo.all(skip_organization_id: true)
-
-    Enum.each(day_3_trial_orgs, fn org ->
-      send_day_3_email_to_org(org)
-    end)
+    # Day 3 of a 14-day trial = 11 days remaining
+    11
+    |> fetch_trial_orgs_by_days_remaining()
+    |> Enum.each(&send_day_3_email_to_org/1)
 
     Logger.info("Completed day 3 follow-up email task")
     :ok
@@ -94,24 +80,10 @@ defmodule Glific.TrialAccount.TrialWorker do
   def send_day_6_followup_emails do
     Logger.info("Starting day 6 follow-up email task")
 
-    # Calculate the date range for trials that started 6 days ago
-    # Since trial is 14 days, day 6 means 8 days remaining
-    # We check for trials expiring in 8-9 days to catch the day 6 window
-    now = DateTime.utc_now()
-    eight_days = DateTime.add(now, 8, :day)
-    nine_days = DateTime.add(now, 9, :day)
-
-    day_6_trial_orgs =
-      Organization
-      |> where([o], o.is_trial_org == true)
-      |> where([o], not is_nil(o.trial_expiration_date))
-      |> where([o], o.trial_expiration_date >= ^eight_days)
-      |> where([o], o.trial_expiration_date < ^nine_days)
-      |> Repo.all(skip_organization_id: true)
-
-    Enum.each(day_6_trial_orgs, fn org ->
-      send_day_6_email_to_org(org)
-    end)
+    # Day 6 of a 14-day trial = 8 days remaining
+    8
+    |> fetch_trial_orgs_by_days_remaining()
+    |> Enum.each(&send_day_6_email_to_org/1)
 
     Logger.info("Completed day 6 follow-up email task")
     :ok
@@ -124,24 +96,10 @@ defmodule Glific.TrialAccount.TrialWorker do
   def send_day_12_followup_emails do
     Logger.info("Starting day 12 follow-up email task")
 
-    # Calculate the date range for trials that started 12 days ago
-    # Since trial is 14 days, day 12 means 2 days remaining
-    # We check for trials expiring in 2-3 days to catch the day 12 window
-    now = DateTime.utc_now()
-    two_days = DateTime.add(now, 2, :day)
-    three_days = DateTime.add(now, 3, :day)
-
-    day_12_trial_orgs =
-      Organization
-      |> where([o], o.is_trial_org == true)
-      |> where([o], not is_nil(o.trial_expiration_date))
-      |> where([o], o.trial_expiration_date >= ^two_days)
-      |> where([o], o.trial_expiration_date < ^three_days)
-      |> Repo.all(skip_organization_id: true)
-
-    Enum.each(day_12_trial_orgs, fn org ->
-      send_day_12_email_to_org(org)
-    end)
+    # Day 12 of a 14-day trial = 2 days remaining
+    2
+    |> fetch_trial_orgs_by_days_remaining()
+    |> Enum.each(&send_day_12_email_to_org/1)
 
     Logger.info("Completed day 12 follow-up email task")
     :ok
@@ -154,23 +112,10 @@ defmodule Glific.TrialAccount.TrialWorker do
   def send_day_14_followup_emails do
     Logger.info("Starting day 14 follow-up email task")
 
-    # Calculate the date range for trials that are expiring today
-    # Since trial is 14 days, day 14 means trial expires today (0-1 days remaining)
-    # We check for trials expiring in 0-1 days to catch the day 14 window
-    now = DateTime.utc_now()
-    one_day = DateTime.add(now, 1, :day)
-
-    day_14_trial_orgs =
-      Organization
-      |> where([o], o.is_trial_org == true)
-      |> where([o], not is_nil(o.trial_expiration_date))
-      |> where([o], o.trial_expiration_date >= ^now)
-      |> where([o], o.trial_expiration_date < ^one_day)
-      |> Repo.all(skip_organization_id: true)
-
-    Enum.each(day_14_trial_orgs, fn org ->
-      send_day_14_email_to_org(org)
-    end)
+    # Day 14 of a 14-day trial = 0 days remaining (expires today)
+    0
+    |> fetch_trial_orgs_by_days_remaining()
+    |> Enum.each(&send_day_14_email_to_org/1)
 
     Logger.info("Completed day 14 follow-up email task")
     :ok
@@ -324,5 +269,20 @@ defmodule Glific.TrialAccount.TrialWorker do
       select: t
     )
     |> Repo.one(skip_organization_id: true)
+  end
+
+  # Fetches trial organizations that have a specific number of days remaining until expiration.
+  @spec fetch_trial_orgs_by_days_remaining(integer()) :: [Organization.t()]
+  defp fetch_trial_orgs_by_days_remaining(days_remaining) do
+    now = DateTime.utc_now()
+    start_range = DateTime.add(now, days_remaining, :day)
+    end_range = DateTime.add(now, days_remaining + 1, :day)
+
+    Organization
+    |> where([o], o.is_trial_org == true)
+    |> where([o], not is_nil(o.trial_expiration_date))
+    |> where([o], o.trial_expiration_date >= ^start_range)
+    |> where([o], o.trial_expiration_date < ^end_range)
+    |> Repo.all(skip_organization_id: true)
   end
 end
