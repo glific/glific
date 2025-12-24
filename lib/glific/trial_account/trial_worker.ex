@@ -182,7 +182,7 @@ defmodule Glific.TrialAccount.TrialWorker do
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 3 email
-    if MailLog.mail_sent_in_past_time?(organization_id, "trial_day_3_followup", time, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_3_followup", time, organization_id, []) do
       Logger.info("Day 3 follow-up email already sent for organization: #{organization_id}")
       :ok
     else
@@ -219,7 +219,7 @@ defmodule Glific.TrialAccount.TrialWorker do
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 6 email
-    if MailLog.mail_sent_in_past_time?(organization_id, "trial_day_6_followup", time, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_6_followup", time, organization_id, []) do
       Logger.info("Day 6 follow-up email already sent for organization: #{organization_id}")
       :ok
     else
@@ -256,7 +256,7 @@ defmodule Glific.TrialAccount.TrialWorker do
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 12 email
-    if MailLog.mail_sent_in_past_time?(organization_id, "trial_day_12_followup", time, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_12_followup", time, organization_id, []) do
       Logger.info("Day 12 follow-up email already sent for organization: #{organization_id}")
       :ok
     else
@@ -293,7 +293,7 @@ defmodule Glific.TrialAccount.TrialWorker do
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 14 email
-    if MailLog.mail_sent_in_past_time?(organization_id, "trial_day_14_followup", time, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_14_followup", time, organization_id, []) do
       Logger.info("Day 14 follow-up email already sent for organization: #{organization_id}")
       :ok
     else

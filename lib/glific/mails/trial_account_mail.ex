@@ -4,7 +4,8 @@ defmodule Glific.Mails.TrialAccountMail do
   """
   alias Glific.{
     Communications.Mailer,
-    Partners.Organization
+    Partners.Organization,
+    Partners.Saas
   }
 
   @glific_email {"Glific Team", "connect@glific.org"}
