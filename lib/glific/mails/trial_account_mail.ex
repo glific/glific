@@ -135,6 +135,29 @@ defmodule Glific.Mails.TrialAccountMail do
     )
   end
 
+  @doc """
+  Sends day 14 follow-up email to trial users on their last day
+  """
+  @spec day_14_followup(Organization.t(), map()) :: Swoosh.Email.t()
+  def day_14_followup(organization, trial_user) do
+    subject = "Your Glific trial ends today – what's next?"
+    body = create_day_14_followup_body(organization.shortcode, trial_user)
+
+    recipients = [
+      {"#{trial_user.username}", trial_user.email}
+    ]
+
+    Mailer.common_send(
+      organization,
+      subject,
+      body,
+      send_to: recipients,
+      from_email: @glific_email,
+      ignore_cc_support: true,
+      in_cc: []
+    )
+  end
+
   @spec create_otp_mail_body(String.t(), String.t()) :: String.t()
   defp create_otp_mail_body(otp_code, username) do
     """
@@ -267,6 +290,33 @@ defmodule Glific.Mails.TrialAccountMail do
     If you'd like to:<br>
     <strong>Continue using Glific:</strong> We have one plan to make it easy for organisations to get started. Find about the pricing <a href="https://glific.org/pricing/">here</a>.<br>
     <strong>Talk to someone:</strong> Book a short call here so we can review your trial and map the right next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a><br><br>
+
+    Best,<br>
+    Team Glific<br><br>
+
+    <i>Built for nonprofits. Designed for impact.</i>
+    """
+  end
+
+  @spec create_day_14_followup_body(String.t(), map()) :: String.t()
+  defp create_day_14_followup_body(_shortcode, trial_user) do
+    """
+    Hi #{trial_user.username},<br><br>
+
+    Your Glific trial ends today, so this is a quick check-in to see how your experience has been and what you'd like to do next.<br><br>
+
+    Here are a few options:<br>
+
+    <strong>&#10145; Continue using Glific</strong><br>
+    We have one plan to make it easy for organisations to get started — as low as &#8377;300 (USD 4) per day. Find the pricing details <a href="https://glific.org/pricing/">here</a>.<br><br>
+
+    <strong>&#10145; Need support or have questions?</strong><br>
+    Book a short call and we'll walk you through setup, flows, and next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a><br><br>
+
+    <strong>&#10145; Not continuing right now?</strong><br>
+    No problem — even a quick note on your experience would really help us improve.<br><br>
+
+    Thanks again for trying Glific.<br><br>
 
     Best,<br>
     Team Glific<br><br>
