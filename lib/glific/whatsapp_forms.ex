@@ -10,6 +10,9 @@ defmodule Glific.WhatsappForms do
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
+    Sheets,
+    Sheets.GoogleSheets,
+    Sheets.Sheet,
     WhatsappForms.WhatsappForm
   }
 
@@ -32,8 +35,11 @@ defmodule Glific.WhatsappForms do
   """
   @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs) do
+    attrs = Map.put(attrs, :operation, :create)
+
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
-         {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
+         {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
@@ -47,8 +53,14 @@ defmodule Glific.WhatsappForms do
   """
   @spec update_whatsapp_form(WhatsappForm.t(), map()) :: {:ok, map()} | {:error, any()}
   def update_whatsapp_form(%WhatsappForm{} = form, attrs) do
+    attrs =
+      attrs
+      |> Map.put(:operation, :update)
+      |> Map.put(:sheet_id, form.sheet_id)
+
     with {:ok, response} <- ApiClient.update_whatsapp_form(form.meta_flow_id, attrs),
-         {:ok, db_attrs} <- prepare_attrs(attrs, response, :update),
+         {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
          {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
@@ -64,7 +76,8 @@ defmodule Glific.WhatsappForms do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, _response} <-
            ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
-         {:ok, updated_form} <- update_form_status(form, :published) do
+         {:ok, updated_form} <- update_form_status(form, :published),
+         {:ok, _} <- append_headers_to_sheet(form) do
       {:ok, %{whatsapp_form: updated_form}}
     end
   end
@@ -103,7 +116,13 @@ defmodule Glific.WhatsappForms do
   @spec get_whatsapp_form_by_id(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
   def get_whatsapp_form_by_id(id) do
-    Repo.fetch_by(WhatsappForm, %{id: id})
+    case Repo.fetch_by(WhatsappForm, %{id: id}) do
+      {:ok, whatsapp_form} ->
+        {:ok, Repo.preload(whatsapp_form, [:sheet])}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -144,9 +163,8 @@ defmodule Glific.WhatsappForms do
     |> Repo.update()
   end
 
-  @spec prepare_attrs(map(), map(), :create | :update) ::
-          {:ok, map()}
-  defp prepare_attrs(validated_attrs, api_response, :create) do
+  @spec prepare_attrs(map(), map()) :: {:ok, map()}
+  defp prepare_attrs(%{operation: :create} = validated_attrs, api_response) do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
@@ -154,19 +172,21 @@ defmodule Glific.WhatsappForms do
       meta_flow_id: api_response.id,
       status: "draft",
       description: validated_attrs.description,
-      categories: validated_attrs.categories
+      categories: validated_attrs.categories,
+      sheet_id: validated_attrs.sheet_id
     }
 
     {:ok, db_attrs}
   end
 
-  defp prepare_attrs(validated_attrs, _, :update) do
+  defp prepare_attrs(%{operation: :update} = validated_attrs, _api_response) do
     db_attrs = %{
       name: validated_attrs.name,
       definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
       categories: validated_attrs.categories,
-      organization_id: validated_attrs.organization_id
+      organization_id: validated_attrs.organization_id,
+      sheet_id: validated_attrs.sheet_id
     }
 
     {:ok, db_attrs}
@@ -232,6 +252,150 @@ defmodule Glific.WhatsappForms do
       _count ->
         :ok
     end
+  end
+
+  @spec maybe_create_google_sheet(map()) ::
+          {:ok, map()} | {:error, any()}
+  defp maybe_create_google_sheet(attrs) do
+    url = Map.get(attrs, :google_sheet_url)
+
+    if url in [nil, ""] do
+      {:ok, Map.put(attrs, :sheet_id, nil)}
+    else
+      handle_google_sheet(attrs, url)
+    end
+  end
+
+  @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp handle_google_sheet(%{operation: :update, sheet_id: sheet_id} = attrs, url)
+       when not is_nil(sheet_id) do
+    update_existing_sheet(attrs, url, sheet_id)
+  end
+
+  defp handle_google_sheet(%{operation: operation} = attrs, url)
+       when operation in [:create, :update] do
+    create_new_sheet(attrs, url)
+  end
+
+  @spec create_new_sheet(map(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp create_new_sheet(attrs, url) do
+    case Sheets.create_sheet(%{
+           label: "WhatsApp Form - #{attrs.name}",
+           organization_id: attrs.organization_id,
+           url: url,
+           type: "WRITE"
+         }) do
+      {:ok, sheet} ->
+        {:ok, Map.put(attrs, :sheet_id, sheet.id)}
+
+      {:error, reason} ->
+        Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @spec update_existing_sheet(map(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  defp update_existing_sheet(attrs, url, sheet_id) do
+    case Repo.fetch_by(Sheet, %{id: sheet_id}) do
+      {:ok, sheet} ->
+        case Sheets.update_sheet(sheet, %{
+               url: url,
+               label: "WhatsApp Form - #{attrs.name}",
+               type: "WRITE",
+               organization_id: attrs.organization_id
+             }) do
+          {:ok, updated_sheet} ->
+            {:ok, Map.put(attrs, :sheet_id, updated_sheet.id)}
+
+          {:error, reason} ->
+            Logger.error("Failed to update Google Sheet for WhatsApp form: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to fetch existing Google Sheet for WhatsApp form: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+    Appends headers to the Google Sheet associated with the WhatsApp form.
+  """
+  @spec append_headers_to_sheet(WhatsappForm.t()) :: {:ok, any()} | {:error, any()}
+  def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
+
+  def append_headers_to_sheet(%{
+        definition: %{"screens" => screens},
+        sheet: %{url: url},
+        organization_id: organization_id
+      }) do
+    with {:ok, complete_payload} <- extract_complete_payload(screens),
+         spreadsheet_id <- Sheets.extract_spreadsheet_id(url),
+         headers <- build_headers(complete_payload),
+         {:ok, _result} <- insert_headers(organization_id, spreadsheet_id, headers) do
+      {:ok, headers}
+    end
+  end
+
+  def append_headers_to_sheet(_), do: {:error, "Invalid form structure"}
+
+  @spec extract_complete_payload(list()) :: {:ok, map()} | {:error, String.t()}
+  defp extract_complete_payload(screens) do
+    payload =
+      screens
+      |> Enum.find_value(&find_complete_action/1)
+
+    case payload do
+      nil -> {:error, "No complete action payload found"}
+      payload -> {:ok, payload}
+    end
+  end
+
+  @spec find_complete_action(map()) :: map() | nil
+  defp find_complete_action(%{"layout" => %{"children" => children}}) do
+    children
+    |> Enum.flat_map(fn child ->
+      get_in(child, ["children"]) || []
+    end)
+    |> Enum.find_value(&extract_payload_from_child/1)
+  end
+
+  defp find_complete_action(_), do: nil
+
+  @spec extract_payload_from_child(map()) :: map() | nil
+  defp extract_payload_from_child(%{
+         "on-click-action" => %{"name" => "complete", "payload" => payload}
+       }),
+       do: payload
+
+  defp extract_payload_from_child(_), do: nil
+
+  @spec build_headers(map()) :: list(String.t())
+  defp build_headers(complete_payload) do
+    default_headers = [
+      "timestamp",
+      "contact_phone_number",
+      "whatsapp_form_id",
+      "whatsapp_form_name"
+    ]
+
+    form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
+
+    default_headers ++ form_headers
+  end
+
+  @spec insert_headers(non_neg_integer(), String.t(), list(String.t())) ::
+          {:ok, any()} | {:error, any()}
+  defp insert_headers(organization_id, spreadsheet_id, headers) do
+    GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
+      range: "A1",
+      data: [headers]
+    })
   end
 
   def update_revision_number(whatsapp_form_id, revision_id) do
