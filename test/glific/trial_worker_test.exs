@@ -493,7 +493,7 @@ defmodule Glific.TrialWorkerTest do
         |> where([m], m.category == "trial_day_3_followup")
         |> Repo.all(skip_organization_id: true)
 
-      assert length(mail_logs) == 0
+      assert Enum.empty?(mail_logs)
     end
   end
 
@@ -874,7 +874,7 @@ defmodule Glific.TrialWorkerTest do
         |> where([m], m.category == "trial_day_14_followup")
         |> Repo.all(skip_organization_id: true)
 
-      assert length(mail_logs) == 0
+      assert assert Enum.empty?(mail_logs)
     end
   end
 end
