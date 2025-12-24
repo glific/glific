@@ -112,6 +112,29 @@ defmodule Glific.Mails.TrialAccountMail do
     )
   end
 
+  @doc """
+  Sends day 12 follow-up email to trial users with conversion and next steps
+  """
+  @spec day_12_followup(Organization.t(), map()) :: Swoosh.Email.t()
+  def day_12_followup(organization, trial_user) do
+    subject = "Your Glific trial – next steps & how we can support"
+    body = create_day_12_followup_body(organization.shortcode, trial_user)
+
+    recipients = [
+      {"#{trial_user.username}", trial_user.email}
+    ]
+
+    Mailer.common_send(
+      organization,
+      subject,
+      body,
+      send_to: recipients,
+      from_email: @glific_email,
+      ignore_cc_support: true,
+      in_cc: []
+    )
+  end
+
   @spec create_otp_mail_body(String.t(), String.t()) :: String.t()
   defp create_otp_mail_body(otp_code, username) do
     """
@@ -225,6 +248,27 @@ defmodule Glific.Mails.TrialAccountMail do
     You can book a 30 min conversation with us here: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a>. Or if you have any questions, write to us by replying to this email.<br><br>
 
     Regards,<br>
+    Team Glific<br><br>
+
+    <i>Built for nonprofits. Designed for impact.</i>
+    """
+  end
+
+  @spec create_day_12_followup_body(String.t(), map()) :: String.t()
+  defp create_day_12_followup_body(_shortcode, trial_user) do
+    """
+    Hi #{trial_user.username},<br><br>
+
+    Your Glific trial will end in two days, so we wanted to check in on:<br>
+    &#8226; What you've been able to try so far<br>
+    &#8226; Any blockers you faced<br>
+    &#8226; Whether you'd like to continue with a paid plan<br><br>
+
+    If you'd like to:<br>
+    <strong>Continue using Glific:</strong> We have one plan to make it easy for organisations to get started. Find about the pricing <a href="https://glific.org/pricing/">here</a>.<br>
+    <strong>Talk to someone:</strong> Book a short call here so we can review your trial and map the right next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a><br><br>
+
+    Best,<br>
     Team Glific<br><br>
 
     <i>Built for nonprofits. Designed for impact.</i>
