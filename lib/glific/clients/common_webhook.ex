@@ -22,8 +22,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   require Logger
 
-  @dialyzer {:nowarn_function, handle_tts_only: 4}
-
   @doc """
   Create a webhook with different signatures along with header, so we can easily implement
   additional functionality as needed
@@ -386,8 +384,8 @@ defmodule Glific.Clients.CommonWebhook do
   defp normalize_language(nil), do: ""
   defp normalize_language(language), do: String.downcase(language)
 
-  @spec handle_tts_only(String.t(), String.t(), String.t(), String.t()) :: map() | String.t()
-  # Dialyzer warning: handle_tts_only/4 success response is wrong
+  @spec handle_tts_only(String.t(), non_neg_integer(), String.t(), String.t()) ::
+          map() | String.t()
   defp handle_tts_only(language, org_id, text, speech_engine) do
     cond do
       speech_engine == "bhashini" ->
