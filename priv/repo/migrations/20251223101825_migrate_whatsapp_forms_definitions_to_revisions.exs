@@ -41,11 +41,6 @@ defmodule Glific.Repo.Migrations.MigrateWhatsappFormsDefinitionsToRevisions do
       AND wfr.revision_number = 1;
     """)
 
-    # making revision_id non-nullable in whatsapp_forms
-    alter table(:whatsapp_forms) do
-      modify(:revision_id, :bigint, null: false)
-    end
-
     # making definition field nullable in whatsapp_forms
     alter table(:whatsapp_forms) do
       modify(:definition, :jsonb, null: true)
@@ -53,11 +48,6 @@ defmodule Glific.Repo.Migrations.MigrateWhatsappFormsDefinitionsToRevisions do
   end
 
   def down do
-    # making revision_id nullable again in whatsapp_forms
-    alter table(:whatsapp_forms) do
-      modify(:revision_id, :bigint, null: true)
-    end
-
     # restoring definitions back to whatsapp_forms from whatsapp_form_revisions
     execute("""
     UPDATE whatsapp_forms wf
