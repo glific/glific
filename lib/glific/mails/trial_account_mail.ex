@@ -4,8 +4,7 @@ defmodule Glific.Mails.TrialAccountMail do
   """
   alias Glific.{
     Communications.Mailer,
-    Partners.Organization,
-    Partners.Saas
+    Partners.Organization
   }
 
   @doc """
@@ -18,8 +17,7 @@ defmodule Glific.Mails.TrialAccountMail do
     body = create_otp_mail_body(otp_code, username)
 
     recipients = [
-      {"User", email},
-      {"Glific", Saas.primary_email()}
+      {"Username", email}
     ]
 
     Mailer.common_send(

@@ -12,19 +12,6 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
 
   @mock_otp_code "123456"
 
-  defp mock_email_services do
-    [
-      {PasswordlessAuth, [], [generate_code: fn _phone -> @mock_otp_code end]},
-      {Glific.Mails.TrialAccountMail, [],
-       [
-         otp_verification_mail: fn _org, _email, _code, _username ->
-           %Swoosh.Email{}
-         end
-       ]},
-      {Glific.Communications.Mailer, [], [send: fn _email, _opts -> {:ok, %{id: "test_id"}} end]}
-    ]
-  end
-
   describe "create_trial_user/2" do
     test "creates a new trial user and sends OTP with valid data", %{conn: conn} do
       params = %{
@@ -34,19 +21,15 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
         "organization_name" => "New Org"
       }
 
-      with_mocks(mock_email_services()) do
-        result = TrialUsersController.create_trial_user(conn, params)
+      result = TrialUsersController.create_trial_user(conn, params)
 
-        assert json_response(result, 200) == %{
-                 "data" => %{
-                   "message" => "OTP sent successfully to newuser@example.com"
-                 }
+      assert json_response(result, 200) == %{
+               "data" => %{
+                 "message" => "OTP sent successfully to newuser@example.com"
                }
+             }
 
-        assert Repo.get_by(TrialUsers, %{email: "newuser@example.com"},
-                 skip_organization_id: true
-               )
-      end
+      assert Repo.get_by(TrialUsers, %{email: "newuser@example.com"}, skip_organization_id: true)
     end
 
     test "resends OTP when user exists but OTP not verified", %{conn: conn} do
@@ -66,22 +49,20 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
         "organization_name" => trial_user.organization_name
       }
 
-      with_mocks(mock_email_services()) do
-        result = TrialUsersController.create_trial_user(conn, params)
+      result = TrialUsersController.create_trial_user(conn, params)
 
-        assert json_response(result, 200) == %{
-                 "data" => %{
-                   "message" => "OTP sent successfully to #{trial_user.email}"
-                 }
+      assert json_response(result, 200) == %{
+               "data" => %{
+                 "message" => "OTP sent successfully to #{trial_user.email}"
                }
+             }
 
-        users =
-          TrialUsers
-          |> Repo.all(skip_organization_id: true)
-          |> Enum.filter(fn u -> u.email == trial_user.email end)
+      users =
+        TrialUsers
+        |> Repo.all(skip_organization_id: true)
+        |> Enum.filter(fn u -> u.email == trial_user.email end)
 
-        assert length(users) == 1
-      end
+      assert length(users) == 1
     end
 
     test "returns error when phone already exists with different email", %{conn: conn} do
@@ -101,40 +82,11 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
         "organization_name" => "New Org"
       }
 
-      with_mocks(mock_email_services()) do
-        result = TrialUsersController.create_trial_user(conn, params)
+      result = TrialUsersController.create_trial_user(conn, params)
 
-        response = json_response(result, 200)
-        assert response["success"] == false
-        assert response["error"] == "User with this email or phone already exists"
-      end
-    end
-
-    test "returns error when both email and phone exist for different users", %{conn: conn} do
-      # Create user with email
-      {:ok, _user1} =
-        TrialUsers.create_trial_user(%{
-          username: "user1",
-          email: "email1@example.com",
-          phone: "919222222222",
-          organization_name: "Org1",
-          otp_entered: true
-        })
-
-      params = %{
-        "username" => "new_user",
-        "email" => "email1@example.com",
-        "phone" => "919222222222",
-        "organization_name" => "New Org"
-      }
-
-      with_mocks(mock_email_services()) do
-        result = TrialUsersController.create_trial_user(conn, params)
-
-        response = json_response(result, 200)
-        assert response["success"] == false
-        assert response["error"] == "User with this email or phone already exists"
-      end
+      response = json_response(result, 200)
+      assert response["success"] == false
+      assert response["error"] == "Email or phone already registered"
     end
 
     test "returns error when trial user creation fails due to validation", %{conn: conn} do

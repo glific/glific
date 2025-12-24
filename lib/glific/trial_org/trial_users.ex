@@ -61,6 +61,16 @@ defmodule Glific.TrialUsers do
     |> Repo.update()
   end
 
+  @spec validate_email_format(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_email_format(changeset) do
+    validate_change(changeset, :email, fn :email, email ->
+      case Pow.Ecto.Schema.Changeset.validate_email(email) do
+        :ok -> []
+        {:error, reason} -> [email: reason]
+      end
+    end)
+  end
+
   @doc """
   Standard changeset pattern we use for all data types
   """
@@ -69,8 +79,8 @@ defmodule Glific.TrialUsers do
     trial_org_data
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_format(:email, ~r/@/)
-    |> unique_constraint(:email)
+    |> validate_email_format()
     |> unique_constraint(:phone)
+    |> unique_constraint(:email)
   end
 end
