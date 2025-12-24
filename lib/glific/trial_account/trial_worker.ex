@@ -121,13 +121,13 @@ defmodule Glific.TrialAccount.TrialWorker do
     :ok
   end
 
-  @spec send_day_3_email_to_org(Organization.t()) :: :ok | {:error, any()}
+  @spec send_day_3_email_to_org(Organization.t()) :: :ok
   defp send_day_3_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 3 email
-    if MailLog.mail_sent_in_past_time?("trial_day_3_followup", time, organization_id, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_3_followup", time, organization_id) do
       Logger.info("Day 3 follow-up email already sent for organization: #{organization_id}")
     else
       organization_id
@@ -155,13 +155,13 @@ defmodule Glific.TrialAccount.TrialWorker do
     :ok
   end
 
-  @spec send_day_6_email_to_org(Organization.t()) :: :ok | {:error, any()}
+  @spec send_day_6_email_to_org(Organization.t()) :: :ok
   defp send_day_6_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 6 email
-    if MailLog.mail_sent_in_past_time?("trial_day_6_followup", time, organization_id, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_6_followup", time, organization_id) do
       Logger.info("Day 6 follow-up email already sent for organization: #{organization_id}")
     else
       organization_id
@@ -189,13 +189,13 @@ defmodule Glific.TrialAccount.TrialWorker do
     :ok
   end
 
-  @spec send_day_12_email_to_org(Organization.t()) :: :ok | {:error, any()}
+  @spec send_day_12_email_to_org(Organization.t()) :: :ok
   defp send_day_12_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 12 email
-    if MailLog.mail_sent_in_past_time?("trial_day_12_followup", time, organization_id, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_12_followup", time, organization_id) do
       Logger.info("Day 12 follow-up email already sent for organization: #{organization_id}")
     else
       organization_id
@@ -223,13 +223,13 @@ defmodule Glific.TrialAccount.TrialWorker do
     :ok
   end
 
-  @spec send_day_14_email_to_org(Organization.t()) :: :ok | {:error, any()}
+  @spec send_day_14_email_to_org(Organization.t()) :: :ok
   defp send_day_14_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
     # Check if we've already sent the day 14 email
-    if MailLog.mail_sent_in_past_time?("trial_day_14_followup", time, organization_id, []) do
+    if MailLog.mail_sent_in_past_time?("trial_day_14_followup", time, organization_id) do
       Logger.info("Day 14 follow-up email already sent for organization: #{organization_id}")
     else
       organization_id
