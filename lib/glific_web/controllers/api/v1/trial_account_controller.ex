@@ -185,11 +185,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       organization_id: organization.id
     })
 
-    Glific.Mails.MailLog.list_mail_logs(%{
-      organization_id: organization.id,
-      category: "trial_user_welcome"
-    })
-
     TrialAccountMail.trial_account_allocated(organization, trial_user)
     |> Mailer.send(%{
       category: "new_trial_account_allocated",
