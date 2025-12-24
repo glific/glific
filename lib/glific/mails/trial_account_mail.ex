@@ -8,6 +8,8 @@ defmodule Glific.Mails.TrialAccountMail do
     Partners.Saas
   }
 
+  @glific_email {"Glific Team", "connect@glific.org"}
+
   @doc """
   Creates OTP verification email
   """
@@ -27,7 +29,7 @@ defmodule Glific.Mails.TrialAccountMail do
       subject,
       body,
       send_to: recipients,
-      from_email: {"Glific Team", "connect@glific.org"},
+      from_email: @glific_email,
       ignore_cc_support: true,
       in_cc: []
     )
@@ -47,7 +49,7 @@ defmodule Glific.Mails.TrialAccountMail do
       subject,
       body,
       send_to: recipients,
-      from_email: {"Glific Team", "connect@glific.org"},
+      from_email: @glific_email,
       ignore_cc_support: true,
       in_cc: []
     )
@@ -57,15 +59,11 @@ defmodule Glific.Mails.TrialAccountMail do
     subject = "Glific: A new trial account has been allocated"
     body = create_trial_account_allocated_body(organization.shortcode, trial_user)
 
-    recipients = [
-      {"Glific Team", "connect@glific.org"}
-    ]
-
     Mailer.common_send(
       organization,
       subject,
       body,
-      send_to: recipients,
+      send_to: [@glific_email],
       ignore_cc_support: true,
       in_cc: []
     )
@@ -80,7 +78,7 @@ defmodule Glific.Mails.TrialAccountMail do
     body = create_day_3_followup_body(organization.shortcode, trial_user)
 
     recipients = [
-      {"User", trial_user.email}
+      {"#{trial_user.username}", trial_user.email}
     ]
 
     Mailer.common_send(
