@@ -184,7 +184,6 @@ defmodule Glific.TrialAccount.TrialWorker do
     # Check if we've already sent the day 3 email
     if MailLog.mail_sent_in_past_time?("trial_day_3_followup", time, organization_id, []) do
       Logger.info("Day 3 follow-up email already sent for organization: #{organization_id}")
-      :ok
     else
       organization_id
       |> fetch_trial_user()
@@ -193,8 +192,6 @@ defmodule Glific.TrialAccount.TrialWorker do
           Logger.warning(
             "No admin or trial user found for trial organization #{organization_id}, skipping day 3 email"
           )
-
-          :ok
 
         trial_user ->
           Logger.info(
@@ -207,10 +204,10 @@ defmodule Glific.TrialAccount.TrialWorker do
             category: "trial_day_3_followup",
             organization_id: organization.id
           })
-
-          :ok
       end
     end
+
+    :ok
   end
 
   @spec send_day_6_email_to_org(Organization.t()) :: :ok | {:error, any()}
@@ -221,7 +218,6 @@ defmodule Glific.TrialAccount.TrialWorker do
     # Check if we've already sent the day 6 email
     if MailLog.mail_sent_in_past_time?("trial_day_6_followup", time, organization_id, []) do
       Logger.info("Day 6 follow-up email already sent for organization: #{organization_id}")
-      :ok
     else
       organization_id
       |> fetch_trial_user()
@@ -230,8 +226,6 @@ defmodule Glific.TrialAccount.TrialWorker do
           Logger.warning(
             "No admin or trial user found for trial organization #{organization_id}, skipping day 6 email"
           )
-
-          :ok
 
         trial_user ->
           Logger.info(
@@ -244,10 +238,10 @@ defmodule Glific.TrialAccount.TrialWorker do
             category: "trial_day_6_followup",
             organization_id: organization.id
           })
-
-          :ok
       end
     end
+
+    :ok
   end
 
   @spec send_day_12_email_to_org(Organization.t()) :: :ok | {:error, any()}
@@ -258,7 +252,6 @@ defmodule Glific.TrialAccount.TrialWorker do
     # Check if we've already sent the day 12 email
     if MailLog.mail_sent_in_past_time?("trial_day_12_followup", time, organization_id, []) do
       Logger.info("Day 12 follow-up email already sent for organization: #{organization_id}")
-      :ok
     else
       organization_id
       |> fetch_trial_user()
@@ -267,8 +260,6 @@ defmodule Glific.TrialAccount.TrialWorker do
           Logger.warning(
             "No admin or trial user found for trial organization #{organization_id}, skipping day 12 email"
           )
-
-          :ok
 
         trial_user ->
           Logger.info(
@@ -281,10 +272,10 @@ defmodule Glific.TrialAccount.TrialWorker do
             category: "trial_day_12_followup",
             organization_id: organization.id
           })
-
-          :ok
       end
     end
+
+    :ok
   end
 
   @spec send_day_14_email_to_org(Organization.t()) :: :ok | {:error, any()}
@@ -295,7 +286,6 @@ defmodule Glific.TrialAccount.TrialWorker do
     # Check if we've already sent the day 14 email
     if MailLog.mail_sent_in_past_time?("trial_day_14_followup", time, organization_id, []) do
       Logger.info("Day 14 follow-up email already sent for organization: #{organization_id}")
-      :ok
     else
       organization_id
       |> fetch_trial_user()
@@ -304,8 +294,6 @@ defmodule Glific.TrialAccount.TrialWorker do
           Logger.warning(
             "No admin or trial user found for trial organization #{organization_id}, skipping day 14 email"
           )
-
-          :ok
 
         trial_user ->
           Logger.info(
@@ -318,10 +306,10 @@ defmodule Glific.TrialAccount.TrialWorker do
             category: "trial_day_14_followup",
             organization_id: organization.id
           })
-
-          :ok
       end
     end
+
+    :ok
   end
 
   @spec fetch_trial_user(integer()) :: TrialUsers.t() | nil
