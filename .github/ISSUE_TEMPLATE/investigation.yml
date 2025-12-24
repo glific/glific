@@ -1,0 +1,60 @@
+name: Investigation
+description: Report an issue that requires investigation.
+title: "[Investigation]: "
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Brief description of the issue requiring investigation
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence/Observations
+      description: Data, logs, metrics, or observations that indicate an issue
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: What problems could arise from this issue?
+      placeholder: |
+        Ex:
+        - Performance degradation
+        - Increased costs
+        - System instability
+    validations:
+      required: false
+  - type: textarea
+    id: questions
+    attributes:
+      label: Key Questions
+      description: What needs to be investigated or answered?
+      placeholder: |
+        Ex:
+        - Why is this happening?
+        - What is the root cause?
+        - Are other organizations affected?
+    validations:
+      required: true
+  - type: textarea
+    id: action-items
+    attributes:
+      label: Proposed Action Items
+      description: Steps to investigate and resolve the issue
+      placeholder: |
+        Ex:
+        - [ ] Review application logs for errors
+        - [ ] Contact affected users/organizations
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information, links, or screenshots
+    validations:
+      required: false

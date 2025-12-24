@@ -191,6 +191,8 @@ defmodule Glific.Partners.Organization do
 
     field(:is_whatsapp_forms_enabled, :boolean, default: false, virtual: true)
 
+    field(:high_trigger_tps_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

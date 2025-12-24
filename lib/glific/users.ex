@@ -295,8 +295,8 @@ defmodule Glific.Users do
   defp maybe_promote_user(_list, user) do
     {:ok, user} =
       update_user(user, %{
-        roles: [:manager],
-        add_role_ids: get_role_id("Manager"),
+        roles: [:none],
+        add_role_ids: get_role_id("No access"),
         organization_id: user.organization_id
       })
 
