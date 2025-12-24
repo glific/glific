@@ -36,7 +36,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends welcome email to trial users
   """
-  @spec welcome_to_trial_account(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec welcome_to_trial_account(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def welcome_to_trial_account(organization, trial_user) do
     subject = "Welcome to Glific — let’s get started"
     body = create_welcome_mail_body(organization.shortcode, trial_user)
@@ -60,7 +60,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends trial account allocated email notification to Biz Dev
   """
-  @spec trial_account_allocated(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec trial_account_allocated(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def trial_account_allocated(organization, trial_user) do
     subject = "Glific: A new trial account has been allocated"
     body = create_trial_account_allocated_body(organization.shortcode, trial_user)
@@ -78,7 +78,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends day 3 follow-up email to trial users
   """
-  @spec day_3_followup(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec day_3_followup(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def day_3_followup(organization, trial_user) do
     subject = "Have you tried the Glific platform yet?"
     body = create_day_3_followup_body(organization.shortcode, trial_user)
@@ -101,7 +101,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends day 6 follow-up email to trial users with social proof and case studies
   """
-  @spec day_6_followup(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec day_6_followup(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def day_6_followup(organization, trial_user) do
     subject = "How other NGOs are using Glific (ideas for your trial)"
     body = create_day_6_followup_body(organization.shortcode, trial_user)
@@ -124,7 +124,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends day 12 follow-up email to trial users with conversion and next steps
   """
-  @spec day_12_followup(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec day_12_followup(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def day_12_followup(organization, trial_user) do
     subject = "Your Glific trial – next steps & how we can support"
     body = create_day_12_followup_body(organization.shortcode, trial_user)
@@ -147,7 +147,7 @@ defmodule Glific.Mails.TrialAccountMail do
   @doc """
   Sends day 14 follow-up email to trial users on their last day
   """
-  @spec day_14_followup(Organization.t(), TrialUser.t()) :: Swoosh.Email.t()
+  @spec day_14_followup(Organization.t(), TrialUserS.t()) :: Swoosh.Email.t()
   def day_14_followup(organization, trial_user) do
     subject = "Your Glific trial ends today – what's next?"
     body = create_day_14_followup_body(organization.shortcode, trial_user)
