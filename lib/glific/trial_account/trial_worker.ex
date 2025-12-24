@@ -147,6 +147,35 @@ defmodule Glific.TrialAccount.TrialWorker do
     :ok
   end
 
+  @doc """
+  Sends day 14 follow-up emails to trial users on their last day of trial
+  """
+  @spec send_day_14_followup_emails() :: :ok
+  def send_day_14_followup_emails do
+    Logger.info("Starting day 14 follow-up email task")
+
+    # Calculate the date range for trials that are expiring today
+    # Since trial is 14 days, day 14 means trial expires today (0-1 days remaining)
+    # We check for trials expiring in 0-1 days to catch the day 14 window
+    now = DateTime.utc_now()
+    one_day = DateTime.add(now, 1, :day)
+
+    day_14_trial_orgs =
+      Organization
+      |> where([o], o.is_trial_org == true)
+      |> where([o], not is_nil(o.trial_expiration_date))
+      |> where([o], o.trial_expiration_date >= ^now)
+      |> where([o], o.trial_expiration_date < ^one_day)
+      |> Repo.all(skip_organization_id: true)
+
+    Enum.each(day_14_trial_orgs, fn org ->
+      send_day_14_email_to_org(org)
+    end)
+
+    Logger.info("Completed day 14 follow-up email task")
+    :ok
+  end
+
   @spec send_day_3_email_to_org(Organization.t()) :: :ok | {:error, any()}
   defp send_day_3_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
@@ -250,6 +279,43 @@ defmodule Glific.TrialAccount.TrialWorker do
           |> TrialAccountMail.day_12_followup(trial_user)
           |> Mailer.send(%{
             category: "trial_day_12_followup",
+            organization_id: organization.id
+          })
+
+          :ok
+      end
+    end
+  end
+
+  @spec send_day_14_email_to_org(Organization.t()) :: :ok | {:error, any()}
+  defp send_day_14_email_to_org(%{id: organization_id} = organization) do
+    Repo.put_process_state(organization_id)
+    time = Glific.go_back_time(24)
+
+    # Check if we've already sent the day 14 email
+    if MailLog.mail_sent_in_past_time?(organization_id, "trial_day_14_followup", time, []) do
+      Logger.info("Day 14 follow-up email already sent for organization: #{organization_id}")
+      :ok
+    else
+      organization_id
+      |> fetch_trial_user()
+      |> case do
+        nil ->
+          Logger.warning(
+            "No admin or trial user found for trial organization #{organization_id}, skipping day 14 email"
+          )
+
+          :ok
+
+        trial_user ->
+          Logger.info(
+            "Sending day 14 follow-up email to #{trial_user.email} for organization #{organization_id}"
+          )
+
+          organization
+          |> TrialAccountMail.day_14_followup(trial_user)
+          |> Mailer.send(%{
+            category: "trial_day_14_followup",
             organization_id: organization.id
           })
 
