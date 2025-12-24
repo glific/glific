@@ -68,6 +68,29 @@ defmodule Glific.Mails.TrialAccountMail do
     )
   end
 
+  @doc """
+  Sends day 3 follow-up email to trial users
+  """
+  @spec day_3_followup(Organization.t(), map()) :: Swoosh.Email.t()
+  def day_3_followup(organization, trial_user) do
+    subject = "Have you tried the Glific platform yet?"
+    body = create_day_3_followup_body(organization.shortcode, trial_user)
+
+    recipients = [
+      {"User", trial_user.email}
+    ]
+
+    Mailer.common_send(
+      organization,
+      subject,
+      body,
+      send_to: recipients,
+      from_email: {"Team Glific", "connect@glific.org"},
+      ignore_cc_support: true,
+      in_cc: []
+    )
+  end
+
   @spec create_otp_mail_body(String.t(), String.t()) :: String.t()
   defp create_otp_mail_body(otp_code, username) do
     """
@@ -127,6 +150,32 @@ defmodule Glific.Mails.TrialAccountMail do
     Email: #{trial_user.email}<br>
     Phone Number: #{trial_user.phone}<br>
     Login URL: <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a><br><br>
+
+    Best,<br>
+    Team Glific<br><br>
+
+    <i>Built for nonprofits. Designed for impact.</i>
+    """
+  end
+
+  @spec create_day_3_followup_body(String.t(), map()) :: String.t()
+  defp create_day_3_followup_body(_shortcode, trial_user) do
+    """
+    Hi #{trial_user.username},<br><br>
+
+    Checking in to see how your Glific trial is going.<br><br>
+
+    Most NGOs start with one simple step:<br>
+    <strong>Create 1 flow + send a message on the preview (simulator) to test</strong><br><br>
+
+    You could use Glific to:<br>
+    &#8226; Share program reminders with beneficiaries<br>
+    &#8226; Collect quick surveys from the field<br>
+    &#8226; Send event reminders<br><br>
+
+    If you're stuck at any point, just reply to this email and tell us where you're blocked — we'll help you sort it out. You can <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">book a slot to have a chat with us</a>.<br><br>
+
+    You can also follow this <a href="https://glific.org/quick-start-guide/">quick start guide</a>.<br><br>
 
     Best,<br>
     Team Glific<br><br>
