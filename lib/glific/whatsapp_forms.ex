@@ -121,6 +121,25 @@ defmodule Glific.WhatsappForms do
     do: Repo.list_filter(args, WhatsappForm, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
+  Updates the WhatsApp form JSON with the definition from the given revision
+  """
+  @spec update_whatsapp_form_json(non_neg_integer(), WhatsappFormRevision.t()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def update_whatsapp_form_json(whatsapp_form_id, revision) do
+    attrs = %{
+      definition: revision.definition,
+      organization_id: revision.organization_id
+    }
+
+    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id),
+         {:ok, _} <- ApiClient.update_whatsapp_form_json(form.meta_flow_id, attrs) do
+      form
+      |> WhatsappForm.changeset(%{revision_id: revision.id})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
   Return the count of whatsapp forms
   """
   @spec count_whatsapp_forms(map()) :: integer
@@ -193,7 +212,7 @@ defmodule Glific.WhatsappForms do
              organization_id: whatsapp_form.organization_id
            }),
          {:ok, _updated_form} <-
-           update_revision_number(whatsapp_form.id, revision.id) do
+           update_whatsapp_form_json(whatsapp_form.id, revision) do
       {:ok, whatsapp_form}
     end
   end
@@ -252,11 +271,147 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  def update_revision_number(whatsapp_form_id, revision_id) do
-    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id) do
-      form
-      |> WhatsappForm.changeset(%{revision_id: revision_id})
-      |> Repo.update()
+  @spec maybe_create_google_sheet(map()) ::
+          {:ok, map()} | {:error, any()}
+  defp maybe_create_google_sheet(attrs) do
+    url = Map.get(attrs, :google_sheet_url)
+
+    if url in [nil, ""] do
+      {:ok, Map.put(attrs, :sheet_id, nil)}
+    else
+      handle_google_sheet(attrs, url)
     end
+  end
+
+  @spec handle_google_sheet(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  defp handle_google_sheet(%{operation: :update, sheet_id: sheet_id} = attrs, url)
+       when not is_nil(sheet_id) do
+    update_existing_sheet(attrs, url, sheet_id)
+  end
+
+  defp handle_google_sheet(%{operation: operation} = attrs, url)
+       when operation in [:create, :update] do
+    create_new_sheet(attrs, url)
+  end
+
+  @spec create_new_sheet(map(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp create_new_sheet(attrs, url) do
+    case Sheets.create_sheet(%{
+           label: "WhatsApp Form - #{attrs.name}",
+           organization_id: attrs.organization_id,
+           url: url,
+           type: "WRITE"
+         }) do
+      {:ok, sheet} ->
+        {:ok, Map.put(attrs, :sheet_id, sheet.id)}
+
+      {:error, reason} ->
+        Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @spec update_existing_sheet(map(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  defp update_existing_sheet(attrs, url, sheet_id) do
+    case Repo.fetch_by(Sheet, %{id: sheet_id}) do
+      {:ok, sheet} ->
+        case Sheets.update_sheet(sheet, %{
+               url: url,
+               label: "WhatsApp Form - #{attrs.name}",
+               type: "WRITE",
+               organization_id: attrs.organization_id
+             }) do
+          {:ok, updated_sheet} ->
+            {:ok, Map.put(attrs, :sheet_id, updated_sheet.id)}
+
+          {:error, reason} ->
+            Logger.error("Failed to update Google Sheet for WhatsApp form: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to fetch existing Google Sheet for WhatsApp form: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+    Appends headers to the Google Sheet associated with the WhatsApp form.
+  """
+  @spec append_headers_to_sheet(WhatsappForm.t()) :: {:ok, any()} | {:error, any()}
+  def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
+
+  def append_headers_to_sheet(%{
+        definition: %{"screens" => screens},
+        sheet: %{url: url},
+        organization_id: organization_id
+      }) do
+    with {:ok, complete_payload} <- extract_complete_payload(screens),
+         spreadsheet_id <- Sheets.extract_spreadsheet_id(url),
+         headers <- build_headers(complete_payload),
+         {:ok, _result} <- insert_headers(organization_id, spreadsheet_id, headers) do
+      {:ok, headers}
+    end
+  end
+
+  def append_headers_to_sheet(_), do: {:error, "Invalid form structure"}
+
+  @spec extract_complete_payload(list()) :: {:ok, map()} | {:error, String.t()}
+  defp extract_complete_payload(screens) do
+    payload =
+      screens
+      |> Enum.find_value(&find_complete_action/1)
+
+    case payload do
+      nil -> {:error, "No complete action payload found"}
+      payload -> {:ok, payload}
+    end
+  end
+
+  @spec find_complete_action(map()) :: map() | nil
+  defp find_complete_action(%{"layout" => %{"children" => children}}) do
+    children
+    |> Enum.flat_map(fn child ->
+      get_in(child, ["children"]) || []
+    end)
+    |> Enum.find_value(&extract_payload_from_child/1)
+  end
+
+  defp find_complete_action(_), do: nil
+
+  @spec extract_payload_from_child(map()) :: map() | nil
+  defp extract_payload_from_child(%{
+         "on-click-action" => %{"name" => "complete", "payload" => payload}
+       }),
+       do: payload
+
+  defp extract_payload_from_child(_), do: nil
+
+  @spec build_headers(map()) :: list(String.t())
+  defp build_headers(complete_payload) do
+    default_headers = [
+      "timestamp",
+      "contact_phone_number",
+      "whatsapp_form_id",
+      "whatsapp_form_name"
+    ]
+
+    form_headers = complete_payload |> Map.keys() |> Enum.map(&to_string/1)
+
+    default_headers ++ form_headers
+  end
+
+  @spec insert_headers(non_neg_integer(), String.t(), list(String.t())) ::
+          {:ok, any()} | {:error, any()}
+  defp insert_headers(organization_id, spreadsheet_id, headers) do
+    GoogleSheets.insert_row(organization_id, spreadsheet_id, %{
+      range: "A1",
+      data: [headers]
+    })
   end
 end

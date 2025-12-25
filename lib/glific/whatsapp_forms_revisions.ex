@@ -24,7 +24,8 @@ defmodule Glific.WhatsappFormsRevisions do
     }
 
     with {:ok, revision} <- create_revision(payload),
-         {:ok, _form} <- WhatsappForms.update_revision_number(attrs.whatsapp_form_id, revision.id) do
+         {:ok, _form} <-
+           WhatsappForms.update_whatsapp_form_json(attrs.whatsapp_form_id, revision) do
       {:ok, revision}
     end
   end
