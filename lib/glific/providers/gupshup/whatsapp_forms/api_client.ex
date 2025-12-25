@@ -34,8 +34,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     payload =
       %{
         name: params.name,
-        categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.form_json
+        categories: Enum.map(params.categories, &String.upcase/1)
       }
 
     client(url: url, headers: headers)
