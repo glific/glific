@@ -1203,17 +1203,6 @@ defmodule Glific.Flows do
     end
   end
 
-  defp process_action(%{"type" => action_type} = action, _, _, _, org_id)
-       when action_type in ["add_contact_groups", "remove_contact_groups"] do
-    groups =
-      Enum.map(action["groups"], fn action_group ->
-        {:ok, group} = Groups.get_or_create_group_by_label(action_group["name"], org_id)
-        Map.put(action_group, "uuid", group.id)
-      end)
-
-    {:ok, Map.put(action, "groups", groups)}
-  end
-
   defp process_action(action, _node, _interactive_template_list, _flow_info, _org_id),
     do: {:ok, action}
 

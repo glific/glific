@@ -1,6 +1,6 @@
 defmodule Glific.Mails.TrialAccountMail do
   @moduledoc """
-  TrialAccountMails will have the content for formatting for the trial accounts email.
+  TrialAccountMails will have the content for the trial accounts email notifications.
   """
   alias Glific.{
     Communications.Mailer,
@@ -17,7 +17,7 @@ defmodule Glific.Mails.TrialAccountMail do
     body = create_otp_mail_body(otp_code, username)
 
     recipients = [
-      {"Username", email}
+      {"#{username}", email}
     ]
 
     Mailer.common_send(

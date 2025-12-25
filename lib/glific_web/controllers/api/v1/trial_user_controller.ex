@@ -1,6 +1,6 @@
 defmodule GlificWeb.API.V1.TrialUsersController do
   @moduledoc """
-  Controller for allocating trial users to users via an API endpoint.
+  Controller for trial account user creation.
   """
   use GlificWeb, :controller
   require Logger
