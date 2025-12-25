@@ -10,7 +10,11 @@ defmodule Glific.WhatsappForms do
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
-    WhatsappForms.WhatsappForm
+    Sheets,
+    Sheets.GoogleSheets,
+    Sheets.Sheet,
+    WhatsappForms.WhatsappForm,
+    WhatsappFormsRevisions
   }
 
   require Logger
@@ -28,13 +32,16 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  Creates a WhatsApp form
+  Creates a WhatsApp form with an initial revision
   """
-  @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
-  def create_whatsapp_form(attrs) do
+  @spec create_whatsapp_form(map(), map()) :: {:ok, map()} | {:error, any()}
+  def create_whatsapp_form(attrs, user) do
+    attrs = Map.put(attrs, :operation, :create)
+
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
-         {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
+         {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
+         {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs, user),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
       Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
@@ -150,7 +157,6 @@ defmodule Glific.WhatsappForms do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
-      definition: validated_attrs.form_json,
       meta_flow_id: api_response.id,
       status: "draft",
       description: validated_attrs.description,
@@ -172,12 +178,24 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
-  @spec do_create_whatsapp_form(map()) ::
+  @spec do_create_whatsapp_form(map(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_whatsapp_form(attrs) do
-    %WhatsappForm{}
-    |> WhatsappForm.changeset(attrs)
-    |> Repo.insert()
+  defp do_create_whatsapp_form(attrs, user) do
+    with {:ok, whatsapp_form} <-
+           %WhatsappForm{}
+           |> WhatsappForm.changeset(attrs)
+           |> Repo.insert(),
+         {:ok, revision} <-
+           WhatsappFormsRevisions.create_revision(%{
+             whatsapp_form_id: whatsapp_form.id,
+             definition: WhatsappFormsRevisions.default_definition(),
+             user_id: user.id,
+             organization_id: whatsapp_form.organization_id
+           }),
+         {:ok, _updated_form} <-
+           update_revision_number(whatsapp_form.id, revision.id) do
+      {:ok, whatsapp_form}
+    end
   end
 
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::

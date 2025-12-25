@@ -34,8 +34,8 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
   """
   @spec create_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_whatsapp_form(_, %{input: params}, _) do
-    WhatsappForms.create_whatsapp_form(params)
+  def create_whatsapp_form(_, %{input: params}, %{context: %{current_user: user}}) do
+    WhatsappForms.create_whatsapp_form(params, user)
   end
 
   @doc """
