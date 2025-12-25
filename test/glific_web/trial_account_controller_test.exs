@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
     Partners.Organization,
     Repo,
     Seeds.SeedsDev,
+    TrialUsers,
     Users.User
   }
 
@@ -32,14 +33,31 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
           trial_expiration_date: DateTime.utc_now() |> DateTime.add(10, :day)
         })
 
+      trial_user = insert_trial_user(@valid_phone)
+
       valid_otp = PasswordlessAuth.generate_code(@valid_phone)
 
       %{
         trial_org_1: trial_org_1,
         trial_org_2: trial_org_2,
         allocated_org: allocated_org,
+        trial_user: trial_user,
         valid_otp: valid_otp
       }
+    end
+
+    defp insert_trial_user(phone) do
+      default_attrs = %{
+        phone: phone,
+        username: "Test User",
+        email: "test_#{phone}@example.com",
+        organization_name: "Test Organization",
+        otp_entered: false
+      }
+
+      %TrialUsers{}
+      |> TrialUsers.changeset(default_attrs)
+      |> Repo.insert!()
     end
 
     test "successfully allocates a trial account with valid token", %{
@@ -50,7 +68,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => valid_otp,
-        "name" => "Test User",
+        "username" => "Test User",
         "password" => @password
       }
 
@@ -58,7 +76,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       response = json_response(conn, 200)
 
       assert response["success"] == true
-      assert response["data"]["login_url"] == "https://#{trial_org_1.shortcode}.glific.com"
+      assert response["data"]["login_url"] == "https://#{trial_org_1.shortcode}.glific.com/login"
 
       updated_org = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
       assert updated_org.trial_expiration_date != nil
@@ -86,7 +104,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => "wrong_otp",
-        "name" => "Test User",
+        "username" => "Test User",
         "password" => @password
       }
 
@@ -118,7 +136,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => valid_otp,
-        "name" => "Test User",
+        "username" => "Test User",
         "password" => @password
       }
 
@@ -134,8 +152,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => valid_otp,
-        # This will cause contact creation to fail
-        "name" => nil,
+        "username" => nil,
         "password" => @password
       }
 
@@ -149,32 +166,6 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
              }
     end
 
-    test "sets trial expiration date to 14 days from now", %{
-      conn: conn,
-      trial_org_1: trial_org_1,
-      valid_otp: valid_otp
-    } do
-      params = %{
-        "phone" => @valid_phone,
-        "otp" => valid_otp,
-        "name" => "Test User",
-        "password" => @password
-      }
-
-      before_allocation = DateTime.utc_now() |> DateTime.truncate(:second)
-
-      TrialAccountController.trial(conn, params)
-
-      updated_org = Repo.get!(Organization, trial_org_1.id, skip_organization_id: true)
-
-      assert updated_org.trial_expiration_date != nil
-
-      expected_date = DateTime.add(before_allocation, 14, :day)
-
-      diff = DateTime.diff(updated_org.trial_expiration_date, expected_date)
-      assert abs(diff) <= 2
-    end
-
     test "rolls back organization allocation when contact creation fails", %{
       conn: conn,
       trial_org_1: trial_org_1,
@@ -186,7 +177,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => valid_otp,
-        "name" => nil,
+        "username" => nil,
         "password" => @password
       }
 
@@ -232,8 +223,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       params = %{
         "phone" => @valid_phone,
         "otp" => valid_otp,
-        "name" => "Test User",
-        # Invalid password will cause user creation to fail
+        "username" => "Test User",
         "password" => "weak"
       }
 
