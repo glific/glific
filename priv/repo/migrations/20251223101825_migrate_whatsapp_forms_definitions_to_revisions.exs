@@ -17,8 +17,7 @@ defmodule Glific.Repo.Migrations.MigrateWhatsappFormsDefinitionsToRevisions do
       wf.id,
       wf.definition,
       COALESCE(
-        (SELECT id FROM users WHERE organization_id = wf.organization_id LIMIT 1),
-        (SELECT id FROM users LIMIT 1)
+        (SELECT id FROM users WHERE organization_id = wf.organization_id LIMIT 1)
       ) as user_id,
       wf.organization_id,
       1 as revision_number,
@@ -48,15 +47,6 @@ defmodule Glific.Repo.Migrations.MigrateWhatsappFormsDefinitionsToRevisions do
   end
 
   def down do
-    # restoring definitions back to whatsapp_forms from whatsapp_form_revisions
-    execute("""
-    UPDATE whatsapp_forms wf
-    SET definition = wfr.definition
-    FROM whatsapp_form_revisions wfr
-    WHERE wfr.whatsapp_form_id = wf.id
-      AND wfr.revision_number = 1;
-    """)
-
     # making definition field non-nullable in whatsapp_forms
     alter table(:whatsapp_forms) do
       modify(:definition, :jsonb, null: false)
