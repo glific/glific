@@ -7,13 +7,15 @@ defmodule Glific.WhatsappForms do
 
   alias Glific.{
     Enums.WhatsappFormCategory,
+    Notifications,
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Sheets,
     Sheets.GoogleSheets,
     Sheets.Sheet,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker
   }
 
   require Logger
@@ -64,6 +66,50 @@ defmodule Glific.WhatsappForms do
          {:ok, whatsapp_form} <- do_update_whatsapp_form(form, db_attrs) do
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
+  end
+
+  @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(non_neg_integer()) ::
+          {:ok, String.t()} | {:error, any()}
+  def sync_whatsapp_form(organization_id) do
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
+         {:ok, _} <- sync_all_forms_for_org(forms, organization_id) do
+      {:ok, %{message: "Syncing of WhatsApp forms has started in the background."}}
+    end
+  end
+
+  @doc """
+  Handles syncing of a all WhatsApp form.
+  """
+  @spec sync_all_forms_for_org(list(map()), non_neg_integer()) :: {:ok, any()} | {:error, any()}
+  def sync_all_forms_for_org(forms, org_id) do
+    meta_flow_ids =
+      forms
+      |> Enum.map(fn form -> form.id end)
+
+    published_ids =
+      WhatsappForm
+      |> where([w], w.meta_flow_id in ^meta_flow_ids and w.status == :published)
+      |> select([w], w.meta_flow_id)
+      |> Repo.all()
+      |> MapSet.new()
+
+    forms =
+      Enum.reject(forms, fn form ->
+        MapSet.member?(published_ids, form.id)
+      end)
+
+    Notifications.create_notification(%{
+      category: "WhatsApp Forms",
+      message: "Syncing of whatsapp form templates has started in the background.",
+      severity: Notifications.types().info,
+      organization_id: org_id,
+      entity: %{Provider: "Gupshup"}
+    })
+
+    WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
   end
 
   @doc """
@@ -396,5 +442,33 @@ defmodule Glific.WhatsappForms do
       range: "A1",
       data: [headers]
     })
+  end
+
+  @spec normalize_categories(any()) :: list(atom() | String.t())
+
+  defp normalize_categories(categories) when is_list(categories) do
+    Enum.map(categories, fn category ->
+      category
+      |> to_string()
+      |> String.downcase()
+      |> String.to_existing_atom()
+    end)
+  end
+
+  @spec normalize_status(any()) :: atom() | String.t()
+
+  defp normalize_status(status) when is_binary(status) do
+    status
+    |> String.downcase()
+    |> String.to_existing_atom()
+  end
+
+  @spec form_changed?(map(), map()) :: boolean()
+  defp form_changed?(%WhatsappForm{} = existing_form, attrs) do
+    comparable_fields = [:name, :definition, :categories, :status]
+
+    Enum.any?(comparable_fields, fn field ->
+      Map.get(existing_form, field) != Map.get(attrs, field)
+    end)
   end
 end
