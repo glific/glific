@@ -69,9 +69,10 @@ defmodule Glific.WhatsappForms do
 
   def publish_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
+         form = Repo.preload(form, [:revision]),
          {:ok, _} <-
            ApiClient.update_whatsapp_form_json(form.meta_flow_id, %{
-             definition: form.definition,
+             definition: form.revision.definition,
              organization_id: form.organization_id
            }),
          {:ok, _response} <-
