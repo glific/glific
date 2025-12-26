@@ -3,19 +3,19 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsRevisionTable do
 
   def up do
     create table(:whatsapp_form_revisions) do
-      add :revision_number, :integer, null: false
-      add :definition, :map, null: false
-      add :whatsapp_form_id, references(:whatsapp_forms, on_delete: :delete_all), null: false
-      add :user_id, references(:users, on_delete: :nilify_all), null: false
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add(:revision_number, :integer, null: false)
+      add(:definition, :map, null: false)
+      add(:whatsapp_form_id, references(:whatsapp_forms, on_delete: :delete_all), null: false)
+      add(:user_id, references(:users, on_delete: :nilify_all), null: false)
+      add(:organization_id, references(:organizations, on_delete: :delete_all), null: false)
 
       timestamps()
     end
 
-    create index(:whatsapp_form_revisions, [:whatsapp_form_id])
-    create index(:whatsapp_form_revisions, [:user_id])
+    create(index(:whatsapp_form_revisions, [:whatsapp_form_id]))
+    create(unique_index(:whatsapp_form_revisions, [:whatsapp_form_id, :revision_number]))
 
-    execute """
+    execute("""
     CREATE OR REPLACE FUNCTION set_whatsapp_form_revision_number()
     RETURNS trigger
     LANGUAGE plpgsql
@@ -34,25 +34,25 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsRevisionTable do
       RETURN NEW;
     END;
     $$;
-    """
+    """)
 
-    execute """
+    execute("""
     CREATE TRIGGER set_whatsapp_form_revision_number_trigger
     BEFORE INSERT ON whatsapp_form_revisions
     FOR EACH ROW
     EXECUTE FUNCTION set_whatsapp_form_revision_number();
-    """
+    """)
   end
 
   def down do
-    execute """
+    execute("""
     DROP TRIGGER IF EXISTS set_whatsapp_form_revision_number_trigger ON whatsapp_form_revisions;
-    """
+    """)
 
-    execute """
+    execute("""
     DROP FUNCTION IF EXISTS set_whatsapp_form_revision_number();
-    """
+    """)
 
-    drop table(:whatsapp_form_revisions)
+    drop(table(:whatsapp_form_revisions))
   end
 end

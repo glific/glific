@@ -54,7 +54,6 @@ defmodule Glific.WhatsappForms.WhatsappForm do
 
     belongs_to(:organization, Organization)
     belongs_to(:sheet, Sheet)
-    belongs_to(:revision, WhatsappFormRevision)
     timestamps(type: :utc_datetime_usec)
   end
 
