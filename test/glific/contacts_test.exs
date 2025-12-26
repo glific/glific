@@ -1775,5 +1775,48 @@ defmodule Glific.ContactsTest do
       assert contact.active_profile_id == nil
       refute Map.has_key?(contact, :active_profile_name)
     end
+
+    test "import_contact/3 csv parse error handling" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\n\"Test Name,919876543210,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
+      assert count == 0
+    end
+
+    test "import_contact/3 with valid empty phone number" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data = "name,phone,Language,opt_in\nTest Name,,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+    end
   end
 end
