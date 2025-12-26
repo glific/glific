@@ -337,7 +337,13 @@ defmodule Glific.Messages do
       })
       |> create_message()
 
-    Communications.Message.send_message(message, attrs)
+    result = Communications.Message.send_message(message, attrs)
+
+    if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
+      Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+    end
+
+    result
   end
 
   defp do_send_message({:error, reason}, attrs) do
@@ -560,6 +566,7 @@ defmodule Glific.Messages do
       template_id: template_id,
       template_type: session_template.type,
       has_buttons: session_template.has_buttons,
+      button_type: session_template.button_type,
       params: parameters,
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),

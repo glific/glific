@@ -1,16 +1,18 @@
 fragment SheetFields on SheetResult {
-  sheet {
-    id
-    label
-    isActive
-    url
-    sheetDataCount
-  }
+    sheet {
+        id
+        label
+        isActive
+        url
+        sheetDataCount
+        syncStatus
+        failureReason
+    }
 }
 
 fragment ErrorFields on SheetResult {
-  errors {
-    key
-    message
-  }
+    errors {
+        key
+        message
+    }
 }

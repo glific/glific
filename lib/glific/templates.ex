@@ -495,7 +495,7 @@ defmodule Glific.Templates do
 
   @spec do_insert_hsm(map(), Organization.t(), map(), String.t()) :: :ok
   defp do_insert_hsm(template, organization, languages, example) do
-    number_of_parameter = template_parameters_count(%{body: template["data"]})
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
       template["templateType"]
@@ -762,8 +762,15 @@ defmodule Glific.Templates do
     template = parse_buttons(template, false, Map.get(template, :has_buttons, false))
 
     template.body
-    |> then(fn body -> Regex.scan(~r/{{(\d+)}}/, body) end)
-    |> Enum.map(fn [_full_match, param_num] -> param_num end)
+    |> String.split()
+    |> Enum.reduce([], fn word, acc ->
+      with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
+           clean_word <- Glific.string_clean(word) do
+        acc ++ [clean_word]
+      else
+        _ -> acc
+      end
+    end)
     |> Enum.uniq()
     |> Enum.count()
   end
