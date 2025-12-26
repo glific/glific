@@ -19,6 +19,28 @@ defmodule Glific.Sheets.GoogleSheets do
   ]
 
   @doc """
+  Get headers (first row) from the spreadsheet.
+  """
+  @spec get_headers(non_neg_integer(), String.t()) :: {:ok, list(String.t())} | {:error, any()}
+  def get_headers(org_id, spreadsheet_id) do
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
+      case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "1:1") do
+        {:ok, %{values: [headers | _]}} when is_list(headers) ->
+          {:ok, headers}
+
+        {:ok, %{values: nil}} ->
+          {:error, "No headers found in the spreadsheet"}
+
+        {:ok, _} ->
+          {:error, "Invalid header format in the spreadsheet"}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
+
+  @doc """
   Insert new row to the spreadsheet.
   """
   @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, any()} | {:error, any()}

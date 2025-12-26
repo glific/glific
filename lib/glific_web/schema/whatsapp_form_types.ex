@@ -3,7 +3,9 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   GraphQL Representation of Glific's WhatsApp Form DataType
   """
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -15,9 +17,15 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :definition, :json
     field :meta_flow_id, :string
     field :categories, list_of(:string)
+    field :sheet_id, :id
     field :inserted_at, :string
     field :updated_at, :string
+
     field(:errors, list_of(:input_error))
+
+    field :sheet, :sheet do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   object :whatsapp_form_result do
@@ -30,6 +38,7 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field :form_json, non_null(:json)
     field :categories, non_null(list_of(:string))
     field :description, :string
+    field :google_sheet_url, :string
   end
 
   @desc "Filtering options for WhatsApp forms"

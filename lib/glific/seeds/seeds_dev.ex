@@ -33,6 +33,7 @@ if Code.ensure_loaded?(Faker) do
       Seeds.SeedsFlows,
       Settings,
       Settings.Language,
+      Sheets.Sheet,
       Stats.Stat,
       Tags.Tag,
       Templates.InteractiveTemplate,
@@ -424,6 +425,20 @@ if Code.ensure_loaded?(Faker) do
     def seed_whatsapp_forms(organization \\ nil) do
       organization = get_organization(organization)
 
+      seed_sheets(organization)
+
+      {:ok, sheet_1} =
+        Repo.fetch_by(Sheet, %{
+          label: "Responses Sheet",
+          organization_id: organization.id
+        })
+
+      {:ok, sheet_2} =
+        Repo.fetch_by(Sheet, %{
+          label: "User Data Sheet",
+          organization_id: organization.id
+        })
+
       forms = [
         %{
           name: "sign_up_form",
@@ -446,7 +461,8 @@ if Code.ensure_loaded?(Faker) do
             ]
           },
           categories: [:sign_up, :lead_generation],
-          organization_id: organization.id
+          organization_id: organization.id,
+          sheet_id: nil
         },
         %{
           name: "contact_us_form",
@@ -460,20 +476,40 @@ if Code.ensure_loaded?(Faker) do
                 "id" => "screen_1",
                 "title" => "Contact Us",
                 "description" => "Tell us how we can help you",
-                "fields" => [
-                  %{
-                    "id" => "query",
-                    "label" => "Your Query",
-                    "type" => "text",
-                    "required" => true
-                  }
-                ],
+                "layout" => %{
+                  "children" => [
+                    %{
+                      "type" => "Form",
+                      "children" => [
+                        %{
+                          "id" => "query",
+                          "label" => "Your Query",
+                          "type" => "text",
+                          "required" => true
+                        },
+                        %{
+                          "on-click-action" => %{
+                            "name" => "complete",
+                            "payload" => %{
+                              "screen_1_Purchase_experience_0" => "${form.Purchase_experience}",
+                              "screen_1_Delivery_and_setup_1" => "${form.Delivery_and_setup}",
+                              "screen_1_Customer_service_2" => "${form.Customer_service}",
+                              "screen_0_Choose_one_0" => "${data.screen_0_Choose_one_0}",
+                              "screen_0_Leave_a_comment_1" => "${data.screen_0_Leave_a_comment_1}"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
                 "actions" => [%{"type" => "submit", "label" => "Send"}]
               }
             ]
           },
           categories: [:contact_us],
-          organization_id: organization.id
+          organization_id: organization.id,
+          sheet_id: sheet_1.id
         },
         %{
           name: "feedback_form",
@@ -506,7 +542,8 @@ if Code.ensure_loaded?(Faker) do
             ]
           },
           categories: [:survey, :customer_support],
-          organization_id: organization.id
+          organization_id: organization.id,
+          sheet_id: nil
         },
         %{
           name: "newsletter_subscription_form",
@@ -533,7 +570,8 @@ if Code.ensure_loaded?(Faker) do
             ]
           },
           categories: [:customer_support],
-          organization_id: organization.id
+          organization_id: organization.id,
+          sheet_id: sheet_2.id
         },
         %{
           name: "event_registration_form",
@@ -573,7 +611,8 @@ if Code.ensure_loaded?(Faker) do
             ]
           },
           categories: [:customer_support],
-          organization_id: organization.id
+          organization_id: organization.id,
+          sheet_id: nil
         }
       ]
 
@@ -2061,6 +2100,28 @@ if Code.ensure_loaded?(Faker) do
           group_id: group.id,
           organization_id: organization.id
         })
+      end)
+    end
+
+    @spec seed_sheets(Organization.t()) :: :ok
+    defp seed_sheets(organization) do
+      sheets = [
+        %{
+          label: "Responses Sheet",
+          sheet_id: 1,
+          url: "https://docs.google.com/spreadsheets/d/#{Faker.String.base64(10)}",
+          organization_id: organization.id
+        },
+        %{
+          label: "User Data Sheet",
+          sheet_id: 2,
+          url: "https://docs.google.com/spreadsheets/d/#{Faker.String.base64(10)}",
+          organization_id: organization.id
+        }
+      ]
+
+      Enum.each(sheets, fn sheet ->
+        Repo.insert!(struct(Sheet, sheet))
       end)
     end
 
