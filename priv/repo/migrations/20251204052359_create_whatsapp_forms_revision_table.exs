@@ -13,7 +13,7 @@ defmodule Glific.Repo.Migrations.CreateWhatsappFormsRevisionTable do
     end
 
     create index(:whatsapp_form_revisions, [:whatsapp_form_id])
-    create index(:whatsapp_form_revisions, [:user_id])
+    create unique_index(:whatsapp_form_revisions, [:whatsapp_form_id, :revision_number])
 
     execute """
     CREATE OR REPLACE FUNCTION set_whatsapp_form_revision_number()
