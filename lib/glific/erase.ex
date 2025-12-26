@@ -442,7 +442,7 @@ defmodule Glific.Erase do
       category: "Organization",
       message: "Failed to delete organization with ID #{organization_id}. Error: #{reason}",
       severity: :critical,
-      organization_id: Repo.get_organization_id(),
+      organization_id: Glific.glific_organization_id(),
       entity: %{
         id: organization_id
       }
