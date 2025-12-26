@@ -672,15 +672,18 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert get_in(out_of_office, ["enabled_days", Access.at(1), "enabled"]) == false
   end
 
-  test "delete an organization", %{user: user} do
-    organization = Fixtures.organization_fixture()
+  test "delete an organization queues a background job", %{user: user} do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
-    # sometime This is causing a deadlock issue so we need to fix this
     result = auth_query_gql_by(:delete, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteOrganization", "errors"]) == nil
 
+    # Organization should still exist immediately after mutation
+    assert {:ok, _org} = Repo.fetch(Organization, organization.id)
+
+    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :purge, with_safety: false)
     result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
