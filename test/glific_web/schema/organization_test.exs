@@ -673,7 +673,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete an organization queues a background job", %{user: user} do
-    organization = Fixtures.organization_fixture()
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
