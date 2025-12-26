@@ -427,7 +427,7 @@ defmodule Glific.Erase do
       message:
         "Organization '#{organization.name}' (ID: #{organization.id}) has been successfully deleted.",
       severity: :info,
-      organization_id: Repo.get_organization_id(),
+      organization_id: Glific.glific_organization_id(),
       entity: %{
         id: organization.id,
         name: organization.name
