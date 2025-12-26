@@ -16,6 +16,9 @@ defmodule Glific.SheetsTest do
   describe "sheets" do
     setup do
       Tesla.Mock.mock(fn
+        %{method: :get, url: nil} ->
+          {:error, :invalid_url}
+
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
@@ -75,7 +78,7 @@ defmodule Glific.SheetsTest do
     end
 
     test "create_sheet/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Sheets.create_sheet(@invalid_attrs)
+      assert {:error, "Invalid sheet URL"} = Sheets.create_sheet(@invalid_attrs)
     end
 
     test "update_sheet/2 with valid data updates the sheet", attrs do
@@ -87,7 +90,7 @@ defmodule Glific.SheetsTest do
 
     test "update_sheet/2 with invalid data returns error changeset", attrs do
       sheet = Fixtures.sheet_fixture(attrs)
-      assert {:error, %Ecto.Changeset{}} = Sheets.update_sheet(sheet, @invalid_attrs)
+      assert {:error, "Invalid sheet URL"} = Sheets.update_sheet(sheet, @invalid_attrs)
       assert sheet == Sheets.get_sheet!(sheet.id)
     end
 
