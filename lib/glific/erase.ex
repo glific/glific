@@ -6,6 +6,7 @@ defmodule Glific.Erase do
 
   alias Glific.Contacts.Contact
   alias Glific.Notifications
+  alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Partners.Organization
   alias Glific.Repo

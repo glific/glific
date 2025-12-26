@@ -518,10 +518,7 @@ defmodule Glific do
   def glific_organization_id do
     app_env = Application.get_env(:glific, :environment)
 
-    cond do
-      app_env == :prod -> 2
-      true -> 1
-    end
+    if app_env == :prod, do: 2, else: 1
   end
 
   @doc """
