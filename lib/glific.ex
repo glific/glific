@@ -564,7 +564,7 @@ defmodule Glific do
 
     delay = Map.get(retry_config, :delay, 500)
 
-    max_retries = Map.get(retry_config, :max_retries, 3)
+    max_retries = Map.get(retry_config, :max_retries, 2)
 
     [
       {

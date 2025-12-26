@@ -3,6 +3,7 @@ defmodule Glific.EraseTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Contacts.ContactHistory,
     Erase,
     Fixtures,
     Flows.FlowRevision,
@@ -251,5 +252,49 @@ defmodule Glific.EraseTest do
     assert :ok = perform_job(Erase, job.args)
 
     assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
+  end
+
+  test "perform_periodic clears contact histories older than 2 month", attrs do
+    contact = Fixtures.contact_fixture(attrs)
+
+    attrs =
+      %{
+        event_type: "contact_flow_ended",
+        event_label: "Flow Completed",
+        contact_id: contact.id,
+        event_datetime: DateTime.utc_now(),
+        organization_id: contact.organization_id,
+        event_meta: %{}
+      }
+
+    %ContactHistory{}
+    |> ContactHistory.changeset(attrs)
+    |> Repo.insert!()
+    |> Ecto.Changeset.change(%{
+      inserted_at: DateTime.add(DateTime.utc_now(), -90, :day),
+      updated_at: DateTime.add(DateTime.utc_now(), -90, :day)
+    })
+    |> Repo.update()
+
+    %ContactHistory{}
+    |> ContactHistory.changeset(attrs)
+    |> Repo.insert()
+
+    histories =
+      ContactHistory
+      |> where([ch], ch.contact_id == ^contact.id)
+      |> order_by([ch], ch.event_datetime)
+      |> Repo.all()
+
+    assert length(histories) == 2
+    Erase.clean_old_records()
+
+    histories =
+      ContactHistory
+      |> where([ch], ch.contact_id == ^contact.id)
+      |> order_by([ch], ch.event_datetime)
+      |> Repo.all()
+
+    assert length(histories) == 1
   end
 end

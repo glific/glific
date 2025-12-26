@@ -166,19 +166,24 @@ defmodule Glific.Erase do
   @spec remove_old_records() :: any
   defp remove_old_records do
     [
-      {"message_broadcast_contacts", "week"},
-      {"notifications", "week"},
-      {"webhook_logs", "week"},
-      {"flow_contexts", "month"},
-      {"flow_results", "month"},
-      {"messages_conversations", "month"},
-      {"user_jobs", "month"},
-      {"issued_certificates", "month"}
+      {"message_broadcast_contacts", 1, "week"},
+      {"notifications", 1, "week"},
+      {"webhook_logs", 1, "week"},
+      {"flow_contexts", 1, "month"},
+      {"flow_results", 1, "month"},
+      {"messages_conversations", 1, "month"},
+      {"user_jobs", 1, "month"},
+      {"issued_certificates", 1, "month"},
+      {"contact_histories", 2, "month"}
     ]
-    |> Enum.each(fn {table, duration} ->
+    |> Enum.each(fn {table, duration, duration_type} ->
+      duration = to_string(duration)
+
       Repo.delete_all(
         from(fc in table,
-          where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^duration)
+          where:
+            fc.inserted_at <
+              fragment("CURRENT_DATE - (? || ?)::interval", ^duration, ^duration_type)
         ),
         skip_organization_id: true,
         timeout: 400_000
