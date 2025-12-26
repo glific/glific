@@ -11,6 +11,7 @@ defmodule Glific.EraseTest do
     Messages.Message,
     Notifications,
     Notifications.Notification,
+    Partners.Organization,
     Repo
   }
 
@@ -203,7 +204,7 @@ defmodule Glific.EraseTest do
   end
 
   test "successfully processes organization deletion" do
-    organization = Fixtures.organization_fixture(%{is_active: false})
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
     assert {:ok, job} = Erase.delete_organization(organization.id)
     assert %Oban.Job{args: %{"organization_id" => organization_id}} = job
@@ -219,6 +220,13 @@ defmodule Glific.EraseTest do
     assert {:error, "Organization not found"} = perform_job(Erase, job.args)
   end
 
+  test "handles organization that is not deletable" do
+    organization = Fixtures.organization_fixture(%{status: :active})
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert {:error, "Organization not deletable"} = perform_job(Erase, job.args)
+  end
+
   test "enqueues organization deletion job correctly" do
     organization = Fixtures.organization_fixture(%{is_active: false})
 
@@ -229,7 +237,7 @@ defmodule Glific.EraseTest do
   end
 
   test "handles organization deletion with dependent data" do
-    organization = Fixtures.organization_fixture(%{is_active: false})
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
     contact = Fixtures.contact_fixture(%{organization_id: organization.id})
 
     Fixtures.message_fixture(%{

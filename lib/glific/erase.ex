@@ -106,6 +106,7 @@ defmodule Glific.Erase do
 
     with {:ok, organization} <-
            Repo.fetch(Organization, organization_id, skip_organization_id: true),
+          true <- can_delete_organization?(organization),
          {:ok, deleted_organization} <- Partners.delete_organization(organization) do
       Logger.info(
         "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
@@ -114,6 +115,11 @@ defmodule Glific.Erase do
       send_success_notification(deleted_organization)
       :ok
     else
+      false ->
+        Logger.error("Organization with ID #{organization_id} is not deletable, status is not 'ready_to_delete'")
+        send_failure_notification(organization_id, "Organization is not in 'ready_to_delete' status")
+        {:error, "Organization not deletable"}
+
       {:error, [_, "Resource not found"]} ->
         Logger.error("Organization with ID #{organization_id} not found")
         send_failure_notification(organization_id, "Organization not found")
@@ -128,6 +134,9 @@ defmodule Glific.Erase do
         {:error, reason}
     end
   end
+
+  @spec can_delete_organization?(Organization.t()) :: boolean
+  defp can_delete_organization?(organization), do: organization.status == :ready_to_delete
 
   @spec refresh_tables() :: any
   defp refresh_tables do
