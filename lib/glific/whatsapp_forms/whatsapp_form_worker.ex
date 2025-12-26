@@ -7,7 +7,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   use Oban.Worker,
     queue: :default,
     max_attempts: 2,
-    priority: 1
+    priority: 2
 
   alias Glific.{
     Repo,
