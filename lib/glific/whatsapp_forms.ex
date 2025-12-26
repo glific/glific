@@ -69,6 +69,11 @@ defmodule Glific.WhatsappForms do
 
   def publish_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, form} <-
+           ApiClient.update_whatsapp_form_json(form.meta_flow_id, %{
+             definition: form.definition,
+             organization_id: form.organization_id
+           }),
          {:ok, _response} <-
            ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
          {:ok, updated_form} <- update_form_status(form, :published) do
@@ -123,18 +128,12 @@ defmodule Glific.WhatsappForms do
   @doc """
   Updates the WhatsApp form JSON with the definition from the given revision
   """
-  @spec update_whatsapp_form_json(non_neg_integer(), WhatsappFormRevision.t()) ::
+  @spec update_revision_id(non_neg_integer(), non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
-  def update_whatsapp_form_json(whatsapp_form_id, revision) do
-    attrs = %{
-      definition: revision.definition,
-      organization_id: revision.organization_id
-    }
-
-    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id),
-         {:ok, _} <- ApiClient.update_whatsapp_form_json(form.meta_flow_id, attrs) do
+  def update_revision_id(whatsapp_form_id, revision_id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id) do
       form
-      |> WhatsappForm.changeset(%{revision_id: revision.id})
+      |> WhatsappForm.changeset(%{revision_id: revision_id})
       |> Repo.update()
     end
   end
@@ -212,7 +211,7 @@ defmodule Glific.WhatsappForms do
              organization_id: whatsapp_form.organization_id
            }),
          {:ok, _updated_form} <-
-           update_whatsapp_form_json(whatsapp_form.id, revision) do
+           update_revision_id(whatsapp_form.id, revision.id) do
       {:ok, whatsapp_form}
     end
   end

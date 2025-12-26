@@ -25,7 +25,7 @@ defmodule Glific.WhatsappFormsRevisions do
 
     with {:ok, revision} <- create_revision(payload),
          {:ok, _form} <-
-           WhatsappForms.update_whatsapp_form_json(attrs.whatsapp_form_id, revision) do
+           WhatsappForms.update_revision_id(attrs.whatsapp_form_id, revision.id) do
       {:ok, revision}
     end
   end
@@ -58,7 +58,7 @@ defmodule Glific.WhatsappFormsRevisions do
   def list_revisions(whatsapp_form_id, limit \\ 10) do
     WhatsappFormRevision
     |> where([r], r.whatsapp_form_id == ^whatsapp_form_id)
-    |> order_by([r], desc: r.inserted_at)
+    |> order_by([r], desc: r.revision_number)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -66,12 +66,14 @@ defmodule Glific.WhatsappFormsRevisions do
   @doc """
   Reverts a WhatsApp form to a specific revision
   """
-  @spec revert_to_revision(non_neg_integer(), non_neg_integer()) ::
+  @spec revert_to_revision(String.t(), non_neg_integer()) ::
           {:ok, WhatsappFormRevision.t()} | {:error, any()}
   def revert_to_revision(whatsapp_form_id, revision_id) do
+    whatsapp_form_id = String.to_integer(whatsapp_form_id)
+
     with {:ok, revision} <- get_revision(revision_id),
          true <- revision.whatsapp_form_id == whatsapp_form_id,
-         {:ok, _form} <- WhatsappForms.update_revision_number(whatsapp_form_id, revision_id) do
+         {:ok, _form} <- WhatsappForms.update_revision_id(whatsapp_form_id, revision.id) do
       {:ok, revision}
     else
       false -> {:error, "Revision does not belong to this form"}
