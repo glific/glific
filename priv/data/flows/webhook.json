@@ -76,5 +76,12 @@
       "Content-Type": "application/json"
     },
     "response_format_example": "{\"certificate_url\": \"https://storage.googleapis.com/glific-media-bucket/certificate_id_5_contact_12345.png\", \"success\": true}"
+  },
+  {
+    "name": "custom_webhook",
+    "body": "{}",
+    "headers": {
+      "Content-Type": "application/json"
+    }
   }
 ]
