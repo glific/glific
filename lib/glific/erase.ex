@@ -91,6 +91,7 @@ defmodule Glific.Erase do
   end
 
   @impl Oban.Worker
+  @spec perform(Oben.Job.t()) :: :ok | {:error, any()}
   def perform(%Oban.Job{
         args: %{
           "batch_size" => batch_size,
