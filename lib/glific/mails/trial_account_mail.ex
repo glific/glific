@@ -26,8 +26,7 @@ defmodule Glific.Mails.TrialAccountMail do
       body,
       send_to: recipients,
       from_email: {"Glific Team", "connect@glific.org"},
-      ignore_cc_support: true,
-      in_cc: []
+      ignore_cc_support: true
     )
   end
 
