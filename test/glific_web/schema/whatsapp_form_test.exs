@@ -63,6 +63,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   test "publishes a whatsapp form and updates its status to published",
        %{manager: user} do
     Tesla.Mock.mock(fn
+      %{method: :put, url: url} when is_binary(url) ->
+        %Tesla.Env{
+          status: 200,
+          body: %{status: "success", success: true}
+        }
+
       %{method: :post} ->
         %Tesla.Env{status: 200, body: %{"status" => "success"}}
     end)
@@ -383,7 +389,6 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
       valid_attrs = %{
         name: whatsapp_form_1.name,
         description: whatsapp_form_1.description,
-        form_json: whatsapp_form_1.definition,
         categories: ["other"],
         organization_id: whatsapp_form_1.organization_id,
         google_sheet_url: sheet.url

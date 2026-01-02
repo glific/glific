@@ -8,7 +8,8 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Sheets.Sheet,
-    WhatsappForms
+    WhatsappForms,
+    WhatsappFormsRevisions
   }
 
   @org_id 1
@@ -92,7 +93,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     valid_attrs = %{
       "name" => "Test Form",
-      "formJson" => Jason.encode!(@form_json),
       "description" => "A test WhatsApp form",
       "categories" => ["other"],
       "google_sheet_url" => sheet_url
@@ -176,7 +176,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     valid_attrs = %{
       "name" => "Test Form",
-      "formJson" => Jason.encode!(@form_json),
       "description" => "A test WhatsApp form",
       "categories" => ["other"],
       "google_sheet_url" => sheet_url
@@ -264,7 +263,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
       attrs_2 = %{
         "name" => "Test Form 2",
-        "formJson" => Jason.encode!(@form_json),
         "description" => "A test WhatsApp form",
         "categories" => ["other"],
         "google_sheet_url" => sheet_url
@@ -301,17 +299,18 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end)
 
     {:ok, %{whatsapp_form: whatsapp_form}} =
-      WhatsappForms.create_whatsapp_form(%{
-        name: "Initial Form",
-        form_json: @form_json,
-        description: "Initial description",
-        categories: ["other"],
-        organization_id: user.organization_id
-      })
+      WhatsappForms.create_whatsapp_form(
+        %{
+          name: "Initial Form",
+          description: "Initial description",
+          categories: ["other"],
+          organization_id: user.organization_id
+        },
+        user
+      )
 
     valid_update_attrs = %{
       "name" => "Updated Test Form",
-      "formJson" => Jason.encode!(@form_json),
       "description" => "An updated test WhatsApp form",
       "categories" => ["other"]
     }
@@ -403,14 +402,16 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
       Partners.create_credential(sheet_attrs)
 
       {:ok, %{whatsapp_form: whatsapp_form}} =
-        WhatsappForms.create_whatsapp_form(%{
-          name: "Initial Form",
-          form_json: @form_json,
-          description: "Initial description",
-          categories: ["other"],
-          organization_id: user.organization_id,
-          google_sheet_url: "https://docs.google.com/spreadsheets/d/OLD/edit#gid=0"
-        })
+        WhatsappForms.create_whatsapp_form(
+          %{
+            name: "Initial Form",
+            description: "Initial description",
+            categories: ["other"],
+            organization_id: user.organization_id,
+            google_sheet_url: "https://docs.google.com/spreadsheets/d/OLD/edit#gid=0"
+          },
+          user
+        )
 
       {:ok, sheet_before_update} =
         Repo.fetch_by(Sheet, %{
@@ -421,7 +422,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
       update_attrs = %{
         "name" => "Updated Test Form",
-        "formJson" => Jason.encode!(@form_json),
         "description" => "An updated test WhatsApp form",
         "categories" => ["other"],
         "google_sheet_url" => sheet_url
@@ -466,13 +466,15 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     end)
 
     {:ok, %{whatsapp_form: whatsapp_form}} =
-      WhatsappForms.create_whatsapp_form(%{
-        name: "Initial Form",
-        form_json: @form_json,
-        description: "Initial description",
-        categories: ["other"],
-        organization_id: user.organization_id
-      })
+      WhatsappForms.create_whatsapp_form(
+        %{
+          name: "Initial Form",
+          description: "Initial description",
+          categories: ["other"],
+          organization_id: user.organization_id
+        },
+        user
+      )
 
     result =
       auth_query_gql_by(:whatsapp_form, user,
@@ -556,7 +558,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   test "creates whatsapp form and handles duplicate tag error gracefully", %{user: user} do
     valid_attrs = %{
       name: "Test Form",
-      form_json: @form_json,
       description: "A test WhatsApp form",
       categories: ["other"],
       organization_id: user.organization_id
@@ -576,7 +577,7 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
         end
     end)
 
-    result = WhatsappForms.create_whatsapp_form(valid_attrs)
+    result = WhatsappForms.create_whatsapp_form(valid_attrs, user)
     # Should still succeed and create the form
     assert {:ok, %{whatsapp_form: whatsapp_form}} = result
     assert whatsapp_form.name == "Test Form"
@@ -585,7 +586,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
   test "does not create whatsapp form if subscription API fails with other error", %{user: user} do
     valid_attrs = %{
       name: "Test Form",
-      form_json: @form_json,
       description: "A test WhatsApp form",
       categories: ["other"],
       organization_id: user.organization_id
@@ -605,14 +605,13 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
         end
     end)
 
-    result = WhatsappForms.create_whatsapp_form(valid_attrs)
+    result = WhatsappForms.create_whatsapp_form(valid_attrs, user)
     assert {:error, %Tesla.Env{status: 500, body: "Internal server error"}} = result
   end
 
   test "should create the second form without calling subscription api", %{user: user} do
     valid_attrs1 = %{
       name: "Test Form",
-      form_json: @form_json,
       description: "A test WhatsApp form",
       categories: ["other"],
       organization_id: user.organization_id
@@ -620,7 +619,6 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
 
     valid_attrs2 = %{
       name: "Test Form 2",
-      form_json: @form_json,
       description: "Another test WhatsApp form",
       categories: ["other"],
       organization_id: user.organization_id
@@ -643,32 +641,48 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
         end
     end)
 
-    result = WhatsappForms.create_whatsapp_form(valid_attrs1)
+    result = WhatsappForms.create_whatsapp_form(valid_attrs1, user)
     assert {:ok, %{whatsapp_form: whatsapp_form}} = result
     assert whatsapp_form.name == "Test Form"
 
-    result2 = WhatsappForms.create_whatsapp_form(valid_attrs2)
+    result2 = WhatsappForms.create_whatsapp_form(valid_attrs2, user)
     # Should still succeed and create the form
     assert {:ok, %{whatsapp_form: whatsapp_form2}} = result2
     assert whatsapp_form2.name == "Test Form 2"
   end
 
   test "returns correct headers extracted from real form structure", %{
-    organization_id: organization_id
+    organization_id: organization_id,
+    user: user
   } do
     Tesla.Mock.mock(fn
-      %{method: :post, url: _url} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "spreadsheetId" => "test_id",
-              "updates" => %{
-                "updatedRange" => "A1:Z1",
-                "updatedRows" => 1
-              }
-            })
-        }
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "googleapis.com") && String.contains?(url, ":append") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "spreadsheetId" => "test_id",
+                  "updates" => %{
+                    "updatedRange" => "A1:Z1",
+                    "updatedRows" => 1
+                  }
+                })
+            }
+
+          String.contains?(url, "/flows") ->
+            %Tesla.Env{
+              status: 201,
+              body: %{id: "1519604592614438", status: "success", validation_errors: []}
+            }
+
+          String.contains?(url, "subscription") ->
+            %Tesla.Env{
+              status: 200,
+              body: "{\"status\":\"success\",\"subscription\":{\"active\":true}}"
+            }
+        end
     end)
 
     with_mock(
@@ -696,16 +710,31 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
       Partners.create_credential(valid_attrs)
 
       # Create a form with the complete structure from @form_json
-      form = %WhatsappForms.WhatsappForm{
-        sheet_id: 1,
-        definition: @form_json,
-        sheet: %{
-          url: "https://docs.google.com/spreadsheets/d/1A2B3C4D5E6F7G8H9I0J/edit#gid=0"
-        },
-        organization_id: organization_id
-      }
+      {:ok, %{whatsapp_form: whatsapp_form}} =
+        WhatsappForms.create_whatsapp_form(
+          %{
+            name: "Test Form with Headers",
+            description: "A test WhatsApp form with headers",
+            categories: ["other"],
+            organization_id: organization_id,
+            google_sheet_url: "https://docs.google.com/spreadsheets/d/test_id/edit#gid=0"
+          },
+          user
+        )
 
-      assert {:ok, headers} = WhatsappForms.append_headers_to_sheet(form)
+      WhatsappFormsRevisions.save_revision(
+        %{
+          whatsapp_form_id: whatsapp_form.id,
+          definition: @form_json
+        },
+        user
+      )
+
+      {:ok, whatsapp_form} =
+        whatsapp_form.id
+        |> WhatsappForms.get_whatsapp_form_by_id()
+
+      assert {:ok, headers} = WhatsappForms.append_headers_to_sheet(whatsapp_form)
 
       assert length(headers) == 9
 
