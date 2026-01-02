@@ -7,5 +7,12 @@ query list_whatsapp_forms($filter: WhatsappFormFilter) {
     metaFlowId
     categories
     definition
+    sheet {
+      id
+      label
+      url
+      isActive
+      sheetDataCount
+    }
   }
 }

@@ -7,8 +7,20 @@ fragment WhatsappFormFields on WhatsappFormResult {
     definition
     description
     metaFlowId
+    sheetId
+    sheet {
+      id
+      url
+    }
     insertedAt
     updatedAt
+    sheet {
+      id
+      label
+      url
+      isActive
+      sheetDataCount
+    }
   }
 }
 
