@@ -69,7 +69,6 @@ defmodule Glific.WhatsappForms do
 
   def publish_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
-         form = Repo.preload(form, [:revision]),
          {:ok, _} <-
            ApiClient.update_whatsapp_form_json(form.meta_flow_id, %{
              definition: form.revision.definition,
@@ -116,7 +115,13 @@ defmodule Glific.WhatsappForms do
   @spec get_whatsapp_form_by_id(non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, any()}
   def get_whatsapp_form_by_id(id) do
-    Repo.fetch_by(WhatsappForm, %{id: id})
+    case Repo.fetch_by(WhatsappForm, %{id: id}) do
+      {:ok, whatsapp_form} ->
+        {:ok, Repo.preload(whatsapp_form, [:sheet, :revision])}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -188,7 +193,6 @@ defmodule Glific.WhatsappForms do
   defp prepare_attrs(validated_attrs, _, :update) do
     db_attrs = %{
       name: validated_attrs.name,
-      definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
       categories: validated_attrs.categories,
       organization_id: validated_attrs.organization_id
@@ -210,10 +214,8 @@ defmodule Glific.WhatsappForms do
              definition: WhatsappFormsRevisions.default_definition(),
              user_id: user.id,
              organization_id: whatsapp_form.organization_id
-           }),
-         {:ok, _updated_form} <-
-           update_revision_id(whatsapp_form.id, revision.id) do
-      {:ok, whatsapp_form}
+           }) do
+      update_revision_id(whatsapp_form.id, revision.id)
     end
   end
 
@@ -347,7 +349,7 @@ defmodule Glific.WhatsappForms do
   def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
 
   def append_headers_to_sheet(%{
-        definition: %{"screens" => screens},
+        revision: %{definition: %{"screens" => screens}},
         sheet: %{url: url},
         organization_id: organization_id
       }) do
