@@ -5,6 +5,7 @@ defmodule Glific.TrialUsers do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Glific.Repo
   alias __MODULE__
 
   @type t() :: %__MODULE__{
@@ -24,6 +25,7 @@ defmodule Glific.TrialUsers do
     :email,
     :phone
   ]
+
   @optional_fields [
     :organization_name,
     :otp_entered
@@ -39,6 +41,37 @@ defmodule Glific.TrialUsers do
   end
 
   @doc """
+  Creates a trial user
+  """
+  @spec create_trial_user(map()) :: {:ok, TrialUsers.t()} | {:error, Ecto.Changeset.t()}
+  def create_trial_user(params) do
+    %TrialUsers{}
+    |> changeset(params)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a trial user
+  """
+  @spec update_trial_user(TrialUsers.t(), map()) ::
+          {:ok, TrialUsers.t()} | {:error, Ecto.Changeset.t()}
+  def update_trial_user(%TrialUsers{} = trial_user, attrs) do
+    trial_user
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  @spec validate_email_format(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_email_format(changeset) do
+    validate_change(changeset, :email, fn :email, email ->
+      case Pow.Ecto.Schema.Changeset.validate_email(email) do
+        :ok -> []
+        {:error, reason} -> [email: reason]
+      end
+    end)
+  end
+
+  @doc """
   Standard changeset pattern we use for all data types
   """
   @spec changeset(TrialUsers.t(), map()) :: Ecto.Changeset.t()
@@ -46,6 +79,7 @@ defmodule Glific.TrialUsers do
     trial_org_data
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_email_format()
     |> unique_constraint(:phone)
     |> unique_constraint(:email)
   end
