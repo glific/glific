@@ -13,6 +13,7 @@ defmodule Glific.WhatsappForms do
     Sheets,
     Sheets.GoogleSheets,
     Sheets.Sheet,
+    Users.User,
     WhatsappForms.WhatsappForm,
     WhatsappFormsRevisions
   }
@@ -34,7 +35,7 @@ defmodule Glific.WhatsappForms do
   @doc """
   Creates a WhatsApp form with an initial revision
   """
-  @spec create_whatsapp_form(map(), map()) :: {:ok, map()} | {:error, any()}
+  @spec create_whatsapp_form(map(), User.t()) :: {:ok, map()} | {:error, any()}
   def create_whatsapp_form(attrs, user) do
     attrs = Map.put(attrs, :operation, :create)
 
