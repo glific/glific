@@ -10,6 +10,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Contacts.Contact,
     Partners.Organization,
     Repo,
+    TrialUsers,
     Users,
     Users.User
   }
@@ -34,7 +35,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       json(conn, %{
         success: true,
         data: %{
-          login_url: "https://#{shortcode}.glific.com"
+          login_url: "https://#{shortcode}.glific.com/login"
         }
       })
     else
@@ -53,7 +54,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
           error: "No trial accounts available at the moment"
         })
 
-      # All other Multi errors
       {:error, failed_step, reason, _changes} ->
         Logger.error(
           "Trial account allocation failed at #{failed_step}, reason: #{inspect(reason)}"
@@ -83,6 +83,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end)
     |> Multi.run(:user, fn _repo, %{update_organization: org, contact: contact} ->
       create_user(org, contact, phone, params)
+    end)
+    |> Multi.run(:update_trial_user, fn _repo, _changes ->
+      mark_otp_entered(phone)
     end)
     |> Repo.transaction()
   end
@@ -124,7 +127,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   defp create_contact(organization, phone, params) do
     contact_params = %{
       phone: phone,
-      name: params["name"],
+      name: params["username"],
       organization_id: organization.id,
       language_id: organization.default_language_id
     }
@@ -136,7 +139,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   defp create_user(organization, contact, phone, params) do
     user_params = %{
-      name: params["name"],
+      name: params["username"],
       phone: phone,
       password: params["password"],
       confirm_password: params["password"],
@@ -149,5 +152,22 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     }
 
     Users.create_user(user_params)
+  end
+
+  @spec mark_otp_entered(String.t()) :: {:ok, TrialUsers.t()} | {:error, :not_found}
+  defp mark_otp_entered(phone) do
+    trial_user =
+      from(t in TrialUsers,
+        where: t.phone == ^phone
+      )
+      |> Repo.one(skip_organization_id: true)
+
+    case trial_user do
+      nil ->
+        {:error, :not_found}
+
+      user ->
+        TrialUsers.update_trial_user(user, %{otp_entered: true})
+    end
   end
 end
