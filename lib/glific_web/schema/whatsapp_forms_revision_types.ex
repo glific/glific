@@ -1,4 +1,8 @@
 defmodule GlificWeb.Schema.WhatsappFormsRevisionTypes do
+  @moduledoc """
+  GraphQL Representation of Glific's WhatsApp Form Revision DataType
+  """
+
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers

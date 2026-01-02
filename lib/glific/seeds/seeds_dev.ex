@@ -42,7 +42,8 @@ if Code.ensure_loaded?(Faker) do
       WAGroup.WAManagedPhone,
       WAGroup.WAMessage,
       WAManagedPhones,
-      WhatsappForms.WhatsappForm
+      WhatsappForms.WhatsappForm,
+      WhatsappFormsRevisions
     }
 
     alias Faker.Lorem.Shakespeare
@@ -426,6 +427,7 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
 
       seed_sheets(organization)
+      seed_users(organization)
 
       {:ok, sheet_1} =
         Repo.fetch_by(Sheet, %{
@@ -445,21 +447,6 @@ if Code.ensure_loaded?(Faker) do
           description: "Simple signup flow to collect name and email",
           meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
           status: :published,
-          definition: %{
-            "version" => "1.0",
-            "screens" => [
-              %{
-                "id" => "screen_1",
-                "title" => "Sign Up",
-                "description" => "Please enter your details",
-                "fields" => [
-                  %{"id" => "name", "label" => "Full Name", "type" => "text", "required" => true},
-                  %{"id" => "email", "label" => "Email", "type" => "email", "required" => true}
-                ],
-                "actions" => [%{"type" => "submit", "label" => "Submit"}]
-              }
-            ]
-          },
           categories: [:sign_up, :lead_generation],
           organization_id: organization.id,
           sheet_id: nil
@@ -469,44 +456,6 @@ if Code.ensure_loaded?(Faker) do
           description: "Feedback and queries collection form",
           meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
           status: :draft,
-          definition: %{
-            "version" => "1.0",
-            "screens" => [
-              %{
-                "id" => "screen_1",
-                "title" => "Contact Us",
-                "description" => "Tell us how we can help you",
-                "layout" => %{
-                  "children" => [
-                    %{
-                      "type" => "Form",
-                      "children" => [
-                        %{
-                          "id" => "query",
-                          "label" => "Your Query",
-                          "type" => "text",
-                          "required" => true
-                        },
-                        %{
-                          "on-click-action" => %{
-                            "name" => "complete",
-                            "payload" => %{
-                              "screen_1_Purchase_experience_0" => "${form.Purchase_experience}",
-                              "screen_1_Delivery_and_setup_1" => "${form.Delivery_and_setup}",
-                              "screen_1_Customer_service_2" => "${form.Customer_service}",
-                              "screen_0_Choose_one_0" => "${data.screen_0_Choose_one_0}",
-                              "screen_0_Leave_a_comment_1" => "${data.screen_0_Leave_a_comment_1}"
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                "actions" => [%{"type" => "submit", "label" => "Send"}]
-              }
-            ]
-          },
           categories: [:contact_us],
           organization_id: organization.id,
           sheet_id: sheet_1.id
@@ -616,8 +565,22 @@ if Code.ensure_loaded?(Faker) do
         }
       ]
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       Enum.each(forms, fn form ->
-        Repo.insert!(struct(WhatsappForm, form))
+        whatsapp_form = Repo.insert!(struct(WhatsappForm, form))
+
+        {:ok, revision} =
+          WhatsappFormsRevisions.create_revision(%{
+            whatsapp_form_id: whatsapp_form.id,
+            definition: Map.get(form, :definition, WhatsappFormsRevisions.default_definition()),
+            user_id: user.id,
+            organization_id: whatsapp_form.organization_id
+          })
+
+        whatsapp_form
+        |> Ecto.Changeset.change(%{revision_id: revision.id})
+        |> Repo.update!()
       end)
     end
 

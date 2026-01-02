@@ -62,6 +62,11 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     |> parse_response("update_whatsapp_form")
   end
 
+  @doc """
+  Updates the JSON definition of a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form_json(String.t(), map()) ::
+          {:ok, map()} | {:error, String.t()}
   def update_whatsapp_form_json(meta_flow_id, params) do
     url = PartnerAPI.app_url!(params.organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
