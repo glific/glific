@@ -13,11 +13,14 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer() | nil,
-          revision_number: non_neg_integer(),
-          definition: map(),
-          whatsapp_form_id: non_neg_integer(),
+          revision_number: non_neg_integer() | nil,
+          definition: map() | nil,
+          whatsapp_form_id: non_neg_integer() | nil,
           user_id: non_neg_integer() | nil,
           organization_id: non_neg_integer() | nil,
+          whatsapp_form: WhatsappForm.t() | Ecto.Association.NotLoaded.t(),
+          user: User.t() | Ecto.Association.NotLoaded.t(),
+          organization: Organization.t() | Ecto.Association.NotLoaded.t(),
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
         }
@@ -29,9 +32,9 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
     field(:revision_number, :integer)
     field(:definition, :map)
 
-    belongs_to :whatsapp_form, WhatsappForm
-    belongs_to :user, User
-    belongs_to :organization, Organization
+    belongs_to(:whatsapp_form, WhatsappForm)
+    belongs_to(:user, User)
+    belongs_to(:organization, Organization)
 
     timestamps()
   end
