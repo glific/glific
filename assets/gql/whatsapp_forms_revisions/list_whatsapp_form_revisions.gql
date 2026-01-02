@@ -1,0 +1,11 @@
+query ListWhatsappFormRevisions($whatsappFormId: ID!, $limit: Int) {
+  listWhatsappFormRevisions(whatsappFormId: $whatsappFormId, limit: $limit) {
+    definition
+    id
+    insertedAt
+    revisionNumber
+    updatedAt
+    userId
+    whatsappFormId
+  }
+}

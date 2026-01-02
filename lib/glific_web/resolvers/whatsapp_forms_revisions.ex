@@ -19,9 +19,9 @@ defmodule GlificWeb.Resolvers.WhatsappFormsRevisions do
   @doc """
   Gets a specific revision by ID
   """
-  @spec get_revision(any(), map(), any()) :: {:ok, any()} | {:error, any()}
-  def get_revision(_, %{id: id}, _) do
-    case WhatsappFormsRevisions.get_revision(id) do
+  @spec whatsapp_form_revision(any(), map(), any()) :: {:ok, any()} | {:error, any()}
+  def whatsapp_form_revision(_, %{id: id}, _) do
+    case WhatsappFormsRevisions.get_whatsapp_form_revision(id) do
       {:ok, revision} -> {:ok, %{whatsapp_form_revision: revision}}
       error -> error
     end

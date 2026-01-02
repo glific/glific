@@ -43,8 +43,9 @@ defmodule Glific.WhatsappFormsRevisions do
   @doc """
   Gets a specific revision by ID
   """
-  @spec get_revision(non_neg_integer()) :: {:ok, WhatsappFormRevision.t()} | {:error, String.t()}
-  def get_revision(revision_id) do
+  @spec get_whatsapp_form_revision(non_neg_integer()) ::
+          {:ok, WhatsappFormRevision.t()} | {:error, String.t()}
+  def get_whatsapp_form_revision(revision_id) do
     case Repo.fetch_by(WhatsappFormRevision, %{id: revision_id}) do
       {:ok, revision} -> {:ok, revision}
       {:error, _} -> {:error, "Revision not found"}
@@ -71,7 +72,7 @@ defmodule Glific.WhatsappFormsRevisions do
   def revert_to_revision(whatsapp_form_id, revision_id) do
     whatsapp_form_id = String.to_integer(whatsapp_form_id)
 
-    with {:ok, revision} <- get_revision(revision_id),
+    with {:ok, revision} <- get_whatsapp_form_revision(revision_id),
          true <- revision.whatsapp_form_id == whatsapp_form_id,
          {:ok, _form} <- WhatsappForms.update_revision_id(whatsapp_form_id, revision.id) do
       {:ok, revision}

@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.WhatsappFormsRevisionTypes do
     field :whatsapp_form_revision, :whatsapp_form_revision_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
-      resolve(&Resolvers.WhatsappFormsRevisions.get_revision/3)
+      resolve(&Resolvers.WhatsappFormsRevisions.whatsapp_form_revision/3)
     end
 
     @desc "List revisions for a WhatsApp form (last 10 by default)"
