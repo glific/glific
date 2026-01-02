@@ -26,6 +26,8 @@ defmodule Glific.Contacts.Import do
 
   use Publicist
 
+  @contact_job_chunk_size 100
+
   @doc """
   This method allows importing of contacts to a particular organization and group
 
@@ -42,7 +44,6 @@ defmodule Glific.Contacts.Import do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
 
-    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     contact_attrs = %{
@@ -59,8 +60,6 @@ defmodule Glific.Contacts.Import do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
-
-    opts = Keyword.put(opts, :bsp_limit, get_bsp_limit(organization_id))
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
@@ -174,12 +173,18 @@ defmodule Glific.Contacts.Import do
     |> Repo.all()
   end
 
-  @spec cleanup_contact_data(map(), map(), String.t()) :: map()
+  @spec cleanup_contact_data(map() | String.t(), map(), String.t()) :: map()
+  defp cleanup_contact_data(%{"phone" => phone} = data, _contact_attrs, _date_format)
+       when phone in ["", nil] do
+    data
+  end
+
   defp cleanup_contact_data(
          data,
          %{user: _user, organization_id: organization_id} = contact_attrs,
          _date_format
-       ) do
+       )
+       when is_map(data) do
     %{
       name: data["name"],
       phone: data["phone"],
@@ -189,6 +194,11 @@ defmodule Glific.Contacts.Import do
       contact_fields: Map.drop(data, ["phone", "group", "language", "delete", "opt_in"])
     }
     |> add_language(data["language"])
+  end
+
+  # Handling csv parsing errors for rows
+  defp cleanup_contact_data(_data, _contact_attrs, _date_format) do
+    %{}
   end
 
   defp get_collection(:import_contact, data, contact_attrs) do
@@ -281,7 +291,7 @@ defmodule Glific.Contacts.Import do
       data
       |> CSV.decode(headers: true, field_transform: &String.trim/1)
       |> Stream.map(fn {_, data} -> cleanup_contact_data(data, params, date_format) end)
-      |> Stream.chunk_every(opts[:bsp_limit])
+      |> Stream.chunk_every(@contact_job_chunk_size)
       |> Stream.with_index()
       |> Enum.map(fn {chunk, index} ->
         ImportWorker.make_job(chunk, params, user_job.id, index * 2)
@@ -459,20 +469,5 @@ defmodule Glific.Contacts.Import do
   defp add_default_language(results) do
     {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
     Map.put(results, :language_id, en.id)
-  end
-
-  @spec get_bsp_limit(non_neg_integer()) :: non_neg_integer()
-  defp get_bsp_limit(organization_id) do
-    case Partners.organization(organization_id) do
-      {:error, _} ->
-        30
-
-      organization ->
-        bsp_limit = organization.services["bsp"].keys["bsp_limit"]
-        bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
-
-        # lets do 80% of organization bsp limit to allow replies to come in and be processed
-        div(bsp_limit * 80, 100)
-    end
   end
 end
