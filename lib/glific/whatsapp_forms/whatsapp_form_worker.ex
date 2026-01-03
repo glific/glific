@@ -10,7 +10,11 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     priority: 1
 
   alias Glific.{
+    Notifications,
+    Notifications.Notification,
+    Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
+    WhatsappForms,
     WhatsappForms.WhatsappForm,
     WhatsappFormsResponses
   }
@@ -62,13 +66,14 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   Standard perform method to use Oban worker.
   """
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) do
-    %{
-      "payload" => payload,
-      "whatsapp_form_id" => whatsapp_form_id,
-      "organization_id" => organization_id
-    } = args
-
+  @spec perform(Oban.Job.t()) :: {:error, any()} | :ok
+  def perform(%Oban.Job{
+        args: %{
+          "payload" => payload,
+          "whatsapp_form_id" => whatsapp_form_id,
+          "organization_id" => organization_id
+        }
+      }) do
     Repo.put_process_state(organization_id)
 
     whatsapp_form = Repo.get(WhatsappForm, whatsapp_form_id)
@@ -84,11 +89,6 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     end
   end
 
-  @doc """
-  Standard perform method to use Oban worker
-  """
-  @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: {:error, any()} | :ok
   def perform(%Oban.Job{
         args: %{
           "organization_id" => org_id,

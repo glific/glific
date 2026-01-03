@@ -8,6 +8,7 @@ defmodule Glific.WhatsappForms do
   alias Glific.{
     Enums.WhatsappFormCategory,
     Notifications,
+    Partners,
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
@@ -254,6 +255,56 @@ defmodule Glific.WhatsappForms do
     }
 
     {:ok, db_attrs}
+  end
+
+  @doc """
+  Saves or updates a single form from WBM.
+  """
+  @spec sync_single_form(map(), map(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  def sync_single_form(form, form_json, organization_id) do
+    attrs = %{
+      name: form["name"],
+      status: normalize_status(form["status"]),
+      categories: normalize_categories(form["categories"]),
+      description: Map.get(form, "description", ""),
+      meta_flow_id: form["id"],
+      organization_id: organization_id
+    }
+
+    organization = Partners.organization(organization_id)
+    root_user = organization.root_user
+
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
+      {:ok, existing_form} ->
+        xx
+        existing_form_revision = Repo.preload(existing_form, :revision)
+
+        current_definition = Map.get(existing_form_revision, :definition)
+
+        existing_form_with_revision_definition =
+          Map.put(existing_form, :definition, current_definition)
+
+        case form_changed?(existing_form_with_revision_definition, attrs) do
+          false ->
+            {:ok, existing_form}
+
+          true ->
+            revision_attrs = %{
+              whatsapp_form_id: existing_form.id,
+              definition: form_json
+            }
+
+            with {:ok, _revision} <-
+                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user),
+                 {:ok, updated_form} <- do_update_whatsapp_form(existing_form, attrs) do
+              {:ok, updated_form}
+            end
+        end
+
+      {:error, _} ->
+        do_create_whatsapp_form(attrs, root_user)
+    end
   end
 
   @spec do_create_whatsapp_form(map(), map()) ::
