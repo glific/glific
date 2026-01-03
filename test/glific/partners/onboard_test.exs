@@ -971,4 +971,65 @@ defmodule Glific.OnboardTest do
 
     assert %{is_valid: false} = Onboard.setup_v2(attrs)
   end
+
+  test "onboard setup v2, valid params for trial account" do
+    saas_org_id = Saas.organization_id()
+
+    {:ok, _saas_gcs_cred} =
+      Partners.create_credential(%{
+        organization_id: saas_org_id,
+        shortcode: "google_cloud_storage",
+        keys: %{},
+        secrets: %{
+          "bucket" => "test-bucket",
+          "service_account" => "{\"type\": \"service_account\", \"project_id\": \"test-project\"}"
+        },
+        is_active: true
+      })
+
+    attrs = %{
+      "name" => "trial account",
+      "email" => "foo@gmail.com",
+      "is_trial" => true
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "trial orgname acme",
+               project_name: "trial",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
+    end)
+
+    assert %{
+             is_valid: true,
+             messages: %{},
+             organization: organization,
+             contact: contact,
+             credential: credential
+           } =
+             Onboard.setup_v2(attrs)
+
+    user = Repo.preload(contact, [:user])
+    assert user.phone == @dummy_phone_number
+    assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
+    assert organization.is_active
+
+    assert organization.is_trial_org == true
+    assert organization.trial_expiration_date == nil
+  end
 end
