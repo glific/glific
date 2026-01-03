@@ -277,7 +277,6 @@ defmodule Glific.WhatsappForms do
 
     case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
       {:ok, existing_form} ->
-        xx
         existing_form_revision = Repo.preload(existing_form, :revision)
 
         current_definition = Map.get(existing_form_revision, :definition)
