@@ -7,13 +7,18 @@ defmodule Glific.WhatsappForms do
 
   alias Glific.{
     Enums.WhatsappFormCategory,
+    Notifications,
+    Partners,
     Providers.Gupshup.PartnerAPI,
     Providers.Gupshup.WhatsappForms.ApiClient,
     Repo,
     Sheets,
     Sheets.GoogleSheets,
     Sheets.Sheet,
-    WhatsappForms.WhatsappForm
+    Users.User,
+    WhatsappForms.WhatsappForm,
+    WhatsappFormsRevisions,
+    WhatsappForms.WhatsappFormWorker
   }
 
   require Logger
@@ -31,16 +36,16 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
-  Creates a WhatsApp form
+  Creates a WhatsApp form with an initial revision
   """
-  @spec create_whatsapp_form(map()) :: {:ok, map()} | {:error, any()}
-  def create_whatsapp_form(attrs) do
+  @spec create_whatsapp_form(map(), User.t()) :: {:ok, map()} | {:error, any()}
+  def create_whatsapp_form(attrs, user) do
     attrs = Map.put(attrs, :operation, :create)
 
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs, user),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
       Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
@@ -67,6 +72,50 @@ defmodule Glific.WhatsappForms do
   end
 
   @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(non_neg_integer()) ::
+          {:ok, String.t()} | {:error, any()}
+  def sync_whatsapp_form(organization_id) do
+    with {:ok, forms} <- ApiClient.list_whatsapp_forms(organization_id),
+         {:ok, _} <- sync_all_forms_for_org(forms, organization_id) do
+      {:ok, %{message: "Syncing of WhatsApp forms has started in the background."}}
+    end
+  end
+
+  @doc """
+  Handles syncing of a all WhatsApp form.
+  """
+  @spec sync_all_forms_for_org(list(map()), non_neg_integer()) :: {:ok, any()} | {:error, any()}
+  def sync_all_forms_for_org(forms, org_id) do
+    meta_flow_ids =
+      forms
+      |> Enum.map(fn form -> form.id end)
+
+    published_ids =
+      WhatsappForm
+      |> where([w], w.meta_flow_id in ^meta_flow_ids and w.status == :published)
+      |> select([w], w.meta_flow_id)
+      |> Repo.all()
+      |> MapSet.new()
+
+    forms =
+      Enum.reject(forms, fn form ->
+        MapSet.member?(published_ids, form.id)
+      end)
+
+    Notifications.create_notification(%{
+      category: "WhatsApp Forms",
+      message: "Syncing of whatsapp form templates has started in the background.",
+      severity: Notifications.types().info,
+      organization_id: org_id,
+      entity: %{Provider: "Gupshup"}
+    })
+
+    WhatsappFormWorker.schedule_next_form_sync(forms, org_id)
+  end
+
+  @doc """
     Publishes a WhatsApp form through the configured provider (e.g., Gupshup).
   """
   @spec publish_whatsapp_form(non_neg_integer()) ::
@@ -74,6 +123,11 @@ defmodule Glific.WhatsappForms do
 
   def publish_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
+         {:ok, _} <-
+           ApiClient.update_whatsapp_form_json(form.meta_flow_id, %{
+             definition: form.revision.definition,
+             organization_id: form.organization_id
+           }),
          {:ok, _response} <-
            ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
          {:ok, updated_form} <- update_form_status(form, :published),
@@ -118,7 +172,7 @@ defmodule Glific.WhatsappForms do
   def get_whatsapp_form_by_id(id) do
     case Repo.fetch_by(WhatsappForm, %{id: id}) do
       {:ok, whatsapp_form} ->
-        {:ok, Repo.preload(whatsapp_form, [:sheet])}
+        {:ok, Repo.preload(whatsapp_form, [:sheet, :revision])}
 
       {:error, reason} ->
         {:error, reason}
@@ -131,6 +185,19 @@ defmodule Glific.WhatsappForms do
   @spec list_whatsapp_forms(map()) :: [WhatsappForm.t()]
   def list_whatsapp_forms(args),
     do: Repo.list_filter(args, WhatsappForm, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Updates the WhatsApp form JSON with the definition from the given revision
+  """
+  @spec update_revision_id(non_neg_integer(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, any()}
+  def update_revision_id(whatsapp_form_id, revision_id) do
+    with {:ok, form} <- get_whatsapp_form_by_id(whatsapp_form_id) do
+      form
+      |> WhatsappForm.changeset(%{revision_id: revision_id})
+      |> Repo.update()
+    end
+  end
 
   @doc """
   Return the count of whatsapp forms
@@ -168,7 +235,6 @@ defmodule Glific.WhatsappForms do
     db_attrs = %{
       name: validated_attrs.name,
       organization_id: validated_attrs.organization_id,
-      definition: validated_attrs.form_json,
       meta_flow_id: api_response.id,
       status: "draft",
       description: validated_attrs.description,
@@ -182,7 +248,6 @@ defmodule Glific.WhatsappForms do
   defp prepare_attrs(%{operation: :update} = validated_attrs, _api_response) do
     db_attrs = %{
       name: validated_attrs.name,
-      definition: validated_attrs.form_json,
       description: Map.get(validated_attrs, :description),
       categories: validated_attrs.categories,
       organization_id: validated_attrs.organization_id,
@@ -192,12 +257,71 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
-  @spec do_create_whatsapp_form(map()) ::
+  @doc """
+  Saves or updates a single form from WBM.
+  """
+  @spec sync_single_form(map(), map(), non_neg_integer()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_whatsapp_form(attrs) do
-    %WhatsappForm{}
-    |> WhatsappForm.changeset(attrs)
-    |> Repo.insert()
+  def sync_single_form(form, form_json, organization_id) do
+    attrs = %{
+      name: form["name"],
+      status: normalize_status(form["status"]),
+      categories: normalize_categories(form["categories"]),
+      description: Map.get(form, "description", ""),
+      meta_flow_id: form["id"],
+      organization_id: organization_id
+    }
+
+    organization = Partners.organization(organization_id)
+    root_user = organization.root_user
+
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
+      {:ok, existing_form} ->
+        existing_form_revision = Repo.preload(existing_form, :revision)
+
+        current_definition = Map.get(existing_form_revision, :definition)
+
+        existing_form_with_revision_definition =
+          Map.put(existing_form, :definition, current_definition)
+
+        case form_changed?(existing_form_with_revision_definition, attrs) do
+          false ->
+            {:ok, existing_form}
+
+          true ->
+            revision_attrs = %{
+              whatsapp_form_id: existing_form.id,
+              definition: form_json
+            }
+
+            with {:ok, _revision} <-
+                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user),
+                 {:ok, updated_form} <- do_update_whatsapp_form(existing_form, attrs) do
+              {:ok, updated_form}
+            end
+        end
+
+      {:error, _} ->
+        do_create_whatsapp_form(attrs, root_user)
+    end
+  end
+
+  @spec do_create_whatsapp_form(map(), map()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_whatsapp_form(attrs, user) do
+    with {:ok, whatsapp_form} <-
+           %WhatsappForm{}
+           |> WhatsappForm.changeset(attrs)
+           |> Repo.insert(),
+         {:ok, revision} <-
+           WhatsappFormsRevisions.create_revision(%{
+             whatsapp_form_id: whatsapp_form.id,
+             definition: WhatsappFormsRevisions.default_definition(),
+             user_id: user.id,
+             organization_id: whatsapp_form.organization_id
+           }) do
+      update_revision_id(whatsapp_form.id, revision.id)
+    end
   end
 
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
@@ -330,7 +454,7 @@ defmodule Glific.WhatsappForms do
   def append_headers_to_sheet(%{sheet_id: nil}), do: {:ok, nil}
 
   def append_headers_to_sheet(%{
-        definition: %{"screens" => screens},
+        revision: %{definition: %{"screens" => screens}},
         sheet: %{url: url},
         organization_id: organization_id
       }) do
@@ -396,5 +520,33 @@ defmodule Glific.WhatsappForms do
       range: "A1",
       data: [headers]
     })
+  end
+
+  @spec normalize_categories(any()) :: list(atom() | String.t())
+
+  defp normalize_categories(categories) when is_list(categories) do
+    Enum.map(categories, fn category ->
+      category
+      |> to_string()
+      |> String.downcase()
+      |> String.to_existing_atom()
+    end)
+  end
+
+  @spec normalize_status(any()) :: atom() | String.t()
+
+  defp normalize_status(status) when is_binary(status) do
+    status
+    |> String.downcase()
+    |> String.to_existing_atom()
+  end
+
+  @spec form_changed?(map(), map()) :: boolean()
+  defp form_changed?(%WhatsappForm{} = existing_form, attrs) do
+    comparable_fields = [:name, :definition, :categories, :status]
+
+    Enum.any?(comparable_fields, fn field ->
+      Map.get(existing_form, field) != Map.get(attrs, field)
+    end)
   end
 end
