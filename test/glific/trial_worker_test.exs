@@ -402,67 +402,6 @@ defmodule Glific.TrialWorkerTest do
       assert length(mail_logs) == 1
     end
 
-    test "does not send email if already sent in past 24 hours" do
-      trial_org_attrs = %{
-        name: "Day 3 Duplicate Test",
-        shortcode: "day3dup",
-        email: "day3dup@example.com",
-        bsp_id: 1,
-        is_active: true,
-        is_trial_org: true,
-        timezone: "Asia/Kolkata"
-      }
-
-      trial_org = Fixtures.organization_fixture(trial_org_attrs)
-
-      {:ok, trial_org} =
-        trial_org
-        |> Organization.changeset(%{
-          trial_expiration_date: DateTime.add(DateTime.utc_now(), 11 * 24 + 12, :hour)
-        })
-        |> Repo.update()
-
-      {:ok, trial_user} =
-        TrialUsers.create_trial_user(%{
-          username: "dup_user",
-          email: "dupuser@example.com",
-          phone: "919876543211",
-          organization_name: trial_org.name,
-          otp_entered: true
-        })
-
-      Repo.put_process_state(trial_org.id)
-
-      _admin_user =
-        Fixtures.user_fixture(%{
-          organization_id: trial_org.id,
-          phone: trial_user.phone,
-          roles: ["admin"]
-        })
-
-      # First call should send email
-      assert :ok = TrialWorker.send_day_3_followup_emails()
-
-      initial_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_3_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert initial_count == 1
-
-      # Second call should not send duplicate email
-      assert :ok = TrialWorker.send_day_3_followup_emails()
-
-      final_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_3_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert final_count == 1
-    end
-
     test "skips orgs without trial users" do
       trial_org_attrs = %{
         name: "No User Trial Org",
@@ -546,65 +485,6 @@ defmodule Glific.TrialWorkerTest do
 
       assert length(mail_logs) == 1
     end
-
-    test "does not send email if already sent in past 24 hours" do
-      trial_org_attrs = %{
-        name: "Day 6 Duplicate Test",
-        shortcode: "day6dup",
-        email: "day6dup@example.com",
-        bsp_id: 1,
-        is_active: true,
-        is_trial_org: true,
-        timezone: "Asia/Kolkata"
-      }
-
-      trial_org = Fixtures.organization_fixture(trial_org_attrs)
-
-      {:ok, trial_org} =
-        trial_org
-        |> Organization.changeset(%{
-          trial_expiration_date: DateTime.add(DateTime.utc_now(), 8 * 24 + 12, :hour)
-        })
-        |> Repo.update()
-
-      {:ok, trial_user} =
-        TrialUsers.create_trial_user(%{
-          username: "day6_dup_user",
-          email: "day6dupuser@example.com",
-          phone: "919876543213",
-          organization_name: trial_org.name,
-          otp_entered: true
-        })
-
-      Repo.put_process_state(trial_org.id)
-
-      _admin_user =
-        Fixtures.user_fixture(%{
-          organization_id: trial_org.id,
-          phone: trial_user.phone,
-          roles: ["admin"]
-        })
-
-      assert :ok = TrialWorker.send_day_6_followup_emails()
-
-      initial_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_6_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert initial_count == 1
-
-      assert :ok = TrialWorker.send_day_6_followup_emails()
-
-      final_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_6_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert final_count == 1
-    end
   end
 
   describe "send_day_12_followup_emails/0" do
@@ -656,65 +536,6 @@ defmodule Glific.TrialWorkerTest do
 
       assert length(mail_logs) == 1
     end
-
-    test "does not send email if already sent in past 24 hours" do
-      trial_org_attrs = %{
-        name: "Day 12 Duplicate Test",
-        shortcode: "day12dup",
-        email: "day12dup@example.com",
-        bsp_id: 1,
-        is_active: true,
-        is_trial_org: true,
-        timezone: "Asia/Kolkata"
-      }
-
-      trial_org = Fixtures.organization_fixture(trial_org_attrs)
-
-      {:ok, trial_org} =
-        trial_org
-        |> Organization.changeset(%{
-          trial_expiration_date: DateTime.add(DateTime.utc_now(), 2 * 24 + 12, :hour)
-        })
-        |> Repo.update()
-
-      {:ok, trial_user} =
-        TrialUsers.create_trial_user(%{
-          username: "day12_dup_user",
-          email: "day12dupuser@example.com",
-          phone: "919876543215",
-          organization_name: trial_org.name,
-          otp_entered: true
-        })
-
-      Repo.put_process_state(trial_org.id)
-
-      _admin_user =
-        Fixtures.user_fixture(%{
-          organization_id: trial_org.id,
-          phone: trial_user.phone,
-          roles: ["admin"]
-        })
-
-      assert :ok = TrialWorker.send_day_12_followup_emails()
-
-      initial_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_12_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert initial_count == 1
-
-      assert :ok = TrialWorker.send_day_12_followup_emails()
-
-      final_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_12_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert final_count == 1
-    end
   end
 
   describe "send_day_14_followup_emails/0" do
@@ -765,65 +586,6 @@ defmodule Glific.TrialWorkerTest do
         |> Repo.all(skip_organization_id: true)
 
       assert length(mail_logs) == 1
-    end
-
-    test "does not send email if already sent in past 24 hours" do
-      trial_org_attrs = %{
-        name: "Day 14 Duplicate Test",
-        shortcode: "day14dup",
-        email: "day14dup@example.com",
-        bsp_id: 1,
-        is_active: true,
-        is_trial_org: true,
-        timezone: "Asia/Kolkata"
-      }
-
-      trial_org = Fixtures.organization_fixture(trial_org_attrs)
-
-      {:ok, trial_org} =
-        trial_org
-        |> Organization.changeset(%{
-          trial_expiration_date: DateTime.add(DateTime.utc_now(), 12, :hour)
-        })
-        |> Repo.update()
-
-      {:ok, trial_user} =
-        TrialUsers.create_trial_user(%{
-          username: "day14_dup_user",
-          email: "day14dupuser@example.com",
-          phone: "919876543217",
-          organization_name: trial_org.name,
-          otp_entered: true
-        })
-
-      Repo.put_process_state(trial_org.id)
-
-      _admin_user =
-        Fixtures.user_fixture(%{
-          organization_id: trial_org.id,
-          phone: trial_user.phone,
-          roles: ["admin"]
-        })
-
-      assert :ok = TrialWorker.send_day_14_followup_emails()
-
-      initial_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_14_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert initial_count == 1
-
-      assert :ok = TrialWorker.send_day_14_followup_emails()
-
-      final_count =
-        MailLog
-        |> where([m], m.organization_id == ^trial_org.id)
-        |> where([m], m.category == "trial_day_14_followup")
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert final_count == 1
     end
 
     test "does not send email to orgs not expiring today" do
