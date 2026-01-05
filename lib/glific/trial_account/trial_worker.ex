@@ -126,30 +126,25 @@ defmodule Glific.TrialAccount.TrialWorker do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
-    # Check if we've already sent the day 3 email
-    if MailLog.mail_sent_in_past_time?("trial_day_3_followup", time, organization_id) do
-      Logger.info("Day 3 follow-up email already sent for organization: #{organization_id}")
-    else
-      organization_id
-      |> fetch_trial_user()
-      |> case do
-        nil ->
-          Logger.warning(
-            "No admin or trial user found for trial organization #{organization_id}, skipping day 3 email"
-          )
+    organization_id
+    |> fetch_trial_user()
+    |> case do
+      nil ->
+        Logger.warning(
+          "No admin or trial user found for trial organization #{organization_id}, skipping day 3 email"
+        )
 
-        trial_user ->
-          Logger.info(
-            "Sending day 3 follow-up email to #{trial_user.email} for organization #{organization_id}"
-          )
+      trial_user ->
+        Logger.info(
+          "Sending day 3 follow-up email to #{trial_user.email} for organization #{organization_id}"
+        )
 
-          organization
-          |> TrialAccountMail.day_3_followup(trial_user)
-          |> Mailer.send(%{
-            category: "trial_day_3_followup",
-            organization_id: organization.id
-          })
-      end
+        organization
+        |> TrialAccountMail.day_3_followup(trial_user)
+        |> Mailer.send(%{
+          category: "trial_day_3_followup",
+          organization_id: organization.id
+        })
     end
 
     :ok
@@ -160,30 +155,25 @@ defmodule Glific.TrialAccount.TrialWorker do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
-    # Check if we've already sent the day 6 email
-    if MailLog.mail_sent_in_past_time?("trial_day_6_followup", time, organization_id) do
-      Logger.info("Day 6 follow-up email already sent for organization: #{organization_id}")
-    else
-      organization_id
-      |> fetch_trial_user()
-      |> case do
-        nil ->
-          Logger.warning(
-            "No admin or trial user found for trial organization #{organization_id}, skipping day 6 email"
-          )
+    organization_id
+    |> fetch_trial_user()
+    |> case do
+      nil ->
+        Logger.warning(
+          "No admin or trial user found for trial organization #{organization_id}, skipping day 6 email"
+        )
 
-        trial_user ->
-          Logger.info(
-            "Sending day 6 follow-up email to #{trial_user.email} for organization #{organization_id}"
-          )
+      trial_user ->
+        Logger.info(
+          "Sending day 6 follow-up email to #{trial_user.email} for organization #{organization_id}"
+        )
 
-          organization
-          |> TrialAccountMail.day_6_followup(trial_user)
-          |> Mailer.send(%{
-            category: "trial_day_6_followup",
-            organization_id: organization.id
-          })
-      end
+        organization
+        |> TrialAccountMail.day_6_followup(trial_user)
+        |> Mailer.send(%{
+          category: "trial_day_6_followup",
+          organization_id: organization.id
+        })
     end
 
     :ok
@@ -194,30 +184,25 @@ defmodule Glific.TrialAccount.TrialWorker do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
-    # Check if we've already sent the day 12 email
-    if MailLog.mail_sent_in_past_time?("trial_day_12_followup", time, organization_id) do
-      Logger.info("Day 12 follow-up email already sent for organization: #{organization_id}")
-    else
-      organization_id
-      |> fetch_trial_user()
-      |> case do
-        nil ->
-          Logger.warning(
-            "No admin or trial user found for trial organization #{organization_id}, skipping day 12 email"
-          )
+    organization_id
+    |> fetch_trial_user()
+    |> case do
+      nil ->
+        Logger.warning(
+          "No admin or trial user found for trial organization #{organization_id}, skipping day 12 email"
+        )
 
-        trial_user ->
-          Logger.info(
-            "Sending day 12 follow-up email to #{trial_user.email} for organization #{organization_id}"
-          )
+      trial_user ->
+        Logger.info(
+          "Sending day 12 follow-up email to #{trial_user.email} for organization #{organization_id}"
+        )
 
-          organization
-          |> TrialAccountMail.day_12_followup(trial_user)
-          |> Mailer.send(%{
-            category: "trial_day_12_followup",
-            organization_id: organization.id
-          })
-      end
+        organization
+        |> TrialAccountMail.day_12_followup(trial_user)
+        |> Mailer.send(%{
+          category: "trial_day_12_followup",
+          organization_id: organization.id
+        })
     end
 
     :ok
@@ -228,30 +213,25 @@ defmodule Glific.TrialAccount.TrialWorker do
     Repo.put_process_state(organization_id)
     time = Glific.go_back_time(24)
 
-    # Check if we've already sent the day 14 email
-    if MailLog.mail_sent_in_past_time?("trial_day_14_followup", time, organization_id) do
-      Logger.info("Day 14 follow-up email already sent for organization: #{organization_id}")
-    else
-      organization_id
-      |> fetch_trial_user()
-      |> case do
-        nil ->
-          Logger.warning(
-            "No admin or trial user found for trial organization #{organization_id}, skipping day 14 email"
-          )
+    organization_id
+    |> fetch_trial_user()
+    |> case do
+      nil ->
+        Logger.warning(
+          "No admin or trial user found for trial organization #{organization_id}, skipping day 14 email"
+        )
 
-        trial_user ->
-          Logger.info(
-            "Sending day 14 follow-up email to #{trial_user.email} for organization #{organization_id}"
-          )
+      trial_user ->
+        Logger.info(
+          "Sending day 14 follow-up email to #{trial_user.email} for organization #{organization_id}"
+        )
 
-          organization
-          |> TrialAccountMail.day_14_followup(trial_user)
-          |> Mailer.send(%{
-            category: "trial_day_14_followup",
-            organization_id: organization.id
-          })
-      end
+        organization
+        |> TrialAccountMail.day_14_followup(trial_user)
+        |> Mailer.send(%{
+          category: "trial_day_14_followup",
+          organization_id: organization.id
+        })
     end
 
     :ok
