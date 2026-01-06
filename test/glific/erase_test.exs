@@ -77,7 +77,7 @@ defmodule Glific.EraseTest do
     }
 
     Enum.each(1..15, fn _ ->
-      Glific.WhatsappFormsRevisions.save_revision(
+      WhatsappFormsRevisions.save_revision(
         value,
         user
       )
