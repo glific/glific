@@ -66,7 +66,8 @@ defmodule Glific.Fixtures do
     WAManagedPhones,
     WAMessages,
     WaPoll,
-    WhatsappForms
+    WhatsappForms,
+    WhatsappForms.WhatsappForm
   }
 
   @valid_attrs %{
