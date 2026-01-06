@@ -17,8 +17,8 @@ defmodule Glific.WhatsappForms do
     Sheets.Sheet,
     Users.User,
     WhatsappForms.WhatsappForm,
-    WhatsappFormsRevisions,
-    WhatsappForms.WhatsappFormWorker
+    WhatsappForms.WhatsappFormWorker,
+    WhatsappFormsRevisions
   }
 
   require Logger
@@ -291,9 +291,8 @@ defmodule Glific.WhatsappForms do
             }
 
             with {:ok, _revision} <-
-                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user),
-                 {:ok, updated_form} <- do_update_whatsapp_form(existing_form, attrs) do
-              {:ok, updated_form}
+                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user) do
+              do_update_whatsapp_form(existing_form, attrs)
             end
         end
 
