@@ -269,6 +269,7 @@ defmodule Glific.WhatsappForms do
       categories: normalize_categories(form["categories"]),
       description: Map.get(form, "description", ""),
       meta_flow_id: form["id"],
+      definition: form_json,
       organization_id: organization_id
     }
 
@@ -279,12 +280,7 @@ defmodule Glific.WhatsappForms do
       {:ok, existing_form} ->
         existing_form_revision = Repo.preload(existing_form, :revision)
 
-        current_definition = Map.get(existing_form_revision, :definition)
-
-        existing_form_with_revision_definition =
-          Map.put(existing_form, :definition, current_definition)
-
-        case form_changed?(existing_form_with_revision_definition, attrs) do
+        case form_changed?(existing_form_revision, attrs) do
           false ->
             {:ok, existing_form}
 
@@ -294,7 +290,7 @@ defmodule Glific.WhatsappForms do
               definition: form_json
             }
 
-            with {:ok, _revision} <-
+            with {:ok, revision} <-
                    WhatsappFormsRevisions.save_revision(revision_attrs, root_user),
                  {:ok, updated_form} <- do_update_whatsapp_form(existing_form, attrs) do
               {:ok, updated_form}
