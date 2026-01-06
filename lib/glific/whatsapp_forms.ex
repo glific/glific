@@ -172,9 +172,12 @@ defmodule Glific.WhatsappForms do
     {:ok, db_attrs}
   end
 
+  @doc """
+  Create whatsapp form
+  """
   @spec do_create_whatsapp_form(map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_whatsapp_form(attrs) do
+  def do_create_whatsapp_form(attrs) do
     %WhatsappForm{}
     |> WhatsappForm.changeset(attrs)
     |> Repo.insert()

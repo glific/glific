@@ -65,7 +65,8 @@ defmodule Glific.Fixtures do
     WAGroup.WAMessage,
     WAManagedPhones,
     WAMessages,
-    WaPoll
+    WaPoll,
+    WhatsappForms
   }
 
   @valid_attrs %{
@@ -529,6 +530,31 @@ defmodule Glific.Fixtures do
       |> Tags.create_template_tag()
 
     template_tag
+  end
+
+  @doc """
+  Creates WhatsApp form fixture for tests.
+  """
+  @spec whatsapp_form_fixture :: WhatsappForm.t()
+  def whatsapp_form_fixture do
+    user = Repo.get_current_user()
+
+    base_attrs = %{
+      name: "sign_up_form",
+      description: "Simple signup flow to collect name and email",
+      categories: [:sign_up, :lead_generation],
+      organization_id: get_org_id(),
+      google_sheet_url: nil,
+      meta_flow_id: "meta_flow_1234"
+    }
+
+    {:ok, form} =
+      WhatsappForms.do_create_whatsapp_form(
+        base_attrs,
+        user
+      )
+
+    Repo.preload(form, [:revision, :sheet])
   end
 
   @doc false

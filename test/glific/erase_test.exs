@@ -12,7 +12,9 @@ defmodule Glific.EraseTest do
     Messages.Message,
     Notifications,
     Notifications.Notification,
-    Repo
+    Repo,
+    WhatsappForms.WhatsappFormRevision,
+    WhatsappFormsRevisions
   }
 
   test "perform_periodic clears webhook log older than a month", attrs do
@@ -62,6 +64,45 @@ defmodule Glific.EraseTest do
     flow_revision_count = Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2)
     Erase.clean_old_records()
     assert Repo.count_filter(%{}, FlowRevision, &Repo.filter_with/2) == flow_revision_count - 6
+  end
+
+  test "perform_periodic clears whatsapp forms revisions, and saving only recent 10",
+       _attrs do
+    user = Repo.get_current_user()
+    form = Fixtures.whatsapp_form_fixture()
+
+    value = %{
+      whatsapp_form_id: form.id,
+      definition: %{"key" => Ecto.UUID.generate()}
+    }
+
+    Enum.each(1..15, fn _ ->
+      Glific.WhatsappFormsRevisions.save_revision(
+        value,
+        user
+      )
+    end)
+
+    total_revisions_before =
+      Repo.aggregate(
+        from(r in WhatsappFormRevision,
+          where: r.whatsapp_form_id == ^form.id
+        ),
+        :count
+      )
+
+    assert total_revisions_before == 16
+    Erase.clean_old_records()
+
+    total_revisions_after =
+      Repo.aggregate(
+        from(r in WhatsappFormRevision,
+          where: r.whatsapp_form_id == ^form.id
+        ),
+        :count
+      )
+
+    assert total_revisions_after == 10
   end
 
   test "delete beneficiary data", attrs do
