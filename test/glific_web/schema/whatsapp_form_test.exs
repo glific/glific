@@ -68,6 +68,38 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     SeedsDev.seed_whatsapp_forms(organization)
   end
 
+  @defintion_value %{
+    "screens" => [
+      %{
+        "data" => %{},
+        "id" => "screen_bcvvpc",
+        "layout" => %{
+          "children" => [
+            %{
+              "children" => [
+                %{"text" => "Text", "type" => "TextHeading"},
+                %{
+                  "label" => "Continue",
+                  "on-click-action" => %{
+                    "name" => "complete",
+                    "payload" => %{}
+                  },
+                  "type" => "Footer"
+                }
+              ],
+              "name" => "flow_path",
+              "type" => "Form"
+            }
+          ],
+          "type" => "SingleColumnLayout"
+        },
+        "terminal" => true,
+        "title" => "Screen 1"
+      }
+    ],
+    "version" => "7.3"
+  }
+
   test "publishes a whatsapp form and updates its status to published",
        %{manager: user} do
     Tesla.Mock.mock(fn
@@ -436,8 +468,14 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, existing_form1} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
+    form_with_revision = Repo.preload(existing_form1, :revision)
+
+    assert form_with_revision.revision.definition == @defintion_value
+
     {:ok, existing_form2} =
-      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+      Repo.fetch_by(WhatsappForm, %{
+        meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"
+      })
 
     assert existing_form1.status == :draft
 
@@ -457,9 +495,12 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     {:ok, updated_form1} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
 
+    form_with_synced_revision = Repo.preload(updated_form1, :revision)
+
     {:ok, updated_form2} =
       Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
 
+    assert form_with_synced_revision.revision.definition == %{"title" => "Customer Feedback Form"}
     assert updated_form1.status == :published
     assert updated_form1.name == "Customer"
     assert updated_form2.name == "sign_up_form"
