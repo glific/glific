@@ -184,7 +184,7 @@ defmodule GlificWeb.Schema.WhatsappFormsRevisionsTest do
              revision.id |> to_string()
   end
 
-  test " revert_to_whatsapp_form_revision should revert to a specific WhatsApp form revision", %{
+  test "revert_to_whatsapp_form_revision should revert to a specific WhatsApp form revision", %{
     user: user
   } do
     {:ok, whatsapp_form} =

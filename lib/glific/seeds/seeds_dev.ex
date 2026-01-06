@@ -465,31 +465,6 @@ if Code.ensure_loaded?(Faker) do
           description: "Inactive form for collecting customer satisfaction feedback",
           meta_flow_id: "flow-7a12cd90-c6e4-4e56-9a23-001f89b2a8b1",
           status: :inactive,
-          definition: %{
-            "version" => "1.0",
-            "screens" => [
-              %{
-                "id" => "screen_1",
-                "title" => "Feedback",
-                "description" => "We’d love to hear your thoughts",
-                "fields" => [
-                  %{
-                    "id" => "rating",
-                    "label" => "Rate your experience (1-5)",
-                    "type" => "number",
-                    "required" => true
-                  },
-                  %{
-                    "id" => "comments",
-                    "label" => "Additional Comments",
-                    "type" => "text",
-                    "required" => false
-                  }
-                ],
-                "actions" => [%{"type" => "submit", "label" => "Submit Feedback"}]
-              }
-            ]
-          },
           categories: [:survey, :customer_support],
           organization_id: organization.id,
           sheet_id: nil
@@ -499,25 +474,6 @@ if Code.ensure_loaded?(Faker) do
           description: "Draft form to collect email subscriptions for newsletters",
           meta_flow_id: "flow-2a73be22-0a11-4a6d-bb77-8c21df5cdb92",
           status: :draft,
-          definition: %{
-            "version" => "1.0",
-            "screens" => [
-              %{
-                "id" => "screen_1",
-                "title" => "Subscribe",
-                "description" => "Join our newsletter to stay updated",
-                "fields" => [
-                  %{
-                    "id" => "email",
-                    "label" => "Email Address",
-                    "type" => "email",
-                    "required" => true
-                  }
-                ],
-                "actions" => [%{"type" => "submit", "label" => "Subscribe"}]
-              }
-            ]
-          },
           categories: [:customer_support],
           organization_id: organization.id,
           sheet_id: sheet_2.id
@@ -527,38 +483,6 @@ if Code.ensure_loaded?(Faker) do
           description: "Form for users to register for upcoming events or webinars",
           meta_flow_id: "flow-6c45ae11-8f76-4e9c-ae56-9f6d9a2b4a90",
           status: :published,
-          definition: %{
-            "version" => "1.0",
-            "screens" => [
-              %{
-                "id" => "screen_1",
-                "title" => "Event Registration",
-                "description" => "Register for our upcoming event",
-                "fields" => [
-                  %{
-                    "id" => "full_name",
-                    "label" => "Full Name",
-                    "type" => "text",
-                    "required" => true
-                  },
-                  %{
-                    "id" => "email",
-                    "label" => "Email Address",
-                    "type" => "email",
-                    "required" => true
-                  },
-                  %{
-                    "id" => "event_choice",
-                    "label" => "Select Event",
-                    "type" => "dropdown",
-                    "required" => true,
-                    "options" => ["Webinar", "Workshop", "Conference"]
-                  }
-                ],
-                "actions" => [%{"type" => "submit", "label" => "Register"}]
-              }
-            ]
-          },
           categories: [:customer_support],
           organization_id: organization.id,
           sheet_id: nil
