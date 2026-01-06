@@ -290,7 +290,7 @@ defmodule Glific.WhatsappForms do
               definition: form_json
             }
 
-            with {:ok, revision} <-
+            with {:ok, _revision} <-
                    WhatsappFormsRevisions.save_revision(revision_attrs, root_user),
                  {:ok, updated_form} <- do_update_whatsapp_form(existing_form, attrs) do
               {:ok, updated_form}
