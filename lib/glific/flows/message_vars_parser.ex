@@ -61,11 +61,19 @@ defmodule Glific.Flows.MessageVarParser do
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
 
-    substitution =
-      get_in(binding, String.split(var, "."))
-      |> bound()
+    keys = String.split(var, ".")
+    substitution = get_nested_value(binding, keys) |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
+  end
+
+  # Safely get nested value, stopping if intermediate value is not a map
+  defp get_nested_value(data, []), do: data
+  defp get_nested_value(data, [key | rest]) do
+    case data do
+      %{^key => value} when is_map(data) -> get_nested_value(value, rest)
+      _ -> nil
+    end
   end
 
   # this is for the other fields like @contact.fields.name which is a map of (value)
