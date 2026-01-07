@@ -17,8 +17,6 @@ defmodule GlificWeb.Schema.CredentialTypes do
 
   object :credential do
     field :id, :id
-    field :keys, :json
-    field :secrets, :json
     field :is_active, :boolean
 
     field :inserted_at, :datetime
