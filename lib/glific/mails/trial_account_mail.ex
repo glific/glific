@@ -29,7 +29,7 @@ defmodule Glific.Mails.TrialAccountMail do
       subject,
       body,
       send_to: recipients,
-      from_email: {"Glific Team", "connect@glific.org"},
+      from_email: @glific_email,
       ignore_cc_support: true
     )
   end
@@ -54,7 +54,6 @@ defmodule Glific.Mails.TrialAccountMail do
       send_to: recipients,
       from_email: @glific_email,
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
@@ -72,7 +71,6 @@ defmodule Glific.Mails.TrialAccountMail do
       body,
       send_to: [@glific_email],
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
@@ -95,7 +93,6 @@ defmodule Glific.Mails.TrialAccountMail do
       send_to: recipients,
       from_email: @glific_email,
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
@@ -118,7 +115,6 @@ defmodule Glific.Mails.TrialAccountMail do
       send_to: recipients,
       from_email: @glific_email,
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
@@ -141,7 +137,6 @@ defmodule Glific.Mails.TrialAccountMail do
       send_to: recipients,
       from_email: @glific_email,
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
@@ -164,7 +159,6 @@ defmodule Glific.Mails.TrialAccountMail do
       send_to: recipients,
       from_email: @glific_email,
       ignore_cc_support: true,
-      in_cc: []
     )
   end
 
