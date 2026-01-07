@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+mutation SaveWhatsappFormRevision($input: WhatsappFormRevisionInput!) {
+  saveWhatsappFormRevision(input: $input) {
+    ...WhatsappFormRevisionFields
+    ...WhatsappFormRevisionsErrorFields
+  }
+}

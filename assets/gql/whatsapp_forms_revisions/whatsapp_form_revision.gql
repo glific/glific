@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+query WhatsappFormRevision($whatsappFormRevisionId: ID!) {
+  whatsappFormRevision(id: $whatsappFormRevisionId) {
+    ...WhatsappFormRevisionFields
+    ...WhatsappFormRevisionsErrorFields
+  }
+}
