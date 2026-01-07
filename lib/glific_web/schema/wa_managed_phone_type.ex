@@ -20,7 +20,6 @@ defmodule GlificWeb.Schema.WAManagedPhoneTypes do
     field :phone_id, :integer
     field :label, :string
     field :status, :string
-    field :is_active, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
