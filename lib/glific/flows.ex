@@ -1347,10 +1347,9 @@ defmodule Glific.Flows do
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
 
       if is_nil(flow) do
-        raise(RuntimeError,
-          message: "Flow doesn't exist, Name - #{flow_name}, UUID - #{flow_uuid}"
-        )
-      end
+        Logger.warning("Flow doesn't exist during export, Name - #{flow_name}, UUID - #{flow_uuid}")
+        results
+      else
 
       # definition can be nil, hence assigning empty map if so
       # Issue #2173
@@ -1379,10 +1378,11 @@ defmodule Glific.Flows do
 
       ## here we can export more details like fields, triggers, groups and all.
 
-      definition
-      |> Map.get("nodes", [])
-      |> get_sub_flows()
-      |> Enum.reduce(results, &export_flow_details(&1["uuid"], &1["name"], &2))
+        definition
+        |> Map.get("nodes", [])
+        |> get_sub_flows()
+        |> Enum.reduce(results, &export_flow_details(&1["uuid"], &1["name"], &2))
+      end
     end
   end
 
