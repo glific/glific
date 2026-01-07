@@ -512,6 +512,16 @@ defmodule Glific do
   def trusted_env?(_env, _id), do: false
 
   @doc """
+  Get the Glific organization id for the current environment.
+  """
+  @spec glific_organization_id() :: non_neg_integer()
+  def glific_organization_id do
+    app_env = Application.get_env(:glific, :environment)
+
+    if app_env == :prod, do: 2, else: 1
+  end
+
+  @doc """
   Converts Tarams result into {:ok, map()} or {:error, String.t()}
 
   ## Examples
