@@ -65,8 +65,9 @@ defmodule Glific.ERP do
   """
   @spec update_organization(map()) :: {:ok, map()} | {:error, String.t()}
   def update_organization(registration) do
-    customer_name = registration.org_details["name"]
-    encoded_customer_name = URI.encode(customer_name)
+    # Use erp_page_id if available, otherwise fallback to name
+    customer_identifier = registration.erp_page_id || registration.org_details["name"]
+    encoded_customer_name = URI.encode(customer_identifier)
     erp_url = "#{@erp_base_url}/Customer/#{encoded_customer_name}"
     gstin = registration.org_details["gstin"]
 
@@ -94,12 +95,12 @@ defmodule Glific.ERP do
 
     case Tesla.put(@client, erp_url, payload, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
-        case create_or_update_address(registration, customer_name) do
+        case create_or_update_address(registration, customer_identifier) do
           {:error, reason} ->
             {:error, reason}
 
           {:ok, _} ->
-            create_contact(registration, customer_name)
+            create_contact(registration, customer_identifier)
         end
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
@@ -113,37 +114,37 @@ defmodule Glific.ERP do
   end
 
   @spec create_or_update_address(map(), String.t()) :: {:ok, any} | {:error, String.t()}
-  defp create_or_update_address(registration, customer_name) do
+  defp create_or_update_address(registration, customer_identifier) do
     current_address = registration.org_details["current_address"]
     registered_address = registration.org_details["registered_address"]
     are_addresses_same = compare_addresses(current_address, registered_address)
 
     with {:ok, _billing} <-
-           do_create_or_update_address(current_address, "Billing", customer_name) do
-      handle_registered_address(are_addresses_same, registered_address, customer_name)
+           do_create_or_update_address(current_address, "Billing", customer_identifier) do
+      handle_registered_address(are_addresses_same, registered_address, customer_identifier)
     end
   end
 
   @spec handle_registered_address(boolean(), map(), String.t()) ::
-          {:ok, map()} | {:error, String.t()}
-  defp handle_registered_address(false, registered_address, customer_name),
-    do: do_create_or_update_address(registered_address, "Permanent/Registered", customer_name)
+           {:ok, map()} | {:error, String.t()}
+  defp handle_registered_address(false, registered_address, customer_identifier),
+    do: do_create_or_update_address(registered_address, "Permanent/Registered", customer_identifier)
 
-  defp handle_registered_address(true, _registered_address, _customer_name), do: {:ok, nil}
+  defp handle_registered_address(true, _registered_address, _customer_identifier), do: {:ok, nil}
 
   @spec do_create_or_update_address(map(), String.t(), String.t()) ::
-          {:ok, map()} | {:error, String.t()}
-  defp do_create_or_update_address(address, type, customer_name) do
-    if address_exists?(customer_name, type) do
-      update_address(address, type, customer_name)
+           {:ok, map()} | {:error, String.t()}
+  defp do_create_or_update_address(address, type, customer_identifier) do
+    if address_exists?(customer_identifier, type) do
+      update_address(address, type, customer_identifier)
     else
-      create_address(address, type, customer_name)
+      create_address(address, type, customer_identifier)
     end
   end
 
   @spec address_exists?(String.t(), String.t()) :: boolean()
-  defp address_exists?(customer_name, address_type) do
-    encoded_customer_name = URI.encode(customer_name)
+  defp address_exists?(customer_identifier, address_type) do
+    encoded_customer_name = URI.encode(customer_identifier)
     erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
 
     case Tesla.get(@client, erp_url, headers: headers()) do
@@ -160,22 +161,22 @@ defmodule Glific.ERP do
   end
 
   @spec create_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp create_address(address, address_type, customer_name) do
+  defp create_address(address, address_type, customer_identifier) do
     erp_url = "#{@erp_base_url}/Address"
-    payload = build_payload(address, address_type, customer_name)
+    payload = build_payload(address, address_type, customer_identifier)
     do_create_address(erp_url, payload)
   end
 
   @spec update_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp update_address(address, address_type, customer_name) do
-    encoded_customer_name = URI.encode(customer_name)
+  defp update_address(address, address_type, customer_identifier) do
+    encoded_customer_name = URI.encode(customer_identifier)
     erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
-    payload = build_payload(address, address_type, customer_name)
+    payload = build_payload(address, address_type, customer_identifier)
     do_update_address(erp_url, payload)
   end
 
   @spec create_contact(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp create_contact(registration, customer_name) do
+  defp create_contact(registration, customer_identifier) do
     erp_url = "#{@erp_base_url}/Contact"
 
     payload = %{
@@ -199,7 +200,7 @@ defmodule Glific.ERP do
           "phone" => registration.finance_poc["phone"]
         }
       ],
-      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_name}]
+      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_identifier}]
     }
 
     case Tesla.post(@client, erp_url, payload, headers: headers()) do
@@ -217,7 +218,7 @@ defmodule Glific.ERP do
   end
 
   @spec build_payload(map(), String.t(), String.t()) :: map()
-  defp build_payload(address, address_type, customer_name) do
+  defp build_payload(address, address_type, customer_identifier) do
     %{
       "address_type" => address_type,
       "address_line1" => address["address_line1"],
@@ -226,7 +227,7 @@ defmodule Glific.ERP do
       "state" => capitalize_words(address["state"]),
       "country" => capitalize_words(address["country"]),
       "pincode" => address["pincode"],
-      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_name}]
+      "links" => [%{"link_doctype" => "Customer", "link_name" => customer_identifier}]
     }
   end
 
