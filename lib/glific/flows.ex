@@ -1162,9 +1162,16 @@ defmodule Glific.Flows do
        ) do
     sheet_url = action["url"]
     sheet_name = action["name"]
-    sheet = get_or_create_sheet(sheet_url, sheet_name)
-    updated_action = Map.put(action, "sheet_id", sheet.id)
-    {:ok, updated_action}
+
+    case get_or_create_sheet(sheet_url, sheet_name) do
+      {:ok, sheet} ->
+        updated_action = Map.put(action, "sheet_id", sheet.id)
+        {:ok, updated_action}
+
+      {:error, reason} ->
+        warning = "Google Sheet '#{sheet_name}' could not be linked: #{reason}"
+        {:ok, action, warning}
+    end
   end
 
   defp process_action(
@@ -1246,11 +1253,10 @@ defmodule Glific.Flows do
 
     case Repo.fetch_by(Sheet, %{url: sheet_url}) do
       {:ok, sheet} ->
-        sheet
+        {:ok, sheet}
 
       {:error, _} ->
-        {:ok, sheet} = Sheets.create_sheet(attrs)
-        sheet
+        Sheets.create_sheet(attrs)
     end
   end
 
