@@ -7,7 +7,6 @@ defmodule Glific.TrialAccount.TrialWorker do
   alias Glific.{
     Communications.Mailer,
     Erase,
-    Mails.MailLog,
     Mails.TrialAccountMail,
     Partners.Organization,
     Repo,
@@ -124,7 +123,6 @@ defmodule Glific.TrialAccount.TrialWorker do
   @spec send_day_3_email_to_org(Organization.t()) :: :ok
   defp send_day_3_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
-    time = Glific.go_back_time(24)
 
     organization_id
     |> fetch_trial_user()
@@ -153,7 +151,6 @@ defmodule Glific.TrialAccount.TrialWorker do
   @spec send_day_6_email_to_org(Organization.t()) :: :ok
   defp send_day_6_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
-    time = Glific.go_back_time(24)
 
     organization_id
     |> fetch_trial_user()
@@ -182,7 +179,6 @@ defmodule Glific.TrialAccount.TrialWorker do
   @spec send_day_12_email_to_org(Organization.t()) :: :ok
   defp send_day_12_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
-    time = Glific.go_back_time(24)
 
     organization_id
     |> fetch_trial_user()
@@ -211,7 +207,6 @@ defmodule Glific.TrialAccount.TrialWorker do
   @spec send_day_14_email_to_org(Organization.t()) :: :ok
   defp send_day_14_email_to_org(%{id: organization_id} = organization) do
     Repo.put_process_state(organization_id)
-    time = Glific.go_back_time(24)
 
     organization_id
     |> fetch_trial_user()
