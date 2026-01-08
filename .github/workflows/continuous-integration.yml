@@ -84,10 +84,6 @@ jobs:
           name: build-artifact
           path: _build
 
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Run check
         run: mix check
 
@@ -99,6 +95,11 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: cover/excoveralls.json
+
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
 
   security-check:
     runs-on: ubuntu-latest
