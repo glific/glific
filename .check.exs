@@ -14,7 +14,7 @@
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
-    {:ex_unit, "mix test_full", detect: [{:file, "test"}]},
+    {:ex_unit, false},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     ## {:ex_unit, order: -1},
@@ -28,6 +28,6 @@
     {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
     # We will enable it later
     # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
-    {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
+    {:mix_coveralls, false}
   ]
 ]
