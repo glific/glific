@@ -6,26 +6,15 @@ on:
   pull_request:
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:13 # postgres image for test database.
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: glific_test
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     env:
       MIX_ENV: test
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
-      matrix: # build matrix for the job
+      matrix:
         elixir: [1.18.3]
         otp: [27.3.3]
 
@@ -43,7 +32,7 @@ jobs:
 
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v4
-        id: elixir-mix-cache #id to use in retrieve action
+        id: elixir-mix-cache
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -53,18 +42,14 @@ jobs:
         run: |
           mix local.rebar --force
           mix local.hex --force
-
-          # mix hex.organization auth oban --key ${{ secrets.OBAN_OLD_KEY }}
-
           mix hex.repo add oban https://getoban.pro/repo \
             --fetch-public-key ${{ secrets.OBAN_PUBLIC_KEY }} \
             --auth-key ${{ secrets.OBAN_PRO_KEY }}
-
           mix deps.get
 
       - name: Retrieve PLT Cache
         uses: actions/cache@v4
-        id: elixir-plt-cache #id to use in retrieve action
+        id: elixir-plt-cache
         with:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -75,14 +60,151 @@ jobs:
           mkdir -p priv/plts
           mix dialyzer --plt
 
+  code-quality:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    env:
+      MIX_ENV: test
+
+    strategy:
+      matrix:
+        elixir: [1.18.3]
+        otp: [27.3.3]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup elixir
+        uses: erlef/setup-elixir@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Retrieve PLT Cache
+        uses: actions/cache@v4
+        with:
+          path: priv/plts
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
       - name: Run check
         run: mix check
 
-      - name: Coveralls for code coverage
-        run: mix do compile --warnings-as-errors, coveralls.json
+  tests:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: glific_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      MIX_ENV: test
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      matrix:
+        elixir: [1.18.3]
+        otp: [27.3.3]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup elixir
+        uses: erlef/setup-elixir@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Run tests with coverage
+        run: mix coveralls.json
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5.4.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: cover/excoveralls.json
+
+  compile:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    env:
+      MIX_ENV: test
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      matrix:
+        elixir: [1.18.3]
+        otp: [27.3.3]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup elixir
+        uses: erlef/setup-elixir@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Compile
+        run: mix compile --warnings-as-errors
+
+      - name: Upload _build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: _build
+
+  security-check:
+    runs-on: ubuntu-latest
+    needs: compile
+    container:
+      image: erlangsolutions/safe:latest-ex-1.18
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download _build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: _build
+
+      - run: safe analyse
+        env:
+          SAFE_LICENSE: ${{ secrets.SAFE_LICENSE }}
+
+      - name: Persist results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-safe-results
+          path: _results/Glific.safe
