@@ -60,21 +60,6 @@ jobs:
           mkdir -p priv/plts
           mix dialyzer --plt
 
-      - name: Compile
-        run: mix compile --warnings-as-errors
-
-      - name: Upload _build directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifact
-          path: _build
-
-      - name: Upload PLT directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: plt-artifact
-          path: priv/plts
-
   code-quality:
     runs-on: ubuntu-latest
     needs: setup
@@ -103,26 +88,20 @@ jobs:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
-      - name: Download _build directory
-        uses: actions/download-artifact@v4
+      - name: Retrieve PLT Cache
+        uses: actions/cache@v4
+        with:
+          path: priv/plts
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Run check
+        run: mix check
+
+      - name: Upload _build directory
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact
           path: _build
-
-      - name: Download PLT directory
-        uses: actions/download-artifact@v4
-        with:
-          name: plt-artifact
-          path: priv/plts
-
-      - name: Check code formatting
-        run: mix format --check-formatted
-
-      - name: Run Credo
-        run: mix credo --strict
-
-      - name: Run Dialyzer
-        run: mix dialyzer --format github
 
   tests:
     runs-on: ubuntu-latest
