@@ -14,7 +14,7 @@
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
-    {:ex_unit, false},
+    # {:ex_unit, "mix test_full", detect: [{:file, "test"}]},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     ## {:ex_unit, order: -1},
@@ -25,9 +25,9 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
+    {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]}
     # We will enable it later
     # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
-    {:mix_coveralls, false}
+    # {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]
