@@ -326,19 +326,10 @@ defmodule Glific.Flows.Node do
     # we need to execute all the actions (nodes can have multiple actions)
     result =
       Enum.reduce(
-        Enum.with_index(node.actions),
+        node.actions,
         {:ok, context, messages},
-        fn {action, index}, acc ->
+        fn action, acc ->
           {:ok, context, messages} = acc
-
-          # Add incremental delay to consecutive send_msg actions to maintain order
-          action =
-            if action.type == "send_msg" && index > 0 do
-              Map.put(action, :delay, action.delay + (index * 2))
-            else
-              action
-            end
-
           Action.execute(action, context, messages)
         end
       )
