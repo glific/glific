@@ -75,7 +75,7 @@ defmodule Glific.ASR.Bhasini do
         {"Authorization", bhashini_keys.inference_key},
         {"Content-Type", "application/json"}
       ],
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: bhashini_response}} ->
