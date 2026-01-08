@@ -8,11 +8,13 @@ defmodule Glific.TrialWorkerTest do
     Flows.Flow,
     Flows.FlowRevision,
     Flows.WebhookLog,
+    Mails.MailLog,
     Messages.Message,
     Notifications.Notification,
     Partners.Organization,
     Repo,
     TrialAccount.TrialWorker,
+    TrialUsers,
     Users.User
   }
 
@@ -344,6 +346,297 @@ defmodule Glific.TrialWorkerTest do
              "Non-expired org messages should not be deleted"
 
       assert Repo.get(Message, message_2.id, skip_organization_id: true) != nil
+    end
+  end
+
+  describe "send_day_3_followup_emails/0" do
+    test "sends day 3 follow-up email to trial orgs with 11-12 days remaining" do
+      # Create trial org with expiration date 11.5 days from now (day 3 of trial)
+      trial_org_attrs = %{
+        name: "Day 3 Trial Org",
+        shortcode: "day3trial",
+        email: "day3@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 11 * 24 + 12, :hour)
+        })
+        |> Repo.update()
+
+      # Create trial user and corresponding admin user
+      {:ok, trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "test_user",
+          email: "testuser@example.com",
+          phone: "919876543210",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      Repo.put_process_state(trial_org.id)
+
+      _admin_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_3_followup_emails()
+
+      # Verify email was logged
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_3_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert length(mail_logs) == 1
+    end
+
+    test "skips orgs without trial users" do
+      trial_org_attrs = %{
+        name: "No User Trial Org",
+        shortcode: "nouserorg",
+        email: "nouser@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, _trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 11 * 24 + 12, :hour)
+        })
+        |> Repo.update()
+
+      # Don't create trial user or admin
+      assert :ok = TrialWorker.send_day_3_followup_emails()
+
+      # Verify no email was logged
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_3_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert Enum.empty?(mail_logs)
+    end
+  end
+
+  describe "send_day_6_followup_emails/0" do
+    test "sends day 6 follow-up email to trial orgs with 8-9 days remaining" do
+      trial_org_attrs = %{
+        name: "Day 6 Trial Org",
+        shortcode: "day6trial",
+        email: "day6@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 8 * 24 + 12, :hour)
+        })
+        |> Repo.update()
+
+      {:ok, trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "day6_user",
+          email: "day6user@example.com",
+          phone: "919876543212",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      Repo.put_process_state(trial_org.id)
+
+      _admin_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_6_followup_emails()
+
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_6_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert length(mail_logs) == 1
+    end
+  end
+
+  describe "send_day_12_followup_emails/0" do
+    test "sends day 12 follow-up email to trial orgs with 2-3 days remaining" do
+      trial_org_attrs = %{
+        name: "Day 12 Trial Org",
+        shortcode: "day12trial",
+        email: "day12@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 2 * 24 + 12, :hour)
+        })
+        |> Repo.update()
+
+      {:ok, trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "day12_user",
+          email: "day12user@example.com",
+          phone: "919876543214",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      Repo.put_process_state(trial_org.id)
+
+      _admin_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_12_followup_emails()
+
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_12_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert length(mail_logs) == 1
+    end
+  end
+
+  describe "send_day_14_followup_emails/0" do
+    test "sends day 14 follow-up email to trial orgs expiring today" do
+      trial_org_attrs = %{
+        name: "Day 14 Trial Org",
+        shortcode: "day14trial",
+        email: "day14@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 12, :hour)
+        })
+        |> Repo.update()
+
+      {:ok, trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "day14_user",
+          email: "day14user@example.com",
+          phone: "919876543216",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      Repo.put_process_state(trial_org.id)
+
+      _admin_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_14_followup_emails()
+
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_14_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert length(mail_logs) == 1
+    end
+
+    test "does not send email to orgs not expiring today" do
+      trial_org_attrs = %{
+        name: "Future Trial Org",
+        shortcode: "futureorg",
+        email: "future@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      # Expiration date is 5 days away (not day 14)
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 5, :day)
+        })
+        |> Repo.update()
+
+      {:ok, trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "future_user",
+          email: "futureuser@example.com",
+          phone: "919876543218",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      Repo.put_process_state(trial_org.id)
+
+      _admin_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_14_followup_emails()
+
+      # Verify no email was logged for this org
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_14_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert assert Enum.empty?(mail_logs)
     end
   end
 end
