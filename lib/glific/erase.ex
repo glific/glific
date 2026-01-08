@@ -5,6 +5,10 @@ defmodule Glific.Erase do
   import Ecto.Query
 
   alias Glific.Contacts.Contact
+  alias Glific.Notifications
+  alias Glific.Notifications.Notification
+  alias Glific.Partners
+  alias Glific.Partners.Organization
   alias Glific.Repo
   require Logger
 
@@ -56,6 +60,17 @@ defmodule Glific.Erase do
   end
 
   @doc """
+  Creates an Oban job for deleting an organization.
+  This prevents UI timeouts when deleting organizations with large amounts of data.
+  """
+  @spec delete_organization(non_neg_integer()) ::
+          {:ok, Oban.Job.t()} | {:error, Oban.Job.changeset()}
+  def delete_organization(organization_id) do
+    __MODULE__.new(%{organization_id: organization_id})
+    |> Oban.insert()
+  end
+
+  @doc """
   Do the daily DB cleaner tasks
   """
   @spec perform_daily() :: any
@@ -76,6 +91,7 @@ defmodule Glific.Erase do
   end
 
   @impl Oban.Worker
+  @spec perform(Oban.Job.t()) :: :ok | {:error, any()}
   def perform(%Oban.Job{
         args: %{
           "batch_size" => batch_size,
@@ -85,6 +101,44 @@ defmodule Glific.Erase do
       }) do
     delete_old_messages(batch_size, max_rows_to_delete, sleep_after_delete?)
   end
+
+  @impl Oban.Worker
+  def perform(%Oban.Job{args: %{"organization_id" => organization_id}}) do
+    Logger.info("Starting background deletion for organization #{organization_id}")
+
+    with {:ok, organization} <-
+           Repo.fetch(Organization, organization_id, skip_organization_id: true),
+         true <- can_delete_organization?(organization),
+         {:ok, deleted_organization} <- Partners.delete_organization(organization) do
+      Logger.info(
+        "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
+      )
+
+      send_success_notification(deleted_organization)
+      :ok
+    else
+      false ->
+        Logger.error("Organization with ID #{organization_id} is not in deletable status")
+        send_failure_notification(organization_id, "Organization is not in deletable status")
+        {:error, "Organization not deletable"}
+
+      {:error, [_, "Resource not found"]} ->
+        Logger.error("Organization with ID #{organization_id} not found")
+        send_failure_notification(organization_id, "Organization not found")
+        {:error, "Organization not found"}
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to delete organization ID: #{organization_id}, reason: #{inspect(reason)}"
+        )
+
+        send_failure_notification(organization_id, inspect(reason))
+        {:error, reason}
+    end
+  end
+
+  @spec can_delete_organization?(Organization.t()) :: boolean
+  defp can_delete_organization?(organization), do: organization.status == :ready_to_delete
 
   @spec refresh_tables() :: any
   defp refresh_tables do
@@ -114,19 +168,24 @@ defmodule Glific.Erase do
   @spec remove_old_records() :: any
   defp remove_old_records do
     [
-      {"message_broadcast_contacts", "week"},
-      {"notifications", "week"},
-      {"webhook_logs", "week"},
-      {"flow_contexts", "month"},
-      {"flow_results", "month"},
-      {"messages_conversations", "month"},
-      {"user_jobs", "month"},
-      {"issued_certificates", "month"}
+      {"message_broadcast_contacts", 1, "week"},
+      {"notifications", 1, "week"},
+      {"webhook_logs", 1, "week"},
+      {"flow_contexts", 1, "month"},
+      {"flow_results", 1, "month"},
+      {"messages_conversations", 1, "month"},
+      {"user_jobs", 1, "month"},
+      {"issued_certificates", 1, "month"},
+      {"contact_histories", 2, "month"}
     ]
-    |> Enum.each(fn {table, duration} ->
+    |> Enum.each(fn {table, duration, duration_type} ->
+      duration = to_string(duration)
+
       Repo.delete_all(
         from(fc in table,
-          where: fc.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^duration)
+          where:
+            fc.inserted_at <
+              fragment("CURRENT_DATE - (? || ?)::interval", ^duration, ^duration_type)
         ),
         skip_organization_id: true,
         timeout: 400_000
@@ -365,5 +424,33 @@ defmodule Glific.Erase do
         total_rows_deleted
       )
     end
+  end
+
+  @spec send_success_notification(Organization.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp send_success_notification(organization) do
+    message = "Organization '#{organization.name}' has been successfully deleted."
+    entity = %{id: organization.id, name: organization.name, shortcode: organization.shortcode}
+
+    send_notification(message, :info, entity)
+  end
+
+  @spec send_failure_notification(non_neg_integer(), String.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp send_failure_notification(organization_id, reason) do
+    message = "Failed to delete organization with ID #{organization_id}. Reason: #{reason}"
+    send_notification(message, :critical, %{id: organization_id})
+  end
+
+  @spec send_notification(String.t(), :info | :critical, map) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp send_notification(message, severity, entity) do
+    Notifications.create_notification(%{
+      category: "Organization",
+      message: message,
+      severity: severity,
+      organization_id: Glific.glific_organization_id(),
+      entity: entity
+    })
   end
 end
