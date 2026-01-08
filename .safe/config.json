@@ -10,6 +10,6 @@
         "additional_includes": []
       }
     ],
-    "paths": ["/_build/dev/lib"]
+    "paths": ["/_build/test/lib"]
   }
 }
