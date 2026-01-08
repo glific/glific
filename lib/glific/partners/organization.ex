@@ -46,7 +46,9 @@ defmodule Glific.Partners.Organization do
     :optin_flow_id,
     :is_suspended,
     :suspended_until,
-    :parent_org
+    :parent_org,
+    :is_trial_org,
+    :trial_expiration_date
   ]
 
   @type t() :: %__MODULE__{
@@ -86,7 +88,9 @@ defmodule Glific.Partners.Organization do
           is_suspended: boolean() | false,
           suspended_until: DateTime.t() | nil,
           parent_org: String.t() | nil,
-          setting: Setting.t() | nil
+          setting: Setting.t() | nil,
+          is_trial_org: boolean() | false,
+          trial_expiration_date: :utc_datetime | nil
         }
 
   schema "organizations" do
@@ -146,6 +150,10 @@ defmodule Glific.Partners.Organization do
 
     field(:fields, :map, default: %{})
     field(:team_emails, :map, default: %{})
+
+    # trial account support
+    field(:is_trial_org, :boolean, default: false)
+    field(:trial_expiration_date, :utc_datetime)
 
     # lets add support for suspending orgs briefly
     field(:is_suspended, :boolean, default: false)

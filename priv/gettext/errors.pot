@@ -165,8 +165,8 @@ msgstr ""
 msgid "Error while fetching the BSP balance"
 msgstr ""
 
-#: lib/glific/partners.ex:513
-#: lib/glific/partners.ex:530
+#: lib/glific/partners.ex:526
+#: lib/glific/partners.ex:543
 #, elixir-format, elixir-autogen
 msgid "Invalid BSP provider"
 msgstr ""
@@ -176,8 +176,8 @@ msgstr ""
 msgid "Invoice status updated for %{invoice_id}"
 msgstr ""
 
-#: lib/glific/partners.ex:509
-#: lib/glific/partners.ex:526
+#: lib/glific/partners.ex:522
+#: lib/glific/partners.ex:539
 #: lib/glific/providers/gupshup/api_client.ex:36
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
