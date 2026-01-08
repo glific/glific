@@ -60,6 +60,15 @@ jobs:
           mkdir -p priv/plts
           mix dialyzer --plt
 
+      - name: Compile
+        run: mix compile --warnings-as-errors
+
+      - name: Upload _build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: _build
+
   code-quality:
     runs-on: ubuntu-latest
     needs: setup
@@ -96,15 +105,6 @@ jobs:
 
       - name: Run check
         run: mix check
-
-      - name: Compile
-        run: mix compile --warnings-as-errors
-
-      - name: Upload _build directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifact
-          path: _build
 
   tests:
     runs-on: ubuntu-latest
