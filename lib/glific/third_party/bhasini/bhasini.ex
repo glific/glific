@@ -109,7 +109,7 @@ defmodule Glific.Bhasini do
     |> Tesla.client()
     |> Tesla.post(@callback_url, Jason.encode!(body),
       headers: default_headers,
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
