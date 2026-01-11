@@ -15,7 +15,8 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Translate.Export,
     Flows.Translate.Import,
     Repo,
-    State
+    State,
+    TextToFlow
   }
 
   @doc """
@@ -359,5 +360,35 @@ defmodule GlificWeb.Resolvers.Flows do
   def reset_flow_count(_, %{flow_id: flow_id}, _) do
     FlowCount.reset_flow_count(flow_id)
     {:ok, %{success: true}}
+  end
+
+  @doc """
+  Generate a flow from a text prompt using AI
+  """
+  @spec generate_flow_from_text(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def generate_flow_from_text(_, %{uuid: uuid, prompt: prompt}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: uuid, organization_id: user.organization_id}),
+         {:ok, flow_json} <- TextToFlow.generate_flow(flow.name, prompt, user.organization_id, uuid) do
+      _revision = Flows.create_flow_revision(flow_json, user.id)
+      {:ok, %{flow_data: flow_json, success: true}}
+    else
+      {:error, reason} when is_binary(reason) ->
+        {:ok, %{errors: [%{message: reason}], success: false}}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        errors =
+          changeset.errors
+          |> Enum.map(fn {field, {message, _}} ->
+            %{key: to_string(field), message: message}
+          end)
+
+        {:ok, %{errors: errors, success: false}}
+
+      {:error, reason} ->
+        {:ok, %{errors: [%{message: inspect(reason)}], success: false}}
+    end
   end
 end

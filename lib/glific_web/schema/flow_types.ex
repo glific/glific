@@ -48,6 +48,12 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :status, non_null(:string)
   end
 
+  object :text_to_flow_result do
+    field :success, :boolean
+    field :flow_data, :json
+    field :errors, list_of(:input_error)
+  end
+
   object :flow do
     field :id, :id
     field :uuid, :uuid4
@@ -285,6 +291,13 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.inline_flow_localization/3)
+    end
+
+    field :generate_flow_from_text, :text_to_flow_result do
+      arg(:uuid, non_null(:uuid4))
+      arg(:prompt, non_null(:string))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.generate_flow_from_text/3)
     end
   end
 end
