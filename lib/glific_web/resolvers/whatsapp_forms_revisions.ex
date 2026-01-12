@@ -11,9 +11,8 @@ defmodule GlificWeb.Resolvers.WhatsappFormsRevisions do
   @spec save_revision(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def save_revision(_, %{input: input}, %{context: %{current_user: user}}) do
-    case WhatsappFormsRevisions.save_revision(input, user) do
-      {:ok, revision} -> {:ok, %{whatsapp_form_revision: revision}}
-      {:error, _} = error -> error
+    with {:ok, revision} <- WhatsappFormsRevisions.save_revision(input, user) do
+      {:ok, %{whatsapp_form_revision: revision}}
     end
   end
 
@@ -23,12 +22,8 @@ defmodule GlificWeb.Resolvers.WhatsappFormsRevisions do
   @spec whatsapp_form_revision(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def whatsapp_form_revision(_, %{id: id}, _) do
-    case WhatsappFormsRevisions.get_whatsapp_form_revision(id) do
-      {:ok, revision} ->
-        {:ok, %{whatsapp_form_revision: revision}}
-
-      {:error, _} = error ->
-        error
+    with {:ok, revision} <- WhatsappFormsRevisions.get_whatsapp_form_revision(id) do
+      {:ok, %{whatsapp_form_revision: revision}}
     end
   end
 
@@ -49,9 +44,9 @@ defmodule GlificWeb.Resolvers.WhatsappFormsRevisions do
   @spec revert_to_revision(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def revert_to_revision(_, %{whatsapp_form_id: whatsapp_form_id, revision_id: revision_id}, _) do
-    case WhatsappFormsRevisions.revert_to_revision(whatsapp_form_id, revision_id) do
-      {:ok, revision} -> {:ok, %{whatsapp_form_revision: revision}}
-      {:error, _} = error -> error
+    with {:ok, revision} <-
+           WhatsappFormsRevisions.revert_to_revision(whatsapp_form_id, revision_id) do
+      {:ok, %{whatsapp_form_revision: revision}}
     end
   end
 end
