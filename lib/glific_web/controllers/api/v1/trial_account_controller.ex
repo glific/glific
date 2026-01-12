@@ -11,6 +11,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Contacts,
     Contacts.Contact,
     Mails.TrialAccountMail,
+    Partners,
     Partners.Organization,
     Repo,
     TrialUsers,
@@ -35,7 +36,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
          {:ok, result} <- allocate_trial_account(phone, params) do
       organization = result.update_organization
 
-      send_trial_account_emails(organization, result.update_trial_user)
+      send_trial_account_emails(:success, organization, result.update_trial_user)
 
       json(conn, %{
         success: true,
@@ -53,10 +54,28 @@ defmodule GlificWeb.API.V1.TrialAccountController do
         })
 
       {:error, :organization, :no_available_accounts, _changes} ->
+        org = Partners.get_organization!(1)
+
+        attrs = %TrialUsers{
+          username: params["username"],
+          email: params["email"],
+          phone: params["phone"],
+          organization_name: params["organization_name"]
+        }
+
+        send_trial_account_emails(
+          :allocation_failed,
+          org,
+          attrs
+        )
+
         conn
         |> json(%{
           success: false,
-          error: "No trial accounts available at the moment"
+          error:
+            "Thank you for your interest in exploring Glific.
+
+          Apologies, at the moment, all our trial accounts are currently in use. Our Sales team will reach out to you shortly to discuss alternative options."
         })
 
       {:error, failed_step, reason, _changes} ->
@@ -176,9 +195,12 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     end
   end
 
-  @spec send_trial_account_emails(Organization.t(), TrialUsers.t()) ::
-          {:ok, term()} | {:error, term()}
-  defp send_trial_account_emails(organization, trial_user) do
+  @spec send_trial_account_emails(
+          :success | :allocation_failed,
+          Organization.t(),
+          TrialUsers.t()
+        ) :: :ok
+  defp send_trial_account_emails(:success, organization, trial_user) do
     TrialAccountMail.welcome_to_trial_account(organization, trial_user)
     |> Mailer.send(%{
       category: "trial_user_welcome",
@@ -190,5 +212,17 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       category: "new_trial_account_allocated",
       organization_id: organization.id
     })
+
+    :ok
+  end
+
+  defp send_trial_account_emails(:allocation_failed, organization, trial_user) do
+    TrialAccountMail.trial_account_allocation_failed(organization, trial_user)
+    |> Mailer.send(%{
+      category: "trial_account_allocation_failed",
+      organization_id: 1
+    })
+
+    :ok
   end
 end
