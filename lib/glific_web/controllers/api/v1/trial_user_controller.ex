@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
   require Logger
   alias PasswordlessAuth
   alias Plug.Conn
+  alias Glific.Metrics
 
   alias Glific.{
     Communications.Mailer,
@@ -70,6 +71,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
 
     case TrialUsers.create_trial_user(trial_user_attrs) do
       {:ok, trial_user} ->
+        Metrics.increment("Trial user created")
         send_otp_email(conn, trial_user, username)
 
       {:error, %Ecto.Changeset{errors: errors} = changeset} ->
@@ -130,6 +132,8 @@ defmodule GlificWeb.API.V1.TrialUsersController do
     })
     |> case do
       {:ok, _result} ->
+        Metrics.increment("Trial OTP sent")
+
         json(conn, %{
           data: %{
             message: "OTP sent successfully to #{trial_user.email}"

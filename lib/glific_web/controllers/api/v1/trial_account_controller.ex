@@ -17,6 +17,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
 
   alias Ecto.Multi
   alias GlificWeb.API.V1.RegistrationController
+  alias Glific.Metrics
 
   import Ecto.Query
 
@@ -31,6 +32,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
            RegistrationController.verify_otp(phone, params["otp"]),
          {:ok, result} <- allocate_trial_account(phone, params) do
       shortcode = result.update_organization.shortcode
+      Metrics.increment("Trial Account Signup Completed")
 
       json(conn, %{
         success: true,
