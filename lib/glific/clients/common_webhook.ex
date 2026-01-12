@@ -3,22 +3,21 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.{
-    ASR.Bhasini,
-    ASR.GoogleASR,
-    Certificates.Certificate,
-    Certificates.CertificateTemplate,
-    Contacts,
-    Groups.WAGroup,
-    OpenAI.ChatGPT,
-    Partners,
-    Providers.Maytapi,
-    Repo,
-    ThirdParty.GoogleSlide.Slide,
-    ThirdParty.Kaapi.ApiClient,
-    WAGroup.WAManagedPhone,
-    WAGroup.WaPoll
-  }
+  alias Glific.ASR.Bhasini
+  alias Glific.ASR.GoogleASR
+  alias Glific.Certificates.Certificate
+  alias Glific.Certificates.CertificateTemplate
+  alias Glific.Contacts
+  alias Glific.Groups.WAGroup
+  alias Glific.OpenAI.ChatGPT
+  alias Glific.Partners
+  alias Glific.Providers.Maytapi
+  alias Glific.Repo
+  alias Glific.ThirdParty.Gemini.ApiClient, as: GeminiApiClient
+  alias Glific.ThirdParty.GoogleSlide.Slide
+  alias Glific.ThirdParty.Kaapi.ApiClient
+  alias Glific.WAGroup.WAManagedPhone
+  alias Glific.WAGroup.WaPoll
 
   require Logger
 
@@ -177,15 +176,9 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    with {:ok, contact} <- Bhasini.validate_params(fields),
-         {:ok, media_content} <- Tesla.get(fields["speech"]) do
-      source_language = contact.language.locale
-      content = Base.encode64(media_content.body)
-
-      Bhasini.make_asr_api_call(
-        source_language,
-        content
-      )
+    with {:ok, contact} <- Bhasini.validate_params(fields) do
+      Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+      GeminiApiClient.speech_to_text(fields["speech"], contact.organization_id)
     else
       {:error, error} ->
         error
