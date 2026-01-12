@@ -1,12 +1,13 @@
 defmodule GlificWeb.API.V1.TrialUsersController do
   @moduledoc """
-  Controller for allocating trial users to users via an API endpoint.
+  Controller for trial account user creation.
   """
   use GlificWeb, :controller
   require Logger
+  alias Glific.Metrics
+
   alias PasswordlessAuth
   alias Plug.Conn
-  alias Glific.Metrics
 
   alias Glific.{
     Communications.Mailer,
@@ -86,22 +87,13 @@ defmodule GlificWeb.API.V1.TrialUsersController do
     case TrialUsers.create_trial_user(trial_user_attrs) do
       {:ok, trial_user} ->
         Metrics.increment("Trial user created")
-        send_otp_email(conn, trial_user, username)
+        {:ok, trial_user}
 
       {:error, %Ecto.Changeset{errors: errors} = changeset} ->
         if has_unique_constraint_error?(errors) do
-          handle_existing_user(conn, email, phone, username)
+          handle_existing_user(email, phone)
         else
-          Logger.error(
-            "Failed to create trial account for #{email}. Errors: #{inspect(changeset.errors)}"
-          )
-
-          conn
-          |> put_status(400)
-          |> json(%{
-            success: false,
-            error: "Failed to create trial account"
-          })
+          {:error, changeset}
         end
     end
   end
@@ -140,8 +132,12 @@ defmodule GlificWeb.API.V1.TrialUsersController do
            category: "trial_otp_verification",
            organization_id: org.id
          }) do
-      {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, :email_send_failed, reason}
+      {:ok, result} ->
+        Metrics.increment("Trial OTP sent")
+        {:ok, result}
+
+      {:error, reason} ->
+        {:error, :email_send_failed, reason}
     end
   end
 end

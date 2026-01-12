@@ -19,8 +19,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   }
 
   alias Ecto.Multi
-  alias GlificWeb.API.V1.RegistrationController
   alias Glific.Metrics
+  alias GlificWeb.API.V1.RegistrationController
 
   import Ecto.Query
 
@@ -37,6 +37,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       organization = result.update_organization
 
       send_trial_account_emails(organization, result.update_trial_user)
+      Metrics.increment("Trial Account allocated")
 
       json(conn, %{
         success: true,
