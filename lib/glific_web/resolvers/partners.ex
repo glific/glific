@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Partners do
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
+    Erase,
     Partners,
     Partners.Credential,
     Partners.Export,
@@ -87,13 +88,15 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Deletes an organization
+  Deletes an organization as a background job.
+  This prevents UI timeouts when deleting organizations with large amounts of data.
   """
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_organization(_, %{id: id}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id) do
-      Partners.delete_organization(organization)
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true) do
+      Erase.delete_organization(id)
+      {:ok, %{organization: organization}}
     end
   end
 
