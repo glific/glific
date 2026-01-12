@@ -484,6 +484,7 @@ defmodule Glific.Erase do
 
         {:error, error}
     end
+end
   @spec send_success_notification(Organization.t()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp send_success_notification(organization) do
