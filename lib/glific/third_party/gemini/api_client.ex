@@ -2,6 +2,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @moduledoc """
   Client for interacting with Gemini via APIs.
   """
+  require Logger
+
   alias Glific.Metrics
 
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
@@ -28,16 +30,19 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
 
         %{success: true, asr_response_text: text}
 
-      {:ok, %Tesla.Env{status: status_code}} ->
+      {:ok, %Tesla.Env{status: status_code, body: body}} ->
         Metrics.increment("Gemini STT Failure", organization_id)
+        Logger.error("Gemini STT Failure: #{status_code} Body: #{inspect(body)}")
         %{success: false, asr_response_text: status_code}
 
       {:error, %Tesla.Env{body: error_reason}} ->
         Metrics.increment("Gemini STT Failure", organization_id)
+        Logger.error("Gemini STT Failure: Reason: #{inspect(error_reason)}")
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
         Metrics.increment("Gemini STT Failure", organization_id)
+        Logger.error("Gemini STT Failure: Reason: #{inspect(reason)}")
         %{success: false, asr_response_text: reason}
     end
   end
