@@ -215,7 +215,6 @@ mutation ($input: SheetInput!) {
       lastSyncedAt
       updatedAt
       url
-      warnings
     }
     errors {
       key

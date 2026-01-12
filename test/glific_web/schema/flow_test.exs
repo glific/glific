@@ -1032,4 +1032,37 @@ defmodule GlificWeb.Schema.FlowTest do
     refute is_nil(fc.completed_at)
     assert fc.is_killed
   end
+
+  test "import flow with adding and deleting collections", %{manager: user} do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "wait_for_result"}})
+    _flow_id = flow.id
+
+    result =
+      auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+
+    assert {:ok, query_data} = result
+
+    export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
+    data = Jason.decode!(export_data)
+
+    # Delete the flow before importing
+    Flows.list_flows(%{filter: %{id: flow.id}})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    import_flow = Jason.encode!(data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+
+    import_status =
+      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    assert import_status["flowName"] == "wait_for_result"
+    assert import_status["status"] == "Successfully imported"
+
+    # Publish will return success true now, since we update the group ids in the flow json while importing
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
+    assert get_in(query_data, [:data, "publishFlow", "success"]) == true
+  end
 end

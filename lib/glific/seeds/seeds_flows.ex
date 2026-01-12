@@ -414,7 +414,7 @@ defmodule Glific.Seeds.SeedsFlows do
       deactivate_profile: generate_uuid(organization, "db0404ad-8c73-40b8-ac3b-47464c4f8cdf"),
       int_re_response: generate_uuid(organization, "0633e385-0625-4432-98f7-e780a73944aa"),
       call_and_wait: generate_uuid(organization, "3fb647a3-c935-4906-8dd0-c0e63105ee3d"),
-      wait_for_result: generate_uuid(organization, "6a0bd92c-3e6e-4cd5-84b2-d4e140175a90")
+      wait_for_result: generate_uuid(organization, "60238b1d-bfbf-4013-ab5a-285e095b9f7a")
     }
 
     data = [

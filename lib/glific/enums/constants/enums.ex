@@ -112,6 +112,12 @@ defmodule Glific.Enums.Constants do
         :slides
       ]
 
+      # Sheet sync status types
+      @sheet_sync_status_const [
+        :success,
+        :failed
+      ]
+
       # status of whatsapp form
       @whatsapp_form_status_const [
         :draft,

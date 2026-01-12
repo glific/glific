@@ -6,6 +6,8 @@ defmodule Glific.Sheets do
   import Ecto.Query, warn: false
   require Logger
 
+  alias Ecto.Multi
+
   alias Glific.{
     Flows.Action,
     Flows.FlowContext,
@@ -16,7 +18,8 @@ defmodule Glific.Sheets do
     Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
-    Sheets.SheetData
+    Sheets.SheetData,
+    Sheets.Worker
   }
 
   # zero width unicode characters
@@ -173,115 +176,191 @@ defmodule Glific.Sheets do
 
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
-    [sheet_url, _gid] = String.split(sheet.url, ["edit", "view", "comment"])
 
     last_synced_at = DateTime.utc_now()
-    {:ok, uri} = URI.new(sheet.url)
-    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
+    export_url = build_export_url(sheet.url)
 
-    gid = uri.fragment || ""
-    export_url = sheet_url <> "export?format=csv&" <> gid
-    export_url = String.trim_trailing(export_url, "&")
+    sync_result =
+      [url: export_url]
+      |> ApiClient.get_csv_content()
+      |> run_sync_transaction(sheet, last_synced_at)
 
-    SheetData
-    |> where([sd], sd.sheet_id == ^sheet.id)
-    |> Repo.delete_all()
+    sync_status = report_sync_result(sync_result.sync_successful?, sheet)
+    sheet_data_count = count_sheet_data(sheet.id)
 
-    {media_warnings, sync_successful?} =
-      ApiClient.get_csv_content(url: export_url)
-      |> Enum.reduce_while({%{}, true}, fn
-        {:ok, row}, {acc, _} ->
-          parsed_rows = parse_row_values(row)
+    sheet
+    |> update_sheet(%{
+      last_synced_at: last_synced_at,
+      sheet_data_count: sheet_data_count,
+      sync_status: sync_status,
+      failure_reason: sync_result.error_message
+    })
+    |> case do
+      {:ok, updated_sheet} ->
+        # Enqueue background job for media validation if sync was successful
+        if sync_result.sync_successful? do
+          Worker.make_media_validation_job(updated_sheet)
+        end
 
-          %{
-            ## we can also think in case we need first column.
-            key: parsed_rows.values["key"],
-            row_data: parsed_rows.values,
-            sheet_id: sheet.id,
-            organization_id: sheet.organization_id,
-            last_synced_at: last_synced_at
-          }
-          |> create_sheet_data()
+        {:ok, updated_sheet}
 
-          {:cont, {Map.merge(acc, parsed_rows.errors), true}}
-
-        {:error, err}, {acc, _} ->
-          # If we get any error, we stop executing the current sheet further, log it.
-          Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
-          )
-
-          create_sync_fail_notification(sheet)
-          {:halt, {Map.put(acc, export_url, err), false}}
-      end)
-
-    case sync_successful? do
-      true -> Glific.Metrics.increment("Google Sheets Sync Success")
-      false -> Glific.Metrics.increment("Google Sheets Sync Failed")
+      error ->
+        error
     end
-
-    remove_stale_sheet_data(sheet, last_synced_at)
-
-    sheet_data_count =
-      SheetData
-      |> where([sd], sd.sheet_id == ^sheet.id)
-      |> Repo.aggregate(:count)
-
-    ## we can move this to top of the function also. We can change that later.
-    update_sheet(sheet, %{last_synced_at: last_synced_at, sheet_data_count: sheet_data_count})
-    |> append_warnings(media_warnings)
   end
 
-  defp append_warnings({:error, _error} = sheet, _media_warnings), do: sheet
+  @spec build_export_url(String.t()) :: String.t()
+  defp build_export_url(sheet_url) do
+    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
+    [base_url, _gid] = String.split(sheet_url, ["edit", "view", "comment"])
+    {:ok, uri} = URI.new(sheet_url)
 
-  defp append_warnings({:ok, updated_sheet} = _sheet, media_warnings) do
-    updated_sheet
-    |> Map.put(:warnings, media_warnings)
-    |> then(&{:ok, &1})
+    gid = uri.fragment || ""
+    export_url = base_url <> "export?format=csv&" <> gid
+    String.trim_trailing(export_url, "&")
+  end
+
+  @spec report_sync_result(boolean(), Sheet.t()) :: :success | :failed
+  defp report_sync_result(true, _sheet) do
+    Glific.Metrics.increment("Google Sheets Sync Success")
+    :success
+  end
+
+  defp report_sync_result(false, sheet) do
+    create_sync_fail_notification(sheet)
+    Glific.Metrics.increment("Google Sheets Sync Failed")
+    :failed
+  end
+
+  @spec count_sheet_data(integer()) :: integer()
+  defp count_sheet_data(sheet_id) do
+    SheetData
+    |> where([sd], sd.sheet_id == ^sheet_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @spec run_sync_transaction(Enumerable.t(), Sheet.t(), DateTime.t()) :: map()
+  defp run_sync_transaction(csv_content, sheet, last_synced_at) do
+    # Convert the stream to a list once to avoid consumption issues
+    csv_content_list = Enum.to_list(csv_content)
+
+    delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
+
+    Multi.new()
+    |> Multi.delete_all(:delete_sheet_data, delete_query)
+    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(csv_content_list, sheet) end)
+    |> Multi.run(:process_sheet_data, fn _, _ ->
+      process_sheet_data(csv_content_list, sheet, last_synced_at)
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{process_sheet_data: result}} -> result
+      {:error, _, result, _} -> result
+    end
+  end
+
+  defp validate_headers(csv_content, sheet) do
+    case Enum.take(csv_content, 1) do
+      [{:ok, row}] ->
+        row
+        |> Map.values()
+        |> Enum.all?(&(!is_list(&1)))
+        |> case do
+          true ->
+            {:ok, true}
+
+          false ->
+            {:error, handle_sync_failure(sheet, "Repeated or missing headers")}
+        end
+
+      [{:error, err}] ->
+        {:error, handle_sync_failure(sheet, inspect(err))}
+
+      _ ->
+        {:error, handle_sync_failure(sheet, "Unknown error or empty content")}
+    end
+  end
+
+  defp process_sheet_data(csv_content, sheet, last_synced_at) do
+    initial_acc = %{sync_successful?: true, error_message: nil}
+
+    csv_content
+    |> Enum.reduce_while(initial_acc, fn
+      {:ok, row}, acc ->
+        process_row(row, acc, sheet, last_synced_at)
+
+      {:error, err}, acc ->
+        handle_row_error(err, acc, sheet)
+    end)
+    |> case do
+      %{sync_successful?: true} = result -> {:ok, result}
+      result -> {:error, result}
+    end
+  end
+
+  @spec process_row(map(), map(), Sheet.t(), DateTime.t()) :: {:cont, map()}
+  defp process_row(row, acc, sheet, last_synced_at) do
+    %{values: row_values} = parse_row_values(row)
+
+    row_values
+    |> prepare_sheet_data_attrs(sheet, last_synced_at)
+    |> create_sheet_data()
+    |> case do
+      {:ok, _} ->
+        {:cont, acc}
+
+      {:error, changeset} ->
+        {:halt, %{sync_successful?: false, error_message: generate_error_message(changeset)}}
+    end
+  end
+
+  @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
+  defp handle_row_error(err, _acc, sheet) do
+    # If we get any error, we stop executing the current sheet further, log it.
+    {:halt, handle_sync_failure(sheet, inspect(err))}
+  end
+
+  defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
+    %{
+      key: values["key"],
+      row_data: values,
+      sheet_id: sheet.id,
+      organization_id: sheet.organization_id,
+      last_synced_at: last_synced_at
+    }
+  end
+
+  defp handle_sync_failure(sheet, reason) do
+    reason =
+      if String.contains?(reason, "Stray escape character on line"),
+        do: "Sheet not found or inaccessible",
+        else: reason
+
+    Logger.error(
+      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
+    )
+
+    %{sync_successful?: false, error_message: reason}
   end
 
   @spec parse_row_values(map()) :: map()
   defp parse_row_values(row) do
-    clean_row_values =
-      Enum.reduce(row, %{}, fn {key, value}, acc ->
-        key =
-          key
-          |> String.downcase()
-          |> String.replace(" ", "_")
-          |> trim_value()
+    clean_row_values = clean_row_keys_and_values(row)
 
-        Map.put(acc, key, value |> trim_value())
-      end)
-
-    errors =
-      clean_row_values
-      |> Enum.reduce(%{}, fn {_key, value}, acc ->
-        {media_type, _media} = Messages.get_media_type_from_url(value, log_error: false)
-
-        with true <- media_type != :text,
-             %{is_valid: is_valid, message: message} <-
-               Glific.Messages.validate_media(value, Atom.to_string(media_type)),
-             false <- is_valid do
-          Map.put(acc, value, message)
-        else
-          _ -> acc
-        end
-      end)
-
-    %{values: clean_row_values, errors: errors}
+    %{values: clean_row_values}
   end
 
-  ## We are removing all the rows which are not refreshed in the last sync.
-  ## We are assuming that these rows have been deleted from the sheet also.
-  @spec remove_stale_sheet_data(Sheet.t(), DateTime.t()) :: {integer(), nil | [term()]}
-  defp remove_stale_sheet_data(sheet, last_synced_at) do
-    Repo.delete_all(
-      from(sd in SheetData,
-        where:
-          sd.organization_id == ^sheet.organization_id and sd.sheet_id == ^sheet.id and
-            sd.last_synced_at != ^last_synced_at
-      )
-    )
+  @spec clean_row_keys_and_values(map()) :: map()
+  defp clean_row_keys_and_values(row) do
+    Enum.reduce(row, %{}, fn {key, value}, acc ->
+      clean_key =
+        key
+        |> String.downcase()
+        |> String.replace(" ", "_")
+        |> trim_value()
+
+      Map.put(acc, clean_key, trim_value(value))
+    end)
   end
 
   @doc """
@@ -429,4 +508,28 @@ defmodule Glific.Sheets do
   end
 
   defp trim_value(value), do: value
+
+  @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
+  defp generate_error_message(changeset) do
+    changeset
+    |> Ecto.Changeset.traverse_errors(&format_error/1)
+    |> Enum.map_join(", ", &format_field_error(&1, changeset))
+  end
+
+  @spec format_error({String.t(), Keyword.t()}) :: String.t()
+  defp format_error({msg, opts}) do
+    Enum.reduce(opts, msg, fn {key, value}, acc ->
+      String.replace(acc, "%{#{key}}", to_string(value))
+    end)
+  end
+
+  @spec format_field_error({atom(), list(String.t())}, Ecto.Changeset.t()) :: String.t()
+  defp format_field_error({field, message}, changeset) do
+    field_name = field |> Atom.to_string() |> String.capitalize()
+
+    case Map.get(changeset.changes, field) do
+      nil -> "#{field_name}: #{message}"
+      value -> "#{field_name}: #{message} (Value: #{value})"
+    end
+  end
 end

@@ -319,6 +319,22 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get the status of given flag for the organization
+  """
+  @spec get_flag_enabled(atom(), map()) :: boolean
+  def get_flag_enabled(flag, organization) do
+    FunWithFlags.enabled?(flag, for: %{organization_id: organization.id})
+  end
+
+  @doc """
+  Adds given flag to the organization map
+  """
+  @spec set_flag_enabled(map(), atom()) :: map()
+  def set_flag_enabled(organization, flag) do
+    Map.put(organization, flag, get_flag_enabled(flag, organization))
+  end
+
+  @doc """
   Get whatsapp form value for organization flag
   """
   @spec get_whatsapp_forms_enabled?(map()) :: boolean
@@ -513,7 +529,8 @@ defmodule Glific.Flags do
       :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
       :is_ask_me_bot_enabled,
-      :is_whatsapp_forms_enabled
+      :is_whatsapp_forms_enabled,
+      :high_trigger_tps_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

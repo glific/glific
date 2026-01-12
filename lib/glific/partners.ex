@@ -20,6 +20,7 @@ defmodule Glific.Partners do
     Flows,
     Flows.Flow,
     GCS,
+    Mails.GupshupSetupMail,
     Notifications,
     Partners.Credential,
     Partners.Organization,
@@ -574,6 +575,7 @@ defmodule Glific.Partners do
       |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_me_bot_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -995,10 +997,15 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
-    with {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
+    with true <- credential.is_active,
+         {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
          {:ok, _} <- GCS.enable_bucket_logs(organization.id) do
       {:ok, credential}
     else
+      false ->
+        # credential set to inactive, so no further processing
+        {:ok, credential}
+
       {:error, %{body: %{"error" => %{"message" => message}}}} ->
         {:error, message}
 
@@ -1015,20 +1022,27 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(organization, credential, "gupshup") do
-    cond do
-      not valid_bsp?(credential) ->
-        Glific.Metrics.increment("Gupshup Credential Update Failed")
-        {:error, "App Name and API Key can't be empty"}
+    result =
+      cond do
+        not valid_bsp?(credential) ->
+          Glific.Metrics.increment("Gupshup Credential Update Failed")
+          {:error, "App Name and API Key can't be empty"}
 
-      credential.is_active ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
+        credential.is_active ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
 
-        set_bsp_app_id(organization, "gupshup")
+          set_bsp_app_id(organization, "gupshup")
 
-      true ->
-        update_organization(organization, %{bsp_id: credential.provider.id})
-        {:ok, credential}
+        true ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+          {:ok, credential}
+      end
+
+    with {:ok, _} <- result do
+      GupshupSetupMail.send_gupshup_setup_completion_mail(organization)
     end
+
+    result
   end
 
   defp credential_update_callback(organization, credential, "gupshup_enterprise") do
@@ -1314,7 +1328,9 @@ defmodule Glific.Partners do
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
       "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
-      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization)
+      "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
+      "high_trigger_tps_enabled" =>
+        Flags.get_flag_enabled(:high_trigger_tps_enabled, organization)
     }
   end
 

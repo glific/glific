@@ -33,35 +33,49 @@ defmodule GlificWeb.API.V1.TrialUsersController do
           "organization_name" => organization_name
         }
       ) do
-    case Contacts.parse_phone_number(phone) do
-      {:ok, phone} ->
-        handle_trial_user_creation(
-          conn,
-          username,
-          email,
-          phone,
-          organization_name
-        )
+    with {:ok, parsed_phone} <- Contacts.parse_phone_number(phone),
+         {:ok, trial_user} <-
+           create_or_handle_existing_trial_user(
+             username,
+             email,
+             parsed_phone,
+             organization_name
+           ),
+         {:ok, _result} <- send_otp_to_trial_user(trial_user, username) do
+      json(conn, %{
+        data: %{message: "OTP sent successfully to #{trial_user.email}"}
+      })
+    else
+      {:error, :already_registered} ->
+        json(conn, %{
+          success: false,
+          error: "Email or phone already registered"
+        })
 
-      {:error, error_message} ->
+      {:error, error_message} when is_binary(error_message) ->
         conn
         |> put_status(400)
-        |> json(%{
-          success: false,
-          error: error_message
-        })
+        |> json(%{success: false, error: error_message})
+
+      {:error, :email_send_failed, reason} ->
+        Logger.error("Failed to send OTP email. Reason: #{inspect(reason)}")
+
+        conn
+        |> put_status(500)
+        |> json(%{success: false, error: "Failed to send OTP email"})
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        Logger.error("Failed to create trial account. Errors: #{inspect(changeset.errors)}")
+
+        conn
+        |> put_status(400)
+        |> json(%{success: false, error: "Failed to create trial account"})
     end
   end
 
-  @spec handle_trial_user_creation(Conn.t(), String.t(), String.t(), String.t(), String.t()) ::
-          Conn.t()
-  defp handle_trial_user_creation(
-         conn,
-         username,
-         email,
-         phone,
-         organization_name
-       ) do
+  @spec create_or_handle_existing_trial_user(String.t(), String.t(), String.t(), String.t()) ::
+          {:ok, TrialUsers.t()} | {:error, term()}
+  defp create_or_handle_existing_trial_user(username, email, phone, organization_name) do
     trial_user_attrs = %{
       username: username,
       email: email,
@@ -100,57 +114,34 @@ defmodule GlificWeb.API.V1.TrialUsersController do
     end)
   end
 
-  @spec handle_existing_user(Conn.t(), String.t(), String.t(), String.t()) :: Conn.t()
-  defp handle_existing_user(conn, email, phone, username) do
+  @spec handle_existing_user(String.t(), String.t()) ::
+          {:ok, TrialUsers.t()} | {:error, :already_registered}
+  defp handle_existing_user(email, phone) do
     existing_user =
       TrialUsers
       |> where([t], t.email == ^email or t.phone == ^phone)
       |> Repo.one(skip_organization_id: true)
 
     if existing_user.otp_entered do
-      conn
-      |> json(%{
-        success: false,
-        error: "Email or phone already registered"
-      })
+      {:error, :already_registered}
     else
-      Logger.info("Resending OTP to existing unverified user: #{email}")
-      send_otp_email(conn, existing_user, username)
+      {:ok, existing_user}
     end
   end
 
-  @spec send_otp_email(Conn.t(), TrialUsers.t(), String.t()) :: Conn.t()
-  defp send_otp_email(conn, trial_user, username) do
+  @spec send_otp_to_trial_user(TrialUsers.t(), String.t()) ::
+          {:ok, term()} | {:error, :email_send_failed, term()}
+  defp send_otp_to_trial_user(trial_user, username) do
     code = PasswordlessAuth.generate_code(trial_user.phone)
     org = Saas.organization_id() |> Partners.get_organization!()
-    email = trial_user.email
 
-    TrialAccountMail.otp_verification_mail(org, email, code, username)
-    |> Mailer.send(%{
-      category: "trial_otp_verification",
-      organization_id: org.id
-    })
-    |> case do
-      {:ok, _result} ->
-        Metrics.increment("Trial OTP sent")
-
-        json(conn, %{
-          data: %{
-            message: "OTP sent successfully to #{trial_user.email}"
-          }
-        })
-
-      {:error, reason} ->
-        Logger.error(
-          "Failed to send OTP email to #{trial_user.email}. Reason: #{inspect(reason)}"
-        )
-
-        conn
-        |> put_status(500)
-        |> json(%{
-          success: false,
-          error: "Failed to send OTP email"
-        })
+    case TrialAccountMail.otp_verification_mail(org, trial_user.email, code, username)
+         |> Mailer.send(%{
+           category: "trial_otp_verification",
+           organization_id: org.id
+         }) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, :email_send_failed, reason}
     end
   end
 end

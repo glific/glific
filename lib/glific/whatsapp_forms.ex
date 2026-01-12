@@ -36,6 +36,8 @@ defmodule Glific.WhatsappForms do
          {:ok, db_attrs} <- prepare_attrs(attrs, response, :create),
          {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          :ok <- maybe_set_subscription(attrs.organization_id) do
+      # Track metric for WhatsApp form creation
+      Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
       {:ok, %{whatsapp_form: whatsapp_form}}
     end
   end

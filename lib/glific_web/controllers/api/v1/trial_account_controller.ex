@@ -2,12 +2,15 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   @moduledoc """
   Controller for allocating trial accounts to users via an API endpoint.
   """
+
   use GlificWeb, :controller
   require Logger
 
   alias Glific.{
+    Communications.Mailer,
     Contacts,
     Contacts.Contact,
+    Mails.TrialAccountMail,
     Partners.Organization,
     Repo,
     TrialUsers,
@@ -31,13 +34,14 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     with {:ok, _message} <-
            RegistrationController.verify_otp(phone, params["otp"]),
          {:ok, result} <- allocate_trial_account(phone, params) do
-      shortcode = result.update_organization.shortcode
-      Metrics.increment("Trial Account Signup Completed")
+      organization = result.update_organization
+
+      send_trial_account_emails(organization, result.update_trial_user)
 
       json(conn, %{
         success: true,
         data: %{
-          login_url: "https://#{shortcode}.glific.com/login"
+          login_url: "https://#{organization.shortcode}.glific.com/login"
         }
       })
     else
@@ -171,5 +175,21 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       user ->
         TrialUsers.update_trial_user(user, %{otp_entered: true})
     end
+  end
+
+  @spec send_trial_account_emails(Organization.t(), TrialUsers.t()) ::
+          {:ok, term()} | {:error, term()}
+  defp send_trial_account_emails(organization, trial_user) do
+    TrialAccountMail.welcome_to_trial_account(organization, trial_user)
+    |> Mailer.send(%{
+      category: "trial_user_welcome",
+      organization_id: organization.id
+    })
+
+    TrialAccountMail.trial_account_allocated(organization, trial_user)
+    |> Mailer.send(%{
+      category: "new_trial_account_allocated",
+      organization_id: organization.id
+    })
   end
 end

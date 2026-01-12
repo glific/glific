@@ -13,6 +13,8 @@ defmodule Glific.Partners.Credential do
     Provider
   }
 
+  @derive {ExAudit.Tracker, except: [:secrets]}
+
   @required_fields [:organization_id, :provider_id]
   @optional_fields [:keys, :secrets, :is_active, :is_valid]
 

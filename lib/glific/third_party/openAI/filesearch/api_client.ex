@@ -68,7 +68,13 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
       |> Multipart.add_file(media_info.path, name: "file", filename: media_info.filename)
       |> Multipart.add_field("purpose", "assistants")
 
-    post(url, data, headers: remove_content_type(headers()))
+    tesla_opts = [
+      headers: remove_content_type(headers()),
+      opts: [adapter: [recv_timeout: 20_000]]
+    ]
+
+    url
+    |> post(data, tesla_opts)
     |> parse_response()
   end
 

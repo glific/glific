@@ -3,9 +3,12 @@ defmodule Glific.PartnersTest do
   use Oban.Pro.Testing, repo: Glific.Repo
   use Glific.DataCase
   import Mock
+  import Swoosh.TestAssertions
 
   alias Glific.{
+    Communications.Mailer,
     Fixtures,
+    Mails.MailLog,
     Notifications,
     Notifications.Notification,
     Partners,
@@ -1114,6 +1117,48 @@ defmodule Glific.PartnersTest do
       assert "app_id" == updated_credential.secrets["app_id"]
     end
 
+    test "update_credential/2 for gupshup should send email notification to support",
+         %{organization_id: organization_id} = _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body:
+               Jason.encode!(%{
+                 "partnerAppsList" => [%{"id" => "test_app_id", "name" => "test_app"}]
+               })
+           }}
+
+        %{method: :post} ->
+          {:error, %Tesla.Env{status: 400, body: %{"error" => "Re-linking"}}}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "test_app", "api_key" => "test_key"},
+        organization_id: organization_id
+      }
+
+      {:ok, _updated_credential} = Partners.update_credential(credential, valid_update_attrs)
+      # Assert that an email was sent to support
+      assert_email_sent(fn email ->
+        email.subject =~ "Gupshup Setup Completed" and
+          email.to == [Mailer.glific_support()]
+      end)
+
+      # Verify email was logged
+      assert MailLog.count_mail_logs(%{
+               filter: %{organization_id: organization_id, category: "Gupshup Setup"}
+             }) == 1
+    end
+
     test "update_credential/2 for bigquery should call create bigquery dataset",
          %{organization_id: organization_id} = _attrs do
       valid_attrs = %{
@@ -1585,6 +1630,23 @@ defmodule Glific.PartnersTest do
 
       assert {:ok, %{message: _error}} =
                Partners.send_dashboard_report(organization.id, %{frequency: "WEEKLY"})
+    end
+
+    test "credentials should be audited with ExAudit",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_key: "test_audit_value"},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      # History should not have secrets in the patch
+      [created_history] = Repo.history(credential, skip_organization_id: true)
+      assert :secrets not in Map.keys(created_history.patch)
     end
   end
 
