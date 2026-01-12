@@ -75,12 +75,12 @@ defmodule Glific.Mails.TrialAccountMail do
   end
 
   @doc """
-  Sends trial account allocation failed email notification to Biz Dev
+  Sends trial account allocation failure email notification to Biz Dev
   """
   @spec trial_account_allocation_failed(Organization.t(), TrialUsers.t()) :: Swoosh.Email.t()
   def trial_account_allocation_failed(organization, trial_user) do
     subject = "Glific: Trial account allocation failed (no accounts available)"
-    body = create_trial_account_allocation_failed_body(trial_user)
+    body = create_trial_account_allocation_failure_body(trial_user)
 
     Mailer.common_send(
       organization,
@@ -248,8 +248,8 @@ defmodule Glific.Mails.TrialAccountMail do
     """
   end
 
-  @spec create_trial_account_allocation_failed_body(TrialUsers.t()) :: String.t()
-  defp create_trial_account_allocation_failed_body(trial_user) do
+  @spec create_trial_account_allocation_failure_body(TrialUsers.t()) :: String.t()
+  defp create_trial_account_allocation_failure_body(trial_user) do
     """
     A trial account could not be allocated because no trial accounts are currently available.<br><br>
 
@@ -259,7 +259,7 @@ defmodule Glific.Mails.TrialAccountMail do
     Email: #{trial_user.email}<br>
     Phone Number: #{trial_user.phone}<br>
 
-    please reach out to the user, as the user has already completed OTP verification.<br>
+    Please reach out to the user, as the user has already completed OTP verification.<br>
 
     Best,<br>
     Team Glific<br><br>
