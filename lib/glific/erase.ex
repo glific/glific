@@ -484,32 +484,6 @@ defmodule Glific.Erase do
 
         {:error, error}
     end
-  @spec send_success_notification(Organization.t()) ::
-          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  defp send_success_notification(organization) do
-    message = "Organization '#{organization.name}' has been successfully deleted."
-    entity = %{id: organization.id, name: organization.name, shortcode: organization.shortcode}
-
-    send_notification(message, :info, entity)
-  end
-
-  @spec send_failure_notification(non_neg_integer(), String.t()) ::
-          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  defp send_failure_notification(organization_id, reason) do
-    message = "Failed to delete organization with ID #{organization_id}. Reason: #{reason}"
-    send_notification(message, :critical, %{id: organization_id})
-  end
-
-  @spec send_notification(String.t(), :info | :critical, map) ::
-          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  defp send_notification(message, severity, entity) do
-    Notifications.create_notification(%{
-      category: "Organization",
-      message: message,
-      severity: severity,
-      organization_id: Glific.glific_organization_id(),
-      entity: entity
-    })
   end
 
   @spec send_success_notification(Organization.t()) ::
