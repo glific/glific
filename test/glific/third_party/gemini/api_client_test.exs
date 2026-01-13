@@ -1,7 +1,6 @@
 defmodule Glific.ThirdParty.Gemini.ApiClientTest do
   use Glific.DataCase
   import Tesla.Mock
-  import Mock
 
   alias Glific.ThirdParty.Gemini.ApiClient
 
@@ -116,14 +115,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
   end
 
   describe "text_to_speech/2" do
-    test "returns error message when GCS is not enabled", %{organization_id: organization_id} do
-      result = ApiClient.text_to_speech(organization_id, "Hello World")
-      assert result == "Enable GCS is use Gemini text to speech"
-    end
-
-    test "successfully converts text to speech with GCS enabled", %{
-      organization_id: organization_id
-    } do
+    test "successfully converts text to speech" do
       # Base64 encoded sample PCM audio data
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
@@ -156,25 +148,10 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
           }
       end)
 
-      with_mock Glific.GCS.GcsWorker,
-        upload_media: fn _file, _remote_name, _org_id ->
-          {:ok,
-           %{
-             url: "https://storage.googleapis.com/bucket/Gemini/outbound/test.mp3"
-           }}
-        end do
-        result = ApiClient.do_text_to_speech(organization_id, "Hello World")
-
-        assert result.success == true
-
-        assert result.media_url ==
-                 "https://storage.googleapis.com/bucket/Gemini/outbound/test.mp3"
-
-        assert result.translated_text == "Hello World"
-      end
+      assert {:ok, "fake_pcm_audio_data"} == ApiClient.text_to_speech("Hello World")
     end
 
-    test "handles API error with status code", %{organization_id: organization_id} do
+    test "handles API error with status code" do
       mock(fn %{method: :post} ->
         %Tesla.Env{
           status: 400,
@@ -182,77 +159,23 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      result = ApiClient.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
+      assert {:error, nil} == ApiClient.text_to_speech("Hello World")
     end
 
-    test "handles Tesla error with body", %{organization_id: organization_id} do
+    test "handles Tesla error with body" do
       mock(fn %{method: :post} ->
         {:error, %Tesla.Env{body: "Service unavailable"}}
       end)
 
-      result = ApiClient.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
+      assert {:error, nil} == ApiClient.text_to_speech("Hello World")
     end
 
-    test "handles Tesla timeout error", %{organization_id: organization_id} do
+    test "handles Tesla timeout error" do
       mock(fn %{method: :post} ->
         {:error, :timeout}
       end)
 
-      result = ApiClient.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
-    end
-
-    test "handles GCS upload failure", %{organization_id: organization_id} do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
-
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                content: %{
-                  parts: [
-                    %{
-                      inlineData: %{
-                        data: sample_audio_data,
-                        mimeType: "audio/pcm"
-                      }
-                    }
-                  ]
-                }
-              }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 50,
-              candidatesTokenCount: 100,
-              totalTokenCount: 150
-            }
-          }
-        }
-      end)
-
-      with_mock Glific.GCS.GcsWorker,
-        upload_media: fn _file, _remote_name, _org_id ->
-          {:error, "Upload failed"}
-        end do
-        result = ApiClient.do_text_to_speech(organization_id, "Hello World")
-
-        assert result.success == false
-        refute result.media_url
-        assert result.translated_text == "Hello World"
-      end
+      assert {:error, nil} == ApiClient.text_to_speech("Hello World")
     end
   end
 end

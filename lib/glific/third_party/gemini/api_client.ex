@@ -2,12 +2,9 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @moduledoc """
   Client for interacting with Gemini via APIs.
   """
-  use Publicist
   require Logger
 
-  alias Glific.GCS.GcsWorker
   alias Glific.Metrics
-  alias Glific.Partners
 
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -53,55 +50,38 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @doc """
   Convert text to speech using Gemini API.
   """
-  @spec text_to_speech(integer(), String.t()) :: map()
-  def text_to_speech(organization_id, text) do
-    organization = Partners.organization(organization_id)
-    services = organization.services["google_cloud_storage"]
-
-    if is_nil(services) do
-      "Enable GCS is use Gemini text to speech"
-    else
-      do_text_to_speech(organization_id, text)
-    end
-  end
-
-  # Private
-  defp do_text_to_speech(organization_id, text) do
+  def text_to_speech(text) do
     body = tts_request_body(text)
     path = "/gemini-2.5-pro-preview-tts:generateContent"
     opts = [adapter: [recv_timeout: 300_000]]
 
-    with {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} <-
-           Tesla.post(client(), path, body, opts: opts),
-         {:ok, mp3_file, remote_name} <- download_encoded_file(candidates, organization_id),
-         {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
-      gemini_usage_stats(metadata)
+    client()
+    |> Tesla.post(path, body, opts: opts)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
+        decoded_audio =
+          candidates
+          |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
+          |> Base.decode64!()
 
-      %{success: true}
-      |> Map.put(:media_url, media_meta.url)
-      |> Map.put(:translated_text, text)
-    else
+        gemini_usage_stats(metadata)
+        {:ok, decoded_audio}
+
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Logger.error("Gemini TTS Failure: #{status}, Body: #{inspect(body)}")
-        %{success: false, media_url: nil, translated_text: text}
+        {:error, nil}
 
       {:error, %Tesla.Env{body: error_reason}} ->
-        Metrics.increment("Gemini TTS Failure", organization_id)
         Logger.error("Gemini TTS Failure: Reason: #{inspect(error_reason)}")
-        %{success: false, media_url: nil, translated_text: text}
+        {:error, nil}
 
       {:error, reason} ->
-        Metrics.increment("Gemini TTS Failure", organization_id)
         Logger.error("Gemini TTS Failure: Reason: #{inspect(reason)}")
-        %{success: false, media_url: nil, translated_text: text}
-
-      error ->
-        Metrics.increment("Gemini TTS Failure", organization_id)
-        Logger.error("Gemini TTS Failure: Reason: #{inspect(error)}")
-        %{success: false, media_url: nil, translated_text: text}
+        {:error, nil}
     end
   end
 
+  # Private
   @spec gemini_config() :: map()
   defp gemini_config, do: Application.fetch_env!(:glific, __MODULE__)
 
@@ -180,35 +160,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
       },
       "model" => "gemini-2.5-pro-preview-tts"
     }
-  end
-
-  defp download_encoded_file(candidates, organization_id) do
-    decoded_audio =
-      candidates
-      |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
-      |> Base.decode64!()
-
-    Metrics.increment("Gemini TTS Success", organization_id)
-
-    uuid = Ecto.UUID.generate()
-    remote_name = "Gemini/outbound/#{uuid}.mp3"
-
-    pcm_file = System.tmp_dir!() <> "#{uuid}.pcm"
-    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(pcm_file, decoded_audio)
-
-    try do
-      System.cmd("ffmpeg", ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", pcm_file, mp3_file],
-        stderr_to_stdout: true
-      )
-
-      File.rm(pcm_file)
-      {:ok, mp3_file, remote_name}
-    catch
-      error, reason ->
-        Logger.info("Gemini TTS Failed: Downloaded with error: #{error} and reason: #{reason}")
-        "Error while converting file"
-    end
   end
 
   defp gemini_usage_stats(_metadata) do
