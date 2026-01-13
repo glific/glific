@@ -16,6 +16,16 @@ defmodule Glific.Erase do
     queue: :purge,
     max_attempts: 1
 
+  defmodule Error do
+    @moduledoc """
+    Custom error module for trial account cleanup failures.
+    Since trial cleanup is an automated background process,
+    reporting these failures to AppSignal lets us detect and fix problems
+    before they impact trial account availability.
+    """
+    defexception [:message, :reason]
+  end
+
   @batch_sleep 10_000
   @no_of_months 2
 
@@ -426,6 +436,55 @@ defmodule Glific.Erase do
     end
   end
 
+  @doc """
+  Deletes all data associated with a trial organization except user records.
+  """
+  @spec delete_organization_data(non_neg_integer) :: :ok | {:error, any()}
+  def delete_organization_data(organization_id) do
+    Repo.put_process_state(organization_id)
+    Logger.info("Deleting trial data for organization_id: #{organization_id}")
+
+    try do
+      queries = [
+        "DELETE FROM messages_media WHERE organization_id = #{organization_id}",
+        "DELETE FROM contact_histories WHERE organization_id = #{organization_id}",
+        "DELETE FROM contacts_groups WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
+        "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
+        "DELETE FROM messages WHERE organization_id = #{organization_id}",
+
+        # Keep NGO Main Account, SaaS Admin, and Simulator contacts
+        "DELETE FROM contacts
+         WHERE organization_id = #{organization_id}
+         AND name NOT IN ('NGO Main Account', 'SaaS Admin')
+         AND name NOT LIKE 'Glific Simulator%'",
+
+        # Keep template flows (for reallocation)
+        "DELETE FROM flows
+           WHERE organization_id = #{organization_id}
+           AND is_template = false",
+        "DELETE FROM interactive_templates WHERE organization_id = #{organization_id}",
+        "DELETE FROM triggers WHERE organization_id = #{organization_id}",
+        "DELETE FROM notifications WHERE organization_id = #{organization_id}",
+        "DELETE FROM webhook_logs WHERE organization_id = #{organization_id}"
+      ]
+
+      Enum.each(queries, fn query ->
+        result = Repo.query!(query, [], timeout: 300_000, skip_organization_id: true)
+        Logger.info("Deleted #{result.num_rows} rows for org #{organization_id}")
+      end)
+
+      Logger.info("Completed data deletion for organization_id: #{organization_id}")
+      :ok
+    rescue
+      error ->
+        Glific.log_exception(%Error{
+          message: "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+        })
+
+        {:error, error}
+    end
+end
   @spec send_success_notification(Organization.t()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   defp send_success_notification(organization) do

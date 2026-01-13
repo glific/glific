@@ -74,6 +74,8 @@ defmodule GlificWeb.Router do
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post "/askme", AskmeController, :ask
+    post("/trial/allocate-account", TrialAccountController, :trial)
+    post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
 
   # Enables LiveDashboard only for development
