@@ -72,7 +72,7 @@ defmodule Glific.Jobs.UserJob do
   @doc """
   Updates a user job with the given changeset.
   """
-  @spec update_user_job(UserJob.t(), map()) :: UserJob.t()
+  @spec update_user_job(UserJob.t(), map()) :: {:ok, UserJob.t()} | {:error, Ecto.Changeset.t()}
   def update_user_job(user_job, changes) do
     user_job
     |> changeset(changes)
