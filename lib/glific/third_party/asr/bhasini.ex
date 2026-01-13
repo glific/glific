@@ -75,7 +75,7 @@ defmodule Glific.ASR.Bhasini do
         {"Authorization", bhashini_keys.inference_key},
         {"Content-Type", "application/json"}
       ],
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: bhashini_response}} ->
@@ -136,7 +136,7 @@ defmodule Glific.ASR.Bhasini do
     |> Tesla.client()
     |> Tesla.post(url, Jason.encode!(post_body),
       headers: default_headers,
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, response} ->
@@ -249,7 +249,7 @@ defmodule Glific.ASR.Bhasini do
       @callback_url,
       Jason.encode!(asr_post_body),
       headers: asr_headers,
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: asr_response_body}} ->
@@ -283,6 +283,6 @@ defmodule Glific.ASR.Bhasini do
   @spec get_tesla_middlewares :: list()
   defp get_tesla_middlewares do
     [{Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_asr", sampling_scale: 10}}] ++
-      Glific.get_tesla_retry_middleware()
+      Glific.get_tesla_retry_middleware(%{max_retries: 1})
   end
 end

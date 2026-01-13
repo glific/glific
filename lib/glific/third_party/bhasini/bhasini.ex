@@ -109,7 +109,7 @@ defmodule Glific.Bhasini do
     |> Tesla.client()
     |> Tesla.post(@callback_url, Jason.encode!(body),
       headers: default_headers,
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -204,7 +204,7 @@ defmodule Glific.Bhasini do
     |> Tesla.client()
     |> Tesla.post(@callback_url, Jason.encode!(body),
       headers: default_headers,
-      opts: [adapter: [recv_timeout: 300_000]]
+      opts: [adapter: [recv_timeout: 30_000]]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
@@ -292,6 +292,6 @@ defmodule Glific.Bhasini do
   @spec get_tesla_middlewares :: list()
   defp get_tesla_middlewares do
     [{Tesla.Middleware.Telemetry, metadata: %{provider: "bhasini_tts", sampling_scale: 10}}] ++
-      Glific.get_tesla_retry_middleware()
+      Glific.get_tesla_retry_middleware(%{max_retries: 1})
   end
 end

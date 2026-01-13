@@ -15,7 +15,7 @@ defmodule Glific.Flows.Webhook do
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
-    priority: 1,
+    priority: 0,
     unique: [
       period: 60,
       fields: [:args, :worker],
@@ -434,8 +434,20 @@ defmodule Glific.Flows.Webhook do
     )
   end
 
-  defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls,
-    do: __MODULE__.new(payload, queue: :gpt_webhook_queue, unique: nil)
+  defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls do
+    opts = [
+      queue: :gpt_webhook_queue,
+      unique: nil
+    ]
+
+    # Bhasini tts API is performing badly for a long-time, so keeping the priority low, so other jobs can run
+    # But this priorty will be bumped every 5 mins to avoid starvation
+    if url == "nmt_tts_with_bhasini" do
+      __MODULE__.new(payload, Keyword.merge(opts, priority: 2))
+    else
+      __MODULE__.new(payload, opts)
+    end
+  end
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 

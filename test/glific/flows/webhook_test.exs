@@ -422,7 +422,10 @@ defmodule Glific.Flows.WebhookTest do
 
     assert Webhook.execute(action, context) == nil
     assert Webhook.execute(action, context) == nil
-    jobs = all_enqueued(worker: Webhook, prefix: "global")
+
+    [%{priority: 0, queue: "gpt_webhook_queue"} | _] =
+      jobs = all_enqueued(worker: Webhook, prefix: "global")
+
     assert 2 == length(jobs)
   end
 
@@ -592,5 +595,36 @@ defmodule Glific.Flows.WebhookTest do
     assert Webhook.execute(action, context) == nil
     [job] = all_enqueued(worker: Webhook, prefix: "global")
     assert job.queue == "custom_certificate"
+  end
+
+  test "nmt_tts webhook should run with lower priority",
+       attrs do
+    flow_uuid = Ecto.UUID.generate()
+
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: flow_uuid,
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+
+    context =
+      context
+      |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuids_seen, %{flow_uuid => 1})
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "FUNCTION",
+      url: "nmt_tts_with_bhasini",
+      body: Jason.encode!(%{})
+    }
+
+    assert Webhook.execute(action, context) == nil
+    [job] = all_enqueued(worker: Webhook, prefix: "global")
+    assert job.queue == "gpt_webhook_queue"
+    assert job.priority == 2
   end
 end
