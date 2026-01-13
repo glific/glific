@@ -17,8 +17,8 @@ defmodule Glific.WhatsappForms do
     Sheets.Sheet,
     Users.User,
     WhatsappForms.WhatsappForm,
-    WhatsappForms.WhatsappFormWorker,
     WhatsappForms.WhatsappFormRevision,
+    WhatsappForms.WhatsappFormWorker,
     WhatsappFormsRevisions
   }
 
