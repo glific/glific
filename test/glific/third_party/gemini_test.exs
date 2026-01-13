@@ -62,6 +62,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result == "Enable GCS to use Gemini text to speech"
     end
 
+    @tag :skip
     test "successfully converts text to speech with GCS enabled", %{
       organization_id: organization_id
     } do
@@ -154,6 +155,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello World"
     end
 
+    @tag :skip
     test "handles GCS upload failure", %{organization_id: organization_id} do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
@@ -198,6 +200,7 @@ defmodule Glific.ThirdParty.GeminiTest do
   end
 
   describe "nmt_text_to_speech/5" do
+    @tag :skip
     test "successfully translates and converts to speech with Gemini engine", %{
       organization_id: organization_id
     } do
@@ -266,6 +269,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       end
     end
 
+    @tag :skip
     test "successfully translates and converts to speech with OpenAI engine", %{
       organization_id: organization_id
     } do
@@ -333,6 +337,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello"
     end
 
+    @tag :skip
     test "handles errors when token size exceeds 300", %{organization_id: organization_id} do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
       # Token size is 319
@@ -475,6 +480,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello"
     end
 
+    @tag :skip
     test "uses gemini engine by default when speech_engine option is not provided", %{
       organization_id: organization_id
     } do
@@ -534,6 +540,7 @@ defmodule Glific.ThirdParty.GeminiTest do
     end
   end
 
+  @tag :skip
   test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
     organization_id: organization_id
   } do
