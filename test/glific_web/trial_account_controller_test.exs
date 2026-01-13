@@ -176,7 +176,10 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
       assert json_response(conn, 200) == %{
                "success" => false,
-               "error" => "No trial accounts available at the moment"
+               "error" =>
+                 "Thank you for your interest in exploring Glific.
+
+          Apologies, at the moment, all our trial accounts are currently in use. Our Sales team will reach out to you shortly to discuss alternative options."
              }
     end
 
