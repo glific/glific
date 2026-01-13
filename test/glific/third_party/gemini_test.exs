@@ -59,7 +59,7 @@ defmodule Glific.ThirdParty.GeminiTest do
   describe "text_to_speech/2" do
     test "returns error message when GCS is not enabled", %{organization_id: organization_id} do
       result = Gemini.text_to_speech(organization_id, "Hello World")
-      assert result == "Enable GCS is use Gemini text to speech"
+      assert result == "Enable GCS to use Gemini text to speech"
     end
 
     test "successfully converts text to speech with GCS enabled", %{
