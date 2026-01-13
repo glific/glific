@@ -364,14 +364,14 @@ defmodule Glific.Clients.CommonWebhook do
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(source_language, target_language) do
-      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id, opts)
+         true <- Gemini.valid_language?(source_language, target_language) do
+      Gemini.nmt_text_to_speech(text, source_language, target_language, org_id, opts)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}
 
       false ->
-        %{success: false, reason: "Language not supported in Bhashini"}
+        %{success: false, reason: "Language not supported in Gemini"}
     end
   end
 

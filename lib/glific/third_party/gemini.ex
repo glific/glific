@@ -5,10 +5,14 @@ defmodule Glific.ThirdParty.Gemini do
   use Publicist
   require Logger
 
+  alias Glific.Flows.Translate.GoogleTranslate
   alias Glific.GCS.GcsWorker
   alias Glific.Metrics
+  alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.ThirdParty.Gemini.ApiClient
+
+  @supported_languages ["tamil", "telugu", "bengali", "marathi", "spanish", "english", "hindi"]
 
   @doc """
   Converts speech audio to text using Gemini API.
@@ -90,6 +94,76 @@ defmodule Glific.ThirdParty.Gemini do
     end
   end
 
+  @doc """
+  Translates text and converts it to speech using Neural Machine Translation (NMT) and text-to-speech.
+
+  This function combines Google Translate's NMT capabilities with text-to-speech synthesis to translate
+  text from one language to another and then generate audio of the translated text. It supports multiple
+  speech engines including Gemini (default) and OpenAI.
+
+  ## Parameters
+
+    * `organization_id` - The ID of the organization making the request
+    * `text` - The source text to be translated and converted to speech
+    * `source_language` - The language code of the source text (e.g., "english", "hindi", "tamil")
+    * `target_language` - The language code to translate to (e.g., "spanish", "marathi", "bengali")
+    * `opts` - A keyword list of options:
+      * `:speech_engine` - The TTS engine to use, either "open_ai" or "gemini" (default: "gemini")
+      * Additional options passed to Google Translate API
+
+  ## Returns
+
+  Returns a map with one of the following structures:
+
+    * `%{success: true, media_url: url, translated_text: text}` - When translation and TTS succeed
+    * `%{success: false, media_url: nil, translated_text: text}` - When translation or TTS fail
+
+    ## Examples
+
+      iex> Glific.ThirdParty.Gemini.nmt_text_to_speech(1, "Hello", "english", "hindi", [])
+      %{success: true, media_url: "https://storage.googleapis.com/...", translated_text: "नमस्ते"}
+
+      iex> Glific.ThirdParty.Gemini.nmt_text_to_speech(1, "Hello", "english", "spanish", speech_engine: "open_ai")
+      %{success: true, media_url: "https://...", translated_text: "Hola"}
+
+      iex> Glific.ThirdParty.Gemini.nmt_text_to_speech(1, "Hello", "english", "french", [])
+      %{success: false, media_url: nil, translated_text: "Hello"}
+
+  """
+  def nmt_text_to_speech(organization_id, text, source_language, target_language, opts) do
+    speech_engine = Keyword.get(opts, :speech_engine, "gemini")
+    source_language = String.capitalize(source_language)
+    target_language = String.capitalize(target_language)
+
+    with {:ok, [translated_text]} when byte_size(translated_text) > 0 <-
+           GoogleTranslate.translate(
+             [text],
+             source_language,
+             target_language,
+             org_id: organization_id
+           ),
+         %{success: true} = response <-
+           choose_engine_and_do_tts(speech_engine, organization_id, translated_text) do
+      response
+    else
+      %{success: false} ->
+        Metrics.increment("Gemini TTS Failure", organization_id)
+        %{success: false, media_url: nil, translated_text: text}
+
+      error ->
+        Metrics.increment("Gemini NMT TTS Failure", organization_id)
+        Logger.error("Google Translate Error: #{inspect(error)}")
+        %{success: false, media_url: nil, translated_text: text}
+    end
+  end
+
+  @doc """
+  This function validates Gemini supported languages.
+  """
+  @spec valid_language?(String.t(), String.t()) :: boolean()
+  def valid_language?(source_language, target_language),
+    do: source_language in @supported_languages and target_language in @supported_languages
+
   # Private
   defp do_text_to_speech(organization_id, text) do
     with {:ok, decoded_audio} <- ApiClient.text_to_speech(text),
@@ -111,6 +185,13 @@ defmodule Glific.ThirdParty.Gemini do
         %{success: false, media_url: nil, translated_text: text}
     end
   end
+
+  defp choose_engine_and_do_tts("open_ai", organization_id, translated_text),
+    do: ChatGPT.text_to_speech_with_open_ai(organization_id, translated_text)
+
+  # Use Gemini in any other case
+  defp choose_engine_and_do_tts(_speech_engine, organization_id, translated_text),
+    do: do_text_to_speech(organization_id, translated_text)
 
   defp download_encoded_file(decoded_audio) do
     uuid = Ecto.UUID.generate()
