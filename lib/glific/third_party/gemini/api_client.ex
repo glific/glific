@@ -86,8 +86,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   # client with runtime config (API key / base URL).
   @spec client() :: Tesla.Client.t()
   defp client() do
-    Glific.Metrics.increment("Kaapi Requests")
-
     Tesla.client(
       [
         {Tesla.Middleware.BaseUrl, @gemini_url},
