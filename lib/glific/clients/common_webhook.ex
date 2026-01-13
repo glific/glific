@@ -14,7 +14,6 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Providers.Maytapi
   alias Glific.Repo
   alias Glific.ThirdParty.Gemini
-  alias Glific.ThirdParty.Gemini.ApiClient, as: GeminiApiClient
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi.ApiClient
   alias Glific.WAGroup.WAManagedPhone
@@ -179,7 +178,7 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text_with_bhasini", fields) do
     with {:ok, contact} <- Bhasini.validate_params(fields) do
       Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-      GeminiApiClient.speech_to_text(fields["speech"], contact.organization_id)
+      Gemini.speech_to_text(fields["speech"], contact.organization_id)
     else
       {:error, error} ->
         error

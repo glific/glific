@@ -4,15 +4,13 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   """
   require Logger
 
-  alias Glific.Metrics
-
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
   @doc """
   Performs STT call on the given content to Gemini.
   """
-  @spec speech_to_text(String.t(), String.t()) :: any()
-  def speech_to_text(audio_url, organization_id) do
+  @spec speech_to_text(String.t()) :: map()
+  def speech_to_text(audio_url) do
     body = stt_request_body(audio_url)
     opts = [adapter: [recv_timeout: 300_000]]
 
@@ -26,22 +24,18 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           |> Jason.decode!()
 
         gemini_usage_stats(metadata)
-        Metrics.increment("Gemini STT Success", organization_id)
 
         %{success: true, asr_response_text: text}
 
       {:ok, %Tesla.Env{status: status_code, body: body}} ->
-        Metrics.increment("Gemini STT Failure", organization_id)
         Logger.error("Gemini STT Failure: #{status_code} Body: #{inspect(body)}")
         %{success: false, asr_response_text: status_code}
 
       {:error, %Tesla.Env{body: error_reason}} ->
-        Metrics.increment("Gemini STT Failure", organization_id)
         Logger.error("Gemini STT Failure: Reason: #{inspect(error_reason)}")
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
-        Metrics.increment("Gemini STT Failure", organization_id)
         Logger.error("Gemini STT Failure: Reason: #{inspect(reason)}")
         %{success: false, asr_response_text: reason}
     end

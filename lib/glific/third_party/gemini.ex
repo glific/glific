@@ -11,6 +11,46 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.ThirdParty.Gemini.ApiClient
 
   @doc """
+  Converts speech audio to text using Gemini API.
+
+  This function takes an audio file URL and uses Google's Gemini speech-to-text API
+  to transcribe the audio content into text. It tracks success/failure metrics for
+  monitoring purposes.
+
+  ## Parameters
+
+    * `audio_url` - The URL of the audio file to be transcribed (must be publicly accessible)
+    * `organization_id` - The ID of the organization making the request (used for metrics tracking)
+
+  ## Returns
+
+  Returns a map with one of the following structures:
+
+    * `%{success: true, asr_response_text: text}` - When transcription succeeds, where `text` is the transcribed content
+    * Error response from the API client - When transcription fails (structure depends on the error type)
+
+  ## Examples
+
+      iex> Glific.ThirdParty.Gemini.speech_to_text("https://example.com/audio.mp3", 1)
+      %{success: true, asr_response_text: "Hello, this is a transcription"}
+
+      iex> Glific.ThirdParty.Gemini.speech_to_text("https://invalid.url/audio.mp3", 1)
+      %{success: false, error: "Failed to fetch audio"}
+
+  """
+  def speech_to_text(audio_url, organization_id) do
+    with %{success: true, asr_response_text: text} <- ApiClient.speech_to_text(audio_url) do
+      Metrics.increment("Gemini STT Success", organization_id)
+
+      %{success: true, asr_response_text: text}
+    else
+      error ->
+        Metrics.increment("Gemini STT Failure", organization_id)
+        error
+    end
+  end
+
+  @doc """
   Converts text to speech using Gemini API and uploads the audio to Google Cloud Storage.
 
   This function takes text input and converts it to an MP3 audio file using Google's Gemini
