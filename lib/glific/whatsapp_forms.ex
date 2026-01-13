@@ -297,8 +297,9 @@ defmodule Glific.WhatsappForms do
         end
 
       {:error, _} ->
-        with {:ok, whatsapp_form} <- do_create_whatsapp_form(attrs) do
-          create_whatsapp_form_revision(whatsapp_form, root_user)
+        with {:ok, whatsapp_form} <- do_create_whatsapp_form(attrs),
+             {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, root_user) do
+          update_revision_id(whatsapp_form.id, revision.id)
         end
     end
   end
