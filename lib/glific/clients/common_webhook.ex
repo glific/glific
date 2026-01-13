@@ -13,6 +13,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Partners
   alias Glific.Providers.Maytapi
   alias Glific.Repo
+  alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.Gemini.ApiClient, as: GeminiApiClient
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi.ApiClient
@@ -199,13 +200,13 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       speech_engine == "bhashini" ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+        Gemini.text_to_speech(org_id, text)
 
       source_language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+        Gemini.text_to_speech(org_id, text)
     end
   end
 
@@ -384,13 +385,13 @@ defmodule Glific.Clients.CommonWebhook do
   defp handle_tts_only(language, org_id, text, speech_engine) do
     cond do
       speech_engine == "bhashini" ->
-        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
+        Gemini.text_to_speech(org_id, text)
 
       speech_engine == "open_ai" || language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
-        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
+        Gemini.text_to_speech(org_id, text)
     end
   end
 
