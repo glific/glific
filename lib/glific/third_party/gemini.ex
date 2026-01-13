@@ -83,7 +83,7 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, media_url: nil, translated_text: "Error case"}
 
   """
-  @spec text_to_speech(integer(), String.t()) :: map()
+  @spec text_to_speech(integer(), String.t()) :: map() | String.t()
   def text_to_speech(organization_id, text) do
     organization = Partners.organization(organization_id)
     services = organization.services["google_cloud_storage"]
