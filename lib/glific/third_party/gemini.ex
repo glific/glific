@@ -32,11 +32,12 @@ defmodule Glific.ThirdParty.Gemini do
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(audio_url, organization_id) do
-    with %{success: true, asr_response_text: text} <- ApiClient.speech_to_text(audio_url) do
-      Metrics.increment("Gemini STT Success", organization_id)
+    case ApiClient.speech_to_text(audio_url) do
+      %{success: true} = response ->
+        Metrics.increment("Gemini STT Success", organization_id)
 
-      %{success: true, asr_response_text: text}
-    else
+        response
+
       error ->
         Metrics.increment("Gemini STT Failure", organization_id)
         error

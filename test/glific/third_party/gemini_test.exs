@@ -207,44 +207,42 @@ defmodule Glific.ThirdParty.GeminiTest do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "नमस्ते"}
-                  ]
-                }
+        if env.url == "https://translation.googleapis.com/language/translate/v2" do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "नमस्ते"}
+                ]
               }
             }
-
-          true ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                candidates: [
-                  %{
-                    content: %{
-                      parts: [
-                        %{
-                          inlineData: %{
-                            data: sample_audio_data,
-                            mimeType: "audio/pcm"
-                          }
+          }
+        else
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [
+                %{
+                  content: %{
+                    parts: [
+                      %{
+                        inlineData: %{
+                          data: sample_audio_data,
+                          mimeType: "audio/pcm"
                         }
-                      ]
-                    }
+                      }
+                    ]
                   }
-                ],
-                usageMetadata: %{
-                  promptTokenCount: 50,
-                  candidatesTokenCount: 100,
-                  totalTokenCount: 150
                 }
+              ],
+              usageMetadata: %{
+                promptTokenCount: 50,
+                candidatesTokenCount: 100,
+                totalTokenCount: 150
               }
             }
+          }
         end
       end)
 
@@ -282,24 +280,22 @@ defmodule Glific.ThirdParty.GeminiTest do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "Hola"}
-                  ]
-                }
+        if env.url == "https://translation.googleapis.com/language/translate/v2" do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "Hola"}
+                ]
               }
             }
-
-          true ->
-            %Tesla.Env{
-              status: 200,
-              body: sample_audio_data
-            }
+          }
+        else
+          %Tesla.Env{
+            status: 200,
+            body: sample_audio_data
+          }
         end
       end)
 
@@ -348,48 +344,46 @@ defmodule Glific.ThirdParty.GeminiTest do
         )
 
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            # This verifies that the token size exceeds the limit
-            assert %{"q" => "translation not available for long messages"} =
-                     Jason.decode!(env.body)
+        if env.url == "https://translation.googleapis.com/language/translate/v2" do
+          # This verifies that the token size exceeds the limit
+          assert %{"q" => "translation not available for long messages"} =
+                   Jason.decode!(env.body)
 
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "लंबे संदेशों के लिए अनुवाद उपलब्ध नहीं है"}
-                  ]
-                }
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "लंबे संदेशों के लिए अनुवाद उपलब्ध नहीं है"}
+                ]
               }
             }
-
-          true ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                candidates: [
-                  %{
-                    content: %{
-                      parts: [
-                        %{
-                          inlineData: %{
-                            data: sample_audio_data,
-                            mimeType: "audio/pcm"
-                          }
+          }
+        else
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [
+                %{
+                  content: %{
+                    parts: [
+                      %{
+                        inlineData: %{
+                          data: sample_audio_data,
+                          mimeType: "audio/pcm"
                         }
-                      ]
-                    }
+                      }
+                    ]
                   }
-                ],
-                usageMetadata: %{
-                  promptTokenCount: 50,
-                  candidatesTokenCount: 100,
-                  totalTokenCount: 150
                 }
+              ],
+              usageMetadata: %{
+                promptTokenCount: 50,
+                candidatesTokenCount: 100,
+                totalTokenCount: 150
               }
             }
+          }
         end
       end)
 
@@ -416,24 +410,22 @@ defmodule Glific.ThirdParty.GeminiTest do
       organization_id: organization_id
     } do
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "नमस्ते"}
-                  ]
-                }
+        if env.url == "https://translation.googleapis.com/language/translate/v2" do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "नमस्ते"}
+                ]
               }
             }
-
-          true ->
-            %Tesla.Env{
-              status: 400,
-              body: %{error: "Invalid request"}
-            }
+          }
+        else
+          %Tesla.Env{
+            status: 400,
+            body: %{error: "Invalid request"}
+          }
         end
       end)
 
@@ -449,24 +441,22 @@ defmodule Glific.ThirdParty.GeminiTest do
       organization_id: organization_id
     } do
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "नमस्ते"}
-                  ]
-                }
+        if env.url == "https://translation.googleapis.com/language/translate/v2" do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "नमस्ते"}
+                ]
               }
             }
-
-          true ->
-            %Tesla.Env{
-              status: 400,
-              body: %{error: "Invalid request"}
-            }
+          }
+        else
+          %Tesla.Env{
+            status: 400,
+            body: %{error: "Invalid request"}
+          }
         end
       end)
 
@@ -487,80 +477,7 @@ defmodule Glific.ThirdParty.GeminiTest do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
       mock_global(fn env ->
-        cond do
-          env.url == "https://translation.googleapis.com/language/translate/v2" ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                "data" => %{
-                  "translations" => [
-                    %{"translatedText" => "नमस्ते"}
-                  ]
-                }
-              }
-            }
-
-          String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                candidates: [
-                  %{
-                    content: %{
-                      parts: [
-                        %{
-                          inlineData: %{
-                            data: sample_audio_data,
-                            mimeType: "audio/pcm"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ],
-                usageMetadata: %{
-                  promptTokenCount: 50,
-                  candidatesTokenCount: 100,
-                  totalTokenCount: 150
-                }
-              }
-            }
-        end
-      end)
-
-      with_mock Glific.GCS.GcsWorker,
-        upload_media: fn _file, _remote_name, _org_id ->
-          {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
-        end do
-        result =
-          Gemini.nmt_text_to_speech(organization_id, "Hello", "english", "hindi", [])
-
-        assert result.success == true
-      end
-    end
-  end
-
-  @tag :skip
-  test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
-    organization_id: organization_id
-  } do
-    sample_audio_data = Base.encode64("fake_pcm_audio_data")
-
-    mock_global(fn env ->
-      cond do
-        env.url == "https://translation.googleapis.com/language/translate/v2" ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "नमस्ते"}
-                ]
-              }
-            }
-          }
-
-        String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") ->
+        if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
           %Tesla.Env{
             status: 200,
             body: %{
@@ -585,6 +502,75 @@ defmodule Glific.ThirdParty.GeminiTest do
               }
             }
           }
+        else
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "नमस्ते"}
+                ]
+              }
+            }
+          }
+        end
+      end)
+
+      with_mock Glific.GCS.GcsWorker,
+        upload_media: fn _file, _remote_name, _org_id ->
+          {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
+        end do
+        result =
+          Gemini.nmt_text_to_speech(organization_id, "Hello", "english", "hindi", [])
+
+        assert result.success == true
+      end
+    end
+  end
+
+  @tag :skip
+  test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
+    organization_id: organization_id
+  } do
+    sample_audio_data = Base.encode64("fake_pcm_audio_data")
+
+    mock_global(fn env ->
+      if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            candidates: [
+              %{
+                content: %{
+                  parts: [
+                    %{
+                      inlineData: %{
+                        data: sample_audio_data,
+                        mimeType: "audio/pcm"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            usageMetadata: %{
+              promptTokenCount: 50,
+              candidatesTokenCount: 100,
+              totalTokenCount: 150
+            }
+          }
+        }
+      else
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "नमस्ते"}
+              ]
+            }
+          }
+        }
       end
     end)
 

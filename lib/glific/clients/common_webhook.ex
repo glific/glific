@@ -176,10 +176,11 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    with {:ok, contact} <- Bhasini.validate_params(fields) do
-      Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-      Gemini.speech_to_text(fields["speech"], contact.organization_id)
-    else
+    case Bhasini.validate_params(fields) do
+      {:ok, contact} ->
+        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+        Gemini.speech_to_text(fields["speech"], contact.organization_id)
+
       {:error, error} ->
         error
     end

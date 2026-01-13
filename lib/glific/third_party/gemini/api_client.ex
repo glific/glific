@@ -156,6 +156,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   end
 
   defp gemini_usage_stats(_metadata) do
-    # TODO: Implement usage stats calculation
+    # Implement usage stats calculation
   end
 end
