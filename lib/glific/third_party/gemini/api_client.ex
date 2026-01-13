@@ -137,7 +137,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         %{
           "parts" => [
             %{
-              "text" => text
+              "text" =>
+                "Read aloud in warm and friendly tone, considering audience listening to you is based in India: #{text}"
             }
           ]
         }
