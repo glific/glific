@@ -21,18 +21,6 @@ defmodule Glific.ThirdParty.Gemini do
   to transcribe the audio content into text. It tracks success/failure metrics for
   monitoring purposes.
 
-  ## Parameters
-
-    * `audio_url` - The URL of the audio file to be transcribed (must be publicly accessible)
-    * `organization_id` - The ID of the organization making the request (used for metrics tracking)
-
-  ## Returns
-
-  Returns a map with one of the following structures:
-
-    * `%{success: true, asr_response_text: text}` - When transcription succeeds, where `text` is the transcribed content
-    * Error response from the API client - When transcription fails (structure depends on the error type)
-
   ## Examples
 
       iex> Glific.ThirdParty.Gemini.speech_to_text("https://example.com/audio.mp3", 1)
@@ -61,19 +49,6 @@ defmodule Glific.ThirdParty.Gemini do
   This function takes text input and converts it to an MP3 audio file using Google's Gemini
   text-to-speech API. The resulting audio is uploaded to GCS and a URL is returned.
 
-  ## Parameters
-
-    * `organization_id` - The ID of the organization making the request
-    * `text` - The text to be converted to speech
-
-  ## Returns
-
-  Returns a map with the following structure:
-
-    * `%{success: true, media_url: url, translated_text: text}` - When conversion succeeds
-    * `%{success: false, media_url: nil, translated_text: text}` - When conversion fails
-    * A string error message if GCS is not enabled for the organization
-
   ## Examples
 
       iex> Glific.ThirdParty.Gemini.text_to_speech(1, "Hello world")
@@ -101,23 +76,6 @@ defmodule Glific.ThirdParty.Gemini do
   This function combines Google Translate's NMT capabilities with text-to-speech synthesis to translate
   text from one language to another and then generate audio of the translated text. It supports multiple
   speech engines including Gemini (default) and OpenAI.
-
-  ## Parameters
-
-    * `organization_id` - The ID of the organization making the request
-    * `text` - The source text to be translated and converted to speech
-    * `source_language` - The language code of the source text (e.g., "english", "hindi", "tamil")
-    * `target_language` - The language code to translate to (e.g., "spanish", "marathi", "bengali")
-    * `opts` - A keyword list of options:
-      * `:speech_engine` - The TTS engine to use, either "open_ai" or "gemini" (default: "gemini")
-      * Additional options passed to Google Translate API
-
-  ## Returns
-
-  Returns a map with one of the following structures:
-
-    * `%{success: true, media_url: url, translated_text: text}` - When translation and TTS succeed
-    * `%{success: false, media_url: nil, translated_text: text}` - When translation or TTS fail
 
     ## Examples
 
