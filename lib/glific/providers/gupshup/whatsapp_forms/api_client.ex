@@ -18,6 +18,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         {Tesla.Middleware.BaseUrl, Keyword.fetch!(opts, :url)},
         {Tesla.Middleware.Headers, Keyword.fetch!(opts, :headers)},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        {Tesla.Middleware.Timeout, timeout: 60_000},
         {Tesla.Middleware.Telemetry,
          metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
@@ -112,13 +113,13 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @doc """
   Updates the JSON definition of a WhatsApp form via Gupshup Partner API.
   """
-  @spec update_whatsapp_form_json(String.t(), map()) ::
+  @spec update_whatsapp_form_json(map()) ::
           {:ok, map()} | {:error, String.t()}
-  def update_whatsapp_form_json(meta_flow_id, params) do
-    url = PartnerAPI.app_url!(params.organization_id)
-    headers = PartnerAPI.headers(:app_token, org_id: params.organization_id)
+  def update_whatsapp_form_json(form) do
+    url = PartnerAPI.app_url!(form.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: form.organization_id)
 
-    json_content = Jason.encode!(params.definition)
+    json_content = Jason.encode!(form.revision.definition)
 
     multipart =
       Multipart.new()
@@ -128,7 +129,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
       )
 
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{meta_flow_id}/assets", multipart)
+    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart)
     |> parse_response("update_whatsapp_form_json")
   end
 

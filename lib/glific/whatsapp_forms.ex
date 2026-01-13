@@ -18,6 +18,7 @@ defmodule Glific.WhatsappForms do
     Users.User,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormWorker,
+    WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
 
@@ -45,7 +46,9 @@ defmodule Glific.WhatsappForms do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs, user),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
+         {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, user),
+         {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id),
          :ok <- maybe_set_subscription(attrs.organization_id) do
       # Track metric for WhatsApp form creation
       Glific.Metrics.increment("WhatsApp Form Created", attrs.organization_id)
@@ -124,10 +127,7 @@ defmodule Glific.WhatsappForms do
   def publish_whatsapp_form(id) do
     with {:ok, form} <- get_whatsapp_form_by_id(id),
          {:ok, _} <-
-           ApiClient.update_whatsapp_form_json(form.meta_flow_id, %{
-             definition: form.revision.definition,
-             organization_id: form.organization_id
-           }),
+           ApiClient.update_whatsapp_form_json(form),
          {:ok, _response} <-
            ApiClient.publish_whatsapp_form(form.meta_flow_id, form.organization_id),
          {:ok, updated_form} <- update_form_status(form, :published),
@@ -301,6 +301,50 @@ defmodule Glific.WhatsappForms do
     end
   end
 
+  @doc """
+  Saves or updates a single form from WBM.
+  """
+  @spec sync_single_form(map(), map(), non_neg_integer()) ::
+          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
+  def sync_single_form(form, form_json, organization_id) do
+    attrs = %{
+      name: form["name"],
+      status: normalize_status(form["status"]),
+      categories: normalize_categories(form["categories"]),
+      description: Map.get(form, "description", ""),
+      meta_flow_id: form["id"],
+      definition: form_json,
+      organization_id: organization_id
+    }
+
+    organization = Partners.organization(organization_id)
+    root_user = organization.root_user
+
+    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
+      {:ok, existing_form} ->
+        existing_form_revision = Repo.preload(existing_form, :revision)
+
+        case form_changed?(existing_form_revision, attrs) do
+          false ->
+            {:ok, existing_form}
+
+          true ->
+            revision_attrs = %{
+              whatsapp_form_id: existing_form.id,
+              definition: form_json
+            }
+
+            with {:ok, _revision} <-
+                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user) do
+              do_update_whatsapp_form(existing_form, attrs)
+            end
+        end
+
+      {:error, _} ->
+        do_create_whatsapp_form(attrs, root_user)
+    end
+  end
+
   @spec do_create_whatsapp_form(map(), map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_whatsapp_form(attrs, user) do
@@ -341,7 +385,7 @@ defmodule Glific.WhatsappForms do
     end
   end
 
-  @spec maybe_set_subscription(non_neg_integer()) :: :ok
+  @spec maybe_set_subscription(non_neg_integer()) :: :ok | {:error, any()}
   defp maybe_set_subscription(organization_id) do
     # Check if this is the first form for the organization
     with 1 <- count_whatsapp_forms(%{organization_id: organization_id}),
@@ -543,5 +587,16 @@ defmodule Glific.WhatsappForms do
     Enum.any?(comparable_fields, fn field ->
       Map.get(existing_form, field) != Map.get(attrs, field)
     end)
+  end
+
+  @spec create_whatsapp_form_revision(WhatsappForm.t(), User.t()) ::
+          {:ok, WhatsappFormRevision.t()} | {:error, any()}
+  defp create_whatsapp_form_revision(whatsapp_form, user) do
+    WhatsappFormsRevisions.create_revision(%{
+      whatsapp_form_id: whatsapp_form.id,
+      definition: WhatsappFormsRevisions.default_definition(),
+      user_id: user.id,
+      organization_id: whatsapp_form.organization_id
+    })
   end
 end
