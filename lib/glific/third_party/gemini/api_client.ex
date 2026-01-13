@@ -117,8 +117,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
               }
             },
             %{
-              "text" =>
-                "Process the audio file and generate transcription.\n\nRequirements:\n1. Detect the primary language of the audio.\n2. Identify the primary emotion of the speaker in the audio. You MUST choose exactly one of the following: Happy, Sad, Angry, Neutral."
+              "text" => "Process the audio file and generate transcription in the same language."
             }
           ]
         }
