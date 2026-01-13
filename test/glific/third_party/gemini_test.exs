@@ -333,6 +333,80 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello"
     end
 
+    test "handles errors when token size exceeds 300", %{organization_id: organization_id} do
+      sample_audio_data = Base.encode64("fake_pcm_audio_data")
+      # Token size is 319
+      long_text =
+        String.duplicate(
+          "This test is to verifies that the Gemini NMT text-to-speech functionality can't handle longer text inputs that crosses the token limit.",
+          11
+        )
+
+      mock_global(fn env ->
+        cond do
+          env.url == "https://translation.googleapis.com/language/translate/v2" ->
+            # This verifies that the token size exceeds the limit
+            assert %{"q" => "translation not available for long messages"} =
+                     Jason.decode!(env.body)
+
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "data" => %{
+                  "translations" => [
+                    %{"translatedText" => "लंबे संदेशों के लिए अनुवाद उपलब्ध नहीं है"}
+                  ]
+                }
+              }
+            }
+
+          true ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                candidates: [
+                  %{
+                    content: %{
+                      parts: [
+                        %{
+                          inlineData: %{
+                            data: sample_audio_data,
+                            mimeType: "audio/pcm"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                usageMetadata: %{
+                  promptTokenCount: 50,
+                  candidatesTokenCount: 100,
+                  totalTokenCount: 150
+                }
+              }
+            }
+        end
+      end)
+
+      with_mock Glific.GCS.GcsWorker,
+        upload_media: fn _file, _remote_name, _org_id ->
+          {:ok,
+           %{
+             url: "https://storage.googleapis.com/bucket/Gemini/outbound/test.mp3"
+           }}
+        end do
+        result =
+          Gemini.nmt_text_to_speech(organization_id, long_text, "english", "hindi", [])
+
+        assert true == result.success
+
+        assert "https://storage.googleapis.com/bucket/Gemini/outbound/test.mp3" ==
+                 result.media_url
+
+        assert "लंबे संदेशों के लिए अनुवाद उपलब्ध नहीं है" == result.translated_text
+      end
+    end
+
     test "handles TTS failure after successful translation", %{
       organization_id: organization_id
     } do

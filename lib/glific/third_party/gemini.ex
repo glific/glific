@@ -101,7 +101,8 @@ defmodule Glific.ThirdParty.Gemini do
              [text],
              source_language,
              target_language,
-             org_id: organization_id
+             org_id: organization_id,
+             token_chunk_size: 300
            ),
          %{success: true} = response <-
            choose_engine_and_do_tts(speech_engine, organization_id, translated_text) do
