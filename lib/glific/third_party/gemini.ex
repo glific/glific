@@ -42,6 +42,7 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, error: "Failed to fetch audio"}
 
   """
+  @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(audio_url, organization_id) do
     with %{success: true, asr_response_text: text} <- ApiClient.speech_to_text(audio_url) do
       Metrics.increment("Gemini STT Success", organization_id)
@@ -130,6 +131,8 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, media_url: nil, translated_text: "Hello"}
 
   """
+  @spec nmt_text_to_speech(non_neg_integer(), String.t(), String.t(), String.t(), Keyword.t()) ::
+          map()
   def nmt_text_to_speech(organization_id, text, source_language, target_language, opts) do
     speech_engine = Keyword.get(opts, :speech_engine, "gemini")
     source_language = String.capitalize(source_language)
@@ -165,6 +168,7 @@ defmodule Glific.ThirdParty.Gemini do
     do: source_language in @supported_languages and target_language in @supported_languages
 
   # Private
+  @spec do_text_to_speech(non_neg_integer(), String.t()) :: map()
   defp do_text_to_speech(organization_id, text) do
     with {:ok, decoded_audio} <- ApiClient.text_to_speech(text),
          {:ok, mp3_file, remote_name} <- download_encoded_file(decoded_audio),
@@ -186,6 +190,7 @@ defmodule Glific.ThirdParty.Gemini do
     end
   end
 
+  @spec choose_engine_and_do_tts(String.t(), non_neg_integer(), String.t()) :: map()
   defp choose_engine_and_do_tts("open_ai", organization_id, translated_text),
     do: ChatGPT.text_to_speech_with_open_ai(organization_id, translated_text)
 
@@ -193,6 +198,7 @@ defmodule Glific.ThirdParty.Gemini do
   defp choose_engine_and_do_tts(_speech_engine, organization_id, translated_text),
     do: do_text_to_speech(organization_id, translated_text)
 
+  @spec download_encoded_file(binary()) :: {:ok, String.t(), String.t()} | String.t()
   defp download_encoded_file(decoded_audio) do
     uuid = Ecto.UUID.generate()
     remote_name = "Gemini/outbound/#{uuid}.mp3"
