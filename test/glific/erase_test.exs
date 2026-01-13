@@ -12,6 +12,7 @@ defmodule Glific.EraseTest do
     Messages.Message,
     Notifications,
     Notifications.Notification,
+    Partners.Organization,
     Repo,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
@@ -242,6 +243,56 @@ defmodule Glific.EraseTest do
              Oban.drain_queue(queue: :purge, with_safety: false)
 
     assert length(Messages.list_messages(%{filter: %{contact_id: sender.id}})) == 6
+  end
+
+  test "successfully processes organization deletion" do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert %Oban.Job{args: %{"organization_id" => organization_id}} = job
+    assert organization_id == organization.id
+    assert :ok = perform_job(Erase, job.args)
+    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
+  end
+
+  test "handles non-existent organization gracefully" do
+    non_existent_id = 999_999_999
+
+    assert {:ok, job} = Erase.delete_organization(non_existent_id)
+    assert {:error, "Organization not found"} = perform_job(Erase, job.args)
+  end
+
+  test "handles organization that is not deletable" do
+    organization = Fixtures.organization_fixture(%{status: :active})
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert {:error, "Organization not deletable"} = perform_job(Erase, job.args)
+  end
+
+  test "enqueues organization deletion job correctly" do
+    organization = Fixtures.organization_fixture(%{is_active: false})
+
+    assert {:ok, %Oban.Job{} = job} = Erase.delete_organization(organization.id)
+    assert job.queue == "purge"
+    assert job.max_attempts == 1
+    assert job.args["organization_id"] == organization.id
+  end
+
+  test "handles organization deletion with dependent data" do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+    contact = Fixtures.contact_fixture(%{organization_id: organization.id})
+
+    Fixtures.message_fixture(%{
+      organization_id: organization.id,
+      sender_id: contact.id,
+      receiver_id: contact.id
+    })
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+
+    assert :ok = perform_job(Erase, job.args)
+
+    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
   end
 
   test "perform_periodic clears contact histories older than 2 month", attrs do
