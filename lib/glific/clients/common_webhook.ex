@@ -199,12 +199,14 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       speech_engine == "bhashini" ->
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
 
       source_language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
     end
   end
@@ -365,6 +367,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     with false <- is_nil(services),
          true <- Gemini.valid_language?(source_language, target_language) do
+      Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
       Gemini.nmt_text_to_speech(text, source_language, target_language, org_id, opts)
     else
       true ->
@@ -384,12 +387,14 @@ defmodule Glific.Clients.CommonWebhook do
   defp handle_tts_only(language, org_id, text, speech_engine) do
     cond do
       speech_engine == "bhashini" ->
+        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
 
       speech_engine == "open_ai" || language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
+        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
     end
   end
