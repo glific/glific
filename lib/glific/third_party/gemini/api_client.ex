@@ -44,6 +44,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @doc """
   Convert text to speech using Gemini API.
   """
+  @spec text_to_speech(String.t()) :: {:ok, binary()} | {:error, nil}
   def text_to_speech(text) do
     body = tts_request_body(text)
     path = "/gemini-2.5-pro-preview-tts:generateContent"
