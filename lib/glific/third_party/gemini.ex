@@ -132,6 +132,7 @@ defmodule Glific.ThirdParty.Gemini do
     with {:ok, decoded_audio} <- ApiClient.text_to_speech(text),
          {:ok, mp3_file, remote_name} <- download_encoded_file(decoded_audio),
          {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
+      File.rm(mp3_file)
       Metrics.increment("Gemini TTS Success", organization_id)
 
       %{success: true}
