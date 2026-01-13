@@ -201,19 +201,19 @@ defmodule Glific.ThirdParty.Gemini do
     mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
     File.write!(pcm_file, decoded_audio)
 
-    try do
-      System.cmd(
-        "ffmpeg",
-        ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", pcm_file, mp3_file],
-        stderr_to_stdout: true
-      )
+    case do
+      System.cmd "ffmpeg",
+                 ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", pcm_file, mp3_file],
+                 stderr_to_stdout: true do
+        {_output, 0} ->
+          File.rm(pcm_file)
+          {:ok, mp3_file, remote_name}
 
-      File.rm(pcm_file)
-      {:ok, mp3_file, remote_name}
-    catch
-      error, reason ->
-        Logger.info("Gemini TTS Failed: Downloaded with error: #{error} and reason: #{reason}")
-        "Error while converting file"
+        {output, exit_code} ->
+          File.rm(pcm_file)
+          Logger.error("Gemini TTS FFmpeg failed with exit code #{exit_code}: #{output}")
+          "Error while converting file"
+      end
     end
   end
 end
