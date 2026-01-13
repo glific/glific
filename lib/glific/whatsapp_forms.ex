@@ -46,7 +46,7 @@ defmodule Glific.WhatsappForms do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs, user),
          {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, user),
          {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id),
          :ok <- maybe_set_subscription(attrs.organization_id) do
@@ -255,50 +255,6 @@ defmodule Glific.WhatsappForms do
     }
 
     {:ok, db_attrs}
-  end
-
-  @doc """
-  Saves or updates a single form from WBM.
-  """
-  @spec sync_single_form(map(), map(), non_neg_integer()) ::
-          {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  def sync_single_form(form, form_json, organization_id) do
-    attrs = %{
-      name: form["name"],
-      status: normalize_status(form["status"]),
-      categories: normalize_categories(form["categories"]),
-      description: Map.get(form, "description", ""),
-      meta_flow_id: form["id"],
-      definition: form_json,
-      organization_id: organization_id
-    }
-
-    organization = Partners.organization(organization_id)
-    root_user = organization.root_user
-
-    case Repo.fetch_by(WhatsappForm, %{meta_flow_id: form["id"], organization_id: organization_id}) do
-      {:ok, existing_form} ->
-        existing_form_revision = Repo.preload(existing_form, :revision)
-
-        case form_changed?(existing_form_revision, attrs) do
-          false ->
-            {:ok, existing_form}
-
-          true ->
-            revision_attrs = %{
-              whatsapp_form_id: existing_form.id,
-              definition: form_json
-            }
-
-            with {:ok, _revision} <-
-                   WhatsappFormsRevisions.save_revision(revision_attrs, root_user) do
-              do_update_whatsapp_form(existing_form, attrs)
-            end
-        end
-
-      {:error, _} ->
-        do_create_whatsapp_form(attrs, root_user)
-    end
   end
 
   @doc """
