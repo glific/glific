@@ -46,7 +46,7 @@ defmodule Glific.WhatsappForms do
     with {:ok, response} <- ApiClient.create_whatsapp_form(attrs),
          {:ok, updated_attrs} <- maybe_create_google_sheet(attrs),
          {:ok, db_attrs} <- prepare_attrs(updated_attrs, response),
-         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs, user),
+         {:ok, whatsapp_form} <- do_create_whatsapp_form(db_attrs),
          {:ok, revision} <- create_whatsapp_form_revision(whatsapp_form, user),
          {:ok, _} <- update_revision_id(whatsapp_form.id, revision.id),
          :ok <- maybe_set_subscription(attrs.organization_id) do
@@ -297,26 +297,18 @@ defmodule Glific.WhatsappForms do
         end
 
       {:error, _} ->
-        do_create_whatsapp_form(attrs, root_user)
+        with {:ok, whatsapp_form} <- do_create_whatsapp_form(attrs) do
+          create_whatsapp_form_revision(whatsapp_form, root_user)
+        end
     end
   end
 
-  @spec do_create_whatsapp_form(map(), map()) ::
+  @spec do_create_whatsapp_form(map()) ::
           {:ok, WhatsappForm.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_whatsapp_form(attrs, user) do
-    with {:ok, whatsapp_form} <-
-           %WhatsappForm{}
-           |> WhatsappForm.changeset(attrs)
-           |> Repo.insert(),
-         {:ok, revision} <-
-           WhatsappFormsRevisions.create_revision(%{
-             whatsapp_form_id: whatsapp_form.id,
-             definition: WhatsappFormsRevisions.default_definition(),
-             user_id: user.id,
-             organization_id: whatsapp_form.organization_id
-           }) do
-      update_revision_id(whatsapp_form.id, revision.id)
-    end
+  defp do_create_whatsapp_form(attrs) do
+    %WhatsappForm{}
+    |> WhatsappForm.changeset(attrs)
+    |> Repo.insert()
   end
 
   @spec do_update_whatsapp_form(WhatsappForm.t(), map()) ::
