@@ -368,7 +368,7 @@ defmodule Glific.Clients.CommonWebhook do
     with false <- is_nil(services),
          true <- Gemini.valid_language?(source_language, target_language) do
       Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
-      Gemini.nmt_text_to_speech(text, source_language, target_language, org_id, opts)
+      Gemini.nmt_text_to_speech(org_id, text, source_language, target_language, opts)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}
