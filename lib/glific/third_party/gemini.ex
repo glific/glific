@@ -88,7 +88,7 @@ defmodule Glific.ThirdParty.Gemini do
     services = organization.services["google_cloud_storage"]
 
     if is_nil(services) do
-      "Enable GCS is use Gemini text to speech"
+      "Enable GCS to use Gemini text to speech"
     else
       do_text_to_speech(organization_id, text)
     end
