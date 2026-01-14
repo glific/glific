@@ -94,7 +94,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         {Tesla.Middleware.Headers, headers()},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Gemini", sampling_scale: 10}}
-      ] ++ Glific.get_tesla_retry_middleware()
+      ] ++ Glific.get_tesla_retry_middleware(%{max_retries: 1})
     )
   end
 
