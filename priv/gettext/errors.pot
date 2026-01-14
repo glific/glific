@@ -160,7 +160,7 @@ msgstr ""
 msgid "Error updating opted-in contacts: Invalid BSP API key"
 msgstr ""
 
-#: lib/glific_web/resolvers/partners.ex:257
+#: lib/glific_web/resolvers/partners.ex:260
 #, elixir-format, elixir-autogen
 msgid "Error while fetching the BSP balance"
 msgstr ""
@@ -275,7 +275,7 @@ msgstr ""
 msgid "Error in encoding webhook body. Please check the json body in floweditor"
 msgstr ""
 
-#: lib/glific_web/resolvers/partners.ex:240
+#: lib/glific_web/resolvers/partners.ex:243
 #, elixir-autogen, elixir-format
 msgid "Error while fetching Quality Rating details"
 msgstr ""

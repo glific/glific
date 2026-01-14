@@ -4,6 +4,8 @@ defmodule GlificWeb.API.V1.TrialUsersController do
   """
   use GlificWeb, :controller
   require Logger
+  alias Glific.Metrics
+
   alias PasswordlessAuth
   alias Plug.Conn
 
@@ -84,6 +86,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
 
     case TrialUsers.create_trial_user(trial_user_attrs) do
       {:ok, trial_user} ->
+        Metrics.increment("Trial user created")
         {:ok, trial_user}
 
       {:error, %Ecto.Changeset{errors: errors} = changeset} ->
@@ -129,8 +132,12 @@ defmodule GlificWeb.API.V1.TrialUsersController do
            category: "trial_otp_verification",
            organization_id: org.id
          }) do
-      {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, :email_send_failed, reason}
+      {:ok, result} ->
+        Metrics.increment("Trial OTP sent")
+        {:ok, result}
+
+      {:error, reason} ->
+        {:error, :email_send_failed, reason}
     end
   end
 end
