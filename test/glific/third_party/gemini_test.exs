@@ -522,64 +522,64 @@ defmodule Glific.ThirdParty.GeminiTest do
         assert result.success == true
       end
     end
-  end
 
-  @tag :skip
-  test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
-    organization_id: organization_id
-  } do
-    sample_audio_data = Base.encode64("fake_pcm_audio_data")
+    @tag :skip
+    test "uses gemini engine by default when any unsupported speech_engine option is provided", %{
+      organization_id: organization_id
+    } do
+      sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
-    mock_global(fn env ->
-      if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                content: %{
-                  parts: [
-                    %{
-                      inlineData: %{
-                        data: sample_audio_data,
-                        mimeType: "audio/pcm"
+      mock_global(fn env ->
+        if String.contains?(env.url, "https://generativelanguage.googleapis.com/v1beta/models") do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [
+                %{
+                  content: %{
+                    parts: [
+                      %{
+                        inlineData: %{
+                          data: sample_audio_data,
+                          mimeType: "audio/pcm"
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
                 }
+              ],
+              usageMetadata: %{
+                promptTokenCount: 50,
+                candidatesTokenCount: 100,
+                totalTokenCount: 150
               }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 50,
-              candidatesTokenCount: 100,
-              totalTokenCount: 150
             }
           }
-        }
-      else
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            "data" => %{
-              "translations" => [
-                %{"translatedText" => "नमस्ते"}
-              ]
+        else
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "data" => %{
+                "translations" => [
+                  %{"translatedText" => "नमस्ते"}
+                ]
+              }
             }
           }
-        }
+        end
+      end)
+
+      with_mock Glific.GCS.GcsWorker,
+        upload_media: fn _file, _remote_name, _org_id ->
+          {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
+        end do
+        result =
+          Gemini.nmt_text_to_speech(organization_id, "Hello", "english", "hindi",
+            speech_engine: "bhashini"
+          )
+
+        assert result.success == true
       end
-    end)
-
-    with_mock Glific.GCS.GcsWorker,
-      upload_media: fn _file, _remote_name, _org_id ->
-        {:ok, %{url: "https://storage.googleapis.com/bucket/test.mp3"}}
-      end do
-      result =
-        Gemini.nmt_text_to_speech(organization_id, "Hello", "english", "hindi",
-          speech_engine: "bhashini"
-        )
-
-      assert result.success == true
     end
   end
 
