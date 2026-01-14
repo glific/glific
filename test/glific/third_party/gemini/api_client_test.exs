@@ -114,7 +114,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
     end
   end
 
-  describe "text_to_speech/1" do
+  describe "text_to_speech/2" do
     test "successfully converts text to speech", %{organization_id: organization_id} do
       # Base64 encoded sample PCM audio data
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
