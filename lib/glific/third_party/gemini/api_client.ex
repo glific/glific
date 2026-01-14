@@ -87,7 +87,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
 
   # client with runtime config (API key / base URL).
   @spec client() :: Tesla.Client.t()
-  defp client() do
+  defp client do
     Tesla.client(
       [
         {Tesla.Middleware.BaseUrl, @gemini_url},
@@ -99,7 +99,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   end
 
   @spec headers() :: list()
-  defp headers() do
+  defp headers do
     [
       {"x-goog-api-key", gemini_config(:gemini_api_key)},
       {"Content-Type", "application/json"}
