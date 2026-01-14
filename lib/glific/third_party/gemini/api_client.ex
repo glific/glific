@@ -3,6 +3,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   Client for interacting with Gemini via APIs.
   """
   require Logger
+  alias Glific.Metrics
 
   defmodule Error do
     @moduledoc """
