@@ -334,14 +334,10 @@ defmodule Glific.ThirdParty.GeminiTest do
     end
 
     @tag :skip
-    test "handles errors when token size exceeds 300", %{organization_id: organization_id} do
+    test "handles errors when token size exceeds 600", %{organization_id: organization_id} do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
-      # Token size is 319
-      long_text =
-        String.duplicate(
-          "This test is to verifies that the Gemini NMT text-to-speech functionality can't handle longer text inputs that crosses the token limit.",
-          11
-        )
+      # Token size is 640
+      long_text = String.duplicate("शामिल होने के लिए धन्यवाद", 16)
 
       mock_global(fn env ->
         if env.url == "https://translation.googleapis.com/language/translate/v2" do
