@@ -32,7 +32,7 @@ defmodule Glific.ThirdParty.Gemini do
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(audio_url, organization_id) do
-    case ApiClient.speech_to_text(audio_url) do
+    case ApiClient.speech_to_text(audio_url, organization_id) do
       %{success: true} = response ->
         Metrics.increment("Gemini STT Success", organization_id)
 
@@ -130,7 +130,7 @@ defmodule Glific.ThirdParty.Gemini do
   # Private
   @spec do_text_to_speech(non_neg_integer(), String.t()) :: map()
   defp do_text_to_speech(organization_id, text) do
-    with {:ok, decoded_audio} <- ApiClient.text_to_speech(text),
+    with {:ok, decoded_audio} <- ApiClient.text_to_speech(text, organization_id),
          {:ok, mp3_file, remote_name} <- download_encoded_file(decoded_audio),
          {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
       File.rm(mp3_file)

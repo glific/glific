@@ -4,13 +4,15 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   """
   require Logger
 
+  alias Glific.Metrics
+
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
   @doc """
   Performs STT call on the given content to Gemini.
   """
-  @spec speech_to_text(String.t()) :: map()
-  def speech_to_text(audio_url) do
+  @spec speech_to_text(String.t(), non_neg_integer()) :: map()
+  def speech_to_text(audio_url, organization_id) do
     body = stt_request_body(audio_url)
     opts = [adapter: [recv_timeout: 300_000]]
 
@@ -23,7 +25,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           |> get_in([Access.at(0), :content, :parts, Access.at(0), :text])
           |> Jason.decode!()
 
-        gemini_usage_stats(metadata)
+        stt_gemini_usage_stats(metadata, organization_id)
 
         %{success: true, asr_response_text: text}
 
@@ -44,8 +46,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @doc """
   Convert text to speech using Gemini API.
   """
-  @spec text_to_speech(String.t()) :: {:ok, binary()} | {:error, nil}
-  def text_to_speech(text) do
+  @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, nil}
+  def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
     path = "/gemini-2.5-pro-preview-tts:generateContent"
     opts = [adapter: [recv_timeout: 300_000]]
@@ -59,7 +61,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
           |> Base.decode64!()
 
-        gemini_usage_stats(metadata)
+        tts_gemini_usage_stats(metadata, organization_id)
         {:ok, decoded_audio}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
@@ -157,8 +159,13 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     }
   end
 
-  @spec gemini_usage_stats(map()) :: nil
-  defp gemini_usage_stats(metadata) do
-    # Implement usage stats calculation
+  @spec stt_gemini_usage_stats(map(), non_neg_integer()) :: :ok
+  defp stt_gemini_usage_stats(metadata, organization_id) do
+    Metrics.increment("Gemini STT Usage", organization_id, metadata[:totalTokenCount])
+  end
+
+  @spec tts_gemini_usage_stats(map(), non_neg_integer()) :: :ok
+  defp tts_gemini_usage_stats(metadata, organization_id) do
+    Metrics.increment("Gemini TTS Usage", organization_id, metadata[:totalTokenCount])
   end
 end
