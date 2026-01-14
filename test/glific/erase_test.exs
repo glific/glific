@@ -70,7 +70,7 @@ defmodule Glific.EraseTest do
   test "perform_periodic clears whatsapp forms revisions, and saving only recent 10",
        _attrs do
     user = Repo.get_current_user()
-    form = Fixtures.whatsapp_form_fixture()
+    {_, form} = Fixtures.whatsapp_form_fixture()
 
     value = %{
       whatsapp_form_id: form.id,

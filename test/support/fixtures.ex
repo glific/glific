@@ -536,26 +536,24 @@ defmodule Glific.Fixtures do
   @doc """
   Creates WhatsApp form fixture for tests.
   """
-  @spec whatsapp_form_fixture :: WhatsappForm.t()
+  @spec whatsapp_form_fixture :: {:ok, WhatsappForm.t()} | {:error, any()}
   def whatsapp_form_fixture do
     user = Repo.get_current_user()
 
-    base_attrs = %{
+    attrs = %{
       name: "sign_up_form",
       description: "Simple signup flow to collect name and email",
+      status: "draft",
       categories: [:sign_up, :lead_generation],
       organization_id: get_org_id(),
       google_sheet_url: nil,
       meta_flow_id: "meta_flow_1234"
     }
 
-    {:ok, form} =
-      WhatsappForms.do_create_whatsapp_form(
-        base_attrs,
-        user
-      )
-
-    Repo.preload(form, [:revision, :sheet])
+    with {:ok, whatsapp_form} <- WhatsappForms.do_create_whatsapp_form(attrs),
+         {:ok, revision} <- WhatsappForms.create_whatsapp_form_revision(whatsapp_form, user) do
+      WhatsappForms.update_revision_id(whatsapp_form.id, revision.id)
+    end
   end
 
   @doc false
