@@ -4,7 +4,13 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   """
   require Logger
 
-  alias Glific.Metrics
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Gemini API failures.
+    Reporting these failures to AppSignal lets us detect and fix issues.
+    """
+    defexception [:message, :status_code]
+  end
 
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -30,15 +36,19 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         %{success: true, asr_response_text: text}
 
       {:ok, %Tesla.Env{status: status_code, body: body}} ->
-        Logger.error("Gemini STT Failure: #{status_code} Body: #{inspect(body)}")
+        Glific.log_exception(%Error{
+          message: "Gemini STT Failure: #{inspect(body)}",
+          status_code: status_code
+        })
+
         %{success: false, asr_response_text: status_code}
 
       {:error, %Tesla.Env{body: error_reason}} ->
-        Logger.error("Gemini STT Failure: Reason: #{inspect(error_reason)}")
+        Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(error_reason)}"})
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
-        Logger.error("Gemini STT Failure: Reason: #{inspect(reason)}")
+        Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(reason)}"})
         %{success: false, asr_response_text: reason}
     end
   end
@@ -65,15 +75,19 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         {:ok, decoded_audio}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
-        Logger.error("Gemini TTS Failure: #{status}, Body: #{inspect(body)}")
+        Glific.log_exception(%Error{
+          message: "Gemini TTS Failure: #{inspect(body)}",
+          status_code: status
+        })
+
         {:error, nil}
 
       {:error, %Tesla.Env{body: error_reason}} ->
-        Logger.error("Gemini TTS Failure: Reason: #{inspect(error_reason)}")
+        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(error_reason)}"})
         {:error, nil}
 
       {:error, reason} ->
-        Logger.error("Gemini TTS Failure: Reason: #{inspect(reason)}")
+        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(reason)}"})
         {:error, nil}
     end
   end
