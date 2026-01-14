@@ -12,8 +12,22 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.Partners
   alias Glific.ThirdParty.Gemini.ApiClient
 
-  @supported_languages ["tamil", "telugu", "bengali", "marathi", "spanish", "english", "hindi"]
-
+  @supported_languages %{
+    "tamil" => "ta",
+    "kannada" => "kn",
+    "malayalam" => "ml",
+    "telugu" => "te",
+    "assamese" => "as",
+    "gujarati" => "",
+    "bengali" => "gu",
+    "punjabi" => "pa",
+    "marathi" => "mr",
+    "urdu" => "ur",
+    "spanish" => "es",
+    "english" => "en",
+    "hindi" => "hi",
+    "odia" => "or"
+  }
   @doc """
   Converts speech audio to text using Gemini API.
 
@@ -94,8 +108,8 @@ defmodule Glific.ThirdParty.Gemini do
           map()
   def nmt_text_to_speech(organization_id, text, source_language, target_language, opts) do
     speech_engine = Keyword.get(opts, :speech_engine, "gemini")
-    source_language = String.capitalize(source_language)
-    target_language = String.capitalize(target_language)
+    source_language = @supported_languages[source_language]
+    target_language = @supported_languages[target_language]
 
     with {:ok, [translated_text]} when byte_size(translated_text) > 0 <-
            GoogleTranslate.translate(
@@ -124,8 +138,10 @@ defmodule Glific.ThirdParty.Gemini do
   This function validates Gemini supported languages.
   """
   @spec valid_language?(String.t(), String.t()) :: boolean()
-  def valid_language?(source_language, target_language),
-    do: source_language in @supported_languages and target_language in @supported_languages
+  def valid_language?(source_language, target_language) do
+    languages = Map.keys(@supported_languages)
+    source_language in languages and target_language in languages
+  end
 
   # Private
   @spec do_text_to_speech(non_neg_integer(), String.t()) :: map()
