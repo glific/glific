@@ -104,6 +104,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     ]
   end
 
+  @spec stt_request_body(String.t()) :: map()
   defp stt_request_body(audio_url) do
     %{
       "contents" => [
@@ -129,6 +130,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     }
   end
 
+  @spec tts_request_body(String.t()) :: map()
   defp tts_request_body(text) do
     %{
       "contents" => [
@@ -155,7 +157,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     }
   end
 
-  defp gemini_usage_stats(_metadata) do
+  @spec gemini_usage_stats(map()) :: nil
+  defp gemini_usage_stats(metadata) do
     # Implement usage stats calculation
   end
 end
