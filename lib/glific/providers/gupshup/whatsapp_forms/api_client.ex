@@ -18,7 +18,6 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         {Tesla.Middleware.BaseUrl, Keyword.fetch!(opts, :url)},
         {Tesla.Middleware.Headers, Keyword.fetch!(opts, :headers)},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        {Tesla.Middleware.Timeout, timeout: 60_000},
         {Tesla.Middleware.Telemetry,
          metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
@@ -105,8 +104,10 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         categories: Enum.map(params.categories, &String.upcase/1)
       }
 
+    opts = [adapter: [recv_timeout: 60_000]]
+
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> Tesla.put("/flows/#{meta_flow_id}", payload, opts: opts)
     |> parse_response("update_whatsapp_form")
   end
 
