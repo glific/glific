@@ -165,3 +165,6 @@ config :glific,
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),
   kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret")
+
+config :glific, Glific.ThirdParty.Gemini.ApiClient,
+  gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
