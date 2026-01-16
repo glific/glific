@@ -122,6 +122,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     json_content = Jason.encode!(form.revision.definition)
 
+
     multipart =
       Multipart.new()
       |> Multipart.add_file_content(json_content, "flow.json",
@@ -129,8 +130,10 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         headers: [{"content-type", "application/json"}]
       )
 
+      opts = [adapter: [recv_timeout: 60_000]]
+
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart)
+    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart, opts: opts)
     |> parse_response("update_whatsapp_form_json")
   end
 
