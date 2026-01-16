@@ -44,6 +44,53 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   end
 
   @doc """
+  Lists all WhatsApp forms via Gupshup Partner API.
+  """
+  @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_whatsapp_forms(organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    client(url: url, headers: headers)
+    |> Tesla.get("/flows")
+    |> parse_response("list_whatsapp_forms")
+  end
+
+  @doc """
+  Fetches WhatsApp Flow JSON (full form definition) from Gupshup.
+  """
+  @spec get_whatsapp_form_assets(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_whatsapp_form_assets(flow_id, organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    response =
+      client(url: url, headers: headers)
+      |> Tesla.get("/flows/#{flow_id}/assets")
+      |> parse_response("get_whatsapp_form_assets")
+
+    case response do
+      {:ok, [asset]} ->
+        download(asset.download_url)
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Downloads a file from a given URL.
+  """
+  @spec download(String.t()) :: {:ok, map()} | {:error, any()}
+  def download(url) do
+    case Tesla.get(url) |> parse_response("download_whatsapp_form_json") do
+      {:ok, body} -> Jason.decode(body)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
   Updates a WhatsApp form via Gupshup Partner API.
   """
   @spec update_whatsapp_form(String.t(), map()) :: {:ok, map()} | {:error, any()}
@@ -84,7 +131,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
       )
 
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart, opts: opts)
+    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart)
     |> parse_response("update_whatsapp_form_json")
   end
 
@@ -104,7 +151,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @spec parse_response(
           {:ok, Tesla.Env.t()} | {:error, any()},
           String.t()
-        ) :: {:ok, map()} | {:error, String.t()}
+        ) :: {:ok, map()} | {:ok, list(map())} | {:error, String.t()}
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, _action)
        when status in 200..299 do
     {:ok, body}

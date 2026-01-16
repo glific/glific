@@ -37,6 +37,11 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
     field(:errors, list_of(:input_error))
   end
 
+  object :sync_whatsapp_form do
+    field :message, :string
+    field :errors, list_of(:input_error)
+  end
+
   input_object :whatsapp_form_input do
     field(:name, non_null(:string))
     field(:categories, non_null(list_of(:string)))
@@ -91,6 +96,12 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       arg(:input, non_null(:whatsapp_form_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.create_whatsapp_form/3)
+    end
+
+    @desc "Sync a WhatsApp form from Gupshup"
+    field :sync_whatsapp_form, :sync_whatsapp_form do
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WhatsappForms.sync_whatsapp_form/3)
     end
 
     @desc "Update a WhatsApp form"
