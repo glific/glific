@@ -22,6 +22,9 @@ defmodule GlificWeb.Schema.SheetTest do
 
   setup do
     Tesla.Mock.mock(fn
+      %{method: :get, url: nil} ->
+        {:error, :invalid_url}
+
       %{method: :get, url: "https://docs.google.com/spreadsheets/d/partial" <> _} ->
         %Tesla.Env{
           status: 200,
@@ -34,6 +37,22 @@ defmodule GlificWeb.Schema.SheetTest do
           status: 200,
           body:
             "Key,Day,Message English,Video link,Message Hindi\r\n1/10/2022,1,Hi welcome to Glific. ,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,Glific में आपका स्वागत है।\r\n2/10/2022,2,Do you want to explore various programs that we have?,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,क्या आप हमारे पास मौजूद विभिन्न कार्यक्रमों का पता लगाना चाहते हैं?\r\n3/10/2022,3,Click on this link to know more about Glific,,Glific के बारे में अधिक जानने के लिए इस लिंक पर क्लिक करें\r\n4/10/2022,4,Please share your usecase,,कृपया अपना उपयोगकेस साझा करें"
+        }
+
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "spreadsheetId" => "1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw",
+              "updates" => %{
+                "spreadsheetId" => "1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw",
+                "updatedRange" => "A1:A1",
+                "updatedRows" => 1,
+                "updatedColumns" => 1,
+                "updatedCells" => 1
+              }
+            })
         }
     end)
 

@@ -1,0 +1,8 @@
+mutation syncWhatsappForm{
+  syncWhatsappForm{
+    message
+    errors {
+      message
+    }
+  }
+}
