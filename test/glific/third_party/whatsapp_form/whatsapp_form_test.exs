@@ -487,6 +487,38 @@ defmodule Glific.ThirdParty.WhatsappForm.ApiClientTest do
     assert "Initial Form" = query_data.data["whatsappForm"]["whatsappForm"]["name"]
   end
 
+  test "returns error when WhatsApp Form assets fetch fails during sync" do
+    Tesla.Mock.mock(fn
+      %{method: :get} = _env ->
+        %Tesla.Env{
+          status: 401,
+          body: %{
+            status: "error",
+            message: "error while fetching assets"
+          }
+        }
+    end)
+
+    {:error, reason} = ApiClient.get_whatsapp_form_assets(@meta_flow_id, @org_id)
+    assert reason.message == "error while fetching assets"
+  end
+
+  test "syncing WhatsApp Forms fails when asset download from Business Manager is unsuccessful" do
+    Tesla.Mock.mock(fn
+      %{method: :get} = _env ->
+        %Tesla.Env{
+          status: 401,
+          body: %{
+            status: "error",
+            message: "resource not found"
+          }
+        }
+    end)
+
+    {:error, reason} = ApiClient.download("https://example.com/fake_download.json")
+    assert reason.message == "resource not found"
+  end
+
   test "successfully publishes WhatsApp form" do
     Tesla.Mock.mock(fn
       %{method: :post} ->

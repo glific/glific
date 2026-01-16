@@ -2,6 +2,7 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
   import Mock
+  use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
     Partners,
@@ -9,7 +10,8 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     Seeds.SeedsDev,
     Sheets.Sheet,
     WhatsappForms,
-    WhatsappForms.WhatsappForm
+    WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormWorker
   }
 
   load_gql(
@@ -54,11 +56,49 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     "assets/gql/whatsapp_forms/delete.gql"
   )
 
+  load_gql(
+    :sync_whatsapp_form,
+    GlificWeb.Schema,
+    "assets/gql/whatsapp_forms/sync.gql"
+  )
+
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_whatsapp_forms(organization)
   end
+
+  @defintion_value %{
+    "screens" => [
+      %{
+        "data" => %{},
+        "id" => "screen_bcvvpc",
+        "layout" => %{
+          "children" => [
+            %{
+              "children" => [
+                %{"text" => "Text", "type" => "TextHeading"},
+                %{
+                  "label" => "Continue",
+                  "on-click-action" => %{
+                    "name" => "complete",
+                    "payload" => %{}
+                  },
+                  "type" => "Footer"
+                }
+              ],
+              "name" => "flow_path",
+              "type" => "Form"
+            }
+          ],
+          "type" => "SingleColumnLayout"
+        },
+        "terminal" => true,
+        "title" => "Screen 1"
+      }
+    ],
+    "version" => "7.3"
+  }
 
   test "publishes a whatsapp form and updates its status to published",
        %{manager: user} do
@@ -324,6 +364,146 @@ defmodule GlificWeb.Schema.WhatsappFormTest do
     assert form_with_sheet2["sheet"]["label"] == "Contact Responses"
 
     assert form_without_sheet["sheet"] == nil
+  end
+
+  test "syncs WhatsApp forms for an organization that does not exist in the database from Business Manager",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "1234567890",
+                  status: "draft",
+                  name: "Customer Feedback Form",
+                  categories: ["survey"]
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    auth_query_gql_by(:sync_whatsapp_form, user)
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    {:ok, form} = Repo.fetch_by(WhatsappForm, %{meta_flow_id: "1234567890"})
+    assert form.name == "Customer Feedback Form"
+    assert form.status == :draft
+  end
+
+  test "syncs whatsapp forms will only updates non published ones in db",
+       %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} = _env ->
+        cond do
+          String.contains?(url, "/flows") and not String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2",
+                  status: "published",
+                  name: "Customer Feedback Form",
+                  categories: ["survey"]
+                },
+                %{
+                  id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0",
+                  status: "published",
+                  name: "Customer",
+                  categories: ["survey"]
+                }
+              ]
+            }
+
+          String.contains?(url, "/assets") ->
+            %Tesla.Env{
+              status: 200,
+              body: [
+                %{
+                  download_url: "https://example.com/fake_download.json"
+                }
+              ]
+            }
+
+          String.starts_with?(url, "https://") ->
+            %Tesla.Env{
+              status: 200,
+              body: ~s({"title": "Customer Feedback Form"})
+            }
+
+          true ->
+            %Tesla.Env{status: 404, body: "not mocked"}
+        end
+    end)
+
+    {:ok, existing_form1} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    form_with_revision = Repo.preload(existing_form1, :revision)
+
+    assert form_with_revision.revision.definition == @defintion_value
+
+    {:ok, existing_form2} =
+      Repo.fetch_by(WhatsappForm, %{
+        meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"
+      })
+
+    assert existing_form1.status == :draft
+
+    assert existing_form2.status == :published
+    assert existing_form2.name == "sign_up_form"
+
+    auth_query_gql_by(:sync_whatsapp_form, user)
+
+    assert_enqueued(
+      worker: WhatsappFormWorker,
+      prefix: "global"
+    )
+
+    assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+             Oban.drain_queue(queue: :default, with_scheduled: true)
+
+    {:ok, updated_form1} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+    form_with_synced_revision = Repo.preload(updated_form1, :revision)
+
+    {:ok, updated_form2} =
+      Repo.fetch_by(WhatsappForm, %{meta_flow_id: "flow-9e3bf3f2-0c9f-4a8b-bf23-33b7e5d2fbb2"})
+
+    assert form_with_synced_revision.revision.definition == %{"title" => "Customer Feedback Form"}
+    assert updated_form1.status == :published
+    assert updated_form1.name == "Customer"
+    assert updated_form2.name == "sign_up_form"
   end
 
   test "if an existing sheet is associated with a WhatsApp form, updating the form updates the sheet details",

@@ -8,6 +8,8 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
     WhatsappForms.WhatsappForm
   }
 
+  require Logger
+
   @doc """
   Retrieves a WhatsApp form by ID
   """
@@ -48,6 +50,16 @@ defmodule GlificWeb.Resolvers.WhatsappForms do
            WhatsappForms.get_whatsapp_form_by_id(id) do
       WhatsappForms.update_whatsapp_form(form, params)
     end
+  end
+
+  @doc """
+  Syncs a WhatsApp form from Gupshup
+  """
+  @spec sync_whatsapp_form(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+
+  def sync_whatsapp_form(_, _, %{context: %{current_user: user}}) do
+    WhatsappForms.sync_whatsapp_form(user.organization_id)
   end
 
   @doc """
