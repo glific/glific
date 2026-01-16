@@ -6,7 +6,6 @@ query list_whatsapp_forms($filter: WhatsappFormFilter) {
     description
     metaFlowId
     categories
-    definition
     sheet {
       id
       label

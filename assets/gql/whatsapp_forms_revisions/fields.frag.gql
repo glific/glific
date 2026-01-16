@@ -1,0 +1,18 @@
+fragment WhatsappFormRevisionFields on WhatsappFormRevisionResult {
+  whatsappFormRevision {
+    definition
+    id
+    insertedAt
+    revisionNumber
+    updatedAt
+    userId
+    whatsappFormId
+  }
+}
+
+fragment WhatsappFormRevisionsErrorFields on WhatsappFormRevisionResult {
+  errors {
+    key
+    message
+  }
+}

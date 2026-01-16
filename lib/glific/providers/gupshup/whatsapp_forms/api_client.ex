@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   """
 
   alias Glific.Providers.Gupshup.PartnerAPI
+  alias Tesla.Multipart
 
   require Logger
 
@@ -34,8 +35,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     payload =
       %{
         name: params.name,
-        categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.form_json
+        categories: Enum.map(params.categories, &String.upcase/1)
       }
 
     client(url: url, headers: headers)
@@ -54,13 +54,39 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     payload =
       %{
         name: params.name,
-        categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.form_json
+        categories: Enum.map(params.categories, &String.upcase/1)
       }
 
+    opts = [adapter: [recv_timeout: 60_000]]
+
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> Tesla.put("/flows/#{meta_flow_id}", payload, opts: opts)
     |> parse_response("update_whatsapp_form")
+  end
+
+  @doc """
+  Updates the JSON definition of a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form_json(map()) ::
+          {:ok, map()} | {:error, String.t()}
+  def update_whatsapp_form_json(form) do
+    url = PartnerAPI.app_url!(form.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: form.organization_id)
+
+    json_content = Jason.encode!(form.revision.definition)
+
+    multipart =
+      Multipart.new()
+      |> Multipart.add_file_content(json_content, "flow.json",
+        name: "file",
+        headers: [{"content-type", "application/json"}]
+      )
+
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    client(url: url, headers: headers)
+    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart, opts: opts)
+    |> parse_response("update_whatsapp_form_json")
   end
 
   @doc """

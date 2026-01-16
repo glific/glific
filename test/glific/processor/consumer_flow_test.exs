@@ -238,10 +238,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     latest_message =
       Repo.one(
-        from m in Message,
+        from(m in Message,
           where: m.sender_id == ^sender.id,
           order_by: [desc: m.inserted_at],
           limit: 1
+        )
       )
 
     assert latest_message.body == "hey"
@@ -525,7 +526,8 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
   test "handles whatsapp form response correctly and includes and whatsapp response in the results map",
        %{
-         conn: conn
+         conn: conn,
+         user: user
        } = attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: url} ->
@@ -564,16 +566,16 @@ defmodule Glific.Processor.ConsumerFlowTest do
       })
 
     {:ok, _wa_form} =
-      WhatsappForms.create_whatsapp_form(%{
-        name: "Customer Feedback Form",
-        meta_flow_id: "1787478395302778",
-        form_json: %{
-          "screens" => []
+      WhatsappForms.create_whatsapp_form(
+        %{
+          name: "Customer Feedback Form",
+          meta_flow_id: "1787478395302778",
+          categories: ["other"],
+          description: "A form to collect customer feedback",
+          organization_id: conn.assigns[:organization_id]
         },
-        categories: ["other"],
-        description: "A form to collect customer feedback",
-        organization_id: conn.assigns[:organization_id]
-      })
+        user
+      )
 
     payload = %{
       "entry" => [
@@ -631,8 +633,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
     # Fetch the created WhatsAppFormResponse from DB using contact.id
     form_response =
       Repo.one(
-        from wfr in WhatsappFormResponse,
+        from(wfr in WhatsappFormResponse,
           where: wfr.contact_id == ^contact.id
+        )
       )
 
     assert form_response != nil
@@ -641,10 +644,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     message =
       Repo.one(
-        from m in Message,
+        from(m in Message,
           where:
             m.bsp_message_id == "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
           preload: [:whatsapp_form_response]
+        )
       )
 
     assert message != nil
