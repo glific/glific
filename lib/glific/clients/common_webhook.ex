@@ -3,22 +3,21 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.{
-    ASR.Bhasini,
-    ASR.GoogleASR,
-    Certificates.Certificate,
-    Certificates.CertificateTemplate,
-    Contacts,
-    Groups.WAGroup,
-    OpenAI.ChatGPT,
-    Partners,
-    Providers.Maytapi,
-    Repo,
-    ThirdParty.GoogleSlide.Slide,
-    ThirdParty.Kaapi.ApiClient,
-    WAGroup.WAManagedPhone,
-    WAGroup.WaPoll
-  }
+  alias Glific.ASR.Bhasini
+  alias Glific.ASR.GoogleASR
+  alias Glific.Certificates.Certificate
+  alias Glific.Certificates.CertificateTemplate
+  alias Glific.Contacts
+  alias Glific.Groups.WAGroup
+  alias Glific.OpenAI.ChatGPT
+  alias Glific.Partners
+  alias Glific.Providers.Maytapi
+  alias Glific.Repo
+  alias Glific.ThirdParty.Gemini
+  alias Glific.ThirdParty.GoogleSlide.Slide
+  alias Glific.ThirdParty.Kaapi.ApiClient
+  alias Glific.WAGroup.WAManagedPhone
+  alias Glific.WAGroup.WaPoll
 
   require Logger
 
@@ -175,16 +174,11 @@ defmodule Glific.Clients.CommonWebhook do
 
   # This webhook will call Bhashini speech-to-text API
   def webhook("speech_to_text_with_bhasini", fields) do
-    with {:ok, contact} <- Bhasini.validate_params(fields),
-         {:ok, media_content} <- Tesla.get(fields["speech"]) do
-      source_language = contact.language.locale
-      content = Base.encode64(media_content.body)
+    case Bhasini.validate_params(fields) do
+      {:ok, contact} ->
+        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+        Gemini.speech_to_text(fields["speech"], contact.organization_id)
 
-      Bhasini.make_asr_api_call(
-        source_language,
-        content
-      )
-    else
       {:error, error} ->
         error
     end
@@ -204,13 +198,15 @@ defmodule Glific.Clients.CommonWebhook do
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       speech_engine == "bhashini" ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
 
       source_language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
-        Glific.Bhasini.text_to_speech_with_bhashini(source_language, org_id, text)
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
     end
   end
 
@@ -369,14 +365,15 @@ defmodule Glific.Clients.CommonWebhook do
     services = organization.services["google_cloud_storage"]
 
     with false <- is_nil(services),
-         true <- Glific.Bhasini.valid_language?(source_language, target_language) do
-      Glific.Bhasini.nmt_tts(text, source_language, target_language, org_id, opts)
+         true <- Gemini.valid_language?(source_language, target_language) do
+      Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
+      Gemini.nmt_text_to_speech(org_id, text, source_language, target_language, opts)
     else
       true ->
         %{success: false, reason: "GCS is disabled"}
 
       false ->
-        %{success: false, reason: "Language not supported in Bhashini"}
+        %{success: false, reason: "Language not supported in Gemini"}
     end
   end
 
@@ -389,13 +386,15 @@ defmodule Glific.Clients.CommonWebhook do
   defp handle_tts_only(language, org_id, text, speech_engine) do
     cond do
       speech_engine == "bhashini" ->
-        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
+        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
 
       speech_engine == "open_ai" || language == "english" ->
         ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
       true ->
-        Glific.Bhasini.text_to_speech_with_bhashini(language, org_id, text)
+        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
     end
   end
 

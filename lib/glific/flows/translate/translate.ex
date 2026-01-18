@@ -57,14 +57,15 @@ defmodule Glific.Flows.Translate.Translate do
   This reverses the order of string which is reversed again in next function
   """
   @token_chunk_size 200
-  @spec check_large_strings([String.t()]) :: [String.t()]
-  def check_large_strings(strings) do
+  @spec check_large_strings([String.t()], Keyword.t()) :: [String.t()]
+  def check_large_strings(strings, opts \\ []) do
     strings
     |> Enum.reduce([], fn string, acc ->
       # we ca use the gptTokenizer to count the token
       string_size = Gpt3Tokenizer.token_count(string)
+      token_chunk_size = Keyword.get(opts, :token_chunk_size, @token_chunk_size)
 
-      if string_size > @token_chunk_size do
+      if string_size > token_chunk_size do
         ["translation not available for long messages" | acc]
       else
         [string | acc]
