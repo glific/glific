@@ -430,19 +430,28 @@ defmodule Glific.Erase do
   @spec clean_whatsapp_form_revisions() :: any()
   defp clean_whatsapp_form_revisions do
     """
-    DELETE FROM whatsapp_form_revisions wfr1
-    WHERE wfr1.id NOT IN (
-      SELECT wfr2.id
-      FROM whatsapp_form_revisions wfr2
-      WHERE wfr2.whatsapp_form_id = wfr1.whatsapp_form_id
-      ORDER BY wfr2.revision_number DESC NULLS LAST, wfr2.id DESC
-      LIMIT 10
-    )
-    AND wfr1.id NOT IN (
-      SELECT revision_id
-      FROM whatsapp_forms
-      WHERE revision_id IS NOT NULL
+    DELETE FROM whatsapp_form_revisions wfr
+    USING (
+    SELECT id
+    FROM (
+    SELECT
+      wfr.id,
+      ROW_NUMBER() OVER (
+        PARTITION BY wfr.whatsapp_form_id
+        ORDER BY wfr.revision_number DESC NULLS LAST, wfr.id DESC
+      ) AS rn
+    FROM whatsapp_form_revisions AS wfr
+    ) AS ranked
+    WHERE rn > 10
+    ) AS old_revisions
+    WHERE wfr.id = old_revisions.id
+    AND NOT EXISTS (
+    SELECT 1
+    FROM whatsapp_forms wf
+    WHERE wf.revision_id = wfr.id
     );
+
+
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
