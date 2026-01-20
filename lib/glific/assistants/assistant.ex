@@ -1,0 +1,59 @@
+defmodule Glific.Assistants.Assistant do
+  @moduledoc """
+  Assistant schema
+  """
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias Glific.{
+    Assistants.AssistantConfigVersion,
+    Partners.Organization
+  }
+
+  @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer() | nil,
+          name: String.t() | nil,
+          description: String.t() | nil,
+          kaapi_uuid: Ecto.UUID.t() | nil,
+          active_config_version_id: non_neg_integer() | nil,
+          organization_id: non_neg_integer() | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          active_config_version:
+            AssistantConfigVersion.t() | Ecto.Association.NotLoaded.t() | nil,
+          config_versions: [AssistantConfigVersion.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
+
+  @required_fields [
+    :name,
+    :kaapi_uuid,
+    :organization_id
+  ]
+  @optional_fields [:description, :active_config_version_id]
+
+  schema "assistants" do
+    field(:name, :string)
+    field(:description, :string)
+    field(:kaapi_uuid, :string)
+
+    belongs_to(:organization, Organization)
+    belongs_to(:active_config_version, AssistantConfigVersion)
+    has_many :config_versions, AssistantConfigVersion
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(assistant, attrs) do
+    assistant
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+    |> assoc_constraint(:active_config_version)
+  end
+end

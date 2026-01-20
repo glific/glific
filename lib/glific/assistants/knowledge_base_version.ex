@@ -1,0 +1,83 @@
+defmodule Glific.Assistants.KnowledgeBaseVersion do
+  @moduledoc """
+  Knowledge base version schema
+  """
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias Glific.{
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Enums.KnowledgeBaseStatus,
+    Partners.Organization
+  }
+
+  @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer() | nil,
+          knowledge_base_id: non_neg_integer() | nil,
+          knowledge_base: KnowledgeBase.t() | Ecto.Association.NotLoaded.t() | nil,
+          version_number: non_neg_integer() | nil,
+          files: map() | nil,
+          size: non_neg_integer() | nil,
+          status: KnowledgeBaseStatus.t(),
+          failure_reason: String.t() | nil,
+          organization_id: non_neg_integer() | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          kaapi_job_id: String.t() | nil,
+          llm_service_id: String.t() | nil,
+          assistant_config_versions:
+            [AssistantConfigVersion.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
+
+  @required_fields [
+    :knowledge_base_id,
+    :version_number,
+    :organization_id
+  ]
+  @optional_fields [
+    :files,
+    :size,
+    :status,
+    :failure_reason,
+    :kaapi_job_id,
+    :llm_service_id
+  ]
+
+  schema "knowledge_base_versions" do
+    field(:version_number, :integer)
+    field(:files, :map)
+    field(:size, :integer)
+
+    field(:status, KnowledgeBaseStatus, default: :in_progress)
+    field(:failure_reason, :string)
+
+    field(:kaapi_job_id, :string)
+    field(:llm_service_id, :string)
+
+    belongs_to(:organization, Organization)
+    belongs_to(:knowledge_base, KnowledgeBase)
+
+    many_to_many(
+      :assistant_config_versions,
+      AssistantConfigVersion,
+      join_through: "assistant_config_version_knowledge_base_versions"
+    )
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(kb_version, attrs) do
+    kb_version
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+    |> assoc_constraint(:knowledge_base)
+  end
+end
