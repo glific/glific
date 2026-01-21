@@ -56,10 +56,10 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     field(:description, :string)
     field(:prompt, :string)
 
-    field(:provider, :string)
+    field(:provider, :string, default: "openai")
     field(:model, :string)
 
-    field(:settings, :map)
+    field(:settings, :map, default: %{})
     field(:status, AssistantConfigVersionStatus, default: :in_progress)
     field(:failure_reason, :string)
     field(:deleted_at, :utc_datetime_usec)

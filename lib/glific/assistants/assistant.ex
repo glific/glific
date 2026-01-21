@@ -55,6 +55,5 @@ defmodule Glific.Assistants.Assistant do
     assistant
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> assoc_constraint(:active_config_version)
   end
 end

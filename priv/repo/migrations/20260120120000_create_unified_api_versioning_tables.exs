@@ -109,7 +109,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
   defp create_knowledge_bases do
     create table(:knowledge_bases) do
-      add :name, :string, null: false, comment: "Name of the knowledge base (user-facing)"
+      add :name, :string, null: false, comment: "Name of the knowledge base"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
