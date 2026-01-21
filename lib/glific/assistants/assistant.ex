@@ -47,6 +47,15 @@ defmodule Glific.Assistants.Assistant do
   end
 
   @doc """
+  Changeset for updating the active_config_version_id
+  """
+  def set_active_config_version_changeset(assistant, attrs) do
+    assistant
+    |> cast(attrs, [:active_config_version_id])
+    |> validate_required([:active_config_version_id])
+  end
+
+  @doc """
   Standard changeset pattern we use for all data types
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()

@@ -199,7 +199,8 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number
       FROM assistant_config_versions
-      WHERE assistant_id = NEW.assistant_id;
+      WHERE assistant_id = NEW.assistant_id
+      FOR UPDATE;
 
       RETURN NEW;
     END;
@@ -207,7 +208,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     """)
 
     execute("""
-    CREATE TRIGGER acv_set_version_number
+    CREATE TRIGGER assistant_convfig_version_set_version_number
     BEFORE INSERT ON assistant_config_versions
     FOR EACH ROW
     WHEN (NEW.version_number IS NULL)
@@ -223,7 +224,8 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number
       FROM knowledge_base_versions
-      WHERE knowledge_base_id = NEW.knowledge_base_id;
+      WHERE knowledge_base_id = NEW.knowledge_base_id
+      FOR UPDATE;
 
       RETURN NEW;
     END;
@@ -231,7 +233,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     """)
 
     execute("""
-    CREATE TRIGGER kbv_set_version_number
+    CREATE TRIGGER knowledge_base_version_set_version_number
     BEFORE INSERT ON knowledge_base_versions
     FOR EACH ROW
     WHEN (NEW.version_number IS NULL)
@@ -240,10 +242,16 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
   end
 
   defp drop_triggers do
-    execute("DROP TRIGGER IF EXISTS acv_set_version_number ON assistant_config_versions;")
+    execute(
+      "DROP TRIGGER IF EXISTS assistant_convfig_version_set_version_number ON assistant_config_versions;"
+    )
+
     execute("DROP FUNCTION IF EXISTS set_assistant_config_version_number();")
 
-    execute("DROP TRIGGER IF EXISTS kbv_set_version_number ON knowledge_base_versions;")
+    execute(
+      "DROP TRIGGER IF EXISTS knowledge_base_version_set_version_number ON knowledge_base_versions;"
+    )
+
     execute("DROP FUNCTION IF EXISTS set_knowledge_base_version_number();")
   end
 end
