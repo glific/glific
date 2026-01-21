@@ -12,13 +12,13 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
   end
 
   def down do
+    drop_triggers()
     drop_if_exists(table(:assistant_config_version_knowledge_base_versions))
 
     drop_if_exists(table(:knowledge_base_versions))
     drop_if_exists(table(:knowledge_bases))
     drop_if_exists(table(:assistant_config_versions))
     drop_if_exists(table(:assistants))
-    drop_triggers()
     drop_enums()
   end
 
