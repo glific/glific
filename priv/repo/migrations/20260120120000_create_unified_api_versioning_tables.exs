@@ -18,7 +18,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     drop_if_exists(table(:knowledge_bases))
     drop_if_exists(table(:assistant_config_versions))
     drop_if_exists(table(:assistants))
-
+    drop_triggers()
     drop_enums()
   end
 
@@ -67,10 +67,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
   defp create_assistant_config_versions do
     create table(:assistant_config_versions) do
-      add :assistant_id, references(:assistants, on_delete: :delete_all),
-        null: false,
-        comment: "Assistant this configuration belongs to"
-
       add :version_number, :integer,
         null: false,
         comment: "Monotonically increasing config version per assistant"
@@ -130,10 +126,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
   defp create_knowledge_base_versions do
     create table(:knowledge_base_versions) do
-      add :knowledge_base_id, references(:knowledge_bases, on_delete: :delete_all),
-        null: false,
-        comment: "Knowledge base wrapper record for this version"
-
       add :version_number, :integer,
         null: false,
         comment: "Monotonically increasing version per knowledge base"
@@ -245,5 +237,13 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     WHEN (NEW.version_number IS NULL)
     EXECUTE FUNCTION set_knowledge_base_version_number();
     """)
+  end
+
+  defp drop_triggers do
+    execute("DROP TRIGGER IF EXISTS acv_set_version_number ON assistant_config_versions;")
+    execute("DROP FUNCTION IF EXISTS set_assistant_config_version_number();")
+
+    execute("DROP TRIGGER IF EXISTS kbv_set_version_number ON knowledge_base_versions;")
+    execute("DROP FUNCTION IF EXISTS set_knowledge_base_version_number();")
   end
 end
