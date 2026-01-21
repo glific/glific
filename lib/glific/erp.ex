@@ -6,7 +6,7 @@ defmodule Glific.ERP do
   require Logger
   use Tesla
 
-  @erp_base_url "https://t4d-erp.frappe.cloud/api/resource"
+  @erp_base_url Application.compile_env(:glific, :ERP_ENDPOINT)
 
   @client Tesla.client([
             {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},

@@ -7,6 +7,8 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   require Logger
 
   alias Glific.{
+    AccessControl.Role,
+    AccessControl.UserRole,
     Communications.Mailer,
     Contacts,
     Contacts.Contact,
@@ -177,7 +179,16 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       contact_id: contact.id
     }
 
-    Users.create_user(user_params)
+    with {:ok, user} <- Users.create_user(user_params),
+         {:ok, role} <- Repo.fetch_by(Role, %{label: "Admin"}) do
+      UserRole.create_user_role(%{
+        role_id: role.id,
+        user_id: user.id,
+        organization_id: organization.id
+      })
+
+      {:ok, user}
+    end
   end
 
   @spec mark_otp_entered(String.t()) :: {:ok, TrialUsers.t()} | {:error, :not_found}
