@@ -204,167 +204,215 @@ defmodule Glific.Mails.TrialAccountMail do
   @spec create_welcome_mail_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_welcome_mail_body(shortcode, trial_user) do
     """
-    Hi #{trial_user.username},<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{trial_user.username},</p>
 
-    Welcome to Glific! 🎉<br><br>
+      <p>Welcome to Glific! 🎉</p>
 
-    Thank you for signing up for a trial. With Glific, you can:<br><br>
+      <p>Thank you for signing up for a trial. With Glific, you can:</p>
 
-    &#8226 Run two-way WhatsApp conversations with your communities<br>
-    &#8226 Automate FAQs, reminders, follow-ups, and more<br>
-    &#8226 Track responses and impact in real time<br><br>
+      <ul>
+        <li>Run two-way WhatsApp conversations with your communities</li>
+        <li>Automate FAQs, reminders, follow-ups, and more</li>
+        <li>Track responses and impact in real time</li>
+      </ul>
 
-    To help you get started:<br><br>
+      <p>To help you get started:</p>
 
-    1. Here’s the link to the platform: <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a> <br>
-    2. Here’s a short <a href="https://www.youtube.com/watch?v=OH4rDB6wlx0">video</a> that shows you how to create your first flow on Glific<br><br>
+      <ol>
+        <li>Here's the link to the platform: <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a></li>
+        <li>Here's a short <a href="https://www.youtube.com/watch?v=OH4rDB6wlx0">video</a> that shows you how to create your first flow on Glific</li>
+      </ol>
 
-    If you’d like a quick walkthrough, you can book a 30 min demo with us here:  <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a>. Or if you have any questions, write to us by replying to this email.<br><br>
+      <p>If you'd like a quick walkthrough, you can book a 30 min demo with us <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">here</a>. Or if you have any questions, write to us by replying to this email.</p>
 
-    Looking forward to helping you make the most of your trial.<br><br>
+      <p>Looking forward to helping you make the most of your trial.</p>
 
-    Warm regards,<br>
-    Team Glific<br><br>
+      <p>Warm regards,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_trial_account_allocated_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_trial_account_allocated_body(shortcode, trial_user) do
     """
-    A new trial account has been allocated. Details of trial account user:<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>A new trial account has been allocated. Details of trial account user:</p>
 
-    Name: #{trial_user.username}<br>
-    Organization: #{trial_user.organization_name}<br>
-    Email: #{trial_user.email}<br>
-    Phone Number: #{trial_user.phone}<br>
-    Login URL: <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a><br><br>
+      <ul>
+        <li><strong>Name:</strong> #{trial_user.username}</li>
+        <li><strong>Organization:</strong> #{trial_user.organization_name}</li>
+        <li><strong>Email:</strong> #{trial_user.email}</li>
+        <li><strong>Phone Number:</strong> #{trial_user.phone}</li>
+        <li><strong>Login URL:</strong> <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a></li>
+      </ul>
 
-    Best,<br>
-    Team Glific<br><br>
+      <p>Best,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_trial_account_allocation_failure_body(TrialUsers.t()) :: String.t()
   defp create_trial_account_allocation_failure_body(trial_user) do
     """
-    A trial account could not be allocated because no trial accounts are currently available.<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>A trial account could not be allocated because no trial accounts are currently available.</p>
 
-    <strong>User details:</strong><br>
-    Name: #{trial_user.username}<br>
-    Organization: #{trial_user.organization_name}<br>
-    Email: #{trial_user.email}<br>
-    Phone Number: #{trial_user.phone}<br>
+      <p><strong>User details:</strong></p>
+      <ul>
+        <li><strong>Name:</strong> #{trial_user.username}</li>
+        <li><strong>Organization:</strong> #{trial_user.organization_name}</li>
+        <li><strong>Email:</strong> #{trial_user.email}</li>
+        <li><strong>Phone Number:</strong> #{trial_user.phone}</li>
+      </ul>
 
-    Please reach out to the user, as the user has already completed OTP verification.<br>
+      <p>Please reach out to the user, as the user has already completed OTP verification.</p>
 
-    Best,<br>
-    Team Glific<br><br>
+      <p>Best,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_day_3_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_3_followup_body(_shortcode, trial_user) do
     """
-    Hi #{trial_user.username},<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{trial_user.username},</p>
 
-    Checking in to see how your Glific trial is going.<br><br>
+      <p>Checking in to see how your Glific trial is going.</p>
 
-    Most NGOs start with one simple step:<br>
-    <strong>Create 1 flow + send a message on the preview (simulator) to test</strong><br><br>
+      <p>Most NGOs start with one simple step:<br>
+      <strong>Create 1 flow + send a message on the preview (simulator) to test</strong></p>
 
-    You could use Glific to:<br>
-    &#8226; Share program reminders with beneficiaries<br>
-    &#8226; Collect quick surveys from the field<br>
-    &#8226; Send event reminders<br><br>
+      <p>You could use Glific to:</p>
+      <ul>
+        <li>Share program reminders with beneficiaries</li>
+        <li>Collect quick surveys from the field</li>
+        <li>Send event reminders</li>
+      </ul>
 
-    If you're stuck at any point, just reply to this email and tell us where you're blocked — we'll help you sort it out. You can <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">book a slot to have a chat with us</a>.<br><br>
+      <p>If you're stuck at any point, just reply to this email and tell us where you're blocked — we'll help you sort it out. You can <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">book a slot to have a chat with us</a>.</p>
 
-    You can also follow this <a href="https://glific.org/quick-start-guide/">quick start guide</a>.<br><br>
+      <p>You can also follow this <a href="https://glific.org/quick-start-guide/">quick start guide</a>.</p>
 
-    Best,<br>
-    Team Glific<br><br>
+      <p>Best,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_day_6_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_6_followup_body(_shortcode, trial_user) do
     """
-    Hi #{trial_user.username},<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{trial_user.username},</p>
 
-    Sharing a few ways NGOs like yours use Glific:<br>
+      <p>Sharing a few ways NGOs like yours use Glific:</p>
 
-    <strong>Antarang Foundation</strong> — Uses a WhatsApp chatbot to scale career guidance for students. (<a href="https://glific.org/antarang-foundation/">See full case study</a>)<br>
+      <p><strong>Antarang Foundation</strong> — Uses a WhatsApp chatbot to scale career guidance for students. (<a href="https://glific.org/antarang-foundation/">See full case study</a>)</p>
 
-    <strong>Reap Benefit</strong> — Runs a WhatsApp-bot powered "Solve Ninja" programme for youth civic & climate engagement via nudges, data collection & follow-up. (<a href="https://glific.org/reap-benefit/">See full case study</a>)<br>
+      <p><strong>Reap Benefit</strong> — Runs a WhatsApp-bot powered "Solve Ninja" programme for youth civic & climate engagement via nudges, data collection & follow-up. (<a href="https://glific.org/reap-benefit/">See full case study</a>)</p>
 
-    <strong>The Apprentice Project (TAP)</strong> — Uses the "TAP Buddy" WhatsApp chatbot to deliver self-learning electives & build 21st-century skills for underserved students. (<a href="https://glific.org/the-apprentice-project/">See TAP Buddy in action</a>)<br>
+      <p><strong>The Apprentice Project (TAP)</strong> — Uses the "TAP Buddy" WhatsApp chatbot to deliver self-learning electives & build 21st-century skills for underserved students. (<a href="https://glific.org/the-apprentice-project/">See TAP Buddy in action</a>)</p>
 
-    Here's a link showing <a href="https://glific.org/case-studies/">how similar NGOs are using Glific</a> — along with examples you can explore.<br><br>
+      <p>Here's a link showing <a href="https://glific.org/case-studies/">how similar NGOs are using Glific</a> — along with examples you can explore.</p>
 
-    Tell us what you're trying to achieve, and we'll recommend the flow, templates, and setup steps that will help you get there faster.<br>
+      <p>Tell us what you're trying to achieve, and we'll recommend the flow, templates, and setup steps that will help you get there faster.</p>
 
-    You can book a 30 min conversation with us here: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a>. Or if you have any questions, write to us by replying to this email.<br><br>
+      <p>You can book a 30 min conversation with us here: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a>. Or if you have any questions, write to us by replying to this email.</p>
 
-    Regards,<br>
-    Team Glific<br><br>
+      <p>Regards,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_day_12_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_12_followup_body(_shortcode, trial_user) do
     """
-    Hi #{trial_user.username},<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{trial_user.username},</p>
 
-    Your Glific trial will end in two days, so we wanted to check in on:<br>
-    &#8226; What you've been able to try so far<br>
-    &#8226; Any blockers you faced<br>
-    &#8226; Whether you'd like to continue with a paid plan<br><br>
+      <p>Your Glific trial will end in two days, so we wanted to check in on:</p>
+      <ul>
+        <li>What you've been able to try so far</li>
+        <li>Any blockers you faced</li>
+        <li>Whether you'd like to continue with a paid plan</li>
+      </ul>
 
-    If you'd like to:<br>
-    <strong>Continue using Glific:</strong> We have one plan to make it easy for organisations to get started. Find about the pricing <a href="https://glific.org/pricing/">here</a>.<br>
-    <strong>Talk to someone:</strong> Book a short call here so we can review your trial and map the right next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a><br><br>
+      <p>If you'd like to:</p>
+      <p><strong>Continue using Glific:</strong> We have one plan to make it easy for organisations to get started. Find about the pricing <a href="https://glific.org/pricing/">here</a>.</p>
 
-    Best,<br>
-    Team Glific<br><br>
+      <p><strong>Talk to someone:</strong> Book a short call here so we can review your trial and map the right next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a></p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p>Best,<br>
+      Team Glific</p>
+
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
   @spec create_day_14_followup_body(String.t(), TrialUsers.t()) :: String.t()
   defp create_day_14_followup_body(_shortcode, trial_user) do
     """
-    Hi #{trial_user.username},<br><br>
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{trial_user.username},</p>
 
-    Your Glific trial ends today, so this is a quick check-in to see how your experience has been and what you'd like to do next.<br><br>
+      <p>Your Glific trial ends today, so this is a quick check-in to see how your experience has been and what you'd like to do next.</p>
 
-    Here are a few options:<br>
+      <p>Here are a few options:</p>
 
-    <strong>&#10145; Continue using Glific</strong><br>
-    We have one plan to make it easy for organisations to get started — as low as &#8377;300 (USD 4) per day. Find the pricing details <a href="https://glific.org/pricing/">here</a>.<br><br>
+      <p><strong>➡ Continue using Glific</strong><br>
+      We have one plan to make it easy for organisations to get started — as low as ₹300 (USD 4) per day. Find the pricing details <a href="https://glific.org/pricing/">here</a>.</p>
 
-    <strong>&#10145; Need support or have questions?</strong><br>
-    Book a short call and we'll walk you through setup, flows, and next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a><br><br>
+      <p><strong>➡ Need support or have questions?</strong><br>
+      Book a short call and we'll walk you through setup, flows, and next steps: <a href="https://calendly.com/aishwarya-cs-projecttech4dev/30min?utm_medium=trial%20accounts">Link</a></p>
 
-    <strong>&#10145; Not continuing right now?</strong><br>
-    No problem — even a quick note on your experience would really help us improve.<br><br>
+      <p><strong>➡ Not continuing right now?</strong><br>
+      No problem — even a quick note on your experience would really help us improve.</p>
 
-    Thanks again for trying Glific.<br><br>
+      <p>Thanks again for trying Glific.</p>
 
-    Best,<br>
-    Team Glific<br><br>
+      <p>Best,<br>
+      Team Glific</p>
 
-    <i>Built for nonprofits. Designed for impact.</i>
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 end
