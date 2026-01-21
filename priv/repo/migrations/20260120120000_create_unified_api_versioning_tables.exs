@@ -191,11 +191,12 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     CREATE OR REPLACE FUNCTION set_assistant_config_version_number()
     RETURNS trigger AS $$
     BEGIN
+      PERFORM id FROM assistants WHERE id = NEW.assistant_id FOR UPDATE;
+
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number
       FROM assistant_config_versions
-      WHERE assistant_id = NEW.assistant_id
-      FOR UPDATE;
+      WHERE assistant_id = NEW.assistant_id;
 
       RETURN NEW;
     END;
@@ -216,11 +217,12 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     CREATE OR REPLACE FUNCTION set_knowledge_base_version_number()
     RETURNS trigger AS $$
     BEGIN
+      
+      PERFORM id FROM knowledge_bases WHERE id = NEW.knowledge_base_id FOR UPDATE;
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number
       FROM knowledge_base_versions
-      WHERE knowledge_base_id = NEW.knowledge_base_id
-      FOR UPDATE;
+      WHERE knowledge_base_id = NEW.knowledge_base_id;
 
       RETURN NEW;
     END;
