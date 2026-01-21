@@ -50,11 +50,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       add :name, :string, null: false, comment: "Name of the assistant"
       add :description, :text, comment: "Description of the assistant"
 
-      add :active_config_version_id,
-          references(:assistant_config_versions, on_delete: :nilify_all),
-          null: true,
-          comment: "Currently active assistant config version"
-
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."

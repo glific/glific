@@ -8,6 +8,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
 
   alias Glific.{
     Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBaseVersion,
     Assistants.KnowledgeBase,
     Enums.KnowledgeBaseStatus,
     Partners.Organization
@@ -70,7 +71,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(KnowledgeBaseVersion.t(), map()) :: Ecto.Changeset.t()
   def changeset(knowledge_base_version, attrs) do
     knowledge_base_version
     |> cast(attrs, @required_fields ++ @optional_fields)

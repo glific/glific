@@ -8,6 +8,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
 
   alias Glific.{
     Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
     Enums.AssistantConfigVersionStatus,
     Partners.Organization
@@ -82,7 +83,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(AssistantConfigVersion.t(), map()) :: Ecto.Changeset.t()
   def changeset(config_version, attrs) do
     config_version
     |> cast(attrs, @required_fields ++ @optional_fields)

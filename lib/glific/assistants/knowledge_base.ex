@@ -7,6 +7,7 @@ defmodule Glific.Assistants.KnowledgeBase do
   import Ecto.Changeset
 
   alias Glific.{
+    Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Partners.Organization
   }
@@ -36,7 +37,7 @@ defmodule Glific.Assistants.KnowledgeBase do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(KnowledgeBase.t(), map()) :: Ecto.Changeset.t()
   def changeset(knowledge_base, attrs) do
     knowledge_base
     |> cast(attrs, @required_fields)

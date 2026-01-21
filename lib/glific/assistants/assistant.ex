@@ -7,6 +7,7 @@ defmodule Glific.Assistants.Assistant do
   import Ecto.Changeset
 
   alias Glific.{
+    Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Partners.Organization
   }
@@ -49,7 +50,7 @@ defmodule Glific.Assistants.Assistant do
   @doc """
   Changeset for updating the active_config_version_id
   """
-  @spec set_active_config_version_changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec set_active_config_version_changeset(Assistant.t(), map()) :: Ecto.Changeset.t()
   def set_active_config_version_changeset(assistant, attrs) do
     assistant
     |> cast(attrs, [:active_config_version_id])
@@ -59,7 +60,7 @@ defmodule Glific.Assistants.Assistant do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(Assistant.t(), map()) :: Ecto.Changeset.t()
   def changeset(assistant, attrs) do
     assistant
     |> cast(attrs, @required_fields ++ @optional_fields)
