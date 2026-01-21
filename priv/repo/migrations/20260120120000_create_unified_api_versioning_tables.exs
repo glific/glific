@@ -152,6 +152,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       timestamps(type: :utc_datetime)
     end
 
+    create unique_index(:knowledge_base_versions, [:knowledge_base_id, :version_number])
     create index(:knowledge_base_versions, [:knowledge_base_id])
     create index(:knowledge_base_versions, [:organization_id])
     create index(:knowledge_base_versions, [:status])

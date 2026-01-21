@@ -76,5 +76,6 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> assoc_constraint(:knowledge_base)
+    |> unique_constraint([:knowledge_base_id, :version_number])
   end
 end
