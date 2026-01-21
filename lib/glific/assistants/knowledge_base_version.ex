@@ -8,8 +8,8 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
 
   alias Glific.{
     Assistants.AssistantConfigVersion,
-    Assistants.KnowledgeBaseVersion,
     Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     Enums.KnowledgeBaseStatus,
     Partners.Organization
   }
