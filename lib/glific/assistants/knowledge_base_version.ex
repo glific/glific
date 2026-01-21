@@ -34,7 +34,6 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
 
   @required_fields [
     :knowledge_base_id,
-    :version_number,
     :organization_id,
     :files,
     :status,
@@ -42,6 +41,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   ]
   @optional_fields [
     :size,
+    :version_number,
     :kaapi_job_id
   ]
 

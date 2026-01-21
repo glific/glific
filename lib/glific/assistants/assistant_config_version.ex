@@ -37,7 +37,6 @@ defmodule Glific.Assistants.AssistantConfigVersion do
 
   @required_fields [
     :assistant_id,
-    :version_number,
     :provider,
     :status,
     :model,
@@ -50,6 +49,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   @optional_fields [
     :description,
     :failure_reason,
+    :version_number,
     :deleted_at
   ]
 
