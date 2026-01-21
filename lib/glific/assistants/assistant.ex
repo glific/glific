@@ -49,6 +49,7 @@ defmodule Glific.Assistants.Assistant do
   @doc """
   Changeset for updating the active_config_version_id
   """
+  @spec set_active_config_version_changeset(t(), map()) :: Ecto.Changeset.t()
   def set_active_config_version_changeset(assistant, attrs) do
     assistant
     |> cast(attrs, [:active_config_version_id])
