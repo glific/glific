@@ -35,14 +35,14 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   @required_fields [
     :knowledge_base_id,
     :version_number,
-    :organization_id
+    :organization_id,
+    :files,
+    :status,
+    :llm_service_id
   ]
   @optional_fields [
-    :files,
     :size,
-    :status,
-    :kaapi_job_id,
-    :llm_service_id
+    :kaapi_job_id
   ]
 
   schema "knowledge_base_versions" do
@@ -71,8 +71,8 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
-  def changeset(kb_version, attrs) do
-    kb_version
+  def changeset(knowledge_base_version, attrs) do
+    knowledge_base_version
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> assoc_constraint(:knowledge_base)
