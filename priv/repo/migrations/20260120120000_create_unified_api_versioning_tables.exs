@@ -5,11 +5,10 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create_enums()
     create_assistants()
     create_assistant_config_versions()
-
     create_knowledge_bases()
     create_knowledge_base_versions()
-
     create_assistant_config_version_knowledge_base_versions()
+    create_triggers()
   end
 
   def down do
@@ -51,6 +50,11 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       add :name, :string, null: false, comment: "Name of the assistant"
       add :description, :text, comment: "Description of the assistant"
 
+      add :active_config_version_id,
+          references(:assistant_config_versions, on_delete: :nilify_all),
+          null: true,
+          comment: "Currently active assistant config version"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."
@@ -72,8 +76,8 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
         comment: "Monotonically increasing config version per assistant"
 
       add :description, :text, comment: "Description for this version"
-      add :prompt, :text, comment: "Prompt/instructions for this version"
-      add :kaapi_uuid, :string, comment: "Kaapi UUID for the assistant"
+      add :prompt, :text, null: false, comment: "Prompt/instructions for this version"
+      add :kaapi_uuid, :string, null: false, comment: "Kaapi UUID for the assistant"
 
       add :provider, :string,
         null: false,
@@ -97,6 +101,10 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."
+
+      add :assistant_id, references(:assistants, on_delete: :delete_all),
+        null: false,
+        comment: "Assistant this configuration belongs to"
 
       timestamps(type: :utc_datetime)
     end
@@ -148,6 +156,10 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
         null: false,
         comment: "Unique organization ID."
 
+      add :knowledge_base_id, references(:knowledge_bases, on_delete: :delete_all),
+        null: false,
+        comment: "Knowledge base this version belongs to"
+
       timestamps(type: :utc_datetime)
     end
 
@@ -180,5 +192,58 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
     create index(:assistant_config_version_knowledge_base_versions, [:knowledge_base_version_id])
     create index(:assistant_config_version_knowledge_base_versions, [:organization_id])
+  end
+
+  defp create_triggers do
+    create_assistant_config_version_triggers()
+    create_knowledge_base_version_triggers()
+  end
+
+  defp create_assistant_config_version_triggers do
+    execute("""
+    CREATE OR REPLACE FUNCTION set_assistant_config_version_number()
+    RETURNS trigger AS $$
+    BEGIN
+      SELECT COALESCE(MAX(version_number), 0) + 1
+      INTO NEW.version_number
+      FROM assistant_config_versions
+      WHERE assistant_id = NEW.assistant_id;
+
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    """)
+
+    execute("""
+    CREATE TRIGGER acv_set_version_number
+    BEFORE INSERT ON assistant_config_versions
+    FOR EACH ROW
+    WHEN (NEW.version_number IS NULL)
+    EXECUTE FUNCTION set_assistant_config_version_number();
+    """)
+  end
+
+  defp create_knowledge_base_version_triggers do
+    execute("""
+    CREATE OR REPLACE FUNCTION set_knowledge_base_version_number()
+    RETURNS trigger AS $$
+    BEGIN
+      SELECT COALESCE(MAX(version_number), 0) + 1
+      INTO NEW.version_number
+      FROM knowledge_base_versions
+      WHERE knowledge_base_id = NEW.knowledge_base_id;
+
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    """)
+
+    execute("""
+    CREATE TRIGGER kbv_set_version_number
+    BEFORE INSERT ON knowledge_base_versions
+    FOR EACH ROW
+    WHEN (NEW.version_number IS NULL)
+    EXECUTE FUNCTION set_knowledge_base_version_number();
+    """)
   end
 end
