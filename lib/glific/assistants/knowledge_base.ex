@@ -22,7 +22,7 @@ defmodule Glific.Assistants.KnowledgeBase do
           updated_at: DateTime.t() | nil
         }
 
-  @required_fields [:name]
+  @required_fields [:name, :organization_id]
 
   schema "knowledge_bases" do
     field(:name, :string)
