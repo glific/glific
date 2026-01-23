@@ -117,14 +117,5 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
     end
-
-    test "knowledge_base_status_const returns all valid status values" do
-      statuses = Glific.Enums.knowledge_base_status_const()
-
-      assert :in_progress in statuses
-      assert :completed in statuses
-      assert :failed in statuses
-      assert length(statuses) == 3
-    end
   end
 end

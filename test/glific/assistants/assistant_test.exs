@@ -67,5 +67,15 @@ defmodule Glific.Assistants.AssistantTest do
       assert changeset.valid? == false
       assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
+
+    test "set_active_config_version_changeset with valid active_config_version_id" do
+      assistant = %Assistant{id: 1, name: "Test Assistant"}
+      attrs = %{active_config_version_id: 2}
+
+      changeset = Assistant.set_active_config_version_changeset(assistant, attrs)
+
+      assert changeset.valid?
+      assert get_change(changeset, :active_config_version_id) == 2
+    end
   end
 end

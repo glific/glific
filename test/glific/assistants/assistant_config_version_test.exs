@@ -6,8 +6,6 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
 
   alias Glific.Assistants.AssistantConfigVersion
 
-  require Glific.Enums
-
   describe "AssistantConfigVersion.changeset/2" do
     @valid_attrs %{
       prompt: "You are a helpful assistant.",
@@ -173,14 +171,5 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
     end
-  end
-
-  test "assistant_config_version_status_const returns all valid status values" do
-    statuses = Glific.Enums.assistant_config_version_status_const()
-
-    assert :in_progress in statuses
-    assert :ready in statuses
-    assert :failed in statuses
-    assert length(statuses) == 3
   end
 end

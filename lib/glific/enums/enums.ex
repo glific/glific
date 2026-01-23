@@ -120,6 +120,12 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.WhatsappFormCategory.__enum_map__()
   Glific.Enums.whatsapp_form_category_const()
+
+  iex> Glific.Enums.AssistantConfigVersionStatus.__enum_map__()
+  Glific.Enums.assistant_config_version_status_const()
+
+  iex> Glific.Enums.KnowledgeBaseStatus.__enum_map__()
+  Glific.Enums.knowledge_base_status_const()
   """
 
   defmacro api_status_const,
