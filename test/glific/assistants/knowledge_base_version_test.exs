@@ -6,22 +6,21 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
 
   alias Glific.Assistants.KnowledgeBaseVersion
 
-  require Glific.Enums
+  setup %{organization_id: organization_id} do
+    valid_attrs = %{
+      files: %{"file1.pdf" => %{"size" => 1024, "pages" => 10}},
+      status: :completed,
+      llm_service_id: "vs_abc123",
+      organization_id: organization_id,
+      knowledge_base_id: 1
+    }
 
-  @valid_attrs %{
-    files: %{"file1.pdf" => %{"size" => 1024, "pages" => 10}},
-    status: :completed,
-    llm_service_id: "vs_abc123"
-  }
+    %{valid_attrs: valid_attrs}
+  end
 
-  describe "KnowledgeBaseVersion.changeset/2" do
-    test "changeset with valid attributes", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:knowledge_base_id, 1)
-
-      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
+  describe "changeset/2" do
+    test "changeset with valid attributes", %{valid_attrs: valid_attrs} do
+      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, valid_attrs)
 
       assert changeset.valid?
       assert get_change(changeset, :files) == %{"file1.pdf" => %{"size" => 1024, "pages" => 10}}
@@ -29,47 +28,33 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
       assert get_change(changeset, :llm_service_id) == "vs_abc123"
     end
 
-    test "changeset without knowledge_base_id returns error", %{organization_id: organization_id} do
-      attrs = Map.put(@valid_attrs, :organization_id, organization_id)
+    test "changeset without knowledge_base_id returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :knowledge_base_id)
       changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{knowledge_base_id: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset without files returns error", %{organization_id: organization_id} do
-      attrs = %{
-        organization_id: organization_id,
-        knowledge_base_id: 1,
-        status: :in_progress,
-        llm_service_id: "vs_abc123"
-      }
-
+    test "changeset without files returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :files)
       changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{files: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset without llm_service_id returns error", %{organization_id: organization_id} do
-      attrs = %{
-        organization_id: organization_id,
-        knowledge_base_id: 1,
-        files: %{},
-        status: :in_progress
-      }
-
+    test "changeset without llm_service_id returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :llm_service_id)
       changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{llm_service_id: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset with optional fields", %{organization_id: organization_id} do
+    test "changeset with optional fields", %{valid_attrs: valid_attrs} do
       attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:knowledge_base_id, 1)
+        valid_attrs
         |> Map.put(:size, 2048)
         |> Map.put(:version_number, 1)
         |> Map.put(:kaapi_job_id, "job_xyz789")
@@ -82,51 +67,24 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
       assert get_change(changeset, :kaapi_job_id) == "job_xyz789"
     end
 
-    test "changeset with all status values", %{organization_id: organization_id} do
-      base_attrs = %{
-        organization_id: organization_id,
-        knowledge_base_id: 1,
-        files: %{},
-        llm_service_id: "vs_abc123"
-      }
-
-      changeset =
-        KnowledgeBaseVersion.changeset(
-          %KnowledgeBaseVersion{},
-          Map.put(base_attrs, :status, :in_progress)
-        )
-
-      assert changeset.valid?
-      assert get_field(changeset, :status) == :in_progress
-
-      changeset =
-        KnowledgeBaseVersion.changeset(
-          %KnowledgeBaseVersion{},
-          Map.put(base_attrs, :status, :completed)
-        )
-
+    test "changeset with all status values", %{valid_attrs: valid_attrs} do
+      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, valid_attrs)
       assert changeset.valid?
       assert get_change(changeset, :status) == :completed
 
-      changeset =
-        KnowledgeBaseVersion.changeset(
-          %KnowledgeBaseVersion{},
-          Map.put(base_attrs, :status, :failed)
-        )
-
+      attrs = Map.put(valid_attrs, :status, :failed)
+      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
 
-      attrs_without_status =
-        @valid_attrs
-        |> Map.delete(:status)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:knowledge_base_id, 1)
+      attrs = Map.put(valid_attrs, :status, :in_progress)
+      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
+      assert changeset.valid?
+      assert get_field(changeset, :status) == :in_progress
 
-      changeset =
-        KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs_without_status)
-
-      changeset.valid?
+      attrs = Map.delete(valid_attrs, :status)
+      changeset = KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs)
+      assert changeset.valid?
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
     end

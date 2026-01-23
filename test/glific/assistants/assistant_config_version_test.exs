@@ -6,23 +6,24 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
 
   alias Glific.Assistants.AssistantConfigVersion
 
-  @valid_attrs %{
-    prompt: "You are a helpful assistant.",
-    provider: "openai",
-    model: "gpt-4o",
-    kaapi_uuid: "kaapi-uuid-12345",
-    settings: %{"temperature" => 0.7},
-    status: :ready
-  }
+  setup %{organization_id: organization_id} do
+    valid_attrs = %{
+      prompt: "You are a helpful assistant.",
+      provider: "openai",
+      model: "gpt-4o",
+      kaapi_uuid: "kaapi-uuid-12345",
+      settings: %{"temperature" => 0.7},
+      status: :ready,
+      organization_id: organization_id,
+      assistant_id: 1
+    }
+
+    %{valid_attrs: valid_attrs}
+  end
 
   describe "changeset/2" do
-    test "changeset with valid attributes", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
-      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+    test "changeset with valid attributes", %{valid_attrs: valid_attrs} do
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, valid_attrs)
 
       assert changeset.valid?
       assert get_change(changeset, :prompt) == "You are a helpful assistant."
@@ -32,60 +33,40 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert get_change(changeset, :settings) == %{"temperature" => 0.7}
     end
 
-    test "changeset without assistant_id returns error", %{organization_id: organization_id} do
-      attrs = Map.put(@valid_attrs, :organization_id, organization_id)
+    test "changeset without assistant_id returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :assistant_id)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{assistant_id: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset without prompt returns error", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.delete(:prompt)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
+    test "changeset without prompt returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :prompt)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{prompt: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset without model returns error", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.delete(:model)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
+    test "changeset without model returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :model)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{model: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset without kaapi_uuid returns error", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.delete(:kaapi_uuid)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
+    test "changeset without kaapi_uuid returns error", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :kaapi_uuid)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid? == false
       assert %{kaapi_uuid: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "changeset uses default settings when not provided", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.delete(:settings)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
+    test "changeset uses default settings when not provided", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :settings)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid?
@@ -93,24 +74,17 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert get_field(changeset, :settings) == %{}
     end
 
-    test "changeset uses default provider when not provided", %{organization_id: organization_id} do
-      attrs =
-        @valid_attrs
-        |> Map.delete(:provider)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
+    test "changeset uses default provider when not provided", %{valid_attrs: valid_attrs} do
+      attrs = Map.delete(valid_attrs, :provider)
       changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
 
       assert changeset.valid?
       assert get_field(changeset, :provider) == "openai"
     end
 
-    test "changeset with optional fields", %{organization_id: organization_id} do
+    test "changeset with optional fields", %{valid_attrs: valid_attrs} do
       attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
+        valid_attrs
         |> Map.put(:description, "Version 1 of the assistant")
         |> Map.put(:version_number, 1)
 
@@ -121,13 +95,9 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert get_change(changeset, :version_number) == 1
     end
 
-    test "changeset with failure_reason when status is failed", %{
-      organization_id: organization_id
-    } do
+    test "changeset with failure_reason when status is failed", %{valid_attrs: valid_attrs} do
       attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
+        valid_attrs
         |> Map.put(:status, :failed)
         |> Map.put(:failure_reason, "Failed to connect to LLM provider")
 
@@ -138,49 +108,24 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert get_change(changeset, :failure_reason) == "Failed to connect to LLM provider"
     end
 
-    test "changeset with all status values", %{organization_id: organization_id} do
-      base_attrs =
-        @valid_attrs
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:assistant_id, 1)
-
-      changeset =
-        AssistantConfigVersion.changeset(
-          %AssistantConfigVersion{},
-          Map.put(base_attrs, :status, :in_progress)
-        )
-
-      assert changeset.valid?
-      assert get_field(changeset, :status) == :in_progress
-
-      changeset =
-        AssistantConfigVersion.changeset(
-          %AssistantConfigVersion{},
-          Map.put(base_attrs, :status, :ready)
-        )
-
+    test "changeset with all status values", %{valid_attrs: valid_attrs} do
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, valid_attrs)
       assert changeset.valid?
       assert get_change(changeset, :status) == :ready
 
-      changeset =
-        AssistantConfigVersion.changeset(
-          %AssistantConfigVersion{},
-          Map.put(base_attrs, :status, :failed)
-        )
-
+      attrs = Map.put(valid_attrs, :status, :failed)
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
 
-      attrs_without_status =
-        @valid_attrs
-        |> Map.delete(:status)
-        |> Map.put(:organization_id, organization_id)
-        |> Map.put(:active_config_version_id, 1)
+      attrs = Map.put(valid_attrs, :status, :in_progress)
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+      assert changeset.valid?
+      assert get_field(changeset, :status) == :in_progress
 
-      changeset =
-        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs_without_status)
-
-      changeset.valid?
+      attrs = Map.delete(valid_attrs, :status)
+      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
+      assert changeset.valid?
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
     end
