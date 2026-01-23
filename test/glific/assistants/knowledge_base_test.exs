@@ -6,11 +6,11 @@ defmodule Glific.Assistants.KnowledgeBaseTest do
 
   alias Glific.Assistants.KnowledgeBase
 
-  describe "KnowledgeBase.changeset/2" do
-    @valid_attrs %{
-      name: "Test Knowledge Base"
-    }
+  @valid_attrs %{
+    name: "Test Knowledge Base"
+  }
 
+  describe "KnowledgeBase.changeset/2" do
     test "changeset with valid attributes", %{organization_id: organization_id} do
       attrs = Map.put(@valid_attrs, :organization_id, organization_id)
       changeset = KnowledgeBase.changeset(%KnowledgeBase{}, attrs)

@@ -8,13 +8,13 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
 
   require Glific.Enums
 
-  describe "KnowledgeBaseVersion.changeset/2" do
-    @valid_attrs %{
-      files: %{"file1.pdf" => %{"size" => 1024, "pages" => 10}},
-      status: :completed,
-      llm_service_id: "vs_abc123"
-    }
+  @valid_attrs %{
+    files: %{"file1.pdf" => %{"size" => 1024, "pages" => 10}},
+    status: :completed,
+    llm_service_id: "vs_abc123"
+  }
 
+  describe "KnowledgeBaseVersion.changeset/2" do
     test "changeset with valid attributes", %{organization_id: organization_id} do
       attrs =
         @valid_attrs
@@ -116,6 +116,19 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
 
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
+
+      attrs_without_status =
+        @valid_attrs
+        |> Map.delete(:status)
+        |> Map.put(:organization_id, organization_id)
+        |> Map.put(:knowledge_base_id, 1)
+
+      changeset =
+        KnowledgeBaseVersion.changeset(%KnowledgeBaseVersion{}, attrs_without_status)
+
+      changeset.valid?
+      assert get_change(changeset, :status) == nil
+      assert get_field(changeset, :status) == :in_progress
     end
   end
 end

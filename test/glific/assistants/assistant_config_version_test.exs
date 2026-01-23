@@ -6,16 +6,16 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
 
   alias Glific.Assistants.AssistantConfigVersion
 
-  describe "AssistantConfigVersion.changeset/2" do
-    @valid_attrs %{
-      prompt: "You are a helpful assistant.",
-      provider: "openai",
-      model: "gpt-4o",
-      kaapi_uuid: "kaapi-uuid-12345",
-      settings: %{"temperature" => 0.7},
-      status: :ready
-    }
+  @valid_attrs %{
+    prompt: "You are a helpful assistant.",
+    provider: "openai",
+    model: "gpt-4o",
+    kaapi_uuid: "kaapi-uuid-12345",
+    settings: %{"temperature" => 0.7},
+    status: :ready
+  }
 
+  describe "changeset/2" do
     test "changeset with valid attributes", %{organization_id: organization_id} do
       attrs =
         @valid_attrs
@@ -170,6 +170,19 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
 
       assert changeset.valid?
       assert get_change(changeset, :status) == :failed
+
+      attrs_without_status =
+        @valid_attrs
+        |> Map.delete(:status)
+        |> Map.put(:organization_id, organization_id)
+        |> Map.put(:active_config_version_id, 1)
+
+      changeset =
+        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs_without_status)
+
+      changeset.valid?
+      assert get_change(changeset, :status) == nil
+      assert get_field(changeset, :status) == :in_progress
     end
   end
 end

@@ -6,17 +6,16 @@ defmodule Glific.Assistants.AssistantTest do
 
   alias Glific.Assistants.Assistant
 
-  describe "Assistant.changeset/2" do
-    @valid_attrs %{
-      name: "Test Assistant",
-      description: "A helpful assistant for testing"
-    }
+  @valid_attrs %{
+    name: "Test Assistant",
+    description: "A helpful assistant for testing"
+  }
 
-    @invalid_attrs %{
-      name: nil,
-      description: "Missing required name"
-    }
-
+  @invalid_attrs %{
+    name: nil,
+    description: "Missing required name"
+  }
+  describe "changeset/2" do
     test "changeset with valid attributes", %{organization_id: organization_id} do
       attrs = Map.put(@valid_attrs, :organization_id, organization_id)
       changeset = Assistant.changeset(%Assistant{}, attrs)
