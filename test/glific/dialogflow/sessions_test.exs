@@ -1,6 +1,6 @@
 defmodule Glific.Dialogflow.SessionsTest do
   use Glific.DataCase, async: false
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
   import Mock
 
   alias Glific.{

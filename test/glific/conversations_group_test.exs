@@ -1,6 +1,6 @@
 defmodule Glific.ConversationsGroupTest do
   use Glific.DataCase, async: true
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     ConversationsGroup,

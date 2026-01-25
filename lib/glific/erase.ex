@@ -96,7 +96,6 @@ defmodule Glific.Erase do
       "VACUUM (FULL, ANALYZE) notifications",
       "VACUUM (FULL, ANALYZE) flow_counts",
       "VACUUM (FULL, ANALYZE) bigquery_jobs",
-      "VACUUM (FULL, ANALYZE) global.oban_producers",
       "VACUUM (FULL, ANALYZE) contacts_groups",
       "VACUUM (FULL, ANALYZE) flow_results",
       "VACUUM (FULL, ANALYZE) contacts",

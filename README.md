@@ -158,71 +158,16 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
 
 ### Oban
 
- [Oban](https://getoban.pro) is a job processing library for Elixir. It supports features like background jobs and scheduled tasks (cron-style).
- Oban is **required** before running mix for Glific to operate.
+[Oban](https://hex.pm/packages/oban) is a job processing library for Elixir. It supports background jobs and scheduled tasks (cron-style) and is required before running `mix` for Glific to operate.
 
- **For contributors on social impact projects (including NGOs):**
+Glific now uses the open-source Oban and Oban Web packages only. You do **not** need an Oban Pro key or the private Oban repository. If you previously added the Oban Pro repo, remove it with:
 
-  Please get in touch with the team on Discord and request a limited-time Oban Pro key.
-  Once provided, run the following command to add the Oban repository with your credentials:
-   ```bash
-  mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
-   ```
+```bash
+mix hex.repo remove oban
+mix hex.repo remove hexpm:oban
+```
 
- **For others, if you want to use the free Oban solution**
- People have contributed code changes to allow Glific to work with the free version of Oban. You can view the details here: https://github.com/glific/glific/pull/2391
-
- **For production use:**
-
-  *You must purchase a license for Oban Pro to use advanced features in production.
-
-  *Note: Oban Web is now open source and does not require a license.
-
-  *If you're using Oban Pro, after purchasing the license:
-
-
-   Go to your Oban account dashboard.
-
-   Run the following command inside your glific_backend directory:
-
-  ```bash
-     mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
-  ```
-
-   where public key "SHA256:4/abc/edf/gef+aIWPc" is replaced by your public key and auth key "abcdefghi" is replaced by your auth key.
-
-   Make sure your key is in the list:
-
-   ```bash
-   mix hex.repo list
-   ```
-
-     Name        URL                             Public key                                          Auth key
-     hexpm       https://repo.hex.pm             SHA256:abc/edf/gef+aIWPc
-     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
-
-   If you see two Auth key entries - caused by Oban moving from a public to a private repository - it will fail.
-   This is what an example of failing looks like:
-
-     Name        URL                             Public key                                          Auth key
-     hexpm:oban  https://repo.hex.pm/repos/oban  SHA256:abc/edf/gef+aIWPc     abdedcqweasdj__KEY_AUTH__asdafasdf
-     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
-
-   This is wrong. When you run mix deps.get as is, it will try to fetch from the public repository instead of the private one and fail.
-   Simply follow the instructions below to remove the public key:
-
-   ```bash
-    mix hex.repo remove hexpm:oban
-   ```
-
-  Now, check again:
-
-   ```bash
-    mix hex.repo list
-   ```
-
-     Name        URL                             Public key                                          Auth key
-     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
+If you still want to explore Oban Pro on your own deployment, follow the upstream Oban docs to add their private repo and license key, but it is no longer required for Glific.
 
 ### 5. Backend - Config
 
@@ -230,14 +175,15 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  - Run `mix deps.get`
    if this fails try `mix local.hex --force` followed by `mix deps.get`
 
-   if you see the error below, then your Oban key is wrong or failing. Check step 5 or contact Oban.
+   If you still see errors referencing `oban_pro`, clean out any old Oban Pro config:
 
-   ❯ mix deps.get
-   Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
-   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-   Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
-   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-   \*\* (Mix) Unknown package oban_pro in lockfile
+   ```bash
+   mix hex.repo remove oban
+   mix hex.repo remove hexpm:oban
+   mix deps.clean --unlock oban_pro
+   rm -rf deps/oban_pro _build/*/lib/oban_pro
+   mix deps.get
+   ```
 
  - Run `mix setup`
   At this point, you may get an error saying `password authentication failed for user "postgres"`, in which case, you need to configure the postgres server properly:
@@ -389,14 +335,15 @@ SSL (Secure Sockets Layer) provides encrypted connections between Glific and you
  - Run `mix deps.get`
    if this fails try `mix local.hex --force` followed by `mix deps.get`
 
-   if you see the error below, then your Oban key is wrong or failing. Check step 5 or contact Oban.
+   If you still see errors referencing `oban_pro`, clean out any old Oban Pro config:
 
-   ❯ mix deps.get
-   Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
-   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-   Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
-   This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-   \*\* (Mix) Unknown package oban_pro in lockfile
+   ```bash
+   mix hex.repo remove oban
+   mix hex.repo remove hexpm:oban
+   mix deps.clean --unlock oban_pro
+   rm -rf deps/oban_pro _build/*/lib/oban_pro
+   mix deps.get
+   ```
 
  - Run `mix setup`
  - Run `iex -S mix phx.server`

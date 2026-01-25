@@ -1,7 +1,9 @@
 defmodule Glific.Repo.Migrations.AddObanPro do
   use Ecto.Migration
 
-  def up, do: Oban.Pro.Migration.up(version: "1.5.0", prefix: "global")
+  # Oban Pro is no longer used; keep this migration as a no-op to preserve
+  # numbering for existing deployments.
+  def up, do: :ok
 
-  def down, do: Oban.Pro.Migration.down(prefix: "global")
+  def down, do: :ok
 end

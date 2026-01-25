@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.SessionTemplateTest do
   use GlificWeb.ConnCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 
   alias Glific.{

@@ -1,7 +1,7 @@
 defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Contacts,

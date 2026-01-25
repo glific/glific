@@ -1,6 +1,6 @@
 defmodule Glific.ThirdParty.Sheets.WorkerTest do
   use Glific.DataCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.Notifications.Notification
   alias Glific.Repo

@@ -30,10 +30,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 oban_queues = [
   bigquery: 10,
   crontab: 10,
-  default: [
-    limit: 10,
-    rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
-  ],
+  default: [limit: 10],
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
@@ -41,10 +38,7 @@ oban_queues = [
   broadcast: 5,
   wa_group: 5,
   purge: 1,
-  custom_certificate: [
-    limit: 10,
-    rate_limit: [allowed: 60, period: {1, :minute}, partition: [:worker, args: :organization_id]]
-  ],
+  custom_certificate: [limit: 10],
   gpt_webhook_queue: 20,
   contact_import: 10,
   gupshup_high_tps: 10
@@ -76,16 +70,13 @@ oban_crontab = [
   {"* 20-23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_low_traffic_tasks}}
 ]
 
-oban_engine = Oban.Pro.Engines.Smart
+oban_engine = Oban.Engines.Basic
 
 oban_plugins = [
   # Prune jobs after 5 mins, gives us some time to go investigate if needed
-  {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
+  {Oban.Plugins.Pruner, max_age: 5 * 60, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
-  Oban.Pro.Plugins.DynamicLifeline,
-  # only reprioritizing for gpt_webhook_queue for now
-  {Oban.Pro.Plugins.DynamicPrioritizer,
-   after: :infinity, queue_overrides: [gpt_webhook_queue: :timer.minutes(5)]}
+  Oban.Plugins.Lifeline
 ]
 
 config :glific, Oban,

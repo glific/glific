@@ -2,7 +2,7 @@ defmodule Glific.TriggersTest do
   alias Glific.Flows.Flow
   alias Glific.Groups.Group
   use Glific.DataCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
   import Ecto.Query
 
   alias Glific.{

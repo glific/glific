@@ -1,6 +1,6 @@
 defmodule Glific.EraseTest do
   use Glific.DataCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Contacts.ContactHistory,

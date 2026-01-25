@@ -1,6 +1,6 @@
 defmodule Glific.GcsWorkerTest do
   use GlificWeb.ConnCase
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
   import Mock
   import Ecto.Query
 

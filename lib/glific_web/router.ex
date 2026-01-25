@@ -206,7 +206,7 @@ defmodule GlificWeb.Router do
   end
 
   @doc """
-  implement basic authentication for live dashboard and oban pro
+  implement basic authentication for live dashboard and Oban Web
   """
   @spec auth(any(), any()) :: any()
   def auth(conn, _opts) do

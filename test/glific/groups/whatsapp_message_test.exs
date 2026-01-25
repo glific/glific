@@ -1,7 +1,7 @@
 defmodule Glific.Groups.WhatsappMessageTest do
   use Glific.DataCase, async: false
   use ExUnit.Case
-  use Oban.Pro.Testing, repo: Glific.Repo
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
     Fixtures,
