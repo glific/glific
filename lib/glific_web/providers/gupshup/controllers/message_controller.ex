@@ -124,13 +124,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   @spec extract_message_from_webhook(map()) :: {map(), map(), String.t()}
   defp extract_message_from_webhook(%{
-         "entry" => [change | _],
-         "gsMetadata" => %{"X-GS-T-ID" => template_id}
+         "entry" => [change | _]
        }) do
     %{"changes" => [%{"value" => %{"messages" => [message | _], "contacts" => [contact | _]}}]} =
       change
 
-    {message, contact, template_id}
+    whatsapp_form_bsp_id = get_in(message, ["context", "gs_id"])
+
+    {message, contact, whatsapp_form_bsp_id}
   end
 
   @spec update_message_params(map(), map()) :: map()

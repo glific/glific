@@ -228,14 +228,14 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec receive_whatsapp_form_response({map(), map(), String.t()}) :: map()
-  def receive_whatsapp_form_response({message, contact, template_id}) do
+  def receive_whatsapp_form_response({message, contact, whatsapp_form_bsp_id}) do
     %{
       bsp_message_id: message["id"],
       body: "",
       context_id: context_id(message),
       raw_response: message["interactive"]["nfm_reply"]["response_json"],
       submitted_at: message["timestamp"],
-      template_id: template_id,
+      whatsapp_form_bsp_id: whatsapp_form_bsp_id,
       sender: %{
         phone: contact["wa_id"],
         name: contact["profile"]["name"]
