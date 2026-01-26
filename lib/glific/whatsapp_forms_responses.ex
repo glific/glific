@@ -13,8 +13,7 @@ defmodule Glific.WhatsappFormsResponses do
   @doc """
   Create a WhatsApp form response from the given attributes
   """
-  @spec create_whatsapp_form_response(map()) ::
-          {:ok, WhatsappFormResponse.t()} | {:error, Ecto.Changeset.t() | String.t() | any()}
+  @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
   def create_whatsapp_form_response(attrs) do
     with {:ok, whatsapp_form_id} <-
            get_wa_form_id(attrs.whatsapp_form_bsp_id, attrs.organization_id),
