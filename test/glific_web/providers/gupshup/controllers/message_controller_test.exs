@@ -692,8 +692,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
             ],
             "id" => "122037724131744"
           }
-        ],
-        "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+        ]
       }
 
       conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
