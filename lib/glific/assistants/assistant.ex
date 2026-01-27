@@ -14,11 +14,11 @@ defmodule Glific.Assistants.Assistant do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          id: non_neg_integer() | nil,
-          name: String.t() | nil,
+          id: non_neg_integer(),
+          name: String.t(),
           description: String.t() | nil,
-          active_config_version_id: non_neg_integer() | nil,
-          organization_id: non_neg_integer() | nil,
+          active_config_version_id: non_neg_integer(),
+          organization_id: non_neg_integer(),
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           active_config_version:
             AssistantConfigVersion.t() | Ecto.Association.NotLoaded.t() | nil,

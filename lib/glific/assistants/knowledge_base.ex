@@ -14,9 +14,9 @@ defmodule Glific.Assistants.KnowledgeBase do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          id: non_neg_integer() | nil,
-          name: String.t() | nil,
-          organization_id: non_neg_integer() | nil,
+          id: non_neg_integer(),
+          name: String.t(),
+          organization_id: non_neg_integer(),
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           versions: [KnowledgeBaseVersion.t()] | Ecto.Association.NotLoaded.t(),
           inserted_at: DateTime.t() | nil,
