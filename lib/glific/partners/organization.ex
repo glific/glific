@@ -185,6 +185,8 @@ defmodule Glific.Partners.Organization do
 
     field(:high_trigger_tps_enabled, :boolean, default: false, virtual: true)
 
+    field(:unified_api_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 
