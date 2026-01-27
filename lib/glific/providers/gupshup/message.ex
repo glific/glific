@@ -229,7 +229,7 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec receive_whatsapp_form_response({map(), map(), String.t()}) :: map()
+  @spec receive_whatsapp_form_response({map(), map()}) :: map()
   def receive_whatsapp_form_response({message, contact}) do
     %{
       bsp_message_id: message["id"],

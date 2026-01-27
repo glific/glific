@@ -122,7 +122,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     handler(conn, params, "whatsapp_form_response handler")
   end
 
-  @spec extract_message_from_webhook(map()) :: {map(), map(), String.t()}
+  @spec extract_message_from_webhook(map()) :: {map(), map()}
   defp extract_message_from_webhook(%{
          "entry" => [change | _]
        }) do
