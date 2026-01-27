@@ -30,7 +30,7 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  @spec get_wa_form_id(String.t(), non_neg_integer()) :: {:ok, non_neg_integer()} | nil
+  @spec get_wa_form_id(String.t(), non_neg_integer()) :: {:ok, non_neg_integer()}
   defp get_wa_form_id(context_id, org_id) do
     with {:ok, previous_message} <-
            Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id}),

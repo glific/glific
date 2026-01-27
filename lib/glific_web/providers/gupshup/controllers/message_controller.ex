@@ -129,9 +129,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     %{"changes" => [%{"value" => %{"messages" => [message | _], "contacts" => [contact | _]}}]} =
       change
 
-    whatsapp_form_bsp_id = get_in(message, ["context", "gs_id"])
-
-    {message, contact, whatsapp_form_bsp_id}
+    {message, contact}
   end
 
   @spec update_message_params(map(), map()) :: map()

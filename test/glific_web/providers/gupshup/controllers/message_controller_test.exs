@@ -623,6 +623,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.whatsapp_form_response_id != nil
       assert message.flow == :inbound
       assert message.sender.phone == "919917443994"
+      assert message.context_id == "0e74fb92-eb8a-415a-bccd-42ee768665e0"
 
       {:ok, form_response} =
         Repo.fetch_by(WhatsappFormResponse, %{id: message.whatsapp_form_response_id})

@@ -111,7 +111,9 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @spec context_id(map()) :: String.t() | nil
   defp context_id(payload),
-    do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
+    do:
+      get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "gs_id"]) ||
+        get_in(payload, ["context", "id"])
 
   @doc false
   @spec receive_text(payload :: map()) :: map()
@@ -228,11 +230,11 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec receive_whatsapp_form_response({map(), map(), String.t()}) :: map()
-  def receive_whatsapp_form_response({message, contact, context_id}) do
+  def receive_whatsapp_form_response({message, contact}) do
     %{
       bsp_message_id: message["id"],
       body: "",
-      context_id: context_id,
+      context_id: context_id(message),
       raw_response: message["interactive"]["nfm_reply"]["response_json"],
       submitted_at: message["timestamp"],
       sender: %{
