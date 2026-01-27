@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:ask_me_bot_enabled, :boolean)
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
+    field(:unified_api_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -140,7 +141,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_certificate_enabled, :boolean)
     field(:is_kaapi_enabled, :boolean)
     field(:is_whatsapp_forms_enabled, :boolean)
-
+    field(:unified_api_enabled, :boolean)
     field(:inserted_at, :datetime)
 
     field(:updated_at, :datetime)

@@ -563,6 +563,7 @@ defmodule Glific.Partners do
       |> Flags.set_is_ask_me_bot_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
+      |> Flags.set_flag_enabled(:unified_api_enabled)
 
     Caches.set(
       @global_organization_id,
