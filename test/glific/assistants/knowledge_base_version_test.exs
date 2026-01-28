@@ -4,7 +4,8 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
   """
   use Glific.DataCase
 
-  alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Assistants.{KnowledgeBase, KnowledgeBaseVersion}
+  alias Glific.Repo
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{
@@ -87,6 +88,51 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
+    end
+  end
+
+  describe "ExAudit tracking" do
+    test "knowledge_base_version should be audited with ExAudit",
+         %{organization_id: organization_id} do
+      {:ok, knowledge_base} =
+        %KnowledgeBase{}
+        |> KnowledgeBase.changeset(%{
+          name: "Test Knowledge Base",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, kb_version} =
+        %KnowledgeBaseVersion{}
+        |> KnowledgeBaseVersion.changeset(%{
+          knowledge_base_id: knowledge_base.id,
+          files: %{"file1.pdf" => "https://example.com/file1.pdf"},
+          status: :in_progress,
+          llm_service_id: "test-llm-service-123",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      [created_history] = Repo.history(kb_version, skip_organization_id: true)
+      assert created_history.action == :created
+      assert :files in Map.keys(created_history.patch)
+      assert :status in Map.keys(created_history.patch)
+
+      {:ok, updated_kb_version} =
+        kb_version
+        |> KnowledgeBaseVersion.changeset(%{
+          files: %{
+            "file1.pdf" => "https://example.com/file1.pdf",
+            "file2.pdf" => "https://example.com/file2.pdf"
+          }
+        })
+        |> Repo.update()
+
+      history = Repo.history(updated_kb_version, skip_organization_id: true)
+      assert length(history) == 2
+      update_history = List.last(history)
+      assert update_history.action == :updated
+      assert :files in Map.keys(update_history.patch)
     end
   end
 end

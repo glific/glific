@@ -4,7 +4,12 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
   """
   use Glific.DataCase
 
-  alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Assistants.{
+    Assistant,
+    AssistantConfigVersion
+  }
+
+  alias Glific.Repo
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{
@@ -128,6 +133,49 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
+    end
+  end
+
+  describe "ExAudit tracking" do
+    test "assistant_config_version should be audited with ExAudit",
+         %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Config Version Test Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          prompt: "You are a helpful assistant",
+          provider: "openai",
+          model: "gpt-4o",
+          kaapi_uuid: "test-kaapi-uuid-123",
+          settings: %{"temperature" => 0.7},
+          status: :ready,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      [created_history] = Repo.history(config_version, skip_organization_id: true)
+      assert created_history.action == :created
+      assert :prompt in Map.keys(created_history.patch)
+      assert :model in Map.keys(created_history.patch)
+
+      {:ok, updated_config_version} =
+        config_version
+        |> AssistantConfigVersion.changeset(%{prompt: "You are an updated helpful assistant"})
+        |> Repo.update()
+
+      history = Repo.history(updated_config_version, skip_organization_id: true)
+      assert length(history) == 2
+      update_history = List.last(history)
+      assert update_history.action == :updated
+      assert :prompt in Map.keys(update_history.patch)
     end
   end
 end
