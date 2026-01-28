@@ -10,6 +10,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     Flows,
     Flows.Flow,
     Flows.FlowContext,
+    Messages,
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
@@ -544,7 +545,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
         end
     end)
 
-    {:ok, _temp} =
+    {:ok, temp} =
       Templates.create_session_template(%{
         label: "Whatsapp Form Template",
         type: :text,
@@ -561,6 +562,19 @@ defmodule Glific.Processor.ConsumerFlowTest do
             "navigate_screen" => "RATE"
           }
         ]
+      })
+
+    {:ok, _message} =
+      Messages.create_message(%{
+        body: "Hello| [Open] ",
+        flow: :outbound,
+        type: :text,
+        sender_id: 1,
+        receiver_id: 2,
+        contact_id: 1,
+        organization_id: conn.assigns[:organization_id],
+        bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+        template_id: temp.id
       })
 
     {:ok, _wa_form} =
@@ -617,8 +631,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
           ],
           "id" => "122037724131744"
         }
-      ],
-      "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+      ]
     }
 
     conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
