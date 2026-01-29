@@ -4,12 +4,11 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
   """
   use Glific.DataCase
 
-  alias Glific.Assistants.{
-    Assistant,
-    AssistantConfigVersion
+  alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Repo
   }
-
-  alias Glific.Repo
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{

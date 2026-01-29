@@ -4,8 +4,10 @@ defmodule Glific.Assistants.AssistantTest do
   """
   use Glific.DataCase
 
-  alias Glific.Assistants.Assistant
-  alias Glific.Repo
+  alias Glific.{
+    Assistants.Assistant,
+    Repo
+  }
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{

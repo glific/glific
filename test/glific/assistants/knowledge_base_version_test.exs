@@ -4,8 +4,11 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
   """
   use Glific.DataCase
 
-  alias Glific.Assistants.{KnowledgeBase, KnowledgeBaseVersion}
-  alias Glific.Repo
+  alias Glific.{
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
+    Repo
+  }
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{
