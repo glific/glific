@@ -1934,10 +1934,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :certificate_template
       ])
 
-  defp get_query("trial_users", organization_id, attrs),
+  defp get_query("trial_users", _organization_id, attrs),
     do:
       TrialUsers
-      |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
 

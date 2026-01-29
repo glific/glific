@@ -3118,7 +3118,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "Name of the trial user",
-        name: "Username",
+        name: "username",
         type: "STRING",
         mode: "REQUIRED"
       },
@@ -3142,8 +3142,8 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "User entered the OTP or not",
-        name: "OTP entered",
-        type: "STRING",
+        name: "otp_entered",
+        type: "BOOLEAN",
         mode: "REQUIRED"
       },
       %{
