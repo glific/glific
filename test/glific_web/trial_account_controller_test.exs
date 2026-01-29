@@ -101,7 +101,7 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
       assert user.roles == [:admin]
     end
 
-    test "sends emails to trial user and biz dev on succesfully assigning trial account", %{
+    test "sends emails to trial user and biz dev on successfully assigning trial account", %{
       conn: conn,
       trial_org_1: trial_org_1,
       valid_otp: valid_otp
@@ -309,8 +309,13 @@ defmodule GlificWeb.API.V1.TrialAccountControllerTest do
 
     attrs = Map.merge(default_attrs, attrs)
 
-    %Organization{}
-    |> Organization.changeset(attrs)
-    |> Repo.insert!()
+    org =
+      %Organization{}
+      |> Organization.changeset(attrs)
+      |> Repo.insert!()
+
+    SeedsDev.seed_roles(org)
+
+    org
   end
 end

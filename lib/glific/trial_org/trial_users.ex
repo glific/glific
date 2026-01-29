@@ -17,7 +17,7 @@ defmodule Glific.TrialUsers do
           organization_name: String.t() | nil,
           otp_entered: boolean() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime_usec | nil
+          updated_at: :utc_datetime | nil
         }
 
   @required_fields [
