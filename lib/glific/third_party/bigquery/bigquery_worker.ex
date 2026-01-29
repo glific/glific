@@ -58,6 +58,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
+    TrialUsers,
     Users.User,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
@@ -468,6 +469,37 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :tags, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("trial_users", organization_id, attrs) do
+    Logger.info(
+      "fetching trial users data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("trial_users", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            username: row.username,
+            email: row.email,
+            phone: row.phone,
+            organization_name: row.organization_name,
+            otp_entered: row.otp_entered,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :trial_users, organization_id, attrs))
 
     :ok
   end
@@ -1901,6 +1933,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :contact,
         :certificate_template
       ])
+
+  defp get_query("trial_users", organization_id, attrs),
+    do:
+      TrialUsers
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
 
   @spec format_value(map() | list() | struct() | any()) :: String.t()
   defp format_value(value) when is_map(value) or is_list(value) do
