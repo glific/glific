@@ -23,7 +23,7 @@ defmodule Glific.TrialWorkerTest do
   setup do
     trial_org_attrs = %{
       name: "Trial Test Org",
-      shortcode: "trial_test}",
+      shortcode: "trial_test",
       email: "trial@example.com",
       bsp_id: 1,
       is_active: true,
@@ -636,7 +636,7 @@ defmodule Glific.TrialWorkerTest do
         |> where([m], m.category == "trial_day_14_followup")
         |> Repo.all(skip_organization_id: true)
 
-      assert assert Enum.empty?(mail_logs)
+      assert Enum.empty?(mail_logs)
     end
   end
 end
