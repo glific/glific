@@ -141,7 +141,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_certificate_enabled, :boolean)
     field(:is_kaapi_enabled, :boolean)
     field(:is_whatsapp_forms_enabled, :boolean)
+    field(:is_trial_org, :boolean)
+    field(:trial_expiration_date, :datetime)
     field(:unified_api_enabled, :boolean)
+
     field(:inserted_at, :datetime)
 
     field(:updated_at, :datetime)
