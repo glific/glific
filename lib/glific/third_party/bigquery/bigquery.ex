@@ -235,7 +235,8 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => WhatsappForm,
     "whatsapp_forms_responses" => WhatsappFormResponse,
     "certificate_templates" => CertificateTemplate,
-    "issued_certificates" => IssuedCertificate
+    "issued_certificates" => IssuedCertificate,
+    "trial_users" => TrialUsers
   }
 
   @doc false
