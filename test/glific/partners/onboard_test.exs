@@ -35,49 +35,73 @@ defmodule Glific.OnboardTest do
     SeedsDev.seed_users()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
-    Tesla.Mock.mock_global(fn
-      %{method: :get, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{data: %{customer_name: "First"}}}}
+    Tesla.Mock.mock_global(fn env ->
+      case env do
+        %{method: :get, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{data: %{customer_name: "First"}}}}
 
-      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{
-        method: :post,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
-      } ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{
+          method: :post,
+          url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{
-        method: :put,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
-      } ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{
+          method: :put,
+          url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "partnerAppsList" => [%{"name" => "fake app name"}]
-            })
-        }
+        # Handle dynamic ERP endpoints
+        %{method: :put, url: url} when is_binary(url) ->
+          cond do
+            String.contains?(url, "/Customer/") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
-              "token" => "ks_test_token",
-              "status" => "success",
-              "templates" => [],
-              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
-            })
-        }
+            String.contains?(url, "/Address/") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+            true ->
+              {:ok, %Tesla.Env{status: 404, body: %{error: "Not found"}}}
+          end
+
+        %{method: :post, url: url} when is_binary(url) ->
+          cond do
+            String.contains?(url, "/Contact") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Contact created"}}}
+
+            String.contains?(url, "/Address") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Address created"}}}
+
+            true ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
+                    "token" => "ks_test_token",
+                    "status" => "success",
+                    "templates" => [],
+                    "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+                  })
+              }
+          end
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "partnerAppsList" => [%{"name" => "fake app name"}]
+              })
+          }
+      end
     end)
 
     :ok
