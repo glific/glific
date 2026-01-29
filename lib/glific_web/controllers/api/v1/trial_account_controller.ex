@@ -181,7 +181,9 @@ defmodule GlificWeb.API.V1.TrialAccountController do
 
     with {:ok, user} <- Users.create_user(user_params),
          {:ok, role} <-
-           Repo.fetch_by(Role, %{label: "Admin", organization_id: organization.id},
+           Repo.fetch_by(
+             Role,
+             %{label: "Admin", organization_id: organization.id},
              skip_organization_id: true
            ) do
       UserRole.create_user_role(%{
