@@ -4,8 +4,8 @@ defmodule Glific.WhatsappFormsResponses do
   """
 
   alias Glific.{
+    Messages.Message,
     Repo,
-    Templates.SessionTemplate,
     WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormResponse
   }
@@ -15,7 +15,8 @@ defmodule Glific.WhatsappFormsResponses do
   """
   @spec create_whatsapp_form_response(map()) :: {:ok, WhatsappFormResponse.t()} | {:error, any()}
   def create_whatsapp_form_response(attrs) do
-    with {:ok, whatsapp_form_id} <- get_wa_form_id(attrs.template_id),
+    with {:ok, whatsapp_form_id} <-
+           get_wa_form_id(attrs.context_id, attrs.organization_id),
          {:ok, parsed_timestamp} <- parse_timestamp(attrs.submitted_at),
          {:ok, decoded_response} <- Jason.decode(attrs.raw_response) do
       %{
@@ -29,10 +30,11 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  @spec get_wa_form_id(String.t()) :: {:ok, non_neg_integer()} | nil
-  defp get_wa_form_id(template_id) do
-    with template when not is_nil(template) <-
-           Repo.get_by(SessionTemplate, %{uuid: template_id}),
+  @spec get_wa_form_id(String.t(), non_neg_integer()) :: {:ok, non_neg_integer()}
+  defp get_wa_form_id(context_id, org_id) do
+    with {:ok, previous_message} <-
+           Repo.fetch_by(Message, %{bsp_message_id: context_id, organization_id: org_id}),
+         %{template: template} <- Repo.preload(previous_message, [:template]),
          [%{"flow_id" => flow_id}] <- template.buttons,
          wa_form when not is_nil(wa_form) <- Repo.get_by(WhatsappForm, %{meta_flow_id: flow_id}) do
       {:ok, wa_form.id}
