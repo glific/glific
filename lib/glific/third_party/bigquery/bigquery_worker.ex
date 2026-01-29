@@ -289,6 +289,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp add_organization_id(query, "trackers_all", _organization_id),
     do: query
 
+  defp add_organization_id(query, "trial_users", _organization_id),
+    do: query
+
   defp add_organization_id(query, _table, organization_id),
     do: query |> where([m], m.organization_id == ^organization_id)
 
@@ -1978,7 +1981,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp fetch_data(table, organization_id, attrs) do
     query = get_query(table, organization_id, attrs)
 
-    if table in ["stats", "stats_all", "trackers", "trackers_all"] do
+    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users"] do
       RepoReplica.all(query, skip_organization_id: true)
     else
       RepoReplica.all(query)
