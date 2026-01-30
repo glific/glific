@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.WhatsappFormsRevisionTypes do
     field(:definition, :json)
     field(:revision_number, :integer)
     field(:user_id, :id)
+    field(:is_current, :boolean)
     field(:inserted_at, :string)
     field(:updated_at, :string)
   end

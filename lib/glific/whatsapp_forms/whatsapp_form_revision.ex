@@ -31,6 +31,7 @@ defmodule Glific.WhatsappForms.WhatsappFormRevision do
   schema "whatsapp_form_revisions" do
     field(:revision_number, :integer)
     field(:definition, :map)
+    field(:is_current, :boolean, virtual: true, default: false)
 
     belongs_to(:whatsapp_form, WhatsappForm)
     belongs_to(:user, User)
