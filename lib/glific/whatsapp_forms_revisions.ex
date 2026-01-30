@@ -58,21 +58,15 @@ defmodule Glific.WhatsappFormsRevisions do
   """
   @spec list_revisions(non_neg_integer(), non_neg_integer()) :: [map()]
   def list_revisions(whatsapp_form_id, limit) do
-    current_revision_id =
-      WhatsappForms.WhatsappForm
-      |> where([f], f.id == ^whatsapp_form_id)
-      |> select([f], f.revision_id)
-      |> Repo.one()
-
     WhatsappFormRevision
     |> where([r], r.whatsapp_form_id == ^whatsapp_form_id)
-    |> order_by([r], desc: r.revision_number)
+    |> join(:inner, [r], f in WhatsappForms.WhatsappForm,
+      on: f.id == r.whatsapp_form_id
+    )
+    |> select_merge([r, f], %{is_current: r.id == f.revision_id})
+    |> order_by([r, f], [desc: r.id == f.revision_id, desc: r.revision_number])
     |> limit(^limit)
     |> Repo.all()
-    |> Enum.map(fn revision ->
-      Map.put(revision, :is_current, revision.id == current_revision_id)
-    end)
-    |> Enum.sort_by(& &1.is_current, :desc)
   end
 
   @doc """
