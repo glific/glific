@@ -28,6 +28,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Stats,
     Templates,
     Trackers,
+    TrialAccount.TrialWorker,
     Triggers
   }
 
@@ -129,6 +130,12 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"],
           only_recent: true
         )
+
+        TrialWorker.cleanup_expired_trials()
+        TrialWorker.send_day_3_followup_emails()
+        TrialWorker.send_day_6_followup_emails()
+        TrialWorker.send_day_12_followup_emails()
+        TrialWorker.send_day_14_followup_emails()
 
         Erase.perform_daily()
 

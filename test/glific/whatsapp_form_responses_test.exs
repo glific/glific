@@ -4,6 +4,7 @@ defmodule Glific.WhatsappFormResponsesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Messages,
     Partners,
     Repo,
     Seeds.SeedsDev,
@@ -46,7 +47,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_whatsapp_forms(organization)
 
-    {:ok, _temp} =
+    {:ok, temp} =
       Templates.create_session_template(%{
         label: "Whatsapp Form Template",
         type: :text,
@@ -65,6 +66,19 @@ defmodule Glific.WhatsappFormResponsesTest do
         ]
       })
 
+    {:ok, _temp_message} =
+      Messages.create_message(%{
+        body: "Hello| [Open] ",
+        flow: :outbound,
+        type: :text,
+        sender_id: 1,
+        receiver_id: 2,
+        contact_id: 1,
+        organization_id: organization.id,
+        bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+        template_id: temp.id
+      })
+
     %{organization_id: organization.id}
   end
 
@@ -79,7 +93,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     bsp_message_id: "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0EzRTUwQjRGQzg4NTgxOTBCODMA",
     sender_id: 2,
     receiver_id: 1,
-    context_id: "031U5mGKSgDZdXxdrtBEa2",
+    context_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
     template_id: "3982792f-a178-442d-be4b-3eadbb804726",
     raw_response:
       "{\"flow_token\":\"unused\",\"screen_1_Customer_service_2\":\"2_Average\",\"screen_0_Choose_one_0\":\"0_Yes\",\"screen_1_Delivery_and_setup_1\":\"0_Excellent\",\"screen_1_Purchase_experience_0\":\"1_Good\"}",
