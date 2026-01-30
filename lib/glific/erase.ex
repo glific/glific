@@ -466,35 +466,6 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  @spec clean_whatsapp_form_revisions() :: any()
-  defp clean_whatsapp_form_revisions do
-    """
-    DELETE FROM whatsapp_form_revisions wfr
-    USING (
-    SELECT id
-    FROM (
-    SELECT
-      wfr.id,
-      ROW_NUMBER() OVER (
-        PARTITION BY wfr.whatsapp_form_id
-        ORDER BY wfr.revision_number DESC NULLS LAST, wfr.id DESC
-      ) AS rn
-    FROM whatsapp_form_revisions AS wfr
-    ) AS ranked
-    WHERE rn > 10
-    ) AS old_revisions
-    WHERE wfr.id = old_revisions.id
-    AND NOT EXISTS (
-    SELECT 1
-    FROM whatsapp_forms wf
-    WHERE wf.revision_id = wfr.id
-    );
-
-
-    """
-    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
-  end
-
   @doc """
   Deletes all data associated with a trial organization except user records.
   """
