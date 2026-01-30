@@ -7,6 +7,7 @@ defmodule Glific.WhatsappFormsResponses do
   require Logger
 
   alias Glific.{
+    Messages.Message,
     Repo,
     Sheets,
     Sheets.GoogleSheets,
