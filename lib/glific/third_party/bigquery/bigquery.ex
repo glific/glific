@@ -43,6 +43,7 @@ defmodule Glific.BigQuery do
     Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
+    TrialUsers,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
     WhatsappForms.WhatsappForm,
@@ -89,7 +90,8 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => :whatsapp_form_schema,
     "whatsapp_forms_responses" => :whatsapp_form_response_schema,
     "certificate_templates" => :certificate_templates_schema,
-    "issued_certificates" => :issued_certificates_schema
+    "issued_certificates" => :issued_certificates_schema,
+    "trial_users" => :trial_user_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -233,7 +235,8 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => WhatsappForm,
     "whatsapp_forms_responses" => WhatsappFormResponse,
     "certificate_templates" => CertificateTemplate,
-    "issued_certificates" => IssuedCertificate
+    "issued_certificates" => IssuedCertificate,
+    "trial_users" => TrialUsers
   }
 
   @doc false
