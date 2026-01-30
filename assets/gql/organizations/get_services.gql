@@ -14,6 +14,7 @@ query organizationServices {
     kaapi_enabled
     ask_me_bot_enabled
     whatsapp_forms_enabled
+    unified_api_enabled
     errors {
       key
       message

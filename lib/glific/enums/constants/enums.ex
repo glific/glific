@@ -135,6 +135,9 @@ defmodule Glific.Enums.Constants do
         :survey,
         :other
       ]
+
+      @assistant_config_version_status_const [:in_progress, :ready, :failed]
+      @knowledge_base_status_const [:in_progress, :completed, :failed]
     end
   end
 end

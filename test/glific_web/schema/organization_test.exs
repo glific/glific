@@ -634,6 +634,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["contact_profile_enabled"] == false
     assert services["auto_translation_enabled"] == false
     assert services["whatsapp_group_enabled"] == false
+    assert services["whatsapp_forms_enabled"] == false
+    assert services["unified_api_enabled"] == false
     assert services["certificate_enabled"] == false
     assert services["kaapi_enabled"] == false
   end

@@ -146,3 +146,15 @@ defenum(
   :whatsapp_form_category_enum,
   Glific.Enums.whatsapp_form_category_const()
 )
+
+defenum(
+  Glific.Enums.AssistantConfigVersionStatus,
+  :assistant_config_version_status_enum,
+  Glific.Enums.assistant_config_version_status_const()
+)
+
+defenum(
+  Glific.Enums.KnowledgeBaseStatus,
+  :knowledge_base_status_enum,
+  Glific.Enums.knowledge_base_status_const()
+)
