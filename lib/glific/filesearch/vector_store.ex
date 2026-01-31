@@ -58,7 +58,9 @@ defmodule Glific.Filesearch.VectorStore do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:vector_store_id, :organization_id])
-    |> unique_constraint([:name, :organization_id])
+    |> unique_constraint([:name, :organization_id],
+      name: :openai_assistants_name_organization_id_index
+    )
   end
 
   @doc """
