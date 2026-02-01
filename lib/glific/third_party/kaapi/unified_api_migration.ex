@@ -24,7 +24,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   @doc """
   Migrate old vector stores to the new Unified API structure for maintaining versions
   """
-  @spec migrate_vector_stores :: :ok | {:error, String.t()}
+  @spec migrate_vector_stores :: %{success: non_neg_integer(), failure: non_neg_integer()}
   def migrate_vector_stores do
     used_vector_stores =
       from(v in VectorStore,
@@ -71,6 +71,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         update_knowledge_base_version(knowledge_base_version, vector_store)
 
       _ ->
+        # This can crash if the creation fails, but the chances of that is minimal,
+        # and its okay for the process to crash if the creation fails.
         {:ok, knowledge_base} = create_knowledge_base(vector_store)
         create_knowledge_base_version(knowledge_base, vector_store)
     end
