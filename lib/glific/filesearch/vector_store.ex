@@ -44,6 +44,9 @@ defmodule Glific.Filesearch.VectorStore do
     field :files, :map
     field :size, :integer
     field :status, :string
+
+    field :legacy, :boolean, virtual: true, default: true
+
     belongs_to :organization, Organization
     has_many :assistants, Assistant
     timestamps(type: :utc_datetime)
