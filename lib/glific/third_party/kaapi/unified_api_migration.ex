@@ -27,7 +27,12 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   @spec migrate_vector_stores :: :ok | {:error, String.t()}
   def migrate_vector_stores do
     used_vector_stores =
-      from(v in VectorStore, join: a in Assistant, on: v.id == a.vector_store_id) |> Repo.all()
+      from(v in VectorStore,
+        join: a in Assistant,
+        on: v.id == a.vector_store_id,
+        distinct: [v.id]
+      )
+      |> Repo.all()
 
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,

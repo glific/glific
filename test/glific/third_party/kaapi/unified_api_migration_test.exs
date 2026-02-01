@@ -77,6 +77,27 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
         assert_vector_migration(vector_store)
       end
     end
+
+    test "does not migrate same vector store multiple times if used by multiple assistants", %{
+      organization_id: organization_id
+    } do
+      vector_stores = create_vector_store_with_assistant(organization_id, 10)
+      vector_stores_count = Enum.count(vector_stores)
+
+      for vector_store <- vector_stores do
+        create_assistant(vector_store)
+      end
+
+      assert %{success: vector_stores_count, failure: 0} ==
+               UnifiedApiMigration.migrate_vector_stores()
+
+      assert Repo.aggregate(KnowledgeBase, :count, :id) == vector_stores_count
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == vector_stores_count
+
+      for vector_store <- vector_stores do
+        assert_vector_migration(vector_store)
+      end
+    end
   end
 
   # Helper functions
@@ -106,14 +127,18 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
   end
 
   defp create_vector_store(organization_id) do
-    Repo.insert(%VectorStore{
+    attrs = %{
       organization_id: organization_id,
       name: Faker.Person.first_name(),
       vector_store_id: Faker.UUID.v4(),
       files: %{"#{Faker.UUID.v4()}" => %{"file_name" => Faker.File.file_name()}},
       status: "in_progress",
       size: Faker.random_between(100, 1000)
-    })
+    }
+
+    %VectorStore{}
+    |> VectorStore.changeset(attrs)
+    |> Repo.insert()
   end
 
   defp update_vector_store(vector_store) do
@@ -129,14 +154,18 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
   end
 
   defp create_assistant(vector_store) do
-    Repo.insert(%Assistant{
+    attrs = %{
       assistant_id: Faker.UUID.v4(),
       name: Faker.Person.first_name(),
       organization_id: vector_store.organization_id,
       model: "gpt4o",
       temperature: Faker.random_uniform(),
       vector_store_id: vector_store.id
-    })
+    }
+
+    %Assistant{}
+    |> Assistant.changeset(attrs)
+    |> Repo.insert()
   end
 
   defp assert_vector_migration(vector_store) do
