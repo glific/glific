@@ -47,6 +47,10 @@ defmodule Glific.Filesearch.Assistant do
     field :model, :string
     field :instructions, :string
     field :temperature, :float
+
+    field :status, :string, virtual: true, default: nil
+    field :new_version_in_progress, :boolean, virtual: true, default: false
+
     belongs_to :organization, Organization
     belongs_to :vector_store, VectorStore
     timestamps(type: :utc_datetime)

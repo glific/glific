@@ -5,8 +5,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
   alias Glific.Filesearch.Assistant
 
   alias Glific.{
+    Assistants,
     Filesearch,
-    Filesearch.VectorStore
+    Repo
   }
 
   @doc """
@@ -79,8 +80,14 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def get_assistant(_, params, _) do
-    with {:ok, assistant} <- Assistant.get_assistant(params.id) do
-      {:ok, %{assistant: assistant}}
+    if unified_api_enabled?() do
+      with {:ok, assistant} <- Assistants.get_assistant(params.id) do
+        {:ok, %{assistant: assistant}}
+      end
+    else
+      with {:ok, assistant} <- Assistant.get_assistant(params.id) do
+        {:ok, %{assistant: assistant}}
+      end
     end
   end
 
@@ -90,7 +97,11 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def list_assistants(_, params, _) do
-    {:ok, Filesearch.list_assistants(params)}
+    if unified_api_enabled?() do
+      {:ok, Assistants.list_assistants(params)}
+    else
+      {:ok, Filesearch.list_assistants(params)}
+    end
   end
 
   @doc """
@@ -105,7 +116,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @doc """
   Return the details of the files in a VectorStore
   """
-  @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
+  @spec list_files(map(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
       %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
@@ -114,9 +125,27 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Resolves the vector_store field on an assistant.
+  Handles both unified API (map with __vector_store_data__) and legacy (Filesearch.Assistant struct) paths.
+  """
+  @spec resolve_vector_store(map(), map(), map()) :: {:ok, map() | nil}
+  def resolve_vector_store(%{__vector_store_data__: vs_data}, _args, _context) do
+    {:ok, vs_data}
+  end
+
+  def resolve_vector_store(%Glific.Filesearch.Assistant{} = assistant, _args, _context) do
+    assistant = Repo.preload(assistant, :vector_store)
+    {:ok, assistant.vector_store}
+  end
+
+  def resolve_vector_store(_parent, _args, _context) do
+    {:ok, nil}
+  end
+
+  @doc """
   Calculate the total file size linked to the VectorStore
   """
-  @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
+  @spec calculate_vector_store_size(map(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
     total_size = vector_store.size
     kb = 1_024
@@ -140,5 +169,11 @@ defmodule GlificWeb.Resolvers.Filesearch do
         to_string(total_size) <> " B"
     end
     |> then(&{:ok, &1})
+  end
+
+  @spec unified_api_enabled?() :: boolean()
+  defp unified_api_enabled? do
+    org_id = Repo.get_organization_id()
+    FunWithFlags.enabled?(:unified_api_enabled, for: %{organization_id: org_id})
   end
 end
