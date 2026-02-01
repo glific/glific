@@ -12,10 +12,10 @@ defmodule Glific.Assistants do
 
   ## Examples
 
-  iex> Glific.Assistants.create_knowledge_base("Test KB", 1)
+  iex> Glific.Assistants.create_knowledge_base(%{name: "Test KB", organization_id: 1})
   {:ok, %KnowledgeBase{name: "Test KB", organization_id: 1}}
 
-  iex> Glific.Assistants.create_knowledge_base("", 1)
+  iex> Glific.Assistants.create_knowledge_base(%{name: "", organization_id: 1})
   {:error, %Ecto.Changeset{}}
   """
   @spec create_knowledge_base(map()) :: {:ok, KnowledgeBase.t()} | {:error, Ecto.Changeset.t()}
