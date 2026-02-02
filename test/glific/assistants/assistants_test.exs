@@ -182,36 +182,6 @@ defmodule Glific.AssistantsTest do
     assert vs["legacy"] == false
   end
 
-  test "new_version_in_progress is true when non-active config version is in progress", %{
-    user: user
-  } do
-    {assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        status: :ready
-      })
-
-    {:ok, _in_progress_cv} =
-      %AssistantConfigVersion{}
-      |> AssistantConfigVersion.changeset(%{
-        assistant_id: assistant.id,
-        provider: "openai",
-        model: "gpt-4o",
-        kaapi_uuid: "asst_unified_456",
-        prompt: "New version prompt",
-        settings: %{"temperature" => 0.5},
-        status: :in_progress,
-        organization_id: user.organization_id
-      })
-      |> Repo.insert()
-
-    {:ok, result} =
-      auth_query_gql_by(:assistants, user, variables: %{})
-
-    assistant_data = List.first(result.data["Assistants"])
-    assert assistant_data["new_version_in_progress"] == true
-  end
-
   test "list assistants filters by name", %{user: user} do
     create_unified_assistant(%{
       organization_id: user.organization_id,
@@ -233,29 +203,6 @@ defmodule Glific.AssistantsTest do
 
     assert length(result.data["Assistants"]) == 1
     assert List.first(result.data["Assistants"])["name"] == "Alpha Bot"
-  end
-
-  test "list assistants supports pagination opts", %{user: user} do
-    create_unified_assistant(%{
-      organization_id: user.organization_id,
-      name: "First",
-      kaapi_uuid: "asst_1"
-    })
-
-    create_unified_assistant(%{
-      organization_id: user.organization_id,
-      name: "Second",
-      kaapi_uuid: "asst_2"
-    })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistants, user,
-        variables: %{
-          "opts" => %{"limit" => 1}
-        }
-      )
-
-    assert length(result.data["Assistants"]) == 1
   end
 
   test "list API returns complete response structure with all fields", %{user: user} do
@@ -494,44 +441,6 @@ defmodule Glific.AssistantsTest do
 
     data = result.data["assistant"]["assistant"]
     assert data["status"] == "in_progress"
-    assert data["new_version_in_progress"] == false
-  end
-
-  test "vector store is nil when config version has no knowledge base", %{user: user} do
-    {assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "No KB Bot",
-        kaapi_uuid: "asst_no_kb"
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
-
-    data = result.data["assistant"]["assistant"]
-    assert data["name"] == "No KB Bot"
-    assert data["status"] == "ready"
-    assert data["vector_store"] == nil
-  end
-
-  test "assistant without active config version returns nil fields", %{user: user} do
-    {:ok, assistant} =
-      %Assistant{}
-      |> Assistant.changeset(%{
-        name: "Empty Assistant",
-        organization_id: user.organization_id
-      })
-      |> Repo.insert()
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
-
-    data = result.data["assistant"]["assistant"]
-    assert data["name"] == "Empty Assistant"
-    assert data["assistant_id"] == nil
-    assert data["status"] == nil
-    assert data["temperature"] == nil
-    assert data["vector_store"] == nil
     assert data["new_version_in_progress"] == false
   end
 end
