@@ -53,7 +53,7 @@ defmodule Glific.Filesearch do
           {:ok, map()} | {:error, String.t()}
   def upload_file(params) do
     with {:ok, _} <- validate_file_format(params.media.filename),
-         {:ok, file} <- ApiClient.upload_file(params.media) |> IO.inspect(label: "upload file") do
+         {:ok, file} <- ApiClient.upload_file(params.media) do
       {:ok,
        %{
          file_id: file.id,
@@ -68,6 +68,7 @@ defmodule Glific.Filesearch do
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(params) do
     org_id = params[:organization_id]
+    prompt = params[:instructions] || "You are a helpful assistant"
 
     # We can pass vector_store_ids while creating assistant, if available
     vector_store_ids =
@@ -75,65 +76,55 @@ defmodule Glific.Filesearch do
            {:ok, vector_store} <- VectorStore.get_vector_store(vs_id) do
         [vector_store.vector_store_id]
       else
-        _ ->
-          []
+        _ -> []
       end
 
     attrs = %{
       temperature: params[:temperature] || 1,
       model: params[:model] || @default_model,
       organization_id: org_id,
-      instructions: params[:instructions] || "You are a helpful assistant",
+      instructions: prompt,
       name: generate_temp_name(params[:name], "Assistant"),
-      vector_store_ids: vector_store_ids
+      vector_store_ids: vector_store_ids,
+      knowledge_base_id: params[:knowledge_base_id]
     }
 
-    case Kaapi.create_assistant_config(attrs, org_id) do
-      {:ok, kaapi_response} ->
-        kaapi_uuid = kaapi_response.data.id
+    with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
+         kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
+         {:ok, assistant} <-
+           Glific.Assistants.Assistant.create_assistant(%{
+             name: attrs.name,
+             description: params[:description],
+             organization_id: org_id
+           }),
+         {:ok, {kb_version_id, status}} <- resolve_kb_status(params[:knowledge_base_id]),
+         {:ok, config_version} <-
+           AssistantConfigVersion.create_assistant_config_version(%{
+             assistant_id: assistant.id,
+             kaapi_uuid: kaapi_uuid,
+             prompt: prompt,
+             model: attrs.model,
+             provider: "kaapi",
+             settings: %{temperature: attrs.temperature},
+             status: status,
+             organization_id: org_id
+           }) do
+      if kb_version_id do
+        link_config_to_kb(config_version.id, kb_version_id, org_id)
+      end
 
-        {:ok, assistant} =
-          Glific.Assistants.Assistant.create_assistant(%{
-            name: attrs.name,
-            description: params[:description],
-            organization_id: org_id
-          })
+      Glific.Assistants.Assistant.update_assistant_active_config(
+        assistant.id,
+        config_version.id
+      )
 
-        {kb_version_id, status} =
-          unless is_nil(params[:knowledge_base_id]) do
-            kb = Repo.get!(KnowledgeBase, params[:knowledge_base_id])
-            kb_version = Repo.get_by!(KnowledgeBaseVersion, knowledge_base_id: kb.id)
-            status = if kb_version.status == :completed, do: :ready, else: :in_progress
-            {kb_version.id, status}
-          else
-            {nil, :ready}
-          end
-
-        {:ok, config_version} =
-          AssistantConfigVersion.create_assistant_config_version(%{
-            assistant_id: assistant.id,
-            kaapi_uuid: kaapi_uuid,
-            prompt: params[:instructions],
-            model: attrs.model,
-            provider: "kaapi",
-            settings: %{temperature: attrs.temperature},
-            status: status,
-            organization_id: org_id
-          })
-
-        if kb_version_id do
-          link_config_to_kb(config_version.id, kb_version_id, org_id)
-        end
-
-        Glific.Assistants.Assistant.update_assistant_active_config(
-          assistant.id,
-          config_version.id
-        )
-
-        {:ok, %{assistant: assistant, config_version: config_version}}
-
+      {:ok, %{assistant: assistant, config_version: config_version}}
+    else
       {:error, reason} ->
-        {:error, "Failed to create assistant config in Kaapi: #{inspect(reason)}"}
+        {:error, reason}
+
+      _ ->
+        {:error, "Something went wrong"}
     end
   end
 
@@ -204,8 +195,6 @@ defmodule Glific.Filesearch do
   """
   @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def update_assistant(id, attrs) do
-    IO.inspect(attrs)
-
     with {:ok, %Assistant{} = assistant} <- Assistant.get_assistant(id),
          {:ok, params} <- parse_assistant_attrs(assistant, attrs),
          {:ok, openai_response} <-
@@ -495,5 +484,21 @@ defmodule Glific.Filesearch do
         }
       ]
     )
+  end
+
+  @spec resolve_kb_status(nil | integer()) ::
+          {:ok, {nil | integer(), :ready | :in_progress}} | {:error, any()}
+  defp resolve_kb_status(nil), do: {:ok, {nil, :ready}}
+
+  defp resolve_kb_status(kb_id) do
+    kb = Repo.get!(KnowledgeBase, kb_id)
+    kb_version = Repo.get_by!(KnowledgeBaseVersion, knowledge_base_id: kb.id)
+
+    status =
+      if kb_version.status == :completed,
+        do: :ready,
+        else: :in_progress
+
+    {:ok, {kb_version.id, status}}
   end
 end

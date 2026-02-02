@@ -16,11 +16,11 @@ defmodule Glific.Assistants.Assistant do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          id: non_neg_integer(),
-          name: String.t(),
+          id: non_neg_integer() | nil,
+          name: String.t() | nil,
           description: String.t() | nil,
-          active_config_version_id: non_neg_integer(),
-          organization_id: non_neg_integer(),
+          active_config_version_id: non_neg_integer() | nil,
+          organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           active_config_version:
             AssistantConfigVersion.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -69,6 +69,11 @@ defmodule Glific.Assistants.Assistant do
     |> Repo.insert()
   end
 
+  @doc """
+  Updates active config
+  """
+  @spec update_assistant_active_config(non_neg_integer(), non_neg_integer()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def update_assistant_active_config(assistant_id, config_version_id) do
     assistant = Repo.get!(Assistant, assistant_id)
 

@@ -18,20 +18,20 @@ defmodule Glific.Assistants.AssistantConfigVersion do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          id: non_neg_integer(),
-          assistant_id: non_neg_integer(),
+          id: non_neg_integer() | nil,
+          assistant_id: non_neg_integer() | nil,
           assistant: Assistant.t() | Ecto.Association.NotLoaded.t() | nil,
-          version_number: non_neg_integer(),
+          version_number: non_neg_integer() | nil,
           description: String.t() | nil,
-          prompt: String.t(),
-          provider: String.t(),
-          model: String.t(),
+          prompt: String.t() | nil,
+          provider: String.t() | nil,
+          model: String.t() | nil,
           settings: map(),
-          kaapi_uuid: String.t(),
+          kaapi_uuid: String.t() | nil,
           status: AssistantConfigVersionStatus.t(),
           failure_reason: String.t() | nil,
           deleted_at: DateTime.t() | nil,
-          organization_id: non_neg_integer(),
+          organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           knowledge_base_versions: [KnowledgeBaseVersion.t()] | Ecto.Association.NotLoaded.t(),
           inserted_at: DateTime.t() | nil,
@@ -100,6 +100,8 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   @doc """
   Creates assistant config version record
   """
+  @spec create_assistant_config_version(map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
   def create_assistant_config_version(attrs) do
     %AssistantConfigVersion{}
     |> AssistantConfigVersion.changeset(attrs)

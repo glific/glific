@@ -4,6 +4,7 @@ defmodule Glific.FilesearchTest do
   """
 
   alias Glific.Filesearch.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
 
   alias Glific.{
     Filesearch,
@@ -119,65 +120,103 @@ defmodule Glific.FilesearchTest do
     enable_kaapi(%{organization_id: user.organization_id})
 
     Tesla.Mock.mock(fn
-      # Mock OpenAI assistants endpoint
-      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
+      %{method: :post, url: "This is not a secret/api/v1/configs/"} ->
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "asst_123",
-            name: "Assistant,-f11ead89",
-            instructions: "this is a story telling assistant that tells story",
-            model: "gpt-4o",
-            temperature: 1.0
-          }
-        }
-
-      # Mock Kaapi backend endpoint
-      %{method: :post, url: "This is not a secret/api/v1/assistant/"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
+            success: true,
             data: %{
-              id: 86,
+              # kaapi_uuid
+              id: "b6463f75-c09a-4534-aca3-b7ebdc99a8d3",
               name: "Assistant-f78f4392",
-              instructions: "you are a helpful asssitant",
-              organization_id: 1,
+              description: "",
+              version: %{
+                id: "3559ace4-bc5e-4889-960f-6d69c3acef3b",
+                version: 1,
+                config_blob: %{
+                  completion: %{
+                    params: %{
+                      instructions: "You are a helpful assistant",
+                      model: "gpt-4o-mini",
+                      temperature: 1.0
+                    },
+                    provider: "openai"
+                  }
+                }
+              },
               project_id: 1,
-              assistant_id: "asst_123",
-              vector_store_ids: [],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
+              inserted_at: "2026-02-03T00:00:00.000000",
+              updated_at: "2026-02-03T00:00:00.000000"
             },
-            metadata: nil,
-            success: true
+            error: nil,
+            metadata: nil
           }
         }
     end)
 
     result =
-      auth_query_gql_by(:create_assistant, user, variables: %{})
+      auth_query_gql_by(:create_assistant, user,
+        variables: %{
+          input: %{
+            name: "Test Assistant",
+            instructions: "You are helpful",
+            model: "gpt-4o-mini",
+            vector_store_id: [],
+            knowledge_base_id: []
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert "Assistant" <> _ = query_data.data["createAssistant"]["assistant"]["name"]
+
+    assistant =
+      Repo.get_by(Glific.Assistants.Assistant,
+        name: query_data.data["createAssistant"]["assistant"]["name"]
+      )
+
+    assert assistant != nil
+
+    config_version =
+      Repo.get_by(AssistantConfigVersion, assistant_id: assistant.id)
+
+    assert config_version != nil
+    assert config_version.kaapi_uuid == "b6463f75-c09a-4534-aca3-b7ebdc99a8d3"
+    assert config_version.status == :ready
+
+    assistant = Repo.preload(assistant, :active_config_version)
+    assert assistant.active_config_version_id == config_version.id
   end
 
   test "create assistant failed due to api failure", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
     Tesla.Mock.mock(fn
-      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
+      %{method: :post, url: "This is not a secret/api/v1/configs/"} ->
         %Tesla.Env{
           status: 500,
-          body: %{}
+          body: %{
+            success: false,
+            error: "Internal server error",
+            data: nil
+          }
         }
     end)
 
     result =
-      auth_query_gql_by(:create_assistant, user, variables: %{})
+      auth_query_gql_by(:create_assistant, user,
+        variables: %{
+          input: %{
+            name: "Test Assistant",
+            instructions: "You are helpful",
+            model: "gpt-4o-mini"
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert length(query_data.errors) == 1
+    assert hd(query_data.errors).message =~ "Failed to create assistant config in Kaapi"
   end
 
   test "delete_assistant/1, valid deletion", attrs do
