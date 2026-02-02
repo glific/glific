@@ -3,8 +3,8 @@ defmodule Glific.FilesearchTest do
   Tests for public filesearch APIs
   """
 
-  alias Glific.Filesearch.Assistant
   alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Filesearch.Assistant
 
   alias Glific.{
     Filesearch,
