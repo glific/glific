@@ -88,9 +88,6 @@ defmodule Glific.Assistants do
     }
   end
 
-  @spec build_vector_store_data(AssistantConfigVersion.t() | nil) :: map() | nil
-  defp build_vector_store_data(nil), do: nil
-
   defp build_vector_store_data(acv) do
     case acv.knowledge_base_versions do
       [kbv | _] ->
