@@ -3103,4 +3103,67 @@ defmodule Glific.BigQuery.Schema do
       }
     ]
   end
+
+  @doc """
+  Schema for Trial user table
+  """
+  @spec trial_user_schema() :: list(map())
+  def trial_user_schema do
+    [
+      %{
+        description: "Unique ID for the Trial User",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the trial user",
+        name: "username",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Email address of the trial user",
+        name: "email",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Phone number of the trial user",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Organization name of the trial user",
+        name: "organization_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "User entered the OTP or not",
+        name: "otp_entered",
+        type: "BOOLEAN",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
 end
