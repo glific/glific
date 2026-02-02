@@ -82,15 +82,6 @@ defmodule Glific.Filesearch do
          file_id: document_data[:id],
          filename: document_data[:fname] || params.media.filename
        }}
-    else
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      {:error, %{status: status, body: body}} ->
-        {:error, "Kaapi upload failed with status #{status}: #{inspect(body)}"}
-
-      {:error, reason} ->
-        {:error, "Kaapi upload failed: #{inspect(reason)}"}
     end
   end
 
