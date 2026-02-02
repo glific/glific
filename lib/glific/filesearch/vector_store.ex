@@ -33,6 +33,7 @@ defmodule Glific.Filesearch.VectorStore do
           files: map() | nil,
           size: integer() | nil,
           status: String.t() | nil,
+          legacy: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           assistants: [Assistant.t()] | Ecto.Association.NotLoaded.t() | nil

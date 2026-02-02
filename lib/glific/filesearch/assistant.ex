@@ -38,7 +38,9 @@ defmodule Glific.Filesearch.Assistant do
           vector_store: VectorStore.t() | Ecto.Association.NotLoaded.t() | nil,
           model: String.t() | nil,
           instructions: String.t() | nil,
-          temperature: float() | nil
+          temperature: float() | nil,
+          status: String.t() | nil,
+          new_version_in_progress: boolean()
         }
 
   schema "openai_assistants" do

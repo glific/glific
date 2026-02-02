@@ -66,7 +66,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     field(:settings, :map, default: %{})
     field(:status, AssistantConfigVersionStatus, default: :in_progress)
     field(:failure_reason, :string)
-    field(:deleted_at, :utc_datetime_usec)
+    field(:deleted_at, :utc_datetime)
 
     belongs_to(:assistant, Assistant)
     belongs_to(:organization, Organization)
