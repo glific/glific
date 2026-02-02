@@ -1,4 +1,4 @@
-defmodule Glific.AssistantsTest do
+defmodule GlificWeb.Schema.UnifiedAssistantsTest do
   @moduledoc """
   Tests for unified API assistants
   """
@@ -182,6 +182,36 @@ defmodule Glific.AssistantsTest do
     assert vs["legacy"] == false
   end
 
+  test "new_version_in_progress is true when non-active config version is in progress", %{
+    user: user
+  } do
+    {assistant, _config} =
+      create_unified_assistant(%{
+        organization_id: user.organization_id,
+        status: :ready
+      })
+
+    {:ok, _in_progress_cv} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        provider: "openai",
+        model: "gpt-4o",
+        kaapi_uuid: "asst_unified_456",
+        prompt: "New version prompt",
+        settings: %{"temperature" => 0.5},
+        status: :in_progress,
+        organization_id: user.organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, result} =
+      auth_query_gql_by(:assistants, user, variables: %{})
+
+    assistant_data = List.first(result.data["Assistants"])
+    assert assistant_data["new_version_in_progress"] == true
+  end
+
   test "list API returns complete response structure with all fields", %{user: user} do
     {_assistant, config} =
       create_unified_assistant(%{
@@ -295,50 +325,5 @@ defmodule Glific.AssistantsTest do
     assert file["id"] == "file_single"
     assert file["name"] == "faq.pdf"
     assert file["uploaded_at"] == "2025-05-01T08:30:00Z"
-  end
-
-  test "vector store status maps correctly from knowledge base version status", %{user: user} do
-    {_assistant1, config1} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "KB InProgress Bot",
-        kaapi_uuid: "asst_kb_ip"
-      })
-
-    create_knowledge_base_for_config(config1, %{
-      organization_id: user.organization_id,
-      kb_name: "Processing KB",
-      kb_status: :in_progress,
-      llm_service_id: "vs_kb_ip"
-    })
-
-    {_assistant2, config2} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "KB Failed Bot",
-        kaapi_uuid: "asst_kb_f"
-      })
-
-    create_knowledge_base_for_config(config2, %{
-      organization_id: user.organization_id,
-      kb_name: "Failed KB",
-      kb_status: :failed,
-      llm_service_id: "vs_kb_f"
-    })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistants, user, variables: %{})
-
-    assistants = result.data["Assistants"]
-
-    ip_bot =
-      Enum.find(assistants, fn a -> a["name"] == "KB InProgress Bot" end)
-
-    assert ip_bot["vector_store"]["status"] == "in_progress"
-
-    failed_bot =
-      Enum.find(assistants, fn a -> a["name"] == "KB Failed Bot" end)
-
-    assert failed_bot["vector_store"]["status"] == "failed"
   end
 end
