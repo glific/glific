@@ -18,9 +18,8 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
     drop_if_exists(table(:knowledge_base_versions))
     drop_if_exists(table(:knowledge_bases))
-    alter table(:assistants) do
-      remove :active_config_version_id
-    end
+
+    remove_active_config_version_from_assistants()
 
     drop_if_exists(table(:assistant_config_versions))
     drop_if_exists(table(:assistants))
@@ -252,6 +251,12 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     WHEN (NEW.version_number IS NULL)
     EXECUTE FUNCTION set_knowledge_base_version_number();
     """)
+  end
+
+  defp remove_active_config_version_from_assistants do
+    alter table(:assistants) do
+      remove :active_config_version_id
+    end
   end
 
   defp drop_triggers do
