@@ -8,6 +8,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   require Logger
 
   alias Glific.Assistants
+  alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Filesearch.Assistant
   alias Glific.Filesearch.VectorStore
