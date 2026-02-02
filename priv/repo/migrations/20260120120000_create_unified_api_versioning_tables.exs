@@ -8,13 +8,14 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create_knowledge_bases()
     create_knowledge_base_versions()
     create_assistant_config_version_knowledge_base_versions()
+    # Add the foreign key after both tables exist
+    add_active_config_version_to_assistants()
     create_triggers()
   end
 
   def down do
     drop_triggers()
     drop_if_exists(table(:assistant_config_version_knowledge_base_versions))
-
     drop_if_exists(table(:knowledge_base_versions))
     drop_if_exists(table(:knowledge_bases))
     drop_if_exists(table(:assistant_config_versions))
@@ -103,6 +104,16 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create unique_index(:assistant_config_versions, [:assistant_id, :version_number])
     create index(:assistant_config_versions, [:assistant_id])
     create index(:assistant_config_versions, [:organization_id])
+  end
+
+  defp add_active_config_version_to_assistants do
+    alter table(:assistants) do
+      add :active_config_version_id,
+          references(:assistant_config_versions, on_delete: :nilify_all),
+          comment: "Reference to the currently active configuration version"
+    end
+
+    create index(:assistants, [:active_config_version_id])
   end
 
   defp create_knowledge_bases do
@@ -217,7 +228,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     CREATE OR REPLACE FUNCTION set_knowledge_base_version_number()
     RETURNS trigger AS $$
     BEGIN
-      
+
       PERFORM id FROM knowledge_bases WHERE id = NEW.knowledge_base_id FOR UPDATE;
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number

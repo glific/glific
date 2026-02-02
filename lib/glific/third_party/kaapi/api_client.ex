@@ -95,6 +95,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create a config in Kaapi (replaces old assistant creation)
+  """
+  @spec create_config(map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_config(body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/configs/", body)
+    |> parse_kaapi_response()
+    |> IO.inspect()
+  end
+
+  @doc """
   Ingests an assistant into the Kaapi platform.
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
