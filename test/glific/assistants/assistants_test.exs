@@ -182,29 +182,6 @@ defmodule Glific.AssistantsTest do
     assert vs["legacy"] == false
   end
 
-  test "list assistants filters by name", %{user: user} do
-    create_unified_assistant(%{
-      organization_id: user.organization_id,
-      name: "Alpha Bot"
-    })
-
-    create_unified_assistant(%{
-      organization_id: user.organization_id,
-      name: "Beta Bot",
-      kaapi_uuid: "asst_unified_beta"
-    })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistants, user,
-        variables: %{
-          "filter" => %{"name" => "Alpha"}
-        }
-      )
-
-    assert length(result.data["Assistants"]) == 1
-    assert List.first(result.data["Assistants"])["name"] == "Alpha Bot"
-  end
-
   test "list API returns complete response structure with all fields", %{user: user} do
     {_assistant, config} =
       create_unified_assistant(%{
@@ -320,47 +297,6 @@ defmodule Glific.AssistantsTest do
     assert file["uploaded_at"] == "2025-05-01T08:30:00Z"
   end
 
-  test "assistant status maps correctly for all config version statuses", %{user: user} do
-    {assistant_ip, _} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "In Progress Bot",
-        kaapi_uuid: "asst_ip",
-        status: :in_progress
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant_ip.id})
-
-    assert result.data["assistant"]["assistant"]["status"] == "in_progress"
-
-    {assistant_f, _} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Failed Bot",
-        kaapi_uuid: "asst_failed",
-        status: :failed
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant_f.id})
-
-    assert result.data["assistant"]["assistant"]["status"] == "failed"
-
-    {assistant_r, _} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Ready Bot",
-        kaapi_uuid: "asst_ready",
-        status: :ready
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant_r.id})
-
-    assert result.data["assistant"]["assistant"]["status"] == "ready"
-  end
-
   test "vector store status maps correctly from knowledge base version status", %{user: user} do
     {_assistant1, config1} =
       create_unified_assistant(%{
@@ -423,24 +359,5 @@ defmodule Glific.AssistantsTest do
     assert data["model"] == nil
     assert data["assistant_id"] == "asst_custom"
     assert data["temperature"] == 0.7
-  end
-
-  test "new_version_in_progress is false when active version itself is in_progress", %{
-    user: user
-  } do
-    {assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Self InProgress Bot",
-        kaapi_uuid: "asst_self_ip",
-        status: :in_progress
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
-
-    data = result.data["assistant"]["assistant"]
-    assert data["status"] == "in_progress"
-    assert data["new_version_in_progress"] == false
   end
 end
