@@ -17,6 +17,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   @doc """
   Migrate assistant
   """
+  @spec migrate_assistants :: nil
   def migrate_assistants do
     # Implementation of the migration logic
   end
@@ -58,6 +59,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   end
 
   # Private
+  @spec migrate_vector_store(VectorStore.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
   defp migrate_vector_store(vector_store) do
     Repo.put_process_state(vector_store.organization_id)
 
@@ -78,6 +81,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     end
   end
 
+  @spec create_knowledge_base(VectorStore.t()) ::
+          {:ok, KnowledgeBase.t()} | {:error, Ecto.Changeset.t()}
   defp create_knowledge_base(vector_store) do
     attrs = %{name: vector_store.name, organization_id: vector_store.organization_id}
 
@@ -94,6 +99,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     end
   end
 
+  @spec create_knowledge_base_version(KnowledgeBase.t(), VectorStore.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
   defp create_knowledge_base_version(knowledge_base, vector_store) do
     attrs = %{
       knowledge_base_id: knowledge_base.id,
@@ -117,6 +124,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     end
   end
 
+  @spec update_knowledge_base_version(KnowledgeBaseVersion.t(), VectorStore.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
   defp update_knowledge_base_version(knowledge_base_version, vector_store) do
     attrs = %{files: vector_store.files, status: :completed, size: vector_store.size}
 
