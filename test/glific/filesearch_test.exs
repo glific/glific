@@ -72,25 +72,31 @@ defmodule Glific.FilesearchTest do
     :ok
   end
 
-  test "upload_file/1, uploads the file successfully", %{user: user} do
+  test "upload_file/1, uploads the file successfully to Kaapi", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
     Tesla.Mock.mock(fn
-      %{method: :post, url: "https://api.openai.com/v1/files"} ->
+      %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
         %Tesla.Env{
           status: 200,
           body: %{
-            id: "file-XNgygnDzO9cTs3YZLJWRscoq",
-            status: "processed",
-            filename: "sample.pdf",
-            bytes: 54_836,
-            object: "file",
-            created_at: 1_727_027_487,
-            purpose: "assistants",
-            status_details: nil
+            success: true,
+            data: %{
+              fname: "sample.pdf",
+              project_id: 9,
+              id: "d33539f6-2196-477c-a127-0f17f04ef133",
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
+              inserted_at: "2026-01-30T10:51:16.872363",
+              updated_at: "2026-01-30T10:51:16.872619",
+              transformation_job: nil
+            },
+            error: nil,
+            metadata: nil
           }
         }
     end)
 
-    assert {:ok, %{file_id: _, filename: _}} =
+    assert {:ok, %{file_id: file_id, filename: filename}} =
              Filesearch.upload_file(%{
                media: %Plug.Upload{
                  path:
@@ -100,6 +106,9 @@ defmodule Glific.FilesearchTest do
                },
                organization_id: user.organization_id
              })
+
+    assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
+    assert filename == "sample.pdf"
   end
 
   test "upload_file/1, uploads the file failed due to unsupported file", %{user: user} do
@@ -113,6 +122,78 @@ defmodule Glific.FilesearchTest do
                },
                organization_id: user.organization_id
              })
+  end
+
+  test "upload_file/1, uploads file to Kaapi with transformation parameters", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              fname: "sample.pdf",
+              project_id: 9,
+              id: "d33539f6-2196-477c-a127-0f17f04ef133",
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
+              inserted_at: "2026-01-30T10:51:16.872363",
+              updated_at: "2026-01-30T10:51:16.872619",
+              transformation_job: nil
+            },
+            error: nil,
+            metadata: nil
+          }
+        }
+    end)
+
+    assert {:ok, %{file_id: file_id, filename: filename}} =
+             Filesearch.upload_file(%{
+               media: %Plug.Upload{
+                 path:
+                   "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+                 content_type: "application/pdf",
+                 filename: "sample.pdf"
+               },
+               organization_id: user.organization_id,
+               target_format: "pdf",
+               transformer: "ocr",
+               callback_url: "https://example.com/webhook"
+             })
+
+    assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
+    assert filename == "sample.pdf"
+  end
+
+  test "upload_file/1, handles Kaapi upload error gracefully", %{user: user} do
+    enable_kaapi(%{organization_id: user.organization_id})
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+        %Tesla.Env{
+          status: 500,
+          body: %{
+            success: false,
+            error: "Internal server error",
+            metadata: nil
+          }
+        }
+    end)
+
+    assert {:error, error_message} =
+             Filesearch.upload_file(%{
+               media: %Plug.Upload{
+                 path:
+                   "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+                 content_type: "application/pdf",
+                 filename: "sample.pdf"
+               },
+               organization_id: user.organization_id
+             })
+
+    assert is_binary(error_message)
+    assert error_message =~ "status 500"
   end
 
   test "valid create assistant", %{user: user} do

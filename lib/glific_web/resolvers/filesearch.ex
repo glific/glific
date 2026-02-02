@@ -10,7 +10,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   }
 
   @doc """
-  Uploads a file to openAI
+  Uploads a file to Kaapi documents API
 
   Returns the File details
   """

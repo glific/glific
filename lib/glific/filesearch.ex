@@ -44,18 +44,53 @@ defmodule Glific.Filesearch do
   ]
 
   @doc """
-  Upload file to openAI
+  Upload file to Kaapi documents API
+
+  ## Parameters
+    - params: Map containing:
+      - media: Required. Map with path and filename
+      - organization_id: Optional. Defaults to current org from Repo
+      - target_format: Optional. Desired output format (e.g., pdf, docx, txt)
+      - transformer: Optional. Name of transformer to apply
+      - callback_url: Optional. URL to call for transformation status updates
+
+  ## Returns
+    - {:ok, %{file_id: string, filename: string}}
+    - {:error, reason}
   """
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params) do
+    organization_id = params[:organization_id] || Repo.get_organization_id()
+
+    document_params = %{
+      path: params.media.path,
+      filename: params.media.filename,
+      target_format: params[:target_format],
+      transformer: params[:transformer],
+      callback_url: params[:callback_url]
+    }
+
     with {:ok, _} <- validate_file_format(params.media.filename),
-         {:ok, file} <- ApiClient.upload_file(params.media) do
+         {:ok, response} <- Kaapi.upload_document(document_params, organization_id) do
+      # Map Kaapi response to the expected format (file_id and filename)
+      # Kaapi returns: {success: true, data: {id, fname, signed_url, ...}}
+      document_data = response[:data] || response
+
       {:ok,
        %{
-         file_id: file.id,
-         filename: file.filename
+         file_id: document_data[:id],
+         filename: document_data[:fname] || params.media.filename
        }}
+    else
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+
+      {:error, %{status: status, body: body}} ->
+        {:error, "Kaapi upload failed with status #{status}: #{inspect(body)}"}
+
+      {:error, reason} ->
+        {:error, "Kaapi upload failed: #{inspect(reason)}"}
     end
   end
 

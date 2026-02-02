@@ -177,6 +177,33 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Upload a document to Kaapi documents API, send error to Appsignal if failed.
+  """
+  @spec upload_document(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def upload_document(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.upload_document(params, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI document upload successful for org: #{organization_id}, file: #{params.filename}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi document upload failed for org_id=#{organization_id}, filename=#{params.filename}, reason=#{inspect(reason)}"
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do
