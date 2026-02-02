@@ -103,7 +103,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> client()
     |> Tesla.post("/api/v1/configs/", body)
     |> parse_kaapi_response()
-    |> IO.inspect()
   end
 
   @doc """

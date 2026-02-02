@@ -83,9 +83,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_assistant_config(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_assistant_config(params, organization_id) do
-    IO.inspect(params)
-    # Build config blob
-    config_blob = build_config_blob(params, params.vector_store_ids) |> IO.inspect()
+    config_blob = build_config_blob(params, params.vector_store_ids)
 
     body = %{
       name: params.name,
@@ -179,7 +177,8 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  defp build_config_blob(params, vector_store_ids \\ []) do
+  @spec build_config_blob(map(), list(String.t())) :: map()
+  defp build_config_blob(params, vector_store_ids) do
     completion_params = %{
       model: params.model || "gpt-4o-mini",
       instructions: params.instructions || params.prompt || "You are a helpful assistant",

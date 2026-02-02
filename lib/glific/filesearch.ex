@@ -10,7 +10,10 @@ defmodule Glific.Filesearch do
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
     Repo,
-    ThirdParty.Kaapi
+    ThirdParty.Kaapi,
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion
   }
 
   require Logger
@@ -64,7 +67,7 @@ defmodule Glific.Filesearch do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(params) do
-    params = Map.put(params, :name, generate_temp_name(params[:name], "Assistant"))
+    org_id = params[:organization_id]
 
     # We can pass vector_store_ids while creating assistant, if available
     vector_store_ids =
@@ -76,29 +79,62 @@ defmodule Glific.Filesearch do
           []
       end
 
-    attrs =
-      %{
-        temperature: 1,
-        model: @default_model,
-        organization_id: Repo.get_organization_id(),
-        vector_store_ids: vector_store_ids,
-        instructions: "You are a helpful assistant"
-      }
-      |> Map.merge(params)
+    attrs = %{
+      temperature: params[:temperature] || 1,
+      model: params[:model] || @default_model,
+      organization_id: org_id,
+      instructions: params[:instructions] || "You are a helpful assistant",
+      name: generate_temp_name(params[:name], "Assistant"),
+      vector_store_ids: vector_store_ids
+    }
 
-    # with {:ok, assistant} <-
-    #        Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
-    #   # calling kaapi right after open ai so that the latest details of the assistant can be synced with kaapi
-    Kaapi.create_assistant_config(attrs, params.organization_id)
-    Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id))
+    case Kaapi.create_assistant_config(attrs, org_id) do
+      {:ok, kaapi_response} ->
+        kaapi_uuid = kaapi_response.data.id
 
-    # {:ok, %{assistant: assistant}}
-    # else
-    #   {:error, %Ecto.Changeset{} = err} ->
-    #     {:error, err}
+        {:ok, assistant} =
+          Glific.Assistants.Assistant.create_assistant(%{
+            name: attrs.name,
+            description: params[:description],
+            organization_id: org_id
+          })
 
-    #   {:error, reason} ->
-    #     {:error, "Assistant ID creation failed due to #{reason}"}
+        {kb_version_id, status} =
+          unless is_nil(params[:knowledge_base_id]) do
+            kb = Repo.get!(KnowledgeBase, params[:knowledge_base_id])
+            kb_version = Repo.get_by!(KnowledgeBaseVersion, knowledge_base_id: kb.id)
+            status = if kb_version.status == :completed, do: :ready, else: :in_progress
+            {kb_version.id, status}
+          else
+            {nil, :ready}
+          end
+
+        {:ok, config_version} =
+          AssistantConfigVersion.create_assistant_config_version(%{
+            assistant_id: assistant.id,
+            kaapi_uuid: kaapi_uuid,
+            prompt: params[:instructions],
+            model: attrs.model,
+            provider: "kaapi",
+            settings: %{temperature: attrs.temperature},
+            status: status,
+            organization_id: org_id
+          })
+
+        if kb_version_id do
+          link_config_to_kb(config_version.id, kb_version_id, org_id)
+        end
+
+        Glific.Assistants.Assistant.update_assistant_active_config(
+          assistant.id,
+          config_version.id
+        )
+
+        {:ok, %{assistant: assistant, config_version: config_version}}
+
+      {:error, reason} ->
+        {:error, "Failed to create assistant config in Kaapi: #{inspect(reason)}"}
+    end
   end
 
   @doc """
@@ -444,279 +480,20 @@ defmodule Glific.Filesearch do
     end
   end
 
-  # @doc """
-  # Creates a complete assistant with config and knowledge base
-  # Now called only when user clicks "Save"
-  # """
-  # @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
-  # def create_assistant(params) do
-  #   # params contains:
-  #   # - name, description
-  #   # - prompt (instructions)
-  #   # - model, temperature, provider
-  #   # - document_ids (if files uploaded)
-
-  #   org_id = Repo.get_organization_id()
-
-  #   Repo.transaction(fn ->
-  #     # STEP 1: Create assistant record (just metadata, no config yet)
-  #     {:ok, assistant} =
-  #       create_base_assistant(%{
-  #         name: params.name,
-  #         description: params.description,
-  #         organization_id: org_id
-  #       })
-
-  #     # STEP 2: Create knowledge base if files uploaded
-  #     {kb_version_id, kb_status} =
-  #       if params[:document_ids] && length(params[:document_ids]) > 0 do
-  #         create_knowledge_base_for_assistant(params.document_ids, org_id)
-  #       else
-  #         # No KB, so config is ready immediately
-  #         {nil, :ready}
-  #       end
-
-  #     # STEP 3: Create config in Kaapi
-  #     config_blob =
-  #       build_config_blob(%{
-  #         model: params.model,
-  #         instructions: params.prompt,
-  #         temperature: params[:temperature] || 1.0,
-  #         provider: params[:provider] || "openai",
-  #         # Empty for now, will update after callback
-  #         knowledge_base_ids: []
-  #       })
-
-  #     {:ok, kaapi_response} =
-  #       KaapiClient.create_config(%{
-  #         name: params.name,
-  #         description: params.description,
-  #         config_blob: config_blob
-  #       })
-
-  #     # STEP 4: Create config version in Glific
-  #     {:ok, config_version} =
-  #       create_assistant_config_version(%{
-  #         assistant_id: assistant.id,
-  #         kaapi_uuid: kaapi_response["data"]["id"],
-  #         prompt: params.prompt,
-  #         model: params.model,
-  #         provider: params[:provider] || "openai",
-  #         temperature: params[:temperature] || 1.0,
-  #         settings: params[:settings] || %{},
-  #         # in_progress if KB, ready if no KB
-  #         status: kb_status,
-  #         organization_id: org_id
-  #       })
-
-  #     # STEP 5: Link config to KB if exists
-  #     if kb_version_id do
-  #       link_config_to_knowledge_base(config_version.id, kb_version_id, org_id)
-  #     end
-
-  #     # STEP 6: Set as active config
-  #     update_assistant_active_config(assistant.id, config_version.id)
-
-  #     # STEP 7: Return complete assistant
-  #     assistant = Repo.preload(assistant, [:active_config_version])
-
-  #     {:ok,
-  #      %{
-  #        assistant: assistant,
-  #        # Let frontend know if waiting for callback
-  #        status: kb_status,
-  #        message:
-  #          if(kb_status == :in_progress,
-  #            do: "Assistant created. Knowledge base is being built...",
-  #            else: "Assistant created successfully"
-  #          )
-  #      }}
-  #   end)
-  #   |> case do
-  #     {:ok, result} -> {:ok, result}
-  #     {:error, reason} -> {:error, reason}
-  #   end
-  # end
-
-  # # ============================================
-  # # HELPER FUNCTIONS
-  # # ============================================
-
-  # defp create_base_assistant(attrs) do
-  #   %Assistant{}
-  #   |> Assistant.changeset(attrs)
-  #   |> Repo.insert()
-  # end
-
-  # defp create_knowledge_base_for_assistant(document_ids, org_id) do
-  #   # Call Kaapi collections API
-  #   {:ok, collection_response} =
-  #     KaapiClient.create_collection(%{
-  #       documents: document_ids,
-  #       provider: "openai",
-  #       callback_url: build_callback_url()
-  #     })
-
-  #   job_id = collection_response["data"]["job_id"]
-
-  #   # Create KB record
-  #   {:ok, kb} =
-  #     %KnowledgeBase{}
-  #     |> KnowledgeBase.changeset(%{
-  #       name: "Knowledge Base",
-  #       organization_id: org_id
-  #     })
-  #     |> Repo.insert()
-
-  #   # Create KB version
-  #   {:ok, kb_version} =
-  #     %KnowledgeBaseVersion{}
-  #     |> KnowledgeBaseVersion.changeset(%{
-  #       knowledge_base_id: kb.id,
-  #       kaapi_job_id: job_id,
-  #       files: Enum.into(document_ids, %{}, fn id -> {id, %{}} end),
-  #       status: :in_progress,
-  #       organization_id: org_id
-  #     })
-  #     |> Repo.insert()
-
-  #   {kb_version.id, :in_progress}
-  # end
-
-  # defp create_assistant_config_version(attrs) do
-  #   %AssistantConfigVersion{}
-  #   |> AssistantConfigVersion.changeset(attrs)
-  #   |> Repo.insert()
-  # end
-
-  # defp link_config_to_knowledge_base(config_version_id, kb_version_id, org_id) do
-  #   %AssistantConfigVersionKnowledgeBaseVersion{}
-  #   |> Ecto.Changeset.change(%{
-  #     assistant_config_version_id: config_version_id,
-  #     knowledge_base_version_id: kb_version_id,
-  #     organization_id: org_id
-  #   })
-  #   |> Repo.insert()
-  # end
-
-  # defp update_assistant_active_config(assistant_id, config_version_id) do
-  #   assistant = Repo.get!(Assistant, assistant_id)
-
-  #   assistant
-  #   |> Ecto.Changeset.change(%{active_config_version_id: config_version_id})
-  #   |> Repo.update()
-  # end
-
-  # defp build_config_blob(params) do
-  #   %{
-  #     completion: %{
-  #       provider: params.provider,
-  #       params: %{
-  #         model: params.model,
-  #         instructions: params.instructions,
-  #         temperature: params.temperature,
-  #         knowledge_base_ids: params.knowledge_base_ids
-  #       }
-  #     }
-  #   }
-  # end
-
-  # defp build_callback_url do
-  #   base_url = Application.get_env(:glific, :base_url)
-  #   "#{base_url}/api/v1/kaapi/collection-callback"
-  # end
-
-  # # ============================================
-  # # CALLBACK HANDLER
-  # # ============================================
-
-  # @doc """
-  # Handle collection callback from Kaapi
-  # Updates KB with vector store ID and marks config as ready
-  # """
-  # def handle_collection_callback(params) do
-  #   job_id = params["job_id"]
-  #   status = params["status"]
-
-  #   case status do
-  #     "SUCCESSFUL" ->
-  #       llm_service_id = get_in(params, ["collection", "llm_service_id"])
-
-  #       # Find KB version
-  #       kb_version = Repo.get_by(KnowledgeBaseVersion, kaapi_job_id: job_id)
-
-  #       # Update KB version
-  #       kb_version
-  #       |> KnowledgeBaseVersion.changeset(%{
-  #         llm_service_id: llm_service_id,
-  #         status: :completed
-  #       })
-  #       |> Repo.update()
-
-  #       # Find and update config version
-  #       config_version = get_config_for_kb_version(kb_version.id)
-
-  #       config_version
-  #       |> AssistantConfigVersion.changeset(%{status: :ready})
-  #       |> Repo.update()
-
-  #       # Update Kaapi config with vector store ID
-  #       KaapiClient.update_config_version(
-  #         config_version.kaapi_uuid,
-  #         %{
-  #           config_blob: %{
-  #             completion: %{
-  #               provider: config_version.provider,
-  #               params: %{
-  #                 model: config_version.model,
-  #                 instructions: config_version.prompt,
-  #                 temperature: config_version.settings["temperature"],
-  #                 knowledge_base_ids: [llm_service_id]
-  #               }
-  #             }
-  #           }
-  #         }
-  #       )
-
-  #       # Send notification
-  #       send_success_notification(config_version.assistant_id)
-
-  #     "FAILED" ->
-  #       error_message = params["error_message"]
-
-  #       # Mark KB as failed
-  #       kb_version = Repo.get_by(KnowledgeBaseVersion, kaapi_job_id: job_id)
-
-  #       kb_version
-  #       |> KnowledgeBaseVersion.changeset(%{
-  #         status: :failed,
-  #         failure_reason: error_message
-  #       })
-  #       |> Repo.update()
-
-  #       # Mark config as failed
-  #       config_version = get_config_for_kb_version(kb_version.id)
-
-  #       config_version
-  #       |> AssistantConfigVersion.changeset(%{
-  #         status: :failed,
-  #         failure_reason: error_message
-  #       })
-  #       |> Repo.update()
-
-  #       # Send notification
-  #       send_failure_notification(config_version.assistant_id, error_message)
-  #   end
-  # end
-
-  # defp get_config_for_kb_version(kb_version_id) do
-  #   query =
-  #     from cv in AssistantConfigVersion,
-  #       join: join in AssistantConfigVersionKnowledgeBaseVersion,
-  #       on: join.assistant_config_version_id == cv.id,
-  #       where: join.knowledge_base_version_id == ^kb_version_id,
-  #       limit: 1
-
-  #   Repo.one(query)
-  # end
+  @spec link_config_to_kb(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {non_neg_integer(), nil | [term()]}
+  defp link_config_to_kb(config_version_id, kb_version_id, org_id) do
+    Repo.insert_all(
+      "assistant_config_version_knowledge_base_versions",
+      [
+        %{
+          assistant_config_version_id: config_version_id,
+          knowledge_base_version_id: kb_version_id,
+          organization_id: org_id,
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        }
+      ]
+    )
+  end
 end
