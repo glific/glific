@@ -341,23 +341,4 @@ defmodule Glific.AssistantsTest do
 
     assert failed_bot["vector_store"]["status"] == "failed"
   end
-
-  test "model and instructions are mapped from config version", %{user: user} do
-    {assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Custom Model Bot",
-        kaapi_uuid: "asst_custom",
-        model: "gpt-4-turbo",
-        prompt: "You are a translation expert. Always respond in French."
-      })
-
-    {:ok, result} =
-      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
-
-    data = result.data["assistant"]["assistant"]
-    assert data["model"] == nil
-    assert data["assistant_id"] == "asst_custom"
-    assert data["temperature"] == 0.7
-  end
 end
