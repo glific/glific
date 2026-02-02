@@ -92,7 +92,6 @@ defmodule Glific.AssistantsTest do
       })
       |> Repo.insert()
 
-    # Link config version to knowledge base version via join table
     Repo.insert_all("assistant_config_version_knowledge_base_versions", [
       %{
         assistant_config_version_id: config_version.id,
@@ -192,7 +191,6 @@ defmodule Glific.AssistantsTest do
         status: :ready
       })
 
-    # Create another config version in progress (not the active one)
     {:ok, _in_progress_cv} =
       %AssistantConfigVersion{}
       |> AssistantConfigVersion.changeset(%{
@@ -292,7 +290,6 @@ defmodule Glific.AssistantsTest do
 
     assistant = List.first(result.data["Assistants"])
 
-    # Top-level assistant fields
     assert is_binary(assistant["id"])
     assert assistant["name"] == "Full Response Bot"
     assert assistant["assistant_id"] == "asst_full_resp"
@@ -302,7 +299,6 @@ defmodule Glific.AssistantsTest do
     assert is_binary(assistant["inserted_at"])
     assert is_binary(assistant["updated_at"])
 
-    # Vector store fields
     vs = assistant["vector_store"]
     assert vs != nil
     assert is_binary(vs["id"])
@@ -311,7 +307,6 @@ defmodule Glific.AssistantsTest do
     assert vs["legacy"] == false
     assert vs["status"] == "completed"
 
-    # Files within vector store
     assert length(vs["files"]) == 2
     file_names = Enum.map(vs["files"], & &1["name"]) |> Enum.sort()
     assert file_names == ["guide.pdf", "notes.txt"]
@@ -354,7 +349,6 @@ defmodule Glific.AssistantsTest do
 
     data = result.data["assistant"]["assistant"]
 
-    # All assistant fields present and correct
     assert is_binary(data["id"])
     assert data["name"] == "Show Bot"
     assert data["assistant_id"] == "asst_show_bot"
@@ -364,7 +358,6 @@ defmodule Glific.AssistantsTest do
     assert is_binary(data["inserted_at"])
     assert is_binary(data["updated_at"])
 
-    # Vector store fully populated
     vs = data["vector_store"]
     assert vs != nil
     assert is_binary(vs["id"])
@@ -373,7 +366,6 @@ defmodule Glific.AssistantsTest do
     assert vs["legacy"] == false
     assert vs["status"] == "completed"
 
-    # Single file
     assert length(vs["files"]) == 1
     file = List.first(vs["files"])
     assert file["id"] == "file_single"
@@ -382,7 +374,6 @@ defmodule Glific.AssistantsTest do
   end
 
   test "assistant status maps correctly for all config version statuses", %{user: user} do
-    # Test :in_progress status
     {assistant_ip, _} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
@@ -396,7 +387,6 @@ defmodule Glific.AssistantsTest do
 
     assert result.data["assistant"]["assistant"]["status"] == "in_progress"
 
-    # Test :failed status
     {assistant_f, _} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
@@ -410,7 +400,6 @@ defmodule Glific.AssistantsTest do
 
     assert result.data["assistant"]["assistant"]["status"] == "failed"
 
-    # Test :ready status
     {assistant_r, _} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
@@ -426,7 +415,6 @@ defmodule Glific.AssistantsTest do
   end
 
   test "vector store status maps correctly from knowledge base version status", %{user: user} do
-    # Test :in_progress KB status
     {_assistant1, config1} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
@@ -441,7 +429,6 @@ defmodule Glific.AssistantsTest do
       llm_service_id: "vs_kb_ip"
     })
 
-    # Test :failed KB status
     {_assistant2, config2} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
@@ -494,8 +481,6 @@ defmodule Glific.AssistantsTest do
   test "new_version_in_progress is false when active version itself is in_progress", %{
     user: user
   } do
-    # If the ONLY config version is the active one and it's in_progress,
-    # new_version_in_progress should be false (there's no OTHER version in progress)
     {assistant, _config} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
