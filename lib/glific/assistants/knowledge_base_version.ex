@@ -20,7 +20,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
           knowledge_base_id: non_neg_integer() | nil,
           knowledge_base: KnowledgeBase.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: non_neg_integer() | nil,
-          files: map(),
+          files: map() | nil,
           size: non_neg_integer() | nil,
           status: KnowledgeBaseStatus.t(),
           organization_id: non_neg_integer() | nil,
