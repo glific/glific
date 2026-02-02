@@ -7,6 +7,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   alias Glific.{
     Assistants,
     Filesearch,
+    Filesearch.VectorStore,
     Repo
   }
 
@@ -116,7 +117,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @doc """
   Return the details of the files in a VectorStore
   """
-  @spec list_files(map(), map(), map()) :: {:ok, list()}
+  @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
       %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
@@ -138,14 +139,10 @@ defmodule GlificWeb.Resolvers.Filesearch do
     {:ok, assistant.vector_store}
   end
 
-  def resolve_vector_store(_parent, _args, _context) do
-    {:ok, nil}
-  end
-
   @doc """
   Calculate the total file size linked to the VectorStore
   """
-  @spec calculate_vector_store_size(map(), map(), map()) :: {:ok, String.t()}
+  @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
     total_size = vector_store.size
     kb = 1_024
