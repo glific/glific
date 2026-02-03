@@ -98,7 +98,7 @@ defmodule Glific.Assistants do
           files: kbv.files || %{},
           size: kbv.size || 0,
           status: to_string(kbv.status),
-          legacy: false,
+          legacy: is_nil(kbv.kaapi_job_id),
           inserted_at: kbv.inserted_at,
           updated_at: kbv.updated_at
         }
