@@ -26,12 +26,31 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     "assets/gql/filesearch/assistant_by_id.gql"
   )
 
-  setup do
+  setup %{user: user} do
     FunWithFlags.enable(:unified_api_enabled,
       for_actor: %{organization_id: 1}
     )
 
-    :ok
+    {assistant, config} = create_unified_assistant(%{organization_id: user.organization_id})
+
+    files = %{
+      "file_1" => %{"filename" => "test.pdf", "uploaded_at" => "2025-01-01T00:00:00Z"}
+    }
+
+    {kb, kbv} =
+      create_knowledge_base_for_config(config, %{
+        organization_id: user.organization_id,
+        kb_name: "Test KB",
+        files: files,
+        llm_service_id: "vs_test_123"
+      })
+
+    %{
+      assistant: assistant,
+      config: config,
+      kb: kb,
+      kbv: kbv
+    }
   end
 
   defp create_unified_assistant(attrs) do
@@ -106,8 +125,6 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
   end
 
   test "list assistants with unified API returns transformed data", %{user: user} do
-    {_assistant, _config} = create_unified_assistant(%{organization_id: user.organization_id})
-
     {:ok, result} =
       auth_query_gql_by(:assistants, user, variables: %{})
 
@@ -123,57 +140,27 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     assert assistant["new_version_in_progress"] == false
   end
 
-  test "list assistants with unified API includes vector store from knowledge base", %{
-    user: user
-  } do
-    {_assistant, config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "KB Test Bot",
-        kaapi_uuid: "asst_kb_test"
-      })
-
-    files = %{
-      "file_1" => %{"filename" => "test.pdf", "uploaded_at" => "2025-01-01T00:00:00Z"}
-    }
-
-    {_kb, _kbv} =
-      create_knowledge_base_for_config(config, %{
-        organization_id: user.organization_id,
-        kb_name: "My KB",
-        files: files,
-        llm_service_id: "vs_kb_789"
-      })
-
+  test "list assistants with unified API includes vector store from knowledge base", %{user: user} do
     {:ok, result} =
       auth_query_gql_by(:assistants, user, variables: %{})
 
-    assistant = Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_kb_test" end)
+    assistant =
+      Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_unified_123" end)
+
     assert assistant != nil
 
     vs = assistant["vector_store"]
     assert vs != nil
-    assert vs["name"] == "My KB"
-    assert vs["vector_store_id"] == "vs_kb_789"
+    assert vs["name"] == "Test KB"
+    assert vs["vector_store_id"] == "vs_test_123"
     assert vs["legacy"] == false
     assert length(vs["files"]) == 1
   end
 
-  test "get assistant with unified API returns transformed data", %{user: user} do
-    {assistant, config} = create_unified_assistant(%{organization_id: user.organization_id})
-
-    files = %{
-      "file_1" => %{"filename" => "doc.pdf", "uploaded_at" => "2025-06-01T00:00:00Z"}
-    }
-
-    {_kb, _kbv} =
-      create_knowledge_base_for_config(config, %{
-        organization_id: user.organization_id,
-        kb_name: "Doc KB",
-        files: files,
-        llm_service_id: "vs_doc_123"
-      })
-
+  test "get assistant with unified API returns transformed data", %{
+    user: user,
+    assistant: assistant
+  } do
     {:ok, result} =
       auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
 
@@ -184,29 +171,22 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     assert data["new_version_in_progress"] == false
 
     vs = data["vector_store"]
-    assert vs["name"] == "Doc KB"
-    assert vs["vector_store_id"] == "vs_doc_123"
+    assert vs["name"] == "Test KB"
+    assert vs["vector_store_id"] == "vs_test_123"
     assert vs["legacy"] == false
   end
 
   test "new_version_in_progress is true when non-active config version is in progress", %{
-    user: user
+    user: user,
+    assistant: assistant
   } do
-    {assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Version Progress Bot",
-        kaapi_uuid: "asst_version_progress",
-        status: :ready
-      })
-
     {:ok, _in_progress_cv} =
       %AssistantConfigVersion{}
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
         provider: "openai",
         model: "gpt-4o",
-        kaapi_uuid: "asst_unified_456",
+        kaapi_uuid: "asst_in_progress_456",
         prompt: "New version prompt",
         settings: %{"temperature" => 0.5},
         status: :in_progress,
@@ -218,7 +198,7 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
       auth_query_gql_by(:assistants, user, variables: %{})
 
     assistant_data =
-      Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_version_progress" end)
+      Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_unified_123" end)
 
     assert assistant_data != nil
     assert assistant_data["new_version_in_progress"] == true
