@@ -1,5 +1,4 @@
 defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
-  alias Glific.Assistants.KnowledgeBase
   use Glific.DataCase
 
   alias Ecto.Changeset
@@ -10,12 +9,16 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
   alias Glific.ThirdParty.Kaapi.UnifiedApiMigration
 
   describe "migrate_vector_stores/0" do
-    test "successfully migrates all vector stores with assistants", %{
-      organization_id: organization_id
-    } do
+    setup %{organization_id: organization_id} do
       vector_stores = create_vector_store_with_assistant(organization_id, 10)
       vector_stores_count = Enum.count(vector_stores)
+      %{vector_stores: vector_stores, count: vector_stores_count}
+    end
 
+    test "successfully migrates all vector stores with assistants", %{
+      vector_stores: vector_stores,
+      count: vector_stores_count
+    } do
       assert %{success: vector_stores_count, failure: 0} ==
                UnifiedApiMigration.migrate_vector_stores()
 
@@ -27,11 +30,12 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
       end
     end
 
-    test "skips vector stores without assistants", %{organization_id: organization_id} do
-      vector_stores = create_vector_store_with_assistant(organization_id, 10)
+    test "skips vector stores without assistants", %{
+      vector_stores: vector_stores,
+      count: vector_stores_count,
+      organization_id: organization_id
+    } do
       vector_stores_without_assistants = create_vector_store_without_assistant(organization_id, 5)
-
-      vector_stores_count = Enum.count(vector_stores)
 
       assert %{success: vector_stores_count, failure: 0} ==
                UnifiedApiMigration.migrate_vector_stores()
@@ -53,11 +57,9 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
     end
 
     test "updates knowledge base version of already migrated vector stores", %{
-      organization_id: organization_id
+      vector_stores: vector_stores,
+      count: vector_stores_count
     } do
-      vector_stores = create_vector_store_with_assistant(organization_id, 10)
-      vector_stores_count = Enum.count(vector_stores)
-
       assert %{success: vector_stores_count, failure: 0} ==
                UnifiedApiMigration.migrate_vector_stores()
 
@@ -79,11 +81,9 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
     end
 
     test "does not migrate same vector store multiple times if used by multiple assistants", %{
-      organization_id: organization_id
+      vector_stores: vector_stores,
+      count: vector_stores_count
     } do
-      vector_stores = create_vector_store_with_assistant(organization_id, 10)
-      vector_stores_count = Enum.count(vector_stores)
-
       for vector_store <- vector_stores do
         create_assistant(vector_store)
       end
