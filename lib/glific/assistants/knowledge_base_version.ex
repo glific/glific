@@ -11,7 +11,8 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Enums.KnowledgeBaseStatus,
-    Partners.Organization
+    Partners.Organization,
+    Repo
   }
 
   @type t() :: %__MODULE__{
@@ -79,4 +80,12 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     |> assoc_constraint(:knowledge_base)
     |> unique_constraint([:knowledge_base_id, :version_number])
   end
+
+  @doc """
+  Retrieves a vector_store
+  """
+  @spec get_llm_service_id(integer()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  def get_llm_service_id(kb_id),
+    do: Repo.fetch_by(KnowledgeBaseVersion, %{knowledge_base_id: kb_id})
 end

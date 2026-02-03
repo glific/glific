@@ -3,9 +3,20 @@ defmodule Glific.Assistants do
   Context module for Assistant and related schemas
   """
 
+  alias Glific.Assistants.Assistant
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Repo
+
+  @doc """
+  Creates an assistant
+  """
+  @spec create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def create_assistant(attrs) do
+    %Assistant{}
+    |> Assistant.changeset(attrs)
+    |> Repo.insert()
+  end
 
   @doc """
   Create a Knowledge Base.
@@ -42,5 +53,20 @@ defmodule Glific.Assistants do
     %KnowledgeBaseVersion{}
     |> KnowledgeBaseVersion.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Updates active config
+  """
+  @spec update_assistant_active_config(non_neg_integer(), non_neg_integer()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def update_assistant_active_config(assistant_id, config_version_id) do
+    assistant = Repo.get!(Assistant, assistant_id)
+
+    assistant
+    |> Assistant.set_active_config_version_changeset(%{
+      active_config_version_id: config_version_id
+    })
+    |> Repo.update()
   end
 end

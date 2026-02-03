@@ -5,13 +5,11 @@ defmodule Glific.Assistants.Assistant do
 
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query, warn: false
 
   alias Glific.{
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
-    Partners.Organization,
-    Repo
+    Partners.Organization
   }
 
   @type t() :: %__MODULE__{
@@ -60,31 +58,6 @@ defmodule Glific.Assistants.Assistant do
     assistant
     |> cast(attrs, [:active_config_version_id])
     |> validate_required([:active_config_version_id])
-  end
-
-  @doc """
-  Creates an assistant
-  """
-  @spec create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def create_assistant(attrs) do
-    %Assistant{}
-    |> changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Updates active config
-  """
-  @spec update_assistant_active_config(non_neg_integer(), non_neg_integer()) ::
-          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def update_assistant_active_config(assistant_id, config_version_id) do
-    assistant = Repo.get!(Assistant, assistant_id)
-
-    assistant
-    |> Ecto.Changeset.change(%{
-      active_config_version_id: config_version_id
-    })
-    |> Repo.update()
   end
 
   @doc """

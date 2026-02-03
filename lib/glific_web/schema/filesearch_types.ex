@@ -58,6 +58,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :id, :id
     field :name, :string
     field :description, :string
+    field :kaapi_uuid, :string
+    field :active_config_version_id, :string
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
@@ -87,7 +89,6 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :model, :string
     field :instructions, :string
     field :temperature, :float
-    field :vector_store_id, :string
     field :knowledge_base_id, :string
   end
 

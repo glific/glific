@@ -6,6 +6,7 @@ defmodule Glific.Filesearch do
   alias Ecto.Multi
 
   alias Glific.{
+    Assistants,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
@@ -70,11 +71,11 @@ defmodule Glific.Filesearch do
     org_id = params[:organization_id]
     prompt = params[:instructions] || "You are a helpful assistant"
 
-    # We can pass vector_store_ids while creating assistant, if available
     vector_store_ids =
-      with %{vector_store_id: vs_id} <- params,
-           {:ok, vector_store} <- VectorStore.get_vector_store(vs_id) do
-        [vector_store.vector_store_id]
+      with %{knowledge_base_id: kb_id} <- params,
+           {:ok, knowledge_base_version} <-
+             KnowledgeBaseVersion.get_llm_service_id(kb_id) do
+        [knowledge_base_version.llm_service_id]
       else
         _ -> []
       end
@@ -85,14 +86,13 @@ defmodule Glific.Filesearch do
       organization_id: org_id,
       instructions: prompt,
       name: generate_temp_name(params[:name], "Assistant"),
-      vector_store_ids: vector_store_ids,
-      knowledge_base_id: params[:knowledge_base_id]
+      vector_store_ids: vector_store_ids
     }
 
     with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
          kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
          {:ok, assistant} <-
-           Glific.Assistants.Assistant.create_assistant(%{
+           Assistants.create_assistant(%{
              name: attrs.name,
              description: params[:description],
              kaapi_uuid: kaapi_uuid,
@@ -108,17 +108,17 @@ defmodule Glific.Filesearch do
              settings: %{temperature: attrs.temperature},
              status: status,
              organization_id: org_id
-           }) do
+           }),
+         {:ok, updated_assistant} <-
+           Assistants.update_assistant_active_config(
+             assistant.id,
+             config_version.id
+           ) do
       if kb_version_id do
         link_config_to_kb(config_version.id, kb_version_id, org_id)
       end
 
-      Glific.Assistants.Assistant.update_assistant_active_config(
-        assistant.id,
-        config_version.id
-      )
-
-      {:ok, %{assistant: assistant, config_version: config_version}}
+      {:ok, %{assistant: updated_assistant, config_version: config_version}}
     else
       {:error, %Ecto.Changeset{} = changeset} ->
         {:error, changeset}
