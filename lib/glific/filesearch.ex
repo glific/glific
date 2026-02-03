@@ -120,11 +120,20 @@ defmodule Glific.Filesearch do
 
       {:ok, %{assistant: assistant, config_version: config_version}}
     else
-      {:error, reason} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
+
+      {:error, %{status: _status, body: body}} when is_map(body) ->
+        {:error, "Failed to create assistant config in Kaapi: #{body[:error]}"}
+
+      {:error, reason} when is_binary(reason) ->
         {:error, reason}
 
+      {:error, reason} ->
+        {:error, "Failed to create assistant: #{inspect(reason)}"}
+
       _ ->
-        {:error, "Something went wrong"}
+        {:error, "Failed to create assistant: Something went wrong"}
     end
   end
 

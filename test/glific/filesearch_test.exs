@@ -181,7 +181,6 @@ defmodule Glific.FilesearchTest do
       Repo.get_by(AssistantConfigVersion, assistant_id: assistant.id)
 
     assert config_version != nil
-    assert config_version.kaapi_uuid == "b6463f75-c09a-4534-aca3-b7ebdc99a8d3"
     assert config_version.status == :ready
 
     assistant = Repo.preload(assistant, :active_config_version)
@@ -209,6 +208,7 @@ defmodule Glific.FilesearchTest do
           input: %{
             name: "Test Assistant",
             instructions: "You are helpful",
+            kaapi_uuid: "test-uuid",
             model: "gpt-4o-mini"
           }
         }
