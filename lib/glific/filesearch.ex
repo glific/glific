@@ -95,13 +95,13 @@ defmodule Glific.Filesearch do
            Glific.Assistants.Assistant.create_assistant(%{
              name: attrs.name,
              description: params[:description],
+             kaapi_uuid: kaapi_uuid,
              organization_id: org_id
            }),
          {:ok, {kb_version_id, status}} <- resolve_kb_status(params[:knowledge_base_id]),
          {:ok, config_version} <-
            AssistantConfigVersion.create_assistant_config_version(%{
              assistant_id: assistant.id,
-             kaapi_uuid: kaapi_uuid,
              prompt: prompt,
              model: attrs.model,
              provider: "kaapi",
