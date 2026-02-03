@@ -178,7 +178,10 @@ config :ex_audit,
     Glific.Flows.Flow,
     Glific.Partners.Credential,
     Glific.Triggers.Trigger,
-    Glific.WhatsappForms.WhatsappForm
+    Glific.WhatsappForms.WhatsappForm,
+    Glific.Assistants.Assistant,
+    Glific.Assistants.AssistantConfigVersion,
+    Glific.Assistants.KnowledgeBaseVersion
   ],
   primitive_structs: [
     DateTime
