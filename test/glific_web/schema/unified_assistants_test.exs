@@ -42,7 +42,8 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
         organization_id: user.organization_id,
         kb_name: "Test KB",
         files: files,
-        llm_service_id: "vs_test_123"
+        llm_service_id: "vs_test_123",
+        kaapi_job_id: "job_test_123"
       })
 
     %{
@@ -107,6 +108,7 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
         files: attrs[:files] || %{},
         status: attrs[:kb_status] || :completed,
         llm_service_id: attrs[:llm_service_id] || "vs_unified_456",
+        kaapi_job_id: attrs[:kaapi_job_id],
         size: attrs[:size] || 1024
       })
       |> Repo.insert()
@@ -228,7 +230,8 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
         files: files,
         llm_service_id: "vs_full_resp",
         kb_status: :completed,
-        size: 52_428
+        size: 52_428,
+        kaapi_job_id: "job_full_resp"
       })
 
     {:ok, result} =
@@ -266,41 +269,19 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     end)
   end
 
-  test "get API returns complete response structure with all fields", %{user: user} do
-    {assistant, config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Show Bot",
-        kaapi_uuid: "asst_show_bot",
-        model: "gpt-4o",
-        prompt: "You are a support agent",
-        settings: %{"temperature" => 1.0},
-        status: :ready
-      })
-
-    files = %{
-      "file_single" => %{"filename" => "faq.pdf", "uploaded_at" => "2025-05-01T08:30:00Z"}
-    }
-
-    {_kb, _kbv} =
-      create_knowledge_base_for_config(config, %{
-        organization_id: user.organization_id,
-        kb_name: "Support KB",
-        files: files,
-        llm_service_id: "vs_show_bot",
-        kb_status: :completed,
-        size: 10_240
-      })
-
+  test "get API returns complete response structure with all fields", %{
+    user: user,
+    assistant: assistant
+  } do
     {:ok, result} =
       auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
 
     data = result.data["assistant"]["assistant"]
 
     assert is_binary(data["id"])
-    assert data["name"] == "Show Bot"
-    assert data["assistant_id"] == "asst_show_bot"
-    assert data["temperature"] == 1.0
+    assert data["name"] == "Test Assistant"
+    assert data["assistant_id"] == "asst_unified_123"
+    assert data["temperature"] == 0.7
     assert data["status"] == "ready"
     assert data["new_version_in_progress"] == false
     assert is_binary(data["inserted_at"])
@@ -309,15 +290,58 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     vs = data["vector_store"]
     assert vs != nil
     assert is_binary(vs["id"])
-    assert vs["vector_store_id"] == "vs_show_bot"
-    assert vs["name"] == "Support KB"
+    assert vs["vector_store_id"] == "vs_test_123"
+    assert vs["name"] == "Test KB"
     assert vs["legacy"] == false
     assert vs["status"] == "completed"
 
     assert length(vs["files"]) == 1
     file = List.first(vs["files"])
-    assert file["id"] == "file_single"
-    assert file["name"] == "faq.pdf"
-    assert file["uploaded_at"] == "2025-05-01T08:30:00Z"
+    assert file["id"] == "file_1"
+    assert file["name"] == "test.pdf"
+    assert file["uploaded_at"] == "2025-01-01T00:00:00Z"
+  end
+
+  test "legacy is false when kaapi_job_id is present", %{
+    user: user,
+    assistant: assistant
+  } do
+    {:ok, result} =
+      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
+
+    data = result.data["assistant"]["assistant"]
+    vs = data["vector_store"]
+
+    assert vs != nil
+    assert vs["legacy"] == false
+  end
+
+  test "legacy is true when kaapi_job_id is nil ", %{
+    user: user
+  } do
+    {assistant, config} =
+      create_unified_assistant(%{
+        organization_id: user.organization_id,
+        name: "Legacy Migrated Bot",
+        kaapi_uuid: "asst_legacy_migrated"
+      })
+
+    {_kb, _kbv} =
+      create_knowledge_base_for_config(config, %{
+        organization_id: user.organization_id,
+        kb_name: "Legacy KB",
+        files: %{},
+        llm_service_id: "vs_legacy_migrated",
+        kaapi_job_id: nil
+      })
+
+    {:ok, result} =
+      auth_query_gql_by(:assistant, user, variables: %{"id" => assistant.id})
+
+    data = result.data["assistant"]["assistant"]
+    vs = data["vector_store"]
+
+    assert vs != nil
+    assert vs["legacy"] == true
   end
 end
