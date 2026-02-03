@@ -1,8 +1,6 @@
 defmodule Glific.Assistants do
   @moduledoc """
   Context module for the Unified API assistants.
-  Provides list/get functions that return data shaped for the
-  legacy GraphQL assistant response format.
   """
 
   import Ecto.Query
