@@ -48,9 +48,7 @@ defmodule Glific.Filesearch do
 
   ## Parameters
     - params: Map containing:
-      - media: Required. Map with path and filename
-      - organization_id: Optional. Defaults to current org from Repo
-      - target_format: Optional. Desired output format (e.g., pdf, docx, txt)
+      - target_format: Optional. Desired output format (e.g., pdf, docx, txt) only pdf to markdown is available now
       - transformer: Optional. Name of transformer to apply
       - callback_url: Optional. URL to call for transformation status updates
 
@@ -73,8 +71,6 @@ defmodule Glific.Filesearch do
 
     with {:ok, _} <- validate_file_format(params.media.filename),
          {:ok, response} <- Kaapi.upload_document(document_params, organization_id) do
-      # Map Kaapi response to the expected format (file_id and filename)
-      # Kaapi returns: {success: true, data: {id, fname, signed_url, ...}}
       document_data = response[:data] || response
 
       {:ok,
@@ -82,6 +78,16 @@ defmodule Glific.Filesearch do
          file_id: document_data[:id],
          filename: document_data[:fname] || params.media.filename
        }}
+    else
+      {:error, %{status: status, body: body}} ->
+        error_message = body[:error] || body["error"]
+        {:error, "File upload failed (status #{status}): #{error_message}"}
+
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+
+      {:error, reason} ->
+        {:error, "File upload failed: #{inspect(reason)}"}
     end
   end
 

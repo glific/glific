@@ -6,17 +6,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   require Logger
 
   # client with runtime config (API key / base URL).
-  # Set skip_content_type: true for multipart uploads
-  defp client(api_key, opts \\ []) do
+  defp client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
-    headers =
-      if Keyword.get(opts, :skip_content_type, false) do
-        [{"X-API-KEY", api_key}]
-      else
-        [{"X-API-KEY", api_key}, {"content-type", "application/json"}]
-      end
+    headers = [{"X-API-KEY", api_key}]
 
     Tesla.client(
       [
@@ -27,7 +21,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       ] ++ Glific.get_tesla_retry_middleware()
     )
   end
-
 
   @doc """
   Onboard NGOs to Kaapi
@@ -129,7 +122,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Upload a document to Kaapi documents API with transformation options.
   """
-  @spec upload_document(map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  @spec upload_document(map(), binary()) :: {:ok, map()} | {:error, any()}
   def upload_document(params, org_api_key) do
     content_type = MIME.from_path(params.filename)
 
@@ -140,34 +133,30 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         filename: params.filename,
         headers: [{"content-type", content_type}]
       )
-
-    multipart =
-      if params[:target_format] do
-        Tesla.Multipart.add_field(multipart, "target_format", params.target_format)
-      else
-        multipart
-      end
-
-    multipart =
-      if params[:transformer] do
-        Tesla.Multipart.add_field(multipart, "transformer", params.transformer)
-      else
-        multipart
-      end
-
-    multipart =
-      if params[:callback_url] do
-        Tesla.Multipart.add_field(multipart, "callback_url", params.callback_url)
-      else
-        multipart
-      end
+      |> add_optional_fields(params)
 
     opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
-    |> client(skip_content_type: true)
+    |> client()
     |> Tesla.post("/api/v1/documents/", multipart, opts: opts)
     |> parse_kaapi_response()
+  end
+
+  @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
+  defp add_optional_fields(multipart, params) do
+    [
+      {:target_format, params[:target_format]},
+      {:transformer, params[:transformer]},
+      {:callback_url, params[:callback_url]}
+    ]
+    |> Enum.reduce(multipart, fn {field, value}, acc ->
+      if value do
+        Tesla.Multipart.add_field(acc, to_string(field), value)
+      else
+        acc
+      end
+    end)
   end
 
   # Private
@@ -189,5 +178,4 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]
-
 end
