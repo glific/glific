@@ -114,7 +114,8 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     assistants = result.data["Assistants"]
     assert length(assistants) >= 1
 
-    assistant = List.first(assistants)
+    assistant = Enum.find(assistants, fn a -> a["assistant_id"] == "asst_unified_123" end)
+    assert assistant != nil
     assert assistant["name"] == "Test Assistant"
     assert assistant["assistant_id"] == "asst_unified_123"
     assert assistant["temperature"] == 0.7
@@ -125,7 +126,12 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
   test "list assistants with unified API includes vector store from knowledge base", %{
     user: user
   } do
-    {_assistant, config} = create_unified_assistant(%{organization_id: user.organization_id})
+    {_assistant, config} =
+      create_unified_assistant(%{
+        organization_id: user.organization_id,
+        name: "KB Test Bot",
+        kaapi_uuid: "asst_kb_test"
+      })
 
     files = %{
       "file_1" => %{"filename" => "test.pdf", "uploaded_at" => "2025-01-01T00:00:00Z"}
@@ -142,9 +148,10 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     {:ok, result} =
       auth_query_gql_by(:assistants, user, variables: %{})
 
-    assistant = List.first(result.data["Assistants"])
-    vs = assistant["vector_store"]
+    assistant = Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_kb_test" end)
+    assert assistant != nil
 
+    vs = assistant["vector_store"]
     assert vs != nil
     assert vs["name"] == "My KB"
     assert vs["vector_store_id"] == "vs_kb_789"
@@ -188,6 +195,8 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     {assistant, _config} =
       create_unified_assistant(%{
         organization_id: user.organization_id,
+        name: "Version Progress Bot",
+        kaapi_uuid: "asst_version_progress",
         status: :ready
       })
 
@@ -208,7 +217,10 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     {:ok, result} =
       auth_query_gql_by(:assistants, user, variables: %{})
 
-    assistant_data = List.first(result.data["Assistants"])
+    assistant_data =
+      Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_version_progress" end)
+
+    assert assistant_data != nil
     assert assistant_data["new_version_in_progress"] == true
   end
 
@@ -242,8 +254,10 @@ defmodule GlificWeb.Schema.UnifiedAssistantsTest do
     {:ok, result} =
       auth_query_gql_by(:assistants, user, variables: %{})
 
-    assistant = List.first(result.data["Assistants"])
+    assistant =
+      Enum.find(result.data["Assistants"], fn a -> a["assistant_id"] == "asst_full_resp" end)
 
+    assert assistant != nil
     assert is_binary(assistant["id"])
     assert assistant["name"] == "Full Response Bot"
     assert assistant["assistant_id"] == "asst_full_resp"
