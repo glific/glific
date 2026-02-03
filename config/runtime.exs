@@ -146,7 +146,8 @@ config :glific,
 
 config :glific,
   ERP_API_KEY: env!("ERP_API_KEY", :string!, "This is not the ERP API key"),
-  ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret")
+  ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret"),
+  ERP_ENDPOINT: env!("ERP_ENDPOINT", :string, "This is not a secret")
 
 config :glific,
   open_ai_project: env!("OPEN_AI_PROJECT", :string!, "This is not a secret")
