@@ -134,7 +134,8 @@ defmodule Glific.WhatsappFormsResponses do
     with {:ok, headers} <- GoogleSheets.get_headers(organization_id, spreadsheet_id) do
       ordered_row =
         Enum.map(headers, fn header ->
-          Map.get(payload, header, "")
+          value = Map.get(payload, header, "")
+          if is_list(value), do: Enum.join(value, ", "), else: value
         end)
 
       {:ok, ordered_row}
