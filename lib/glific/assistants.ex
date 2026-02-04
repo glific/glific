@@ -4,16 +4,14 @@ defmodule Glific.Assistants do
   """
   import Ecto.Query
 
+  alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion
+  }
+
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Repo
-  import Ecto.Query
-
-  alias Glific.{
-    Assistants.Assistant,
-    Assistants.AssistantConfigVersion,
-    Repo
-  }
 
   @doc """
   Create a Knowledge Base.

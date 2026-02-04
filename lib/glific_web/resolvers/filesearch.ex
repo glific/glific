@@ -5,7 +5,10 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   alias Glific.{
     Assistants,
+    Assistants,
     Filesearch,
+    Filesearch.VectorStore,
+    Repo
     Filesearch.VectorStore,
     Repo
   }
@@ -121,11 +124,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec resolve_vector_store(map(), map(), map()) :: {:ok, map() | nil}
   def resolve_vector_store(%{__vector_store_data__: vs_data}, _args, _context) do
     {:ok, vs_data}
-  end
-
-  def resolve_vector_store(%Glific.Filesearch.Assistant{} = assistant, _args, _context) do
-    assistant = Repo.preload(assistant, :vector_store)
-    {:ok, assistant.vector_store}
   end
 
   @doc """
