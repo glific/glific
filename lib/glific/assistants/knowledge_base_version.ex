@@ -85,7 +85,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   Fetches the knowledge base version
   """
   @spec get_knowledge_base_version(integer()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
   def get_knowledge_base_version(kb_id),
     do: Repo.fetch_by(KnowledgeBaseVersion, %{knowledge_base_id: kb_id})
 end
