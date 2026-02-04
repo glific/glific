@@ -2,7 +2,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
-  alias Glific.Filesearch.Assistant
 
   alias Glific.{
     Assistants,
@@ -81,14 +80,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def get_assistant(_, params, _) do
-    if unified_api_enabled?() do
-      with {:ok, assistant} <- Assistants.get_assistant(params.id) do
-        {:ok, %{assistant: assistant}}
-      end
-    else
-      with {:ok, assistant} <- Assistant.get_assistant(params.id) do
-        {:ok, %{assistant: assistant}}
-      end
+    with {:ok, assistant} <- Assistants.get_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
@@ -98,11 +91,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def list_assistants(_, params, _) do
-    if unified_api_enabled?() do
-      {:ok, Assistants.list_assistants(params)}
-    else
-      {:ok, Filesearch.list_assistants(params)}
-    end
+    {:ok, Assistants.list_assistants(params)}
   end
 
   @doc """
@@ -168,9 +157,4 @@ defmodule GlificWeb.Resolvers.Filesearch do
     |> then(&{:ok, &1})
   end
 
-  @spec unified_api_enabled?() :: boolean()
-  defp unified_api_enabled? do
-    org_id = Repo.get_organization_id()
-    FunWithFlags.enabled?(:unified_api_enabled, for: %{organization_id: org_id})
-  end
 end

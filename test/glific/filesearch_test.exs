@@ -3,10 +3,10 @@ defmodule Glific.FilesearchTest do
   Tests for public filesearch APIs
   """
 
-  alias Glific.Filesearch.Assistant
-
   alias Glific.{
+    Assistants.AssistantConfigVersion,
     Filesearch,
+    Filesearch.Assistant,
     Filesearch.VectorStore,
     Partners,
     Repo
@@ -568,15 +568,12 @@ defmodule Glific.FilesearchTest do
   end
 
   test "get assistant", attrs do
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+    {assistant, _config} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant",
+        kaapi_uuid: "asst_abc"
+      })
 
     {:ok, query_data} =
       auth_query_gql_by(:assistant, attrs.user,
@@ -606,25 +603,19 @@ defmodule Glific.FilesearchTest do
 
     assert result.data["Assistants"] == []
 
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
+    {_assistant1, _config1} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant",
+        kaapi_uuid: "asst_abc"
+      })
 
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
-
-    valid_attrs = %{
-      assistant_id: "asst_abc2",
-      name: "new assistant 2",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+    {_assistant2, _config2} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant 2",
+        kaapi_uuid: "asst_abc2"
+      })
 
     # fetch all
     {:ok, result} =
@@ -644,15 +635,12 @@ defmodule Glific.FilesearchTest do
 
     assert length(result.data["Assistants"]) == 1
 
-    valid_attrs = %{
-      assistant_id: "asst_xyz",
-      name: "new assistant 3",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+    {assistant3, _config3} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant 3",
+        kaapi_uuid: "asst_xyz"
+      })
 
     # limit 1, offset 2
     {:ok, result} =
@@ -667,9 +655,9 @@ defmodule Glific.FilesearchTest do
 
     date = DateTime.utc_now() |> DateTime.add(-2 * 86_400)
 
-    Assistant
-    |> where([vs], vs.assistant_id == "asst_xyz")
-    |> update([vs], set: [inserted_at: ^date])
+    Glific.Assistants.Assistant
+    |> where([a], a.id == ^assistant3.id)
+    |> update([a], set: [inserted_at: ^date])
     |> Repo.update_all([])
 
     assert length(result.data["Assistants"]) == 1
@@ -1204,6 +1192,41 @@ defmodule Glific.FilesearchTest do
     # Verify that files were updated
     assert map_size(updated_vector_store.files) == 1
     assert Map.has_key?(updated_vector_store.files, "file-sNDXUc9cysWhFDBF3ftsDnPB")
+  end
+
+  defp create_unified_assistant(attrs) do
+    org_id = attrs[:organization_id] || 1
+
+    {:ok, assistant} =
+      %Glific.Assistants.Assistant{}
+      |> Glific.Assistants.Assistant.changeset(%{
+        name: attrs[:name] || "Test Assistant",
+        organization_id: org_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        provider: "openai",
+        model: attrs[:model] || "gpt-4o",
+        kaapi_uuid: attrs[:kaapi_uuid] || "asst_unified_123",
+        prompt: attrs[:prompt] || "You are a helpful assistant",
+        settings: attrs[:settings] || %{"temperature" => 0.7},
+        status: attrs[:status] || :ready,
+        organization_id: org_id
+      })
+      |> Repo.insert()
+
+    {:ok, assistant} =
+      assistant
+      |> Glific.Assistants.Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    {assistant, config_version}
   end
 
   defp enable_kaapi(attrs) do
