@@ -56,7 +56,13 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Updates active config
+  Updates the active config version for an assistant.
+
+  **Important:** This function assumes the assistant exists.
+  It is meant to be called immediately after creating the assistant.
+
+  ## Raises
+  - `Ecto.NoResultsError` if assistant doesn't exist
   """
   @spec update_assistant_active_config(non_neg_integer(), non_neg_integer()) ::
           {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}

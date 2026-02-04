@@ -8,7 +8,6 @@ defmodule Glific.Filesearch do
   alias Glific.{
     Assistants,
     Assistants.AssistantConfigVersion,
-    Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Filesearch.Assistant,
     Filesearch.VectorStore,
@@ -71,13 +70,10 @@ defmodule Glific.Filesearch do
     org_id = params[:organization_id]
     prompt = params[:instructions] || "You are a helpful assistant"
 
-    vector_store_ids =
-      with %{knowledge_base_id: kb_id} <- params,
-           {:ok, knowledge_base_version} <-
-             KnowledgeBaseVersion.get_llm_service_id(kb_id) do
-        [knowledge_base_version.llm_service_id]
-      else
-        _ -> []
+    kb_details =
+      case get_kb_details(params[:knowledge_base_id]) do
+        {:ok, details} -> details
+        {:error, _} -> %{kb_version_id: nil, status: :ready, vector_store_id: nil}
       end
 
     attrs = %{
@@ -86,7 +82,11 @@ defmodule Glific.Filesearch do
       organization_id: org_id,
       instructions: prompt,
       name: generate_temp_name(params[:name], "Assistant"),
-      vector_store_ids: vector_store_ids
+      vector_store_ids:
+        if(kb_details.vector_store_id,
+          do: [kb_details.vector_store_id],
+          else: []
+        )
     }
 
     with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
@@ -98,7 +98,6 @@ defmodule Glific.Filesearch do
              kaapi_uuid: kaapi_uuid,
              organization_id: org_id
            }),
-         {:ok, {kb_version_id, status}} <- resolve_kb_status(params[:knowledge_base_id]),
          {:ok, config_version} <-
            AssistantConfigVersion.create_assistant_config_version(%{
              assistant_id: assistant.id,
@@ -106,7 +105,7 @@ defmodule Glific.Filesearch do
              model: attrs.model,
              provider: "kaapi",
              settings: %{temperature: attrs.temperature},
-             status: status,
+             status: kb_details.status,
              organization_id: org_id
            }),
          {:ok, updated_assistant} <-
@@ -114,8 +113,8 @@ defmodule Glific.Filesearch do
              assistant.id,
              config_version.id
            ) do
-      if kb_version_id do
-        link_config_to_kb(config_version.id, kb_version_id, org_id)
+      if kb_details.kb_version_id do
+        link_config_to_kb(config_version.id, kb_details.kb_version_id, org_id)
       end
 
       {:ok, %{assistant: updated_assistant, config_version: config_version}}
@@ -495,19 +494,25 @@ defmodule Glific.Filesearch do
     )
   end
 
-  @spec resolve_kb_status(nil | integer()) ::
-          {:ok, {nil | integer(), :ready | :in_progress}} | {:error, any()}
-  defp resolve_kb_status(nil), do: {:ok, {nil, :ready}}
+  @spec get_kb_details(nil | integer()) :: {:ok, map()} | {:error, any()}
+  defp get_kb_details(nil) do
+    {:ok, %{kb_version_id: nil, status: :ready, vector_store_id: nil}}
+  end
 
-  defp resolve_kb_status(kb_id) do
-    kb = Repo.get!(KnowledgeBase, kb_id)
-    kb_version = Repo.get_by!(KnowledgeBaseVersion, knowledge_base_id: kb.id)
+  defp get_kb_details(kb_id) do
+    case KnowledgeBaseVersion.get_knowledge_base_version(kb_id) do
+      {:ok, kb_version} ->
+        status = if kb_version.status == :completed, do: :ready, else: :in_progress
 
-    status =
-      if kb_version.status == :completed,
-        do: :ready,
-        else: :in_progress
+        {:ok,
+         %{
+           kb_version_id: kb_version.id,
+           status: status,
+           vector_store_id: kb_version.llm_service_id
+         }}
 
-    {:ok, {kb_version.id, status}}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end

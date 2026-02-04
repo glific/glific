@@ -82,10 +82,10 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   end
 
   @doc """
-  Retrieves a vector_store
+  Fetches the knowledge base version
   """
-  @spec get_llm_service_id(integer()) ::
+  @spec get_knowledge_base_version(integer()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
-  def get_llm_service_id(kb_id),
+  def get_knowledge_base_version(kb_id),
     do: Repo.fetch_by(KnowledgeBaseVersion, %{knowledge_base_id: kb_id})
 end

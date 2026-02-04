@@ -181,7 +181,7 @@ defmodule Glific.ThirdParty.Kaapi do
   defp build_config_blob(params, vector_store_ids) do
     completion_params = %{
       model: params.model || "gpt-4o-mini",
-      instructions: params.instructions || params.prompt || "You are a helpful assistant",
+      instructions: params.instructions || "You are a helpful assistant",
       temperature: params.temperature || 1.0
     }
 
