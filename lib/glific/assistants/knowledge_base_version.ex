@@ -5,6 +5,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   alias Glific.{
     Assistants.AssistantConfigVersion,
@@ -86,6 +87,15 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   """
   @spec get_knowledge_base_version(integer()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
-  def get_knowledge_base_version(kb_id),
-    do: Repo.fetch_by(KnowledgeBaseVersion, %{knowledge_base_id: kb_id})
+  def get_knowledge_base_version(kb_id) do
+    KnowledgeBaseVersion
+    |> where([kbv], kbv.knowledge_base_id == ^kb_id)
+    |> order_by([kbv], desc: kbv.version_number)
+    |> limit(1)
+    |> Repo.one()
+    |> then(fn
+      nil -> {:error, ["KnowledgeBaseVersion", "Resource not found"]}
+      kb_version -> {:ok, kb_version}
+    end)
+  end
 end

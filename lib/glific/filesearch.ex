@@ -70,24 +70,21 @@ defmodule Glific.Filesearch do
     org_id = params[:organization_id]
     prompt = params[:instructions] || "You are a helpful assistant"
 
-    kb_details =
-      case get_kb_details(params[:knowledge_base_id]) do
-        {:ok, details} -> details
-        {:error, _} -> %{kb_version_id: nil, status: :ready, vector_store_id: nil}
-      end
+    kb_details = get_kb_details(params[:knowledge_base_id])
 
-    attrs = %{
-      temperature: params[:temperature] || 1,
-      model: params[:model] || @default_model,
-      organization_id: org_id,
-      instructions: prompt,
-      name: generate_temp_name(params[:name], "Assistant"),
-      vector_store_ids:
-        if(kb_details.vector_store_id,
-          do: [kb_details.vector_store_id],
-          else: []
-        )
-    }
+    attrs =
+      %{
+        temperature: params[:temperature] || 1,
+        model: params[:model] || @default_model,
+        organization_id: org_id,
+        instructions: prompt,
+        name: generate_temp_name(params[:name], "Assistant"),
+        vector_store_ids:
+          if(kb_details.vector_store_id,
+            do: [kb_details.vector_store_id],
+            else: []
+          )
+      }
 
     with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
          kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
@@ -494,25 +491,20 @@ defmodule Glific.Filesearch do
     )
   end
 
-  @spec get_kb_details(nil | integer()) :: {:ok, map()} | {:error, any()}
+  @spec get_kb_details(nil | integer()) :: map()
   defp get_kb_details(nil) do
-    {:ok, %{kb_version_id: nil, status: :ready, vector_store_id: nil}}
+    %{kb_version_id: nil, status: :ready, vector_store_id: nil}
   end
 
   defp get_kb_details(kb_id) do
-    case KnowledgeBaseVersion.get_knowledge_base_version(kb_id) do
-      {:ok, kb_version} ->
-        status = if kb_version.status == :completed, do: :ready, else: :in_progress
+    with {:ok, kb_version} <- KnowledgeBaseVersion.get_knowledge_base_version(kb_id) do
+      status = if kb_version.status == :completed, do: :ready, else: :in_progress
 
-        {:ok,
-         %{
-           kb_version_id: kb_version.id,
-           status: status,
-           vector_store_id: kb_version.llm_service_id
-         }}
-
-      {:error, reason} ->
-        {:error, reason}
+      %{
+        kb_version_id: kb_version.id,
+        status: status,
+        vector_store_id: kb_version.llm_service_id
+      }
     end
   end
 end
