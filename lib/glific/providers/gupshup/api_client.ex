@@ -75,7 +75,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec download_media_content(String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, :download_failed}
   def download_media_content(audio_url, organization_id) do
-    # Using a separate client as Logger middleware throws errors if debug is not disabled since it does not handle bitstrings.
+    # Using a separate client as Logger middleware throws errors
+    # if debug is not disabled since it does not handle bitstrings.
     client =
       Tesla.client([
         {Tesla.Middleware.Logger, debug: false},
