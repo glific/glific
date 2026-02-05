@@ -5,6 +5,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create_enums()
     create_assistants()
     create_assistant_config_versions()
+    add_active_config_version_to_assistants()
     create_knowledge_bases()
     create_knowledge_base_versions()
     create_assistant_config_version_knowledge_base_versions()
@@ -103,6 +104,16 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create unique_index(:assistant_config_versions, [:assistant_id, :version_number])
     create index(:assistant_config_versions, [:assistant_id])
     create index(:assistant_config_versions, [:organization_id])
+  end
+
+  defp add_active_config_version_to_assistants do
+    alter table(:assistants) do
+      add :active_config_version_id,
+          references(:assistant_config_versions, on_delete: :nilify_all),
+          comment: "Reference to the currently active configuration version"
+    end
+
+    create index(:assistants, [:active_config_version_id])
   end
 
   defp create_knowledge_bases do
