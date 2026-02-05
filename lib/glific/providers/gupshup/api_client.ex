@@ -16,6 +16,14 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     encode: &Query.encode/1
   )
 
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Gupshup API failures.
+    Reporting these failures to AppSignal lets us detect and fix issues.
+    """
+    defexception [:message, :status_code, :reason, :organization_id]
+  end
+
   @doc """
   Making Tesla get call and adding api key in header
   """
@@ -58,6 +66,46 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_msg_url <> "/msg"
       gupshup_post(url, payload, credentials.api_key)
+    end
+  end
+
+  @doc """
+  Downloads the media content, and Base64 encodes the content.
+  """
+  @spec download_media_content(String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, :download_failed}
+  def download_media_content(audio_url, organization_id) do
+    # Using a separate client as Logger middleware throws errors if debug is not disabled since it does not handle bitstrings.
+    client =
+      Tesla.client([
+        {Tesla.Middleware.Logger, debug: false},
+        {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1}
+      ])
+
+    client
+    |> Tesla.get(audio_url)
+    |> case do
+      {:ok, %{status: 200, body: content}} ->
+        {:ok, Base.encode64(content)}
+
+      {:ok, %Tesla.Env{status: status_code, body: body}} ->
+        Glific.log_exception(%Error{
+          message: "Gupshup File download failed",
+          status_code: status_code,
+          reason: body,
+          organization_id: organization_id
+        })
+
+        {:error, :download_failed}
+
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Gupshup File download failed",
+          reason: reason,
+          organization_id: organization_id
+        })
+
+        {:error, :download_failed}
     end
   end
 end
