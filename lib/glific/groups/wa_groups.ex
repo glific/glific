@@ -298,7 +298,7 @@ defmodule Glific.Groups.WAGroups do
         create_wa_group(params)
 
       wa_group ->
-        if wa_group.label != params.label do
+        if params.label && wa_group.label != params.label do
           update_wa_group(wa_group, %{label: params.label})
         else
           {:ok, wa_group}
