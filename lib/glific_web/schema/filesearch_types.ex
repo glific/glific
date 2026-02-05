@@ -3,9 +3,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   GraphQL Representation of Glific's Filesearch DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -28,6 +26,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     field :status, :string
+    field :legacy, :boolean
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -74,9 +73,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :model, :string
     field :instructions, :string
     field :temperature, :float
+    field :status, :string
+    field :new_version_in_progress, :boolean
 
     field :vector_store, :vector_store do
-      resolve(dataloader(Repo))
+      resolve(&Resolvers.Filesearch.resolve_vector_store/3)
     end
 
     field :inserted_at, :datetime
