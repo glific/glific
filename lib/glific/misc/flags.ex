@@ -530,7 +530,8 @@ defmodule Glific.Flags do
       :is_interactive_re_response_enabled,
       :is_ask_me_bot_enabled,
       :is_whatsapp_forms_enabled,
-      :high_trigger_tps_enabled
+      :high_trigger_tps_enabled,
+      :unified_api_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
