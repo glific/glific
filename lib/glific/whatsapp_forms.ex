@@ -267,7 +267,6 @@ defmodule Glific.WhatsappForms do
       name: form["name"],
       status: normalize_status(form["status"]),
       categories: normalize_categories(form["categories"]),
-      description: Map.get(form, "description", ""),
       meta_flow_id: form["id"],
       definition: form_json,
       organization_id: organization_id
@@ -290,12 +289,9 @@ defmodule Glific.WhatsappForms do
               definition: form_json
             }
 
-            attrs_with_description =
-              Map.put(attrs, :description, existing_form.description)
-
             with {:ok, _revision} <-
                    WhatsappFormsRevisions.save_revision(revision_attrs, root_user) do
-              do_update_whatsapp_form(existing_form, attrs_with_description)
+              do_update_whatsapp_form(existing_form, attrs)
             end
         end
 
