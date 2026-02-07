@@ -42,7 +42,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
 
     kbv
     |> KnowledgeBaseVersion.changeset(%{status: :failed, failure_reason: @failure_reason})
-    |> Repo.update!()
+    |> Repo.update()
 
     affected_cvs = update_linked_config_versions(kbv)
 
@@ -59,7 +59,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
         status: :failed,
         failure_reason: "Linked vector store creation timed out"
       })
-      |> Repo.update!()
+      |> Repo.update()
     end)
   end
 
