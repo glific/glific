@@ -23,6 +23,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
           files: map() | nil,
           size: non_neg_integer() | nil,
           status: KnowledgeBaseStatus.t(),
+          failure_reason: String.t() | nil,
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           kaapi_job_id: String.t() | nil,
@@ -43,7 +44,8 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   @optional_fields [
     :size,
     :version_number,
-    :kaapi_job_id
+    :kaapi_job_id,
+    :failure_reason
   ]
 
   schema "knowledge_base_versions" do
@@ -52,6 +54,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     field(:size, :integer)
 
     field(:status, KnowledgeBaseStatus, default: :in_progress)
+    field(:failure_reason, :string)
 
     field(:kaapi_job_id, :string)
     field(:llm_service_id, :string)

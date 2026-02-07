@@ -139,6 +139,8 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
         default: "in_progress",
         comment: "Status of knowledge base creation - in_progress, completed, failed"
 
+      add :failure_reason, :text, comment: "Failure reason if status is failed"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID."
