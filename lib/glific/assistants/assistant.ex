@@ -31,7 +31,8 @@ defmodule Glific.Assistants.Assistant do
 
   @required_fields [
     :name,
-    :organization_id
+    :organization_id,
+    :kaapi_uuid
   ]
   @optional_fields [
     :description,
