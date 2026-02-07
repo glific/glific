@@ -84,14 +84,14 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Gets an assistant by kaapi_uuid. Finds the assistant_id, then calls get_assistant/1.
+  Gets an assistant by kaapi_uuid .
   """
   @spec get_assistant_by_kaapi_uuid(String.t()) :: {:ok, map()} | {:error, any()}
   def get_assistant_by_kaapi_uuid(kaapi_uuid) do
     case Repo.one(
-           from(acv in AssistantConfigVersion,
-             where: acv.kaapi_uuid == ^kaapi_uuid,
-             select: acv.assistant_id
+           from(a in Assistant,
+             where: a.kaapi_uuid == ^kaapi_uuid,
+             select: a.id
            )
          ) do
       nil -> {:error, "Assistant not found"}
@@ -121,7 +121,7 @@ defmodule Glific.Assistants do
     %{
       id: assistant.id,
       name: assistant.name,
-      assistant_id: acv.kaapi_uuid,
+      assistant_id: assistant.kaapi_uuid,
       temperature: get_in(acv.settings || %{}, ["temperature"]),
       model: acv.model,
       instructions: acv.prompt,
@@ -135,18 +135,18 @@ defmodule Glific.Assistants do
 
   @doc """
   Gets vector store data from new tables by kaapi_uuid.
-  Used when mutations return legacy Filesearch.Assistant structs.
   """
   @spec get_vector_store_by_kaapi_uuid(String.t()) :: map() | nil
   def get_vector_store_by_kaapi_uuid(kaapi_uuid) do
     case Repo.one(
-           from(acv in AssistantConfigVersion,
-             where: acv.kaapi_uuid == ^kaapi_uuid,
-             preload: [knowledge_base_versions: :knowledge_base]
+           from(a in Assistant,
+             where: a.kaapi_uuid == ^kaapi_uuid,
+             preload: [active_config_version: [knowledge_base_versions: :knowledge_base]]
            )
          ) do
       nil -> nil
-      acv -> build_vector_store_data(acv)
+      %{active_config_version: nil} -> nil
+      %{active_config_version: acv} -> build_vector_store_data(acv)
     end
   end
 

@@ -1286,7 +1286,8 @@ defmodule Glific.FilesearchTest do
       %UnifiedAssistant{}
       |> UnifiedAssistant.changeset(%{
         name: attrs[:name] || "Test Assistant",
-        organization_id: org_id
+        organization_id: org_id,
+        kaapi_uuid: attrs[:kaapi_uuid] || "asst_test_#{:rand.uniform(10000)}"
       })
       |> Repo.insert()
 
@@ -1295,7 +1296,6 @@ defmodule Glific.FilesearchTest do
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
         organization_id: org_id,
-        kaapi_uuid: attrs[:kaapi_uuid] || "asst_test_#{:rand.uniform(10000)}",
         provider: "openai",
         model: attrs[:model] || "gpt-4o",
         prompt: attrs[:instructions] || "You are a helpful assistant",
@@ -1319,12 +1319,15 @@ defmodule Glific.FilesearchTest do
     org_id = attrs.organization_id
     kaapi_uuid = attrs.kaapi_uuid
 
-    config_version =
+    assistant =
       Repo.one(
-        from(acv in AssistantConfigVersion,
-          where: acv.kaapi_uuid == ^kaapi_uuid and acv.organization_id == ^org_id
+        from(a in UnifiedAssistant,
+          where: a.kaapi_uuid == ^kaapi_uuid and a.organization_id == ^org_id,
+          preload: [:active_config_version]
         )
       )
+
+    config_version = assistant.active_config_version
 
     {:ok, kb} =
       Assistants.create_knowledge_base(%{
