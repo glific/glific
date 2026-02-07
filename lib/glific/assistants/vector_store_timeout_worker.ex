@@ -16,6 +16,9 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
   @timeout_hours 1
   @failure_reason "Vector store creation timed out after #{@timeout_hours} hour(s)"
 
+  @doc """
+  Periodically checks for in-progress KnowledgeBaseVersions that have exceeded the timeout threshold and marks them as failed.
+  """
   @spec process_timeouts(non_neg_integer()) :: :ok
   def process_timeouts(org_id) do
     find_timed_out_versions(org_id)
@@ -36,7 +39,8 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
     |> Repo.all()
   end
 
-  @spec mark_as_failed(KnowledgeBaseVersion.t()) :: Notifications.Notification.t()
+  @spec mark_as_failed(KnowledgeBaseVersion.t()) ::
+          {:ok, Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
   defp mark_as_failed(kbv) do
     Logger.warning("Marking KnowledgeBaseVersion #{kbv.id} as failed due to timeout")
 
@@ -54,12 +58,15 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
     kbv.assistant_config_versions
     |> Enum.filter(&(&1.status == :in_progress))
     |> Enum.map(fn acv ->
-      acv
-      |> AssistantConfigVersion.changeset(%{
-        status: :failed,
-        failure_reason: "Linked vector store creation timed out"
-      })
-      |> Repo.update()
+      {:ok, updated_acv} =
+        acv
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Linked vector store creation timed out"
+        })
+        |> Repo.update()
+
+      updated_acv
     end)
   end
 

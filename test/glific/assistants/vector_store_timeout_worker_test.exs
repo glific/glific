@@ -188,6 +188,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
         provider: "openai",
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
+        kaapi_uuid: "acv_#{:rand.uniform(10000)}",
         settings: %{"temperature" => 1.0},
         status: status
       })
