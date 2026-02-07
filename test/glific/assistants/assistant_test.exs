@@ -13,7 +13,8 @@ defmodule Glific.Assistants.AssistantTest do
     valid_attrs = %{
       name: "Test Assistant",
       description: "A helpful assistant for testing",
-      organization_id: organization_id
+      organization_id: organization_id,
+      kaapi_uuid: "asst_123"
     }
 
     %{valid_attrs: valid_attrs}
@@ -100,6 +101,7 @@ defmodule Glific.Assistants.AssistantTest do
         |> Assistant.changeset(%{
           name: "Audit Test Assistant",
           description: "Testing audit tracking",
+          kaapi_uuid: "asst_123",
           organization_id: organization_id
         })
         |> Repo.insert()

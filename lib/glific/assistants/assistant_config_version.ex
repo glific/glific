@@ -25,7 +25,6 @@ defmodule Glific.Assistants.AssistantConfigVersion do
           provider: String.t(),
           model: String.t(),
           settings: map(),
-          kaapi_uuid: String.t(),
           status: AssistantConfigVersionStatus.t(),
           failure_reason: String.t() | nil,
           deleted_at: DateTime.t() | nil,
@@ -41,7 +40,6 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     :provider,
     :status,
     :model,
-    :kaapi_uuid,
     :prompt,
     :settings,
     :organization_id
@@ -61,7 +59,6 @@ defmodule Glific.Assistants.AssistantConfigVersion do
 
     field(:provider, :string, default: "openai")
     field(:model, :string)
-    field(:kaapi_uuid, :string)
 
     field(:settings, :map, default: %{})
     field(:status, AssistantConfigVersionStatus, default: :in_progress)
