@@ -72,6 +72,49 @@ defmodule Glific.FilesearchTest do
     :ok
   end
 
+  test "upload_file/1, uploads the file successfully", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post, url: "https://api.openai.com/v1/files"} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            id: "file-XNgygnDzO9cTs3YZLJWRscoq",
+            status: "processed",
+            filename: "sample.pdf",
+            bytes: 54_836,
+            object: "file",
+            created_at: 1_727_027_487,
+            purpose: "assistants",
+            status_details: nil
+          }
+        }
+    end)
+
+    assert {:ok, %{file_id: _, filename: _}} =
+             Filesearch.upload_file(%{
+               media: %Plug.Upload{
+                 path:
+                   "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+                 content_type: "application/pdf",
+                 filename: "sample.pdf"
+               },
+               organization_id: user.organization_id
+             })
+  end
+
+  test "upload_file/1, uploads the file failed due to unsupported file", %{user: user} do
+    assert {:error, "Files with extension '.csv' not supported in Filesearch"} =
+             Filesearch.upload_file(%{
+               media: %Plug.Upload{
+                 path:
+                   "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+                 content_type: "application/csv",
+                 filename: "sample.csv"
+               },
+               organization_id: user.organization_id
+             })
+  end
+
   test "valid create assistant", %{user: user} do
     enable_kaapi(%{organization_id: user.organization_id})
 
