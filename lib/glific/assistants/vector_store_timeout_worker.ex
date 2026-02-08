@@ -48,15 +48,18 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
     |> KnowledgeBaseVersion.changeset(%{status: :failed, failure_reason: @failure_reason})
     |> Repo.update()
 
-    affected_cvs = update_linked_config_versions(kbv)
+    affected_acvs_with_preloads =
+      kbv.assistant_config_versions
+      |> Enum.filter(&(&1.status == :in_progress))
 
-    send_timeout_notification(kbv, affected_cvs)
+    affected_acv_ids = update_linked_config_versions(affected_acvs_with_preloads)
+
+    send_timeout_notification(kbv, affected_acvs_with_preloads, affected_acv_ids)
   end
 
-  @spec update_linked_config_versions(KnowledgeBaseVersion.t()) :: [AssistantConfigVersion.t()]
-  defp update_linked_config_versions(kbv) do
-    kbv.assistant_config_versions
-    |> Enum.filter(&(&1.status == :in_progress))
+  @spec update_linked_config_versions([AssistantConfigVersion.t()]) :: [non_neg_integer()]
+  defp update_linked_config_versions(acvs) do
+    acvs
     |> Enum.map(fn acv ->
       {:ok, updated_acv} =
         acv
@@ -66,18 +69,22 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
         })
         |> Repo.update()
 
-      updated_acv
+      updated_acv.id
     end)
   end
 
-  @spec send_timeout_notification(KnowledgeBaseVersion.t(), [AssistantConfigVersion.t()]) ::
+  @spec send_timeout_notification(KnowledgeBaseVersion.t(), [AssistantConfigVersion.t()], [
+          non_neg_integer()
+        ]) ::
           {:ok, Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
-  defp send_timeout_notification(kbv, affected_cvs) do
+  defp send_timeout_notification(kbv, affected_acvs_with_preloads, affected_acv_ids) do
     kb_name = kbv.knowledge_base.name
 
     affected_assistants =
-      affected_cvs
-      |> Enum.map(&if(&1.assistant, do: &1.assistant.name, else: "Unknown"))
+      affected_acvs_with_preloads
+      |> Enum.map(& &1.assistant)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(& &1.name)
       |> Enum.uniq()
       |> Enum.join(", ")
 
@@ -97,7 +104,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
         knowledge_base_version_id: kbv.id,
         knowledge_base_id: kbv.knowledge_base_id,
         kaapi_job_id: kbv.kaapi_job_id,
-        affected_config_version_ids: Enum.map(affected_cvs, & &1.id)
+        affected_config_version_ids: affected_acv_ids
       }
     })
   end

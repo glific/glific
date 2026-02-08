@@ -66,8 +66,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     alter table(:assistants) do
       add :active_config_version_id,
           references(:assistant_config_versions, on_delete: :nilify_all),
-          comment: "Currently active config version for this assistant",
-          null: false
+          comment: "Currently active config version for this assistant"
     end
 
     create index(:assistants, [:active_config_version_id])
