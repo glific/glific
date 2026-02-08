@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   alias Glific.Filesearch.Assistant
 
   alias Glific.{
+    Assistants,
     Filesearch,
     Filesearch.VectorStore
   }
@@ -17,7 +18,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec upload_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def upload_file(_, params, %{context: %{current_user: _user}}) do
-    Filesearch.upload_file(params)
+    Assistants.upload_file(params)
   end
 
   @doc """

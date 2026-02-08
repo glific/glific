@@ -44,48 +44,18 @@ defmodule Glific.Filesearch do
   ]
 
   @doc """
-  Upload file to Kaapi documents API
-
-  ## Parameters
-    - params: Map containing:
-      - target_format: Optional. Desired output format (e.g., pdf, docx, txt) only pdf to markdown is available now
-      - callback_url: Optional. URL to call for transformation status updates
-
-  ## Returns
-    - {:ok, %{file_id: string, filename: string}}
-    - {:error, reason}
+    Upload file to openAI
   """
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params) do
-    organization_id = params[:organization_id] || Repo.get_organization_id()
-
-    document_params = %{
-      path: params.media.path,
-      filename: params.media.filename,
-      target_format: params[:target_format],
-      callback_url: params[:callback_url]
-    }
-
     with {:ok, _} <- validate_file_format(params.media.filename),
-         {:ok, response} <- Kaapi.upload_document(document_params, organization_id) do
-      document_data = response[:data] || response
-
+         {:ok, file} <- ApiClient.upload_file(params.media) do
       {:ok,
        %{
-         file_id: document_data[:id],
-         filename: document_data[:fname] || params.media.filename
+         file_id: file.id,
+         filename: file.filename
        }}
-    else
-      {:error, %{status: status, body: body}} ->
-        error_message = body[:error] || body["error"]
-        {:error, "File upload failed (status #{status}): #{error_message}"}
-
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      {:error, reason} ->
-        {:error, "File upload failed: #{inspect(reason)}"}
     end
   end
 
