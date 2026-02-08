@@ -49,7 +49,6 @@ defmodule Glific.Filesearch do
   ## Parameters
     - params: Map containing:
       - target_format: Optional. Desired output format (e.g., pdf, docx, txt) only pdf to markdown is available now
-      - transformer: Optional. Name of transformer to apply
       - callback_url: Optional. URL to call for transformation status updates
 
   ## Returns
@@ -65,7 +64,6 @@ defmodule Glific.Filesearch do
       path: params.media.path,
       filename: params.media.filename,
       target_format: params[:target_format],
-      transformer: params[:transformer],
       callback_url: params[:callback_url]
     }
 

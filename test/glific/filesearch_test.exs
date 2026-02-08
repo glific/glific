@@ -158,7 +158,6 @@ defmodule Glific.FilesearchTest do
                },
                organization_id: user.organization_id,
                target_format: "pdf",
-               transformer: "ocr",
                callback_url: "https://example.com/webhook"
              })
 
