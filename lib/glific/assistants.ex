@@ -17,8 +17,8 @@ defmodule Glific.Assistants do
   @doc """
   Creates an assistant
   """
-  @spec create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def create_assistant(attrs) do
+  @spec do_create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def do_create_assistant(attrs) do
     %Assistant{}
     |> Assistant.changeset(attrs)
     |> Repo.insert()
@@ -85,8 +85,8 @@ defmodule Glific.Assistants do
   @doc """
   Creates an Assistant
   """
-  @spec create_assistant_with_config(map()) :: {:ok, map()} | {:error, any()}
-  def create_assistant_with_config(params) do
+  @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
+  def create_assistant(params) do
     org_id = params[:organization_id]
     prompt = params[:instructions] || "You are a helpful assistant"
 
@@ -109,7 +109,7 @@ defmodule Glific.Assistants do
     with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
          kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
          {:ok, assistant} <-
-           Assistants.create_assistant(%{
+           do_create_assistant(%{
              name: attrs.name,
              description: params[:description],
              kaapi_uuid: kaapi_uuid,

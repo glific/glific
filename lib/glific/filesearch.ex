@@ -6,11 +6,11 @@ defmodule Glific.Filesearch do
   alias Ecto.Multi
 
   alias Glific.{
-    Assistants,
     Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
-    Repo
+    Repo,
+    ThirdParty.Kaapi
   }
 
   require Logger
