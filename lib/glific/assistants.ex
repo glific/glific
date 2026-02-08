@@ -7,6 +7,12 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Repo
+  alias Glific.Assistants
+  alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.ThirdParty.Kaapi
+
+  @default_model "gpt-4o"
 
   @doc """
   Creates an assistant
@@ -74,5 +80,118 @@ defmodule Glific.Assistants do
       active_config_version_id: config_version_id
     })
     |> Repo.update()
+  end
+
+  @doc """
+  Creates an Assistant
+  """
+  @spec create_assistant_with_config(map()) :: {:ok, map()} | {:error, any()}
+  def create_assistant_with_config(params) do
+    org_id = params[:organization_id]
+    prompt = params[:instructions] || "You are a helpful assistant"
+
+    kb_details = get_kb_details(params[:knowledge_base_id])
+
+    attrs =
+      %{
+        temperature: params[:temperature] || 1,
+        model: params[:model] || @default_model,
+        organization_id: org_id,
+        instructions: prompt,
+        name: generate_temp_name(params[:name], "Assistant"),
+        vector_store_ids:
+          if(kb_details.vector_store_id,
+            do: [kb_details.vector_store_id],
+            else: []
+          )
+      }
+
+    with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
+         kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
+         {:ok, assistant} <-
+           Assistants.create_assistant(%{
+             name: attrs.name,
+             description: params[:description],
+             kaapi_uuid: kaapi_uuid,
+             organization_id: org_id
+           }),
+         {:ok, config_version} <-
+           AssistantConfigVersion.create_assistant_config_version(%{
+             assistant_id: assistant.id,
+             prompt: prompt,
+             model: attrs.model,
+             provider: "kaapi",
+             settings: %{temperature: attrs.temperature},
+             status: kb_details.status,
+             organization_id: org_id
+           }),
+         {:ok, updated_assistant} <-
+           Assistants.update_assistant_active_config(
+             assistant.id,
+             config_version.id
+           ) do
+      if kb_details.kb_version_id do
+        link_config_to_kb(config_version.id, kb_details.kb_version_id, org_id)
+      end
+
+      {:ok, %{assistant: updated_assistant, config_version: config_version}}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
+
+      {:error, %{status: _status, body: body}} when is_map(body) ->
+        {:error, "Failed to create assistant config in Kaapi: #{body[:error]}"}
+
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+
+      {:error, reason} ->
+        {:error, "Failed to create assistant: #{inspect(reason)}"}
+
+      _ ->
+        {:error, "Failed to create assistant: Something went wrong"}
+    end
+  end
+
+  @spec generate_temp_name(map(), String.t()) :: String.t()
+  defp generate_temp_name(name, artifact) when name in [nil, ""] do
+    uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
+    "#{artifact}-#{uid}"
+  end
+
+  defp generate_temp_name(name, _artifact), do: name
+
+  @spec link_config_to_kb(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {non_neg_integer(), nil | [term()]}
+  defp link_config_to_kb(config_version_id, kb_version_id, org_id) do
+    Repo.insert_all(
+      "assistant_config_version_knowledge_base_versions",
+      [
+        %{
+          assistant_config_version_id: config_version_id,
+          knowledge_base_version_id: kb_version_id,
+          organization_id: org_id,
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        }
+      ]
+    )
+  end
+
+  @spec get_kb_details(nil | integer()) :: map()
+  defp get_kb_details(nil) do
+    %{kb_version_id: nil, status: :ready, vector_store_id: nil}
+  end
+
+  defp get_kb_details(kb_id) do
+    with {:ok, kb_version} <- KnowledgeBaseVersion.get_knowledge_base_version(kb_id) do
+      status = if kb_version.status == :completed, do: :ready, else: :in_progress
+
+      %{
+        kb_version_id: kb_version.id,
+        status: status,
+        vector_store_id: kb_version.llm_service_id
+      }
+    end
   end
 end

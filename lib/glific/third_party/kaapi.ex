@@ -190,8 +190,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Map.put(completion_params, :tools, [
           %{
             type: "file_search",
-            vector_store_ids: vector_store_ids,
-            max_num_results: 20
+            vector_store_ids: vector_store_ids
           }
         ])
       else
