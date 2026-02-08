@@ -10,12 +10,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
-    headers = [{"X-API-KEY", api_key}]
-
     Tesla.client(
       [
         {Tesla.Middleware.BaseUrl, base_url},
-        {Tesla.Middleware.Headers, headers},
+        {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
@@ -120,7 +118,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Upload a document to Kaapi documents API with transformation options.
+  Upload a document to Kaapi
   """
   @spec upload_document(map(), binary()) :: {:ok, map()} | {:error, any()}
   def upload_document(params, org_api_key) do
@@ -147,7 +145,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   defp add_optional_fields(multipart, params) do
     [
       {:target_format, params[:target_format]},
-      {:transformer, params[:transformer]},
       {:callback_url, params[:callback_url]}
     ]
     |> Enum.reduce(multipart, fn {field, value}, acc ->
