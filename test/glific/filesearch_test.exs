@@ -14,9 +14,6 @@ defmodule Glific.FilesearchTest do
     Repo
   }
 
-  # Alias for the new unified API Assistant (different from Filesearch.Assistant)
-  alias Glific.Assistants.Assistant, as: UnifiedAssistant
-
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
   import Ecto.Query
@@ -643,7 +640,7 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert %{"name" => "new assistant"} =
+    assert %{"name" => "new assistant", "vector_store" => nil} =
              query_data.data["assistant"]["assistant"]
 
     # Trying to fetch invalid assistant
@@ -655,6 +652,48 @@ defmodule Glific.FilesearchTest do
       )
 
     assert length(query_data.data["assistant"]["errors"]) == 1
+  end
+
+  test "get assistant with vector store", attrs do
+    {assistant, _config} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "assistant with vs",
+        kaapi_uuid: "asst_vs"
+      })
+
+    create_unified_vector_store_for_kaapi_uuid(%{
+      organization_id: attrs.organization_id,
+      kaapi_uuid: "asst_vs",
+      name: "Test KB",
+      vector_store_id: "vs_test_123",
+      files: %{
+        "file_1" => %{
+          "filename" => "test.pdf",
+          "uploaded_at" => DateTime.to_iso8601(DateTime.utc_now())
+        }
+      },
+      size: 2_048
+    })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user,
+        variables: %{
+          "id" => assistant.id
+        }
+      )
+
+    assistant_data = query_data.data["assistant"]["assistant"]
+    assert assistant_data["name"] == "assistant with vs"
+
+    vector_store = assistant_data["vector_store"]
+    assert vector_store["vector_store_id"] == "vs_test_123"
+    assert vector_store["name"] == "Test KB"
+    assert vector_store["status"] == "completed"
+    assert vector_store["legacy"] == true
+    assert vector_store["size"] == "2.0 KB"
+    assert length(vector_store["files"]) == 1
+    assert hd(vector_store["files"])["name"] == "test.pdf"
   end
 
   test "list assistants", attrs do
@@ -716,7 +755,7 @@ defmodule Glific.FilesearchTest do
 
     date = DateTime.utc_now() |> DateTime.add(-2 * 86_400)
 
-    Glific.Assistants.Assistant
+    Assistants.Assistant
     |> where([a], a.id == ^assistant3.id)
     |> update([a], set: [inserted_at: ^date])
     |> Repo.update_all([])
@@ -1283,8 +1322,8 @@ defmodule Glific.FilesearchTest do
     org_id = attrs.organization_id
 
     {:ok, assistant} =
-      %UnifiedAssistant{}
-      |> UnifiedAssistant.changeset(%{
+      %Assistants.Assistant{}
+      |> Assistants.Assistant.changeset(%{
         name: attrs[:name] || "Test Assistant",
         organization_id: org_id,
         kaapi_uuid: attrs[:kaapi_uuid] || "asst_test_#{:rand.uniform(10000)}"
@@ -1307,7 +1346,7 @@ defmodule Glific.FilesearchTest do
     # Set the active config version
     {:ok, assistant} =
       assistant
-      |> UnifiedAssistant.set_active_config_version_changeset(%{
+      |> Assistants.Assistant.set_active_config_version_changeset(%{
         active_config_version_id: config_version.id
       })
       |> Repo.update()
@@ -1321,7 +1360,7 @@ defmodule Glific.FilesearchTest do
 
     assistant =
       Repo.one(
-        from(a in UnifiedAssistant,
+        from(a in Assistants.Assistant,
           where: a.kaapi_uuid == ^kaapi_uuid and a.organization_id == ^org_id,
           preload: [:active_config_version]
         )
