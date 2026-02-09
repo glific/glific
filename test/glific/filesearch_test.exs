@@ -343,7 +343,7 @@ defmodule Glific.FilesearchTest do
 
     assert {:ok, %{temperature: 1.8}} = Assistant.get_assistant(assistant.id)
 
-    assert %{"name" => "new assistant", "assistant_id" => "asst_abc_upd"} =
+    assert %{"name" => "assistant2", "assistant_id" => "asst_abc_upd"} =
              query_data.data["updateAssistant"]["assistant"]
   end
 
