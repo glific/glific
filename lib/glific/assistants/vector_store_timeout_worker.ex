@@ -22,7 +22,16 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
   @spec process_timeouts(non_neg_integer()) :: :ok
   def process_timeouts(org_id) do
     find_timed_out_versions(org_id)
-    |> Enum.each(&mark_as_failed/1)
+    |> Enum.each(fn kbv ->
+      try do
+        mark_as_failed(kbv)
+      rescue
+        e ->
+          Logger.error(
+            "Failed to process timeout for KnowledgeBaseVersion #{kbv.id}: #{Exception.message(e)}"
+          )
+      end
+    end)
 
     :ok
   end
