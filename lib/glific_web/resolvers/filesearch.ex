@@ -34,9 +34,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def delete_assistant(_, params, _) do
-    with {:ok, assistant} <- Filesearch.delete_assistant(params.id),
-         {:ok, unified} <- Assistants.get_assistant_by_kaapi_uuid(assistant.assistant_id) do
-      {:ok, %{assistant: unified}}
+    with {:ok, assistant} <- Filesearch.delete_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
@@ -46,9 +45,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec add_assistant_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def add_assistant_files(_, params, _) do
-    with {:ok, assistant} <- Filesearch.add_assistant_files(params),
-         {:ok, unified} <- Assistants.get_assistant_by_kaapi_uuid(assistant.assistant_id) do
-      {:ok, %{assistant: unified}}
+    with {:ok, assistant} <- Filesearch.add_assistant_files(params) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
@@ -58,9 +56,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec remove_assistant_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def remove_assistant_file(_, params, _) do
-    with {:ok, assistant} <- Filesearch.remove_assistant_file(params),
-         {:ok, unified} <- Assistants.get_assistant_by_kaapi_uuid(assistant.assistant_id) do
-      {:ok, %{assistant: unified}}
+    with {:ok, assistant} <- Filesearch.remove_assistant_file(params) do
+      {:ok, %{assistant: assistant}}
     end
   end
 
@@ -70,9 +67,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: _user}}) do
-    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs),
-         {:ok, unified} <- Assistants.get_assistant_by_kaapi_uuid(assistant.assistant_id) do
-      {:ok, %{assistant: unified}}
+    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs) do
+      {:ok, %{assistant: assistant}}
     end
   end
 

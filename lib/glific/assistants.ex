@@ -84,22 +84,6 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Gets an assistant by kaapi_uuid .
-  """
-  @spec get_assistant_by_kaapi_uuid(String.t()) :: {:ok, map()} | {:error, any()}
-  def get_assistant_by_kaapi_uuid(kaapi_uuid) do
-    case Repo.one(
-           from(a in Assistant,
-             where: a.kaapi_uuid == ^kaapi_uuid,
-             select: a.id
-           )
-         ) do
-      nil -> {:error, "Assistant not found"}
-      assistant_id -> get_assistant(assistant_id)
-    end
-  end
-
-  @doc """
   Transforms a unified API Assistant struct into a map matching the legacy
   GraphQL assistant response shape.
   """
@@ -131,23 +115,6 @@ defmodule Glific.Assistants do
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
     }
-  end
-
-  @doc """
-  Gets vector store data from new tables by kaapi_uuid.
-  """
-  @spec get_vector_store_by_kaapi_uuid(String.t()) :: map() | nil
-  def get_vector_store_by_kaapi_uuid(kaapi_uuid) do
-    case Repo.one(
-           from(a in Assistant,
-             where: a.kaapi_uuid == ^kaapi_uuid,
-             preload: [active_config_version: [knowledge_base_versions: :knowledge_base]]
-           )
-         ) do
-      nil -> nil
-      %{active_config_version: nil} -> nil
-      %{active_config_version: acv} -> build_vector_store_data(acv)
-    end
   end
 
   defp build_vector_store_data(acv) do

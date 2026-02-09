@@ -1,9 +1,11 @@
-fragment AssistantFields on AssistantResult {
+fragment UnifiedAssistantFields on UnifiedAssistantResult {
   assistant {
     id
     name
     assistant_id
     temperature
+    status
+    new_version_in_progress
     vector_store {
       id
       vector_store_id
@@ -21,7 +23,7 @@ fragment AssistantFields on AssistantResult {
   }
 }
 
-fragment ErrorFields on AssistantResult {
+fragment UnifiedErrorFields on UnifiedAssistantResult {
   errors {
     key
     message
