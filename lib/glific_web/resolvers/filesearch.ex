@@ -105,12 +105,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
   Return the details of the files in a VectorStore.
   Handles both unified API (map) and legacy (VectorStore struct) data.
   """
-  @spec list_files(map(), map(), map()) :: {:ok, list()}
+  @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
-    files = Map.get(vector_store, :files) || %{}
-
-    files
-    |> Enum.map(fn {id, info} ->
+    Enum.map(vector_store.files, fn {id, info} ->
       %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
     end)
     |> then(&{:ok, &1})

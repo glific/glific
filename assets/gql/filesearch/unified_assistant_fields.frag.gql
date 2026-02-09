@@ -12,6 +12,7 @@ fragment UnifiedAssistantFields on UnifiedAssistantResult {
       name
       status
       legacy
+      size
       files {
         id
         name
