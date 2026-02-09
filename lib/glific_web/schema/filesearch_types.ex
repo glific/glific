@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   GraphQL Representation of Glific's Filesearch DataType
   """
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
