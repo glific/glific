@@ -44,9 +44,10 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
   defp mark_as_failed(kbv) do
     Logger.warning("Marking KnowledgeBaseVersion #{kbv.id} as failed due to timeout")
 
-    kbv
-    |> KnowledgeBaseVersion.changeset(%{status: :failed, failure_reason: @failure_reason})
-    |> Repo.update()
+    {:ok, _updated_kbv} =
+      kbv
+      |> KnowledgeBaseVersion.changeset(%{status: :failed, failure_reason: @failure_reason})
+      |> Repo.update()
 
     affected_acvs_with_preloads =
       kbv.assistant_config_versions
