@@ -2,14 +2,12 @@ defmodule Glific.Assistants do
   @moduledoc """
   Context module for Assistant and related schemas
   """
-
+  alias Glific.Assistants
   alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Repo
-  alias Glific.Assistants
-  alias Glific.Assistants.AssistantConfigVersion
-  alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.ThirdParty.Kaapi
 
   @default_model "gpt-4o"
