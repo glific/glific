@@ -5,7 +5,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   alias Glific.{
     Assistants,
-    Filesearch
+    Filesearch,
+    Filesearch.VectorStore
   }
 
   @doc """
