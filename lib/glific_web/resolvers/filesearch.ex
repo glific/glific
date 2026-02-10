@@ -116,16 +116,14 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   @doc """
   Resolves the vector_store field on an assistant.
-  Always fetches from new unified API tables.
   """
   @spec resolve_vector_store(map(), map(), map()) :: {:ok, map() | nil}
-  def resolve_vector_store(%{__vector_store_data__: vs_data}, _args, _context) do
+  def resolve_vector_store(%{vector_store_data: vs_data}, _args, _context) do
     {:ok, vs_data}
   end
 
   @doc """
   Calculate the total file size linked to the VectorStore.
-  Handles both unified API (map) and legacy (VectorStore struct) data.
   """
   @spec calculate_vector_store_size(map(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do

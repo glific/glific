@@ -83,12 +83,8 @@ defmodule Glific.Assistants do
     end
   end
 
-  @doc """
-  Transforms a unified API Assistant struct into a map matching the legacy
-  GraphQL assistant response shape.
-  """
   @spec transform_to_legacy_shape(Assistant.t()) :: map()
-  def transform_to_legacy_shape(%Assistant{} = assistant) do
+  defp transform_to_legacy_shape(%Assistant{} = assistant) do
     acv = assistant.active_config_version
 
     new_version_in_progress =
@@ -111,7 +107,7 @@ defmodule Glific.Assistants do
       instructions: acv.prompt,
       status: to_string(acv.status),
       new_version_in_progress: new_version_in_progress,
-      __vector_store_data__: build_vector_store_data(acv),
+      vector_store_data: build_vector_store_data(acv),
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
     }
