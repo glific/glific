@@ -526,7 +526,7 @@ defmodule Glific.Searches do
   end
 
   @spec filtered_query(map(), module()) :: Ecto.Query.t()
-  defp filtered_query(args, repo \\ Repo) do
+  defp filtered_query(args, repo) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
     # always cap out limit to 250, in case frontend sends too many
     limit = min(limit, 250)
@@ -544,7 +544,7 @@ defmodule Glific.Searches do
 
   # codebeat:disable[ABC]
   @spec get_filtered_contacts(String.t(), map(), module()) :: list()
-  defp get_filtered_contacts(term, args, repo \\ Repo) do
+  defp get_filtered_contacts(term, args, repo) do
     {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
     # since this revolves around contacts
@@ -560,7 +560,7 @@ defmodule Glific.Searches do
   # codebeat:enable[ABC]
 
   @spec get_filtered_messages_with_term(String.t(), map(), module()) :: list()
-  defp get_filtered_messages_with_term(term, args, repo \\ Repo) do
+  defp get_filtered_messages_with_term(term, args, repo) do
     filtered_query(args, repo)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
@@ -568,7 +568,7 @@ defmodule Glific.Searches do
   end
 
   @spec get_filtered_labeled_message(String.t(), map(), module()) :: list()
-  defp get_filtered_labeled_message(term, args, repo \\ Repo) do
+  defp get_filtered_labeled_message(term, args, repo) do
     filtered_query(args, repo)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
