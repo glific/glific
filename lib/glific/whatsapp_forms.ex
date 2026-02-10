@@ -553,7 +553,7 @@ defmodule Glific.WhatsappForms do
   @doc """
   Creates a WhatsApp form revision.
   """
-  @spec create_whatsapp_form_revision(WhatsappForm.t(), User.t()) ::
+  @spec create_whatsapp_form_revision(WhatsappForm.t(), User.t(), map() | nil) ::
           {:ok, WhatsappFormRevision.t()} | {:error, any()}
   def create_whatsapp_form_revision(whatsapp_form, user, definition \\ nil) do
     definition = definition || WhatsappFormsRevisions.default_definition()
