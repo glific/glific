@@ -267,7 +267,6 @@ defmodule Glific.WhatsappForms do
       name: form["name"],
       status: normalize_status(form["status"]),
       categories: normalize_categories(form["categories"]),
-      description: Map.get(form, "description", ""),
       meta_flow_id: form["id"],
       definition: form_json,
       organization_id: organization_id
