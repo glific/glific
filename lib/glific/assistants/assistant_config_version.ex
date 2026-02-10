@@ -11,8 +11,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
     Enums.AssistantConfigVersionStatus,
-    Partners.Organization,
-    Repo
+    Partners.Organization
   }
 
   @type t() :: %__MODULE__{
@@ -91,16 +90,5 @@ defmodule Glific.Assistants.AssistantConfigVersion do
       [:assistant_id, :version_number],
       name: :assistant_config_versions_assistant_id_version_number_index
     )
-  end
-
-  @doc """
-  Creates assistant config version record
-  """
-  @spec create_assistant_config_version(map()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  def create_assistant_config_version(attrs) do
-    %AssistantConfigVersion{}
-    |> AssistantConfigVersion.changeset(attrs)
-    |> Repo.insert()
   end
 end

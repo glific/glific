@@ -60,6 +60,17 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Creates assistant config version record
+  """
+  @spec create_assistant_config_version(map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
+  def create_assistant_config_version(attrs) do
+    %AssistantConfigVersion{}
+    |> AssistantConfigVersion.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
   Updates the active config version for an assistant.
 
   **Important:** This function assumes the assistant exists.
@@ -114,7 +125,7 @@ defmodule Glific.Assistants do
              organization_id: org_id
            }),
          {:ok, config_version} <-
-           AssistantConfigVersion.create_assistant_config_version(%{
+           create_assistant_config_version(%{
              assistant_id: assistant.id,
              prompt: prompt,
              model: attrs.model,
