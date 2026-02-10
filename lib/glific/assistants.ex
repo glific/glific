@@ -2,7 +2,6 @@ defmodule Glific.Assistants do
   @moduledoc """
   Context module for Assistant and related schemas
   """
-  alias Glific.Assistants
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
@@ -11,16 +10,6 @@ defmodule Glific.Assistants do
   alias Glific.ThirdParty.Kaapi
 
   @default_model "gpt-4o"
-
-  @doc """
-  Creates an assistant
-  """
-  @spec do_create_assistant(map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def do_create_assistant(attrs) do
-    %Assistant{}
-    |> Assistant.changeset(attrs)
-    |> Repo.insert()
-  end
 
   @doc """
   Create a Knowledge Base.
@@ -60,39 +49,8 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Creates assistant config version record
-  """
-  @spec create_assistant_config_version(map()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  def create_assistant_config_version(attrs) do
-    %AssistantConfigVersion{}
-    |> AssistantConfigVersion.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Updates the active config version for an assistant.
-
-  **Important:** This function assumes the assistant exists.
-  It is meant to be called immediately after creating the assistant.
-
-  ## Raises
-  - `Ecto.NoResultsError` if assistant doesn't exist
-  """
-  @spec update_assistant_active_config(non_neg_integer(), non_neg_integer()) ::
-          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def update_assistant_active_config(assistant_id, config_version_id) do
-    assistant = Repo.get!(Assistant, assistant_id)
-
-    assistant
-    |> Assistant.set_active_config_version_changeset(%{
-      active_config_version_id: config_version_id
-    })
-    |> Repo.update()
-  end
-
-  @doc """
-  Creates an Assistant
+  Creates an Assistant with its first config version.
+  This is the main public API for creating assistants.
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(params) do
@@ -114,49 +72,71 @@ defmodule Glific.Assistants do
     if is_nil(kb_details.vector_store_id) do
       {:error, "Knowledge base must have a valid vector store"}
     else
-      attrs =
-        %{
-          temperature: params[:temperature] || 1,
-          model: params[:model] || @default_model,
-          organization_id: org_id,
-          instructions: prompt,
-          name: generate_temp_name(params[:name], "Assistant"),
-          vector_store_ids: [kb_details.vector_store_id]
-        }
+      attrs = %{
+        temperature: params[:temperature] || 1,
+        model: params[:model] || @default_model,
+        organization_id: org_id,
+        instructions: prompt,
+        name: generate_temp_name(params[:name], "Assistant"),
+        vector_store_ids: [kb_details.vector_store_id]
+      }
 
       with {:ok, kaapi_response} <- Kaapi.create_assistant_config(attrs, org_id),
-           kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id,
-           {:ok, assistant} <-
-             do_create_assistant(%{
-               name: attrs.name,
-               description: params[:description],
-               kaapi_uuid: kaapi_uuid,
-               organization_id: org_id
-             }),
-           {:ok, config_version} <-
-             create_assistant_config_version(%{
-               assistant_id: assistant.id,
-               prompt: prompt,
-               model: attrs.model,
-               provider: "kaapi",
-               settings: %{temperature: attrs.temperature},
-               status: kb_details.status,
-               organization_id: org_id
-             }),
-           {:ok, updated_assistant} <-
-             Assistants.update_assistant_active_config(
-               assistant.id,
-               config_version.id
-             ) do
-        if kb_details.kb_version_id do
-          link_config_to_knowledge_base(config_version.id, kb_details.kb_version_id, org_id)
+           kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id do
+        multi_result =
+          Ecto.Multi.new()
+          |> Ecto.Multi.insert(
+            :assistant,
+            Assistant.changeset(%Assistant{}, %{
+              name: attrs.name,
+              description: params[:description],
+              kaapi_uuid: kaapi_uuid,
+              organization_id: org_id
+            })
+          )
+          |> Ecto.Multi.insert(:config_version, fn %{assistant: assistant} ->
+            AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+              assistant_id: assistant.id,
+              prompt: prompt,
+              model: attrs.model,
+              provider: "kaapi",
+              settings: %{temperature: attrs.temperature},
+              status: kb_details.status,
+              organization_id: org_id
+            })
+          end)
+          |> Ecto.Multi.update(:updated_assistant, fn %{
+                                                        assistant: assistant,
+                                                        config_version: config_version
+                                                      } ->
+            Assistant.set_active_config_version_changeset(assistant, %{
+              active_config_version_id: config_version.id
+            })
+          end)
+          |> Ecto.Multi.run(:link_kb, fn _repo, %{config_version: config_version} ->
+            if kb_details.kb_version_id do
+              {count, _} =
+                link_config_to_knowledge_base(
+                  config_version.id,
+                  kb_details.kb_version_id,
+                  org_id
+                )
+
+              {:ok, count}
+            else
+              {:ok, 0}
+            end
+          end)
+          |> Repo.transaction()
+
+        case multi_result do
+          {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
+            {:ok, %{assistant: assistant, config_version: config_version}}
+
+          {:error, failed_operation, failed_value, _changes_so_far} ->
+            {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
         end
-
-        {:ok, %{assistant: updated_assistant, config_version: config_version}}
       else
-        {:error, %Ecto.Changeset{} = changeset} ->
-          {:error, changeset}
-
         {:error, %{status: _status, body: body}} when is_map(body) ->
           {:error, "Failed to create assistant config in Kaapi: #{body[:error]}"}
 
@@ -172,7 +152,7 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec generate_temp_name(map(), String.t()) :: String.t()
+  @spec generate_temp_name(String.t() | nil, String.t()) :: String.t()
   defp generate_temp_name(name, artifact) when name in [nil, ""] do
     uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
     "#{artifact}-#{uid}"
