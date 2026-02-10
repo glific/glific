@@ -182,20 +182,14 @@ defmodule Glific.ThirdParty.Kaapi do
     completion_params = %{
       model: params.model || "gpt-4o-mini",
       instructions: params.instructions || "You are a helpful assistant",
-      temperature: params.temperature || 1.0
+      temperature: params.temperature || 1.0,
+      tools: [
+        %{
+          type: "file_search",
+          vector_store_ids: vector_store_ids
+        }
+      ]
     }
-
-    completion_params =
-      if vector_store_ids != [] do
-        Map.put(completion_params, :tools, [
-          %{
-            type: "file_search",
-            vector_store_ids: vector_store_ids
-          }
-        ])
-      else
-        completion_params
-      end
 
     %{
       completion: %{

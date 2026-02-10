@@ -14,6 +14,23 @@ defmodule Glific.Assistants.AssistantTest do
   setup %{organization_id: organization_id} do
     enable_kaapi(%{organization_id: organization_id})
 
+    # Create a knowledge base and version for tests
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{
+        name: "Test KB",
+        organization_id: organization_id
+      })
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        llm_service_id: "vs_test_123",
+        status: :completed,
+        organization_id: organization_id,
+        files: %{},
+        size: 0
+      })
+
     valid_attrs = %{
       name: "Test Assistant",
       description: "A helpful assistant for testing",
@@ -21,7 +38,11 @@ defmodule Glific.Assistants.AssistantTest do
       organization_id: organization_id
     }
 
-    %{valid_attrs: valid_attrs}
+    %{
+      valid_attrs: valid_attrs,
+      knowledge_base: kb,
+      knowledge_base_version: kb_version
+    }
   end
 
   describe "changeset/2" do
@@ -127,8 +148,8 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
-  describe "create_assistant_with_config/1" do
-    setup %{organization_id: organization_id} do
+  describe "create_assistant/1" do
+    setup %{organization_id: organization_id, knowledge_base: kb} do
       Tesla.Mock.mock(fn
         %{method: :post, url: _url} ->
           %Tesla.Env{
@@ -143,11 +164,12 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      %{organization_id: organization_id}
+      %{organization_id: organization_id, knowledge_base: kb}
     end
 
-    test "creates assistant successfully", %{
-      organization_id: organization_id
+    test "creates assistant successfully with knowledge base", %{
+      organization_id: organization_id,
+      knowledge_base: kb
     } do
       params = %{
         name: "Test Assistant",
@@ -156,7 +178,7 @@ defmodule Glific.Assistants.AssistantTest do
         temperature: 0.7,
         model: "gpt-4o-mini",
         organization_id: organization_id,
-        knowledge_base_id: nil
+        knowledge_base_id: kb.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -179,11 +201,38 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.organization_id == organization_id
     end
 
-    test "generates temp name when name is nil", %{organization_id: organization_id} do
+    test "returns error when knowledge_base_id is nil", %{organization_id: organization_id} do
+      params = %{
+        name: "Test Assistant",
+        instructions: "You are helpful",
+        organization_id: organization_id,
+        knowledge_base_id: nil
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
+    end
+
+    test "returns error when knowledge_base_id is missing", %{organization_id: organization_id} do
+      params = %{
+        name: "Test Assistant",
+        instructions: "You are helpful",
+        organization_id: organization_id
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
+    end
+
+    test "generates temp name when name is nil", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
       params = %{
         name: nil,
         instructions: "You are helpful",
-        organization_id: organization_id
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -194,11 +243,13 @@ defmodule Glific.Assistants.AssistantTest do
     end
 
     test "uses default values when optional params are missing", %{
-      organization_id: organization_id
+      organization_id: organization_id,
+      knowledge_base: kb
     } do
       params = %{
         name: "Minimal Assistant",
-        organization_id: organization_id
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -212,7 +263,10 @@ defmodule Glific.Assistants.AssistantTest do
       assert assistant.description == nil
     end
 
-    test "returns error when Kaapi API fails", %{organization_id: organization_id} do
+    test "returns error when Kaapi API fails", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
       Tesla.Mock.mock(fn
         %{method: :post, url: _url} ->
           %Tesla.Env{
@@ -228,14 +282,18 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Failing Assistant",
         instructions: "You are helpful",
-        organization_id: organization_id
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
       }
 
       assert {:error, error_message} = Assistants.create_assistant(params)
       assert error_message =~ "Failed to create assistant config in Kaapi"
     end
 
-    test "returns error when Kaapi returns invalid UUID", %{organization_id: organization_id} do
+    test "returns error when Kaapi returns invalid UUID", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
       Tesla.Mock.mock(fn
         %{method: :post, url: _url} ->
           %Tesla.Env{
@@ -253,16 +311,21 @@ defmodule Glific.Assistants.AssistantTest do
 
       params = %{
         name: "Invalid UUID Assistant",
-        organization_id: organization_id
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
       }
 
       assert {:error, _} = Assistants.create_assistant(params)
     end
 
-    test "active_config_version_id is set correctly", %{organization_id: organization_id} do
+    test "active_config_version_id is set correctly", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
       params = %{
         name: "Active Config Test",
-        organization_id: organization_id
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -274,6 +337,48 @@ defmodule Glific.Assistants.AssistantTest do
 
       # Verify config version belongs to this assistant
       assert config_version.assistant_id == assistant.id
+    end
+
+    test "links config version to knowledge base version", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "KB Link Test",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{config_version: config_version} = result
+
+      # Verify the link was created
+      import Ecto.Query
+
+      link =
+        from(acvkbv in "assistant_config_version_knowledge_base_versions",
+          where: acvkbv.assistant_config_version_id == ^config_version.id,
+          select: %{
+            assistant_config_version_id: acvkbv.assistant_config_version_id,
+            knowledge_base_version_id: acvkbv.knowledge_base_version_id
+          }
+        )
+        |> Repo.one()
+
+      assert link != nil
+      assert link.assistant_config_version_id == config_version.id
+    end
+
+    test "returns error when knowledge base has no versions", %{
+      organization_id: organization_id
+    } do
+      params = %{
+        name: "Test Assistant",
+        organization_id: organization_id
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
     end
   end
 
