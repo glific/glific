@@ -21,6 +21,7 @@ defmodule Glific.Searches do
     Groups.WAGroup,
     Messages.Message,
     Repo,
+    RepoReplica,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
@@ -248,8 +249,8 @@ defmodule Glific.Searches do
     |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
   end
 
-  @spec basic_query(map()) :: Ecto.Query.t()
-  defp basic_query(args) do
+  @spec basic_query(map(), module()) :: Ecto.Query.t()
+  defp basic_query(args, repo \\ Repo) do
     query = from(c in Contact, as: :c)
 
     query
@@ -258,7 +259,7 @@ defmodule Glific.Searches do
     |> where([c: c], c.status != :blocked)
     |> where([c: c], c.contact_type in ["WABA", "WABA+WA"])
     |> group_by([c: c], c.id)
-    |> Repo.add_permission(&Searches.add_permission/2)
+    |> repo.add_permission(&Searches.add_permission/2)
   end
 
   @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
@@ -481,16 +482,16 @@ defmodule Glific.Searches do
 
     search_item_tasks = [
       Task.async(fn ->
-        Repo.put_process_state(org_id)
-        get_filtered_contacts(term, args)
+        RepoReplica.put_process_state(org_id)
+        get_filtered_contacts(term, args, RepoReplica)
       end),
       Task.async(fn ->
-        Repo.put_process_state(org_id)
-        get_filtered_messages_with_term(term, args)
+        RepoReplica.put_process_state(org_id)
+        get_filtered_messages_with_term(term, args, RepoReplica)
       end),
       Task.async(fn ->
-        Repo.put_process_state(org_id)
-        get_filtered_labeled_message(term, args)
+        RepoReplica.put_process_state(org_id)
+        get_filtered_labeled_message(term, args, RepoReplica)
       end)
     ]
 
@@ -524,8 +525,8 @@ defmodule Glific.Searches do
     %{wa_groups: wa_groups, wa_messages: wa_messages}
   end
 
-  @spec filtered_query(map()) :: Ecto.Query.t()
-  defp filtered_query(args) do
+  @spec filtered_query(map(), module()) :: Ecto.Query.t()
+  defp filtered_query(args, repo \\ Repo) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
     # always cap out limit to 250, in case frontend sends too many
     limit = min(limit, 250)
@@ -535,43 +536,43 @@ defmodule Glific.Searches do
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
     |> where([m, c: c], c.status != :blocked)
-    |> Repo.add_permission(&Searches.add_permission/2)
+    |> repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)
   end
 
   # codebeat:disable[ABC]
-  @spec get_filtered_contacts(String.t(), map()) :: list()
-  defp get_filtered_contacts(term, args) do
+  @spec get_filtered_contacts(String.t(), map(), module()) :: list()
+  defp get_filtered_contacts(term, args, repo \\ Repo) do
     {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
     # since this revolves around contacts
     args
-    |> basic_query()
+    |> basic_query(repo)
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)
-    |> Repo.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
   # codebeat:enable[ABC]
 
-  @spec get_filtered_messages_with_term(String.t(), map()) :: list()
-  defp get_filtered_messages_with_term(term, args) do
-    filtered_query(args)
+  @spec get_filtered_messages_with_term(String.t(), map(), module()) :: list()
+  defp get_filtered_messages_with_term(term, args, repo \\ Repo) do
+    filtered_query(args, repo)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> Repo.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
-  @spec get_filtered_labeled_message(String.t(), map()) :: list()
-  defp get_filtered_labeled_message(term, args) do
-    filtered_query(args)
+  @spec get_filtered_labeled_message(String.t(), map(), module()) :: list()
+  defp get_filtered_labeled_message(term, args, repo \\ Repo) do
+    filtered_query(args, repo)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> Repo.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
   @spec get_filtered_wa_messages_with_term(String.t(), map()) :: list()
