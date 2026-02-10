@@ -26,7 +26,16 @@ defmodule Glific.Assistants do
 
     assistants =
       Repo.preload(assistants, [
-        {:active_config_version, [knowledge_base_versions: :knowledge_base]},
+        {:active_config_version,
+         [
+           knowledge_base_versions: {
+             from(kbv in KnowledgeBaseVersion,
+               where: kbv.status == :completed,
+               order_by: [desc: kbv.version_number]
+             ),
+             [:knowledge_base]
+           }
+         ]},
         config_versions:
           from(cv in AssistantConfigVersion,
             where: cv.status == :in_progress
@@ -44,7 +53,16 @@ defmodule Glific.Assistants do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}) do
       assistant =
         Repo.preload(assistant, [
-          {:active_config_version, [knowledge_base_versions: :knowledge_base]},
+          {:active_config_version,
+           [
+             knowledge_base_versions: {
+               from(kbv in KnowledgeBaseVersion,
+                 where: kbv.status == :completed,
+                 order_by: [desc: kbv.version_number]
+               ),
+               [:knowledge_base]
+             }
+           ]},
           config_versions:
             from(cv in AssistantConfigVersion,
               where: cv.status == :in_progress
@@ -60,15 +78,9 @@ defmodule Glific.Assistants do
     acv = assistant.active_config_version
 
     new_version_in_progress =
-      case assistant.config_versions do
-        versions when is_list(versions) ->
-          Enum.any?(versions, fn cv ->
-            cv.id != assistant.active_config_version_id and cv.status == :in_progress
-          end)
-
-        _ ->
-          false
-      end
+      Enum.any?(assistant.config_versions, fn cv ->
+        cv.id != assistant.active_config_version_id and cv.status == :in_progress
+      end)
 
     %{
       id: assistant.id,
