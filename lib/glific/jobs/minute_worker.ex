@@ -12,7 +12,7 @@ defmodule Glific.Jobs.MinuteWorker do
   require Logger
 
   alias Glific.{
-    Assistants.VectorStoreTimeoutWorker,
+    Assistants,
     BigQuery.BigQueryWorker,
     Contacts,
     Erase,
@@ -158,7 +158,7 @@ defmodule Glific.Jobs.MinuteWorker do
 
         Partners.perform_all(&WAWorker.perform_periodic/1, nil, [], only_recent: true)
 
-        Partners.perform_all(&VectorStoreTimeoutWorker.process_timeouts/1, nil, [])
+        Partners.perform_all(&Assistants.process_timeouts/1, nil, [])
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])

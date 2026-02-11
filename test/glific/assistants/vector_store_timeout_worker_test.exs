@@ -1,20 +1,18 @@
-defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
+defmodule Glific.AssistantsTimeoutTest do
   @moduledoc """
-  Tests for VectorStoreTimeoutWorker
+  Tests for process_timeouts in Glific.Assistants
   """
   use Glific.DataCase
 
   import Ecto.Query
 
-  alias Glific.{
-    Assistants.Assistant,
-    Assistants.AssistantConfigVersion,
-    Assistants.KnowledgeBase,
-    Assistants.KnowledgeBaseVersion,
-    Assistants.VectorStoreTimeoutWorker,
-    Notifications.Notification,
-    Repo
-  }
+  alias Glific.Assistants
+  alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Assistants.KnowledgeBase
+  alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Notifications.Notification
+  alias Glific.Repo
 
   describe "process_timeouts/1" do
     setup %{organization_id: org_id} do
@@ -36,7 +34,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       organization_id: org_id,
       knowledge_base_version: knowledge_base_version
     } do
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
       assert updated_kbv.status == :failed
@@ -46,7 +44,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       {_knowledge_base, knowledge_base_version} =
         create_knowledge_base_version(org_id, :in_progress, "job_456", hours_ago: 0)
 
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_kbv} =
         Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
@@ -57,7 +55,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       {_knowledge_base, knowledge_base_version} =
         create_knowledge_base_version(org_id, :completed, "job_456", hours_ago: 2)
 
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_kbv} =
         Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
@@ -68,7 +66,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       organization_id: org_id,
       config_version: config_version
     } do
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_acv} = Repo.fetch_by(AssistantConfigVersion, %{id: config_version.id})
       assert updated_acv.status == :failed
@@ -82,7 +80,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       {_assistant, acv_ready} = create_assistant_with_config(org_id, :ready)
       link_kbv_to_acv(knowledge_base_version, acv_ready, org_id)
 
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_acv} = Repo.fetch_by(AssistantConfigVersion, %{id: acv_ready.id})
       assert updated_acv.status == :ready
@@ -96,7 +94,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
     } do
       initial_count = Repo.aggregate(Notification, :count, :id)
 
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       assert Repo.aggregate(Notification, :count, :id) == initial_count + 1
 
@@ -120,7 +118,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       assistant: assistant,
       config_version: config_version
     } do
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       notification =
         Notification
@@ -140,7 +138,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       {_knowledge_base_2, knowledge_base_version_2} =
         create_knowledge_base_version(org_id, :in_progress, "job_2", hours_ago: 3)
 
-      assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
+      assert :ok = Assistants.process_timeouts(org_id)
 
       {:ok, updated_kbv_1} =
         Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version_1.id})
@@ -177,7 +175,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       |> Repo.insert()
 
     if hours_ago > 0 do
-      past_time = DateTime.utc_now() |> DateTime.add(-hours_ago * 3600, :second)
+      past_time = DateTime.utc_now() |> DateTime.add(-hours_ago, :hour)
 
       KnowledgeBaseVersion
       |> where([kbv], kbv.id == ^knowledge_base_version.id)
