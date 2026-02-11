@@ -11,7 +11,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   }
 
   @doc """
-  Uploads a file to Kaapi documents API
+  Uploads a file to Kaapi
 
   Returns the File details
   """

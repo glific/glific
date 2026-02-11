@@ -75,6 +75,9 @@ defmodule Glific.Assistants do
 
   ## Parameters
     - params: Map containing:
+      - media: Required. Map with:
+        - path: Required. File path of the document to upload
+        - filename: Required. Name of the file being uploaded
       - target_format: Optional. Desired output format (e.g., pdf, docx, txt) only pdf to markdown is available now
       - callback_url: Optional. URL to call for transformation status updates
 
@@ -85,7 +88,7 @@ defmodule Glific.Assistants do
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params) do
-    organization_id = params[:organization_id] || Repo.get_organization_id()
+    organization_id = Repo.get_organization_id()
 
     document_params = %{
       path: params.media.path,
@@ -95,17 +98,15 @@ defmodule Glific.Assistants do
     }
 
     with {:ok, _} <- validate_file_format(params.media.filename),
-         {:ok, response} <- Kaapi.upload_document(document_params, organization_id) do
-      document_data = response[:data] || response
-
+         {:ok, %{data: document_data}} <- Kaapi.upload_document(document_params, organization_id) do
       {:ok,
        %{
          file_id: document_data[:id],
-         filename: document_data[:fname] || params.media.filename
+         filename: document_data[:fname]
        }}
     else
       {:error, %{status: status, body: body}} ->
-        error_message = body[:error] || body["error"]
+        error_message = body[:error]
         {:error, "File upload failed (status #{status}): #{error_message}"}
 
       {:error, reason} when is_binary(reason) ->

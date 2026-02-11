@@ -20,7 +20,14 @@ defmodule Glific.Assistants.AssistantTest do
       organization_id: organization_id
     }
 
-    %{valid_attrs: valid_attrs}
+    upload = %Plug.Upload{
+      path:
+        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+      content_type: "application/pdf",
+      filename: "sample.pdf"
+    }
+
+    %{valid_attrs: valid_attrs, upload: upload}
   end
 
   describe "changeset/2" do
@@ -127,7 +134,8 @@ defmodule Glific.Assistants.AssistantTest do
 
   describe "upload_file/1" do
     test "upload_file/1, uploads the file successfully to Kaapi", %{
-      organization_id: organization_id
+      organization_id: organization_id,
+      upload: upload
     } do
       Tesla.Mock.mock(fn
         %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
@@ -152,12 +160,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:ok, %{file_id: file_id, filename: filename}} =
                Assistants.upload_file(%{
-                 media: %Plug.Upload{
-                   path:
-                     "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-                   content_type: "application/pdf",
-                   filename: "sample.pdf"
-                 },
+                 media: upload,
                  organization_id: organization_id
                })
 
@@ -166,22 +169,21 @@ defmodule Glific.Assistants.AssistantTest do
     end
 
     test "upload_file/1, uploads the file failed due to unsupported file", %{
-      organization_id: organization_id
+      organization_id: organization_id,
+      upload: upload
     } do
+      csv_upload = %{upload | content_type: "application/csv", filename: "sample.csv"}
+
       assert {:error, "Files with extension '.csv' not supported in Assistants"} =
                Assistants.upload_file(%{
-                 media: %Plug.Upload{
-                   path:
-                     "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-                   content_type: "application/csv",
-                   filename: "sample.csv"
-                 },
+                 media: csv_upload,
                  organization_id: organization_id
                })
     end
 
     test "upload_file/1, uploads file to Kaapi with transformation parameters", %{
-      organization_id: organization_id
+      organization_id: organization_id,
+      upload: upload
     } do
       Tesla.Mock.mock(fn
         %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
@@ -206,12 +208,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:ok, %{file_id: file_id, filename: filename}} =
                Assistants.upload_file(%{
-                 media: %Plug.Upload{
-                   path:
-                     "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-                   content_type: "application/pdf",
-                   filename: "sample.pdf"
-                 },
+                 media: upload,
                  organization_id: organization_id,
                  target_format: "pdf",
                  callback_url: "https://example.com/webhook"
@@ -222,7 +219,8 @@ defmodule Glific.Assistants.AssistantTest do
     end
 
     test "upload_file/1, handles Kaapi upload error gracefully", %{
-      organization_id: organization_id
+      organization_id: organization_id,
+      upload: upload
     } do
       Tesla.Mock.mock(fn
         %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
@@ -238,12 +236,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:error, error_message} =
                Assistants.upload_file(%{
-                 media: %Plug.Upload{
-                   path:
-                     "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
-                   content_type: "application/pdf",
-                   filename: "sample.pdf"
-                 },
+                 media: upload,
                  organization_id: organization_id
                })
 
