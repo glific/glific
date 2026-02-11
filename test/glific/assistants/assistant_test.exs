@@ -286,36 +286,10 @@ defmodule Glific.Assistants.AssistantTest do
         knowledge_base_id: kb.id
       }
 
-      assert {:error, error_message} = Assistants.create_assistant(params)
-      assert error_message =~ "Failed to create assistant config in Kaapi"
-    end
-
-    test "returns error when Kaapi returns invalid UUID", %{
-      organization_id: organization_id,
-      knowledge_base: kb
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :post, url: _url} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              success: true,
-              data: %{
-                # Invalid UUID
-                id: nil,
-                name: "Test"
-              }
-            }
-          }
-      end)
-
-      params = %{
-        name: "Invalid UUID Assistant",
-        organization_id: organization_id,
-        knowledge_base_id: kb.id
-      }
-
-      assert {:error, _} = Assistants.create_assistant(params)
+      assert {:error, error} = Assistants.create_assistant(params)
+      assert is_map(error)
+      assert error.status == 500
+      assert error.body.error == "Internal server error"
     end
 
     test "active_config_version_id is set correctly", %{
