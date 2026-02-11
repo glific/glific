@@ -88,8 +88,7 @@ defmodule Glific.ThirdParty.Kaapi do
     body = %{
       name: params.name,
       description: params[:description] || "",
-      config_blob: config_blob,
-      commit_message: "Initial config creation"
+      config_blob: config_blob
     }
 
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
@@ -181,7 +180,7 @@ defmodule Glific.ThirdParty.Kaapi do
   defp build_config_blob(params, vector_store_ids) do
     completion_params = %{
       model: params.model || "gpt-4o-mini",
-      instructions: params.instructions || "You are a helpful assistant",
+      instructions: params.prompt || "You are a helpful assistant",
       temperature: params.temperature || 1.0,
       tools: [
         %{

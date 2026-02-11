@@ -82,7 +82,6 @@ defmodule Glific.Assistants do
       temperature: user_params[:temperature] || 1,
       model: user_params[:model] || @default_model,
       organization_id: user_params[:organization_id],
-      instructions: prompt,
       name: generate_assistant_name(user_params[:name]),
       description: description,
       vector_store_ids: [knowledge_base_version.llm_service_id],
