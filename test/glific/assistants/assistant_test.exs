@@ -169,10 +169,10 @@ defmodule Glific.Assistants.AssistantTest do
       organization_id: organization_id,
       upload: upload
     } do
-      csv_upload = %{upload | content_type: "application/csv", filename: "sample.csv"}
+      exe_upload = %{upload | content_type: "application/octet-stream", filename: "sample.exe"}
 
-      assert {:error, "Files with extension '.csv' not supported in Assistants"} =
-               Assistants.upload_file(%{media: csv_upload}, organization_id)
+      assert {:error, "Files with extension '.exe' not supported in Assistants"} =
+               Assistants.upload_file(%{media: exe_upload}, organization_id)
     end
 
     test "upload_file/2, uploads file to Kaapi with transformation parameters", %{
