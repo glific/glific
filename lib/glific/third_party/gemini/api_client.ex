@@ -129,6 +129,9 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           "parts" => [
             %{
               "inline_data" => %{
+                # We are hardcoding the mime type for now, since finding the mime type
+                # requires additional DB query. audio/mp3 is working fine for ogg media.
+                # audio/ogg is the mime type of most audio we receive.
                 "mime_type" => "audio/mp3",
                 "data" => data
               }
