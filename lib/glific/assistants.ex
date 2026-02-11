@@ -55,15 +55,7 @@ defmodule Glific.Assistants do
     assistants =
       Repo.preload(assistants, [
         {:active_config_version,
-         [
-           knowledge_base_versions: {
-             from(kbv in KnowledgeBaseVersion,
-               where: kbv.status == :completed,
-               order_by: [desc: kbv.version_number]
-             ),
-             [:knowledge_base]
-           }
-         ]},
+         [knowledge_base_versions: :knowledge_base]},
         config_versions:
           from(cv in AssistantConfigVersion,
             where: cv.status == :in_progress
@@ -82,15 +74,7 @@ defmodule Glific.Assistants do
       assistant =
         Repo.preload(assistant, [
           {:active_config_version,
-           [
-             knowledge_base_versions: {
-               from(kbv in KnowledgeBaseVersion,
-                 where: kbv.status == :completed,
-                 order_by: [desc: kbv.version_number]
-               ),
-               [:knowledge_base]
-             }
-           ]},
+           [knowledge_base_versions: :knowledge_base]},
           config_versions:
             from(cv in AssistantConfigVersion,
               where: cv.status == :in_progress
