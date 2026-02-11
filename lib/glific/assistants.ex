@@ -85,10 +85,9 @@ defmodule Glific.Assistants do
     - {:ok, %{file_id: string, filename: string}}
     - {:error, reason}
   """
-  @spec upload_file(map()) ::
+  @spec upload_file(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
-  def upload_file(params) do
-    organization_id = Repo.get_organization_id()
+  def upload_file(params, organization_id) do
 
     document_params = %{
       path: params.media.path,

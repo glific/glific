@@ -17,8 +17,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec upload_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def upload_file(_, params, %{context: %{current_user: _user}}) do
-    Assistants.upload_file(params)
+  def upload_file(_, params, %{context: %{current_user: user}}) do
+    Assistants.upload_file(params, user.organization_id)
   end
 
   @doc """
