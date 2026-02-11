@@ -14,7 +14,6 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
   }
 
   @timeout_hours 1
-  @failure_reason "Vector store creation timed out after #{@timeout_hours} hour(s)"
 
   @doc """
   Periodically checks for in-progress KnowledgeBaseVersions that have exceeded the timeout threshold and marks them as failed.

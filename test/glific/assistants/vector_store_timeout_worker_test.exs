@@ -18,55 +18,69 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
   describe "process_timeouts/1" do
     setup %{organization_id: org_id} do
-      {kb, kbv} = create_knowledge_base_version(org_id, :in_progress, "job_123", hours_ago: 2)
-      {assistant, acv} = create_assistant_with_config(org_id, :in_progress)
-      link_kbv_to_acv(kbv, acv, org_id)
+      {knowledge_base, knowledge_base_version} =
+        create_knowledge_base_version(org_id, :in_progress, "job_123", hours_ago: 2)
 
-      [kb: kb, kbv: kbv, assistant: assistant, acv: acv]
+      {assistant, config_version} = create_assistant_with_config(org_id, :in_progress)
+      link_kbv_to_acv(knowledge_base_version, config_version, org_id)
+
+      [
+        knowledge_base: knowledge_base,
+        knowledge_base_version: knowledge_base_version,
+        assistant: assistant,
+        config_version: config_version
+      ]
     end
 
-    test "marks timed-out KnowledgeBaseVersion as failed", %{organization_id: org_id, kbv: kbv} do
+    test "marks timed-out KnowledgeBaseVersion as failed", %{
+      organization_id: org_id,
+      knowledge_base_version: knowledge_base_version
+    } do
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
-      {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
+      {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
       assert updated_kbv.status == :failed
     end
 
     test "does NOT affect records less than 1 hour old", %{organization_id: org_id} do
-      {_kb, kbv} = create_knowledge_base_version(org_id, :in_progress, "job_456", hours_ago: 0)
+      {_knowledge_base, knowledge_base_version} =
+        create_knowledge_base_version(org_id, :in_progress, "job_456", hours_ago: 0)
 
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
-      {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
+      {:ok, updated_kbv} =
+        Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
       assert updated_kbv.status == :in_progress
     end
 
     test "ignores records that are already completed", %{organization_id: org_id} do
-      {_kb, kbv} = create_knowledge_base_version(org_id, :completed, "job_456", hours_ago: 2)
+      {_knowledge_base, knowledge_base_version} =
+        create_knowledge_base_version(org_id, :completed, "job_456", hours_ago: 2)
 
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
-      {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
+      {:ok, updated_kbv} =
+        Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
       assert updated_kbv.status == :completed
     end
 
     test "updates linked in_progress AssistantConfigVersions to failed", %{
       organization_id: org_id,
-      acv: acv
+      config_version: config_version
     } do
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
-      {:ok, updated_acv} = Repo.fetch_by(AssistantConfigVersion, %{id: acv.id})
+      {:ok, updated_acv} = Repo.fetch_by(AssistantConfigVersion, %{id: config_version.id})
       assert updated_acv.status == :failed
       assert updated_acv.failure_reason =~ "vector store creation timed out"
     end
 
     test "does NOT update linked ready AssistantConfigVersions", %{
       organization_id: org_id,
-      kbv: kbv
+      knowledge_base_version: knowledge_base_version
     } do
       {_assistant, acv_ready} = create_assistant_with_config(org_id, :ready)
-      link_kbv_to_acv(kbv, acv_ready, org_id)
+      link_kbv_to_acv(knowledge_base_version, acv_ready, org_id)
 
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
@@ -77,8 +91,8 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
     test "creates notification with correct details", %{
       organization_id: org_id,
-      kb: kb,
-      kbv: kbv
+      knowledge_base: knowledge_base,
+      knowledge_base_version: knowledge_base_version
     } do
       initial_count = Repo.aggregate(Notification, :count, :id)
 
@@ -95,16 +109,16 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
       assert notification.category == "Assistant"
       assert notification.severity == "Warning"
-      assert notification.message =~ kb.name
+      assert notification.message =~ knowledge_base.name
       assert notification.message =~ "timed out"
-      assert notification.entity["knowledge_base_version_id"] == kbv.id
+      assert notification.entity["knowledge_base_version_id"] == knowledge_base_version.id
       assert notification.entity["kaapi_job_id"] == "job_123"
     end
 
     test "notification includes affected assistant names", %{
       organization_id: org_id,
       assistant: assistant,
-      acv: acv
+      config_version: config_version
     } do
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
@@ -116,26 +130,33 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
         |> Repo.one()
 
       assert notification.message =~ assistant.name
-      assert notification.entity["affected_config_version_ids"] == [acv.id]
+      assert notification.entity["affected_config_version_ids"] == [config_version.id]
     end
 
-    test "processes multiple timed-out records", %{organization_id: org_id, kbv: kbv1} do
-      {_kb2, kbv2} = create_knowledge_base_version(org_id, :in_progress, "job_2", hours_ago: 3)
+    test "processes multiple timed-out records", %{
+      organization_id: org_id,
+      knowledge_base_version: knowledge_base_version_1
+    } do
+      {_knowledge_base_2, knowledge_base_version_2} =
+        create_knowledge_base_version(org_id, :in_progress, "job_2", hours_ago: 3)
 
       assert :ok = VectorStoreTimeoutWorker.process_timeouts(org_id)
 
-      {:ok, updated_kbv1} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv1.id})
-      {:ok, updated_kbv2} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv2.id})
+      {:ok, updated_kbv_1} =
+        Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version_1.id})
 
-      assert updated_kbv1.status == :failed
-      assert updated_kbv2.status == :failed
+      {:ok, updated_kbv_2} =
+        Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version_2.id})
+
+      assert updated_kbv_1.status == :failed
+      assert updated_kbv_2.status == :failed
     end
   end
 
   defp create_knowledge_base_version(org_id, status, kaapi_job_id, opts) do
     hours_ago = Keyword.get(opts, :hours_ago, 0)
 
-    {:ok, kb} =
+    {:ok, knowledge_base} =
       %KnowledgeBase{}
       |> KnowledgeBase.changeset(%{
         name: "Test Knowledge Base #{:rand.uniform(10000)}",
@@ -143,10 +164,10 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       })
       |> Repo.insert()
 
-    {:ok, kbv} =
+    {:ok, knowledge_base_version} =
       %KnowledgeBaseVersion{}
       |> KnowledgeBaseVersion.changeset(%{
-        knowledge_base_id: kb.id,
+        knowledge_base_id: knowledge_base.id,
         organization_id: org_id,
         files: %{"file1.pdf" => %{"size" => 1024}},
         status: status,
@@ -159,12 +180,12 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
       past_time = DateTime.utc_now() |> DateTime.add(-hours_ago * 3600, :second)
 
       KnowledgeBaseVersion
-      |> where([kbv], kbv.id == ^kbv.id)
+      |> where([kbv], kbv.id == ^knowledge_base_version.id)
       |> Repo.update_all(set: [inserted_at: past_time])
     end
 
-    {:ok, refreshed} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
-    {kb, refreshed}
+    {:ok, refreshed} = Repo.fetch_by(KnowledgeBaseVersion, %{id: knowledge_base_version.id})
+    {knowledge_base, refreshed}
   end
 
   defp create_assistant_with_config(org_id, status) do
@@ -194,13 +215,13 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
     {assistant, config_version}
   end
 
-  defp link_kbv_to_acv(kbv, acv, org_id) do
+  defp link_kbv_to_acv(knowledge_base_version, config_version, org_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     Repo.insert_all("assistant_config_version_knowledge_base_versions", [
       %{
-        assistant_config_version_id: acv.id,
-        knowledge_base_version_id: kbv.id,
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: knowledge_base_version.id,
         organization_id: org_id,
         inserted_at: now,
         updated_at: now
