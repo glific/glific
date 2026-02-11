@@ -55,7 +55,7 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorker do
 
     {:ok, _updated_kbv} =
       kbv
-      |> KnowledgeBaseVersion.changeset(%{status: :failed, failure_reason: @failure_reason})
+      |> KnowledgeBaseVersion.changeset(%{status: :failed})
       |> Repo.update()
 
     affected_acvs_with_preloads =

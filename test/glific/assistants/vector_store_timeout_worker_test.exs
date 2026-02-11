@@ -30,7 +30,6 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
       {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
       assert updated_kbv.status == :failed
-      assert updated_kbv.failure_reason =~ "timed out"
     end
 
     test "does NOT affect records less than 1 hour old", %{organization_id: org_id} do
@@ -40,7 +39,6 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
       {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
       assert updated_kbv.status == :in_progress
-      assert updated_kbv.failure_reason == nil
     end
 
     test "ignores records that are already completed", %{organization_id: org_id} do
@@ -50,7 +48,6 @@ defmodule Glific.Assistants.VectorStoreTimeoutWorkerTest do
 
       {:ok, updated_kbv} = Repo.fetch_by(KnowledgeBaseVersion, %{id: kbv.id})
       assert updated_kbv.status == :completed
-      assert updated_kbv.failure_reason == nil
     end
 
     test "updates linked in_progress AssistantConfigVersions to failed", %{
