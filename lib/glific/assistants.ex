@@ -10,26 +10,14 @@ defmodule Glific.Assistants do
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
-    "c",
-    "cpp",
-    "cs",
-    "css",
+    "csv",
     "doc",
     "docx",
-    "go",
     "html",
     "java",
-    "js",
-    "json",
     "md",
     "pdf",
-    "php",
     "pptx",
-    "py",
-    "rb",
-    "sh",
-    "tex",
-    "ts",
     "txt"
   ]
 
@@ -88,7 +76,6 @@ defmodule Glific.Assistants do
   @spec upload_file(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def upload_file(params, organization_id) do
-
     document_params = %{
       path: params.media.path,
       filename: params.media.filename,
