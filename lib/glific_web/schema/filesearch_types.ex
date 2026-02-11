@@ -88,6 +88,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
+    field :description, :string
     field :temperature, :float
     field :knowledge_base_id, :string
   end

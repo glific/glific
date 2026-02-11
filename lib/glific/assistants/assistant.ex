@@ -30,12 +30,12 @@ defmodule Glific.Assistants.Assistant do
 
   @required_fields [
     :name,
-    :organization_id,
-    :kaapi_uuid
+    :organization_id
   ]
   @optional_fields [
     :description,
-    :active_config_version_id
+    :active_config_version_id,
+    :kaapi_uuid
   ]
 
   schema "assistants" do

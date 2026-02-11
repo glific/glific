@@ -52,16 +52,15 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Creates an Assistant.
+  Creates an Assistant with its first config version.
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(user_params) do
     with :ok <- validate_knowledge_base_presence(user_params),
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
-         {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
-         {:ok, kaapi_uuid} <- create_kaapi_assistant(kaapi_config, user_params[:organization_id]) do
-      create_assistant_transaction(user_params, kaapi_config, kaapi_uuid, knowledge_base_version)
+         {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
+      create_assistant_transaction(user_params, kaapi_config, knowledge_base_version)
     end
   end
 
@@ -77,18 +76,108 @@ defmodule Glific.Assistants do
   @spec build_kaapi_config(map(), KnowledgeBaseVersion.t()) :: {:ok, map()}
   defp build_kaapi_config(user_params, knowledge_base_version) do
     prompt = user_params[:instructions] || "You are a helpful assistant"
+    description = user_params[:description] || "Assistant configuration"
 
     config = %{
       temperature: user_params[:temperature] || 1,
       model: user_params[:model] || @default_model,
       organization_id: user_params[:organization_id],
       instructions: prompt,
-      name: generate_temp_name(user_params[:name], "Assistant"),
+      name: generate_assistant_name(user_params[:name]),
+      description: description,
       vector_store_ids: [knowledge_base_version.llm_service_id],
       prompt: prompt
     }
 
     {:ok, config}
+  end
+
+  @spec create_assistant_transaction(map(), map(), KnowledgeBaseVersion.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp create_assistant_transaction(user_params, kaapi_config, knowledge_base_version) do
+    Multi.new()
+    |> Multi.insert(:assistant, build_assistant_changeset(user_params, kaapi_config))
+    |> Multi.insert(
+      :config_version,
+      &build_config_version_changeset(&1.assistant, kaapi_config, knowledge_base_version)
+    )
+    |> Multi.update(:assistant_with_active_config, fn %{
+                                                        assistant: assistant,
+                                                        config_version: config_version
+                                                      } ->
+      Assistant.set_active_config_version_changeset(assistant, %{
+        active_config_version_id: config_version.id
+      })
+    end)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        user_params[:organization_id]
+      )
+    )
+    |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
+      create_kaapi_assistant(kaapi_config, user_params[:organization_id])
+    end)
+
+    # Step 6: Update assistant with kaapi_uuid (LAST STEP)
+    |> Multi.update(:updated_assistant, fn %{
+                                             assistant_with_active_config: assistant,
+                                             kaapi_uuid: kaapi_uuid
+                                           } ->
+      Assistant.changeset(assistant, %{kaapi_uuid: kaapi_uuid})
+    end)
+    |> Repo.transaction()
+    |> handle_transaction_result()
+  end
+
+  # Helper function to build the knowledge base link record
+  @spec build_knowledge_base_link(
+          AssistantConfigVersion.t(),
+          KnowledgeBaseVersion.t(),
+          non_neg_integer()
+        ) :: [map()]
+  defp build_knowledge_base_link(config_version, knowledge_base_version, organization_id) do
+    [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: knowledge_base_version.id,
+        organization_id: organization_id,
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      }
+    ]
+  end
+
+  @spec build_assistant_changeset(map(), map()) :: Ecto.Changeset.t()
+  defp build_assistant_changeset(user_params, kaapi_config) do
+    Assistant.changeset(%Assistant{}, %{
+      name: kaapi_config.name,
+      description: user_params[:description],
+      organization_id: user_params[:organization_id]
+    })
+  end
+
+  @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
+          Ecto.Changeset.t()
+  defp build_config_version_changeset(assistant, kaapi_config, knowledge_base_version) do
+    status =
+      if knowledge_base_version.status == :completed,
+        do: :ready,
+        else: knowledge_base_version.status
+
+    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+      assistant_id: assistant.id,
+      description: kaapi_config.description,
+      prompt: kaapi_config.prompt,
+      model: kaapi_config.model,
+      provider: "kaapi",
+      settings: %{temperature: kaapi_config.temperature},
+      status: status,
+      organization_id: kaapi_config.organization_id
+    })
   end
 
   @spec create_kaapi_assistant(map(), non_neg_integer()) :: {:ok, String.t()} | {:error, any()}
@@ -102,98 +191,6 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec create_assistant_transaction(map(), map(), String.t(), KnowledgeBaseVersion.t()) ::
-          {:ok, map()} | {:error, any()}
-  defp create_assistant_transaction(user_params, kaapi_config, kaapi_uuid, knowledge_base_version) do
-    Multi.new()
-    |> Multi.insert(:assistant, build_assistant_changeset(user_params, kaapi_config, kaapi_uuid))
-    |> Multi.insert(
-      :config_version,
-      &build_config_version_changeset(&1, kaapi_config, knowledge_base_version)
-    )
-    |> Multi.update(:updated_assistant, &update_assistant_with_active_config/1)
-    |> Multi.run(
-      :link_knowledge_base,
-      &link_knowledge_base_to_config(
-        &1,
-        &2,
-        knowledge_base_version,
-        user_params[:organization_id]
-      )
-    )
-    |> Repo.transaction()
-    |> handle_transaction_result()
-  end
-
-  @spec build_assistant_changeset(map(), map(), String.t()) :: Ecto.Changeset.t()
-  defp build_assistant_changeset(user_params, kaapi_config, kaapi_uuid) do
-    Assistant.changeset(%Assistant{}, %{
-      name: kaapi_config.name,
-      description: user_params[:description],
-      kaapi_uuid: kaapi_uuid,
-      organization_id: user_params[:organization_id]
-    })
-  end
-
-  @spec build_config_version_changeset(map(), map(), KnowledgeBaseVersion.t()) ::
-          Ecto.Changeset.t()
-  defp build_config_version_changeset(
-         %{assistant: assistant},
-         kaapi_config,
-         knowledge_base_version
-       ) do
-    status = if knowledge_base_version.status == :completed, do: :ready, else: :in_progress
-
-    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
-      assistant_id: assistant.id,
-      prompt: kaapi_config.prompt,
-      model: kaapi_config.model,
-      provider: "kaapi",
-      settings: %{temperature: kaapi_config.temperature},
-      status: status,
-      organization_id: kaapi_config.organization_id
-    })
-  end
-
-  @spec update_assistant_with_active_config(map()) :: Ecto.Changeset.t()
-  defp update_assistant_with_active_config(%{
-         assistant: assistant,
-         config_version: config_version
-       }) do
-    Assistant.set_active_config_version_changeset(assistant, %{
-      active_config_version_id: config_version.id
-    })
-  end
-
-  @spec link_knowledge_base_to_config(
-          Ecto.Repo.t(),
-          map(),
-          KnowledgeBaseVersion.t(),
-          non_neg_integer()
-        ) :: {:ok, non_neg_integer()}
-  defp link_knowledge_base_to_config(
-         _repo,
-         %{config_version: config_version},
-         knowledge_base_version,
-         organization_id
-       ) do
-    {count, _} =
-      Repo.insert_all(
-        "assistant_config_version_knowledge_base_versions",
-        [
-          %{
-            assistant_config_version_id: config_version.id,
-            knowledge_base_version_id: knowledge_base_version.id,
-            organization_id: organization_id,
-            inserted_at: DateTime.utc_now(),
-            updated_at: DateTime.utc_now()
-          }
-        ]
-      )
-
-    {:ok, count}
-  end
-
   @spec handle_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
           {:ok, map()} | {:error, any()}
   defp handle_transaction_result(result) do
@@ -201,27 +198,20 @@ defmodule Glific.Assistants do
       {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
         {:ok, %{assistant: assistant, config_version: config_version}}
 
-      {:error, :assistant, %Ecto.Changeset{} = changeset, _} ->
-        {:error, changeset}
-
-      {:error, :config_version, %Ecto.Changeset{} = changeset, _} ->
-        {:error, changeset}
-
-      {:error, :updated_assistant, %Ecto.Changeset{} = changeset, _} ->
+      {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
         {:error, changeset}
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
         Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
-
         {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
     end
   end
 
-  @spec generate_temp_name(String.t() | nil, String.t()) :: String.t()
-  defp generate_temp_name(name, artifact) when name in [nil, ""] do
+  @spec generate_assistant_name(String.t() | nil) :: String.t()
+  defp generate_assistant_name(name) when name in [nil, ""] do
     uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
-    "#{artifact}-#{uid}"
+    "Assistant-#{uid}"
   end
 
-  defp generate_temp_name(name, _artifact), do: name
+  defp generate_assistant_name(name), do: name
 end
