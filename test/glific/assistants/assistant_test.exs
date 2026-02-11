@@ -132,8 +132,8 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
-  describe "upload_file/1" do
-    test "upload_file/1, uploads the file successfully to Kaapi", %{
+  describe "upload_file/2" do
+    test "upload_file/2, uploads the file successfully to Kaapi", %{
       organization_id: organization_id,
       upload: upload
     } do
@@ -159,29 +159,23 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       assert {:ok, %{file_id: file_id, filename: filename}} =
-               Assistants.upload_file(%{
-                 media: upload,
-                 organization_id: organization_id
-               })
+               Assistants.upload_file(%{media: upload}, organization_id)
 
       assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
       assert filename == "sample.pdf"
     end
 
-    test "upload_file/1, uploads the file failed due to unsupported file", %{
+    test "upload_file/2, uploads the file failed due to unsupported file", %{
       organization_id: organization_id,
       upload: upload
     } do
       csv_upload = %{upload | content_type: "application/csv", filename: "sample.csv"}
 
       assert {:error, "Files with extension '.csv' not supported in Assistants"} =
-               Assistants.upload_file(%{
-                 media: csv_upload,
-                 organization_id: organization_id
-               })
+               Assistants.upload_file(%{media: csv_upload}, organization_id)
     end
 
-    test "upload_file/1, uploads file to Kaapi with transformation parameters", %{
+    test "upload_file/2, uploads file to Kaapi with transformation parameters", %{
       organization_id: organization_id,
       upload: upload
     } do
@@ -207,18 +201,20 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       assert {:ok, %{file_id: file_id, filename: filename}} =
-               Assistants.upload_file(%{
-                 media: upload,
-                 organization_id: organization_id,
-                 target_format: "pdf",
-                 callback_url: "https://example.com/webhook"
-               })
+               Assistants.upload_file(
+                 %{
+                   media: upload,
+                   target_format: "pdf",
+                   callback_url: "https://example.com/webhook"
+                 },
+                 organization_id
+               )
 
       assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
       assert filename == "sample.pdf"
     end
 
-    test "upload_file/1, handles Kaapi upload error gracefully", %{
+    test "upload_file/2, handles Kaapi upload error gracefully", %{
       organization_id: organization_id,
       upload: upload
     } do
@@ -235,10 +231,7 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       assert {:error, error_message} =
-               Assistants.upload_file(%{
-                 media: upload,
-                 organization_id: organization_id
-               })
+               Assistants.upload_file(%{media: upload}, organization_id)
 
       assert is_binary(error_message)
       assert error_message =~ "status 500"
