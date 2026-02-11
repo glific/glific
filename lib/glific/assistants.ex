@@ -121,8 +121,6 @@ defmodule Glific.Assistants do
     |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
       create_kaapi_assistant(kaapi_config, user_params[:organization_id])
     end)
-
-    # Step 6: Update assistant with kaapi_uuid (LAST STEP)
     |> Multi.update(:updated_assistant, fn %{
                                              assistant_with_active_config: assistant,
                                              kaapi_uuid: kaapi_uuid
@@ -133,7 +131,6 @@ defmodule Glific.Assistants do
     |> handle_transaction_result()
   end
 
-  # Helper function to build the knowledge base link record
   @spec build_knowledge_base_link(
           AssistantConfigVersion.t(),
           KnowledgeBaseVersion.t(),
