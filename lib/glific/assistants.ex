@@ -133,33 +133,25 @@ defmodule Glific.Assistants do
          affected_config_versions,
          affected_config_version_ids
        ) do
-    kb_name = knowledge_base_version.knowledge_base.name
-
-    affected_assistants =
+    affected_assistant_names =
       affected_config_versions
       |> Enum.map(& &1.assistant)
-      |> Enum.reject(&is_nil/1)
       |> Enum.map(& &1.name)
       |> Enum.uniq()
-      |> Enum.join(", ")
-
-    message =
-      if affected_assistants != "" do
-        "Vector store '#{kb_name}' (version #{knowledge_base_version.version_number}) creation timed out. Affected assistants: #{affected_assistants}"
-      else
-        "Vector store '#{kb_name}' (version #{knowledge_base_version.version_number}) creation timed out."
-      end
 
     Notifications.create_notification(%{
       category: "Assistant",
-      message: message,
+      message: "Knowledge Base creation timeout",
       severity: Notifications.types().warning,
       organization_id: knowledge_base_version.organization_id,
       entity: %{
         knowledge_base_version_id: knowledge_base_version.id,
         knowledge_base_id: knowledge_base_version.knowledge_base_id,
+        knowledge_base_name: knowledge_base_version.knowledge_base.name,
+        version_number: knowledge_base_version.version_number,
         kaapi_job_id: knowledge_base_version.kaapi_job_id,
-        affected_config_version_ids: affected_config_version_ids
+        affected_config_version_ids: affected_config_version_ids,
+        affected_assistant_names: affected_assistant_names
       }
     })
   end
