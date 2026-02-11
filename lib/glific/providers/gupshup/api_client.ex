@@ -78,10 +78,12 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     # Using a separate client as Logger middleware throws errors
     # if debug is not disabled since it does not handle bitstrings.
     client =
-      Tesla.client([
-        {Tesla.Middleware.Logger, debug: false},
-        {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1}
-      ])
+      Tesla.client(
+        [
+          {Tesla.Middleware.Logger, debug: false},
+          {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1}
+        ] ++ Glific.get_tesla_retry_middleware()
+      )
 
     client
     |> Tesla.get(audio_url)
