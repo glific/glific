@@ -499,7 +499,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
   describe "whatsapp_form_response" do
     test "Incoming WhatsApp form response should be stored in the database with whatsapp_response_id",
-         %{conn: conn} do
+         %{conn: conn, user: user} do
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           cond do
@@ -550,16 +550,19 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       {:ok, _wa_form} =
-        WhatsappForms.create_whatsapp_form(%{
-          name: "Customer Feedback Form",
-          meta_flow_id: "1787478395302778",
-          form_json: %{
-            "screens" => []
+        WhatsappForms.create_whatsapp_form(
+          %{
+            name: "Customer Feedback Form",
+            meta_flow_id: "1787478395302778",
+            form_json: %{
+              "screens" => []
+            },
+            categories: ["other"],
+            description: "A form to collect customer feedback",
+            organization_id: conn.assigns[:organization_id]
           },
-          categories: ["other"],
-          description: "A form to collect customer feedback",
-          organization_id: conn.assigns[:organization_id]
-        })
+          user
+        )
 
       payload = %{
         "entry" => [
