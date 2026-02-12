@@ -73,8 +73,8 @@ defmodule Glific.Assistants do
     Repo.preload(assistant_or_assistants, [
       {:active_config_version, [knowledge_base_versions: :knowledge_base]},
       config_versions:
-        from(cv in AssistantConfigVersion,
-          where: cv.status == :in_progress
+        from(config_version in AssistantConfigVersion,
+          where: config_version.status == :in_progress
         )
     ])
   end
@@ -88,43 +88,44 @@ defmodule Glific.Assistants do
     # migration, which lack a kaapi_job_id since they were synced directly
     # via the OpenAI API.
 
-    acv = assistant.active_config_version
+    active_config_version = assistant.active_config_version
 
     new_version_in_progress =
-      Enum.any?(assistant.config_versions, fn cv ->
-        cv.id != assistant.active_config_version_id and cv.status == :in_progress
+      Enum.any?(assistant.config_versions, fn config_version ->
+        config_version.id != assistant.active_config_version_id and
+          config_version.status == :in_progress
       end)
 
     %{
       id: assistant.id,
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
-      temperature: get_in(acv.settings || %{}, ["temperature"]),
-      model: acv.model,
-      instructions: acv.prompt,
-      status: to_string(acv.status),
+      temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
+      model: active_config_version.model,
+      instructions: active_config_version.prompt,
+      status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
-      vector_store_data: build_vector_store_data(acv),
+      vector_store_data: build_vector_store_data(active_config_version),
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
     }
   end
 
-  defp build_vector_store_data(acv) do
-    case acv.knowledge_base_versions do
-      [kbv | _] ->
-        kb = kbv.knowledge_base
+  defp build_vector_store_data(active_config_version) do
+    case active_config_version.knowledge_base_versions do
+      [knowledge_base_version | _] ->
+        knowledge_base = knowledge_base_version.knowledge_base
 
         %{
-          id: kb.id,
-          vector_store_id: kbv.llm_service_id,
-          name: kb.name,
-          files: kbv.files || %{},
-          size: kbv.size || 0,
-          status: to_string(kbv.status),
-          legacy: is_nil(kbv.kaapi_job_id),
-          inserted_at: kbv.inserted_at,
-          updated_at: kbv.updated_at
+          id: knowledge_base.id,
+          vector_store_id: knowledge_base_version.llm_service_id,
+          name: knowledge_base.name,
+          files: knowledge_base_version.files || %{},
+          size: knowledge_base_version.size || 0,
+          status: to_string(knowledge_base_version.status),
+          legacy: is_nil(knowledge_base_version.kaapi_job_id),
+          inserted_at: knowledge_base_version.inserted_at,
+          updated_at: knowledge_base_version.updated_at
         }
 
       _ ->
