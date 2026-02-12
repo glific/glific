@@ -158,11 +158,12 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      assert {:ok, %{file_id: file_id, filename: filename}} =
+      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
                Assistants.upload_file(%{media: upload}, organization_id)
 
       assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
       assert filename == "sample.pdf"
+      assert uploaded_at == "2026-01-30T10:51:16.872363"
     end
 
     test "upload_file/2, uploads the file failed due to unsupported file", %{
@@ -200,7 +201,7 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      assert {:ok, %{file_id: file_id, filename: filename}} =
+      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
                Assistants.upload_file(
                  %{
                    media: upload,
@@ -212,6 +213,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
       assert filename == "sample.pdf"
+      assert uploaded_at == "2026-01-30T10:51:16.872363"
     end
 
     test "upload_file/2, handles Kaapi upload error gracefully", %{

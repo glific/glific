@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_result do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :string
   end
 
   object :assistant_result do

@@ -88,7 +88,8 @@ defmodule Glific.Assistants do
       {:ok,
        %{
          file_id: document_data[:id],
-         filename: document_data[:fname]
+         filename: document_data[:fname],
+         uploaded_at: document_data[:inserted_at]
        }}
     else
       {:error, %{status: status, body: body}} ->
