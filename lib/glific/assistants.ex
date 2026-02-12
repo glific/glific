@@ -60,7 +60,7 @@ defmodule Glific.Assistants do
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
-      create_assistant_transaction(user_params, kaapi_config, knowledge_base_version)
+      create_assistant_transaction(kaapi_config, knowledge_base_version)
     end
   end
 
@@ -91,11 +91,11 @@ defmodule Glific.Assistants do
     {:ok, config}
   end
 
-  @spec create_assistant_transaction(map(), map(), KnowledgeBaseVersion.t()) ::
+  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
           {:ok, map()} | {:error, any()}
-  defp create_assistant_transaction(user_params, kaapi_config, knowledge_base_version) do
+  defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
     Multi.new()
-    |> Multi.insert(:assistant, build_assistant_changeset(user_params, kaapi_config))
+    |> Multi.insert(:assistant, build_assistant_changeset(kaapi_config))
     |> Multi.insert(
       :config_version,
       &build_config_version_changeset(&1.assistant, kaapi_config, knowledge_base_version)
@@ -114,11 +114,11 @@ defmodule Glific.Assistants do
       &build_knowledge_base_link(
         &1.config_version,
         knowledge_base_version,
-        user_params[:organization_id]
+        kaapi_config.organization_id
       )
     )
     |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
-      create_kaapi_assistant(kaapi_config, user_params[:organization_id])
+      create_kaapi_assistant(kaapi_config, kaapi_config.organization_id)
     end)
     |> Multi.update(:updated_assistant, fn %{
                                              assistant_with_active_config: assistant,
@@ -147,12 +147,12 @@ defmodule Glific.Assistants do
     ]
   end
 
-  @spec build_assistant_changeset(map(), map()) :: Ecto.Changeset.t()
-  defp build_assistant_changeset(user_params, kaapi_config) do
+  @spec build_assistant_changeset(map()) :: Ecto.Changeset.t()
+  defp build_assistant_changeset(kaapi_config) do
     Assistant.changeset(%Assistant{}, %{
       name: kaapi_config.name,
-      description: user_params[:description],
-      organization_id: user_params[:organization_id]
+      description: kaapi_config.prompt,
+      organization_id: kaapi_config.organization_id
     })
   end
 

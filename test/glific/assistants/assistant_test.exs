@@ -179,7 +179,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Test Assistant",
         description: "A test assistant",
-        instructions: "You are helpful",
+        instructions: "You are helpful assistant",
         temperature: 0.7,
         model: "gpt-4o-mini",
         organization_id: organization_id,
@@ -191,14 +191,14 @@ defmodule Glific.Assistants.AssistantTest do
 
       # Check assistant
       assert assistant.name == "Test Assistant"
-      assert assistant.description == "A test assistant"
+      assert assistant.description == "You are helpful assistant"
       assert assistant.kaapi_uuid == "kaapi-uuid-123"
       assert assistant.organization_id == organization_id
       assert assistant.active_config_version_id == config_version.id
 
       # Check config version
       assert config_version.assistant_id == assistant.id
-      assert config_version.prompt == "You are helpful"
+      assert config_version.prompt == "You are helpful assistant"
       assert config_version.model == "gpt-4o-mini"
       assert config_version.provider == "kaapi"
       assert config_version.settings.temperature == 0.7
@@ -297,7 +297,7 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.model == "gpt-4o"
       assert config_version.settings.temperature == 1
       assert config_version.status == :ready
-      assert assistant.description == nil
+      assert assistant.description == "You are a helpful assistant"
 
       :meck.unload(Partners)
     end
