@@ -53,8 +53,12 @@ defmodule Glific.Assistants do
 
   @spec transform_to_legacy_shape(Assistant.t()) :: map()
   defp transform_to_legacy_shape(%Assistant{} = assistant) do
-    # new_version_in_progress - it tracks whether a newer config version (different from the active one) is being drafted, used by the frontend for a "draft in progress" indicator
-    # legacy - it identifies knowledge base versions created before the Kaapi migration, which lack a kaapi_job_id since they were synced directly via the OpenAI API.
+    # new_version_in_progress - tracks whether a newer config version
+    # (different from the active one) is being drafted, used by the frontend
+    # for a "draft in progress" indicator.
+    # legacy - identifies knowledge base versions created before the Kaapi
+    # migration, which lack a kaapi_job_id since they were synced directly
+    # via the OpenAI API.
 
     acv = assistant.active_config_version
 
