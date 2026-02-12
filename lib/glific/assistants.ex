@@ -52,6 +52,22 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Updates an Assistant by creating a new config version and setting it as active.
+  """
+  @spec update_assistant(integer(), map()) :: {:ok, map()} | {:error, any()}
+  def update_assistant(id, user_params) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         assistant <- Repo.preload(assistant, :active_config_version),
+         merged_params <- merge_with_existing(assistant, user_params),
+         :ok <- validate_knowledge_base_presence(merged_params),
+         {:ok, knowledge_base_version} <-
+           KnowledgeBaseVersion.get_knowledge_base_version(merged_params[:knowledge_base_id]),
+         {:ok, kaapi_config} <- build_kaapi_config(merged_params, knowledge_base_version) do
+      update_assistant_transaction(assistant, kaapi_config, knowledge_base_version)
+    end
+  end
+
+  @doc """
   Creates an Assistant with its first config version.
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
@@ -61,6 +77,68 @@ defmodule Glific.Assistants do
            KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       create_assistant_transaction(kaapi_config, knowledge_base_version)
+    end
+  end
+
+  @spec merge_with_existing(Assistant.t(), map()) :: map()
+  defp merge_with_existing(assistant, user_params) do
+    acv = assistant.active_config_version
+
+    %{
+      name: user_params[:name] || assistant.name,
+      description: user_params[:description] || acv.description,
+      instructions: user_params[:instructions] || acv.prompt,
+      temperature: user_params[:temperature] || acv.settings["temperature"],
+      model: user_params[:model] || acv.model,
+      organization_id: assistant.organization_id,
+      knowledge_base_id: user_params[:knowledge_base_id]
+    }
+  end
+
+  @spec update_assistant_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp update_assistant_transaction(assistant, kaapi_config, knowledge_base_version) do
+    Multi.new()
+    |> Multi.insert(
+      :config_version,
+      build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
+    )
+    |> Multi.update(:updated_assistant, fn %{config_version: config_version} ->
+      Assistant.changeset(assistant, %{
+        name: kaapi_config.name,
+        description: kaapi_config.prompt,
+        active_config_version_id: config_version.id
+      })
+    end)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        kaapi_config.organization_id
+      )
+    )
+    |> Multi.run(:kaapi_sync, fn _repo, _changes ->
+      create_kaapi_assistant(kaapi_config, kaapi_config.organization_id)
+    end)
+    |> Repo.transaction()
+    |> handle_update_transaction_result()
+  end
+
+  @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
+          {:ok, map()} | {:error, any()}
+  defp handle_update_transaction_result(result) do
+    case result do
+      {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
+        {:ok, %{assistant: assistant, config_version: config_version}}
+
+      {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
+        {:error, changeset}
+
+      {:error, failed_operation, failed_value, _changes_so_far} ->
+        Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
+        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
     end
   end
 

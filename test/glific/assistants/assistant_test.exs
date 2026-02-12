@@ -12,6 +12,12 @@ defmodule Glific.Assistants.AssistantTest do
   }
 
   setup %{organization_id: organization_id} do
+    :meck.new(Partners, [:passthrough])
+
+    :meck.expect(Partners, :organization, fn _ ->
+      %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+    end)
+
     Tesla.Mock.mock(fn
       %{method: :get, url: _url} ->
         %Tesla.Env{
@@ -58,6 +64,8 @@ defmodule Glific.Assistants.AssistantTest do
       kaapi_uuid: "test-uuid",
       organization_id: organization_id
     }
+
+    on_exit(fn -> :meck.unload(Partners) end)
 
     {:ok, %{valid_attrs: valid_attrs, knowledge_base: kb, knowledge_base_version: kb_version}}
   end
@@ -165,17 +173,11 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
-  describe "create_assistant/1" do
+  describe "create and update assistant" do
     test "creates assistant successfully with knowledge base", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Test Assistant",
         description: "A test assistant",
@@ -189,14 +191,12 @@ defmodule Glific.Assistants.AssistantTest do
       assert {:ok, result} = Assistants.create_assistant(params)
       assert %{assistant: assistant, config_version: config_version} = result
 
-      # Check assistant
       assert assistant.name == "Test Assistant"
       assert assistant.description == "You are helpful assistant"
       assert assistant.kaapi_uuid == "kaapi-uuid-123"
       assert assistant.organization_id == organization_id
       assert assistant.active_config_version_id == config_version.id
 
-      # Check config version
       assert config_version.assistant_id == assistant.id
       assert config_version.prompt == "You are helpful assistant"
       assert config_version.model == "gpt-4o-mini"
@@ -204,17 +204,9 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.settings.temperature == 0.7
       assert config_version.status == :ready
       assert config_version.organization_id == organization_id
-
-      :meck.unload(Partners)
     end
 
     test "returns error when knowledge_base_id is nil", %{organization_id: organization_id} do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Test Assistant",
         instructions: "You are helpful",
@@ -224,17 +216,9 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:error, error_message} = Assistants.create_assistant(params)
       assert error_message == "Knowledge base is required for assistant creation"
-
-      :meck.unload(Partners)
     end
 
     test "returns error when knowledge_base_id is missing", %{organization_id: organization_id} do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Test Assistant",
         instructions: "You are helpful",
@@ -243,20 +227,12 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:error, error_message} = Assistants.create_assistant(params)
       assert error_message == "Knowledge base is required for assistant creation"
-
-      :meck.unload(Partners)
     end
 
     test "generates temp name when name is nil", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: nil,
         instructions: "You are helpful",
@@ -267,22 +243,13 @@ defmodule Glific.Assistants.AssistantTest do
       assert {:ok, result} = Assistants.create_assistant(params)
       assert %{assistant: assistant} = result
 
-      # Should have generated name like "Assistant-abc123"
       assert assistant.name =~ ~r/^Assistant-[a-f0-9]+$/
-
-      :meck.unload(Partners)
     end
 
     test "uses default values when optional params are missing", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Minimal Assistant",
         organization_id: organization_id,
@@ -292,26 +259,17 @@ defmodule Glific.Assistants.AssistantTest do
       assert {:ok, result} = Assistants.create_assistant(params)
       assert %{assistant: assistant, config_version: config_version} = result
 
-      # Check defaults
       assert config_version.prompt == "You are a helpful assistant"
       assert config_version.model == "gpt-4o"
       assert config_version.settings.temperature == 1
       assert config_version.status == :ready
       assert assistant.description == "You are a helpful assistant"
-
-      :meck.unload(Partners)
     end
 
     test "returns error when Kaapi API fails", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       Tesla.Mock.mock(fn
         %{method: :post, url: _url} ->
           %Tesla.Env{
@@ -332,23 +290,14 @@ defmodule Glific.Assistants.AssistantTest do
       }
 
       assert {:error, error} = Assistants.create_assistant(params)
-      # The error is a string, not a map
       assert is_binary(error)
       assert String.contains?(error, "Failed at kaapi_uuid")
-
-      :meck.unload(Partners)
     end
 
     test "active_config_version_id is set correctly", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Active Config Test",
         organization_id: organization_id,
@@ -362,20 +311,12 @@ defmodule Glific.Assistants.AssistantTest do
       assert reloaded_assistant.active_config_version_id == config_version.id
 
       assert config_version.assistant_id == assistant.id
-
-      :meck.unload(Partners)
     end
 
     test "links config version to knowledge base version", %{
       organization_id: organization_id,
       knowledge_base: kb
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "KB Link Test",
         organization_id: organization_id,
@@ -399,19 +340,11 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert link != nil
       assert link.assistant_config_version_id == config_version.id
-
-      :meck.unload(Partners)
     end
 
     test "returns error when knowledge base has no versions", %{
       organization_id: organization_id
     } do
-      :meck.new(Partners, [:passthrough])
-
-      :meck.expect(Partners, :organization, fn _ ->
-        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
-      end)
-
       params = %{
         name: "Test Assistant",
         organization_id: organization_id
@@ -419,8 +352,160 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:error, error_message} = Assistants.create_assistant(params)
       assert error_message == "Knowledge base is required for assistant creation"
+    end
 
-      :meck.unload(Partners)
+    test "updates assistant creating a new config version", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "Original Assistant",
+        instructions: "You are an original assistant",
+        temperature: 0.5,
+        model: "gpt-4o",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      {:ok, result} = Assistants.create_assistant(params)
+
+      update_params = %{
+        name: "Updated Assistant",
+        instructions: "You are an updated assistant",
+        temperature: 0.8,
+        model: "gpt-4o-mini",
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, update_result} = Assistants.update_assistant(result.assistant.id, update_params)
+      assert %{assistant: updated_assistant, config_version: new_config} = update_result
+
+      assert updated_assistant.name == "Updated Assistant"
+      assert new_config.prompt == "You are an updated assistant"
+      assert new_config.model == "gpt-4o-mini"
+      assert new_config.settings["temperature"] == 0.8
+      assert updated_assistant.active_config_version_id == new_config.id
+    end
+
+    test "partial update keeps existing values", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "Original Assistant",
+        instructions: "You are an original assistant",
+        temperature: 0.5,
+        model: "gpt-4o",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      {:ok, result} = Assistants.create_assistant(params)
+
+      update_params = %{
+        instructions: "New instructions only",
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, update_result} = Assistants.update_assistant(result.assistant.id, update_params)
+      assert %{config_version: new_config} = update_result
+
+      assert new_config.prompt == "New instructions only"
+      assert new_config.model == result.config_version.model
+      assert new_config.id != result.config_version.id
+    end
+
+    test "new config version becomes active on update", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "Original Assistant",
+        instructions: "You are an original assistant",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      {:ok, result} = Assistants.create_assistant(params)
+
+      update_params = %{
+        instructions: "Updated instructions",
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, %{assistant: updated_assistant, config_version: new_config}} =
+               Assistants.update_assistant(result.assistant.id, update_params)
+
+      reloaded = Repo.get!(Assistant, updated_assistant.id)
+      assert reloaded.active_config_version_id == new_config.id
+      assert reloaded.active_config_version_id != result.config_version.id
+    end
+
+    test "update links new config version to knowledge base version", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "Original Assistant",
+        instructions: "You are an original assistant",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      {:ok, result} = Assistants.create_assistant(params)
+
+      update_params = %{
+        instructions: "Updated",
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, %{config_version: new_config}} =
+               Assistants.update_assistant(result.assistant.id, update_params)
+
+      import Ecto.Query
+
+      link =
+        from(acvkbv in "assistant_config_version_knowledge_base_versions",
+          where: acvkbv.assistant_config_version_id == ^new_config.id,
+          select: %{
+            assistant_config_version_id: acvkbv.assistant_config_version_id,
+            knowledge_base_version_id: acvkbv.knowledge_base_version_id
+          }
+        )
+        |> Repo.one()
+
+      assert link != nil
+      assert link.assistant_config_version_id == new_config.id
+    end
+
+    test "update returns error when knowledge_base_id is missing", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      params = %{
+        name: "Original Assistant",
+        instructions: "You are an original assistant",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      {:ok, result} = Assistants.create_assistant(params)
+
+      update_params = %{instructions: "New instructions"}
+
+      assert {:error, error_message} =
+               Assistants.update_assistant(result.assistant.id, update_params)
+
+      assert error_message == "Knowledge base is required for assistant creation"
+    end
+
+    test "update returns error when assistant does not exist" do
+      update_params = %{
+        instructions: "New instructions",
+        knowledge_base_id: 999
+      }
+
+      assert {:error, _} = Assistants.update_assistant(0, update_params)
     end
   end
 

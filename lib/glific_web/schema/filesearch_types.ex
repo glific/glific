@@ -149,7 +149,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Update Assistant"
-    field :update_assistant, :assistant_result do
+    field :update_assistant, :kaapi_assistant_result do
       arg(:input, :assistant_input)
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
