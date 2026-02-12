@@ -32,8 +32,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      audio_url = "gs://bucket-name/audio-file.ogg"
-      result = ApiClient.speech_to_text(audio_url, organization_id)
+      result = ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
 
       assert result.success == true
       assert result.asr_response_text == "Hello, this is a test message"
@@ -47,8 +46,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      audio_url = "gs://bucket-name/audio-file.ogg"
-      result = ApiClient.speech_to_text(audio_url, organization_id)
+      result = ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
 
       assert result.success == false
       assert result.asr_response_text == 400
@@ -62,8 +60,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      audio_url = "gs://bucket-name/audio-file.ogg"
-      result = ApiClient.speech_to_text(audio_url, organization_id)
+      result = ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
 
       assert result.success == false
       assert result.asr_response_text == 500
@@ -74,8 +71,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, :timeout}
       end)
 
-      audio_url = "gs://bucket-name/audio-file.ogg"
-      result = ApiClient.speech_to_text(audio_url, organization_id)
+      result = ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
 
       assert result.success == false
       assert result.asr_response_text == :timeout
@@ -86,8 +82,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, :econnrefused}
       end)
 
-      audio_url = "gs://bucket-name/audio-file.ogg"
-      result = ApiClient.speech_to_text(audio_url, organization_id)
+      result = ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
 
       assert result.success == false
       assert result.asr_response_text == :econnrefused
@@ -107,10 +102,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      audio_url = "gs://bucket-name/audio.ogg"
-
       assert %{success: false, asr_response_text: 200} ==
-               ApiClient.speech_to_text(audio_url, organization_id)
+               ApiClient.speech_to_text("3nC0dedAuD10", organization_id)
     end
   end
 

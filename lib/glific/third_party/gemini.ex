@@ -10,6 +10,7 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.Metrics
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Gemini.ApiClient
 
   @supported_languages %{
@@ -46,11 +47,15 @@ defmodule Glific.ThirdParty.Gemini do
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(audio_url, organization_id) do
-    case ApiClient.speech_to_text(audio_url, organization_id) do
-      %{success: true} = response ->
-        Metrics.increment("Gemini STT Success", organization_id)
+    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+         %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
+      Metrics.increment("Gemini STT Success", organization_id)
 
-        response
+      response
+    else
+      {:error, :download_failed} ->
+        Metrics.increment("Gemini STT Failure", organization_id)
+        %{success: false, asr_response_text: "File download failed"}
 
       error ->
         Metrics.increment("Gemini STT Failure", organization_id)
