@@ -8,21 +8,210 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   require Logger
 
   alias Glific.Assistants
+  alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
-  alias Glific.Filesearch.Assistant
+  alias Glific.Filesearch.Assistant, as: OpenAIAssistant
   alias Glific.Filesearch.VectorStore
   alias Glific.Repo
   alias Glific.TaskSupervisor
+  alias Glific.ThirdParty.Kaapi
+
+  @default_model "gpt-4o"
 
   @doc """
-  Migrate assistant
+  Migrate all assistants to the new unified API structure
   """
-  @spec migrate_assistants :: nil
+  @spec migrate_assistants :: %{success: non_neg_integer(), failure: non_neg_integer()}
   def migrate_assistants do
-    # Implementation of the migration logic
+    openai_assistants =
+      from(oa in OpenAIAssistant,
+        preload: [:vector_store]
+      )
+      |> Repo.all()
+
+    Logger.info("Starting migration for #{length(openai_assistants)} assistants")
+
+    Task.Supervisor.async_stream_nolink(
+      TaskSupervisor,
+      openai_assistants,
+      &migrate_assistant/1,
+      max_concurrency: 20,
+      timeout: 60_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.reduce(%{success: 0, failure: 0}, fn
+      {:ok, {:ok, _result}}, acc ->
+        Map.update(acc, :success, 1, &(&1 + 1))
+
+      {:ok, {:error, reason}}, acc ->
+        Logger.error("Assistant Migration failed: #{inspect(reason)}")
+        Map.update(acc, :failure, 1, &(&1 + 1))
+
+      {:exit, :timeout}, acc ->
+        Logger.error("Assistant Migration: Timed out")
+        Map.update(acc, :failure, 1, &(&1 + 1))
+
+      {:exit, reason}, acc ->
+        Logger.error("Assistant Migration: Exited with reason: #{inspect(reason)}")
+        Map.update(acc, :failure, 1, &(&1 + 1))
+    end)
   end
 
+  # Private functions
+  @spec migrate_assistant(OpenAIAssistant.t()) ::
+          {:ok, Assistant.t()} | {:error, any()}
+  defp migrate_assistant(openai_assistant) do
+    Repo.put_process_state(openai_assistant.organization_id)
+
+    # Check if already migrated
+    case check_if_migrated(openai_assistant) do
+      {:ok, existing_assistant} ->
+        Logger.info(
+          "Assistant #{openai_assistant.id} already migrated as #{existing_assistant.id}, skipping"
+        )
+
+        {:ok, existing_assistant}
+
+      {:not_migrated} ->
+        do_migrate_assistant(openai_assistant)
+    end
+  end
+
+  @spec check_if_migrated(OpenAIAssistant.t()) :: {:ok, Assistant.t()} | {:not_migrated}
+  defp check_if_migrated(openai_assistant) do
+    case Repo.fetch_by(Assistant,
+           name: openai_assistant.name,
+           organization_id: openai_assistant.organization_id
+         ) do
+      {:ok, assistant} -> {:ok, assistant}
+      _ -> {:not_migrated}
+    end
+  end
+
+  @spec do_migrate_assistant(OpenAIAssistant.t()) ::
+          {:ok, Assistant.t()} | {:error, any()}
+  defp do_migrate_assistant(openai_assistant) do
+    Logger.info("Migrating assistant #{openai_assistant.id}")
+
+    org_id = openai_assistant.organization_id
+    prompt = openai_assistant.instructions || "You are a helpful assistant"
+
+    vector_store_ids = get_vector_store_ids(openai_assistant.vector_store)
+
+    kb_version_id = get_kb_version_id(openai_assistant.vector_store)
+
+    kaapi_params = %{
+      name: openai_assistant.name,
+      description: nil,
+      instructions: prompt,
+      model: openai_assistant.model || @default_model,
+      temperature: openai_assistant.temperature || 1,
+      organization_id: org_id,
+      vector_store_ids: vector_store_ids
+    }
+
+    with {:ok, kaapi_response} <- Kaapi.create_assistant_config(kaapi_params, org_id),
+         kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id do
+      multi_result =
+        Ecto.Multi.new()
+        |> Ecto.Multi.insert(
+          :assistant,
+          Assistant.changeset(%Assistant{}, %{
+            name: openai_assistant.name,
+            description: nil,
+            kaapi_uuid: kaapi_uuid,
+            organization_id: org_id
+          })
+        )
+        |> Ecto.Multi.insert(:config_version, fn %{assistant: assistant} ->
+          AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+            assistant_id: assistant.id,
+            prompt: prompt,
+            model: kaapi_params.model,
+            provider: "kaapi",
+            settings: %{temperature: kaapi_params.temperature},
+            status: :ready,
+            organization_id: org_id,
+            kaapi_uuid: kaapi_uuid
+          })
+        end)
+        |> Ecto.Multi.update(:updated_assistant, fn %{
+                                                      assistant: assistant,
+                                                      config_version: config_version
+                                                    } ->
+          Assistant.set_active_config_version_changeset(assistant, %{
+            active_config_version_id: config_version.id
+          })
+        end)
+        |> Ecto.Multi.run(:link_kb, fn _repo, %{config_version: config_version} ->
+          if kb_version_id do
+            {count, _} = link_config_to_kb(config_version.id, kb_version_id, org_id)
+            {:ok, count}
+          else
+            {:ok, 0}
+          end
+        end)
+        |> Repo.transaction()
+
+      case multi_result do
+        {:ok, %{updated_assistant: assistant}} ->
+          Logger.info("Successfully migrated assistant #{openai_assistant.id} to #{assistant.id}")
+          {:ok, assistant}
+
+        {:error, failed_operation, failed_value, _} ->
+          Logger.error(
+            "Failed at #{failed_operation} for assistant #{openai_assistant.id}: #{inspect(failed_value)}"
+          )
+
+          {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
+      end
+    else
+      {:error, reason} ->
+        Logger.error(
+          "Kaapi config creation failed for assistant #{openai_assistant.id}: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @spec get_vector_store_ids(VectorStore.t() | nil) :: list(String.t())
+  defp get_vector_store_ids(nil), do: []
+  defp get_vector_store_ids(vector_store), do: [vector_store.vector_store_id]
+
+  @spec get_kb_version_id(VectorStore.t() | nil) :: integer() | nil
+  defp get_kb_version_id(nil), do: nil
+
+  defp get_kb_version_id(vector_store) do
+    case Repo.fetch_by(KnowledgeBaseVersion,
+           llm_service_id: vector_store.vector_store_id,
+           organization_id: vector_store.organization_id
+         ) do
+      {:ok, kb_version} -> kb_version.id
+      _ -> nil
+    end
+  end
+
+  @spec link_config_to_kb(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {non_neg_integer(), nil | [term()]}
+  defp link_config_to_kb(config_version_id, kb_version_id, org_id) do
+    Repo.insert_all(
+      "assistant_config_version_knowledge_base_versions",
+      [
+        %{
+          assistant_config_version_id: config_version_id,
+          knowledge_base_version_id: kb_version_id,
+          organization_id: org_id,
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        }
+      ]
+    )
+  end
+
+  # Vector store migration functions (keep existing code)
   @doc """
   Migrate old vector stores to the new Unified API structure for maintaining versions
   """
@@ -113,8 +302,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     }
 
     case Assistants.create_knowledge_base_version(attrs) do
-      {:ok, _knowledge_base_version} ->
-        {:ok, knowledge_base}
+      {:ok, knowledge_base_version} ->
+        {:ok, knowledge_base_version}
 
       {:error, reason} ->
         Logger.error(
