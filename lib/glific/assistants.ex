@@ -23,16 +23,7 @@ defmodule Glific.Assistants do
       args
       |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
       |> Repo.all()
-
-    assistants =
-      Repo.preload(assistants, [
-        {:active_config_version,
-         [knowledge_base_versions: :knowledge_base]},
-        config_versions:
-          from(cv in AssistantConfigVersion,
-            where: cv.status == :in_progress
-          )
-      ])
+      |> preload_assistant_associations()
 
     Enum.map(assistants, &transform_to_legacy_shape/1)
   end
@@ -43,22 +34,28 @@ defmodule Glific.Assistants do
   @spec get_assistant(integer()) :: {:ok, map()} | {:error, any()}
   def get_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}) do
-      assistant =
-        Repo.preload(assistant, [
-          {:active_config_version,
-           [knowledge_base_versions: :knowledge_base]},
-          config_versions:
-            from(cv in AssistantConfigVersion,
-              where: cv.status == :in_progress
-            )
-        ])
-
+      assistant = preload_assistant_associations(assistant)
       {:ok, transform_to_legacy_shape(assistant)}
     end
   end
 
+  @spec preload_assistant_associations(Assistant.t() | list(Assistant.t())) ::
+          Assistant.t() | list(Assistant.t())
+  defp preload_assistant_associations(assistant_or_assistants) do
+    Repo.preload(assistant_or_assistants, [
+      {:active_config_version, [knowledge_base_versions: :knowledge_base]},
+      config_versions:
+        from(cv in AssistantConfigVersion,
+          where: cv.status == :in_progress
+        )
+    ])
+  end
+
   @spec transform_to_legacy_shape(Assistant.t()) :: map()
   defp transform_to_legacy_shape(%Assistant{} = assistant) do
+    # new_version_in_progress - it tracks whether a newer config version (different from the active one) is being drafted, used by the frontend for a "draft in progress" indicator
+    # legacy - it identifies knowledge base versions created before the Kaapi migration, which lack a kaapi_job_id since they were synced directly via the OpenAI API.
+
     acv = assistant.active_config_version
 
     new_version_in_progress =
