@@ -120,12 +120,11 @@ defmodule Glific.FilesearchTest do
   test "valid create assistant", %{user: user} do
     enable_kaapi(%{organization_id: user.organization_id})
 
-    {_unified_assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: user.organization_id,
-        name: "Assistant-f78f4392",
-        kaapi_uuid: "asst_123"
-      })
+    create_unified_assistant(%{
+      organization_id: user.organization_id,
+      name: "Assistant-f78f4392",
+      kaapi_uuid: "asst_123"
+    })
 
     Tesla.Mock.mock(fn
       # Mock OpenAI assistants endpoint
@@ -210,12 +209,11 @@ defmodule Glific.FilesearchTest do
 
     {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    {_unified_assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant",
-        kaapi_uuid: "asst_abc_del"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant",
+      kaapi_uuid: "asst_abc_del"
+    })
 
     Tesla.Mock.mock(fn
       %{method: :delete} ->
@@ -266,12 +264,11 @@ defmodule Glific.FilesearchTest do
 
     {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    {_unified_assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant",
-        kaapi_uuid: "asst_abc_upd"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant",
+      kaapi_uuid: "asst_abc_upd"
+    })
 
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -357,12 +354,11 @@ defmodule Glific.FilesearchTest do
 
     {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    {_unified_assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant",
-        kaapi_uuid: "asst_abc"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant",
+      kaapi_uuid: "asst_abc"
+    })
 
     create_unified_vector_store_for_kaapi_uuid(%{
       organization_id: attrs.organization_id,
@@ -493,12 +489,11 @@ defmodule Glific.FilesearchTest do
 
     {:ok, assistant} = Assistant.create_assistant(valid_attrs)
 
-    {_unified_assistant, _config} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant",
-        kaapi_uuid: "asst_abc3"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant",
+      kaapi_uuid: "asst_abc3"
+    })
 
     create_unified_vector_store_for_kaapi_uuid(%{
       organization_id: attrs.organization_id,
@@ -626,7 +621,7 @@ defmodule Glific.FilesearchTest do
   end
 
   test "get assistant", attrs do
-    {assistant, _config} =
+    {assistant, _} =
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "new assistant",
@@ -655,7 +650,7 @@ defmodule Glific.FilesearchTest do
   end
 
   test "get assistant with vector store", attrs do
-    {assistant, _config} =
+    {assistant, _} =
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "assistant with vs",
@@ -698,19 +693,17 @@ defmodule Glific.FilesearchTest do
 
     assert result.data["Assistants"] == []
 
-    {_assistant1, _config1} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant",
-        kaapi_uuid: "asst_abc"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant",
+      kaapi_uuid: "asst_abc"
+    })
 
-    {_assistant2, _config2} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "new assistant 2",
-        kaapi_uuid: "asst_abc2"
-      })
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "new assistant 2",
+      kaapi_uuid: "asst_abc2"
+    })
 
     # fetch all
     {:ok, result} =
@@ -730,7 +723,7 @@ defmodule Glific.FilesearchTest do
 
     assert length(result.data["Assistants"]) == 1
 
-    {assistant3, _config3} =
+    {assistant3, _} =
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "new assistant 3",
