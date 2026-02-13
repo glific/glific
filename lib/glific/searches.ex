@@ -21,7 +21,6 @@ defmodule Glific.Searches do
     Groups.WAGroup,
     Messages.Message,
     Repo,
-    RepoReplica,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
@@ -251,6 +250,7 @@ defmodule Glific.Searches do
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
+    repo = search_config(:repo_module)
     query = from(c in Contact, as: :c)
 
     query
@@ -259,7 +259,7 @@ defmodule Glific.Searches do
     |> where([c: c], c.status != :blocked)
     |> where([c: c], c.contact_type in ["WABA", "WABA+WA"])
     |> group_by([c: c], c.id)
-    |> RepoReplica.add_permission(&Searches.add_permission/2)
+    |> repo.add_permission(&Searches.add_permission/2)
   end
 
   @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
@@ -480,17 +480,21 @@ defmodule Glific.Searches do
     ## so we don't need to make extra query for multi search
     tags = []
 
+    # Temporarily using a runtime configurable repo module as a failsafe
+    # so we can switch between the replica and primary database in case of a failure.
+    repo = search_config(:repo_module)
+
     search_item_tasks = [
       Task.async(fn ->
-        RepoReplica.put_process_state(org_id)
+        repo.put_process_state(org_id)
         get_filtered_contacts(term, args)
       end),
       Task.async(fn ->
-        RepoReplica.put_process_state(org_id)
+        repo.put_process_state(org_id)
         get_filtered_messages_with_term(term, args)
       end),
       Task.async(fn ->
-        RepoReplica.put_process_state(org_id)
+        repo.put_process_state(org_id)
         get_filtered_labeled_message(term, args)
       end)
     ]
@@ -530,13 +534,14 @@ defmodule Glific.Searches do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
     # always cap out limit to 250, in case frontend sends too many
     limit = min(limit, 250)
+    repo = search_config(:repo_module)
 
     query = from(m in Message, as: :m)
 
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
     |> where([m, c: c], c.status != :blocked)
-    |> RepoReplica.add_permission(&Searches.add_permission/2)
+    |> repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)
@@ -546,6 +551,7 @@ defmodule Glific.Searches do
   @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
     {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
+    repo = search_config(:repo_module)
 
     # since this revolves around contacts
     args
@@ -554,25 +560,29 @@ defmodule Glific.Searches do
     |> limit(^limit)
     |> offset(^offset)
     |> order_by([c: c], desc: c.last_message_at)
-    |> RepoReplica.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
   # codebeat:enable[ABC]
 
   @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
+    repo = search_config(:repo_module)
+
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> RepoReplica.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
   @spec get_filtered_labeled_message(String.t(), map()) :: list()
   defp get_filtered_labeled_message(term, args) do
+    repo = search_config(:repo_module)
+
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.message_number)
-    |> RepoReplica.all(timeout: @search_timeout)
+    |> repo.all(timeout: @search_timeout)
   end
 
   @spec get_filtered_wa_messages_with_term(String.t(), map()) :: list()
@@ -750,4 +760,10 @@ defmodule Glific.Searches do
 
     {has_filter, query}
   end
+
+  @spec search_config() :: map()
+  defp search_config, do: Application.fetch_env!(:glific, __MODULE__)
+
+  @spec search_config(atom()) :: module()
+  defp search_config(key), do: search_config()[key]
 end
