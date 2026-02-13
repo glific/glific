@@ -1,5 +1,5 @@
-query Assistants($filter: AssistantFilter, $opts: Opts) {
-  Assistants(filter: $filter, opts: $opts) {
+fragment UnifiedAssistantFields on UnifiedAssistantResult {
+  assistant {
     id
     name
     assistant_id
@@ -12,6 +12,7 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
       name
       status
       legacy
+      size
       files {
         id
         name
@@ -20,5 +21,12 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
     }
     inserted_at
     updated_at
+  }
+}
+
+fragment UnifiedErrorFields on UnifiedAssistantResult {
+  errors {
+    key
+    message
   }
 }

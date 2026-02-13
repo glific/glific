@@ -1,9 +1,9 @@
-#import "./assistant_fields.frag.gql"
+#import "./unified_assistant_fields.frag.gql"
 
 query Assistant($id: ID!) {
   assistant(id: $id) {
-    ...AssistantFields
+    ...UnifiedAssistantFields
 
-    ...ErrorFields
+    ...UnifiedErrorFields
   }
 }

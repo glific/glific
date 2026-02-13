@@ -1,4 +1,3 @@
-
 fragment AssistantFields on AssistantResult {
   assistant {
     id
@@ -9,6 +8,8 @@ fragment AssistantFields on AssistantResult {
       id
       vector_store_id
       name
+      status
+      legacy
       files {
         id
         name
