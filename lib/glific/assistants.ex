@@ -128,14 +128,7 @@ defmodule Glific.Assistants do
   def process_timeouts(org_id) do
     find_timed_out_versions(org_id)
     |> Enum.each(fn knowledge_base_version ->
-      try do
-        mark_as_failed(knowledge_base_version)
-      rescue
-        e ->
-          Logger.error(
-            "Failed to process timeout for KnowledgeBaseVersion #{knowledge_base_version.id}: #{Exception.message(e)}"
-          )
-      end
+      mark_as_failed(knowledge_base_version)
     end)
 
     :ok
