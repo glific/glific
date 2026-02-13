@@ -209,7 +209,6 @@ defmodule Glific.AssistantsTest do
       assert notification.message == "Knowledge Base creation timeout"
       assert notification.entity["knowledge_base_version_id"] == knowledge_base_version.id
       assert notification.entity["knowledge_base_name"] == knowledge_base.name
-      assert notification.entity["kaapi_job_id"] == "job_123"
       assert notification.entity["affected_config_version_ids"] == [config_version.id]
       assert assistant.name in notification.entity["affected_assistant_names"]
     end

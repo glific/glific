@@ -122,8 +122,7 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Periodically checks for in-progress KnowledgeBaseVersions that have exceeded
-  the timeout threshold and marks them as failed.
+  Checks for in-progress KnowledgeBaseVersions that have exceeded
   """
   @spec process_timeouts(non_neg_integer()) :: :ok
   def process_timeouts(org_id) do
@@ -144,7 +143,7 @@ defmodule Glific.Assistants do
 
   @spec find_timed_out_versions(non_neg_integer()) :: [KnowledgeBaseVersion.t()]
   defp find_timed_out_versions(org_id) do
-    timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours * 3600, :second)
+    timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours, :hour)
 
     KnowledgeBaseVersion
     |> where([kbv], kbv.organization_id == ^org_id)
@@ -218,7 +217,6 @@ defmodule Glific.Assistants do
         knowledge_base_id: knowledge_base_version.knowledge_base_id,
         knowledge_base_name: knowledge_base_version.knowledge_base.name,
         version_number: knowledge_base_version.version_number,
-        kaapi_job_id: knowledge_base_version.kaapi_job_id,
         affected_config_version_ids: affected_config_version_ids,
         affected_assistant_names: affected_assistant_names
       }
