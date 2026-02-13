@@ -112,25 +112,20 @@ defmodule Glific.Assistants do
   end
 
   defp build_vector_store_data(active_config_version) do
-    case active_config_version.knowledge_base_versions do
-      [knowledge_base_version | _] ->
-        knowledge_base = knowledge_base_version.knowledge_base
+    [knowledge_base_version | _] = active_config_version.knowledge_base_versions
+    knowledge_base = knowledge_base_version.knowledge_base
 
-        %{
-          id: knowledge_base.id,
-          vector_store_id: knowledge_base_version.llm_service_id,
-          name: knowledge_base.name,
-          files: knowledge_base_version.files || %{},
-          size: knowledge_base_version.size || 0,
-          status: to_string(knowledge_base_version.status),
-          legacy: is_nil(knowledge_base_version.kaapi_job_id),
-          inserted_at: knowledge_base_version.inserted_at,
-          updated_at: knowledge_base_version.updated_at
-        }
-
-      _ ->
-        nil
-    end
+    %{
+      id: knowledge_base.id,
+      vector_store_id: knowledge_base_version.llm_service_id,
+      name: knowledge_base.name,
+      files: knowledge_base_version.files || %{},
+      size: knowledge_base_version.size || 0,
+      status: to_string(knowledge_base_version.status),
+      legacy: is_nil(knowledge_base_version.kaapi_job_id),
+      inserted_at: knowledge_base_version.inserted_at,
+      updated_at: knowledge_base_version.updated_at
+    }
   end
 
   @doc """
