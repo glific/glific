@@ -7,6 +7,7 @@ defmodule Glific.Filesearch do
 
   alias Glific.{
     Assistants,
+    Assistants.Assistant,
     Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
@@ -106,7 +107,8 @@ defmodule Glific.Filesearch do
   @doc """
   Deletes the Assistant for the given ID
   """
-  @spec delete_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_assistant(integer()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t() | any()}
   def delete_assistant(id) do
     Assistants.delete_assistant(id)
   end
