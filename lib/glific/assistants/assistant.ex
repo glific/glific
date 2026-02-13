@@ -82,12 +82,10 @@ defmodule Glific.Assistants.Assistant do
     end
   end
 
-  @doc """
-  Generate an OpenAI-style assistant ID
-  Format: asst_ followed by 24 random alphanumeric characters
-  """
+  # Generate an OpenAI-style assistant ID
+  # Format: asst_ followed by 24 random alphanumeric characters
   @spec generate_assistant_id() :: String.t()
-  def generate_assistant_id do
+  defp generate_assistant_id do
     random_string =
       24
       |> :crypto.strong_rand_bytes()
