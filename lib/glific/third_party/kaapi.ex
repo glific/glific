@@ -177,6 +177,33 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Delete a config and all associated versions in Kaapi, send error to Appsignal if failed.
+  """
+  @spec delete_config(binary(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def delete_config(config_uuid, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.delete_config(config_uuid, secrets["api_key"]) do
+      Logger.info(
+        "KAAPI config delete successful for org: #{organization_id}, config: #{config_uuid}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message:
+              "Kaapi config delete failed for org_id=#{organization_id}, config=#{config_uuid}, reason=#{inspect(reason)}"
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do

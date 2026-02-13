@@ -6,6 +6,7 @@ defmodule Glific.Filesearch do
   alias Ecto.Multi
 
   alias Glific.{
+    Assistants,
     Filesearch.Assistant,
     Filesearch.VectorStore,
     OpenAI.Filesearch.ApiClient,
@@ -107,16 +108,7 @@ defmodule Glific.Filesearch do
   """
   @spec delete_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   def delete_assistant(id) do
-    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         {:ok, _} <- ApiClient.delete_assistant(assistant.assistant_id) do
-      if assistant.vector_store_id do
-        delete_vector_store(assistant.vector_store_id)
-      end
-
-      Kaapi.delete_assistant(assistant.assistant_id, assistant.organization_id)
-
-      Repo.delete(assistant)
-    end
+    Assistants.delete_assistant(id)
   end
 
   @doc """

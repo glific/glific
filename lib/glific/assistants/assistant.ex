@@ -42,7 +42,7 @@ defmodule Glific.Assistants.Assistant do
 
     belongs_to(:organization, Organization)
     belongs_to(:active_config_version, AssistantConfigVersion)
-    has_many :config_versions, AssistantConfigVersion
+    has_many(:config_versions, AssistantConfigVersion)
 
     timestamps(type: :utc_datetime)
   end
