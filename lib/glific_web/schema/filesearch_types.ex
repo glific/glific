@@ -50,6 +50,23 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :kaapi_assistant_result do
+    field :assistant, :kaapi_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :kaapi_assistant do
+    field :id, :id
+    field :name, :string
+    field :description, :string
+    field :kaapi_uuid, :string
+    field :assistant_display_id, :string
+    field :assistant_id, :string
+    field :active_config_version_id, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   object :assistant do
     field :id, :id
     field :name, :string
@@ -74,7 +91,9 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
+    field :description, :string
     field :temperature, :float
+    field :knowledge_base_id, :string
   end
 
   input_object :file_info_input do
@@ -105,7 +124,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Create Assistant"
-    field :create_assistant, :assistant_result do
+    field :create_assistant, :kaapi_assistant_result do
       arg(:input, :assistant_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.create_assistant/3)
