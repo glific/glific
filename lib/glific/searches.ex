@@ -757,5 +757,5 @@ defmodule Glific.Searches do
   @spec search_config(atom()) :: module()
   defp search_config(key), do: search_config()[key]
 
-  defp repo(), do: search_config(:repo_module)
+  defp repo, do: search_config(:repo_module)
 end
