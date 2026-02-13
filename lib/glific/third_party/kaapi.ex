@@ -194,6 +194,8 @@ defmodule Glific.ThirdParty.Kaapi do
         params: completion_params
       }
     }
+  end
+
   @doc """
   Upload a document to Kaapi documents API, send error to Appsignal if failed.
   """

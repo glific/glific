@@ -191,7 +191,7 @@ defmodule Glific.Assistants do
   @spec create_kaapi_assistant(map(), non_neg_integer()) :: {:ok, String.t()} | {:error, any()}
   defp create_kaapi_assistant(kaapi_config, organization_id) do
     case Kaapi.create_assistant_config(kaapi_config, organization_id) do
-      {:ok, kaapi_response} when is_binary(kaapi_response.data.id) ->
+      {:ok, kaapi_response} ->
         {:ok, kaapi_response.data.id}
 
       {:error, reason} ->
@@ -222,6 +222,8 @@ defmodule Glific.Assistants do
   end
 
   defp generate_assistant_name(name), do: name
+
+  @doc """
   Upload file to Kaapi documents API
 
   ## Parameters
