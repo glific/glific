@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_result do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :string
   end
 
   object :assistant_result do
@@ -114,6 +115,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
+      arg(:target_format, :string)
+      arg(:callback_url, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
     end

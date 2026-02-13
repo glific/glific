@@ -157,9 +157,7 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
            ApiClient.delete_assistant(assistant_id, secrets["api_key"]) do
-      Logger.info(
-        "KAAPI AI Assistant delete successful for org: #{organization_id}, assistant: #{assistant_id}"
-      )
+      Logger.info("KAAPI AI Assistant delete successful for, assistant: #{assistant_id}")
 
       {:ok, result}
     else
@@ -196,6 +194,30 @@ defmodule Glific.ThirdParty.Kaapi do
         params: completion_params
       }
     }
+  @doc """
+  Upload a document to Kaapi documents API, send error to Appsignal if failed.
+  """
+  @spec upload_document(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def upload_document(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.upload_document(params, secrets["api_key"]) do
+      Logger.info("KAAPI document upload successful for, file: #{params.filename}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi document upload failed for, filename=#{params.filename}",
+            reason: inspect(reason),
+            organization_id: organization_id
+          },
+          []
+        )
+
+        {:error, reason}
+    end
   end
 
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
