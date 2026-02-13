@@ -246,14 +246,6 @@ defmodule Glific.Filesearch do
     end
   end
 
-  @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
-  defp delete_vector_store(id) do
-    with {:ok, vector_store} <- Repo.fetch_by(VectorStore, %{id: id}),
-         {:ok, _} <- ApiClient.delete_vector_store(vector_store.vector_store_id) do
-      Repo.delete(vector_store)
-    end
-  end
-
   @spec get_file(VectorStore.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp get_file(vector_store, file_id) do
     case Map.get(vector_store.files, file_id) do
