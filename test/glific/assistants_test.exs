@@ -16,7 +16,8 @@ defmodule Glific.AssistantsTest do
     %Assistant{}
     |> Assistant.changeset(%{
       name: "Test Assistant",
-      organization_id: organization_id
+      organization_id: organization_id,
+      kaapi_uuid: "kaapi-uuid-123"
     })
     |> Repo.insert!()
   end
@@ -57,11 +58,11 @@ defmodule Glific.AssistantsTest do
   end
 
   describe "delete_assistant/2" do
-    test "deletes assistant with config versions after deleting config from kaapi",
+    test "deletes assistant with kaapi_uuid after deleting config and assistant from kaapi",
          %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       assistant = create_assistant(organization_id)
-      create_config_version(assistant.id, organization_id, "kaapi-uuid-123")
+      config_version = create_config_version(assistant.id, organization_id, "config-uuid-123")
 
       mock(fn %Tesla.Env{method: :delete} ->
         %Tesla.Env{
@@ -72,14 +73,9 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
       assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-    end
 
-    test "deletes assistant without config versions (no kaapi call)",
-         %{organization_id: organization_id} do
-      assistant = create_assistant(organization_id)
-
-      assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
-      assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert {:error, _} =
+               Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
     end
 
     test "returns error when assistant not found" do
@@ -90,7 +86,6 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       assistant = create_assistant(organization_id)
-      create_config_version(assistant.id, organization_id, "kaapi-uuid-456")
 
       mock(fn %Tesla.Env{method: :delete} ->
         %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
