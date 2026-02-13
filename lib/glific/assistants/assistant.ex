@@ -18,6 +18,7 @@ defmodule Glific.Assistants.Assistant do
           name: String.t() | nil,
           description: String.t() | nil,
           kaapi_uuid: String.t() | nil,
+          assistant_id: String.t() | nil,
           active_config_version_id: non_neg_integer() | nil,
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -35,13 +36,15 @@ defmodule Glific.Assistants.Assistant do
   @optional_fields [
     :description,
     :active_config_version_id,
-    :kaapi_uuid
+    :kaapi_uuid,
+    :assistant_id
   ]
 
   schema "assistants" do
     field(:name, :string)
     field(:description, :string)
     field(:kaapi_uuid, :string)
+    field(:assistant_id, :string)
 
     belongs_to(:organization, Organization)
     belongs_to(:active_config_version, AssistantConfigVersion)
@@ -68,5 +71,29 @@ defmodule Glific.Assistants.Assistant do
     assistant
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> add_assistant_id()
+    |> unique_constraint(:assistant_id)
+  end
+
+  defp add_assistant_id(changeset) do
+    case get_field(changeset, :assistant_id) do
+      nil -> put_change(changeset, :assistant_id, generate_assistant_id())
+      _ -> changeset
+    end
+  end
+
+  @doc """
+  Generate an OpenAI-style assistant ID
+  Format: asst_ followed by 24 random alphanumeric characters
+  """
+  @spec generate_assistant_id() :: String.t()
+  def generate_assistant_id do
+    random_string =
+      24
+      |> :crypto.strong_rand_bytes()
+      |> Base.encode32(case: :lower, padding: false)
+      |> binary_part(0, 24)
+
+    "asst_#{random_string}"
   end
 end
