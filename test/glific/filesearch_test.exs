@@ -640,7 +640,7 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert %{"name" => "new assistant", "vector_store" => nil} =
+    assert %{"name" => "new assistant"} =
              query_data.data["assistant"]["assistant"]
 
     # Trying to fetch invalid assistant
@@ -659,22 +659,17 @@ defmodule Glific.FilesearchTest do
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "assistant with vs",
-        kaapi_uuid: "asst_vs"
+        kaapi_uuid: "asst_vs",
+        kb_name: "Test KB",
+        vector_store_id: "vs_test_123",
+        files: %{
+          "file_1" => %{
+            "filename" => "test.pdf",
+            "uploaded_at" => DateTime.to_iso8601(DateTime.utc_now())
+          }
+        },
+        size: 2_048
       })
-
-    create_unified_vector_store_for_kaapi_uuid(%{
-      organization_id: attrs.organization_id,
-      kaapi_uuid: "asst_vs",
-      name: "Test KB",
-      vector_store_id: "vs_test_123",
-      files: %{
-        "file_1" => %{
-          "filename" => "test.pdf",
-          "uploaded_at" => DateTime.to_iso8601(DateTime.utc_now())
-        }
-      },
-      size: 2_048
-    })
 
     {:ok, query_data} =
       auth_query_gql_by(:assistant, attrs.user,
@@ -1319,14 +1314,29 @@ defmodule Glific.FilesearchTest do
   end
 
   defp create_unified_assistant(attrs) do
+    defaults = %{
+      name: "Test Assistant",
+      kaapi_uuid: "asst_test_#{:rand.uniform(10000)}",
+      model: "gpt-4o",
+      instructions: "You are a helpful assistant",
+      temperature: 1.0,
+      status: :ready,
+      kb_name: "Default KB",
+      vector_store_id: "vs_default_#{:rand.uniform(10000)}",
+      files: %{},
+      kb_status: :completed,
+      size: 0
+    }
+
+    attrs = Map.merge(defaults, attrs)
     org_id = attrs.organization_id
 
     {:ok, assistant} =
       %Assistants.Assistant{}
       |> Assistants.Assistant.changeset(%{
-        name: attrs[:name] || "Test Assistant",
+        name: attrs.name,
         organization_id: org_id,
-        kaapi_uuid: attrs[:kaapi_uuid] || "asst_test_#{:rand.uniform(10000)}"
+        kaapi_uuid: attrs.kaapi_uuid
       })
       |> Repo.insert()
 
@@ -1336,14 +1346,15 @@ defmodule Glific.FilesearchTest do
         assistant_id: assistant.id,
         organization_id: org_id,
         provider: "openai",
-        model: attrs[:model] || "gpt-4o",
-        prompt: attrs[:instructions] || "You are a helpful assistant",
-        settings: %{"temperature" => attrs[:temperature] || 1.0},
-        status: attrs[:status] || :ready
+        model: attrs.model,
+        prompt: attrs.instructions,
+        settings: %{"temperature" => attrs.temperature},
+        status: attrs.status
       })
       |> Repo.insert()
 
-    # Set the active config version
+    link_knowledge_base(config_version, attrs)
+
     {:ok, assistant} =
       assistant
       |> Assistants.Assistant.set_active_config_version_changeset(%{
@@ -1355,22 +1366,30 @@ defmodule Glific.FilesearchTest do
   end
 
   defp create_unified_vector_store_for_kaapi_uuid(attrs) do
-    org_id = attrs.organization_id
-    kaapi_uuid = attrs.kaapi_uuid
-
     assistant =
       Repo.one(
         from(a in Assistants.Assistant,
-          where: a.kaapi_uuid == ^kaapi_uuid and a.organization_id == ^org_id,
+          where: a.kaapi_uuid == ^attrs.kaapi_uuid and a.organization_id == ^attrs.organization_id,
           preload: [:active_config_version]
         )
       )
 
-    config_version = assistant.active_config_version
+    defaults = %{
+      kb_name: attrs[:name],
+      kb_status: :completed,
+      files: %{},
+      size: 0
+    }
+
+    link_knowledge_base(assistant.active_config_version, Map.merge(defaults, attrs))
+  end
+
+  defp link_knowledge_base(config_version, attrs) do
+    org_id = config_version.organization_id
 
     {:ok, kb} =
       Assistants.create_knowledge_base(%{
-        name: attrs[:name] || "Test Knowledge Base",
+        name: attrs.kb_name,
         organization_id: org_id
       })
 
@@ -1378,10 +1397,10 @@ defmodule Glific.FilesearchTest do
       Assistants.create_knowledge_base_version(%{
         knowledge_base_id: kb.id,
         organization_id: org_id,
-        llm_service_id: attrs[:vector_store_id] || "vs_test_#{:rand.uniform(10000)}",
-        files: attrs[:files] || %{},
-        status: attrs[:status] || :completed,
-        size: attrs[:size] || 0,
+        llm_service_id: attrs.vector_store_id,
+        files: attrs.files,
+        status: attrs.kb_status,
+        size: attrs.size,
         kaapi_job_id: attrs[:kaapi_job_id]
       })
 
