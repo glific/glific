@@ -62,6 +62,7 @@ defmodule Glific.Assistants.AssistantTest do
       name: "Test Assistant",
       description: "A helpful assistant for testing",
       kaapi_uuid: "test-uuid",
+      assistant_display_id: "asst-123456",
       organization_id: organization_id
     }
 
@@ -82,6 +83,28 @@ defmodule Glific.Assistants.AssistantTest do
       assert changeset.errors == []
       assert get_change(changeset, :name) == "Test Assistant"
       assert get_change(changeset, :description) == "A helpful assistant for testing"
+      assert get_change(changeset, :assistant_display_id) == "asst-123456"
+    end
+
+    test "generates a unique assistant_display_id", %{valid_attrs: valid_attrs} do
+      valid_attrs = Map.delete(valid_attrs, :assistant_display_id)
+      changeset = Assistant.changeset(%Assistant{}, valid_attrs)
+
+      assert changeset.valid?
+      assert changeset.errors == []
+      assert get_change(changeset, :name) == "Test Assistant"
+      assert get_change(changeset, :description) == "A helpful assistant for testing"
+      assert get_change(changeset, :assistant_display_id) |> String.match?(~r/asst_\w{24}/)
+    end
+
+    test "unique assistant_display_id has to be unique", %{valid_attrs: valid_attrs} do
+      assert {:ok, _assistant} =
+               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+
+      assert {:error, changeset} =
+               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+
+      assert %{assistant_display_id: ["has already been taken"]} = errors_on(changeset)
     end
 
     test "changeset without name returns error", %{valid_attrs: valid_attrs} do
