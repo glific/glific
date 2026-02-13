@@ -168,7 +168,6 @@ defmodule Glific.Assistants do
 
     affected_config_versions =
       knowledge_base_version.assistant_config_versions
-      |> Enum.filter(&(&1.status == :in_progress))
 
     affected_config_version_ids = update_linked_config_versions(affected_config_versions)
 
