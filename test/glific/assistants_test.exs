@@ -1,9 +1,101 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
+  import Tesla.Mock
 
-  alias Glific.Assistants
-  alias Glific.Assistants.KnowledgeBase
-  alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.{
+    Assistants,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
+    Partners,
+    Repo
+  }
+
+  defp create_assistant(organization_id) do
+    %Assistant{}
+    |> Assistant.changeset(%{
+      name: "Test Assistant",
+      organization_id: organization_id,
+      kaapi_uuid: "kaapi-uuid-123"
+    })
+    |> Repo.insert!()
+  end
+
+  defp create_config_version(assistant_id, organization_id, kaapi_uuid) do
+    %AssistantConfigVersion{}
+    |> AssistantConfigVersion.changeset(%{
+      assistant_id: assistant_id,
+      prompt: "You are a helpful assistant",
+      provider: "openai",
+      model: "gpt-4o",
+      kaapi_uuid: kaapi_uuid,
+      settings: %{"temperature" => 0.7},
+      status: :ready,
+      organization_id: organization_id
+    })
+    |> Repo.insert!()
+  end
+
+  defp enable_kaapi(organization_id) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "api_key_12345"
+        }
+      })
+
+    Partners.update_credential(credential, %{
+      keys: %{},
+      secrets: %{"api_key" => "api-key-12345"},
+      is_active: true,
+      organization_id: organization_id,
+      shortcode: "kaapi"
+    })
+  end
+
+  describe "delete_assistant/1" do
+    test "deletes assistant with kaapi_uuid after deleting config and assistant from kaapi",
+         %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      assistant = create_assistant(organization_id)
+      config_version = create_config_version(assistant.id, organization_id, "config-uuid-123")
+
+      mock(fn %Tesla.Env{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{error: nil, data: "Deleted", metadata: nil, success: true}
+        }
+      end)
+
+      assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
+      assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert {:error, _} =
+               Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+    end
+
+    test "returns error when assistant not found" do
+      assert {:error, _} = Assistants.delete_assistant(-1)
+    end
+
+    test "returns error when kaapi delete fails",
+         %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      assistant = create_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :delete} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
+      end)
+
+      assert {:error, _} = Assistants.delete_assistant(assistant.id)
+      # assistant should still exist
+      assert {:ok, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+    end
+  end
 
   describe "create_knowledge_base/1" do
     test "creates a knowledge base with valid attrs", %{organization_id: organization_id} do

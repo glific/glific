@@ -3,10 +3,15 @@ defmodule Glific.Assistants do
   Context module for Assistant and related schemas
   """
 
-  alias Glific.Assistants.KnowledgeBase
-  alias Glific.Assistants.KnowledgeBaseVersion
-  alias Glific.Repo
-  alias Glific.ThirdParty.Kaapi
+  require Logger
+
+  alias Glific.{
+    Assistants.Assistant,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
+    Repo,
+    ThirdParty.Kaapi
+  }
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
@@ -20,6 +25,37 @@ defmodule Glific.Assistants do
     "pptx",
     "txt"
   ]
+
+  @doc """
+  Delete an assistant. If the assistant has a kaapi_uuid,
+  deletes the config and assistant from Kaapi first, then deletes
+  the assistant from the database.
+  """
+  @spec delete_assistant(non_neg_integer()) ::
+          {:ok, Assistant.t()} | {:error, any()}
+  def delete_assistant(id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         :ok <- delete_from_kaapi(assistant.kaapi_uuid, assistant.organization_id) do
+      Repo.delete(assistant)
+    end
+  end
+
+  @spec delete_from_kaapi(String.t() | nil, non_neg_integer()) ::
+          :ok | {:error, any()}
+  defp delete_from_kaapi(nil, _organization_id), do: :ok
+
+  defp delete_from_kaapi(kaapi_uuid, organization_id) do
+    with {:ok, _} <- Kaapi.delete_config(kaapi_uuid, organization_id),
+         {:ok, _} <- Kaapi.delete_assistant(kaapi_uuid, organization_id) do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
+
+      error ->
+        {:error, "Failed to delete assistant from Kaapi: #{inspect(error)}"}
+    end
+  end
 
   @doc """
   Create a Knowledge Base.
