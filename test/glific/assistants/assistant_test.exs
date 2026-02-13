@@ -205,7 +205,7 @@ defmodule Glific.Assistants.AssistantTest do
       assert assistant.name == "Test Assistant"
       assert assistant.description == "You are helpful assistant"
       assert assistant.kaapi_uuid == "kaapi-uuid-123"
-      assert assistant.assistant_id != nil
+      assert assistant.assistant_display_id != nil
       assert assistant.organization_id == organization_id
       assert assistant.active_config_version_id == config_version.id
 

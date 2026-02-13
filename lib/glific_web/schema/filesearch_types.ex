@@ -60,6 +60,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :description, :string
     field :kaapi_uuid, :string
+    field :assistant_display_id, :string
     field :assistant_id, :string
     field :active_config_version_id, :string
     field :inserted_at, :datetime
