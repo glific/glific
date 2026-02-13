@@ -44,7 +44,7 @@ defmodule Glific.Filesearch do
   ]
 
   @doc """
-  Upload file to openAI
+    Upload file to openAI
   """
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}
@@ -56,49 +56,6 @@ defmodule Glific.Filesearch do
          file_id: file.id,
          filename: file.filename
        }}
-    end
-  end
-
-  @doc """
-  Creates an Assistant
-  """
-  @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
-  def create_assistant(params) do
-    params = Map.put(params, :name, generate_temp_name(params[:name], "Assistant"))
-
-    # We can pass vector_store_ids while creating assistant, if available
-    vector_store_ids =
-      with %{vector_store_id: vs_id} <- params,
-           {:ok, vector_store} <- VectorStore.get_vector_store(vs_id) do
-        [vector_store.vector_store_id]
-      else
-        _ ->
-          []
-      end
-
-    attrs =
-      %{
-        temperature: 1,
-        model: @default_model,
-        organization_id: Repo.get_organization_id(),
-        vector_store_ids: vector_store_ids,
-        instructions: "You are a helpful assistant"
-      }
-      |> Map.merge(params)
-
-    with {:ok, %{id: assistant_id} = openai_response} <-
-           ApiClient.create_assistant(attrs),
-         {:ok, assistant} <-
-           Assistant.create_assistant(Map.put(attrs, :assistant_id, assistant_id)) do
-      # calling kaapi right after open ai so that the latest details of the assistant can be synced with kaapi
-      Kaapi.create_assistant(openai_response, params.organization_id)
-      {:ok, %{assistant: assistant}}
-    else
-      {:error, %Ecto.Changeset{} = err} ->
-        {:error, err}
-
-      {:error, reason} ->
-        {:error, "Assistant ID creation failed due to #{reason}"}
     end
   end
 

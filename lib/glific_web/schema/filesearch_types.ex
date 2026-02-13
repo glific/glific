@@ -42,11 +42,29 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_result do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :string
   end
 
   object :assistant_result do
     field :assistant, :assistant
     field :errors, list_of(:input_error)
+  end
+
+  object :kaapi_assistant_result do
+    field :assistant, :kaapi_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :kaapi_assistant do
+    field :id, :id
+    field :name, :string
+    field :description, :string
+    field :kaapi_uuid, :string
+    field :assistant_display_id, :string
+    field :assistant_id, :string
+    field :active_config_version_id, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
   end
 
   object :assistant do
@@ -73,7 +91,9 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
+    field :description, :string
     field :temperature, :float
+    field :knowledge_base_id, :string
   end
 
   input_object :file_info_input do
@@ -97,12 +117,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
+      arg(:target_format, :string)
+      arg(:callback_url, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
     end
 
     @desc "Create Assistant"
-    field :create_assistant, :assistant_result do
+    field :create_assistant, :kaapi_assistant_result do
       arg(:input, :assistant_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.create_assistant/3)

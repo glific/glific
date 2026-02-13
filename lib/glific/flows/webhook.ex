@@ -30,7 +30,7 @@ defmodule Glific.Flows.Webhook do
     sending errors to them won’t resolve the issue.
     Reporting these failures to AppSignal lets us detect and fix problems
     """
-    defexception [:message, :reason]
+    defexception [:message, :reason, :organization_id]
   end
 
   @non_unique_urls [
