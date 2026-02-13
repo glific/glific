@@ -48,6 +48,12 @@ defmodule Glific.Assistants do
     with {:ok, _} <- Kaapi.delete_config(kaapi_uuid, organization_id),
          {:ok, _} <- Kaapi.delete_assistant(kaapi_uuid, organization_id) do
       :ok
+    else
+      {:error, reason} ->
+        {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
+
+      error ->
+        {:error, "Failed to delete assistant from Kaapi: #{inspect(error)}"}
     end
   end
 
