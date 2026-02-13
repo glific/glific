@@ -98,10 +98,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   Delete a config in Kaapi
   """
   @spec delete_config(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
-  def delete_config(config_uuid, org_api_key) do
+  def delete_config(uuid, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.delete("/api/v1/configs/#{config_uuid}")
+    |> Tesla.delete("/api/v1/configs/#{uuid}")
     |> parse_kaapi_response()
   end
 

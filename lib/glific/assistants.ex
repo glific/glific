@@ -7,7 +7,6 @@ defmodule Glific.Assistants do
 
   alias Glific.{
     Assistants.Assistant,
-    Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Repo,
@@ -15,29 +14,27 @@ defmodule Glific.Assistants do
   }
 
   @doc """
-  Delete an assistant. If the assistant has a config version with a kaapi_uuid,
-  deletes the config from Kaapi first (which removes all versions), then deletes
+  Delete an assistant. If the assistant has a kaapi_uuid,
+  deletes the config and assistant from Kaapi first, then deletes
   the assistant from the database.
   """
   @spec delete_assistant(non_neg_integer()) ::
           {:ok, Assistant.t()} | {:error, any()}
   def delete_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         assistant <- Repo.preload(assistant, :config_versions),
-         :ok <-
-           maybe_delete_config_from_kaapi(assistant.config_versions, assistant.organization_id) do
+         :ok <- delete_from_kaapi(assistant.kaapi_uuid, assistant.organization_id) do
       Repo.delete(assistant)
     end
   end
 
-  @spec maybe_delete_config_from_kaapi([AssistantConfigVersion.t()], non_neg_integer()) ::
+  @spec delete_from_kaapi(String.t() | nil, non_neg_integer()) ::
           :ok | {:error, any()}
-  defp maybe_delete_config_from_kaapi([], _organization_id), do: :ok
+  defp delete_from_kaapi(nil, _organization_id), do: :ok
 
-  defp maybe_delete_config_from_kaapi([config_version | _], organization_id) do
-    case Kaapi.delete_config(config_version.kaapi_uuid, organization_id) do
-      {:ok, _} -> :ok
-      {:error, reason} -> {:error, reason}
+  defp delete_from_kaapi(kaapi_uuid, organization_id) do
+    with {:ok, _} <- Kaapi.delete_config(kaapi_uuid, organization_id),
+         {:ok, _} <- Kaapi.delete_assistant(kaapi_uuid, organization_id) do
+      :ok
     end
   end
 

@@ -17,6 +17,7 @@ defmodule Glific.Assistants.Assistant do
           id: non_neg_integer(),
           name: String.t(),
           description: String.t() | nil,
+          kaapi_uuid: String.t() | nil,
           active_config_version_id: non_neg_integer(),
           organization_id: non_neg_integer(),
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -33,12 +34,14 @@ defmodule Glific.Assistants.Assistant do
   ]
   @optional_fields [
     :description,
-    :active_config_version_id
+    :active_config_version_id,
+    :kaapi_uuid
   ]
 
   schema "assistants" do
     field(:name, :string)
     field(:description, :string)
+    field(:kaapi_uuid, :string)
 
     belongs_to(:organization, Organization)
     belongs_to(:active_config_version, AssistantConfigVersion)
