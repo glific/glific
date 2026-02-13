@@ -72,6 +72,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
       add(:description, :text, comment: "Description for this version")
       add(:prompt, :text, null: false, comment: "Prompt/instructions for this version")
+      add(:kaapi_uuid, :string, null: true, comment: "Kaapi UUID for the config version")
 
       add(:provider, :string,
         null: false,
@@ -85,8 +86,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
         default: "{}",
         comment: "Provider-specific settings like temperature, etc."
       )
-
-      add(:kaapi_uuid, :string, null: true, comment: "Kaapi UUID for the config version")
 
       add(:status, :assistant_config_version_status_enum,
         null: false,

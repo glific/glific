@@ -57,7 +57,7 @@ defmodule Glific.AssistantsTest do
     })
   end
 
-  describe "delete_assistant/2" do
+  describe "delete_assistant/1" do
     test "deletes assistant with kaapi_uuid after deleting config and assistant from kaapi",
          %{organization_id: organization_id} do
       enable_kaapi(organization_id)
