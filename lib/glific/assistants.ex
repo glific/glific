@@ -455,7 +455,7 @@ defmodule Glific.Assistants do
 
     callback_url =
       "https://api.#{organization.shortcode}.glific.com" <>
-        "api/kaapi/knowledge_base_version"
+        "/kaapi/knowledge_base_version"
 
     %{
       documents: Map.keys(files),
