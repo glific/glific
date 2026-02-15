@@ -364,9 +364,9 @@ defmodule Glific.Assistants do
   @doc """
   Handles the callback from Kaapi for knowledge base creation.
   """
-  @spec handle_kaapi_knowledge_base_callback(map) ::
+  @spec handle_knowledge_base_callback(map) ::
           KnowledgeBaseVersion.t() | {:error, String.t()}
-  def handle_kaapi_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
+  def handle_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
     knowledge_base_version_params =
       case get_in(data, ["collection", "llm_service_id"]) do
         nil -> %{status: data["status"]}

@@ -15,7 +15,7 @@ defmodule GlificWeb.KaapiController do
           {:ok, map()} | {:error, String.t()}
   def knowledge_base_version_creation_callback(conn, params) do
     Logger.info("Received knowledge base creation callback")
-    Assistants.handle_kaapi_knowledge_base_callback(params)
+    Assistants.handle_knowledge_base_callback(params)
     send_resp(conn, 200, "Knowledge base version creation callback handled successfully")
   end
 end
