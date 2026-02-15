@@ -53,17 +53,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Removes the given file from the Assistant's VectorStore
-  """
-  @spec remove_assistant_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def remove_assistant_file(_, params, _) do
-    with {:ok, assistant} <- Filesearch.remove_assistant_file(params) do
-      {:ok, %{assistant: assistant}}
-    end
-  end
-
-  @doc """
   Updates an Assistant
   """
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
