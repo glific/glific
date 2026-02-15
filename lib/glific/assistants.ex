@@ -97,6 +97,8 @@ defmodule Glific.Assistants do
   iex> Glific.Assistants.update_knowledge_base_version(%KnowledgeBaseVersion{id: 1}, %{status: :invalid})
   {:error, %Ecto.Changeset{}}
   """
+  @spec update_knowledge_base_version(KnowledgeBaseVersion.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
   def update_knowledge_base_version(knowledge_base_version, params) do
     knowledge_base_version
     |> KnowledgeBaseVersion.changeset(params)
@@ -447,6 +449,7 @@ defmodule Glific.Assistants do
     "temporary-vs-#{random_string}"
   end
 
+  @spec prepare_kaapi_collections_api_params(KnowledgeBaseVersion.t(), map()) :: map()
   defp prepare_kaapi_collections_api_params(%KnowledgeBaseVersion{files: files}, params) do
     organization = Partners.organization(params[:organization_id])
 

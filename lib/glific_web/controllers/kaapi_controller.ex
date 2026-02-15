@@ -8,6 +8,11 @@ defmodule GlificWeb.KaapiController do
 
   alias Glific.Assistants
 
+  @doc """
+  Handles the callback from Kaapi upon succefull or failure of collection creation.
+  """
+  @spec knowledge_base_version_creation_callback(map(), map()) ::
+          {:ok, map()} | {:error, String.t()}
   def knowledge_base_version_creation_callback(conn, params) do
     Logger.info("Received knowledge base creation callback")
     Assistants.handle_kaapi_knowledge_base_callback(params)

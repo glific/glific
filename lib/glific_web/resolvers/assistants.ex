@@ -6,6 +6,10 @@ defmodule GlificWeb.Resolvers.Assistants do
 
   alias Glific.Assistants
 
+  @doc """
+  Create a new knowledge base with the given parameters.
+  """
+  @spec create_knowledge_base(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_knowledge_base(_, params, _context) do
     with {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}} <-
            Assistants.create_knowledge_base_multi(params) do
