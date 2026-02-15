@@ -64,6 +64,23 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Updates a Knowledge Base Version.
+
+  ## Examples
+
+  iex> Glific.Assistants.update_knowledge_base_version(%KnowledgeBaseVersion{id: 1}, %{status: :completed})
+  {:ok, %KnowledgeBaseVersion{name: "Test KB", organization_id: 1}}
+
+  iex> Glific.Assistants.update_knowledge_base_version(%KnowledgeBaseVersion{id: 1}, %{status: :invalid})
+  {:error, %Ecto.Changeset{}}
+  """
+  def update_knowledge_base_version(knowledge_base_version, params) do
+    knowledge_base_version
+    |> KnowledgeBaseVersion.changeset(params)
+    |> Repo.update()
+  end
+
+  @doc """
   Creates an Assistant
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}

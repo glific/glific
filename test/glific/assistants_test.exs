@@ -116,4 +116,62 @@ defmodule Glific.AssistantsTest do
       assert %{llm_service_id: ["can't be blank"]} == errors_on(changeset)
     end
   end
+
+  describe "update_knowledge_base_version/2" do
+    setup %{organization_id: organization_id} do
+      {:ok, knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Test Knowledge Base",
+          organization_id: organization_id
+        })
+
+      {:ok, knowledge_base_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: knowledge_base.id,
+          organization_id: organization_id,
+          files: %{"file_123" => %{"name" => "test_file.txt"}},
+          status: :in_progress,
+          llm_service_id: "vs_12345",
+          size: 100
+        })
+
+      %{knowledge_base_version: knowledge_base_version}
+    end
+
+    test "updates with valid attrs", %{knowledge_base_version: kbv} do
+      assert {:ok, %KnowledgeBaseVersion{} = updated} =
+               Assistants.update_knowledge_base_version(kbv, %{
+                 status: :completed,
+                 kaapi_job_id: "job_xyz",
+                 llm_service_id: "vs_updated",
+                 size: 250
+               })
+
+      assert updated.status == :completed
+      assert updated.kaapi_job_id == "job_xyz"
+      assert updated.llm_service_id == "vs_updated"
+      assert updated.size == 250
+    end
+
+    test "returns error with invalid attrs", %{knowledge_base_version: kbv} do
+      assert {:error, changeset} =
+               Assistants.update_knowledge_base_version(kbv, %{
+                 llm_service_id: nil,
+                 status: :ready
+               })
+
+      assert %{llm_service_id: ["can't be blank"], status: ["is invalid"]} == errors_on(changeset)
+    end
+
+    test "preserves unchanged fields after update", %{knowledge_base_version: kbv} do
+      assert {:ok, %KnowledgeBaseVersion{} = updated} =
+               Assistants.update_knowledge_base_version(kbv, %{status: :completed})
+
+      assert updated.llm_service_id == kbv.llm_service_id
+      assert updated.files == kbv.files
+      assert updated.size == kbv.size
+      assert updated.knowledge_base_id == kbv.knowledge_base_id
+      assert updated.organization_id == kbv.organization_id
+    end
+  end
 end
