@@ -2,15 +2,26 @@ defmodule Glific.Assistants do
   @moduledoc """
   Context module for Assistant and related schemas
   """
+
   alias Ecto.Multi
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Assistants.Error
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Partners
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
 
   require Logger
+
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Assistant failures.
+    Reporting these failures to AppSignal lets us detect and fix problems.
+    """
+    defexception [:message, :reason, :organization_id]
+  end
 
   @default_model "gpt-4o"
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
@@ -25,6 +36,18 @@ defmodule Glific.Assistants do
     "pptx",
     "txt"
   ]
+
+  @knowledge_base_version_status_mapping %{
+    "SUCCESSFUL" => :completed,
+    "FAILED" => :failed,
+    "PROCESSING" => :in_progress
+  }
+
+  @assistant_config_version_status_mapping %{
+    "SUCCESSFUL" => :ready,
+    "FAILED" => :failed,
+    "PROCESSING" => :in_progress
+  }
 
   @doc """
   Create a Knowledge Base.
@@ -306,5 +329,158 @@ defmodule Glific.Assistants do
     else
       {:error, "Files with extension '.#{extension}' not supported in Assistants"}
     end
+  end
+
+  @doc """
+    Create a new knowledge base, knowledge_base_version in Glific and creates a corresponding Collection in Kaapi.
+  """
+  @spec create_knowledge_base_multi(params :: map()) ::
+          {:ok, map()} | {:error, Ecto.Changeset.t() | String.t()}
+  def create_knowledge_base_multi(params) do
+    with {:ok, knowledge_base} <- maybe_create_knowledge_base(params),
+         {:ok, knowledge_base_version} <-
+           do_create_knowledge_base_version(knowledge_base, params),
+         api_params <- prepare_kaapi_collections_api_params(knowledge_base_version, params),
+         {:ok, %{data: %{job_id: job_id}}} <-
+           Kaapi.create_collection(api_params, params[:organization_id]),
+         {:ok, knowledge_base_version} <-
+           update_knowledge_base_version(knowledge_base_version, %{kaapi_job_id: job_id}) do
+      {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}}
+    else
+      {:error, %Ecto.Changeset{} = error} ->
+        {:error, error}
+
+      {:error, error} ->
+        Glific.log_exception(%Error{
+          message: "Create knowledge base failed. Reason: #{inspect(error)}",
+          reason: inspect(error)
+        })
+
+        {:error, "Failed to create knowledge base"}
+    end
+  end
+
+  @doc """
+  Handles the callback from Kaapi for knowledge base creation.
+  """
+  @spec handle_kaapi_knowledge_base_callback(map) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t()}
+  def handle_kaapi_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
+    knowledge_base_version_params =
+      case get_in(data, ["collection", "llm_service_id"]) do
+        nil -> %{status: data["status"]}
+        llm_service_id -> %{status: data["status"], llm_service_id: llm_service_id}
+      end
+
+    assistant_version_params = %{status: data["status"], failure_reason: data["error_message"]}
+
+    with {:ok, knowledge_base_version} <-
+           Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id}),
+         {:ok, knowledge_base_version} <-
+           update_knowledge_base_version_status_and_llm_service_id(
+             knowledge_base_version,
+             knowledge_base_version_params
+           ),
+         _ <-
+           update_linked_assistant_versions(knowledge_base_version, assistant_version_params) do
+      knowledge_base_version
+    else
+      {:error, [_, "Resource not found"]} ->
+        Logger.error(
+          "Failed to update knowledge base version status, Knowledge Base Version not found. Job ID: #{job_id}"
+        )
+
+        {:error, "Failed to update knowledge base version status"}
+
+      {:error, :failed} ->
+        Logger.error("Knowledge Base Version already failed, Job ID: #{job_id}")
+
+        {:error, "Failed to update knowledge base version status"}
+    end
+  end
+
+  # Private
+  @spec maybe_create_knowledge_base(map()) ::
+          {:ok, KnowledgeBase.t()} | {:error, Ecto.Changeset.t()}
+  defp maybe_create_knowledge_base(%{id: id}), do: Repo.fetch(KnowledgeBase, id)
+
+  defp maybe_create_knowledge_base(params) do
+    params = %{name: generate_knowledge_base_name(), organization_id: params[:organization_id]}
+    create_knowledge_base(params)
+  end
+
+  @spec do_create_knowledge_base_version(KnowledgeBase.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_knowledge_base_version(knowledge_base, params) do
+    files_details =
+      Enum.reduce(params.media_info, %{}, fn info, files ->
+        Map.put(files, info.file_id, info)
+      end)
+
+    params = %{
+      knowledge_base_id: knowledge_base.id,
+      organization_id: params[:organization_id],
+      files: files_details,
+      status: :in_progress,
+      llm_service_id: generate_temporary_llm_service_id()
+    }
+
+    create_knowledge_base_version(params)
+  end
+
+  @spec generate_knowledge_base_name() :: String.t()
+  defp generate_knowledge_base_name do
+    uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
+    "Vector-Store-#{uid}"
+  end
+
+  # Temporary LLM Service ID that looks like what is
+  # generated by Kaappi or other providers.
+  @spec generate_temporary_llm_service_id() :: String.t()
+  defp generate_temporary_llm_service_id do
+    random_string =
+      24
+      |> :crypto.strong_rand_bytes()
+      |> Base.encode32(case: :lower, padding: false)
+      |> binary_part(0, 24)
+
+    "temporary-vs-#{random_string}"
+  end
+
+  defp prepare_kaapi_collections_api_params(%KnowledgeBaseVersion{files: files}, params) do
+    organization = Partners.organization(params[:organization_id])
+
+    callback_url =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "api/kaapi/knowledge_base_version"
+
+    %{
+      documents: Map.keys(files),
+      callback_url: callback_url
+    }
+  end
+
+  @spec update_knowledge_base_version_status_and_llm_service_id(KnowledgeBaseVersion.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp update_knowledge_base_version_status_and_llm_service_id(%{status: :failed}, _),
+    do: {:error, :failed}
+
+  defp update_knowledge_base_version_status_and_llm_service_id(
+         knowledge_base_version,
+         %{status: status} = params
+       ) do
+    params = Map.put(params, :status, @knowledge_base_version_status_mapping[status])
+    update_knowledge_base_version(knowledge_base_version, params)
+  end
+
+  @spec update_linked_assistant_versions(KnowledgeBaseVersion.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp update_linked_assistant_versions(knowledge_base_version, %{status: status} = params) do
+    knowledge_base_version = Repo.preload(knowledge_base_version, :assistant_config_versions)
+    params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
+
+    Enum.each(knowledge_base_version.assistant_config_versions, fn assistant_version ->
+      update_assistant_version(assistant_version, params)
+    end)
   end
 end

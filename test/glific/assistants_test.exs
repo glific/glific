@@ -6,6 +6,7 @@ defmodule Glific.AssistantsTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Partners
 
   describe "create_knowledge_base/1" do
     test "creates a knowledge base with valid attrs", %{organization_id: organization_id} do
@@ -237,5 +238,129 @@ defmodule Glific.AssistantsTest do
       assert updated.assistant_id == av.assistant_id
       assert updated.organization_id == av.organization_id
     end
+  end
+
+  describe "create_knowledge_base_multi/1" do
+    setup :enable_kaapi
+
+    test "creates knowledge base and version, and sets kaapi_job_id",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{job_id: "job_abc123"}}
+          }
+      end)
+
+      params = %{
+        media_info: [
+          %{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()},
+          %{file_id: "file_xyz", filename: "notes.txt", uploaded_at: DateTime.utc_now()}
+        ],
+        organization_id: organization_id
+      }
+
+      assert {:ok,
+              %{
+                knowledge_base: %KnowledgeBase{} = knowledge_base,
+                knowledge_base_version: %KnowledgeBaseVersion{} = knowledge_base_version
+              }} = Assistants.create_knowledge_base_multi(params)
+
+      assert knowledge_base.organization_id == organization_id
+      assert String.starts_with?(knowledge_base.name, "Vector-Store-")
+
+      assert knowledge_base_version.knowledge_base_id == knowledge_base.id
+      assert knowledge_base_version.organization_id == organization_id
+      assert knowledge_base_version.status == :in_progress
+      assert knowledge_base_version.kaapi_job_id == "job_abc123"
+      assert map_size(knowledge_base_version.files) == 2
+      assert Map.has_key?(knowledge_base_version.files, "file_abc")
+      assert Map.has_key?(knowledge_base_version.files, "file_xyz")
+      assert String.starts_with?(knowledge_base_version.llm_service_id, "temporary-vs-")
+    end
+
+    test "uses existing knowledge base when id is provided",
+         %{organization_id: organization_id} do
+      {:ok, existing_knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Existing KB",
+          organization_id: organization_id
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{job_id: "job_def456"}}
+          }
+      end)
+
+      params = %{
+        id: existing_knowledge_base.id,
+        media_info: [
+          %{file_id: "file_new", filename: "report.pdf", uploaded_at: DateTime.utc_now()}
+        ],
+        organization_id: organization_id
+      }
+
+      assert {:ok,
+              %{
+                knowledge_base: %KnowledgeBase{} = knowledge_base,
+                knowledge_base_version: %KnowledgeBaseVersion{} = knowledge_base_version
+              }} = Assistants.create_knowledge_base_multi(params)
+
+      assert knowledge_base.id == existing_knowledge_base.id
+      assert knowledge_base.name == "Existing KB"
+      assert knowledge_base_version.knowledge_base_id == existing_knowledge_base.id
+      assert knowledge_base_version.kaapi_job_id == "job_def456"
+      assert knowledge_base_version.status == :in_progress
+      assert map_size(knowledge_base_version.files) == 1
+      assert Map.has_key?(knowledge_base_version.files, "file_new")
+      assert String.starts_with?(knowledge_base_version.llm_service_id, "temporary-vs-")
+    end
+
+    test "returns error when kaapi api fails", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Internal server error"}
+          }
+      end)
+
+      params = %{
+        media_info: [%{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}],
+        organization_id: organization_id
+      }
+
+      assert {:error, "Failed to create knowledge base"} =
+               Assistants.create_knowledge_base_multi(params)
+    end
+
+    test "returns error when knowledge base id does not exist",
+         %{organization_id: organization_id} do
+      params = %{
+        id: 0,
+        media_info: [%{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}],
+        organization_id: organization_id
+      }
+
+      assert {:error, _} = Assistants.create_knowledge_base_multi(params)
+    end
+  end
+
+  defp enable_kaapi(%{organization_id: organization_id}) do
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "kaapi",
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true
+    })
+
+    :ok
   end
 end

@@ -9,8 +9,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-  object :vector_store_result do
-    field :vector_store, :vector_store
+  object :knowledge_base_result do
+    field :knowledge_base, :vector_store
     field :errors, list_of(:input_error)
   end
 
@@ -99,6 +99,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :datetime
   end
 
   @desc "Filtering options for VectorStore"
@@ -138,11 +139,11 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Add files to Assistant"
-    field :add_assistant_files, :assistant_result do
+    field :add_assistant_files, :knowledge_base_result do
       arg(:media_info, non_null(list_of(non_null(:file_info_input))))
-      arg(:id, non_null(:id))
+      arg(:id, :id)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.add_assistant_files/3)
+      resolve(&Resolvers.Assistants.create_knowledge_base/3)
     end
 
     @desc "Remove files from Assistant"
