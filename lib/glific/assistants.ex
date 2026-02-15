@@ -460,7 +460,7 @@ defmodule Glific.Assistants do
   end
 
   @spec apply_callback_updates(KnowledgeBaseVersion.t(), map()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()} | {:error, :failed}
   defp apply_callback_updates(%{status: :failed}, _), do: {:error, :failed}
 
   defp apply_callback_updates(knowledge_base_version, %{status: status} = params) do
@@ -474,7 +474,15 @@ defmodule Glific.Assistants do
     params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
 
     Enum.each(knowledge_base_version.assistant_config_versions, fn assistant_version ->
-      update_assistant_version(assistant_version, params)
+      case update_assistant_version(assistant_version, params) do
+        {:ok, _} ->
+          :ok
+
+        {:error, changeset} ->
+          Logger.error(
+            "Failed to update assistant version #{assistant_version.id}: #{inspect(changeset)}"
+          )
+      end
     end)
   end
 end
