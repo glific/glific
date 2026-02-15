@@ -8,7 +8,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   load_gql(
     :create_knowledge_base,
     GlificWeb.Schema,
-    "assets/gql/assistants/create_knowledge_base.gql"
+    "assets/gql/assistants/add_assistant_files.gql"
   )
 
   describe "create_knowledge_base/3" do

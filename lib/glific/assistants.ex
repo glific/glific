@@ -365,8 +365,7 @@ defmodule Glific.Assistants do
   @doc """
   Handles the callback from Kaapi for knowledge base creation.
   """
-  @spec handle_kaapi_knowledge_base_callback(map) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t()}
+  @spec handle_kaapi_knowledge_base_callback(map) :: KnowledgeBaseVersion.t() | {:error, String.t()}
   def handle_kaapi_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
     knowledge_base_version_params =
       case get_in(data, ["collection", "llm_service_id"]) do
@@ -383,7 +382,7 @@ defmodule Glific.Assistants do
              knowledge_base_version,
              knowledge_base_version_params
            ),
-         _ <-
+         :ok <-
            update_linked_assistant_versions(knowledge_base_version, assistant_version_params) do
       knowledge_base_version
     else
@@ -476,8 +475,7 @@ defmodule Glific.Assistants do
     update_knowledge_base_version(knowledge_base_version, params)
   end
 
-  @spec update_linked_assistant_versions(KnowledgeBaseVersion.t(), map()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_linked_assistant_versions(KnowledgeBaseVersion.t(), map()) :: :ok
   defp update_linked_assistant_versions(knowledge_base_version, %{status: status} = params) do
     knowledge_base_version = Repo.preload(knowledge_base_version, :assistant_config_versions)
     params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
