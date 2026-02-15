@@ -341,7 +341,7 @@ defmodule Glific.Assistants do
     with {:ok, knowledge_base} <- maybe_create_knowledge_base(params),
          {:ok, knowledge_base_version} <-
            build_and_create_knowledge_base_version(knowledge_base, params),
-         api_params <- prepare_kaapi_collections_api_params(knowledge_base_version, params),
+         api_params <- build_collection_params(knowledge_base_version, params),
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(api_params, params[:organization_id]),
          {:ok, knowledge_base_version} <-
@@ -445,8 +445,8 @@ defmodule Glific.Assistants do
     "temporary-vs-#{random_string}"
   end
 
-  @spec prepare_kaapi_collections_api_params(KnowledgeBaseVersion.t(), map()) :: map()
-  defp prepare_kaapi_collections_api_params(%KnowledgeBaseVersion{files: files}, params) do
+  @spec build_collection_params(KnowledgeBaseVersion.t(), map()) :: map()
+  defp build_collection_params(%KnowledgeBaseVersion{files: files}, params) do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
@@ -459,7 +459,8 @@ defmodule Glific.Assistants do
     }
   end
 
-  @spec apply_callback_updates(KnowledgeBaseVersion.t(), map()) :: {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  @spec apply_callback_updates(KnowledgeBaseVersion.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
   defp apply_callback_updates(%{status: :failed}, _), do: {:error, :failed}
 
   defp apply_callback_updates(knowledge_base_version, %{status: status} = params) do
