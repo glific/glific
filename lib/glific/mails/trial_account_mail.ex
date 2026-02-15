@@ -190,22 +190,28 @@ defmodule Glific.Mails.TrialAccountMail do
   @spec create_otp_mail_body(String.t(), String.t()) :: String.t()
   defp create_otp_mail_body(otp_code, username) do
     """
-    Hi #{username},
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <p>Hi #{username},</p>
 
-    Thank you for registering for a Glific trial account. You’re just one step away from activating your account!
+      <p>Thank you for registering for a Glific trial account. You're just one step away from activating your account!</p>
 
-    Your One-Time Password (OTP) for email verification is:
+      <p>Your One-Time Password (OTP) for email verification is:</p>
+      <p>🔐 <strong>OTP: #{otp_code}</strong></p>
 
-    🔐 **OTP**: #{otp_code}
+      <p>Please enter this OTP in the registration form to continue with your trial setup.</p>
 
-    Please enter this OTP in the registration form to continue with your trial setup. The OTP is valid for the next 5 minutes.
+      <p><strong>The OTP is valid for the next 5 minutes.</strong></p>
 
-    If you did not request this, please ignore this email.
+      <p><em>If you did not request this, please ignore this email.</em></p>
 
-    Best,
-    Team Glific
-    Built for nonprofits. Designed for impact.
+      <p>Best,<br>
+      Team Glific</p>
 
+      <p><em>Built for nonprofits. Designed for impact.</em></p>
+    </body>
+    </html>
     """
   end
 
