@@ -2,6 +2,8 @@ defmodule Glific.AssistantsTest do
   use Glific.DataCase
 
   alias Glific.Assistants
+  alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
 
@@ -172,6 +174,68 @@ defmodule Glific.AssistantsTest do
       assert updated.size == kbv.size
       assert updated.knowledge_base_id == kbv.knowledge_base_id
       assert updated.organization_id == kbv.organization_id
+    end
+  end
+
+  describe "update_assistant_version/2" do
+    setup %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, assistant_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 0.7},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      %{assistant_version: assistant_version}
+    end
+
+    test "updates with valid attrs", %{assistant_version: av} do
+      assert {:ok, %AssistantConfigVersion{} = updated} =
+               Assistants.update_assistant_version(av, %{
+                 status: :failed,
+                 description: "Updated description",
+                 prompt: "New system prompt",
+                 failure_reason: "Kaapi API error",
+                 model: "gpt-4o",
+                 settings: %{"temperature" => 0.5}
+               })
+
+      assert updated.description == "Updated description"
+      assert updated.prompt == "New system prompt"
+      assert updated.status == :failed
+      assert updated.failure_reason == "Kaapi API error"
+      assert updated.model == "gpt-4o"
+      assert updated.settings == %{"temperature" => 0.5}
+    end
+
+    test "returns error with invalid attrs", %{assistant_version: av} do
+      assert {:error, changeset} =
+               Assistants.update_assistant_version(av, %{status: :invalid, prompt: nil})
+
+      assert %{status: ["is invalid"], prompt: ["can't be blank"]} == errors_on(changeset)
+    end
+
+    test "preserves unchanged fields after update", %{assistant_version: av} do
+      assert {:ok, %AssistantConfigVersion{} = updated} =
+               Assistants.update_assistant_version(av, %{status: :ready})
+
+      assert updated.prompt == av.prompt
+      assert updated.provider == av.provider
+      assert updated.model == av.model
+      assert updated.settings == av.settings
+      assert updated.assistant_id == av.assistant_id
+      assert updated.organization_id == av.organization_id
     end
   end
 end

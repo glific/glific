@@ -93,6 +93,17 @@ defmodule Glific.Assistants do
     end
   end
 
+  @doc """
+  Updates an Assistant Version.
+  """
+  @spec update_assistant_version(AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
+  def update_assistant_version(assistant_version, params) do
+    assistant_version
+    |> AssistantConfigVersion.changeset(params)
+    |> Repo.update()
+  end
+
   @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
   defp validate_knowledge_base_presence(user_params) do
     if is_nil(user_params[:knowledge_base_id]) do
