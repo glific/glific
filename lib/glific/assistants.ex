@@ -6,7 +6,6 @@ defmodule Glific.Assistants do
   alias Ecto.Multi
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
-  alias Glific.Assistants.Error
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Partners
@@ -365,7 +364,8 @@ defmodule Glific.Assistants do
   @doc """
   Handles the callback from Kaapi for knowledge base creation.
   """
-  @spec handle_kaapi_knowledge_base_callback(map) :: KnowledgeBaseVersion.t() | {:error, String.t()}
+  @spec handle_kaapi_knowledge_base_callback(map) ::
+          KnowledgeBaseVersion.t() | {:error, String.t()}
   def handle_kaapi_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
     knowledge_base_version_params =
       case get_in(data, ["collection", "llm_service_id"]) do
