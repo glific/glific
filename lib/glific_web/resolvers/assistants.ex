@@ -12,7 +12,7 @@ defmodule GlificWeb.Resolvers.Assistants do
   @spec create_knowledge_base(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_knowledge_base(_, params, _context) do
     with {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}} <-
-           Assistants.create_knowledge_base_multi(params) do
+           Assistants.create_knowledge_base_with_version(params) do
       response = %{
         id: knowledge_base.id,
         name: knowledge_base.name,

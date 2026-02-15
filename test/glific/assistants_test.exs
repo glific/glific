@@ -240,7 +240,7 @@ defmodule Glific.AssistantsTest do
     end
   end
 
-  describe "create_knowledge_base_multi/1" do
+  describe "create_knowledge_base_with_version/1" do
     setup :enable_kaapi
 
     test "creates knowledge base and version, and sets kaapi_job_id",
@@ -265,7 +265,7 @@ defmodule Glific.AssistantsTest do
               %{
                 knowledge_base: %KnowledgeBase{} = knowledge_base,
                 knowledge_base_version: %KnowledgeBaseVersion{} = knowledge_base_version
-              }} = Assistants.create_knowledge_base_multi(params)
+              }} = Assistants.create_knowledge_base_with_version(params)
 
       assert knowledge_base.organization_id == organization_id
       assert String.starts_with?(knowledge_base.name, "Vector-Store-")
@@ -308,7 +308,7 @@ defmodule Glific.AssistantsTest do
               %{
                 knowledge_base: %KnowledgeBase{} = knowledge_base,
                 knowledge_base_version: %KnowledgeBaseVersion{} = knowledge_base_version
-              }} = Assistants.create_knowledge_base_multi(params)
+              }} = Assistants.create_knowledge_base_with_version(params)
 
       assert knowledge_base.id == existing_knowledge_base.id
       assert knowledge_base.name == "Existing KB"
@@ -335,7 +335,7 @@ defmodule Glific.AssistantsTest do
       }
 
       assert {:error, "Failed to create knowledge base"} =
-               Assistants.create_knowledge_base_multi(params)
+               Assistants.create_knowledge_base_with_version(params)
     end
 
     test "returns error when knowledge base id does not exist",
@@ -346,7 +346,7 @@ defmodule Glific.AssistantsTest do
         organization_id: organization_id
       }
 
-      assert {:error, _} = Assistants.create_knowledge_base_multi(params)
+      assert {:error, _} = Assistants.create_knowledge_base_with_version(params)
     end
   end
 
