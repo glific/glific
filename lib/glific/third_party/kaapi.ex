@@ -9,6 +9,18 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Partners
   alias Glific.Partners.Credential
   alias Glific.ThirdParty.Kaapi.ApiClient
+  alias Glific.ThirdParty.Kaapi.Error, as: KaapiError
+
+  # Replace other Error module with this one
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Kaapi API failures.
+    Since Kaapi is a backend service (NGOs don’t interact with it directly),
+    sending errors to them won’t resolve the issue.
+    Reporting these failures to AppSignal lets us detect and fix problems
+    """
+    defexception [:message, :reason, :status, :organization_id]
+  end
 
   @doc """
   Fetch the kaapi creds
@@ -166,6 +178,33 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message:
               "Kaapi AI Assistant delete failed for org_id=#{organization_id}, assistant_id=#{assistant_id}), reason=#{inspect(reason)}"
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Create a collection (Knowledge Base in Glific) in Kaapi and send error to Appsignal if failed
+  """
+  @spec create_collection(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | String.t()}
+  def create_collection(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_collection(params, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi Knowledge Base creation job successfully created for org: #{organization_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %KaapiError{
+            message: "Failed to create Kaapi Knowledge Base creation job",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )
