@@ -378,10 +378,7 @@ defmodule Glific.Assistants do
     with {:ok, knowledge_base_version} <-
            Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id}),
          {:ok, knowledge_base_version} <-
-           update_knowledge_base_version_status_and_llm_service_id(
-             knowledge_base_version,
-             knowledge_base_version_params
-           ),
+           apply_callback_updates(knowledge_base_version, knowledge_base_version_params),
          :ok <-
            update_linked_assistant_versions(knowledge_base_version, assistant_version_params) do
       knowledge_base_version
@@ -462,15 +459,10 @@ defmodule Glific.Assistants do
     }
   end
 
-  @spec update_knowledge_base_version_status_and_llm_service_id(KnowledgeBaseVersion.t(), map()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
-  defp update_knowledge_base_version_status_and_llm_service_id(%{status: :failed}, _),
-    do: {:error, :failed}
+  @spec apply_callback_updates(KnowledgeBaseVersion.t(), map()) :: {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp apply_callback_updates(%{status: :failed}, _), do: {:error, :failed}
 
-  defp update_knowledge_base_version_status_and_llm_service_id(
-         knowledge_base_version,
-         %{status: status} = params
-       ) do
+  defp apply_callback_updates(knowledge_base_version, %{status: status} = params) do
     params = Map.put(params, :status, @knowledge_base_version_status_mapping[status])
     update_knowledge_base_version(knowledge_base_version, params)
   end
