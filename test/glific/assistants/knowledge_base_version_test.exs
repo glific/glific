@@ -131,7 +131,11 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
         })
         |> Repo.update()
 
-      history = Repo.history(updated_kb_version, skip_organization_id: true)
+      history =
+        updated_kb_version
+        |> Repo.history(skip_organization_id: true)
+        |> Enum.sort(&(&2.id >= &1.id))
+
       assert length(history) == 2
       update_history = List.last(history)
       assert update_history.action == :updated
