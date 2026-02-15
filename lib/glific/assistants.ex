@@ -340,7 +340,7 @@ defmodule Glific.Assistants do
   def create_knowledge_base_with_version(params) do
     with {:ok, knowledge_base} <- maybe_create_knowledge_base(params),
          {:ok, knowledge_base_version} <-
-           do_create_knowledge_base_version(knowledge_base, params),
+           build_and_create_knowledge_base_version(knowledge_base, params),
          api_params <- prepare_kaapi_collections_api_params(knowledge_base_version, params),
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(api_params, params[:organization_id]),
@@ -410,9 +410,9 @@ defmodule Glific.Assistants do
     create_knowledge_base(params)
   end
 
-  @spec do_create_knowledge_base_version(KnowledgeBase.t(), map()) ::
+  @spec build_and_create_knowledge_base_version(KnowledgeBase.t(), map()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_knowledge_base_version(knowledge_base, params) do
+  defp build_and_create_knowledge_base_version(knowledge_base, params) do
     files_details =
       Enum.reduce(params.media_info, %{}, fn info, files ->
         Map.put(files, info.file_id, info)
