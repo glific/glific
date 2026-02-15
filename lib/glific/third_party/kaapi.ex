@@ -4,14 +4,11 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   require Logger
 
-  # Replace this with the new exception after PR #4365 is merged
-  alias Glific.Flows.Webhook.Error
   alias Glific.Partners
   alias Glific.Partners.Credential
   alias Glific.ThirdParty.Kaapi.ApiClient
-  alias Glific.ThirdParty.Kaapi.Error, as: KaapiError
 
-  # Replace other Error module with this one
+  # Update all Error struct data in this format
   defmodule Error do
     @moduledoc """
     Custom error module for Kaapi API failures.
@@ -201,7 +198,7 @@ defmodule Glific.ThirdParty.Kaapi do
     else
       {:error, reason} ->
         Appsignal.send_error(
-          %KaapiError{
+          %Error{
             message: "Failed to create Kaapi Knowledge Base creation job",
             organization_id: organization_id,
             reason: inspect(reason)
