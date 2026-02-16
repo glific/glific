@@ -19,8 +19,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   Performs STT call on the given content to Gemini.
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
-  def speech_to_text(audio_url, organization_id) do
-    body = stt_request_body(audio_url)
+  def speech_to_text(encoded_audio, organization_id) do
+    body = stt_request_body(encoded_audio)
     opts = [adapter: [recv_timeout: 300_000]]
 
     client()
@@ -122,14 +122,18 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   end
 
   @spec stt_request_body(String.t()) :: map()
-  defp stt_request_body(audio_url) do
+  defp stt_request_body(data) do
     %{
       "contents" => [
         %{
           "parts" => [
             %{
-              "file_data" => %{
-                "file_uri" => audio_url
+              "inline_data" => %{
+                # We are hardcoding the mime type for now, since finding the mime type
+                # requires additional DB query. audio/mp3 is working fine for ogg media.
+                # audio/ogg is the mime type of most audio we receive.
+                "mime_type" => "audio/mp3",
+                "data" => data
               }
             },
             %{

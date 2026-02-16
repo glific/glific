@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :file_result do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :string
   end
 
   object :assistant_result do
@@ -59,6 +60,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :description, :string
     field :kaapi_uuid, :string
+    field :assistant_display_id, :string
+    field :assistant_id, :string
     field :active_config_version_id, :string
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -88,6 +91,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
+    field :description, :string
     field :temperature, :float
     field :knowledge_base_id, :string
   end
@@ -113,6 +117,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
       arg(:media, non_null(:upload))
+      arg(:target_format, :string)
+      arg(:callback_url, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.upload_file/3)
     end

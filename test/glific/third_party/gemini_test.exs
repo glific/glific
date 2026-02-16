@@ -7,30 +7,34 @@ defmodule Glific.ThirdParty.GeminiTest do
 
   describe "speech_to_text/2" do
     test "successfully transcribes audio and returns text", %{organization_id: organization_id} do
-      mock(fn %{method: :post, url: url} ->
-        assert String.contains?(url, "/gemini-2.5-pro:generateContent")
+      mock(fn
+        %{method: :get, url: "gs://bucket-name/audio-file.ogg"} ->
+          %Tesla.Env{status: 200, body: "<<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10>>"}
 
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                content: %{
-                  parts: [
-                    %{
-                      text: "\"Hello, this is a test message\""
-                    }
-                  ]
+        %{method: :post, url: url} ->
+          assert String.contains?(url, "/gemini-2.5-pro:generateContent")
+
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [
+                %{
+                  content: %{
+                    parts: [
+                      %{
+                        text: "\"Hello, this is a test message\""
+                      }
+                    ]
+                  }
                 }
+              ],
+              usageMetadata: %{
+                promptTokenCount: 100,
+                candidatesTokenCount: 50,
+                totalTokenCount: 150
               }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 100,
-              candidatesTokenCount: 50,
-              totalTokenCount: 150
             }
           }
-        }
       end)
 
       audio_url = "gs://bucket-name/audio-file.ogg"
@@ -40,12 +44,14 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.asr_response_text == "Hello, this is a test message"
     end
 
-    test "handles errors", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 400,
-          body: %{error: "Bad request"}
-        }
+    test "handles Gemini errors", %{organization_id: organization_id} do
+      mock(fn
+        %{method: :get, url: "gs://bucket-name/audio-file.ogg"} ->
+          # Return binary audio content for download
+          %Tesla.Env{status: 200, body: "<<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10>>"}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 400, body: %{error: "Bad request"}}
       end)
 
       audio_url = "gs://bucket-name/audio-file.ogg"
@@ -53,6 +59,19 @@ defmodule Glific.ThirdParty.GeminiTest do
 
       assert result.success == false
       assert result.asr_response_text == 400
+    end
+
+    test "handles media download failure", %{organization_id: organization_id} do
+      mock(fn
+        %{method: :get, url: "gs://bucket-name/audio-file.ogg"} ->
+          %Tesla.Env{status: 404, body: "Not Found"}
+      end)
+
+      audio_url = "gs://bucket-name/audio-file.ogg"
+      result = Gemini.speech_to_text(audio_url, organization_id)
+
+      assert result.success == false
+      assert result.asr_response_text == "File download failed"
     end
   end
 

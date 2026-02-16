@@ -44,7 +44,7 @@ defmodule Glific.Filesearch do
   ]
 
   @doc """
-  Upload file to openAI
+    Upload file to openAI
   """
   @spec upload_file(map()) ::
           {:ok, map()} | {:error, String.t()}

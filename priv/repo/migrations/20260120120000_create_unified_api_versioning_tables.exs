@@ -50,7 +50,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create table(:assistants) do
       add :name, :string, null: false, comment: "Name of the assistant"
       add :description, :text, comment: "Description of the assistant"
-      add :kaapi_uuid, :string, null: false, comment: "Kaapi UUID for the config"
+      add :kaapi_uuid, :string, null: true, comment: "Kaapi UUID for the config"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
