@@ -78,24 +78,23 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Create an AI assistant in Kaapi, send error to Appsignal if failed.
+  Create a config in Kaapi for the assistant
   """
-  @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
-  def create_assistant(openai_response, organization_id) do
-    params = %{
-      name: openai_response.name,
-      model: openai_response.model,
-      assistant_id: openai_response.id,
-      organization_id: organization_id,
-      instructions: openai_response.instructions,
-      temperature: openai_response.temperature
+  @spec create_assistant_config(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def create_assistant_config(params, organization_id) do
+    config_blob = build_config_blob(params, params.vector_store_ids)
+
+    body = %{
+      name: params.name,
+      description: params[:description] || "",
+      config_blob: config_blob
     }
 
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <-
-           ApiClient.create_assistant(params, secrets["api_key"]) do
+         {:ok, result} <- ApiClient.create_config(body, secrets["api_key"]) do
       Logger.info(
-        "KAAPI AI Assistant creation successful for org: #{organization_id}, assistant: #{params.assistant_id}"
+        "Kaapi Config creation successful for org: #{organization_id}, name: #{params.name}"
       )
 
       {:ok, result}
@@ -104,7 +103,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}, reason=#{inspect(reason)}"
+              "Kaapi Config creation failed for org_id=#{organization_id}, name=#{params.name}, reason=#{inspect(reason)}"
           },
           []
         )
@@ -173,6 +172,28 @@ defmodule Glific.ThirdParty.Kaapi do
 
         {:error, reason}
     end
+  end
+
+  @spec build_config_blob(map(), list(String.t())) :: map()
+  defp build_config_blob(params, vector_store_ids) do
+    completion_params = %{
+      model: params.model || "gpt-4o-mini",
+      instructions: params.prompt || "You are a helpful assistant",
+      temperature: params.temperature || 1.0,
+      tools: [
+        %{
+          type: "file_search",
+          vector_store_ids: vector_store_ids
+        }
+      ]
+    }
+
+    %{
+      completion: %{
+        provider: params[:provider] || "openai",
+        params: completion_params
+      }
+    }
   end
 
   @doc """

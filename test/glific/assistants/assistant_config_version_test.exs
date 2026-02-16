@@ -15,7 +15,6 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       prompt: "You are a helpful assistant.",
       provider: "openai",
       model: "gpt-4o",
-      kaapi_uuid: "kaapi-uuid-12345",
       settings: %{"temperature" => 0.7},
       status: :ready,
       organization_id: organization_id,
@@ -32,7 +31,6 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
       assert changeset.valid?
       assert get_change(changeset, :prompt) == "You are a helpful assistant."
       assert get_change(changeset, :model) == "gpt-4o"
-      assert get_change(changeset, :kaapi_uuid) == "kaapi-uuid-12345"
       assert get_change(changeset, :status) == :ready
       assert get_change(changeset, :settings) == %{"temperature" => 0.7}
     end
@@ -59,14 +57,6 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
 
       assert changeset.valid? == false
       assert %{model: ["can't be blank"]} = errors_on(changeset)
-    end
-
-    test "changeset without kaapi_uuid returns error", %{valid_attrs: valid_attrs} do
-      attrs = Map.delete(valid_attrs, :kaapi_uuid)
-      changeset = AssistantConfigVersion.changeset(%AssistantConfigVersion{}, attrs)
-
-      assert changeset.valid? == false
-      assert %{kaapi_uuid: ["can't be blank"]} = errors_on(changeset)
     end
 
     test "changeset uses default settings when not provided", %{valid_attrs: valid_attrs} do
@@ -142,6 +132,7 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
         %Assistant{}
         |> Assistant.changeset(%{
           name: "Config Version Test Assistant",
+          kaapi_uuid: "test-uuid",
           organization_id: organization_id
         })
         |> Repo.insert()
@@ -153,7 +144,6 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
           prompt: "You are a helpful assistant",
           provider: "openai",
           model: "gpt-4o",
-          kaapi_uuid: "test-kaapi-uuid-123",
           settings: %{"temperature" => 0.7},
           status: :ready,
           organization_id: organization_id
