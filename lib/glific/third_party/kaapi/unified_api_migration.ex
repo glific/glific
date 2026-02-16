@@ -105,7 +105,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     kaapi_params = %{
       name: openai_assistant.name,
       description: nil,
-      instructions: prompt,
+      prompt: prompt,
+      assistant_id: openai_assistant.assistant_id,
       model: openai_assistant.model || @default_model,
       temperature: openai_assistant.temperature || 1,
       organization_id: org_id,
@@ -113,7 +114,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     }
 
     with {:ok, kaapi_response} <- Kaapi.create_assistant_config(kaapi_params, org_id),
-         kaapi_uuid when is_binary(kaapi_uuid) <- kaapi_response.data.id do
+         kaapi_uuid = kaapi_response.data.id do
       multi_result =
         Ecto.Multi.new()
         |> Ecto.Multi.insert(
@@ -122,6 +123,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
             name: openai_assistant.name,
             description: nil,
             kaapi_uuid: kaapi_uuid,
+            assistant_display_id: openai_assistant.assistant_id,
             organization_id: org_id
           })
         )
@@ -219,7 +221,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   def migrate_vector_stores do
     used_vector_stores =
       from(v in VectorStore,
-        join: a in Assistant,
+        join: a in OpenAIAssistant,
         on: v.id == a.vector_store_id,
         distinct: [v.id]
       )
