@@ -2,17 +2,24 @@ defmodule Glific.Assistants do
   @moduledoc """
   Context module for Assistant and related schemas
   """
+
+  import Ecto.Query
+
+  require Logger
+
   alias Ecto.Multi
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Notifications
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
 
-  require Logger
+  @timeout_hours 1
 
   @default_model "gpt-4o"
+
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
     "csv",
@@ -278,5 +285,101 @@ defmodule Glific.Assistants do
     else
       {:error, "Files with extension '.#{extension}' not supported in Assistants"}
     end
+  end
+
+  @doc """
+  Checks for in-progress KnowledgeBaseVersions that have exceeded
+  """
+  @spec process_timeouts(non_neg_integer()) :: :ok
+  def process_timeouts(org_id) do
+    org_id
+    |> find_timed_out_versions()
+    |> Enum.each(fn knowledge_base_version ->
+      mark_as_failed(knowledge_base_version)
+    end)
+
+    :ok
+  end
+
+  @spec find_timed_out_versions(non_neg_integer()) :: [KnowledgeBaseVersion.t()]
+  defp find_timed_out_versions(org_id) do
+    timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours, :hour)
+
+    KnowledgeBaseVersion
+    |> where([kbv], kbv.organization_id == ^org_id)
+    |> where([kbv], kbv.status == :in_progress)
+    |> where([kbv], kbv.inserted_at < ^timeout_threshold)
+    |> preload([:knowledge_base, assistant_config_versions: :assistant])
+    |> Repo.all()
+  end
+
+  @spec mark_as_failed(KnowledgeBaseVersion.t()) ::
+          {:ok, Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp mark_as_failed(knowledge_base_version) do
+    Logger.warning(
+      "Marking KnowledgeBaseVersion #{knowledge_base_version.id} as failed due to timeout"
+    )
+
+    {:ok, _updated} =
+      knowledge_base_version
+      |> KnowledgeBaseVersion.changeset(%{status: :failed})
+      |> Repo.update()
+
+    affected_config_versions =
+      knowledge_base_version.assistant_config_versions
+
+    affected_config_version_ids = update_linked_config_versions(affected_config_versions)
+
+    send_timeout_notification(
+      knowledge_base_version,
+      affected_config_versions,
+      affected_config_version_ids
+    )
+  end
+
+  @spec update_linked_config_versions([AssistantConfigVersion.t()]) :: [non_neg_integer()]
+  defp update_linked_config_versions(config_versions) do
+    Enum.map(config_versions, fn config_version ->
+      {:ok, updated} =
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Linked vector store creation timed out"
+        })
+        |> Repo.update()
+
+      updated.id
+    end)
+  end
+
+  @spec send_timeout_notification(KnowledgeBaseVersion.t(), [AssistantConfigVersion.t()], [
+          non_neg_integer()
+        ]) ::
+          {:ok, Notifications.Notification.t()} | {:error, Ecto.Changeset.t()}
+  defp send_timeout_notification(
+         knowledge_base_version,
+         affected_config_versions,
+         affected_config_version_ids
+       ) do
+    affected_assistant_names =
+      affected_config_versions
+      |> Enum.map(& &1.assistant)
+      |> Enum.map(& &1.name)
+      |> Enum.uniq()
+
+    Notifications.create_notification(%{
+      category: "Assistant",
+      message: "Knowledge Base creation timeout",
+      severity: Notifications.types().warning,
+      organization_id: knowledge_base_version.organization_id,
+      entity: %{
+        knowledge_base_version_id: knowledge_base_version.id,
+        knowledge_base_id: knowledge_base_version.knowledge_base_id,
+        knowledge_base_name: knowledge_base_version.knowledge_base.name,
+        version_number: knowledge_base_version.version_number,
+        affected_config_version_ids: affected_config_version_ids,
+        affected_assistant_names: affected_assistant_names
+      }
+    })
   end
 end
