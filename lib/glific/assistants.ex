@@ -4,7 +4,7 @@ defmodule Glific.Assistants do
   """
 
   import Ecto.Query
-  
+
   require Logger
 
   alias Ecto.Multi
@@ -292,7 +292,8 @@ defmodule Glific.Assistants do
   """
   @spec process_timeouts(non_neg_integer()) :: :ok
   def process_timeouts(org_id) do
-    find_timed_out_versions(org_id)
+    org_id
+    |> find_timed_out_versions()
     |> Enum.each(fn knowledge_base_version ->
       mark_as_failed(knowledge_base_version)
     end)
