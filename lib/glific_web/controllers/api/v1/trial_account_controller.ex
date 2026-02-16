@@ -15,6 +15,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Mails.TrialAccountMail,
     Partners,
     Partners.Organization,
+    Partners.Saas,
     Repo,
     TrialUsers,
     Users,
@@ -58,7 +59,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
         })
 
       {:error, :organization, :no_available_accounts, _changes} ->
-        org = Partners.get_organization!(1)
+        org = Saas.organization_id() |> Partners.get_organization!()
 
         attrs = %TrialUsers{
           username: params["username"],
@@ -238,7 +239,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     TrialAccountMail.trial_account_allocation_failed(organization, trial_user)
     |> Mailer.send(%{
       category: "trial_account_allocation_failed",
-      organization_id: 1
+      organization_id: organization.id
     })
 
     :ok
