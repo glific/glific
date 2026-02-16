@@ -24,6 +24,8 @@ defmodule Glific.WhatsappForms do
 
   require Logger
 
+  @default_definition WhatsappFormsRevisions.default_definition()
+
   @doc """
   Lists all available WhatsApp form categories
   """
@@ -541,7 +543,7 @@ defmodule Glific.WhatsappForms do
     comparable_fields = [:name, :categories, :status]
 
     definition_changed =
-      get_in(existing_form, [Access.key(:revision), Access.key(:definition)]) !=
+      existing_form |> Map.get(:revision) |> Map.get(:definition) !=
         Map.get(attrs, :definition)
 
     definition_changed ||
@@ -553,11 +555,9 @@ defmodule Glific.WhatsappForms do
   @doc """
   Creates a WhatsApp form revision.
   """
-  @spec create_whatsapp_form_revision(WhatsappForm.t(), User.t(), map() | nil) ::
+  @spec create_whatsapp_form_revision(WhatsappForm.t(), User.t(), map()) ::
           {:ok, WhatsappFormRevision.t()} | {:error, any()}
-  def create_whatsapp_form_revision(whatsapp_form, user, definition \\ nil) do
-    definition = definition || WhatsappFormsRevisions.default_definition()
-
+  def create_whatsapp_form_revision(whatsapp_form, user, definition \\ @default_definition) do
     WhatsappFormsRevisions.create_revision(%{
       whatsapp_form_id: whatsapp_form.id,
       definition: definition,
