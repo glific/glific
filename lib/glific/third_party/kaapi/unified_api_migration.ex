@@ -72,19 +72,19 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
         {:ok, existing_assistant}
 
-      {:not_migrated} ->
+      :not_migrated ->
         do_migrate_assistant(openai_assistant)
     end
   end
 
-  @spec check_if_migrated(OpenAIAssistant.t()) :: {:ok, Assistant.t()} | {:not_migrated}
+  @spec check_if_migrated(OpenAIAssistant.t()) :: {:ok, Assistant.t()} | :not_migrated
   defp check_if_migrated(openai_assistant) do
     case Repo.fetch_by(Assistant,
            name: openai_assistant.name,
            organization_id: openai_assistant.organization_id
          ) do
       {:ok, assistant} -> {:ok, assistant}
-      _ -> {:not_migrated}
+      _ -> :not_migrated
     end
   end
 
@@ -126,7 +126,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
   @spec build_migration_multi(OpenAIAssistant.t(), map(), String.t()) :: Ecto.Multi.t()
   defp build_migration_multi(openai_assistant, kaapi_params, kaapi_uuid) do
-    kb_version_id = get_kb_version_id(openai_assistant.vector_store)
+    knowledge_base_version_id = get_knowledge_base_version_id(openai_assistant.vector_store)
 
     Ecto.Multi.new()
     |> Ecto.Multi.insert(:assistant, build_assistant_changeset(openai_assistant, kaapi_uuid))
@@ -135,8 +135,12 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       build_config_version_changeset(kaapi_params, kaapi_uuid)
     )
     |> Ecto.Multi.update(:updated_assistant, &build_active_config_changeset/1)
-    |> Ecto.Multi.run(:link_kb, fn _repo, %{config_version: config_version} ->
-      link_kb_version(config_version.id, kb_version_id, kaapi_params.organization_id)
+    |> Ecto.Multi.run(:link_knowledge_base, fn _repo, %{config_version: config_version} ->
+      link_knowledge_base_version(
+        config_version.id,
+        knowledge_base_version_id,
+        kaapi_params.organization_id
+      )
     end)
   end
 
@@ -144,10 +148,10 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   defp build_assistant_changeset(openai_assistant, kaapi_uuid) do
     Assistant.changeset(%Assistant{}, %{
       name: openai_assistant.name,
-      description: nil,
       kaapi_uuid: kaapi_uuid,
       assistant_display_id: openai_assistant.assistant_id,
-      organization_id: openai_assistant.organization_id
+      organization_id: openai_assistant.organization_id,
+      inserted_at: openai_assistant.inserted_at
     })
   end
 
@@ -174,12 +178,14 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     })
   end
 
-  @spec link_kb_version(non_neg_integer(), non_neg_integer() | nil, non_neg_integer()) ::
+  @spec link_knowledge_base_version(non_neg_integer(), non_neg_integer() | nil, non_neg_integer()) ::
           {:ok, non_neg_integer()}
-  defp link_kb_version(_config_version_id, nil, _org_id), do: {:ok, 0}
+  defp link_knowledge_base_version(_config_version_id, nil, _org_id), do: {:ok, 0}
 
-  defp link_kb_version(config_version_id, kb_version_id, org_id) do
-    {count, _} = link_config_to_kb(config_version_id, kb_version_id, org_id)
+  defp link_knowledge_base_version(config_version_id, knowledge_base_version_id, org_id) do
+    {count, _} =
+      link_config_to_knowledge_base(config_version_id, knowledge_base_version_id, org_id)
+
     {:ok, count}
   end
 
@@ -204,28 +210,28 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   defp get_vector_store_ids(nil), do: []
   defp get_vector_store_ids(vector_store), do: [vector_store.vector_store_id]
 
-  @spec get_kb_version_id(VectorStore.t() | nil) :: integer() | nil
-  defp get_kb_version_id(nil), do: nil
+  @spec get_knowledge_base_version_id(VectorStore.t() | nil) :: integer() | nil
+  defp get_knowledge_base_version_id(nil), do: nil
 
-  defp get_kb_version_id(vector_store) do
+  defp get_knowledge_base_version_id(vector_store) do
     case Repo.fetch_by(KnowledgeBaseVersion,
            llm_service_id: vector_store.vector_store_id,
            organization_id: vector_store.organization_id
          ) do
-      {:ok, kb_version} -> kb_version.id
+      {:ok, knowledge_base_version} -> knowledge_base_version.id
       _ -> nil
     end
   end
 
-  @spec link_config_to_kb(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+  @spec link_config_to_knowledge_base(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           {non_neg_integer(), nil | [term()]}
-  defp link_config_to_kb(config_version_id, kb_version_id, org_id) do
+  defp link_config_to_knowledge_base(config_version_id, knowledge_base_version_id, org_id) do
     Repo.insert_all(
       "assistant_config_version_knowledge_base_versions",
       [
         %{
           assistant_config_version_id: config_version_id,
-          knowledge_base_version_id: kb_version_id,
+          knowledge_base_version_id: knowledge_base_version_id,
           organization_id: org_id,
           inserted_at: DateTime.utc_now(),
           updated_at: DateTime.utc_now()

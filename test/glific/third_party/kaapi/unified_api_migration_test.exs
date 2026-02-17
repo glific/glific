@@ -378,12 +378,14 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
     expected_prompt = openai_assistant.instructions || "You are a helpful assistant"
     expected_model = openai_assistant.model || "gpt-4o"
     expected_temperature = openai_assistant.temperature || 1
+    expected_inserted_at = openai_assistant.inserted_at
 
     assert config_version.prompt == expected_prompt
     assert config_version.model == expected_model
     assert config_version.provider == "kaapi"
     assert config_version.settings["temperature"] == expected_temperature
     assert config_version.status == :ready
+    assert config_version.inserted_at == expected_inserted_at
     assert assistant.active_config_version_id == config_version.id
   end
 
