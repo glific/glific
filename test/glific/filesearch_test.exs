@@ -1362,7 +1362,8 @@ defmodule Glific.FilesearchTest do
     assistant =
       Repo.one(
         from(a in Assistants.Assistant,
-          where: a.kaapi_uuid == ^attrs.kaapi_uuid and a.organization_id == ^attrs.organization_id,
+          where:
+            a.kaapi_uuid == ^attrs.kaapi_uuid and a.organization_id == ^attrs.organization_id,
           preload: [:active_config_version]
         )
       )

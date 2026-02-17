@@ -9,7 +9,6 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
-
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
 
@@ -141,8 +140,12 @@ defmodule Glific.Assistants do
   @spec get_assistant(integer()) :: {:ok, map()} | {:error, any()}
   def get_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}) do
-      assistant = preload_assistant_associations(assistant)
-      {:ok, transform_to_legacy_shape(assistant)}
+      assistant =
+        assistant
+        |> preload_assistant_associations()
+        |> transform_to_legacy_shape()
+
+      {:ok, assistant}
     end
   end
 
