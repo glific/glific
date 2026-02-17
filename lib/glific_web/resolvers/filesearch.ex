@@ -26,7 +26,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_assistant(_, %{input: params}, _) do
-    Filesearch.create_assistant(params)
+    Assistants.create_assistant(params)
   end
 
   @doc """

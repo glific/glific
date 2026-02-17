@@ -2,7 +2,7 @@ defmodule Glific.Assistants.AssistantTest do
   @moduledoc """
   Tests for Assistant schema and changesets
   """
-  use Glific.DataCase
+  use Glific.DataCase, async: false
 
   alias Glific.{
     Assistants,
@@ -14,11 +14,56 @@ defmodule Glific.Assistants.AssistantTest do
   setup %{organization_id: organization_id} do
     enable_kaapi(%{organization_id: organization_id})
 
+    Tesla.Mock.mock(fn
+      %{method: :get, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            services: %{
+              "kaapi" => %{
+                secrets: %{"api_key" => "sk_test_key"}
+              }
+            }
+          }
+        }
+    end)
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{id: "kaapi-uuid-123"}}
+        }
+    end)
+
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{
+        name: "Test KB",
+        organization_id: organization_id
+      })
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        llm_service_id: "vs_test_123",
+        status: :completed,
+        organization_id: organization_id,
+        files: %{},
+        size: 0
+      })
+
+    upload = %Plug.Upload{
+      path: "/var/folders/test/multipart-1727169241-575672640710-1",
+      content_type: "application/pdf",
+      filename: "sample.pdf"
+    }
+
     valid_attrs = %{
       name: "Test Assistant",
       description: "A helpful assistant for testing",
-      organization_id: organization_id,
-      kaapi_uuid: "asst_123"
+      kaapi_uuid: "test-uuid",
+      assistant_display_id: "asst-123456",
+      organization_id: organization_id
     }
 
     upload = %Plug.Upload{
@@ -39,6 +84,28 @@ defmodule Glific.Assistants.AssistantTest do
       assert changeset.errors == []
       assert get_change(changeset, :name) == "Test Assistant"
       assert get_change(changeset, :description) == "A helpful assistant for testing"
+      assert get_change(changeset, :assistant_display_id) == "asst-123456"
+    end
+
+    test "generates a unique assistant_display_id", %{valid_attrs: valid_attrs} do
+      valid_attrs = Map.delete(valid_attrs, :assistant_display_id)
+      changeset = Assistant.changeset(%Assistant{}, valid_attrs)
+
+      assert changeset.valid?
+      assert changeset.errors == []
+      assert get_change(changeset, :name) == "Test Assistant"
+      assert get_change(changeset, :description) == "A helpful assistant for testing"
+      assert get_change(changeset, :assistant_display_id) |> String.match?(~r/asst_\w{24}/)
+    end
+
+    test "unique assistant_display_id has to be unique", %{valid_attrs: valid_attrs} do
+      assert {:ok, _assistant} =
+               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+
+      assert {:error, changeset} =
+               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+
+      assert %{assistant_display_id: ["has already been taken"]} = errors_on(changeset)
     end
 
     test "changeset without name returns error", %{valid_attrs: valid_attrs} do
@@ -112,7 +179,7 @@ defmodule Glific.Assistants.AssistantTest do
         |> Assistant.changeset(%{
           name: "Audit Test Assistant",
           description: "Testing audit tracking",
-          kaapi_uuid: "asst_123",
+          kaapi_uuid: "test-uuid",
           organization_id: organization_id
         })
         |> Repo.insert()
@@ -132,6 +199,395 @@ defmodule Glific.Assistants.AssistantTest do
       assert update_history.action == :updated
       assert :name in Map.keys(update_history.patch)
     end
+  end
+
+  describe "create_assistant/1" do
+    test "creates assistant successfully with knowledge base", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Test Assistant",
+        description: "A test assistant",
+        instructions: "You are helpful assistant",
+        temperature: 0.7,
+        model: "gpt-4o-mini",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{assistant: assistant, config_version: config_version} = result
+
+      # Check assistant
+      assert assistant.name == "Test Assistant"
+      assert assistant.description == "You are helpful assistant"
+      assert assistant.kaapi_uuid == "kaapi-uuid-123"
+      assert assistant.assistant_display_id != nil
+      assert assistant.organization_id == organization_id
+      assert assistant.active_config_version_id == config_version.id
+
+      # Check config version
+      assert config_version.assistant_id == assistant.id
+      assert config_version.prompt == "You are helpful assistant"
+      assert config_version.model == "gpt-4o-mini"
+      assert config_version.provider == "kaapi"
+      assert config_version.settings.temperature == 0.7
+      assert config_version.status == :ready
+      assert config_version.organization_id == organization_id
+
+      :meck.unload(Partners)
+    end
+
+    test "returns error when knowledge_base_id is nil", %{organization_id: organization_id} do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Test Assistant",
+        instructions: "You are helpful",
+        organization_id: organization_id,
+        knowledge_base_id: nil
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
+
+      :meck.unload(Partners)
+    end
+
+    test "returns error when knowledge_base_id is missing", %{organization_id: organization_id} do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Test Assistant",
+        instructions: "You are helpful",
+        organization_id: organization_id
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
+
+      :meck.unload(Partners)
+    end
+
+    test "generates temp name when name is nil", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: nil,
+        instructions: "You are helpful",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{assistant: assistant} = result
+
+      # Should have generated name like "Assistant-abc123"
+      assert assistant.name =~ ~r/^Assistant-[a-f0-9]+$/
+
+      :meck.unload(Partners)
+    end
+
+    test "uses default values when optional params are missing", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Minimal Assistant",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{assistant: assistant, config_version: config_version} = result
+
+      # Check defaults
+      assert config_version.prompt == "You are a helpful assistant"
+      assert config_version.model == "gpt-4o"
+      assert config_version.settings.temperature == 1
+      assert config_version.status == :ready
+      assert assistant.description == "You are a helpful assistant"
+
+      :meck.unload(Partners)
+    end
+
+    test "returns error when Kaapi API fails", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: _url} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Kaapi service error"}
+          }
+      end)
+
+      params = %{
+        name: "Failing Assistant",
+        instructions: "You are helpful",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:error, error} = Assistants.create_assistant(params)
+      assert is_binary(error)
+      assert String.contains?(error, "Failed at kaapi_uuid")
+
+      :meck.unload(Partners)
+    end
+
+    test "active_config_version_id is set correctly", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Active Config Test",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{assistant: assistant, config_version: config_version} = result
+
+      reloaded_assistant = Repo.get!(Assistant, assistant.id)
+      assert reloaded_assistant.active_config_version_id == config_version.id
+
+      assert config_version.assistant_id == assistant.id
+
+      :meck.unload(Partners)
+    end
+
+    test "links config version to knowledge base version", %{
+      organization_id: organization_id,
+      knowledge_base: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "KB Link Test",
+        organization_id: organization_id,
+        knowledge_base_id: kb.id
+      }
+
+      assert {:ok, result} = Assistants.create_assistant(params)
+      assert %{config_version: config_version} = result
+
+      import Ecto.Query
+
+      link =
+        from(acvkbv in "assistant_config_version_knowledge_base_versions",
+          where: acvkbv.assistant_config_version_id == ^config_version.id,
+          select: %{
+            assistant_config_version_id: acvkbv.assistant_config_version_id,
+            knowledge_base_version_id: acvkbv.knowledge_base_version_id
+          }
+        )
+        |> Repo.one()
+
+      assert link != nil
+      assert link.assistant_config_version_id == config_version.id
+
+      :meck.unload(Partners)
+    end
+
+    test "returns error when knowledge base has no versions", %{
+      organization_id: organization_id
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      params = %{
+        name: "Test Assistant",
+        organization_id: organization_id
+      }
+
+      assert {:error, error_message} = Assistants.create_assistant(params)
+      assert error_message == "Knowledge base is required for assistant creation"
+
+      :meck.unload(Partners)
+    end
+  end
+
+  describe "upload_file/2" do
+    test "uploads the file successfully to Kaapi", %{
+      organization_id: organization_id,
+      upload: upload
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                fname: "sample.pdf",
+                project_id: 9,
+                id: "d33539f6-2196-477c-a127-0f17f04ef133",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
+                inserted_at: "2026-01-30T10:51:16.872363",
+                updated_at: "2026-01-30T10:51:16.872619",
+                transformation_job: nil
+              },
+              error: nil,
+              metadata: nil
+            }
+          }
+      end)
+
+      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
+               Assistants.upload_file(%{media: upload}, organization_id)
+
+      assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
+      assert filename == "sample.pdf"
+      assert uploaded_at == "2026-01-30T10:51:16.872363"
+    end
+
+    test "uploads the file failed due to unsupported file", %{
+      organization_id: organization_id,
+      upload: upload
+    } do
+      exe_upload = %{upload | content_type: "application/octet-stream", filename: "sample.exe"}
+
+      assert {:error, "Files with extension '.exe' not supported in Assistants"} =
+               Assistants.upload_file(%{media: exe_upload}, organization_id)
+    end
+
+    test "uploads file to Kaapi with transformation parameters", %{
+      organization_id: organization_id,
+      upload: upload
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                fname: "sample.pdf",
+                project_id: 9,
+                id: "d33539f6-2196-477c-a127-0f17f04ef133",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
+                inserted_at: "2026-01-30T10:51:16.872363",
+                updated_at: "2026-01-30T10:51:16.872619",
+                transformation_job: nil
+              },
+              error: nil,
+              metadata: nil
+            }
+          }
+      end)
+
+      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
+               Assistants.upload_file(
+                 %{
+                   media: upload,
+                   target_format: "pdf",
+                   callback_url: "https://example.com/webhook"
+                 },
+                 organization_id
+               )
+
+      assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
+      assert filename == "sample.pdf"
+      assert uploaded_at == "2026-01-30T10:51:16.872363"
+    end
+
+    test "handles Kaapi upload error gracefully", %{
+      organization_id: organization_id,
+      upload: upload
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{
+              success: false,
+              error: "Internal server error",
+              data: nil,
+              metadata: nil
+            }
+          }
+      end)
+
+      assert {:error, error_message} =
+               Assistants.upload_file(%{media: upload}, organization_id)
+
+      assert is_binary(error_message)
+      assert error_message =~ "status 500"
+    end
+  end
+
+  defp enable_kaapi(attrs) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        },
+        is_active: true
+      })
+
+    valid_update_attrs = %{
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi"
+    }
+
+    Partners.update_credential(credential, valid_update_attrs)
   end
 
   describe "upload_file/2" do

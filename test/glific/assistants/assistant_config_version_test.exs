@@ -132,8 +132,8 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
         %Assistant{}
         |> Assistant.changeset(%{
           name: "Config Version Test Assistant",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi-uuid-12345"
+          kaapi_uuid: "test-uuid",
+          organization_id: organization_id
         })
         |> Repo.insert()
 
