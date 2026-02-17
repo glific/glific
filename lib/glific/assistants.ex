@@ -444,7 +444,7 @@ defmodule Glific.Assistants do
       end)
 
     %{
-      id: assistant.id,
+      id: assistant.assistant_display_id,
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
