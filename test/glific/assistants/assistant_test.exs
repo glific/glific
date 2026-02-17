@@ -52,12 +52,6 @@ defmodule Glific.Assistants.AssistantTest do
         size: 0
       })
 
-    upload = %Plug.Upload{
-      path: "/var/folders/test/multipart-1727169241-575672640710-1",
-      content_type: "application/pdf",
-      filename: "sample.pdf"
-    }
-
     valid_attrs = %{
       name: "Test Assistant",
       description: "A helpful assistant for testing",
@@ -67,13 +61,18 @@ defmodule Glific.Assistants.AssistantTest do
     }
 
     upload = %Plug.Upload{
-      path:
-        "/var/folders/vz/7fp5h9bs69d3kc8lxpbzlf6w0000gn/T/plug-1727-NXFz/multipart-1727169241-575672640710-1",
+      path: "/var/folders/test/multipart-1727169241-575672640710-1",
       content_type: "application/pdf",
       filename: "sample.pdf"
     }
 
-    %{valid_attrs: valid_attrs, upload: upload}
+    {:ok,
+     %{
+       valid_attrs: valid_attrs,
+       knowledge_base: kb,
+       knowledge_base_version: kb_version,
+       upload: upload
+     }}
   end
 
   describe "changeset/2" do
@@ -219,7 +218,8 @@ defmodule Glific.Assistants.AssistantTest do
         temperature: 0.7,
         model: "gpt-4o-mini",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -298,7 +298,8 @@ defmodule Glific.Assistants.AssistantTest do
         name: nil,
         instructions: "You are helpful",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -323,7 +324,8 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Minimal Assistant",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -361,7 +363,8 @@ defmodule Glific.Assistants.AssistantTest do
         name: "Failing Assistant",
         instructions: "You are helpful",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:error, error} = Assistants.create_assistant(params)
@@ -384,7 +387,8 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Active Config Test",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -411,7 +415,8 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "KB Link Test",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_id: kb.id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -446,7 +451,8 @@ defmodule Glific.Assistants.AssistantTest do
 
       params = %{
         name: "Test Assistant",
-        organization_id: organization_id
+        organization_id: organization_id,
+        kaapi_uuid: "test-uuid"
       }
 
       assert {:error, error_message} = Assistants.create_assistant(params)
@@ -575,138 +581,6 @@ defmodule Glific.Assistants.AssistantTest do
           "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
         },
         is_active: true
-      })
-
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
-
-    Partners.update_credential(credential, valid_update_attrs)
-  end
-
-  describe "upload_file/2" do
-    test "upload_file/2, uploads the file successfully to Kaapi", %{
-      organization_id: organization_id,
-      upload: upload
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              success: true,
-              data: %{
-                fname: "sample.pdf",
-                project_id: 9,
-                id: "d33539f6-2196-477c-a127-0f17f04ef133",
-                signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
-                inserted_at: "2026-01-30T10:51:16.872363",
-                updated_at: "2026-01-30T10:51:16.872619",
-                transformation_job: nil
-              },
-              error: nil,
-              metadata: nil
-            }
-          }
-      end)
-
-      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
-               Assistants.upload_file(%{media: upload}, organization_id)
-
-      assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
-      assert filename == "sample.pdf"
-      assert uploaded_at == "2026-01-30T10:51:16.872363"
-    end
-
-    test "upload_file/2, uploads the file failed due to unsupported file", %{
-      organization_id: organization_id,
-      upload: upload
-    } do
-      exe_upload = %{upload | content_type: "application/octet-stream", filename: "sample.exe"}
-
-      assert {:error, "Files with extension '.exe' not supported in Assistants"} =
-               Assistants.upload_file(%{media: exe_upload}, organization_id)
-    end
-
-    test "upload_file/2, uploads file to Kaapi with transformation parameters", %{
-      organization_id: organization_id,
-      upload: upload
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              success: true,
-              data: %{
-                fname: "sample.pdf",
-                project_id: 9,
-                id: "d33539f6-2196-477c-a127-0f17f04ef133",
-                signed_url: "https://kaapi-test.s3.amazonaws.com/test/doc.pdf",
-                inserted_at: "2026-01-30T10:51:16.872363",
-                updated_at: "2026-01-30T10:51:16.872619",
-                transformation_job: nil
-              },
-              error: nil,
-              metadata: nil
-            }
-          }
-      end)
-
-      assert {:ok, %{file_id: file_id, filename: filename, uploaded_at: uploaded_at}} =
-               Assistants.upload_file(
-                 %{
-                   media: upload,
-                   target_format: "pdf",
-                   callback_url: "https://example.com/webhook"
-                 },
-                 organization_id
-               )
-
-      assert file_id == "d33539f6-2196-477c-a127-0f17f04ef133"
-      assert filename == "sample.pdf"
-      assert uploaded_at == "2026-01-30T10:51:16.872363"
-    end
-
-    test "upload_file/2, handles Kaapi upload error gracefully", %{
-      organization_id: organization_id,
-      upload: upload
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
-          %Tesla.Env{
-            status: 500,
-            body: %{
-              success: false,
-              error: "Internal server error",
-              metadata: nil
-            }
-          }
-      end)
-
-      assert {:error, error_message} =
-               Assistants.upload_file(%{media: upload}, organization_id)
-
-      assert is_binary(error_message)
-      assert error_message =~ "status 500"
-    end
-  end
-
-  defp enable_kaapi(attrs) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: attrs.organization_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{
-          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
-        }
       })
 
     valid_update_attrs = %{

@@ -10,7 +10,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create_knowledge_base_versions()
     create_assistant_config_version_knowledge_base_versions()
     # Add the foreign key after both tables exist
-    add_active_config_version_to_assistants()
     create_triggers()
   end
 

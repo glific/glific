@@ -195,7 +195,8 @@ defmodule Glific.Assistants do
       name: generate_assistant_name(user_params[:name]),
       description: description,
       vector_store_ids: [knowledge_base_version.llm_service_id],
-      prompt: prompt
+      prompt: prompt,
+      kaapi_uuid: user_params[:kaapi_uuid]
     }
 
     {:ok, config}
@@ -262,7 +263,8 @@ defmodule Glific.Assistants do
     Assistant.changeset(%Assistant{}, %{
       name: kaapi_config.name,
       description: kaapi_config.prompt,
-      organization_id: kaapi_config.organization_id
+      organization_id: kaapi_config.organization_id,
+      kaapi_uuid: kaapi_config.kaapi_uuid
     })
   end
 
