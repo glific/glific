@@ -25,9 +25,6 @@ config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 # While we store everything in UTC, we need to respect the user's tz
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
-config :logger,
-  level: :error
-
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
