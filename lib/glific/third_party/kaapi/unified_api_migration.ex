@@ -21,7 +21,11 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   @doc """
   Migrate all assistants to the new unified API structure
   """
-  @spec migrate_assistants :: %{success: non_neg_integer(), failure: non_neg_integer()}
+  @spec migrate_assistants :: %{
+          success: non_neg_integer(),
+          failure: non_neg_integer(),
+          skipped: non_neg_integer()
+        }
   def migrate_assistants do
     openai_assistants =
       from(oa in OpenAIAssistant,
@@ -39,9 +43,12 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       timeout: 60_000,
       on_timeout: :kill_task
     )
-    |> Enum.reduce(%{success: 0, failure: 0}, fn
+    |> Enum.reduce(%{success: 0, failure: 0, skipped: 0}, fn
       {:ok, {:ok, _result}}, acc ->
         Map.update(acc, :success, 1, &(&1 + 1))
+
+      {:ok, :skipped}, acc ->
+        Map.update(acc, :skipped, 1, &(&1 + 1))
 
       {:ok, {:error, reason}}, acc ->
         Logger.error("Assistant Migration failed: #{inspect(reason)}")
@@ -59,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
   # Private functions
   @spec migrate_assistant(OpenAIAssistant.t()) ::
-          {:ok, Assistant.t()} | {:error, any()}
+          {:ok, Assistant.t()} | {:error, any()} | :skipped
   defp migrate_assistant(openai_assistant) do
     Repo.put_process_state(openai_assistant.organization_id)
 
@@ -70,7 +77,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
           "Assistant #{openai_assistant.id} already migrated as #{existing_assistant.id}, skipping"
         )
 
-        {:ok, existing_assistant}
+        :skipped
 
       :not_migrated ->
         do_migrate_assistant(openai_assistant)

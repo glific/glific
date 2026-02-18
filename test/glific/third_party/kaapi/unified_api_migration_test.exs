@@ -154,7 +154,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
 
       # Re-run — no new Kaapi calls since all are already migrated
       second_result = UnifiedApiMigration.migrate_assistants()
-      assert second_result.success == length(openai_assistants)
+      assert second_result.skipped == length(openai_assistants)
+      assert second_result.success == 0
       assert second_result.failure == 0
 
       # Counts should not double
