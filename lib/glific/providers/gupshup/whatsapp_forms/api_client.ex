@@ -159,10 +159,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, action) do
     Logger.error("""
-    [Gupshup WhatsAppForms API Error]
-    Action: #{action}
-    Status: #{status}
-    Response Body: #{inspect(body)}
+    [Gupshup WhatsAppForms API Error] Action: #{action} Status: #{status} Response Body: #{inspect(body)}
     """)
 
     {:error, body}
@@ -170,9 +167,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   defp parse_response({:error, reason}, action) do
     Logger.error("""
-    [Gupshup WhatsAppForms API Request Failed]
-    Action: #{action}
-    Reason: #{inspect(reason)}
+    [Gupshup WhatsAppForms API Request Failed] Action: #{action} Reason: #{inspect(reason)}
     """)
 
     {:error, inspect(reason)}
