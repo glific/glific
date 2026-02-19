@@ -98,6 +98,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         on: c.organization_id == o.id and c.provider_id == p.id,
         where: not is_nil(c.id),
         where: c.is_active == true,
+        where: is_nil(o.deleted_at),
         select: o.id,
         distinct: o.id
       )

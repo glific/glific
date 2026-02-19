@@ -686,6 +686,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, _org} = Repo.fetch(Organization, organization.id)
 
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :purge, with_safety: false)
+
+    # After job completes, organization is soft-deleted (record preserved with deleted_at)
+    {:ok, deleted_org} =
+      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+
+    assert deleted_org.deleted_at != nil
+
     result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 

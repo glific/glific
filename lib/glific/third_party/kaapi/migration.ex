@@ -46,6 +46,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     base_query =
       from(o in Organization,
         where: o.status in [:active, :suspended, :forced_suspension],
+        where: is_nil(o.deleted_at),
         left_join: c in Credential,
         on: c.organization_id == o.id and c.provider_id == ^provider_id,
         where: is_nil(c.id),

@@ -630,10 +630,17 @@ defmodule Glific.PartnersTest do
       assert organization.setting.send_warning_mail == true
     end
 
-    test "delete_organization/1 deletes the organization" do
+    test "delete_organization/1 soft deletes the organization" do
       organization = Fixtures.organization_fixture()
-      assert {:ok, %Organization{}} = Partners.delete_organization(organization)
-      assert_raise Ecto.NoResultsError, fn -> Partners.get_organization!(organization.id) end
+      assert {:ok, %Organization{} = deleted_org} = Partners.delete_organization(organization)
+      assert deleted_org.deleted_at != nil
+
+      # Organization record is preserved (accessible by ID)
+      assert %Organization{} = Partners.get_organization!(organization.id)
+
+      # But excluded from list queries
+      org_list = Partners.list_organizations(%{filter: %{name: organization.name}})
+      assert Enum.empty?(org_list)
     end
 
     test "delete_organization_test_data/1 deletes the organization test data" do

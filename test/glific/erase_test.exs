@@ -211,7 +211,12 @@ defmodule Glific.EraseTest do
     assert %Oban.Job{args: %{"organization_id" => organization_id}} = job
     assert organization_id == organization.id
     assert :ok = perform_job(Erase, job.args)
-    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
+
+    # Organization record is preserved with deleted_at set
+    {:ok, deleted_org} =
+      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+
+    assert deleted_org.deleted_at != nil
   end
 
   test "handles non-existent organization gracefully" do
@@ -251,7 +256,28 @@ defmodule Glific.EraseTest do
 
     assert :ok = perform_job(Erase, job.args)
 
-    assert {:error, [_module, "Resource not found"]} = Repo.fetch(Organization, organization.id)
+    # Organization record preserved with deleted_at set
+    {:ok, deleted_org} =
+      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+
+    assert deleted_org.deleted_at != nil
+
+    # All related data should be deleted
+    {:ok, result} =
+      Repo.query(
+        "SELECT count(*) FROM messages WHERE organization_id = #{organization.id}"
+      )
+
+    [[count]] = result.rows
+    assert count == 0
+
+    {:ok, result} =
+      Repo.query(
+        "SELECT count(*) FROM contacts WHERE organization_id = #{organization.id}"
+      )
+
+    [[count]] = result.rows
+    assert count == 0
   end
 
   test "perform_periodic clears contact histories older than 2 month", attrs do
