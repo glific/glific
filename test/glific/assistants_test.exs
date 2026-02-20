@@ -272,7 +272,7 @@ defmodule Glific.AssistantsTest do
               }} = Assistants.create_knowledge_base_with_version(params)
 
       assert knowledge_base.organization_id == organization_id
-      assert String.starts_with?(knowledge_base.name, "Vector-Store-")
+      assert String.starts_with?(knowledge_base.name, "VectorStore-")
 
       assert knowledge_base_version.knowledge_base_id == knowledge_base.id
       assert knowledge_base_version.organization_id == organization_id

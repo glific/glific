@@ -439,8 +439,13 @@ defmodule Glific.Assistants do
 
   @spec generate_knowledge_base_name() :: String.t()
   defp generate_knowledge_base_name do
-    uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
-    "Vector-Store-#{uid}"
+    random_string =
+      24
+      |> :crypto.strong_rand_bytes()
+      |> Base.encode32(case: :lower, padding: false)
+      |> binary_part(0, 24)
+
+    "VectorStore-#{random_string}"
   end
 
   # Temporary LLM Service ID that looks like what is
