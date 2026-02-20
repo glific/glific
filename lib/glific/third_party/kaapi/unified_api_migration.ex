@@ -39,7 +39,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       TaskSupervisor,
       openai_assistants,
       &migrate_assistant/1,
-      max_concurrency: 20,
+      max_concurrency: 5,
       timeout: 60_000,
       on_timeout: :kill_task
     )
@@ -265,7 +265,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       TaskSupervisor,
       used_vector_stores,
       &migrate_vector_store/1,
-      max_concurrency: 20,
+      max_concurrency: 5,
       on_timeout: :kill_task
     )
     |> Enum.reduce(%{success: 0, failure: 0}, fn
