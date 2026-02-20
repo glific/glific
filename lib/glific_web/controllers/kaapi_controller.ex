@@ -13,7 +13,7 @@ defmodule GlificWeb.KaapiController do
   """
   @spec knowledge_base_version_creation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def knowledge_base_version_creation_callback(conn, params) do
-    Logger.info("Received knowledge base creation callback")
+    Logger.info("Received knowledge base creation callback", params: params)
     Assistants.handle_knowledge_base_callback(params)
     send_resp(conn, 200, "Knowledge base version creation callback handled successfully")
   end
