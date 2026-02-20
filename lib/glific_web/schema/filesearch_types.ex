@@ -138,8 +138,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.delete_assistant/3)
     end
 
-    @desc "Add files to Assistant"
-    field :add_assistant_files, :knowledge_base_result do
+    @desc "Create a knowledge Base and/or Knowledge Base version"
+    field :create_knowledge_base, :knowledge_base_result do
       arg(:media_info, non_null(list_of(non_null(:file_info_input))))
       arg(:id, :id)
       middleware(Authorize, :staff)

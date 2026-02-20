@@ -1,5 +1,5 @@
-mutation add_assistant_files($media_info: [FileInfoInput!]!, $id: ID) {
-    add_assistant_files(media_info: $media_info, id: $id) {
+mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
+    create_knowledge_base(media_info: $media_info, id: $id) {
         knowledge_base {
             id
             vector_store_id

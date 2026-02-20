@@ -8,7 +8,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   load_gql(
     :create_knowledge_base,
     GlificWeb.Schema,
-    "assets/gql/assistants/add_assistant_files.gql"
+    "assets/gql/assistants/create_knowledge_base.gql"
   )
 
   describe "create_knowledge_base/3" do
@@ -35,7 +35,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           }
         )
 
-      knowledge_base = query_data.data["add_assistant_files"]["knowledge_base"]
+      knowledge_base = query_data.data["create_knowledge_base"]["knowledge_base"]
       assert knowledge_base["id"] != nil
       assert knowledge_base["name"] != nil
       assert knowledge_base["vector_store_id"] != nil
@@ -73,7 +73,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           }
         )
 
-      response = query_data.data["add_assistant_files"]["knowledge_base"]
+      response = query_data.data["create_knowledge_base"]["knowledge_base"]
 
       assert response["id"] == to_string(knowledge_base.id)
       assert response["name"] == knowledge_base.name
@@ -99,7 +99,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           }
         )
 
-      assert query_data.data["add_assistant_files"] == nil
+      assert query_data.data["create_knowledge_base"] == nil
       assert [error | _] = query_data.errors
       assert error[:message] == "Failed to create knowledge base"
     end
