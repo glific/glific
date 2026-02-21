@@ -5,7 +5,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create_enums()
     create_assistants()
     create_assistant_config_versions()
-    add_active_config_version_to_assistants()
     create_knowledge_bases()
     create_knowledge_base_versions()
     create_assistant_config_version_knowledge_base_versions()
