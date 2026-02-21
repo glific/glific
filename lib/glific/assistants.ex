@@ -33,14 +33,6 @@ defmodule Glific.Assistants do
     "txt"
   ]
 
-  alias Glific.{
-    Assistants.Assistant,
-    Assistants.AssistantConfigVersion,
-    Assistants.KnowledgeBase,
-    Assistants.KnowledgeBaseVersion,
-    Repo
-  }
-
   @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
   """
