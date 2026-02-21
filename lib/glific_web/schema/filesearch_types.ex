@@ -28,6 +28,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     field :status, :string
+    field :legacy, :boolean
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -77,6 +78,29 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
     field :vector_store, :vector_store do
       resolve(dataloader(Repo))
+    end
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  object :unified_assistant_result do
+    field :assistant, :unified_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :unified_assistant do
+    field :id, :id
+    field :name, :string
+    field :assistant_id, :string
+    field :model, :string
+    field :instructions, :string
+    field :temperature, :float
+    field :status, :string
+    field :new_version_in_progress, :boolean
+
+    field :vector_store, :vector_store do
+      resolve(&Resolvers.Filesearch.resolve_vector_store/3)
     end
 
     field :inserted_at, :datetime
@@ -157,14 +181,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :filesearch_queries do
     @desc "Get Assistant"
-    field :assistant, :assistant_result do
+    field :assistant, :unified_assistant_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.get_assistant/3)
     end
 
     @desc "List Assistants"
-    field :assistants, list_of(:assistant) do
+    field :assistants, list_of(:unified_assistant) do
       arg(:filter, :assistant_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
