@@ -179,30 +179,10 @@ defmodule Glific.Assistants do
            Repo.fetch_by(Assistant, %{assistant_display_id: display_id}),
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
-         {:ok, kaapi_config} <-
-           build_kaapi_config_for_update(assistant, user_params, knowledge_base_version) do
+         user_params = Map.put_new(user_params, :name, assistant.name),
+         {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       update_assistant_transaction(assistant, kaapi_config, knowledge_base_version)
     end
-  end
-
-  @spec build_kaapi_config_for_update(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
-          {:ok, map()}
-  defp build_kaapi_config_for_update(assistant, user_params, knowledge_base_version) do
-    name = if user_params[:name] in [nil, ""], do: assistant.name, else: user_params[:name]
-    prompt = user_params[:instructions] || "You are a helpful assistant"
-    description = user_params[:description] || "Assistant configuration"
-
-    config = %{
-      temperature: user_params[:temperature] || 1,
-      model: user_params[:model] || @default_model,
-      organization_id: user_params[:organization_id],
-      name: name,
-      description: description,
-      vector_store_ids: [knowledge_base_version.llm_service_id],
-      prompt: prompt
-    }
-
-    {:ok, config}
   end
 
   @spec update_assistant_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
