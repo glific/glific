@@ -996,26 +996,6 @@ defmodule Glific.FilesearchTest do
     {assistant, config_version}
   end
 
-  defp create_unified_vector_store_for_kaapi_uuid(attrs) do
-    assistant =
-      Repo.one(
-        from(a in Assistants.Assistant,
-          where:
-            a.kaapi_uuid == ^attrs.kaapi_uuid and a.organization_id == ^attrs.organization_id,
-          preload: [:active_config_version]
-        )
-      )
-
-    defaults = %{
-      kb_name: attrs[:name],
-      kb_status: :completed,
-      files: %{},
-      size: 0
-    }
-
-    link_knowledge_base(assistant.active_config_version, Map.merge(defaults, attrs))
-  end
-
   defp link_knowledge_base(config_version, attrs) do
     org_id = config_version.organization_id
 
