@@ -36,7 +36,9 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def delete_assistant(_, params, _) do
-    Assistants.delete_assistant(params.id)
+    with {:ok, assistant} <- Assistants.delete_assistant(params.id) do
+      {:ok, %{assistant: assistant}}
+    end
   end
 
   @doc """

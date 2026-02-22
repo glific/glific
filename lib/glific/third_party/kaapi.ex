@@ -238,7 +238,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "Kaapi config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
+              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
           },
           []
         )

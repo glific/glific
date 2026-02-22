@@ -397,6 +397,7 @@ defmodule Glific.Assistants do
     })
   end
 
+  @doc false
   @spec delete_from_kaapi(String.t() | nil, non_neg_integer()) ::
           :ok | {:error, any()}
   defp delete_from_kaapi(nil, _organization_id), do: :ok
