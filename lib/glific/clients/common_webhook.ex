@@ -110,8 +110,10 @@ defmodule Glific.Clients.CommonWebhook do
             signature_payload["timestamp"]
           )
 
+        organization = Partners.organization(organization_id)
+
         callback_url =
-          "https://de98-111-223-1-182.ngrok-free.app" <>
+          "https://api.#{organization.shortcode}.glific.com" <>
             "/webhook/flow_resume"
 
         payload =

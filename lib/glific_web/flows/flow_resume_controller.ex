@@ -87,6 +87,9 @@ defmodule GlificWeb.Flows.FlowResumeController do
     Map.put(response, "thread_id", response["response_id"])
   end
 
+  # Fallback for unexpected formats
+  defp parse_callback_response(_result), do: %{}
+
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do
     flow_id = fields["flow_id"]

@@ -651,11 +651,14 @@ defmodule Glific.Flows.Action do
 
     # Webhooks don't consume messages, so if we send a message while a webhook node is running,
     # the node won't be executed again because it only matches when the message list is empty (`[]`)
+    # unified_api_enabled takes priority over is_kaapi_enabled.
+    # unified routes to /api/v1/llm/call, kaapi routes to /api/v1/responses.
+    # If neither flag is on, fall back to the legacy direct OpenAI call.
     cond do
       FunWithFlags.enabled?(:unified_api_enabled,
         for: %{organization_id: context.organization_id}
       ) ->
-        execute_unified_filesearch(action, context)
+        execute_kaapi_filesearch(action, context, "unified-llm-call")
 
       FunWithFlags.enabled?(:is_kaapi_enabled,
         for: %{organization_id: context.organization_id}
@@ -1030,28 +1033,14 @@ defmodule Glific.Flows.Action do
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
   end
 
-  @spec execute_unified_filesearch(Action.t(), FlowContext.t()) ::
+  @spec execute_kaapi_filesearch(Action.t(), FlowContext.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp execute_unified_filesearch(action, context) do
+  defp execute_kaapi_filesearch(action, context, webhook_name \\ "call_and_wait") do
     with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
          api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
       updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
       updated_action = %{action | headers: updated_headers}
-      Webhook.webhook_and_wait(updated_action, context, true, "unified-llm-call")
-    else
-      {:error, _error} ->
-        Webhook.webhook_and_wait(action, context, false)
-    end
-  end
-
-  @spec execute_kaapi_filesearch(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp execute_kaapi_filesearch(action, context) do
-    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
-         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
-      updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
-      updated_action = %{action | headers: updated_headers}
-      Webhook.webhook_and_wait(updated_action, context, true)
+      Webhook.webhook_and_wait(updated_action, context, true, webhook_name)
     else
       {:error, _error} ->
         Webhook.webhook_and_wait(action, context, false)
