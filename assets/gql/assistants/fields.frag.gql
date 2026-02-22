@@ -1,0 +1,6 @@
+fragment ErrorFields on AssistantResult {
+    errors {
+        key
+        message
+    }
+}

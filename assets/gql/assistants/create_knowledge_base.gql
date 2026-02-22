@@ -1,3 +1,5 @@
+#import "./fields.frag.gql"
+
 mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
     create_knowledge_base(media_info: $media_info, id: $id) {
         knowledge_base {
@@ -9,9 +11,6 @@ mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
             inserted_at
             updated_at
         }
-        errors {
-            key
-            message
-        }
+        ...ErrorFields
     }
 }
