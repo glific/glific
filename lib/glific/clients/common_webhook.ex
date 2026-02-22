@@ -590,7 +590,7 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   @spec build_conversation(String.t() | nil) :: map()
-  defp build_conversation(nil), do: %{id: nil, auto_create: true}
+  defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
 
   @spec lookup_kaapi_config(String.t(), non_neg_integer()) ::
