@@ -1,6 +1,16 @@
-Thanks for your intrest. To start contributing in this repo. 
+Thank you for your interest in contributing as part of FOSSC Hack 
 
-1. Clone this Repo
-2. Setup the project by following the steps in the [Readme.md](https://github.com/glific/glific#readme)
-3. Pick one issue ([beginner level issues](https://github.com/glific/glific/issues?q=is%3Aissue+is%3Aopen+label%3A%22Good+issues+for+beginner%22)), Fix it, create PR and CI checks will help you to move forword.
-4. You can reach out to us on our [discord server](https://discord.gg/9dyTc6Zm) in case of any queston/suggestions.
+To get started:
+
+Clone this repository.
+
+Set up the project by following the instructions in the README.md.
+
+Pick a beginner-level issue, work on fixing it, and create a PR.
+
+The CI checks will guide you and help ensure everything is working correctly before review.
+
+If you have any questions or suggestions, feel free to reach out to us on our Discord channel:
+👉 [Discord](https://discord.com/channels/717975833226248303/1468837556966916289)
+
+We’re excited to see your contributions!
