@@ -65,7 +65,6 @@ defmodule Glific.Clients.CommonWebhook do
         |> Map.put("webhook_log_id", webhook_log_id)
         |> Map.put("result_name", result_name)
         |> maybe_put_response_id(fields)
-        |> Jason.encode!()
 
       {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
