@@ -15,30 +15,18 @@ headers {
 }
 
 body:graphql {
-  mutation add_assistant_files($media_info: [FileInfoInput!]!, $id: ID!) {
-    add_assistant_files(media_info: $media_info, id: $id) {
-      assistant {
+  mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
+    create_knowledge_base(media_info: $media_info, id: $id) {
+      knowledge_base {
         id
+        vector_store_id
         name
-        assistant_id,
-     		model
-        instructions
-        temperature
-        vector_store {
-          id
-          vector_store_id
-          files {
-            id
-            name
-            uploaded_at
-          }
-          size
-          status
-        }
+        status
+        size
         inserted_at
         updated_at
       }
-      
+
       errors {
         key
         message

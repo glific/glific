@@ -9,8 +9,8 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-  object :vector_store_result do
-    field :vector_store, :vector_store
+  object :knowledge_base_result do
+    field :knowledge_base, :vector_store
     field :errors, list_of(:input_error)
   end
 
@@ -28,6 +28,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     field :status, :string
+    field :legacy, :boolean
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -50,6 +51,23 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :kaapi_assistant_result do
+    field :assistant, :kaapi_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :kaapi_assistant do
+    field :id, :id
+    field :name, :string
+    field :description, :string
+    field :kaapi_uuid, :string
+    field :assistant_display_id, :string
+    field :assistant_id, :string
+    field :active_config_version_id, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   object :assistant do
     field :id, :id
     field :name, :string
@@ -66,6 +84,29 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :updated_at, :datetime
   end
 
+  object :unified_assistant_result do
+    field :assistant, :unified_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :unified_assistant do
+    field :id, :id
+    field :name, :string
+    field :assistant_id, :string
+    field :model, :string
+    field :instructions, :string
+    field :temperature, :float
+    field :status, :string
+    field :new_version_in_progress, :boolean
+
+    field :vector_store, :vector_store do
+      resolve(&Resolvers.Filesearch.resolve_vector_store/3)
+    end
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   input_object :vector_store_input do
     field :name, :string
   end
@@ -74,12 +115,15 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :name, :string
     field :model, :string
     field :instructions, :string
+    field :description, :string
     field :temperature, :float
+    field :knowledge_base_id, :string
   end
 
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
+    field :uploaded_at, :datetime
   end
 
   @desc "Filtering options for VectorStore"
@@ -105,7 +149,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Create Assistant"
-    field :create_assistant, :assistant_result do
+    field :create_assistant, :kaapi_assistant_result do
       arg(:input, :assistant_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.create_assistant/3)
@@ -118,20 +162,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
       resolve(&Resolvers.Filesearch.delete_assistant/3)
     end
 
-    @desc "Add files to Assistant"
-    field :add_assistant_files, :assistant_result do
+    @desc "Create a Knowledge Base Version"
+    field :create_knowledge_base, :knowledge_base_result do
       arg(:media_info, non_null(list_of(non_null(:file_info_input))))
-      arg(:id, non_null(:id))
+      arg(:id, :id)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.add_assistant_files/3)
-    end
-
-    @desc "Remove files from Assistant"
-    field :remove_assistant_file, :assistant_result do
-      arg(:file_id, non_null(:string))
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.remove_assistant_file/3)
+      resolve(&Resolvers.Assistants.create_knowledge_base/3)
     end
 
     @desc "Update Assistant"
@@ -145,14 +181,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :filesearch_queries do
     @desc "Get Assistant"
-    field :assistant, :assistant_result do
+    field :assistant, :unified_assistant_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.get_assistant/3)
     end
 
     @desc "List Assistants"
-    field :assistants, list_of(:assistant) do
+    field :assistants, list_of(:unified_assistant) do
       arg(:filter, :assistant_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
