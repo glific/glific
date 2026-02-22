@@ -1,9 +1,0 @@
-#import "./assistant_fields.frag.gql"
-
-mutation RemoveAssistantFile($id: ID!, $file_id: String!) {
-  RemoveAssistantFile(id: $id, file_id: $file_id) {
-    ...AssistantFields
-
-    ...ErrorFields
-  }
-}
