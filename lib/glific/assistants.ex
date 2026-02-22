@@ -2,6 +2,7 @@ defmodule Glific.Assistants do
   @moduledoc """
   Context module for Assistant and related schemas.
   """
+  use Publicist
 
   import Ecto.Query
 
@@ -17,8 +18,6 @@ defmodule Glific.Assistants do
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
 
-  require Logger
-
   defmodule Error do
     @moduledoc """
     Custom error module for Assistant failures.
@@ -30,8 +29,6 @@ defmodule Glific.Assistants do
   @default_model "gpt-4o"
 
   @timeout_hours 1
-
-  @default_model "gpt-4o"
 
   # https://platform.openai.com/docs/assistants/tools/file-search#supported-files
   @assistant_supported_file_extensions [
@@ -216,17 +213,6 @@ defmodule Glific.Assistants do
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       create_assistant_transaction(kaapi_config, knowledge_base_version)
     end
-  end
-
-  @doc """
-  Updates an Assistant Version.
-  """
-  @spec update_assistant_version(AssistantConfigVersion.t(), map()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  def update_assistant_version(assistant_version, params) do
-    assistant_version
-    |> AssistantConfigVersion.changeset(params)
-    |> Repo.update()
   end
 
   @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
@@ -591,6 +577,14 @@ defmodule Glific.Assistants do
           )
       end
     end)
+  end
+
+  @spec update_assistant_version(AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp update_assistant_version(assistant_version, params) do
+    assistant_version
+    |> AssistantConfigVersion.changeset(params)
+    |> Repo.update()
   end
 
   @doc """
