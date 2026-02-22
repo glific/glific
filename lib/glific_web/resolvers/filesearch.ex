@@ -63,12 +63,14 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Updates an Assistant
+  Updates an Assistant by creating a new config version and setting it as active
   """
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: _user}}) do
-    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs) do
+  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: user}}) do
+    attrs = Map.put(attrs, :organization_id, user.organization_id)
+
+    with {:ok, assistant} <- Assistants.update_assistant(id, attrs) do
       {:ok, %{assistant: assistant}}
     end
   end

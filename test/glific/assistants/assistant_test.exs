@@ -7,6 +7,7 @@ defmodule Glific.Assistants.AssistantTest do
   alias Glific.{
     Assistants,
     Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Partners,
     Repo
   }
@@ -450,6 +451,245 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {:error, error_message} = Assistants.create_assistant(params)
       assert error_message == "Knowledge base is required for assistant creation"
+
+      :meck.unload(Partners)
+    end
+  end
+
+  describe "update_assistant/2" do
+    setup %{
+      organization_id: organization_id,
+      knowledge_base: kb,
+      knowledge_base_version: kb_version
+    } do
+      # Create assistant directly in DB to avoid Kaapi calls in setup
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Original Assistant",
+          description: "Original instructions",
+          organization_id: organization_id,
+          kaapi_uuid: "original-kaapi-uuid"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "kaapi",
+          model: "gpt-4o",
+          prompt: "Original instructions",
+          settings: %{"temperature" => 0.5},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: config_version.id,
+          knowledge_base_version_id: kb_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, assistant: assistant, kb: kb, config_version: config_version}
+    end
+
+    test "creates a new config version and sets it as active", %{
+      organization_id: organization_id,
+      assistant: assistant,
+      kb: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      update_params = %{
+        instructions: "Updated instructions",
+        model: "gpt-4o-mini",
+        temperature: 0.9,
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:ok, updated_assistant} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+
+      assert updated_assistant.instructions == "Updated instructions"
+      assert updated_assistant.model == "gpt-4o-mini"
+      assert updated_assistant.temperature == 0.9
+
+      reloaded = Repo.get!(Assistant, assistant.id)
+      assert reloaded.active_config_version_id != assistant.active_config_version_id
+
+      :meck.unload(Partners)
+    end
+
+    test "updates the assistant name when provided", %{
+      organization_id: organization_id,
+      assistant: assistant,
+      kb: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      update_params = %{
+        name: "Renamed Assistant",
+        instructions: "Some instructions",
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:ok, updated_assistant} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+
+      assert updated_assistant.name == "Renamed Assistant"
+
+      :meck.unload(Partners)
+    end
+
+    test "preserves existing name when name is not provided", %{
+      organization_id: organization_id,
+      assistant: assistant,
+      kb: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      update_params = %{
+        instructions: "New instructions",
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:ok, updated_assistant} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+
+      assert updated_assistant.name == assistant.name
+
+      :meck.unload(Partners)
+    end
+
+    test "updates kaapi_uuid with the new config's uuid", %{
+      organization_id: organization_id,
+      assistant: assistant,
+      kb: kb
+    } do
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      update_params = %{
+        instructions: "Updated instructions",
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:ok, _updated_assistant} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+
+      reloaded = Repo.get!(Assistant, assistant.id)
+      assert reloaded.kaapi_uuid == "kaapi-uuid-123"
+
+      :meck.unload(Partners)
+    end
+
+    test "returns error when knowledge_base_id is missing", %{
+      organization_id: organization_id,
+      assistant: assistant
+    } do
+      update_params = %{
+        instructions: "New instructions",
+        organization_id: organization_id
+      }
+
+      assert {:error, "Knowledge base is required for assistant creation"} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+    end
+
+    test "returns error when knowledge_base_id is nil", %{
+      organization_id: organization_id,
+      assistant: assistant
+    } do
+      update_params = %{
+        instructions: "New instructions",
+        knowledge_base_id: nil,
+        organization_id: organization_id
+      }
+
+      assert {:error, "Knowledge base is required for assistant creation"} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+    end
+
+    test "returns error when assistant display_id is not found", %{
+      organization_id: organization_id,
+      kb: kb
+    } do
+      update_params = %{
+        instructions: "New instructions",
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:error, _} =
+               Assistants.update_assistant("asst_nonexistent_id_12345", update_params)
+    end
+
+    test "links new config version to knowledge base version", %{
+      organization_id: organization_id,
+      assistant: assistant,
+      kb: kb
+    } do
+      import Ecto.Query
+
+      :meck.new(Partners, [:passthrough])
+
+      :meck.expect(Partners, :organization, fn _ ->
+        %{services: %{"kaapi" => %{secrets: %{"api_key" => "sk_test_key"}}}}
+      end)
+
+      update_params = %{
+        instructions: "Updated instructions",
+        knowledge_base_id: kb.id,
+        organization_id: organization_id
+      }
+
+      assert {:ok, _} =
+               Assistants.update_assistant(assistant.assistant_display_id, update_params)
+
+      reloaded = Repo.get!(Assistant, assistant.id)
+
+      link_count =
+        from(acvkbv in "assistant_config_version_knowledge_base_versions",
+          where: acvkbv.assistant_config_version_id == ^reloaded.active_config_version_id,
+          select: count(acvkbv.assistant_config_version_id)
+        )
+        |> Repo.one()
+
+      assert link_count == 1
 
       :meck.unload(Partners)
     end
