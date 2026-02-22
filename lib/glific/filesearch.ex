@@ -72,39 +72,6 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Removes the given file from the Assistant's VectorStore
-
-  Also deletes the file from the openAI
-  """
-  @spec remove_assistant_file(map()) :: {:ok, Assistant.t()} | {:error, String.t()}
-  def remove_assistant_file(params) do
-    with {:ok, assistant} <- Assistant.get_assistant(params.id),
-         assistant <- Repo.preload(assistant, :vector_store),
-         {:ok, file} <- get_file(assistant.vector_store, params.file_id),
-         {:ok, _} <-
-           ApiClient.delete_vector_store_file(%{
-             file_id: file["file_id"],
-             vector_store_id: assistant.vector_store.vector_store_id
-           }) do
-      # We will initiate the file deletion async, since don't want to delay the main process
-      Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-        ApiClient.delete_file(file["file_id"])
-      end)
-
-      {:ok, _} =
-        VectorStore.update_vector_store(
-          assistant.vector_store,
-          %{files: Map.delete(assistant.vector_store.files, file["file_id"])}
-        )
-
-      {:ok, Repo.preload(assistant, :vector_store, force: true)}
-    else
-      {:error, reason} ->
-        {:error, "Removing file from assistant failed due to #{reason}"}
-    end
-  end
-
-  @doc """
   Updates the assistant details and configurations with the given Assistant ID
   """
   @spec update_assistant(integer(), map()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
@@ -191,17 +158,6 @@ defmodule Glific.Filesearch do
 
       {:error, reason} ->
         {:error, "VectorStore creation failed due to #{reason}"}
-    end
-  end
-
-  @spec get_file(VectorStore.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp get_file(vector_store, file_id) do
-    case Map.get(vector_store.files, file_id) do
-      nil ->
-        {:error, "File #{file_id} not found"}
-
-      file ->
-        {:ok, file}
     end
   end
 
