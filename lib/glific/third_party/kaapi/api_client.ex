@@ -64,7 +64,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Calls Kaapi Unified LLM API with the given payload.
   """
-  @spec call_llm(String.t(), binary()) :: {:ok, any()} | {:error, any()}
+  @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_llm(payload, org_api_key) do
     opts = [adapter: [recv_timeout: 300_000]]
 

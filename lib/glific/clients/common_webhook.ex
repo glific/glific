@@ -116,28 +116,26 @@ defmodule Glific.Clients.CommonWebhook do
           "https://api.#{organization.shortcode}.glific.com" <>
             "/webhook/flow_resume"
 
-        payload =
-          %{
-            query: %{
-              input: fields["question"],
-              conversation: build_conversation(fields["thread_id"])
-            },
-            config: %{
-              id: kaapi_uuid,
-              version: version_number
-            },
-            callback_url: callback_url,
-            request_metadata: %{
-              organization_id: organization_id,
-              flow_id: flow_id,
-              contact_id: contact_id,
-              timestamp: timestamp,
-              signature: signature,
-              webhook_log_id: webhook_log_id,
-              result_name: result_name
-            }
+        payload = %{
+          query: %{
+            input: fields["question"],
+            conversation: build_conversation(fields["thread_id"])
+          },
+          config: %{
+            id: kaapi_uuid,
+            version: version_number
+          },
+          callback_url: callback_url,
+          request_metadata: %{
+            organization_id: organization_id,
+            flow_id: flow_id,
+            contact_id: contact_id,
+            timestamp: timestamp,
+            signature: signature,
+            webhook_log_id: webhook_log_id,
+            result_name: result_name
           }
-          |> Jason.encode!()
+        }
 
         {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
