@@ -19,10 +19,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     drop_if_exists(table(:knowledge_base_versions))
     drop_if_exists(table(:knowledge_bases))
 
-    alter table(:assistants) do
-      remove_if_exists(:active_config_version_id, :integer)
-    end
-
+    drop_if_exists(constraint(:assistants, :assistants_active_config_version_id_fkey))
     drop_if_exists(table(:assistant_config_versions))
     drop_if_exists(table(:assistants))
     drop_enums()
