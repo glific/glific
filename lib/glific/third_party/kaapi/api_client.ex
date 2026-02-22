@@ -106,6 +106,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create a collection in Kaapi.
+  """
+  @spec create_collection(map(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def create_collection(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/collections/", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Ingests an assistant into the Kaapi platform.
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
