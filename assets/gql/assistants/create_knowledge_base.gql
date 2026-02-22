@@ -1,4 +1,4 @@
-#import "./fields.frag.gql"
+#import "./knowledge_base_fields.frag.gql"
 
 mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
     create_knowledge_base(media_info: $media_info, id: $id) {

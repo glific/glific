@@ -1,4 +1,4 @@
-fragment ErrorFields on AssistantResult {
+fragment ErrorFields on KnowledgeBaseResult {
     errors {
         key
         message
