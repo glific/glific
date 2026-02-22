@@ -3,6 +3,8 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
   import Ecto.Query
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Fixtures,
     Flows.Action,
     Flows.Flow,
@@ -501,6 +503,174 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
       assert flow_context.id == context.id
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+  end
+
+  describe "Call a webhook for FileSearch-GPT when Unified API is enabled" do
+    test "executes unified API filesearch when unified_api_enabled flag is on",
+         %{conn: conn} do
+      organization_id = conn.assigns.organization_id
+
+      # activate kaapi
+      enable_kaapi(%{organization_id: organization_id})
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      FunWithFlags.enable(:unified_api_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      # Create an Assistant record with kaapi_uuid and assistant_display_id
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Test Unified Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi-uuid-test-123",
+          assistant_display_id: "asst_pJxxD"
+        })
+        |> Repo.insert()
+
+      # Create an AssistantConfigVersion with version_number
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          version_number: 3,
+          prompt: "You are a helpful assistant.",
+          provider: "openai",
+          model: "gpt-4o",
+          settings: %{},
+          status: :ready,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      # Set the active config version on the assistant
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+      contact = Fixtures.contact_fixture()
+
+      flow =
+        Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      [node | _tail] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:flow, :contact])
+
+      action = %Action{
+        type: "call_webhook",
+        uuid: "UUID 1",
+        url: "filesearch-gpt",
+        body:
+          "{\n\"question\": \"tell me about glific\",\n  \"flow_id\": \"@flow.id\",\n  \"contact_id\": \"@contact.id\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
+        method: "FUNCTION",
+        headers: %{
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        result_name: "filesearch",
+        node_uuid: "Test UUID"
+      }
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: url} ->
+          # Verify it hits the unified API endpoint
+          assert String.contains?(url, "/api/v1/llm/call")
+
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              error: nil,
+              data: %{
+                message: "LLM call started",
+                status: "processing",
+                success: true
+              }
+            }
+          }
+      end)
+
+      message_stream = []
+
+      # Execute the webhook node — should use unified API path
+      assert {:wait, _context, []} = Action.execute(action, context, message_stream)
+
+      # Verify webhook log was created
+      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
+      assert webhook_log != nil
+
+      # Simulate callback from Kaapi and verify flow resumes
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(
+          organization_id,
+          Jason.encode!(signature_payload),
+          signature_payload["timestamp"]
+        )
+
+      callback_params = %{
+        "data" => %{
+          "contact_id" => contact.id,
+          "flow_id" => flow.id,
+          "organization_id" => organization_id,
+          "signature" => signature,
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "filesearch",
+          "message" => @kaapi_response,
+          "response_id" => "resp_unified_test_123",
+          "status" => "success"
+        },
+        "success" => true
+      }
+
+      conn =
+        conn
+        |> post("/webhook/flow_resume", callback_params)
+
+      assert json_response(conn, 200) == ""
+
+      [message | _messages] =
+        Glific.Messages.list_messages(%{
+          filter: %{contact_id: contact.id},
+          opts: %{limit: 1, order: :desc}
+        })
+
+      assert message.body == @kaapi_response
+
+      # Cleanup flags
+      FunWithFlags.disable(:unified_api_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
 
       FunWithFlags.disable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}

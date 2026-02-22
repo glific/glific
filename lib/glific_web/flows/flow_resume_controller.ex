@@ -16,11 +16,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = result["data"]
-    # Map the response_id to thread_id, since we treat response_id as the thread ID in Glific
-    # and use thread_id throughout the platform for OpenAI conversation support
-    thread_id = if is_map(response), do: Map.get(response, "response_id"), else: nil
-    response = Map.put(response, "thread_id", thread_id)
+    response = parse_callback_response(result)
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
@@ -29,7 +25,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       %{
         success: result["success"],
         message: response["message"] || result["error"],
-        thread_id: thread_id
+        thread_id: response["thread_id"]
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
@@ -68,6 +64,27 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     # always return 200 and an empty response
     json(conn, "")
+  end
+
+  # New format from unified-llm-call (/api/v1/llm/call):
+  # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
+  # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
+  @spec parse_callback_response(map()) :: map()
+  defp parse_callback_response(%{"metadata" => metadata, "data" => data})
+       when is_map(metadata) and map_size(metadata) > 0 do
+    response_data = get_in(data || %{}, ["response"]) || %{}
+    message_text = get_in(response_data, ["output", "content", "value"])
+    conversation_id = response_data["conversation_id"]
+
+    metadata
+    |> Map.put("message", message_text)
+    |> Map.put("thread_id", conversation_id)
+  end
+
+  # Old format from call_and_wait (/api/v1/responses):
+  defp parse_callback_response(%{"data" => data}) do
+    response = data || %{}
+    Map.put(response, "thread_id", response["response_id"])
   end
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()

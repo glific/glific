@@ -454,9 +454,9 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for Kaapi to send a response.
   """
-  @spec webhook_and_wait(map(), FlowContext.t(), boolean()) ::
+  @spec webhook_and_wait(map(), FlowContext.t(), boolean(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def webhook_and_wait(action, context, is_active?) do
+  def webhook_and_wait(action, context, is_active?, webhook_name \\ "call_and_wait") do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -478,16 +478,17 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        do_webhook_and_wait(params, is_active?, failure_message)
+        do_webhook_and_wait(params, is_active?, failure_message, webhook_name)
     end
   end
 
-  @spec do_webhook_and_wait(map(), boolean(), Message.t()) ::
+  @spec do_webhook_and_wait(map(), boolean(), Message.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp do_webhook_and_wait(
          %{webhook_log: webhook_log, context: context} = _params,
          false,
-         failure_message
+         failure_message,
+         _webhook_name
        ) do
     update_log(webhook_log.id, "Kaapi is not active")
 
@@ -499,7 +500,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, context, [failure_message]}
   end
 
-  defp do_webhook_and_wait(params, true, failure_message) do
+  defp do_webhook_and_wait(params, true, failure_message, webhook_name) do
     webhook_log_id = params.webhook_log.id
 
     fields =
@@ -514,20 +515,23 @@ defmodule Glific.Flows.Webhook do
       |> add_signature(params.context.organization_id, params.body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    process_call_and_wait(%{
-      webhook_log_id: webhook_log_id,
-      fields: fields,
-      headers: headers,
-      action: params.action,
-      context: params.context,
-      failure_message: failure_message
-    })
+    process_call_and_wait(
+      %{
+        webhook_log_id: webhook_log_id,
+        fields: fields,
+        headers: headers,
+        action: params.action,
+        context: params.context,
+        failure_message: failure_message
+      },
+      webhook_name
+    )
   end
 
-  @spec process_call_and_wait(map()) ::
+  @spec process_call_and_wait(map(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_call_and_wait(params) do
-    response = CommonWebhook.webhook("call_and_wait", params.fields, params.headers)
+  defp process_call_and_wait(params, webhook_name) do
+    response = CommonWebhook.webhook(webhook_name, params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
