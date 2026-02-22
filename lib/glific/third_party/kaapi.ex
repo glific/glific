@@ -16,7 +16,7 @@ defmodule Glific.ThirdParty.Kaapi do
     sending errors to them won’t resolve the issue.
     Reporting these failures to AppSignal lets us detect and fix problems
     """
-    defexception [:message, :reason, :status, :organization_id]
+    defexception [:message, :reason, :organization_id]
   end
 
   @doc """
