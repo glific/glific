@@ -5,9 +5,9 @@ defmodule Glific.Clients.CommonWebhook do
 
   alias Glific.ASR.Bhasini
   alias Glific.ASR.GoogleASR
+  alias Glific.Assistants.Assistant
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
-  alias Glific.Assistants.Assistant
   alias Glific.Contacts
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
@@ -88,69 +88,69 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("unified-llm-call", fields, headers) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
 
-    with {:ok, {kaapi_uuid, version_number}} <-
-           lookup_kaapi_config(fields["assistant_id"], organization_id) do
-      result_name = fields["result_name"]
-      webhook_log_id = fields["webhook_log_id"]
-      {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-      {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    case lookup_kaapi_config(fields["assistant_id"], organization_id) do
+      {:ok, {kaapi_uuid, version_number}} ->
+        result_name = fields["result_name"]
+        webhook_log_id = fields["webhook_log_id"]
+        {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+        {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+        timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-      signature_payload = %{
-        "organization_id" => organization_id,
-        "flow_id" => flow_id,
-        "contact_id" => contact_id,
-        "timestamp" => timestamp
-      }
-
-      signature =
-        Glific.signature(
-          organization_id,
-          Jason.encode!(signature_payload),
-          signature_payload["timestamp"]
-        )
-
-      callback_url =
-        "https://de98-111-223-1-182.ngrok-free.app" <>
-          "/webhook/flow_resume"
-
-      payload =
-        %{
-          query: %{
-            input: fields["question"],
-            conversation: build_conversation(fields["thread_id"])
-          },
-          config: %{
-            id: kaapi_uuid,
-            version: version_number
-          },
-          callback_url: callback_url,
-          request_metadata: %{
-            organization_id: organization_id,
-            flow_id: flow_id,
-            contact_id: contact_id,
-            timestamp: timestamp,
-            signature: signature,
-            webhook_log_id: webhook_log_id,
-            result_name: result_name
-          }
+        signature_payload = %{
+          "organization_id" => organization_id,
+          "flow_id" => flow_id,
+          "contact_id" => contact_id,
+          "timestamp" => timestamp
         }
-        |> Jason.encode!()
 
-      {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+        signature =
+          Glific.signature(
+            organization_id,
+            Jason.encode!(signature_payload),
+            signature_payload["timestamp"]
+          )
 
-      case ApiClient.call_llm(payload, org_api_key) do
-        {:ok, body} ->
-          Map.merge(%{success: true}, body)
+        callback_url =
+          "https://de98-111-223-1-182.ngrok-free.app" <>
+            "/webhook/flow_resume"
 
-        {:error, %{status: _status, body: body}} ->
-          result = Jason.encode!(body)
-          %{success: false, reason: result}
+        payload =
+          %{
+            query: %{
+              input: fields["question"],
+              conversation: build_conversation(fields["thread_id"])
+            },
+            config: %{
+              id: kaapi_uuid,
+              version: version_number
+            },
+            callback_url: callback_url,
+            request_metadata: %{
+              organization_id: organization_id,
+              flow_id: flow_id,
+              contact_id: contact_id,
+              timestamp: timestamp,
+              signature: signature,
+              webhook_log_id: webhook_log_id,
+              result_name: result_name
+            }
+          }
+          |> Jason.encode!()
 
-        {:error, reason} ->
-          %{success: false, reason: inspect(reason)}
-      end
-    else
+        {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+
+        case ApiClient.call_llm(payload, org_api_key) do
+          {:ok, body} ->
+            Map.merge(%{success: true}, body)
+
+          {:error, %{status: _status, body: body}} ->
+            result = Jason.encode!(body)
+            %{success: false, reason: result}
+
+          {:error, reason} ->
+            %{success: false, reason: inspect(reason)}
+        end
+
       {:error, reason} ->
         %{success: false, reason: reason}
     end

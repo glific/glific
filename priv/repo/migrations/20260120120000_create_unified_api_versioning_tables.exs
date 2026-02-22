@@ -172,13 +172,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     create index(:knowledge_base_versions, [:status])
   end
 
-  defp add_active_config_version_to_assistants do
-    alter table(:assistants) do
-      add :active_config_version_id, references(:assistant_config_versions, on_delete: :nilify_all),
-        comment: "Currently active config version"
-    end
-  end
-
   defp create_assistant_config_version_knowledge_base_versions do
     create table(:assistant_config_version_knowledge_base_versions) do
       add :assistant_config_version_id,

@@ -526,7 +526,6 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         for_actor: %{organization_id: organization_id}
       )
 
-      # Create an Assistant record with kaapi_uuid and assistant_display_id
       {:ok, assistant} =
         %Assistant{}
         |> Assistant.changeset(%{
@@ -537,7 +536,6 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         })
         |> Repo.insert()
 
-      # Create an AssistantConfigVersion with version_number
       {:ok, config_version} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
@@ -552,7 +550,6 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         })
         |> Repo.insert()
 
-      # Set the active config version on the assistant
       assistant
       |> Assistant.set_active_config_version_changeset(%{
         active_config_version_id: config_version.id
