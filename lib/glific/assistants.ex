@@ -115,7 +115,8 @@ defmodule Glific.Assistants do
       end)
 
     %{
-      id: assistant.assistant_display_id,
+      id: assistant.id,
+      assistant_display_id: assistant.assistant_display_id,
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
@@ -486,7 +487,7 @@ defmodule Glific.Assistants do
   # Private
   @spec maybe_create_knowledge_base(map()) ::
           {:ok, KnowledgeBase.t()} | {:error, Ecto.Changeset.t()}
-  defp maybe_create_knowledge_base(%{id: id}), do: Repo.fetch(KnowledgeBase, id)
+  defp maybe_create_knowledge_base(%{id: id}) when not is_nil(id), do: Repo.fetch(KnowledgeBase, id)
 
   defp maybe_create_knowledge_base(params) do
     params = %{name: generate_knowledge_base_name(), organization_id: params[:organization_id]}
