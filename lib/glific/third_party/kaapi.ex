@@ -226,6 +226,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
     %{
       completion: %{
+        type: "text",
         provider: params[:provider] || "openai",
         params: completion_params
       }
