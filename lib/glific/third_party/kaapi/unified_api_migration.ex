@@ -139,7 +139,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     |> Ecto.Multi.insert(:assistant, build_assistant_changeset(openai_assistant, kaapi_uuid))
     |> Ecto.Multi.insert(
       :config_version,
-      build_config_version_changeset(kaapi_params, kaapi_uuid)
+      build_config_version_changeset(kaapi_params)
     )
     |> Ecto.Multi.update(:updated_assistant, &build_active_config_changeset/1)
     |> Ecto.Multi.run(:link_knowledge_base, fn _repo, %{config_version: config_version} ->
@@ -162,8 +162,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     })
   end
 
-  @spec build_config_version_changeset(map(), String.t()) :: (map() -> Ecto.Changeset.t())
-  defp build_config_version_changeset(kaapi_params, kaapi_uuid) do
+  @spec build_config_version_changeset(map()) :: (map() -> Ecto.Changeset.t())
+  defp build_config_version_changeset(kaapi_params) do
     fn %{assistant: assistant} ->
       AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
         assistant_id: assistant.id,
@@ -172,8 +172,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         provider: "kaapi",
         settings: %{temperature: kaapi_params.temperature},
         status: :ready,
-        organization_id: kaapi_params.organization_id,
-        kaapi_uuid: kaapi_uuid
+        organization_id: kaapi_params.organization_id
       })
     end
   end
@@ -290,20 +289,28 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   defp migrate_vector_store(vector_store) do
     Repo.put_process_state(vector_store.organization_id)
 
-    attrs = %{
-      llm_service_id: vector_store.vector_store_id,
-      organization_id: vector_store.organization_id
-    }
-
-    case Repo.fetch_by(KnowledgeBaseVersion, attrs) do
-      {:ok, knowledge_base_version} ->
-        update_knowledge_base_version(knowledge_base_version, vector_store)
+    case Repo.fetch_by(KnowledgeBase,
+           name: vector_store.name,
+           organization_id: vector_store.organization_id
+         ) do
+      {:ok, knowledge_base} ->
+        knowledge_base = Repo.preload(knowledge_base, :versions)
+        handle_existing_knowledge_base(knowledge_base, vector_store)
 
       _ ->
         # This can crash if the creation fails, but the chances of that is minimal,
         # and its okay for the process to crash if the creation fails.
         {:ok, knowledge_base} = create_knowledge_base(vector_store)
         create_knowledge_base_version(knowledge_base, vector_store)
+    end
+  end
+
+  @spec handle_existing_knowledge_base(KnowledgeBase.t(), VectorStore.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp handle_existing_knowledge_base(knowledge_base, vector_store) do
+    case Enum.find(knowledge_base.versions, &(&1.llm_service_id == vector_store.vector_store_id)) do
+      nil -> create_knowledge_base_version(knowledge_base, vector_store)
+      version -> update_knowledge_base_version(version, vector_store)
     end
   end
 
