@@ -105,69 +105,6 @@ defmodule Glific.FilesearchTest do
              })
   end
 
-  test "delete_assistant/1, valid deletion", attrs do
-    valid_attrs = %{
-      vector_store_id: "vs_abcdef",
-      name: "VectorStore 1",
-      files: %{},
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
-
-    valid_attrs = %{
-      assistant_id: "asst_abc_del",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id,
-      vector_store_id: vector_store.id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-    create_unified_assistant(%{
-      organization_id: attrs.organization_id,
-      name: "new assistant",
-      kaapi_uuid: "asst_abc_del"
-    })
-
-    Tesla.Mock.mock(fn
-      %{method: :delete} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            deleted: true
-          }
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:delete_assistant, attrs.user,
-        variables: %{
-          "id" => assistant.id
-        }
-      )
-
-    assert {:ok, query_data} = result
-    assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
-
-    # deleting assistant should delete attached vector store
-    assert {:error, _} = VectorStore.get_vector_store(vector_store.id)
-  end
-
-  test "delete_assistant/1, invalid deletion", attrs do
-    result =
-      auth_query_gql_by(:delete_assistant, attrs.user,
-        variables: %{
-          "id" => 0
-        }
-      )
-
-    assert {:ok, query_data} = result
-    assert length(query_data.data["deleteAssistant"]["errors"]) == 1
-  end
-
   test "update assistant", attrs do
     enable_kaapi(%{organization_id: attrs.organization_id})
 

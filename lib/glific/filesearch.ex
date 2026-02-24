@@ -60,23 +60,6 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Deletes the Assistant for the given ID
-  """
-  @spec delete_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def delete_assistant(id) do
-    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         {:ok, _} <- ApiClient.delete_assistant(assistant.assistant_id) do
-      if assistant.vector_store_id do
-        delete_vector_store(assistant.vector_store_id)
-      end
-
-      Kaapi.delete_assistant(assistant.assistant_id, assistant.organization_id)
-
-      Repo.delete(assistant)
-    end
-  end
-
-  @doc """
   Upload and add the files to the Assistant
   """
   @spec add_assistant_files(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
@@ -175,14 +158,6 @@ defmodule Glific.Filesearch do
 
       {:error, reason} ->
         {:error, "VectorStore creation failed due to #{reason}"}
-    end
-  end
-
-  @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
-  defp delete_vector_store(id) do
-    with {:ok, vector_store} <- Repo.fetch_by(VectorStore, %{id: id}),
-         {:ok, _} <- ApiClient.delete_vector_store(vector_store.vector_store_id) do
-      Repo.delete(vector_store)
     end
   end
 
