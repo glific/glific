@@ -491,7 +491,23 @@ defmodule Glific.Flows.Webhook do
   """
   @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, is_active?) do
+  def unified_llm_and_wait(action, context, false) do
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
+    webhook_log = create_log(action, %{}, action.headers, context)
+    update_log(webhook_log.id, "Kaapi is not active")
+
+    Appsignal.send_error(
+      %Error{
+        message: "Kaapi is not active",
+        organization_id: context.organization_id
+      },
+      []
+    )
+
+    {:ok, context, [failure_message]}
+  end
+
+  def unified_llm_and_wait(action, context, true) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -513,31 +529,13 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        do_unified_llm_and_wait(params, is_active?, failure_message)
+        do_unified_llm_and_wait(params, failure_message)
     end
   end
 
-  @spec do_unified_llm_and_wait(map(), boolean(), Message.t()) ::
+  @spec do_unified_llm_and_wait(map(), Message.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_unified_llm_and_wait(
-         %{webhook_log: webhook_log, context: context} = _params,
-         false,
-         failure_message
-       ) do
-    update_log(webhook_log.id, "Kaapi is not active")
-
-    Appsignal.send_error(
-      %Error{
-        message: "Kaapi is not active",
-        organization_id: context.organization_id
-      },
-      []
-    )
-
-    {:ok, context, [failure_message]}
-  end
-
-  defp do_unified_llm_and_wait(params, true, failure_message) do
+  defp do_unified_llm_and_wait(params, failure_message) do
     webhook_log_id = params.webhook_log.id
 
     fields =
