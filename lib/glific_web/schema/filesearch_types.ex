@@ -91,6 +91,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :unified_assistant do
     field :id, :id
+    field :assistant_display_id, :string
     field :name, :string
     field :assistant_id, :string
     field :model, :string
@@ -123,7 +124,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
-    field :uploaded_at, :datetime
+    field :uploaded_at, :string
   end
 
   @desc "Filtering options for VectorStore"

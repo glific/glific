@@ -33,6 +33,7 @@ defmodule Glific.Assistants.Assistant do
     :name,
     :organization_id
   ]
+
   @optional_fields [
     :description,
     :active_config_version_id,
