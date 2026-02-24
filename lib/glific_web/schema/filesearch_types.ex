@@ -156,7 +156,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Delete Assistant"
-    field :delete_assistant, :assistant_result do
+    field :delete_assistant, :kaapi_assistant_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.delete_assistant/3)
