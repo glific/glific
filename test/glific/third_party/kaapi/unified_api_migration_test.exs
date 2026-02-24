@@ -369,6 +369,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
       })
 
     assert assistant.assistant_display_id == openai_assistant.assistant_id
+    assert assistant.inserted_at == openai_assistant.inserted_at
     refute is_nil(assistant.kaapi_uuid)
     assert {:ok, _} = Ecto.UUID.cast(assistant.kaapi_uuid)
     refute is_nil(assistant.active_config_version_id)

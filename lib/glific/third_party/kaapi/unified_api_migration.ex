@@ -153,12 +153,12 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
   @spec build_assistant_changeset(OpenAIAssistant.t(), String.t()) :: Ecto.Changeset.t()
   defp build_assistant_changeset(openai_assistant, kaapi_uuid) do
-    Assistant.changeset(%Assistant{}, %{
+    %Assistant{inserted_at: openai_assistant.inserted_at}
+    |> Assistant.changeset(%{
       name: openai_assistant.name,
       kaapi_uuid: kaapi_uuid,
       assistant_display_id: openai_assistant.assistant_id,
-      organization_id: openai_assistant.organization_id,
-      inserted_at: openai_assistant.inserted_at
+      organization_id: openai_assistant.organization_id
     })
   end
 
