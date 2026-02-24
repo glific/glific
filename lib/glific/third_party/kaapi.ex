@@ -111,8 +111,9 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "Kaapi Config creation failed for org_id=#{organization_id}, name=#{params.name}, reason=#{inspect(reason)}"
+            message: "Kaapi Config creation failed for name #{params.name}",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )
@@ -148,8 +149,9 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "Kaapi AI Assistant update failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id}), reason=#{inspect(reason)}"
+            message: "Kaapi AI Assistant update failed for assistant_id=#{assistant_id}",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )
@@ -173,8 +175,9 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "Kaapi AI Assistant delete failed for org_id=#{organization_id}, assistant_id=#{assistant_id}), reason=#{inspect(reason)}"
+            message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )

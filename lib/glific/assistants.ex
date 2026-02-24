@@ -409,8 +409,7 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Delete an assistant. If the assistant has a kaapi_uuid,
-  deletes the config and assistant from Kaapi first, then deletes
+  Delete an assistant config from Kaapi first, then deletes
   the assistant from the database.
   """
   @spec delete_assistant(non_neg_integer()) ::
@@ -698,9 +697,8 @@ defmodule Glific.Assistants do
   end
 
   @doc false
-  @spec delete_from_kaapi(String.t() | nil, non_neg_integer()) ::
+  @spec delete_from_kaapi(String.t(), non_neg_integer()) ::
           :ok | {:error, any()}
-  defp delete_from_kaapi(nil, _organization_id), do: :ok
 
   defp delete_from_kaapi(kaapi_uuid, organization_id) do
     case Kaapi.delete_config(kaapi_uuid, organization_id) do
