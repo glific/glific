@@ -703,10 +703,10 @@ defmodule Glific.Assistants do
   defp delete_from_kaapi(nil, _organization_id), do: :ok
 
   defp delete_from_kaapi(kaapi_uuid, organization_id) do
-    with {:ok, _} <- Kaapi.delete_config(kaapi_uuid, organization_id),
-         {:ok, _} <- Kaapi.delete_assistant(kaapi_uuid, organization_id) do
-      :ok
-    else
+    case Kaapi.delete_config(kaapi_uuid, organization_id) do
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
     end

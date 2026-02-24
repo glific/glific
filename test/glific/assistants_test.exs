@@ -567,7 +567,7 @@ defmodule Glific.AssistantsTest do
   end
 
   describe "delete_assistant/1" do
-    test "deletes assistant with kaapi_uuid after deleting config and assistant from kaapi",
+    test "deletes assistant with kaapi_uuid ",
          %{organization_id: organization_id} do
       enable_kaapi(%{organization_id: organization_id})
       {assistant, config_version} = create_assistant_with_config(organization_id, :ready)
