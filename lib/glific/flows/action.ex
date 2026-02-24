@@ -23,7 +23,6 @@ defmodule Glific.Flows.Action do
     Repo,
     Sheets,
     Templates.InteractiveTemplate,
-    ThirdParty.Kaapi,
     Tickets
   }
 
@@ -658,12 +657,12 @@ defmodule Glific.Flows.Action do
       FunWithFlags.enabled?(:unified_api_enabled,
         for: %{organization_id: context.organization_id}
       ) ->
-        execute_kaapi_filesearch(action, context, "unified-llm-call")
+        Webhook.execute_unified_filesearch(action, context)
 
       FunWithFlags.enabled?(:is_kaapi_enabled,
         for: %{organization_id: context.organization_id}
       ) ->
-        execute_kaapi_filesearch(action, context)
+        Webhook.execute_kaapi_filesearch(action, context)
 
       true ->
         Webhook.execute(action, context)
@@ -1031,20 +1030,6 @@ defmodule Glific.Flows.Action do
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
-  end
-
-  @spec execute_kaapi_filesearch(Action.t(), FlowContext.t(), String.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp execute_kaapi_filesearch(action, context, webhook_name \\ "call_and_wait") do
-    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
-         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
-      updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
-      updated_action = %{action | headers: updated_headers}
-      Webhook.webhook_and_wait(updated_action, context, true, webhook_name)
-    else
-      {:error, _error} ->
-        Webhook.webhook_and_wait(action, context, false)
-    end
   end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil

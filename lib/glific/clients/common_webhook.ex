@@ -86,72 +86,64 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("unified-llm-call", fields, headers) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
 
-    case lookup_kaapi_config(fields["assistant_id"], organization_id) do
-      {:ok, {kaapi_uuid, version_number}} ->
-        result_name = fields["result_name"]
-        webhook_log_id = fields["webhook_log_id"]
-        {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-        {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-        timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-        signature_payload = %{
-          "organization_id" => organization_id,
-          "flow_id" => flow_id,
-          "contact_id" => contact_id,
-          "timestamp" => timestamp
-        }
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
 
-        signature =
-          Glific.signature(
-            organization_id,
-            Jason.encode!(signature_payload),
-            signature_payload["timestamp"]
-          )
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
 
-        organization = Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
 
-        callback_url =
-          "https://api.#{organization.shortcode}.glific.com" <>
-            "/webhook/flow_resume"
+    callback_url =
+      "https://api.#{organization.shortcode}.glific.com" <>
+        "/webhook/flow_resume"
 
-        payload = %{
-          query: %{
-            input: fields["question"],
-            conversation: build_conversation(fields["thread_id"])
-          },
-          config: %{
-            id: kaapi_uuid,
-            version: version_number
-          },
-          callback_url: callback_url,
-          request_metadata: %{
-            organization_id: organization_id,
-            flow_id: flow_id,
-            contact_id: contact_id,
-            timestamp: timestamp,
-            signature: signature,
-            webhook_log_id: webhook_log_id,
-            result_name: result_name
-          }
-        }
+    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
-        {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+    request_metadata = %{
+      organization_id: organization_id,
+      flow_id: flow_id,
+      contact_id: contact_id,
+      timestamp: timestamp,
+      signature: signature,
+      webhook_log_id: fields["webhook_log_id"],
+      result_name: fields["result_name"]
+    }
 
-        case ApiClient.call_llm(payload, org_api_key) do
-          {:ok, body} ->
-            Map.merge(%{success: true}, body)
+    with {:ok, {kaapi_uuid, version_number}} <-
+           lookup_kaapi_config(fields["assistant_id"], organization_id),
+         payload =
+           build_unified_llm_payload(
+             fields,
+             kaapi_uuid,
+             version_number,
+             callback_url,
+             request_metadata
+           ),
+         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
+      Map.merge(%{success: true}, body)
+    else
+      {:error, %{status: _status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body)}
 
-          {:error, %{status: _status, body: body}} ->
-            result = Jason.encode!(body)
-            %{success: false, reason: result}
-
-          {:error, reason} ->
-            %{success: false, reason: inspect(reason)}
-        end
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason}
 
       {:error, reason} ->
-        %{success: false, reason: reason}
+        %{success: false, reason: inspect(reason)}
     end
   end
 
@@ -590,26 +582,44 @@ defmodule Glific.Clients.CommonWebhook do
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
 
+  defp build_unified_llm_payload(
+         fields,
+         kaapi_uuid,
+         version_number,
+         callback_url,
+         request_metadata
+       ) do
+    %{
+      query: %{
+        input: fields["question"],
+        conversation: build_conversation(fields["thread_id"])
+      },
+      config: %{
+        id: kaapi_uuid,
+        version: version_number
+      },
+      callback_url: callback_url,
+      request_metadata: request_metadata
+    }
+  end
+
   @spec lookup_kaapi_config(String.t(), non_neg_integer()) ::
           {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
   defp lookup_kaapi_config(assistant_display_id, organization_id) do
-    case Repo.fetch_by(Assistant, %{
-           assistant_display_id: assistant_display_id,
-           organization_id: organization_id
-         }) do
-      {:ok, assistant} ->
-        assistant = Repo.preload(assistant, :active_config_version)
-
-        case assistant.active_config_version do
-          nil ->
-            {:error, "No active config version found for assistant #{assistant_display_id}"}
-
-          config_version ->
-            {:ok, {assistant.kaapi_uuid, config_version.version_number}}
-        end
-
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{
+             assistant_display_id: assistant_display_id,
+             organization_id: organization_id
+           }),
+         assistant <- Repo.preload(assistant, :active_config_version),
+         %{version_number: version_number} <- assistant.active_config_version do
+      {:ok, {assistant.kaapi_uuid, version_number}}
+    else
       {:error, _} ->
         {:error, "Assistant not found: #{assistant_display_id}"}
+
+      nil ->
+        {:error, "No active config version found for assistant #{assistant_display_id}"}
     end
   end
 
