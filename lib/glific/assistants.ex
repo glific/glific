@@ -118,7 +118,7 @@ defmodule Glific.Assistants do
       id: assistant.id,
       assistant_display_id: assistant.assistant_display_id,
       name: assistant.name,
-      assistant_id: assistant.assistant_display_id,
+      assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
       model: active_config_version.model,
       instructions: active_config_version.prompt,
@@ -131,20 +131,25 @@ defmodule Glific.Assistants do
   end
 
   defp build_vector_store_data(active_config_version) do
-    [knowledge_base_version | _] = active_config_version.knowledge_base_versions
-    knowledge_base = knowledge_base_version.knowledge_base
+    case active_config_version.knowledge_base_versions do
+      [] ->
+        nil
 
-    %{
-      id: knowledge_base.id,
-      vector_store_id: knowledge_base_version.llm_service_id,
-      name: knowledge_base.name,
-      files: knowledge_base_version.files || %{},
-      size: knowledge_base_version.size || 0,
-      status: to_string(knowledge_base_version.status),
-      legacy: is_nil(knowledge_base_version.kaapi_job_id),
-      inserted_at: knowledge_base_version.inserted_at,
-      updated_at: knowledge_base_version.updated_at
-    }
+      [knowledge_base_version | _] ->
+        knowledge_base = knowledge_base_version.knowledge_base
+
+        %{
+          id: knowledge_base.id,
+          vector_store_id: knowledge_base_version.llm_service_id,
+          name: knowledge_base.name,
+          files: knowledge_base_version.files || %{},
+          size: knowledge_base_version.size || 0,
+          status: to_string(knowledge_base_version.status),
+          legacy: is_nil(knowledge_base_version.kaapi_job_id),
+          inserted_at: knowledge_base_version.inserted_at,
+          updated_at: knowledge_base_version.updated_at
+        }
+    end
   end
 
   @doc """
@@ -246,8 +251,10 @@ defmodule Glific.Assistants do
        do: {:ok, kb_id}
 
   defp resolve_knowledge_base_id(assistant, _user_params) do
-    [%{knowledge_base_id: kb_id} | _] = assistant.active_config_version.knowledge_base_versions
-    {:ok, kb_id}
+    case assistant.active_config_version.knowledge_base_versions do
+      [%{knowledge_base_id: kb_id} | _] -> {:ok, kb_id}
+      [] -> {:error, "No knowledge base linked to this assistant"}
+    end
   end
 
   @spec enrich_update_params(map(), Assistant.t()) :: map()
@@ -255,6 +262,7 @@ defmodule Glific.Assistants do
     active_config = assistant.active_config_version
 
     user_params
+    |> Map.put_new(:organization_id, assistant.organization_id)
     |> Map.put_new(:name, assistant.name)
     |> Map.put_new(:instructions, active_config.prompt)
     |> Map.put_new(:model, active_config.model)

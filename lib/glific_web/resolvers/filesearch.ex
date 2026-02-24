@@ -56,9 +56,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   """
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: user}}) do
-    attrs = Map.put(attrs, :organization_id, user.organization_id)
-
+  def update_assistant(_, %{id: id, input: attrs}, _) do
     with {:ok, assistant} <- Assistants.update_assistant(id, attrs) do
       {:ok, %{assistant: assistant}}
     end

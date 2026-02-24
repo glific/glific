@@ -135,7 +135,7 @@ defmodule Glific.FilesearchTest do
       )
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
-             unified_assistant.assistant_display_id
+             unified_assistant.kaapi_uuid
 
     # updating with some input variables
     {:ok, query_data} =
@@ -156,7 +156,7 @@ defmodule Glific.FilesearchTest do
              query_data.data["updateAssistant"]["assistant"]
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
-             unified_assistant.assistant_display_id
+             "new-kaapi-uuid-upd"
   end
 
   test "get assistant", attrs do
