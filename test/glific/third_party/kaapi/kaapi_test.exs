@@ -218,6 +218,60 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "create_collection/2" do
+    test "successfully creates a collection in kaapi" do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              job_id: "2b55b30c-f2c8-4772-a0fd-4a0e7d0e0803",
+              status: "PROCESSING",
+              action_type: "CREATE",
+              collection: nil,
+              error_message: nil
+            },
+            error: nil,
+            metadata: nil
+          }
+        }
+      end)
+
+      params = %{callback_url: "https://example.com/callback", file_ids: ["file_1", "file_2"]}
+
+      assert {:ok, resp} = ApiClient.create_collection(params, @org_kaapi_api_key)
+      assert resp.data.job_id == "2b55b30c-f2c8-4772-a0fd-4a0e7d0e0803"
+      assert resp.data.status == "PROCESSING"
+      assert resp.data.action_type == "CREATE"
+      assert resp.data.collection == nil
+      assert resp.data.error_message == nil
+    end
+
+    test "returns error when kaapi returns error status" do
+      response_body = %{error: "Invalid parameters", data: %{}, success: false}
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: response_body}
+      end)
+
+      params = %{name: "Test Collection"}
+
+      assert {:error, %{status: 422, body: ^response_body}} =
+               ApiClient.create_collection(params, @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :post} ->
+        {:error, :timeout}
+      end)
+
+      params = %{callback_url: "http://example.com/callback", file_ids: ["file_1"]}
+
+      assert {:error, :timeout} = ApiClient.create_collection(params, @org_kaapi_api_key)
+    end
+  end
+
   describe "delete_assistant/1" do
     test "successfully updates assistant in kaapi" do
       mock(fn %Tesla.Env{method: :delete} ->

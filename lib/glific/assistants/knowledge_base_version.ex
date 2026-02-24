@@ -23,7 +23,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
           knowledge_base: KnowledgeBase.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: non_neg_integer() | nil,
           files: map() | nil,
-          size: non_neg_integer() | nil,
+          size: non_neg_integer(),
           status: KnowledgeBaseStatus.t(),
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -51,7 +51,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   schema "knowledge_base_versions" do
     field(:version_number, :integer)
     field(:files, :map)
-    field(:size, :integer)
+    field(:size, :integer, default: 0)
 
     field(:status, KnowledgeBaseStatus, default: :in_progress)
 
