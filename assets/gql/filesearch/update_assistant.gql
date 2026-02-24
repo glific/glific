@@ -1,9 +1,9 @@
-#import "./assistant_fields.frag.gql"
+#import "./unified_assistant_fields.frag.gql"
 
 mutation updateAssistant($id: ID!, $input:AssistantInput! = {}) {
   updateAssistant(id: $id, input: $input) {
-    ...AssistantFields
+    ...UnifiedAssistantFields
 
-    ...ErrorFields
+    ...UnifiedErrorFields
   }
 }

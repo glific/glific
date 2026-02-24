@@ -115,9 +115,9 @@ defmodule Glific.Assistants do
       end)
 
     %{
-      id: assistant.assistant_display_id,
+      id: assistant.id,
       name: assistant.name,
-      assistant_id: assistant.kaapi_uuid,
+      assistant_id: assistant.assistant_display_id,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
       model: active_config_version.model,
       instructions: active_config_version.prompt,
@@ -212,6 +212,125 @@ defmodule Glific.Assistants do
            KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       create_assistant_transaction(kaapi_config, knowledge_base_version)
+    end
+  end
+
+  @doc """
+  Updates an Assistant by creating a new config version and setting it as active.
+  """
+  @spec update_assistant(non_neg_integer(), map()) :: {:ok, map()} | {:error, any()}
+  def update_assistant(id, user_params) do
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{id: id}),
+         assistant <-
+           Repo.preload(assistant, active_config_version: :knowledge_base_versions),
+         {:ok, knowledge_base_id} <- resolve_knowledge_base_id(assistant, user_params),
+         {:ok, knowledge_base_version} <-
+           KnowledgeBaseVersion.get_knowledge_base_version(knowledge_base_id),
+         user_params <- enrich_update_params(user_params, assistant) do
+      if no_changes?(user_params, assistant, knowledge_base_version) do
+        get_assistant(assistant.id)
+      else
+        with {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
+          update_assistant_transaction(assistant, kaapi_config, knowledge_base_version)
+        end
+      end
+    end
+  end
+
+  @spec resolve_knowledge_base_id(Assistant.t(), map()) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp resolve_knowledge_base_id(_assistant, %{knowledge_base_id: kb_id})
+       when not is_nil(kb_id),
+       do: {:ok, kb_id}
+
+  defp resolve_knowledge_base_id(assistant, _user_params) do
+    [%{knowledge_base_id: kb_id} | _] = assistant.active_config_version.knowledge_base_versions
+    {:ok, kb_id}
+  end
+
+  @spec enrich_update_params(map(), Assistant.t()) :: map()
+  defp enrich_update_params(user_params, assistant) do
+    active_config = assistant.active_config_version
+
+    user_params
+    |> Map.put_new(:name, assistant.name)
+    |> Map.put_new(:instructions, active_config.prompt)
+    |> Map.put_new(:model, active_config.model)
+    |> Map.put_new(
+      :temperature,
+      get_in(active_config.settings || %{}, ["temperature"]) || 1
+    )
+    |> Map.put_new(:description, assistant.description)
+  end
+
+  @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t()) :: boolean()
+  defp no_changes?(user_params, assistant, knowledge_base_version) do
+    active_config = assistant.active_config_version
+    current_kb_version = List.first(active_config.knowledge_base_versions)
+
+    user_params[:name] == assistant.name and
+      user_params[:instructions] == active_config.prompt and
+      user_params[:model] == active_config.model and
+      user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
+      knowledge_base_version.id == current_kb_version.id
+  end
+
+  @spec update_assistant_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp update_assistant_transaction(assistant, kaapi_config, knowledge_base_version) do
+    Multi.new()
+    |> Multi.insert(
+      :config_version,
+      build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
+    )
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        kaapi_config.organization_id
+      )
+    )
+    |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
+      update_kaapi_config(assistant, kaapi_config)
+    end)
+    |> Multi.update(:updated_assistant, fn %{
+                                             config_version: config_version,
+                                             kaapi_uuid: kaapi_uuid
+                                           } ->
+      Assistant.changeset(assistant, %{
+        name: kaapi_config.name,
+        description: kaapi_config.prompt,
+        kaapi_uuid: kaapi_uuid,
+        active_config_version_id: config_version.id
+      })
+    end)
+    |> Repo.transaction()
+    |> handle_update_transaction_result()
+  end
+
+  @spec update_kaapi_config(Assistant.t(), map()) :: {:ok, String.t()} | {:error, any()}
+  defp update_kaapi_config(_assistant, kaapi_config) do
+    uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
+    new_version_config = Map.put(kaapi_config, :name, "#{kaapi_config.name}-#{uid}")
+    create_kaapi_assistant(new_version_config, kaapi_config.organization_id)
+  end
+
+  @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
+          {:ok, map()} | {:error, any()}
+  defp handle_update_transaction_result(result) do
+    case result do
+      {:ok, %{updated_assistant: assistant}} ->
+        get_assistant(assistant.id)
+
+      {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
+        {:error, changeset}
+
+      {:error, failed_operation, failed_value, _changes_so_far} ->
+        Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
+        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
     end
   end
 
