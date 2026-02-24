@@ -565,7 +565,7 @@ defmodule Glific.Assistants.AssistantTest do
   end
 
   defp enable_kaapi(attrs) do
-    {:ok, credential} =
+    {:ok, _credential} =
       Partners.create_credential(%{
         organization_id: attrs.organization_id,
         shortcode: "kaapi",
@@ -575,17 +575,5 @@ defmodule Glific.Assistants.AssistantTest do
         },
         is_active: true
       })
-
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
-
-    Partners.update_credential(credential, valid_update_attrs)
   end
 end

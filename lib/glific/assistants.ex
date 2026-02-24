@@ -409,6 +409,19 @@ defmodule Glific.Assistants do
     end
   end
 
+  @doc """
+  Delete an assistant config from Kaapi first, then deletes
+  the assistant from the database.
+  """
+  @spec delete_assistant(non_neg_integer()) ::
+          {:ok, Assistant.t()} | {:error, any()}
+  def delete_assistant(id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         :ok <- delete_from_kaapi(assistant.kaapi_uuid, assistant.organization_id) do
+      Repo.delete(assistant)
+    end
+  end
+
   @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   defp validate_file_format(filename) do
     extension = String.split(filename, ".") |> List.last()
@@ -682,5 +695,19 @@ defmodule Glific.Assistants do
         affected_assistant_names: affected_assistant_names
       }
     })
+  end
+
+  @doc false
+  @spec delete_from_kaapi(String.t(), non_neg_integer()) ::
+          :ok | {:error, any()}
+
+  defp delete_from_kaapi(kaapi_uuid, organization_id) do
+    case Kaapi.delete_config(kaapi_uuid, organization_id) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
+    end
   end
 end

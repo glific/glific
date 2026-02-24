@@ -1,5 +1,6 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
+  import Tesla.Mock
 
   import Ecto.Query
 
@@ -11,6 +12,31 @@ defmodule Glific.AssistantsTest do
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Repo
+
+  defp enable_kaapi(attrs) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{
+          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        }
+      })
+
+    valid_update_attrs = %{
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+      },
+      is_active: true,
+      organization_id: attrs.organization_id,
+      shortcode: "kaapi"
+    }
+
+    {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    :ok
+  end
 
   describe "create_knowledge_base/1" do
     test "creates a knowledge base with valid attrs", %{organization_id: organization_id} do
@@ -540,17 +566,42 @@ defmodule Glific.AssistantsTest do
     ])
   end
 
-  defp enable_kaapi(%{organization_id: organization_id}) do
-    Partners.create_credential(%{
-      organization_id: organization_id,
-      shortcode: "kaapi",
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
-      },
-      is_active: true
-    })
+  describe "delete_assistant/1" do
+    test "deletes assistant with kaapi_uuid ",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+      {assistant, config_version} = create_assistant_with_config(organization_id, :ready)
 
-    :ok
+      mock(fn %Tesla.Env{method: :delete} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{error: nil, data: "Deleted", metadata: nil, success: true}
+        }
+      end)
+
+      assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
+      assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert {:error, _} =
+               Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+    end
+
+    test "returns error when assistant not found" do
+      assert {:error, _} = Assistants.delete_assistant(-1)
+    end
+
+    test "returns error when kaapi delete fails",
+         %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+      {assistant, _config_version} = create_assistant_with_config(organization_id, :ready)
+
+      mock(fn %Tesla.Env{method: :delete} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
+      end)
+
+      assert {:error, _} = Assistants.delete_assistant(assistant.id)
+      # assistant should still exist
+      assert {:ok, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+    end
   end
 end

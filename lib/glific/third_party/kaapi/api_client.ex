@@ -117,6 +117,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Delete a config in Kaapi
+  """
+  @spec delete_config(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def delete_config(uuid, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/configs/#{uuid}")
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Ingests an assistant into the Kaapi platform.
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
