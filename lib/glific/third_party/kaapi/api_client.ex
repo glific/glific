@@ -51,13 +51,26 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Calls Kaapi Responses API with the given payload.
   """
-  @spec call_responses_api(String.t(), binary()) :: {:ok, any()} | {:error, any()}
+  @spec call_responses_api(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_responses_api(payload, org_api_key) do
     opts = [adapter: [recv_timeout: 300_000]]
 
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/responses", payload, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Calls Kaapi Unified LLM API with the given payload.
+  """
+  @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
+  def call_llm(payload, org_api_key) do
+    opts = [adapter: [recv_timeout: 300_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/llm/call", payload, opts: opts)
     |> parse_kaapi_response()
   end
 
