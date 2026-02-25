@@ -233,7 +233,7 @@ defmodule Glific.Assistants do
          {:ok, knowledge_base_id} <- resolve_knowledge_base_id(assistant, user_params),
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_knowledge_base_version(knowledge_base_id),
-         user_params <- enrich_update_params(user_params, assistant) do
+         user_params <- fill_defaults_from_assistant(user_params, assistant) do
       if no_changes?(user_params, assistant, knowledge_base_version) do
         get_assistant(assistant.id)
       else
@@ -257,8 +257,8 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec enrich_update_params(map(), Assistant.t()) :: map()
-  defp enrich_update_params(user_params, assistant) do
+  @spec fill_defaults_from_assistant(map(), Assistant.t()) :: map()
+  defp fill_defaults_from_assistant(user_params, assistant) do
     active_config = assistant.active_config_version
 
     user_params
