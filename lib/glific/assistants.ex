@@ -448,7 +448,7 @@ defmodule Glific.Assistants do
          {:ok, knowledge_base_version} <- create_knowledge_base_version(knowledge_base, params),
          api_params <- build_collection_params(knowledge_base_version, params),
          {:ok, %{data: %{job_id: job_id}}} <-
-           kaapi_create_collection_or_cleanup(api_params, params[:organization_id], knowledge_base,
+           create_kaapi_collection(api_params, params[:organization_id], knowledge_base,
              knowledge_base_version, newly_created_kb),
          {:ok, knowledge_base_version} <-
            update_knowledge_base_version(knowledge_base_version, %{kaapi_job_id: job_id}) do
@@ -469,14 +469,14 @@ defmodule Glific.Assistants do
 
   # Calls Kaapi to create a collection. On failure, cleans up the orphaned
   # KnowledgeBaseVersion and, if it was newly created, the KnowledgeBase too.
-  @spec kaapi_create_collection_or_cleanup(
+  @spec create_kaapi_collection(
           map(),
           non_neg_integer(),
           KnowledgeBase.t(),
           KnowledgeBaseVersion.t(),
           boolean()
         ) :: {:ok, map()} | {:error, any()}
-  defp kaapi_create_collection_or_cleanup(
+  defp create_kaapi_collection(
          api_params,
          organization_id,
          knowledge_base,
@@ -496,14 +496,13 @@ defmodule Glific.Assistants do
   @spec delete_orphaned_records(KnowledgeBase.t(), KnowledgeBaseVersion.t(), boolean()) :: :ok
   defp delete_orphaned_records(knowledge_base, knowledge_base_version, newly_created_kb) do
     Logger.warning(
-      "Kaapi collection creation failed. Cleaning up orphaned records. " <>
-        "KnowledgeBaseVersion ID: #{knowledge_base_version.id}, " <>
-        "KnowledgeBase ID: #{knowledge_base.id}"
+      "Kaapi collection creation failed. Cleaning up orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}"
     )
 
     Repo.delete(knowledge_base_version)
 
     if newly_created_kb do
+      Logger.warning("Cleaning up orphaned KnowledgeBase ID: #{knowledge_base.id}")
       Repo.delete(knowledge_base)
     end
 
