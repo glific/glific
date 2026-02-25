@@ -21,31 +21,31 @@ defmodule Glific.FilesearchTest do
   load_gql(
     :create_assistant,
     GlificWeb.Schema,
-    "assets/gql/filesearch/create_assistant.gql"
+    "assets/gql/assistants/create_assistant.gql"
   )
 
   load_gql(
     :delete_assistant,
     GlificWeb.Schema,
-    "assets/gql/filesearch/delete_assistant.gql"
+    "assets/gql/assistants/delete_assistant.gql"
   )
 
   load_gql(
     :update_assistant,
     GlificWeb.Schema,
-    "assets/gql/filesearch/update_assistant.gql"
+    "assets/gql/assistants/update_assistant.gql"
   )
 
   load_gql(
     :assistant,
     GlificWeb.Schema,
-    "assets/gql/filesearch/assistant_by_id.gql"
+    "assets/gql/assistants/assistant_by_id.gql"
   )
 
   load_gql(
     :assistants,
     GlificWeb.Schema,
-    "assets/gql/filesearch/list_assistants.gql"
+    "assets/gql/assistants/list_assistants.gql"
   )
 
   load_gql(

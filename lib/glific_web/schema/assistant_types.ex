@@ -1,6 +1,6 @@
-defmodule GlificWeb.Schema.FilesearchTypes do
+defmodule GlificWeb.Schema.AssistantTypes do
   @moduledoc """
-  GraphQL Representation of Glific's Filesearch DataType
+  GraphQL Representation of Glific's Assistant DataType
   """
   use Absinthe.Schema.Notation
 
