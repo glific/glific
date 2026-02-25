@@ -118,10 +118,10 @@ defmodule Glific.FilesearchTest do
       })
 
     Tesla.Mock.mock(fn
-      %{method: :post} ->
+      %{method: :post, url: "This is not a secret/api/v1/configs/asst_abc_upd/versions"} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{id: "new-kaapi-uuid-upd"}}
+          body: %{data: %{version: 2}}
         }
     end)
 
@@ -156,7 +156,7 @@ defmodule Glific.FilesearchTest do
              query_data.data["updateAssistant"]["assistant"]
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
-             "new-kaapi-uuid-upd"
+             unified_assistant.kaapi_uuid
   end
 
   test "get assistant", attrs do

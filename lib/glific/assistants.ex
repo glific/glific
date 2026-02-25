@@ -303,16 +303,13 @@ defmodule Glific.Assistants do
       )
     )
     |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
-      update_kaapi_config(assistant, kaapi_config)
+      create_kaapi_config_version(assistant, kaapi_config)
     end)
     |> Multi.update(:updated_assistant, fn %{
-                                             config_version: config_version,
-                                             kaapi_uuid: kaapi_uuid
+                                             config_version: config_version
                                            } ->
       Assistant.changeset(assistant, %{
         name: kaapi_config.name,
-        description: kaapi_config.prompt,
-        kaapi_uuid: kaapi_uuid,
         active_config_version_id: config_version.id
       })
     end)
@@ -320,11 +317,19 @@ defmodule Glific.Assistants do
     |> handle_update_transaction_result()
   end
 
-  @spec update_kaapi_config(Assistant.t(), map()) :: {:ok, String.t()} | {:error, any()}
-  defp update_kaapi_config(_assistant, kaapi_config) do
-    uid = Ecto.UUID.generate() |> String.split("-") |> List.first()
-    new_version_config = Map.put(kaapi_config, :name, "#{kaapi_config.name}-#{uid}")
-    create_kaapi_assistant(new_version_config, kaapi_config.organization_id)
+  @spec create_kaapi_config_version(Assistant.t(), map()) :: {:ok, String.t()} | {:error, any()}
+  defp create_kaapi_config_version(assistant, kaapi_config) do
+    case Kaapi.create_config_version(
+           assistant.kaapi_uuid,
+           kaapi_config,
+           kaapi_config.organization_id
+         ) do
+      {:ok, kaapi_response} ->
+        {:ok, kaapi_response.data.id}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
@@ -430,7 +435,6 @@ defmodule Glific.Assistants do
   defp build_assistant_changeset(kaapi_config) do
     Assistant.changeset(%Assistant{}, %{
       name: kaapi_config.name,
-      description: kaapi_config.prompt,
       organization_id: kaapi_config.organization_id
     })
   end
