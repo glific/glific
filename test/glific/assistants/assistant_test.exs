@@ -333,7 +333,7 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.model == "gpt-4o"
       assert config_version.settings.temperature == 1
       assert config_version.status == :ready
-      refute assistant.description == "You are a helpful assistant"
+      refute assistant.description
 
       :meck.unload(Partners)
     end

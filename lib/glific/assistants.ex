@@ -241,7 +241,7 @@ defmodule Glific.Assistants do
              {:ok, %{updated_assistant: assistant}} <-
                update_assistant_transaction(assistant, kaapi_config, knowledge_base_version),
              {:ok, _} <- create_kaapi_config_version(assistant, kaapi_config) do
-               {:ok, assistant}
+          {:ok, assistant}
         end
       end
     end
