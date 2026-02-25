@@ -58,7 +58,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAManagedPhoneTypes)
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
-  import_types(__MODULE__.FilesearchTypes)
+  import_types(__MODULE__.AssistantTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)

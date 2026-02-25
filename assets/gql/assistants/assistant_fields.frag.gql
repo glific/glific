@@ -1,4 +1,4 @@
-fragment UnifiedAssistantFields on UnifiedAssistantResult {
+fragment AssistantFields on AssistantResult {
   assistant {
     id
     name
@@ -24,7 +24,7 @@ fragment UnifiedAssistantFields on UnifiedAssistantResult {
   }
 }
 
-fragment UnifiedErrorFields on UnifiedAssistantResult {
+fragment ErrorFields on AssistantResult {
   errors {
     key
     message
