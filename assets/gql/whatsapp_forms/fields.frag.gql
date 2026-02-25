@@ -4,11 +4,22 @@ fragment WhatsappFormFields on WhatsappFormResult {
     name
     status
     categories
-    definition
     description
     metaFlowId
+    sheetId
+    sheet {
+      id
+      url
+    }
     insertedAt
     updatedAt
+    sheet {
+      id
+      label
+      url
+      isActive
+      sheetDataCount
+    }
   }
 }
 
