@@ -53,7 +53,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec call_responses_api(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_responses_api(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
     |> client()
@@ -66,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_llm(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
     |> client()
