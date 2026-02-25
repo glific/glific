@@ -577,7 +577,7 @@ defmodule Glific.AssistantsTest do
       new_config =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
-        |> order_by([acv], desc: acv.inserted_at)
+        |> order_by([acv], desc: acv.id)
         |> limit(1)
         |> Repo.one()
 
@@ -600,7 +600,7 @@ defmodule Glific.AssistantsTest do
       new_config =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
-        |> order_by([acv], desc: acv.inserted_at)
+        |> order_by([acv], desc: acv.id)
         |> limit(1)
         |> Repo.one()
 
@@ -623,7 +623,7 @@ defmodule Glific.AssistantsTest do
       new_config =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
-        |> order_by([acv], desc: acv.inserted_at)
+        |> order_by([acv], desc: acv.id)
         |> limit(1)
         |> Repo.one()
 
