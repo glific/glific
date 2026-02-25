@@ -468,9 +468,12 @@ defmodule Glific.Assistants do
           KnowledgeBaseVersion.t() | {:error, String.t()}
   def handle_knowledge_base_callback(%{"data" => %{"job_id" => job_id} = data}) do
     knowledge_base_version_params =
-      case get_in(data, ["collection", "llm_service_id"]) do
-        nil -> %{status: data["status"]}
-        llm_service_id -> %{status: data["status"], llm_service_id: llm_service_id}
+      case get_in(data, ["collection", "knowledge_base_id"]) do
+        nil ->
+          %{status: data["status"]}
+
+        llm_service_id ->
+          %{status: data["status"], llm_service_id: llm_service_id}
       end
 
     assistant_version_params = %{status: data["status"], failure_reason: data["error_message"]}
