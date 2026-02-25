@@ -237,8 +237,11 @@ defmodule Glific.Assistants do
       if no_changes?(user_params, assistant, knowledge_base_version) do
         get_assistant(assistant.id)
       else
-        with {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
-          update_assistant_transaction(assistant, kaapi_config, knowledge_base_version)
+        with {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
+             {:ok, %{updated_assistant: assistant}} <-
+               update_assistant_transaction(assistant, kaapi_config, knowledge_base_version),
+             {:ok, _} <- create_kaapi_config_version(assistant, kaapi_config) do
+               {:ok, assistant}
         end
       end
     end
@@ -302,9 +305,6 @@ defmodule Glific.Assistants do
         kaapi_config.organization_id
       )
     )
-    |> Multi.run(:kaapi_uuid, fn _repo, _changes ->
-      create_kaapi_config_version(assistant, kaapi_config)
-    end)
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
@@ -337,7 +337,12 @@ defmodule Glific.Assistants do
   defp handle_update_transaction_result(result) do
     case result do
       {:ok, %{updated_assistant: assistant}} ->
-        get_assistant(assistant.id)
+        assistant =
+          assistant
+          |> preload_assistant_associations()
+          |> transform_to_legacy_shape()
+
+        {:ok, assistant}
 
       {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
         {:error, changeset}
