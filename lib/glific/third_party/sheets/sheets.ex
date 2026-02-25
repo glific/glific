@@ -215,7 +215,7 @@ defmodule Glific.Sheets do
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
 
-    last_synced_at = DateTime.utc_now()
+    last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
     export_url = build_export_url(sheet.url)
 
     sync_result =
@@ -304,7 +304,7 @@ defmodule Glific.Sheets do
     |> Repo.transaction()
     |> case do
       {:ok, %{process_sheet_data: result}} -> result
-      {:error, _, result, _} -> result
+      {:error, result} -> result
     end
   end
 
@@ -331,42 +331,36 @@ defmodule Glific.Sheets do
   end
 
   defp process_sheet_data(csv_content, sheet, last_synced_at) do
-    initial_acc = %{sync_successful?: true, error_message: nil}
+    initial_acc = {:ok, %{sync_successful?: true, error_message: nil}}
 
     csv_content
-    |> Enum.reduce_while(initial_acc, fn
-      {:ok, row}, acc ->
-        process_row(row, acc, sheet, last_synced_at)
-
-      {:error, err}, acc ->
-        handle_row_error(err, acc, sheet)
+    |> Enum.chunk_every(1000)
+    |> Enum.reduce_while(initial_acc, fn chunk, acc ->
+      chunk
+      |> Enum.map(fn {:ok, row} -> clean_row_keys_and_values(row) end)
+      |> Enum.map(fn row_values -> prepare_sheet_data_attrs(row_values, sheet, last_synced_at) end)
+      |> insert_sheet_data(acc)
     end)
-    |> case do
-      %{sync_successful?: true} = result -> {:ok, result}
-      result -> {:error, result}
-    end
   end
 
-  @spec process_row(map(), map(), Sheet.t(), DateTime.t()) :: {:cont, map()}
-  defp process_row(row, acc, sheet, last_synced_at) do
-    %{values: row_values} = parse_row_values(row)
-
-    row_values
-    |> prepare_sheet_data_attrs(sheet, last_synced_at)
-    |> create_sheet_data()
-    |> case do
-      {:ok, _} ->
+  defp insert_sheet_data(rows_to_insert, acc) do
+    case Repo.insert_all(SheetData, rows_to_insert) do
+      {count, _} when count == length(rows_to_insert) ->
         {:cont, acc}
 
-      {:error, changeset} ->
-        {:halt, %{sync_successful?: false, error_message: generate_error_message(changeset)}}
-    end
-  end
+      {count, _} ->
+        {:halt,
+         {:error,
+          %{
+            sync_successful?: false,
+            error_message:
+              "Failed to insert all rows: expected #{length(rows_to_insert)}, got #{count}"
+          }}}
 
-  @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
-  defp handle_row_error(err, _acc, sheet) do
-    # If we get any error, we stop executing the current sheet further, log it.
-    {:halt, handle_sync_failure(sheet, inspect(err))}
+      {:error, err} ->
+        {:halt,
+         {:error, %{sync_successful?: false, error_message: "Bulk insert error: #{inspect(err)}"}}}
+    end
   end
 
   defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
@@ -375,7 +369,9 @@ defmodule Glific.Sheets do
       row_data: values,
       sheet_id: sheet.id,
       organization_id: sheet.organization_id,
-      last_synced_at: last_synced_at
+      last_synced_at: last_synced_at,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     }
   end
 
@@ -392,13 +388,6 @@ defmodule Glific.Sheets do
     %{sync_successful?: false, error_message: reason}
   end
 
-  @spec parse_row_values(map()) :: map()
-  defp parse_row_values(row) do
-    clean_row_values = clean_row_keys_and_values(row)
-
-    %{values: clean_row_values}
-  end
-
   @spec clean_row_keys_and_values(map()) :: map()
   defp clean_row_keys_and_values(row) do
     Enum.reduce(row, %{}, fn {key, value}, acc ->
@@ -410,25 +399,6 @@ defmodule Glific.Sheets do
 
       Map.put(acc, clean_key, trim_value(value))
     end)
-  end
-
-  @doc """
-  Creates a sheet
-
-  ## Examples
-
-      iex> create_sheet_data(%{field: value})
-      {:ok, %Sheet{}}
-
-      iex> create_sheet_data(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec create_sheet_data(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
-  def create_sheet_data(attrs) do
-    %SheetData{}
-    |> SheetData.changeset(attrs)
-    |> Repo.insert()
   end
 
   @doc """
