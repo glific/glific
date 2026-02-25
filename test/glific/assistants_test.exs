@@ -380,6 +380,298 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "update_assistant/2" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "returns current assistant without creating a new config version when nothing changes",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
+      initial_config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 organization_id: organization_id
+               })
+
+      final_config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert result.name == assistant.name
+      assert initial_config_count == final_config_count
+    end
+
+    test "creates a new config version and updates the assistant when name changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_abc"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Updated Name",
+                 organization_id: organization_id
+               })
+
+      assert result.name == "Updated Name"
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "creates a new config version when temperature changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 temperature: 0.5,
+                 organization_id: organization_id
+               })
+
+      assert result.temperature == 0.5
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "creates a new config version when model changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 model: "gpt-4o-mini",
+                 organization_id: organization_id
+               })
+
+      assert result.model == "gpt-4o-mini"
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "creates a new config version when instructions change",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 instructions: "You are a specialized assistant",
+                 organization_id: organization_id
+               })
+
+      assert result.instructions == "You are a specialized assistant"
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "creates a new config version when knowledge base changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "New KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_2" => %{"filename" => "new_doc.pdf"}},
+          status: :completed,
+          llm_service_id: "vs_new_456",
+          size: 200
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_kb"}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_id: new_kb.id,
+                 organization_id: organization_id
+               })
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "returns error when assistant does not exist", %{organization_id: organization_id} do
+      assert {:error, _} = Assistants.update_assistant(0, %{organization_id: organization_id})
+    end
+
+    test "no-op returns correct config field values",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: config_version
+         } do
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 organization_id: organization_id
+               })
+
+      assert result.model == config_version.model
+      assert result.instructions == config_version.prompt
+      assert result.temperature == get_in(config_version.settings, ["temperature"])
+    end
+
+    test "new config version persists the updated temperature value",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp2"}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 temperature: 0.3,
+                 organization_id: organization_id
+               })
+
+      new_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert get_in(new_config.settings, ["temperature"]) == 0.3
+    end
+
+    test "new config version persists the updated model value",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model2"}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 model: "gpt-4o-mini",
+                 organization_id: organization_id
+               })
+
+      new_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config.model == "gpt-4o-mini"
+    end
+
+    test "new config version persists the updated instructions value",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions2"}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 instructions: "You are a specialized assistant",
+                 organization_id: organization_id
+               })
+
+      new_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config.prompt == "You are a specialized assistant"
+    end
+
+    test "multiple fields changing creates only one new config version",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_multi"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Multi-Update Name",
+                 model: "gpt-4o-mini",
+                 temperature: 0.7,
+                 organization_id: organization_id
+               })
+
+      assert result.name == "Multi-Update Name"
+      assert result.model == "gpt-4o-mini"
+      assert result.temperature == 0.7
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+    end
+
+    test "returns error when Kaapi API call fails",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      assert {:error, _} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Updated Name",
+                 organization_id: organization_id
+               })
+    end
+  end
+
   describe "process_timeouts/1" do
     setup %{organization_id: org_id} do
       {knowledge_base, knowledge_base_version} =
@@ -564,6 +856,55 @@ defmodule Glific.AssistantsTest do
         updated_at: now
       }
     ])
+  end
+
+  defp setup_assistant_with_kb(%{organization_id: organization_id}) do
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{
+        name: "Test KB",
+        organization_id: organization_id
+      })
+
+    {:ok, kbv} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: organization_id,
+        files: %{"file_1" => %{"filename" => "doc.pdf"}},
+        status: :completed,
+        llm_service_id: "vs_test_123",
+        size: 500
+      })
+
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        organization_id: organization_id,
+        provider: "kaapi",
+        model: "gpt-4o",
+        prompt: "You are a helpful assistant",
+        settings: %{"temperature" => 1.0},
+        status: :ready
+      })
+      |> Repo.insert()
+
+    link_kbv_to_acv(kbv, config_version, organization_id)
+
+    {:ok, assistant} =
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    Partners.organization(organization_id)
+
+    %{assistant: assistant, config_version: config_version, knowledge_base_version: kbv}
   end
 
   describe "delete_assistant/1" do

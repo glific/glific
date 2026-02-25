@@ -119,6 +119,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create a config version in Kaapi.
+  """
+  @spec create_config_version(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_config_version(config_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/configs/#{config_id}/versions", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Create a collection in Kaapi.
   """
   @spec create_collection(map(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
