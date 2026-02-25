@@ -17,6 +17,10 @@ defmodule Glific.ThirdParty.Kaapi do
     Reporting these failures to AppSignal lets us detect and fix problems
     """
     defexception [:message, :reason, :organization_id]
+
+    def message(%Error{} = error) do
+      "#{error.message} reason: #{error.reason} organization_id: #{error.organization_id}"
+    end
   end
 
   @doc """
@@ -96,7 +100,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
     body = %{
       name: params.name,
-      description: params[:description] || "",
+      commit_message: params[:description] || "",
       config_blob: config_blob
     }
 
@@ -112,6 +116,41 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message: "Kaapi Config creation failed for name #{params.name}",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Create a new version of an config in Kaapi, send error to Appsignal if failed.
+  """
+  @spec create_config_version(binary(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def create_config_version(config_id, params, organization_id) do
+    config_blob = build_config_blob(params, params.vector_store_ids)
+
+    body = %{
+      commit_message: params[:description] || "",
+      config_blob: config_blob
+    }
+
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_config_version(config_id, body, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi Config Version creation successful for org: #{organization_id}, Config ID: #{config_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi Config Version creation failed for Config ID #{config_id}",
             organization_id: organization_id,
             reason: inspect(reason)
           },
