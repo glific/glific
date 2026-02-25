@@ -314,8 +314,8 @@ defmodule Glific.Assistants do
            kaapi_config,
            kaapi_config.organization_id
          ) do
-      {:ok, _kaapi_response} ->
-        {:ok, :created}
+      {:ok, kaapi_response} ->
+        {:ok, kaapi_response.data.id}
 
       {:error, reason} ->
         {:error, reason}
