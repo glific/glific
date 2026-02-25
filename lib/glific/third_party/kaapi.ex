@@ -18,7 +18,7 @@ defmodule Glific.ThirdParty.Kaapi do
     """
     defexception [:message, :reason, :organization_id]
 
-    @spec message(__MODULE__) :: String.t()
+    @spec message(%__MODULE__{}) :: String.t()
     def message(%Error{} = error) do
       "#{error.message} reason: #{error.reason} organization_id: #{error.organization_id}"
     end
