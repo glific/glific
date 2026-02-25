@@ -232,8 +232,9 @@ defmodule Glific.Assistants do
            Repo.preload(assistant, active_config_version: :knowledge_base_versions),
          {:ok, knowledge_base_id} <- resolve_knowledge_base_id(assistant, user_params),
          {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_knowledge_base_version(knowledge_base_id),
-         user_params <- fill_defaults_from_assistant(user_params, assistant) do
+           KnowledgeBaseVersion.get_knowledge_base_version(knowledge_base_id) do
+      user_params = Map.put(user_params, :organization_id, assistant.organization_id)
+
       if no_changes?(user_params, assistant, knowledge_base_version) do
         get_assistant(assistant.id)
       else
@@ -258,22 +259,6 @@ defmodule Glific.Assistants do
       [%{knowledge_base_id: kb_id} | _] -> {:ok, kb_id}
       [] -> {:error, "No knowledge base linked to this assistant"}
     end
-  end
-
-  @spec fill_defaults_from_assistant(map(), Assistant.t()) :: map()
-  defp fill_defaults_from_assistant(user_params, assistant) do
-    active_config = assistant.active_config_version
-
-    user_params
-    |> Map.put_new(:organization_id, assistant.organization_id)
-    |> Map.put_new(:name, assistant.name)
-    |> Map.put_new(:instructions, active_config.prompt)
-    |> Map.put_new(:model, active_config.model)
-    |> Map.put_new(
-      :temperature,
-      get_in(active_config.settings || %{}, ["temperature"]) || 1
-    )
-    |> Map.put_new(:description, assistant.description)
   end
 
   @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t()) :: boolean()

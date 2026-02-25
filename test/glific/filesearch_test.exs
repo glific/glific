@@ -125,11 +125,15 @@ defmodule Glific.FilesearchTest do
         }
     end)
 
-    # updating with empty input variables - no changes, should return current state
     {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
-          "input" => %{},
+          "input" => %{
+            "name" => "new assistant",
+            "instructions" => "You are a helpful assistant",
+            "model" => "gpt-4o",
+            "temperature" => 1.0
+          },
           "id" => unified_assistant.id
         }
       )
