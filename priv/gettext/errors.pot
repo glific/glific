@@ -178,7 +178,7 @@ msgstr ""
 
 #: lib/glific/partners.ex:522
 #: lib/glific/partners.ex:539
-#: lib/glific/providers/gupshup/api_client.ex:36
+#: lib/glific/providers/gupshup/api_client.ex:44
 #: lib/glific/providers/gupshup_enterprise/api_client.ex:36
 #, elixir-format, elixir-autogen
 msgid "No active BSP available"
