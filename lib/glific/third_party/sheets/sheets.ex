@@ -383,13 +383,6 @@ defmodule Glific.Sheets do
            error_message:
              "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"
          }}
-
-      {:error, err} ->
-        {:error,
-         %{
-           sync_successful?: false,
-           error_message: "Bulk insert error: #{inspect(err)}"
-         }}
     end
   end
 

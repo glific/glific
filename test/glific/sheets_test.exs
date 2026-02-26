@@ -305,7 +305,8 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Failed to insert all rows likely due to duplicate keys: expected 2, got 1"
+      assert updated_sheet.failure_reason ==
+               "Failed to insert all rows likely due to duplicate keys: expected 2, got 1"
 
       # No sheet data should be created
       sheet_data_count =
