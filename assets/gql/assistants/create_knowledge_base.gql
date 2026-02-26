@@ -4,7 +4,7 @@ mutation create_knowledge_base($media_info: [FileInfoInput!]!, $id: ID) {
     create_knowledge_base(media_info: $media_info, id: $id) {
         knowledge_base {
             id
-            vector_store_id
+            llm_service_id
             name
             status
             size

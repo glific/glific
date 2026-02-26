@@ -8,7 +8,7 @@ fragment UnifiedAssistantFields on UnifiedAssistantResult {
     new_version_in_progress
     vector_store {
       id
-      vector_store_id
+      llm_service_id
       name
       status
       legacy
