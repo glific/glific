@@ -140,7 +140,7 @@ defmodule Glific.Assistants do
 
         %{
           id: knowledge_base.id,
-          vector_store_id: knowledge_base_version.llm_service_id,
+          llm_service_id: knowledge_base_version.llm_service_id,
           name: knowledge_base.name,
           files: knowledge_base_version.files || %{},
           size: knowledge_base_version.size || 0,
@@ -215,7 +215,7 @@ defmodule Glific.Assistants do
   def create_assistant(user_params) do
     with :ok <- validate_knowledge_base_presence(user_params),
          {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_knowledge_base_version(user_params[:knowledge_base_id]),
+           KnowledgeBaseVersion.get_by_llm_service_id(user_params[:llm_service_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       create_assistant_transaction(kaapi_config, knowledge_base_version)
     end
@@ -230,9 +230,7 @@ defmodule Glific.Assistants do
            Repo.fetch_by(Assistant, %{id: id}),
          assistant <-
            Repo.preload(assistant, active_config_version: :knowledge_base_versions),
-         {:ok, knowledge_base_id} <- resolve_knowledge_base_id(assistant, user_params),
-         {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_knowledge_base_version(knowledge_base_id) do
+         {:ok, knowledge_base_version} <- resolve_knowledge_base_version(assistant, user_params) do
       user_params = Map.put(user_params, :organization_id, assistant.organization_id)
 
       if no_changes?(user_params, assistant, knowledge_base_version) do
@@ -253,15 +251,15 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec resolve_knowledge_base_id(Assistant.t(), map()) ::
-          {:ok, non_neg_integer()} | {:error, String.t()}
-  defp resolve_knowledge_base_id(_assistant, %{knowledge_base_id: kb_id})
-       when not is_nil(kb_id),
-       do: {:ok, kb_id}
+  @spec resolve_knowledge_base_version(Assistant.t(), map()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t() | [String.t()]}
+  defp resolve_knowledge_base_version(_assistant, %{llm_service_id: llm_service_id})
+       when not is_nil(llm_service_id),
+       do: KnowledgeBaseVersion.get_by_llm_service_id(llm_service_id)
 
-  defp resolve_knowledge_base_id(assistant, _user_params) do
+  defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
-      [%{knowledge_base_id: kb_id} | _] -> {:ok, kb_id}
+      [knowledge_base_version | _] -> {:ok, knowledge_base_version}
       [] -> {:error, "No knowledge base linked to this assistant"}
     end
   end
@@ -340,7 +338,7 @@ defmodule Glific.Assistants do
 
   @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
   defp validate_knowledge_base_presence(user_params) do
-    if is_nil(user_params[:knowledge_base_id]) do
+    if is_nil(user_params[:llm_service_id]) do
       {:error, "Knowledge base is required for assistant creation"}
     else
       :ok

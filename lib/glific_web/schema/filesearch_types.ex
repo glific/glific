@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :vector_store do
     field :id, :id
-    field :vector_store_id, :string
+    field :llm_service_id, :string
     field :name, :string
 
     field :files, list_of(:file_info) do
@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :instructions, :string
     field :description, :string
     field :temperature, :float
-    field :knowledge_base_id, :string
+    field :llm_service_id, :string
   end
 
   input_object :file_info_input do

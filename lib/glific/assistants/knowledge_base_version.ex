@@ -98,4 +98,21 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
       kb_version -> {:ok, kb_version}
     end)
   end
+
+  @doc """
+  Fetches the knowledge base version by llm_service_id
+  """
+  @spec get_by_llm_service_id(String.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
+  def get_by_llm_service_id(llm_service_id) do
+    KnowledgeBaseVersion
+    |> where([kbv], kbv.llm_service_id == ^llm_service_id)
+    |> order_by([kbv], desc: kbv.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+    |> then(fn
+      nil -> {:error, ["KnowledgeBaseVersion", "Resource not found"]}
+      kb_version -> {:ok, kb_version}
+    end)
+  end
 end
