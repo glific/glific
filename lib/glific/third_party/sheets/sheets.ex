@@ -304,7 +304,7 @@ defmodule Glific.Sheets do
     |> Repo.transaction()
     |> case do
       {:ok, %{process_sheet_data: result}} -> result
-      {:error, result} -> result
+      {:error, _, result, _} -> result
     end
   end
 
@@ -336,43 +336,81 @@ defmodule Glific.Sheets do
     csv_content
     |> Enum.chunk_every(1000)
     |> Enum.reduce_while(initial_acc, fn chunk, acc ->
-      chunk
-      |> Enum.map(fn {:ok, row} -> clean_row_keys_and_values(row) end)
-      |> Enum.map(fn row_values -> prepare_sheet_data_attrs(row_values, sheet, last_synced_at) end)
-      |> insert_sheet_data(acc)
+      with {:ok, rows_to_insert} <- build_chunk_rows(chunk, sheet, last_synced_at),
+           {:ok, _} <- insert_sheet_data_rows(rows_to_insert) do
+        {:cont, acc}
+      else
+        {:error, reason} ->
+          {:halt, {:error, normalize_process_error(reason)}}
+      end
     end)
   end
 
-  defp insert_sheet_data(rows_to_insert, acc) do
-    case Repo.insert_all(SheetData, rows_to_insert) do
-      {count, _} when count == length(rows_to_insert) ->
-        {:cont, acc}
+  defp build_chunk_rows(chunk, sheet, last_synced_at) do
+    chunk
+    |> Enum.reduce_while({:ok, []}, fn
+      {:ok, row}, {:ok, acc} ->
+        row_values = clean_row_keys_and_values(row)
 
-      {count, _} ->
-        {:halt,
-         {:error,
-          %{
-            sync_successful?: false,
-            error_message:
-              "Failed to insert all rows: expected #{length(rows_to_insert)}, got #{count}"
-          }}}
+        case prepare_sheet_data_attrs(row_values, sheet, last_synced_at) do
+          {:error, changeset} ->
+            {:halt, {:error, changeset}}
 
-      {:error, err} ->
-        {:halt,
-         {:error, %{sync_successful?: false, error_message: "Bulk insert error: #{inspect(err)}"}}}
+          valid_attrs ->
+            {:cont, {:ok, [valid_attrs | acc]}}
+        end
+    end)
+    |> case do
+      {:ok, results} ->
+        {:ok, Enum.reverse(results)}
+
+      {:error, _} = error ->
+        error
     end
   end
 
+  defp insert_sheet_data_rows([]), do: {:ok, 0}
+
+  defp insert_sheet_data_rows(rows_to_insert) do
+    case Repo.insert_all(SheetData, rows_to_insert, on_conflict: :nothing) do
+      {count, _} when count == length(rows_to_insert) ->
+        {:ok, count}
+
+      {count, _} ->
+        {:error,
+         %{
+           sync_successful?: false,
+           error_message:
+             "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"
+         }}
+
+      {:error, err} ->
+        {:error,
+         %{
+           sync_successful?: false,
+           error_message: "Bulk insert error: #{inspect(err)}"
+         }}
+    end
+  end
+
+  defp normalize_process_error(%Ecto.Changeset{} = changeset) do
+    %{sync_successful?: false, error_message: generate_error_message(changeset)}
+  end
+
+  defp normalize_process_error(%{sync_successful?: false, error_message: _} = result), do: result
+
+  defp normalize_process_error(other) do
+    %{sync_successful?: false, error_message: inspect(other)}
+  end
+
   defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
-    %{
+    SheetData.prepare_insert_all_attrs(%{
       key: values["key"],
       row_data: values,
       sheet_id: sheet.id,
       organization_id: sheet.organization_id,
-      last_synced_at: last_synced_at,
-      inserted_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now()
-    }
+      last_synced_at: last_synced_at
+    })
   end
 
   defp handle_sync_failure(sheet, reason) do
@@ -399,6 +437,25 @@ defmodule Glific.Sheets do
 
       Map.put(acc, clean_key, trim_value(value))
     end)
+  end
+
+  @doc """
+  Creates a sheet
+
+  ## Examples
+
+      iex> create_sheet_data(%{field: value})
+      {:ok, %Sheet{}}
+
+      iex> create_sheet_data(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_sheet_data(map()) :: {:ok, Sheet.t()} | {:error, Ecto.Changeset.t()}
+  def create_sheet_data(attrs) do
+    %SheetData{}
+    |> SheetData.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
