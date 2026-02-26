@@ -1,0 +1,11 @@
+#import "./fields.frag.gql"
+
+mutation RevertToWhatsappFormRevision($revisionId: ID!, $whatsappFormId: ID!) {
+  revertToWhatsappFormRevision(
+    revisionId: $revisionId
+    whatsappFormId: $whatsappFormId
+  ) {
+    ...WhatsappFormRevisionFields
+    ...WhatsappFormRevisionsErrorFields
+  }
+}
