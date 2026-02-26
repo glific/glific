@@ -60,23 +60,6 @@ defmodule Glific.Filesearch do
   end
 
   @doc """
-  Deletes the Assistant for the given ID
-  """
-  @spec delete_assistant(integer()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
-  def delete_assistant(id) do
-    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         {:ok, _} <- ApiClient.delete_assistant(assistant.assistant_id) do
-      if assistant.vector_store_id do
-        delete_vector_store(assistant.vector_store_id)
-      end
-
-      Kaapi.delete_assistant(assistant.assistant_id, assistant.organization_id)
-
-      Repo.delete(assistant)
-    end
-  end
-
-  @doc """
   Upload and add the files to the Assistant
   """
   @spec add_assistant_files(map()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
@@ -85,39 +68,6 @@ defmodule Glific.Filesearch do
          assistant = Repo.preload(assistant, :vector_store),
          {:ok, vector_store} <- bulk_upload_vector_store_files(assistant.vector_store, params) do
       update_assistant(assistant.id, %{vector_store_id: vector_store.id})
-    end
-  end
-
-  @doc """
-  Removes the given file from the Assistant's VectorStore
-
-  Also deletes the file from the openAI
-  """
-  @spec remove_assistant_file(map()) :: {:ok, Assistant.t()} | {:error, String.t()}
-  def remove_assistant_file(params) do
-    with {:ok, assistant} <- Assistant.get_assistant(params.id),
-         assistant <- Repo.preload(assistant, :vector_store),
-         {:ok, file} <- get_file(assistant.vector_store, params.file_id),
-         {:ok, _} <-
-           ApiClient.delete_vector_store_file(%{
-             file_id: file["file_id"],
-             vector_store_id: assistant.vector_store.vector_store_id
-           }) do
-      # We will initiate the file deletion async, since don't want to delay the main process
-      Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
-        ApiClient.delete_file(file["file_id"])
-      end)
-
-      {:ok, _} =
-        VectorStore.update_vector_store(
-          assistant.vector_store,
-          %{files: Map.delete(assistant.vector_store.files, file["file_id"])}
-        )
-
-      {:ok, Repo.preload(assistant, :vector_store, force: true)}
-    else
-      {:error, reason} ->
-        {:error, "Removing file from assistant failed due to #{reason}"}
     end
   end
 
@@ -208,25 +158,6 @@ defmodule Glific.Filesearch do
 
       {:error, reason} ->
         {:error, "VectorStore creation failed due to #{reason}"}
-    end
-  end
-
-  @spec delete_vector_store(integer()) :: {:ok, VectorStore.t()} | {:error, Ecto.Changeset.t()}
-  defp delete_vector_store(id) do
-    with {:ok, vector_store} <- Repo.fetch_by(VectorStore, %{id: id}),
-         {:ok, _} <- ApiClient.delete_vector_store(vector_store.vector_store_id) do
-      Repo.delete(vector_store)
-    end
-  end
-
-  @spec get_file(VectorStore.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp get_file(vector_store, file_id) do
-    case Map.get(vector_store.files, file_id) do
-      nil ->
-        {:error, "File #{file_id} not found"}
-
-      file ->
-        {:ok, file}
     end
   end
 

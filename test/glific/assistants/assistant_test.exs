@@ -226,7 +226,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       # Check assistant
       assert assistant.name == "Test Assistant"
-      assert assistant.description == "You are helpful assistant"
+      refute assistant.description
       assert assistant.kaapi_uuid == "kaapi-uuid-123"
       assert assistant.assistant_display_id != nil
       assert assistant.organization_id == organization_id
@@ -333,7 +333,7 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.model == "gpt-4o"
       assert config_version.settings.temperature == 1
       assert config_version.status == :ready
-      assert assistant.description == "You are a helpful assistant"
+      refute assistant.description
 
       :meck.unload(Partners)
     end
@@ -565,7 +565,7 @@ defmodule Glific.Assistants.AssistantTest do
   end
 
   defp enable_kaapi(attrs) do
-    {:ok, credential} =
+    {:ok, _credential} =
       Partners.create_credential(%{
         organization_id: attrs.organization_id,
         shortcode: "kaapi",
@@ -575,17 +575,5 @@ defmodule Glific.Assistants.AssistantTest do
         },
         is_active: true
       })
-
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
-
-    Partners.update_credential(credential, valid_update_attrs)
   end
 end
