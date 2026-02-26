@@ -499,11 +499,16 @@ defmodule Glific.Assistants do
       "Kaapi collection creation failed. Cleaning up orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}"
     )
 
-    Repo.delete(knowledge_base_version)
+    with {:error, reason} <- Repo.delete(knowledge_base_version) do
+      Logger.error("Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}")
+    end
 
     if newly_created_kb do
       Logger.warning("Cleaning up orphaned KnowledgeBase ID: #{knowledge_base.id}")
-      Repo.delete(knowledge_base)
+
+      with {:error, reason} <- Repo.delete(knowledge_base) do
+        Logger.error("Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}")
+      end
     end
 
     :ok
