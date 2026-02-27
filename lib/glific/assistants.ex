@@ -556,15 +556,21 @@ defmodule Glific.Assistants do
 
   @doc """
     Create a new knowledge base, knowledge_base_version in Glific and creates a corresponding Collection in Kaapi.
+    If Kaapi collection creation fails, any newly created records are cleaned up immediately:
+    - The KnowledgeBaseVersion is always deleted on Kaapi failure.
+    - The KnowledgeBase is deleted only if it was newly created (not fetched from an existing ID).
   """
   @spec create_knowledge_base_with_version(params :: map()) ::
           {:ok, map()} | {:error, Ecto.Changeset.t() | String.t()}
   def create_knowledge_base_with_version(params) do
+    newly_created_kb = is_nil(params[:id])
+
     with {:ok, knowledge_base} <- maybe_create_knowledge_base(params),
          {:ok, knowledge_base_version} <- create_knowledge_base_version(knowledge_base, params),
          api_params <- build_collection_params(knowledge_base_version, params),
          {:ok, %{data: %{job_id: job_id}}} <-
-           Kaapi.create_collection(api_params, params[:organization_id]),
+           create_kaapi_collection(api_params, params[:organization_id], knowledge_base,
+             knowledge_base_version, newly_created_kb),
          {:ok, knowledge_base_version} <-
            update_knowledge_base_version(knowledge_base_version, %{kaapi_job_id: job_id}) do
       {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}}
@@ -580,6 +586,53 @@ defmodule Glific.Assistants do
 
         {:error, "Failed to create knowledge base"}
     end
+  end
+
+  # Calls Kaapi to create a collection. On failure, cleans up the orphaned
+  # KnowledgeBaseVersion and, if it was newly created, the KnowledgeBase too.
+  @spec create_kaapi_collection(
+          map(),
+          non_neg_integer(),
+          KnowledgeBase.t(),
+          KnowledgeBaseVersion.t(),
+          boolean()
+        ) :: {:ok, map()} | {:error, any()}
+  defp create_kaapi_collection(
+         api_params,
+         organization_id,
+         knowledge_base,
+         knowledge_base_version,
+         newly_created_kb
+       ) do
+    case Kaapi.create_collection(api_params, organization_id) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, reason} ->
+        delete_orphaned_records(knowledge_base, knowledge_base_version, newly_created_kb)
+        {:error, reason}
+    end
+  end
+
+  @spec delete_orphaned_records(KnowledgeBase.t(), KnowledgeBaseVersion.t(), boolean()) :: :ok
+  defp delete_orphaned_records(knowledge_base, knowledge_base_version, newly_created_kb) do
+    Logger.warning(
+      "Kaapi collection creation failed. Cleaning up orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}"
+    )
+
+    with {:error, reason} <- Repo.delete(knowledge_base_version) do
+      Logger.error("Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}")
+    end
+
+    if newly_created_kb do
+      Logger.warning("Cleaning up orphaned KnowledgeBase ID: #{knowledge_base.id}")
+
+      with {:error, reason} <- Repo.delete(knowledge_base) do
+        Logger.error("Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}")
+      end
+    end
+
+    :ok
   end
 
   @doc """
