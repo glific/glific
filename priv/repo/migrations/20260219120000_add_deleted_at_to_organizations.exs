@@ -68,10 +68,11 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
       tbl TEXT;
       rows_deleted BIGINT;
     BEGIN
-      -- Null out foreign keys on the organization row to avoid FK violations
+      -- Null out nullable foreign keys on the organization row to avoid FK violations.
+      -- bsp_id and default_language_id are NOT NULL so they cannot be nullified here;
+      -- they reference global tables (providers, languages) that are never deleted anyway.
       UPDATE organizations
-      SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL,
-          bsp_id = NULL, default_language_id = NULL
+      SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL
       WHERE id = org_id;
 
       -- Dynamically delete from all tables with organization_id column
