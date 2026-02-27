@@ -59,7 +59,7 @@ defmodule Glific.Sheets.SheetData do
   @doc """
   Prepare the attributes for insert_all
   """
-  @spec prepare_insert_all_attrs(map()) :: Ecto.Changeset.t()
+  @spec prepare_insert_all_attrs(map()) :: map() | {:error, Ecto.Changeset.t()}
   def prepare_insert_all_attrs(attrs) do
     changeset =
       %SheetData{

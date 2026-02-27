@@ -303,11 +303,19 @@ defmodule Glific.Sheets do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{process_sheet_data: result}} -> result
-      {:error, _, result, _} -> result
+      {:error, :delete_all, {:error, error_map}, _changes} ->
+        %{sync_successful?: false, error_message: error_map}
+
+      {:ok, %{process_sheet_data: result}} ->
+        result
+
+      {:error, _, result, _} ->
+        result
     end
   end
 
+  @spec validate_headers(Enumerable.t(), Sheet.t()) ::
+          {:ok, true} | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp validate_headers(csv_content, sheet) do
     case Enum.take(csv_content, 1) do
       [{:ok, row}] ->
@@ -330,6 +338,9 @@ defmodule Glific.Sheets do
     end
   end
 
+  @spec process_sheet_data(Enumerable.t(), Sheet.t(), DateTime.t()) ::
+          {:ok, %{sync_successful?: true, error_message: nil}}
+          | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp process_sheet_data(csv_content, sheet, last_synced_at) do
     initial_acc = {:ok, %{sync_successful?: true, error_message: nil}}
 
@@ -346,6 +357,8 @@ defmodule Glific.Sheets do
     end)
   end
 
+  @spec build_chunk_rows(Enumerable.t(), Sheet.t(), DateTime.t()) ::
+          {:ok, list(map())} | {:error, Ecto.Changeset.t()}
   defp build_chunk_rows(chunk, sheet, last_synced_at) do
     chunk
     |> Enum.reduce_while({:ok, []}, fn
@@ -369,6 +382,8 @@ defmodule Glific.Sheets do
     end
   end
 
+  @spec insert_sheet_data_rows(list(map())) ::
+          {:ok, integer()} | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp insert_sheet_data_rows([]), do: {:ok, 0}
 
   defp insert_sheet_data_rows(rows_to_insert) do
@@ -396,6 +411,8 @@ defmodule Glific.Sheets do
     %{sync_successful?: false, error_message: inspect(other)}
   end
 
+  @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
+          map() | {:error, Ecto.Changeset.t()}
   defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
     SheetData.prepare_insert_all_attrs(%{
       key: values["key"],
@@ -406,6 +423,10 @@ defmodule Glific.Sheets do
     })
   end
 
+  @spec handle_sync_failure(Sheet.t(), String.t()) :: %{
+          sync_successful?: false,
+          error_message: String.t()
+        }
   defp handle_sync_failure(sheet, reason) do
     reason =
       if String.contains?(reason, "Stray escape character on line"),
