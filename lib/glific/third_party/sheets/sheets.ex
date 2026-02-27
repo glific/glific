@@ -343,9 +343,10 @@ defmodule Glific.Sheets do
           | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp process_sheet_data(csv_content, sheet, last_synced_at) do
     initial_acc = {:ok, %{sync_successful?: true, error_message: nil}}
+    chunk_size = Application.get_env(:glific, :sheets_chunk_size)
 
     csv_content
-    |> Enum.chunk_every(1000)
+    |> Enum.chunk_every(chunk_size)
     |> Enum.reduce_while(initial_acc, fn chunk, acc ->
       with {:ok, rows_to_insert} <- build_chunk_rows(chunk, sheet, last_synced_at),
            {:ok, _} <- insert_sheet_data_rows(rows_to_insert) do
