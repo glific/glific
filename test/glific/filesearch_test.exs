@@ -6,6 +6,8 @@ defmodule Glific.FilesearchTest do
   alias Glific.Filesearch.Assistant
 
   alias Glific.{
+    Assistants,
+    Assistants.AssistantConfigVersion,
     Filesearch,
     Filesearch.VectorStore,
     Partners,
@@ -32,18 +34,6 @@ defmodule Glific.FilesearchTest do
     :update_assistant,
     GlificWeb.Schema,
     "assets/gql/filesearch/update_assistant.gql"
-  )
-
-  load_gql(
-    :add_assistant_files,
-    GlificWeb.Schema,
-    "assets/gql/filesearch/add_assistant_files.gql"
-  )
-
-  load_gql(
-    :remove_assistant_file,
-    GlificWeb.Schema,
-    "assets/gql/filesearch/remove_assistant_file.gql"
   )
 
   load_gql(
@@ -115,194 +105,43 @@ defmodule Glific.FilesearchTest do
              })
   end
 
-  test "valid create assistant", %{user: user} do
-    enable_kaapi(%{organization_id: user.organization_id})
-
-    Tesla.Mock.mock(fn
-      # Mock OpenAI assistants endpoint
-      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            id: "asst_123",
-            name: "Assistant,-f11ead89",
-            instructions: "this is a story telling assistant that tells story",
-            model: "gpt-4o",
-            temperature: 1.0
-          }
-        }
-
-      # Mock Kaapi backend endpoint
-      %{method: :post, url: "This is not a secret/api/v1/assistant/"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 86,
-              name: "Assistant-f78f4392",
-              instructions: "you are a helpful asssitant",
-              organization_id: 1,
-              project_id: 1,
-              assistant_id: "asst_123",
-              vector_store_ids: [],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
-            },
-            metadata: nil,
-            success: true
-          }
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:create_assistant, user, variables: %{})
-
-    assert {:ok, query_data} = result
-    assert "Assistant" <> _ = query_data.data["createAssistant"]["assistant"]["name"]
-  end
-
-  test "create assistant failed due to api failure", %{user: user} do
-    Tesla.Mock.mock(fn
-      %{method: :post, url: "https://api.openai.com/v1/assistants"} ->
-        %Tesla.Env{
-          status: 500,
-          body: %{}
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:create_assistant, user, variables: %{})
-
-    assert {:ok, query_data} = result
-    assert length(query_data.errors) == 1
-  end
-
-  test "delete_assistant/1, valid deletion", attrs do
-    valid_attrs = %{
-      vector_store_id: "vs_abcdef",
-      name: "VectorStore 1",
-      files: %{},
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, vector_store} = VectorStore.create_vector_store(valid_attrs)
-
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id,
-      vector_store_id: vector_store.id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-    Tesla.Mock.mock(fn
-      %{method: :delete} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            deleted: true
-          }
-        }
-    end)
-
-    result =
-      auth_query_gql_by(:delete_assistant, attrs.user,
-        variables: %{
-          "id" => assistant.id
-        }
-      )
-
-    assert {:ok, query_data} = result
-    assert query_data.data["deleteAssistant"]["assistant"]["name"] == "new assistant"
-
-    # deleting assistant should delete attached vector store
-    assert {:error, _} = VectorStore.get_vector_store(vector_store.id)
-  end
-
-  test "delete_assistant/1, invalid deletion", attrs do
-    result =
-      auth_query_gql_by(:delete_assistant, attrs.user,
-        variables: %{
-          "id" => 0
-        }
-      )
-
-    assert {:ok, query_data} = result
-    assert length(query_data.data["deleteAssistant"]["errors"]) == 1
-  end
-
   test "update assistant", attrs do
     enable_kaapi(%{organization_id: attrs.organization_id})
 
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
+    Partners.organization(attrs.organization_id)
 
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+    {unified_assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant",
+        kaapi_uuid: "asst_abc_upd"
+      })
 
     Tesla.Mock.mock(fn
-      %{method: :post} ->
+      %{method: :post, url: "This is not a secret/api/v1/configs/asst_abc_upd/versions"} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            id: "asst_abc",
-            name: "Updated Assistant",
-            model: "gpt-4o",
-            instructions: "new instructions",
-            temperature: 0.7,
-            tool_resources: %{file_search: %{vector_store_ids: ["vs_1"]}}
-          }
-        }
-
-      %{
-        method: :patch,
-        url: "This is not a secret/api/v1/assistant/asst_abc"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 86,
-              name: "Assistant-f78f4392",
-              instructions: "you are a helpful asssitant",
-              organization_id: 1,
-              project_id: 1,
-              assistant_id: "asst_abc",
-              vector_store_ids: ["vs_1"],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
-            },
-            metadata: nil,
-            success: true
-          }
+          body: %{data: %{id: "config-version-id-1"}}
         }
     end)
 
-    # updating with empty input variables
     {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
-          "input" => %{},
-          "id" => assistant.id
+          "input" => %{
+            "name" => "new assistant",
+            "instructions" => "You are a helpful assistant",
+            "model" => "gpt-4o",
+            "temperature" => 1.0
+          },
+          "id" => unified_assistant.id
         }
       )
 
-    assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] == "asst_abc"
+    assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
+             unified_assistant.kaapi_uuid
 
-    # # updating with some input variables except vector_store_id
+    # updating with some input variables
     {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
@@ -311,272 +150,26 @@ defmodule Glific.FilesearchTest do
             "instructions" => "no instruction",
             "temperature" => 1.8
           },
-          "id" => assistant.id
+          "id" => unified_assistant.id
         }
       )
 
-    assert {:ok, %{temperature: 1.8}} = Assistant.get_assistant(assistant.id)
+    assert query_data.data["updateAssistant"]["assistant"]["temperature"] == 1.8
 
-    assert %{"name" => "assistant2", "temperature" => 1.8} =
+    assert %{"name" => "assistant2"} =
              query_data.data["updateAssistant"]["assistant"]
-  end
 
-  test "add_assistant_files and remove assistant file, assistant doesnt has vectorStore", attrs do
-    enable_kaapi(%{organization_id: attrs.organization_id})
-
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            id: "vs_abc",
-            name: "Assistant-f11ead89",
-            instructions: "this is a story telling assistant that tells story",
-            model: "gpt-4o",
-            temperature: 1.0,
-            tool_resources: %{
-              file_search: %{vector_store_ids: ["vs_68a5"]}
-            }
-          }
-        }
-
-      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 86,
-              name: "new assistant",
-              instructions: "this is a story telling assistant that tells story",
-              organization_id: 1,
-              project_id: 1,
-              assistant_id: "asst_abc",
-              vector_store_ids: ["vs_68a5"],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
-            },
-            metadata: nil,
-            success: true
-          }
-        }
-
-      # Delete assistant (DELETE)
-      %{method: :delete} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            deleted: true
-          }
-        }
-    end)
-
-    {:ok, query_data} =
-      auth_query_gql_by(:add_assistant_files, attrs.user,
-        variables: %{
-          "media_info" => [
-            %{
-              "file_id" => "file_abc",
-              "filename" => "abc"
-            },
-            %{
-              "file_id" => "file_xyz",
-              "filename" => "xyz"
-            }
-          ],
-          "id" => assistant.id
-        }
-      )
-
-    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
-             query_data.data["add_assistant_files"]["assistant"]
-
-    {:ok, query_data} =
-      auth_query_gql_by(:remove_assistant_file, attrs.user,
-        variables: %{
-          "file_id" => "file_abc",
-          "id" => assistant.id
-        }
-      )
-
-    assert length(query_data.data["RemoveAssistantFile"]["assistant"]["vector_store"]["files"]) ==
-             1
-
-    # If deleted: false from openAI
-
-    Tesla.Mock.mock(fn
-      %{method: :delete} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            deleted: false
-          }
-        }
-    end)
-
-    {:ok, query_data} =
-      auth_query_gql_by(:remove_assistant_file, attrs.user,
-        variables: %{
-          "file_id" => "file_xyz",
-          "id" => assistant.id
-        }
-      )
-
-    assert length(query_data.errors) == 1
-  end
-
-  test "add_assistant_files, assistant already has a vectorStore", attrs do
-    enable_kaapi(%{organization_id: attrs.organization_id})
-
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            id: "vs_abc",
-            name: "Assistant-f11ead89",
-            instructions: "this is a story telling assistant that tells story",
-            model: "gpt-4o",
-            temperature: 1.0,
-            tool_resources: %{
-              file_search: %{vector_store_ids: ["vs_68a5"]}
-            }
-          }
-        }
-
-      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 86,
-              name: "new assistant",
-              instructions: "this is a story telling assistant that tells story",
-              organization_id: 1,
-              project_id: 1,
-              assistant_id: "asst_abc",
-              vector_store_ids: ["vs_68a5"],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
-            },
-            metadata: nil,
-            success: true
-          }
-        }
-    end)
-
-    {:ok, query_data} =
-      auth_query_gql_by(:add_assistant_files, attrs.user,
-        variables: %{
-          "media_info" => [
-            %{
-              "file_id" => "file_abc",
-              "filename" => "abc"
-            },
-            %{
-              "file_id" => "file_xyz",
-              "filename" => "xyz"
-            }
-          ],
-          "id" => assistant.id
-        }
-      )
-
-    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
-             query_data.data["add_assistant_files"]["assistant"]
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            id: "vs_abc",
-            name: "Assistant-f11ead89",
-            instructions: "this is a story telling assistant that tells story",
-            model: "gpt-4o",
-            temperature: 1.0,
-            tool_resources: %{
-              file_search: %{vector_store_ids: ["vs_68a5"]}
-            }
-          }
-        }
-
-      %{method: :patch, url: "This is not a secret/api/v1/assistant/vs_abc"} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 86,
-              name: "new assistant",
-              instructions: "this is a story telling assistant that tells story",
-              organization_id: 1,
-              project_id: 1,
-              assistant_id: "asst_abc",
-              vector_store_ids: ["vs_68a5"],
-              temperature: 0.1,
-              model: "gpt-4o",
-              is_deleted: false,
-              deleted_at: nil
-            },
-            metadata: nil,
-            success: true
-          }
-        }
-    end)
-
-    {:ok, query_data} =
-      auth_query_gql_by(:add_assistant_files, attrs.user,
-        variables: %{
-          "media_info" => [
-            %{
-              "file_id" => "file_lmn",
-              "filename" => "lmn"
-            }
-          ],
-          "id" => assistant.id
-        }
-      )
-
-    assert %{"name" => "new assistant", "vector_store" => %{"vector_store_id" => "vs_abc"}} =
-             query_data.data["add_assistant_files"]["assistant"]
+    assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
+             unified_assistant.kaapi_uuid
   end
 
   test "get assistant", attrs do
-    valid_attrs = %{
-      assistant_id: "asst_abc",
-      name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, assistant} = Assistant.create_assistant(valid_attrs)
+    {assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant",
+        kaapi_uuid: "asst_abc"
+      })
 
     {:ok, query_data} =
       auth_query_gql_by(:assistant, attrs.user,
@@ -599,6 +192,43 @@ defmodule Glific.FilesearchTest do
     assert length(query_data.data["assistant"]["errors"]) == 1
   end
 
+  test "get assistant with vector store", attrs do
+    {assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "assistant with vs",
+        kaapi_uuid: "asst_vs",
+        kb_name: "Test KB",
+        vector_store_id: "vs_test_123",
+        files: %{
+          "file_1" => %{
+            "filename" => "test.pdf",
+            "uploaded_at" => DateTime.to_iso8601(DateTime.utc_now())
+          }
+        },
+        size: 2_048
+      })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user,
+        variables: %{
+          "id" => assistant.id
+        }
+      )
+
+    assistant_data = query_data.data["assistant"]["assistant"]
+    assert assistant_data["name"] == "assistant with vs"
+
+    vector_store = assistant_data["vector_store"]
+    assert vector_store["vector_store_id"] == "vs_test_123"
+    assert vector_store["name"] == "Test KB"
+    assert vector_store["status"] == "completed"
+    assert vector_store["legacy"] == true
+    assert vector_store["size"] == "2.0 KB"
+    assert length(vector_store["files"]) == 1
+    assert hd(vector_store["files"])["name"] == "test.pdf"
+  end
+
   test "list assistants", attrs do
     # empty assistants
     {:ok, result} =
@@ -606,25 +236,17 @@ defmodule Glific.FilesearchTest do
 
     assert result.data["Assistants"] == []
 
-    valid_attrs = %{
-      assistant_id: "asst_abc",
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
       name: "new assistant",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
+      kaapi_uuid: "asst_abc"
+    })
 
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
-
-    valid_attrs = %{
-      assistant_id: "asst_abc2",
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
       name: "new assistant 2",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+      kaapi_uuid: "asst_abc2"
+    })
 
     # fetch all
     {:ok, result} =
@@ -644,15 +266,12 @@ defmodule Glific.FilesearchTest do
 
     assert length(result.data["Assistants"]) == 1
 
-    valid_attrs = %{
-      assistant_id: "asst_xyz",
-      name: "new assistant 3",
-      temperature: 1,
-      model: "gpt-4o",
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, _assistant} = Assistant.create_assistant(valid_attrs)
+    {assistant3, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "new assistant 3",
+        kaapi_uuid: "asst_xyz"
+      })
 
     # limit 1, offset 2
     {:ok, result} =
@@ -667,9 +286,9 @@ defmodule Glific.FilesearchTest do
 
     date = DateTime.utc_now() |> DateTime.add(-2 * 86_400)
 
-    Assistant
-    |> where([vs], vs.assistant_id == "asst_xyz")
-    |> update([vs], set: [inserted_at: ^date])
+    Assistants.Assistant
+    |> where([a], a.id == ^assistant3.id)
+    |> update([a], set: [inserted_at: ^date])
     |> Repo.update_all([])
 
     assert length(result.data["Assistants"]) == 1
@@ -1228,5 +847,92 @@ defmodule Glific.FilesearchTest do
     }
 
     Partners.update_credential(credential, valid_update_attrs)
+  end
+
+  defp create_unified_assistant(attrs) do
+    defaults = %{
+      name: "Test Assistant",
+      kaapi_uuid: "asst_test_#{:rand.uniform(10000)}",
+      model: "gpt-4o",
+      instructions: "You are a helpful assistant",
+      temperature: 1.0,
+      status: :ready,
+      kb_name: "Default KB",
+      vector_store_id: "vs_default_#{:rand.uniform(10000)}",
+      files: %{},
+      kb_status: :completed,
+      size: 0
+    }
+
+    attrs = Map.merge(defaults, attrs)
+    org_id = attrs.organization_id
+
+    {:ok, assistant} =
+      %Assistants.Assistant{}
+      |> Assistants.Assistant.changeset(%{
+        name: attrs.name,
+        organization_id: org_id,
+        kaapi_uuid: attrs.kaapi_uuid
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        organization_id: org_id,
+        provider: "openai",
+        model: attrs.model,
+        prompt: attrs.instructions,
+        settings: %{"temperature" => attrs.temperature},
+        status: attrs.status
+      })
+      |> Repo.insert()
+
+    link_knowledge_base(config_version, attrs)
+
+    {:ok, assistant} =
+      assistant
+      |> Assistants.Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    {assistant, config_version}
+  end
+
+  defp link_knowledge_base(config_version, attrs) do
+    org_id = config_version.organization_id
+
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{
+        name: attrs.kb_name,
+        organization_id: org_id
+      })
+
+    {:ok, kbv} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: org_id,
+        llm_service_id: attrs.vector_store_id,
+        files: attrs.files,
+        status: attrs.kb_status,
+        size: attrs.size,
+        kaapi_job_id: attrs[:kaapi_job_id]
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: kbv.id,
+        organization_id: org_id,
+        inserted_at: now,
+        updated_at: now
+      }
+    ])
+
+    {kb, kbv}
   end
 end
