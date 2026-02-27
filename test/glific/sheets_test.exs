@@ -465,6 +465,40 @@ defmodule Glific.SheetsTest do
       assert updated_sheet.failure_reason =~ "Escape sequence started on line 2:\\n\\n\\"
     end
 
+    test "handles inline CSV parsing errors after some valid rows", %{
+      organization_id: organization_id
+    } do
+      # Mock a CSV where header and first data row are valid, but a later row has a parse error
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,Message\r\n" <>
+                "key1,val1,Hello\r\n" <>
+                "\"unclosed quote,val2,World"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "inline parse error sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      # Should handle the inline CSV parsing error gracefully without raising
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      # The low-level escape error is normalized to a user-friendly message
+      assert updated_sheet.failure_reason ==
+               "\"Stray escape character on line 3:\\n\\nunclosed quote,val2,World\\n\\nThis error often happens when the wrong separator or escape character has been applied.\\n\""
+    end
+
     test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
       # Mock an HTTP failure
       Tesla.Mock.mock(fn
@@ -532,7 +566,7 @@ defmodule Glific.SheetsTest do
         url:
           "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
         organization_id: organization_id
-    }
+      }
 
       {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
 

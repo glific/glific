@@ -373,6 +373,10 @@ defmodule Glific.Sheets do
           valid_attrs ->
             {:cont, {:ok, [valid_attrs | acc]}}
         end
+
+      {:error, err}, {:ok, _acc} ->
+        # Stop processing on CSV decode error and surface a normalized sync failure
+        {:halt, {:error, handle_sync_failure(sheet, inspect(err))}}
     end)
     |> case do
       {:ok, results} ->
@@ -429,11 +433,6 @@ defmodule Glific.Sheets do
           error_message: String.t()
         }
   defp handle_sync_failure(sheet, reason) do
-    reason =
-      if String.contains?(reason, "Stray escape character on line"),
-        do: "Sheet not found or inaccessible",
-        else: reason
-
     Logger.error(
       "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
     )
