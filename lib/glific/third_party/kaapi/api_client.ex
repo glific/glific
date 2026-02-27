@@ -53,7 +53,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec call_responses_api(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_responses_api(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
     |> client()
@@ -66,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_llm(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
     |> client()
@@ -115,6 +115,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/configs/", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Create a config version in Kaapi.
+  """
+  @spec create_config_version(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_config_version(config_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/configs/#{config_id}/versions", body)
     |> parse_kaapi_response()
   end
 
