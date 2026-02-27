@@ -98,6 +98,7 @@ defmodule Glific.Erase do
   def clean_old_records do
     remove_old_records()
     clean_flow_revision()
+    clean_whatsapp_form_revisions()
   end
 
   @impl Oban.Worker
@@ -435,6 +436,35 @@ defmodule Glific.Erase do
         total_rows_deleted
       )
     end
+  end
+
+  @spec clean_whatsapp_form_revisions() :: any()
+  defp clean_whatsapp_form_revisions do
+    """
+    DELETE FROM whatsapp_form_revisions wfr
+    USING (
+    SELECT id
+    FROM (
+    SELECT
+      wfr.id,
+      ROW_NUMBER() OVER (
+        PARTITION BY wfr.whatsapp_form_id
+        ORDER BY wfr.revision_number DESC NULLS LAST, wfr.id DESC
+      ) AS rn
+    FROM whatsapp_form_revisions AS wfr
+    ) AS ranked
+    WHERE rn > 10
+    ) AS old_revisions
+    WHERE wfr.id = old_revisions.id
+    AND NOT EXISTS (
+    SELECT 1
+    FROM whatsapp_forms wf
+    WHERE wf.revision_id = wfr.id
+    );
+
+
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
   @doc """

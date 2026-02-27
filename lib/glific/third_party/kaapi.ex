@@ -4,11 +4,25 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   require Logger
 
-  # Replace this with the new exception after PR #4365 is merged
-  alias Glific.Flows.Webhook.Error
   alias Glific.Partners
   alias Glific.Partners.Credential
   alias Glific.ThirdParty.Kaapi.ApiClient
+
+  # Update all Error struct data in this format
+  defmodule Error do
+    @moduledoc """
+    Custom error module for Kaapi API failures.
+    Since Kaapi is a backend service (NGOs don’t interact with it directly),
+    sending errors to them won’t resolve the issue.
+    Reporting these failures to AppSignal lets us detect and fix problems
+    """
+    defexception [:message, :reason, :organization_id]
+
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%Error{} = error) do
+      "#{error.message} reason: #{error.reason} organization_id: #{error.organization_id}"
+    end
+  end
 
   @doc """
   Fetch the kaapi creds
@@ -78,24 +92,23 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Create an AI assistant in Kaapi, send error to Appsignal if failed.
+  Create a config in Kaapi for the assistant
   """
-  @spec create_assistant(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
-  def create_assistant(openai_response, organization_id) do
-    params = %{
-      name: openai_response.name,
-      model: openai_response.model,
-      assistant_id: openai_response.id,
-      organization_id: organization_id,
-      instructions: openai_response.instructions,
-      temperature: openai_response.temperature
+  @spec create_assistant_config(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def create_assistant_config(params, organization_id) do
+    config_blob = build_config_blob(params, params.vector_store_ids)
+
+    body = %{
+      name: params.name,
+      commit_message: params[:description] || "",
+      config_blob: config_blob
     }
 
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <-
-           ApiClient.create_assistant(params, secrets["api_key"]) do
+         {:ok, result} <- ApiClient.create_config(body, secrets["api_key"]) do
       Logger.info(
-        "KAAPI AI Assistant creation successful for org: #{organization_id}, assistant: #{params.assistant_id}"
+        "Kaapi Config creation successful for org: #{organization_id}, name: #{params.name}"
       )
 
       {:ok, result}
@@ -103,8 +116,44 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "Kaapi AI Assistant creation failed for org_id=#{params.organization_id}, assistant_id=#{params.assistant_id}, reason=#{inspect(reason)}"
+            message: "Kaapi Config creation failed for name #{params.name}",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Create a new version of an config in Kaapi, send error to Appsignal if failed.
+  """
+  @spec create_config_version(binary(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def create_config_version(config_id, params, organization_id) do
+    config_blob = build_config_blob(params, params.vector_store_ids)
+
+    body = %{
+      commit_message: params[:description] || "",
+      config_blob: config_blob
+    }
+
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_config_version(config_id, body, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi Config Version creation successful for org: #{organization_id}, Config ID: #{config_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi Config Version creation failed for Config ID #{config_id}",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )
@@ -140,8 +189,9 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "Kaapi AI Assistant update failed for org_id=#{params.organization_id}, assistant_id=#{assistant_id}), reason=#{inspect(reason)}"
+            message: "Kaapi AI Assistant update failed for assistant_id=#{assistant_id}",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )
@@ -158,8 +208,33 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
            ApiClient.delete_assistant(assistant_id, secrets["api_key"]) do
+      Logger.info("KAAPI AI Assistant delete successful for, assistant: #{assistant_id}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Create a collection (Knowledge Base in Glific) in Kaapi and send error to Appsignal if failed
+  """
+  @spec create_collection(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | String.t()}
+  def create_collection(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_collection(params, secrets["api_key"]) do
       Logger.info(
-        "KAAPI AI Assistant delete successful for org: #{organization_id}, assistant: #{assistant_id}"
+        "Kaapi Knowledge Base creation job successfully created for org: #{organization_id}"
       )
 
       {:ok, result}
@@ -167,8 +242,83 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
+            message: "Failed to create Kaapi Knowledge Base creation job",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @spec build_config_blob(map(), list(String.t())) :: map()
+  defp build_config_blob(params, vector_store_ids) do
+    completion_params = %{
+      model: params.model || "gpt-4o-mini",
+      instructions: params.prompt || "You are a helpful assistant",
+      temperature: params.temperature || 1.0,
+      tools: [
+        %{
+          type: "file_search",
+          vector_store_ids: vector_store_ids
+        }
+      ]
+    }
+
+    %{
+      completion: %{
+        type: "text",
+        provider: params[:provider] || "openai",
+        params: completion_params
+      }
+    }
+  end
+
+  @doc """
+  Upload a document to Kaapi documents API, send error to Appsignal if failed.
+  """
+  @spec upload_document(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def upload_document(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.upload_document(params, secrets["api_key"]) do
+      Logger.info("KAAPI document upload successful for, file: #{params.filename}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi document upload failed for, filename=#{params.filename}",
+            reason: inspect(reason),
+            organization_id: organization_id
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Delete a config and all associated versions in Kaapi, send error to Appsignal if failed.
+  """
+  @spec delete_config(binary(), non_neg_integer()) :: {:ok, map()} | {:error, map() | binary()}
+  def delete_config(uuid, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <-
+           ApiClient.delete_config(uuid, secrets["api_key"]) do
+      Logger.info("KAAPI config delete successful for org: #{organization_id}, config: #{uuid}")
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
             message:
-              "Kaapi AI Assistant delete failed for org_id=#{organization_id}, assistant_id=#{assistant_id}), reason=#{inspect(reason)}"
+              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
           },
           []
         )
