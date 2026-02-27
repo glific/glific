@@ -46,6 +46,9 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
                      name: :organizations_contact_id_active_index
                    )
 
+    # Remove soft-deleted orgs before recreating plain unique indexes to avoid conflicts
+    execute("DELETE FROM organizations WHERE deleted_at IS NOT NULL")
+
     create unique_index(:organizations, [:shortcode])
     create unique_index(:organizations, [:contact_id])
 
@@ -67,7 +70,8 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
     BEGIN
       -- Null out foreign keys on the organization row to avoid FK violations
       UPDATE organizations
-      SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL
+      SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL,
+          bsp_id = NULL, default_language_id = NULL
       WHERE id = org_id;
 
       -- Dynamically delete from all tables with organization_id column
