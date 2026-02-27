@@ -218,8 +218,8 @@ defmodule Glific.Partners.Organization do
     |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> validate_active_languages()
     |> validate_default_language()
-    |> unique_constraint(:shortcode)
-    |> unique_constraint(:contact_id)
+    |> unique_constraint(:shortcode, name: :organizations_shortcode_active_index)
+    |> unique_constraint(:contact_id, name: :organizations_contact_id_active_index)
   end
 
   @doc false
