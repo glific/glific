@@ -81,10 +81,10 @@ defmodule Glific.Saas.Onboard do
            Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
       Repo.put_process_state(result.organization.id)
       Queries.seed_data(result)
+      setup_kaapi_for_organization(result.organization)
       SeedsMigration.migrate_data(:template_flows, result.organization)
       org = status(result.organization.id, :active)
       notify_saas_team(result.organization)
-      setup_kaapi_for_organization(result.organization)
 
       if params["is_trial"] do
         setup_gcs(result.organization)
