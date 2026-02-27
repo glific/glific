@@ -10,7 +10,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     project_name: "Glific"
   }
 
-  @org_kaapi_api_key "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+  @org_kaapi_api_key "sk_test_key"
 
   test "onboard_to_kaapi/1 returns {:ok, %{api_key: key}} on 200 with api_key" do
     mock(fn
