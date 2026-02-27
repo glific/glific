@@ -2,22 +2,22 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @moduledoc """
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
-  alias Glific.Filesearch.Assistant
 
   alias Glific.{
+    Assistants,
     Filesearch,
     Filesearch.VectorStore
   }
 
   @doc """
-  Uploads a file to openAI
+  Uploads a file to Kaapi
 
   Returns the File details
   """
   @spec upload_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def upload_file(_, params, %{context: %{current_user: _user}}) do
-    Filesearch.upload_file(params)
+  def upload_file(_, params, %{context: %{current_user: user}}) do
+    Assistants.upload_file(params, user.organization_id)
   end
 
   @doc """
@@ -26,7 +26,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_assistant(_, %{input: params}, _) do
-    Filesearch.create_assistant(params)
+    Assistants.create_assistant(params)
   end
 
   @doc """
@@ -35,7 +35,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec delete_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def delete_assistant(_, params, _) do
-    with {:ok, assistant} <- Filesearch.delete_assistant(params.id) do
+    with {:ok, assistant} <- Assistants.delete_assistant(params.id) do
       {:ok, %{assistant: assistant}}
     end
   end
@@ -52,23 +52,12 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Removes the given file from the Assistant's VectorStore
-  """
-  @spec remove_assistant_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def remove_assistant_file(_, params, _) do
-    with {:ok, assistant} <- Filesearch.remove_assistant_file(params) do
-      {:ok, %{assistant: assistant}}
-    end
-  end
-
-  @doc """
   Updates an Assistant
   """
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_assistant(_, %{id: id, input: attrs}, %{context: %{current_user: _user}}) do
-    with {:ok, assistant} <- Filesearch.update_assistant(id, attrs) do
+  def update_assistant(_, %{id: id, input: attrs}, _) do
+    with {:ok, assistant} <- Assistants.update_assistant(id, attrs) do
       {:ok, %{assistant: assistant}}
     end
   end
@@ -79,7 +68,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec get_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def get_assistant(_, params, _) do
-    with {:ok, assistant} <- Assistant.get_assistant(params.id) do
+    with {:ok, assistant} <- Assistants.get_assistant(params.id) do
       {:ok, %{assistant: assistant}}
     end
   end
@@ -90,7 +79,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any()} | {:error, any()}
   def list_assistants(_, params, _) do
-    {:ok, Filesearch.list_assistants(params)}
+    {:ok, Assistants.list_assistants(params)}
   end
 
   @doc """
@@ -103,7 +92,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Return the details of the files in a VectorStore
+  Return the details of the files in a VectorStore.
+  Handles both unified API (map) and legacy (VectorStore struct) data.
   """
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
@@ -114,9 +104,17 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Calculate the total file size linked to the VectorStore
+  Resolves the vector_store field on an assistant.
   """
-  @spec calculate_vector_store_size(VectorStore.t(), map(), map()) :: {:ok, String.t()}
+  @spec resolve_vector_store(map(), map(), map()) :: {:ok, map() | nil}
+  def resolve_vector_store(%{vector_store_data: vs_data}, _args, _context) do
+    {:ok, vs_data}
+  end
+
+  @doc """
+  Calculate the total file size linked to the VectorStore.
+  """
+  @spec calculate_vector_store_size(map(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
     total_size = vector_store.size
     kb = 1_024
