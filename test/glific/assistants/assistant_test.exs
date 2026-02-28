@@ -410,7 +410,8 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "KB Link Test",
         organization_id: organization_id,
-knowledge_base_version_id: kb_version.id      }
+        knowledge_base_version_id: kb_version.id
+      }
 
       assert {:ok, result} = Assistants.create_assistant(params)
       assert %{config_version: config_version} = result
