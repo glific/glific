@@ -555,8 +555,13 @@ defmodule Glific.Sheets do
   defp trim_value(value), do: value
 
   @spec format_notification_message(any()) :: String.t()
-  defp format_notification_message(%Tesla.Env{body: body}) when is_binary(body), do: body
-  defp format_notification_message(error) when is_binary(error), do: error
+  defp format_notification_message(%Tesla.Env{body: body}) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error" => %{"message" => message}}} -> message
+      _ -> body
+    end
+  end
+
   defp format_notification_message(error), do: inspect(error)
 
   @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
