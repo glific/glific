@@ -540,7 +540,7 @@ defmodule Glific.SheetsTest do
     end
   end
 
-  describe "execute/2 WRITE action - format_notification_message" do
+  describe "execute/2 WRITE action error handling" do
     test "creates a notification with the API error message when Google Sheets returns 403",
          %{organization_id: organization_id} do
       with_mock(Goth.Token, [],
