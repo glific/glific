@@ -140,7 +140,7 @@ defmodule Glific.Assistants do
 
         %{
           id: knowledge_base.id,
-          llm_service_id: knowledge_base_version.llm_service_id,
+          knowledge_base_version_id: knowledge_base_version.id,
           name: knowledge_base.name,
           files: knowledge_base_version.files || %{},
           size: knowledge_base_version.size || 0,
@@ -215,7 +215,7 @@ defmodule Glific.Assistants do
   def create_assistant(user_params) do
     with :ok <- validate_knowledge_base_presence(user_params),
          {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_by_llm_service_id(user_params[:llm_service_id]),
+           KnowledgeBaseVersion.get_by_version_id(user_params[:knowledge_base_version_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
       create_assistant_transaction(kaapi_config, knowledge_base_version)
     end
@@ -253,9 +253,11 @@ defmodule Glific.Assistants do
 
   @spec resolve_knowledge_base_version(Assistant.t(), map()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, String.t() | [String.t()]}
-  defp resolve_knowledge_base_version(_assistant, %{llm_service_id: llm_service_id})
-       when not is_nil(llm_service_id),
-       do: KnowledgeBaseVersion.get_by_llm_service_id(llm_service_id)
+  defp resolve_knowledge_base_version(_assistant, %{
+         knowledge_base_version_id: knowledge_base_version_id
+       })
+       when not is_nil(knowledge_base_version_id),
+       do: KnowledgeBaseVersion.get_by_version_id(knowledge_base_version_id)
 
   defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
@@ -338,7 +340,7 @@ defmodule Glific.Assistants do
 
   @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
   defp validate_knowledge_base_presence(user_params) do
-    if is_nil(user_params[:llm_service_id]) do
+    if is_nil(user_params[:knowledge_base_version_id]) do
       {:error, "Knowledge base is required for assistant creation"}
     else
       :ok
@@ -680,7 +682,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      "https://73b3-2401-4900-5ee9-80c7-6cce-8c71-64e0-dfb7.ngrok-free.app" <>
         "/kaapi/knowledge_base_version"
 
     %{

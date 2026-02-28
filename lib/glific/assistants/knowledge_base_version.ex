@@ -102,9 +102,9 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   @doc """
   Fetches the knowledge base version by llm_service_id
   """
-  @spec get_by_llm_service_id(String.t()) ::
+  @spec get_by_version_id(String.t()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
-  def get_by_llm_service_id(llm_service_id) do
-    Repo.fetch_by(KnowledgeBaseVersion, llm_service_id: llm_service_id)
+  def get_by_version_id(knowledge_base_version_id) do
+    Repo.fetch_by(KnowledgeBaseVersion, id: knowledge_base_version_id)
   end
 end

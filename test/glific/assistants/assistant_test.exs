@@ -218,7 +218,7 @@ defmodule Glific.Assistants.AssistantTest do
         temperature: 0.7,
         model: "gpt-4o-mini",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -297,7 +297,7 @@ defmodule Glific.Assistants.AssistantTest do
         name: nil,
         instructions: "You are helpful",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -322,7 +322,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Minimal Assistant",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -360,7 +360,7 @@ defmodule Glific.Assistants.AssistantTest do
         name: "Failing Assistant",
         instructions: "You are helpful",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:error, error} = Assistants.create_assistant(params)
@@ -383,7 +383,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Active Config Test",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -410,8 +410,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "KB Link Test",
         organization_id: organization_id,
-        llm_service_id: kb_version.llm_service_id
-      }
+knowledge_base_version_id: kb_version.id      }
 
       assert {:ok, result} = Assistants.create_assistant(params)
       assert %{config_version: config_version} = result
