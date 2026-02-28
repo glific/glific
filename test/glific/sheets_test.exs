@@ -3,9 +3,12 @@ defmodule Glific.SheetsTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Fixtures,
+    Notifications,
+    Partners,
     Repo,
     Sheets,
     Sheets.Sheet,
@@ -534,6 +537,66 @@ defmodule Glific.SheetsTest do
       assert Enum.any?(data_after_failed_sync, fn data ->
                data.key == "key1" && data.row_data["message"] == "Initial data"
              end)
+    end
+  end
+
+  describe "execute/2 WRITE action error handling" do
+    test "creates a notification with the API error message when Google Sheets returns 403",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                "{\n  \"error\": {\n    \"code\": 403,\n    \"message\": \"The caller does not have permission\",\n    \"status\": \"PERMISSION_DENIED\"\n  }\n}\n"
+            }
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message == "The caller does not have permission"
+      end
     end
   end
 end

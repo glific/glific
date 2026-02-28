@@ -475,7 +475,7 @@ defmodule Glific.Sheets do
       {:error, error} ->
         Notifications.create_notification(%{
           category: "Flow",
-          message: error,
+          message: format_notification_message(error),
           severity: Notifications.types().warning,
           organization_id: context.organization_id,
           entity: %{
@@ -553,6 +553,16 @@ defmodule Glific.Sheets do
   end
 
   defp trim_value(value), do: value
+
+  @spec format_notification_message(any()) :: String.t()
+  defp format_notification_message(%Tesla.Env{body: body}) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"error" => %{"message" => message}}} -> message
+      _ -> body
+    end
+  end
+
+  defp format_notification_message(error), do: inspect(error)
 
   @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
   defp generate_error_message(changeset) do
