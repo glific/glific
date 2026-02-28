@@ -215,7 +215,7 @@ defmodule Glific.Sheets do
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
 
-    last_synced_at = DateTime.utc_now()
+    last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
     export_url = build_export_url(sheet.url)
 
     sync_result =
@@ -303,11 +303,19 @@ defmodule Glific.Sheets do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{process_sheet_data: result}} -> result
-      {:error, _, result, _} -> result
+      {:error, :delete_all, {:error, error_map}, _changes} ->
+        %{sync_successful?: false, error_message: error_map}
+
+      {:ok, %{process_sheet_data: result}} ->
+        result
+
+      {:error, _, result, _} ->
+        result
     end
   end
 
+  @spec validate_headers(Enumerable.t(), Sheet.t()) ::
+          {:ok, true} | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp validate_headers(csv_content, sheet) do
     case Enum.take(csv_content, 1) do
       [{:ok, row}] ->
@@ -330,73 +338,106 @@ defmodule Glific.Sheets do
     end
   end
 
+  @spec process_sheet_data(Enumerable.t(), Sheet.t(), DateTime.t()) ::
+          {:ok, %{sync_successful?: true, error_message: nil}}
+          | {:error, %{sync_successful?: false, error_message: String.t()}}
   defp process_sheet_data(csv_content, sheet, last_synced_at) do
-    initial_acc = %{sync_successful?: true, error_message: nil}
+    initial_acc = {:ok, %{sync_successful?: true, error_message: nil}}
+    chunk_size = Application.get_env(:glific, :sheets_chunk_size)
 
     csv_content
-    |> Enum.reduce_while(initial_acc, fn
-      {:ok, row}, acc ->
-        process_row(row, acc, sheet, last_synced_at)
+    |> Enum.chunk_every(chunk_size)
+    |> Enum.reduce_while(initial_acc, fn chunk, acc ->
+      with {:ok, rows_to_insert} <- build_chunk_rows(chunk, sheet, last_synced_at),
+           {:ok, _} <- insert_sheet_data_rows(rows_to_insert) do
+        {:cont, acc}
+      else
+        {:error, reason} ->
+          {:halt, {:error, normalize_process_error(reason)}}
+      end
+    end)
+  end
 
-      {:error, err}, acc ->
-        handle_row_error(err, acc, sheet)
+  @spec build_chunk_rows(Enumerable.t(), Sheet.t(), DateTime.t()) ::
+          {:ok, list(map())} | {:error, Ecto.Changeset.t()}
+  defp build_chunk_rows(chunk, sheet, last_synced_at) do
+    chunk
+    |> Enum.reduce_while({:ok, []}, fn
+      {:ok, row}, {:ok, acc} ->
+        row_values = clean_row_keys_and_values(row)
+
+        case prepare_sheet_data_attrs(row_values, sheet, last_synced_at) do
+          {:error, changeset} ->
+            {:halt, {:error, changeset}}
+
+          valid_attrs ->
+            {:cont, {:ok, [valid_attrs | acc]}}
+        end
+
+      {:error, err}, {:ok, _acc} ->
+        # Stop processing on CSV decode error and surface a normalized sync failure
+        {:halt, {:error, handle_sync_failure(sheet, inspect(err))}}
     end)
     |> case do
-      %{sync_successful?: true} = result -> {:ok, result}
-      result -> {:error, result}
+      {:ok, results} ->
+        {:ok, Enum.reverse(results)}
+
+      {:error, _} = error ->
+        error
     end
   end
 
-  @spec process_row(map(), map(), Sheet.t(), DateTime.t()) :: {:cont, map()}
-  defp process_row(row, acc, sheet, last_synced_at) do
-    %{values: row_values} = parse_row_values(row)
+  @spec insert_sheet_data_rows(list(map())) ::
+          {:ok, integer()} | {:error, %{sync_successful?: false, error_message: String.t()}}
+  defp insert_sheet_data_rows([]), do: {:ok, 0}
 
-    row_values
-    |> prepare_sheet_data_attrs(sheet, last_synced_at)
-    |> create_sheet_data()
-    |> case do
-      {:ok, _} ->
-        {:cont, acc}
+  defp insert_sheet_data_rows(rows_to_insert) do
+    case Repo.insert_all(SheetData, rows_to_insert, on_conflict: :nothing) do
+      {count, _} when count == length(rows_to_insert) ->
+        {:ok, count}
 
-      {:error, changeset} ->
-        {:halt, %{sync_successful?: false, error_message: generate_error_message(changeset)}}
+      {count, _} ->
+        {:error,
+         %{
+           sync_successful?: false,
+           error_message:
+             "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"
+         }}
     end
   end
 
-  @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
-  defp handle_row_error(err, _acc, sheet) do
-    # If we get any error, we stop executing the current sheet further, log it.
-    {:halt, handle_sync_failure(sheet, inspect(err))}
+  defp normalize_process_error(%Ecto.Changeset{} = changeset) do
+    %{sync_successful?: false, error_message: generate_error_message(changeset)}
   end
 
+  defp normalize_process_error(%{sync_successful?: false, error_message: _} = result), do: result
+
+  defp normalize_process_error(other) do
+    %{sync_successful?: false, error_message: inspect(other)}
+  end
+
+  @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
+          map() | {:error, Ecto.Changeset.t()}
   defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
-    %{
+    SheetData.prepare_insert_all_attrs(%{
       key: values["key"],
       row_data: values,
       sheet_id: sheet.id,
       organization_id: sheet.organization_id,
       last_synced_at: last_synced_at
-    }
+    })
   end
 
+  @spec handle_sync_failure(Sheet.t(), String.t()) :: %{
+          sync_successful?: false,
+          error_message: String.t()
+        }
   defp handle_sync_failure(sheet, reason) do
-    reason =
-      if String.contains?(reason, "Stray escape character on line"),
-        do: "Sheet not found or inaccessible",
-        else: reason
-
     Logger.error(
       "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
     )
 
     %{sync_successful?: false, error_message: reason}
-  end
-
-  @spec parse_row_values(map()) :: map()
-  defp parse_row_values(row) do
-    clean_row_values = clean_row_keys_and_values(row)
-
-    %{values: clean_row_values}
   end
 
   @spec clean_row_keys_and_values(map()) :: map()

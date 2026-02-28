@@ -55,4 +55,27 @@ defmodule Glific.Sheets.SheetData do
     |> validate_required(@required_fields)
     |> unique_constraint([:key, :sheet_id, :organization_id])
   end
+
+  @doc """
+  Prepare the attributes for insert_all
+  """
+  @spec prepare_insert_all_attrs(map()) :: map() | {:error, Ecto.Changeset.t()}
+  def prepare_insert_all_attrs(attrs) do
+    changeset =
+      %SheetData{
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      }
+      |> cast(attrs, @required_fields)
+      |> validate_required(@required_fields)
+
+    if changeset.valid? do
+      changeset
+      |> apply_changes()
+      |> Map.from_struct()
+      |> Map.take(@required_fields ++ [:inserted_at, :updated_at])
+    else
+      {:error, changeset}
+    end
+  end
 end

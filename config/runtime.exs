@@ -145,6 +145,9 @@ config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,
+  sheets_chunk_size: env!("SHEETS_CHUNK_SIZE", :integer, 1000)
+
+config :glific,
   ERP_API_KEY: env!("ERP_API_KEY", :string!, "This is not the ERP API key"),
   ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret"),
   ERP_ENDPOINT: env!("ERP_ENDPOINT", :string, "This is not a secret")
