@@ -682,14 +682,14 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         shortcode: "kaapi",
         keys: %{},
         secrets: %{
-          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+          "api_key" => "sk_test_key"
         }
       })
 
     valid_update_attrs = %{
       keys: %{},
       secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        "api_key" => "sk_test_key"
       },
       is_active: true,
       organization_id: attrs.organization_id,
