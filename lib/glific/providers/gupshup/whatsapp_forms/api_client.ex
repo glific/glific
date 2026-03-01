@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   """
 
   alias Glific.Providers.Gupshup.PartnerAPI
+  alias Tesla.Multipart
 
   require Logger
 
@@ -34,13 +35,59 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     payload =
       %{
         name: params.name,
-        categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.form_json
+        categories: Enum.map(params.categories, &String.upcase/1)
       }
 
     client(url: url, headers: headers)
     |> Tesla.post("/flows", payload)
     |> parse_response("create_whatsapp_form")
+  end
+
+  @doc """
+  Lists all WhatsApp forms via Gupshup Partner API.
+  """
+  @spec list_whatsapp_forms(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_whatsapp_forms(organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    client(url: url, headers: headers)
+    |> Tesla.get("/flows")
+    |> parse_response("list_whatsapp_forms")
+  end
+
+  @doc """
+  Fetches WhatsApp Flow JSON (full form definition) from Gupshup.
+  """
+  @spec get_whatsapp_form_assets(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_whatsapp_form_assets(flow_id, organization_id) do
+    url = PartnerAPI.app_url!(organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: organization_id)
+
+    response =
+      client(url: url, headers: headers)
+      |> Tesla.get("/flows/#{flow_id}/assets")
+      |> parse_response("get_whatsapp_form_assets")
+
+    case response do
+      {:ok, [asset]} ->
+        download(asset.download_url)
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Downloads a file from a given URL.
+  """
+  @spec download(String.t()) :: {:ok, map()} | {:error, any()}
+  def download(url) do
+    case Tesla.get(url) |> parse_response("download_whatsapp_form_json") do
+      {:ok, body} -> Jason.decode(body)
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -54,13 +101,38 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     payload =
       %{
         name: params.name,
-        categories: Enum.map(params.categories, &String.upcase/1),
-        flow_json: params.form_json
+        categories: Enum.map(params.categories, &String.upcase/1)
       }
 
+    opts = [adapter: [recv_timeout: 60_000]]
+
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{meta_flow_id}", payload)
+    |> Tesla.put("/flows/#{meta_flow_id}", payload, opts: opts)
     |> parse_response("update_whatsapp_form")
+  end
+
+  @doc """
+  Updates the JSON definition of a WhatsApp form via Gupshup Partner API.
+  """
+  @spec update_whatsapp_form_json(map()) ::
+          {:ok, map()} | {:error, String.t()}
+  def update_whatsapp_form_json(form) do
+    url = PartnerAPI.app_url!(form.organization_id)
+    headers = PartnerAPI.headers(:app_token, org_id: form.organization_id)
+    json_content = Jason.encode!(form.revision.definition)
+
+    multipart =
+      Multipart.new()
+      |> Multipart.add_file_content(json_content, "flow.json",
+        name: "file",
+        headers: [{"content-type", "application/json"}]
+      )
+
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    client(url: url, headers: headers)
+    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart, opts: opts)
+    |> parse_response("update_whatsapp_form_json")
   end
 
   @doc """
@@ -79,7 +151,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
   @spec parse_response(
           {:ok, Tesla.Env.t()} | {:error, any()},
           String.t()
-        ) :: {:ok, map()} | {:error, String.t()}
+        ) :: {:ok, map()} | {:ok, list(map())} | {:error, String.t()}
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, _action)
        when status in 200..299 do
     {:ok, body}
@@ -87,10 +159,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}, action) do
     Logger.error("""
-    [Gupshup WhatsAppForms API Error]
-    Action: #{action}
-    Status: #{status}
-    Response Body: #{inspect(body)}
+    [Gupshup WhatsAppForms API Error] Action: #{action} Status: #{status} Response Body: #{inspect(body)}
     """)
 
     {:error, body}
@@ -98,9 +167,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
   defp parse_response({:error, reason}, action) do
     Logger.error("""
-    [Gupshup WhatsAppForms API Request Failed]
-    Action: #{action}
-    Reason: #{inspect(reason)}
+    [Gupshup WhatsAppForms API Request Failed] Action: #{action} Reason: #{inspect(reason)}
     """)
 
     {:error, inspect(reason)}

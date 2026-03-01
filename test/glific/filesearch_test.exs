@@ -118,18 +118,22 @@ defmodule Glific.FilesearchTest do
       })
 
     Tesla.Mock.mock(fn
-      %{method: :post} ->
+      %{method: :post, url: "This is not a secret/api/v1/configs/asst_abc_upd/versions"} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{id: "new-kaapi-uuid-upd"}}
+          body: %{data: %{id: "config-version-id-1"}}
         }
     end)
 
-    # updating with empty input variables - no changes, should return current state
     {:ok, query_data} =
       auth_query_gql_by(:update_assistant, attrs.user,
         variables: %{
-          "input" => %{},
+          "input" => %{
+            "name" => "new assistant",
+            "instructions" => "You are a helpful assistant",
+            "model" => "gpt-4o",
+            "temperature" => 1.0
+          },
           "id" => unified_assistant.id
         }
       )
@@ -156,7 +160,7 @@ defmodule Glific.FilesearchTest do
              query_data.data["updateAssistant"]["assistant"]
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
-             "new-kaapi-uuid-upd"
+             unified_assistant.kaapi_uuid
   end
 
   test "get assistant", attrs do

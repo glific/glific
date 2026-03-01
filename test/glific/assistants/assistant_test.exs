@@ -226,7 +226,7 @@ defmodule Glific.Assistants.AssistantTest do
 
       # Check assistant
       assert assistant.name == "Test Assistant"
-      assert assistant.description == "You are helpful assistant"
+      refute assistant.description
       assert assistant.kaapi_uuid == "kaapi-uuid-123"
       assert assistant.assistant_display_id != nil
       assert assistant.organization_id == organization_id
@@ -333,7 +333,7 @@ defmodule Glific.Assistants.AssistantTest do
       assert config_version.model == "gpt-4o"
       assert config_version.settings.temperature == 1
       assert config_version.status == :ready
-      assert assistant.description == "You are a helpful assistant"
+      refute assistant.description
 
       :meck.unload(Partners)
     end

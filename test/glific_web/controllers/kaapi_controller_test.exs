@@ -16,7 +16,7 @@ defmodule GlificWeb.KaapiControllerTest do
         "data" => %{
           "job_id" => knowledge_base_version.kaapi_job_id,
           "status" => "SUCCESSFUL",
-          "collection" => %{"llm_service_id" => "vs_updated_789"},
+          "collection" => %{"knowledge_base_id" => "vs_updated_789"},
           "error_message" => nil
         }
       }
@@ -116,7 +116,7 @@ defmodule GlificWeb.KaapiControllerTest do
         "data" => %{
           "job_id" => knowledge_base_version.kaapi_job_id,
           "status" => "SUCCESSFUL",
-          "collection" => %{"llm_service_id" => "vs_new"},
+          "collection" => %{"knowledge_base_id" => "vs_new"},
           "error_message" => nil
         }
       }
@@ -230,7 +230,7 @@ defmodule GlificWeb.KaapiControllerTest do
         "data" => %{
           "job_id" => "nonexistent_job",
           "status" => "SUCCESSFUL",
-          "collection" => %{"llm_service_id" => "vs_123"},
+          "collection" => %{"knowledge_base_id" => "vs_123"},
           "error_message" => nil
         }
       }
@@ -250,7 +250,7 @@ defmodule GlificWeb.KaapiControllerTest do
         "data" => %{
           "job_id" => knowledge_base_version.kaapi_job_id,
           "status" => "SUCCESSFUL",
-          "collection" => %{"llm_service_id" => "vs_new"},
+          "collection" => %{"knowledge_base_id" => "vs_new"},
           "error_message" => nil
         }
       }

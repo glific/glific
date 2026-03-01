@@ -3,33 +3,50 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
   GraphQL Representation of Glific's WhatsApp Form DataType
   """
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :whatsapp_form do
-    field :id, :id
-    field :name, :string
-    field :status, :whatsapp_form_status_enum
-    field :description, :string
-    field :definition, :json
-    field :meta_flow_id, :string
-    field :categories, list_of(:string)
-    field :inserted_at, :string
-    field :updated_at, :string
+    field(:id, :id)
+    field(:name, :string)
+    field(:status, :whatsapp_form_status_enum)
+    field(:description, :string)
+    field(:meta_flow_id, :string)
+    field(:categories, list_of(:string))
+    field(:sheet_id, :id)
+    field(:revision_id, :integer)
+    field(:inserted_at, :string)
+    field(:updated_at, :string)
+
     field(:errors, list_of(:input_error))
+
+    field :sheet, :sheet do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
+    field :revision, :whatsapp_form_revision do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   object :whatsapp_form_result do
-    field :whatsapp_form, :whatsapp_form
+    field(:whatsapp_form, :whatsapp_form)
+    field(:errors, list_of(:input_error))
+  end
+
+  object :sync_whatsapp_form do
+    field :message, :string
     field :errors, list_of(:input_error)
   end
 
   input_object :whatsapp_form_input do
-    field :name, non_null(:string)
-    field :form_json, non_null(:json)
-    field :categories, non_null(list_of(:string))
-    field :description, :string
+    field(:name, non_null(:string))
+    field(:categories, non_null(list_of(:string)))
+    field(:description, :string)
+    field(:google_sheet_url, :string)
   end
 
   @desc "Filtering options for WhatsApp forms"
@@ -79,6 +96,12 @@ defmodule GlificWeb.Schema.WhatsappFormTypes do
       arg(:input, non_null(:whatsapp_form_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.WhatsappForms.create_whatsapp_form/3)
+    end
+
+    @desc "Sync a WhatsApp form from Gupshup"
+    field :sync_whatsapp_form, :sync_whatsapp_form do
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.WhatsappForms.sync_whatsapp_form/3)
     end
 
     @desc "Update a WhatsApp form"
