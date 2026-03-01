@@ -126,6 +126,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       from(o in Organization,
         where: o.is_trial_org == true,
         where: is_nil(o.trial_expiration_date),
+        where: is_nil(o.deleted_at),
         order_by: [asc: o.id],
         limit: 1,
         lock: "FOR UPDATE"

@@ -120,9 +120,10 @@ defmodule Glific.Erase do
     with {:ok, organization} <-
            Repo.fetch(Organization, organization_id, skip_organization_id: true),
          true <- can_delete_organization?(organization),
+         :ok <- delete_all_organization_data(organization_id),
          {:ok, deleted_organization} <- Partners.delete_organization(organization) do
       Logger.info(
-        "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
+        "Successfully soft-deleted organization #{deleted_organization.name} (ID: #{organization_id})"
       )
 
       send_success_notification(deleted_organization)
@@ -511,6 +512,34 @@ defmodule Glific.Erase do
         Glific.log_exception(%Error{
           message: "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
         })
+
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Deletes ALL data associated with an organization by calling the database function
+  `delete_organization_data`. This function dynamically discovers all tables with
+  an `organization_id` column and deletes matching rows, ensuring any new tables
+  added in the future are automatically covered.
+  """
+  @spec delete_all_organization_data(non_neg_integer) :: :ok | {:error, any()}
+  def delete_all_organization_data(organization_id) do
+    Logger.info("Deleting all data for organization_id: #{organization_id}")
+
+    try do
+      Repo.query!("SELECT delete_organization_data(#{organization_id})", [],
+        timeout: 900_000,
+        skip_organization_id: true
+      )
+
+      Logger.info("Completed full data deletion for organization_id: #{organization_id}")
+      :ok
+    rescue
+      error ->
+        Logger.error(
+          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+        )
 
         {:error, error}
     end
