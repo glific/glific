@@ -120,6 +120,21 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field(:name, :string)
   end
 
+  object :golden_qa_result do
+    field :golden_qa, :golden_qa
+    field :errors, list_of(:input_error)
+  end
+
+  object :golden_qa do
+    field :name, :string
+    field :duplication_factor, :integer
+  end
+
+  input_object :golden_qa_input do
+    field :name, non_null(:string)
+    field :duplication_factor, non_null(:integer)
+  end
+
   object :filesearch_mutations do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
@@ -158,6 +173,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.update_assistant/3)
+    end
+
+    @desc "Create Golden QA"
+    field :create_golden_qa, :golden_qa_result do
+      arg(:input, non_null(:golden_qa_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Assistants.create_golden_qa/3)
     end
   end
 
