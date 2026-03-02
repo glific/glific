@@ -604,7 +604,10 @@ defmodule Glific.Assistants do
     assistant_version_params = %{status: data["status"], failure_reason: data["error_message"]}
 
     with {:ok, knowledge_base_version} <-
-           Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id}),
+           Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id},
+             skip_organization_id: true
+           ),
+         _ <- Repo.put_organization_id(knowledge_base_version.organization_id),
          {:ok, knowledge_base_version} <-
            apply_callback_updates(knowledge_base_version, knowledge_base_version_params),
          :ok <-
