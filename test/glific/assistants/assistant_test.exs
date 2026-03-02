@@ -363,9 +363,7 @@ defmodule Glific.Assistants.AssistantTest do
         knowledge_base_id: kb.id
       }
 
-      assert {:error, error} = Assistants.create_assistant(params)
-      assert is_binary(error)
-      assert String.contains?(error, "Failed at kaapi_uuid")
+      assert {:error, "Kaapi service error"} = Assistants.create_assistant(params)
 
       :meck.unload(Partners)
     end
