@@ -310,7 +310,17 @@ defmodule Glific.Sheets do
           {:cont, {:ok, [row | acc]}}
 
         {:error, err}, _ ->
-          {:halt, {:error, inspect(err)}}
+          err_string = inspect(err)
+
+          sanitized_message =
+            if String.contains?(err_string, "Escape sequence started on line") or
+                 String.contains?(err_string, "Stray escape character on line") do
+              "Invalid escape characters found"
+            else
+              err_string
+            end
+
+          {:halt, {:error, sanitized_message}}
       end)
 
     case result do
@@ -334,7 +344,7 @@ defmodule Glific.Sheets do
       {:ok, _} ->
         %{sync_successful?: true, error_message: nil}
 
-      {:error, :delete_all, reason, _changes} ->
+      {:error, :delete_sheet_data, reason, _changes} ->
         %{sync_successful?: false, error_message: error_reason_to_string(reason)}
 
       {:error, :validate_headers, message, _} when is_binary(message) ->

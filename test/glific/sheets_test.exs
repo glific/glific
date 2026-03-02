@@ -462,7 +462,7 @@ defmodule Glific.SheetsTest do
       # Should handle the CSV parsing error gracefully
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
-      assert updated_sheet.failure_reason =~ "Escape sequence started on line 2:\\n\\n\\"
+      assert updated_sheet.failure_reason == "Invalid escape characters found"
     end
 
     test "handles inline CSV parsing errors after some valid rows", %{
@@ -495,8 +495,7 @@ defmodule Glific.SheetsTest do
       assert updated_sheet.sync_status == :failed
 
       # The low-level escape error is normalized to a user-friendly message
-      assert updated_sheet.failure_reason ==
-               "\"Stray escape character on line 3:\\n\\nunclosed quote,val2,World\\n\\nThis error often happens when the wrong separator or escape character has been applied.\\n\""
+      assert updated_sheet.failure_reason == "Invalid escape characters found"
     end
 
     test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
