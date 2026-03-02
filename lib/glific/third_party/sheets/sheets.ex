@@ -218,10 +218,23 @@ defmodule Glific.Sheets do
     last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
     export_url = build_export_url(sheet.url)
 
-    sync_result =
+    csv_content_list =
       [url: export_url]
       |> ApiClient.get_csv_content()
-      |> run_sync_transaction(sheet, last_synced_at)
+      |> Enum.to_list()
+
+    sync_result =
+      case decode_all_csv_rows(csv_content_list) do
+        {:ok, decoded_rows} ->
+          run_sync_transaction(sheet, last_synced_at, decoded_rows)
+
+        {:error, message} ->
+          %{sync_successful?: false, error_message: message}
+      end
+
+    if not sync_result.sync_successful? do
+      log_sync_failure(sheet, sync_result.error_message)
+    end
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
@@ -288,107 +301,108 @@ defmodule Glific.Sheets do
     |> Repo.aggregate(:count)
   end
 
-  @spec run_sync_transaction(Enumerable.t(), Sheet.t(), DateTime.t()) :: map()
-  defp run_sync_transaction(csv_content, sheet, last_synced_at) do
-    # Convert the stream to a list once to avoid consumption issues
-    csv_content_list = Enum.to_list(csv_content)
+  @spec decode_all_csv_rows(list({:ok, map()} | {:error, term()})) ::
+          {:ok, [map()]} | {:error, String.t()}
+  defp decode_all_csv_rows(csv_content_list) do
+    result =
+      Enum.reduce_while(csv_content_list, {:ok, []}, fn
+        {:ok, row}, {:ok, acc} ->
+          {:cont, {:ok, [row | acc]}}
 
+        {:error, err}, _ ->
+          {:halt, {:error, inspect(err)}}
+      end)
+
+    case result do
+      {:ok, acc} -> {:ok, Enum.reverse(acc)}
+      {:error, _} = err -> err
+    end
+  end
+
+  @spec run_sync_transaction(Sheet.t(), DateTime.t(), [map()]) :: map()
+  defp run_sync_transaction(sheet, last_synced_at, decoded_rows) do
     delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
 
     Multi.new()
     |> Multi.delete_all(:delete_sheet_data, delete_query)
-    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(csv_content_list, sheet) end)
+    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(decoded_rows) end)
     |> Multi.run(:process_sheet_data, fn _, _ ->
-      process_sheet_data(csv_content_list, sheet, last_synced_at)
+      process_sheet_data(decoded_rows, sheet, last_synced_at)
     end)
     |> Repo.transaction()
     |> case do
-      {:error, :delete_all, {:error, error_map}, _changes} ->
-        %{sync_successful?: false, error_message: error_map}
+      {:ok, _} ->
+        %{sync_successful?: true, error_message: nil}
 
-      {:ok, %{process_sheet_data: result}} ->
-        result
+      {:error, :delete_all, reason, _changes} ->
+        %{sync_successful?: false, error_message: error_reason_to_string(reason)}
 
-      {:error, _, result, _} ->
-        result
+      {:error, :validate_headers, message, _} when is_binary(message) ->
+        %{sync_successful?: false, error_message: message}
+
+      {:error, :process_sheet_data, message, _} when is_binary(message) ->
+        %{sync_successful?: false, error_message: message}
+
+      {:error, _, other, _} ->
+        %{sync_successful?: false, error_message: error_reason_to_string(other)}
     end
   end
 
-  @spec validate_headers(Enumerable.t(), Sheet.t()) ::
-          {:ok, true} | {:error, %{sync_successful?: false, error_message: String.t()}}
-  defp validate_headers(csv_content, sheet) do
-    case Enum.take(csv_content, 1) do
-      [{:ok, row}] ->
-        row
-        |> Map.values()
-        |> Enum.all?(&(!is_list(&1)))
-        |> case do
-          true ->
-            {:ok, true}
+  @spec error_reason_to_string(term()) :: String.t()
+  defp error_reason_to_string(msg) when is_binary(msg), do: msg
+  defp error_reason_to_string(%Ecto.Changeset{} = cs), do: generate_error_message(cs)
+  defp error_reason_to_string(other), do: inspect(other)
 
-          false ->
-            {:error, handle_sync_failure(sheet, "Repeated or missing headers")}
-        end
+  @spec validate_headers([map()]) :: {:ok, true} | {:error, String.t()}
+  defp validate_headers([]), do: {:error, "Unknown error or empty content"}
 
-      [{:error, err}] ->
-        {:error, handle_sync_failure(sheet, inspect(err))}
-
-      _ ->
-        {:error, handle_sync_failure(sheet, "Unknown error or empty content")}
+  defp validate_headers([first_row | _]) do
+    if Enum.all?(Map.values(first_row), &(!is_list(&1))) do
+      {:ok, true}
+    else
+      {:error, "Repeated or missing headers"}
     end
   end
 
-  @spec process_sheet_data(Enumerable.t(), Sheet.t(), DateTime.t()) ::
-          {:ok, %{sync_successful?: true, error_message: nil}}
-          | {:error, %{sync_successful?: false, error_message: String.t()}}
-  defp process_sheet_data(csv_content, sheet, last_synced_at) do
-    initial_acc = {:ok, %{sync_successful?: true, error_message: nil}}
+  @spec process_sheet_data([map()], Sheet.t(), DateTime.t()) ::
+          {:ok, nil} | {:error, String.t()}
+  defp process_sheet_data(decoded_rows, sheet, last_synced_at) do
     chunk_size = Application.get_env(:glific, :sheets_chunk_size)
 
-    csv_content
+    decoded_rows
     |> Enum.chunk_every(chunk_size)
-    |> Enum.reduce_while(initial_acc, fn chunk, acc ->
+    |> Enum.reduce_while({:ok, nil}, fn chunk, _ ->
       with {:ok, rows_to_insert} <- build_chunk_rows(chunk, sheet, last_synced_at),
            {:ok, _} <- insert_sheet_data_rows(rows_to_insert) do
-        {:cont, acc}
+        {:cont, {:ok, nil}}
       else
-        {:error, reason} ->
-          {:halt, {:error, normalize_process_error(reason)}}
+        {:error, message} -> {:halt, {:error, message}}
       end
     end)
   end
 
-  @spec build_chunk_rows(Enumerable.t(), Sheet.t(), DateTime.t()) ::
-          {:ok, list(map())} | {:error, Ecto.Changeset.t()}
+  @spec build_chunk_rows([map()], Sheet.t(), DateTime.t()) ::
+          {:ok, list(map())} | {:error, String.t()}
   defp build_chunk_rows(chunk, sheet, last_synced_at) do
     chunk
-    |> Enum.reduce_while({:ok, []}, fn
-      {:ok, row}, {:ok, acc} ->
-        row_values = clean_row_keys_and_values(row)
+    |> Enum.reduce_while({:ok, []}, fn row, {:ok, acc} ->
+      row_values = clean_row_keys_and_values(row)
 
-        case prepare_sheet_data_attrs(row_values, sheet, last_synced_at) do
-          {:error, changeset} ->
-            {:halt, {:error, changeset}}
+      case prepare_sheet_data_attrs(row_values, sheet, last_synced_at) do
+        {:error, changeset} ->
+          {:halt, {:error, generate_error_message(changeset)}}
 
-          valid_attrs ->
-            {:cont, {:ok, [valid_attrs | acc]}}
-        end
-
-      {:error, err}, {:ok, _acc} ->
-        # Stop processing on CSV decode error and surface a normalized sync failure
-        {:halt, {:error, handle_sync_failure(sheet, inspect(err))}}
+        valid_attrs ->
+          {:cont, {:ok, [valid_attrs | acc]}}
+      end
     end)
     |> case do
-      {:ok, results} ->
-        {:ok, Enum.reverse(results)}
-
-      {:error, _} = error ->
-        error
+      {:ok, results} -> {:ok, Enum.reverse(results)}
+      {:error, _} = error -> error
     end
   end
 
-  @spec insert_sheet_data_rows(list(map())) ::
-          {:ok, integer()} | {:error, %{sync_successful?: false, error_message: String.t()}}
+  @spec insert_sheet_data_rows(list(map())) :: {:ok, integer()} | {:error, String.t()}
   defp insert_sheet_data_rows([]), do: {:ok, 0}
 
   defp insert_sheet_data_rows(rows_to_insert) do
@@ -398,22 +412,17 @@ defmodule Glific.Sheets do
 
       {count, _} ->
         {:error,
-         %{
-           sync_successful?: false,
-           error_message:
-             "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"
-         }}
+         "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"}
     end
   end
 
-  defp normalize_process_error(%Ecto.Changeset{} = changeset) do
-    %{sync_successful?: false, error_message: generate_error_message(changeset)}
-  end
+  @spec log_sync_failure(Sheet.t(), String.t()) :: :ok
+  defp log_sync_failure(sheet, reason) do
+    Logger.error(
+      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
+    )
 
-  defp normalize_process_error(%{sync_successful?: false, error_message: _} = result), do: result
-
-  defp normalize_process_error(other) do
-    %{sync_successful?: false, error_message: inspect(other)}
+    :ok
   end
 
   @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
@@ -426,18 +435,6 @@ defmodule Glific.Sheets do
       organization_id: sheet.organization_id,
       last_synced_at: last_synced_at
     })
-  end
-
-  @spec handle_sync_failure(Sheet.t(), String.t()) :: %{
-          sync_successful?: false,
-          error_message: String.t()
-        }
-  defp handle_sync_failure(sheet, reason) do
-    Logger.error(
-      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
-    )
-
-    %{sync_successful?: false, error_message: reason}
   end
 
   @spec clean_row_keys_and_values(map()) :: map()

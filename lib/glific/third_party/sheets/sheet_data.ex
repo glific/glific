@@ -62,18 +62,19 @@ defmodule Glific.Sheets.SheetData do
   @spec prepare_insert_all_attrs(map()) :: map() | {:error, Ecto.Changeset.t()}
   def prepare_insert_all_attrs(attrs) do
     changeset =
-      %SheetData{
-        inserted_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
-      }
+      %SheetData{}
       |> cast(attrs, @required_fields)
       |> validate_required(@required_fields)
 
     if changeset.valid? do
+      now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
       changeset
       |> apply_changes()
       |> Map.from_struct()
-      |> Map.take(@required_fields ++ [:inserted_at, :updated_at])
+      |> Map.take(@required_fields)
+      |> Map.put(:inserted_at, now)
+      |> Map.put(:updated_at, now)
     else
       {:error, changeset}
     end
