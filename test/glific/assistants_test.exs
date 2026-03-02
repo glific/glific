@@ -701,16 +701,14 @@ defmodule Glific.AssistantsTest do
                })
     end
 
-    test "returns inspected value when Kaapi error body does not contain a binary message",
+    test "returns generic error when Kaapi error body does not contain a binary message",
          %{organization_id: organization_id, knowledge_base_version: kbv} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 500, body: %{error: %{message: "Internal Server Error"}}}
       end)
 
-      failed_value = "%{status: 500, body: %{error: %{message: \"Internal Server Error\"}}}"
-
-      assert {:error, failed_value} ==
+      assert {:error, "Unknown error occurred, please retry again."} ==
                Assistants.create_assistant(%{
                  name: "test_fallback",
                  model: "gpt-4o",
