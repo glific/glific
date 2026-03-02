@@ -59,6 +59,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.AssistantTypes)
+  import_types(__MODULE__.AIEvaluationTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
@@ -215,6 +216,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_mutations)
 
     import_fields(:whatsapp_form_revision_mutations)
+
+    import_fields(:ai_evaluation_mutations)
   end
 
   subscription do
@@ -277,6 +280,21 @@ defmodule GlificWeb.Schema do
   def plugins do
     [Absinthe.Middleware.Dataloader | Absinthe.Plugin.defaults()]
   end
+
+  @doc """
+  Called by Absinthe.Plug before sending the response. Sets HTTP 403 when
+  a feature-flag middleware blocked the request.
+  """
+  @spec absinthe_before_send(Plug.Conn.t(), Absinthe.Blueprint.t() | map()) :: Plug.Conn.t()
+  def absinthe_before_send(conn, %{execution: %{context: context}}) do
+    if context[:feature_flag_forbidden] do
+      Plug.Conn.put_status(conn, 403)
+    else
+      conn
+    end
+  end
+
+  def absinthe_before_send(conn, _), do: conn
 
   @doc """
   Validation function for all subscriptions received by the system
