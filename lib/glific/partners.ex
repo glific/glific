@@ -1025,12 +1025,12 @@ defmodule Glific.Partners do
 
   defp credential_update_callback(organization, credential, "gupshup") do
     result =
-      if not valid_bsp?(credential) do
-        Glific.Metrics.increment("Gupshup Credential Update Failed")
-        {:error, "App Name and API Key and App ID can't be empty"}
-      else
+      if valid_bsp?(credential) do
         update_organization(organization, %{bsp_id: credential.provider.id})
         {:ok, credential}
+      else
+        Glific.Metrics.increment("Gupshup Credential Update Failed")
+        {:error, "App Name and API Key and App ID can't be empty"}
       end
 
     with {:ok, _} <- result do
