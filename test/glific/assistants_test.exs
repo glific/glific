@@ -1281,7 +1281,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _new_kbv} =
+      {:ok, new_kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: new_kb.id,
           organization_id: organization_id,
@@ -1293,7 +1293,7 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, result} =
                Assistants.update_assistant(assistant.id, %{
-                 knowledge_base_id: new_kb.id,
+                 knowledge_base_version_id: new_kbv.id,
                  organization_id: organization_id
                })
 
@@ -1325,7 +1325,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _new_kbv} =
+      {:ok, new_kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: new_kb.id,
           organization_id: organization_id,
@@ -1338,7 +1338,7 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
-                 knowledge_base_id: new_kb.id,
+                 knowledge_base_version_id: new_kbv.id,
                  name: "Updated Deferred Name",
                  organization_id: organization_id
                })
@@ -1393,7 +1393,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _new_kbv} =
+      {:ok, new_kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: new_kb.id,
           organization_id: organization_id,
@@ -1407,7 +1407,7 @@ defmodule Glific.AssistantsTest do
       # No Tesla mock for the update itself
       assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
-                 knowledge_base_id: new_kb.id,
+                 knowledge_base_version_id: new_kbv.id,
                  organization_id: organization_id
                })
 

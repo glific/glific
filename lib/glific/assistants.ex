@@ -248,29 +248,21 @@ defmodule Glific.Assistants do
 
         {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
-        if knowledge_base_changed and knowledge_base_version.status != :completed do
-          with {:ok, _config_version} <-
-                 deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-            assistant_result =
-              assistant
-              |> preload_assistant_associations()
-              |> transform_to_legacy_shape()
-
-            Metrics.increment("Assistant Updated", assistant.organization_id)
-            {:ok, assistant_result}
-          end
+        with true <-
+               knowledge_base_changed and knowledge_base_version.status != :completed,
+             {:ok, _config_version} <-
+               deferred_update_transaction(assistant, config_params, knowledge_base_version) do
+          format_assistant_result(assistant)
         else
-          with {:ok, updated_assistant} <-
-                 update_assistant_transaction(assistant, config_params, knowledge_base_version),
-               {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
-            assistant_result =
-              updated_assistant
-              |> preload_assistant_associations()
-              |> transform_to_legacy_shape()
+          false ->
+            with {:ok, updated_assistant} <-
+                   update_assistant_transaction(assistant, config_params, knowledge_base_version),
+                 {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
+              format_assistant_result(updated_assistant)
+            end
 
-            Metrics.increment("Assistant Updated", assistant.organization_id)
-            {:ok, assistant_result}
-          end
+          {:error, reason} ->
+            {:error, reason}
         end
       end
     end
@@ -289,6 +281,17 @@ defmodule Glific.Assistants do
       [knowledge_base_version | _] -> {:ok, knowledge_base_version}
       [] -> {:error, "No knowledge base linked to this assistant"}
     end
+  end
+
+  @spec format_assistant_result(Assistant.t()) :: {:ok, map()}
+  defp format_assistant_result(assistant) do
+    assistant_result =
+      assistant
+      |> preload_assistant_associations()
+      |> transform_to_legacy_shape()
+
+    Metrics.increment("Assistant Updated", assistant.organization_id)
+    {:ok, assistant_result}
   end
 
   @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t()) :: boolean()
