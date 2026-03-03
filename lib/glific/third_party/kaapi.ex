@@ -256,7 +256,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec build_config_blob(map(), list(String.t())) :: map()
   defp build_config_blob(params, knowledge_base_ids) do
     completion_params = %{
-      model: params.model || "gpt-4o-mini",
+      model: params.model || "gpt-4o",
       instructions: params.prompt || "You are a helpful assistant",
       temperature: params.temperature || 1.0,
       knowledge_base_ids: knowledge_base_ids

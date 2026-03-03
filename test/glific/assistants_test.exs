@@ -913,7 +913,23 @@ defmodule Glific.AssistantsTest do
 
   describe "create_assistant/1" do
     test "creates assistant and config version with nil kaapi_uuid",
-         %{organization_id: organization_id, knowledge_base: kb} do
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "vs_test_123",
+          size: 0
+        })
+
       assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  name: "New Assistant",
@@ -976,7 +992,23 @@ defmodule Glific.AssistantsTest do
     end
 
     test "uses default values when optional params are missing",
-         %{organization_id: organization_id, knowledge_base: kb} do
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Default Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "vs_defaults_test",
+          size: 0
+        })
+
       assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  knowledge_base_id: kb.id,
@@ -984,10 +1016,14 @@ defmodule Glific.AssistantsTest do
                })
 
       assert String.starts_with?(assistant.name, "Assistant-")
-      assert config_version.model == "gpt-4o-mini"
+      assert config_version.model == "gpt-4o"
       assert config_version.prompt == "You are a helpful assistant"
       assert config_version.description == "Assistant configuration"
-      assert config_version.settings["temperature"] == 1
+
+      temperature =
+        config_version.settings[:temperature] || config_version.settings["temperature"]
+
+      assert temperature == 1
     end
   end
 
