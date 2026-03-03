@@ -911,6 +911,82 @@ defmodule Glific.AssistantsTest do
     %{assistant: assistant, config_version: config_version, knowledge_base_version: kbv}
   end
 
+  describe "create_assistant/1" do
+    test "creates assistant and config version with nil kaapi_uuid",
+         %{organization_id: organization_id, knowledge_base: kb} do
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "New Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert is_nil(assistant.kaapi_uuid)
+      assert assistant.name == "New Assistant"
+      assert assistant.active_config_version_id == config_version.id
+      assert config_version.model == "gpt-4o"
+      assert config_version.prompt == "You are a helpful assistant"
+
+      config_version = Repo.preload(config_version, :knowledge_base_versions)
+      assert length(config_version.knowledge_base_versions) == 1
+    end
+
+    test "creates assistant with in-progress KB and sets config status to in_progress",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "In-Progress KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-abc123",
+          size: 500
+        })
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Deferred Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert is_nil(assistant.kaapi_uuid)
+      assert config_version.status == :in_progress
+    end
+
+    test "returns error when knowledge_base_id is missing",
+         %{organization_id: organization_id} do
+      assert {:error, "Knowledge base is required for assistant creation"} =
+               Assistants.create_assistant(%{
+                 name: "No KB Assistant",
+                 organization_id: organization_id
+               })
+    end
+
+    test "generates name when not provided",
+         %{organization_id: organization_id, knowledge_base: kb} do
+      assert {:ok, %{assistant: assistant}} =
+               Assistants.create_assistant(%{
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert String.starts_with?(assistant.name, "Assistant-")
+    end
+  end
+
   describe "create_assistant with in-progress KB" do
     setup [:enable_kaapi]
 

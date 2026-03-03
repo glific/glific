@@ -622,7 +622,7 @@ defmodule Glific.Assistants do
       Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
 
     case knowledge_base_version.assistant_config_versions do
-      [config_version] when is_nil(config_version.assistant.kaapi_uuid) ->
+      [config_version] ->
         create_deferred_kaapi_config(config_version, knowledge_base_version)
 
       _ ->
