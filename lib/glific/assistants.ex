@@ -334,7 +334,7 @@ defmodule Glific.Assistants do
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
         Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
-        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
+        {:error, kaapi_error_message(failed_value)}
     end
   end
 
@@ -472,9 +472,13 @@ defmodule Glific.Assistants do
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
         Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
-        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
+        {:error, kaapi_error_message(failed_value)}
     end
   end
+
+  @spec kaapi_error_message(map() | any()) :: String.t()
+  defp kaapi_error_message(%{body: %{error: message}}) when is_binary(message), do: message
+  defp kaapi_error_message(_value), do: "Unknown error occurred, please retry again."
 
   @spec generate_assistant_name(String.t() | nil) :: String.t()
   defp generate_assistant_name(name) when name in [nil, ""] do

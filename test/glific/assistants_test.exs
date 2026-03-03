@@ -20,14 +20,14 @@ defmodule Glific.AssistantsTest do
         shortcode: "kaapi",
         keys: %{},
         secrets: %{
-          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+          "api_key" => "sk_test_key"
         }
       })
 
     valid_update_attrs = %{
       keys: %{},
       secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        "api_key" => "sk_test_key"
       },
       is_active: true,
       organization_id: attrs.organization_id,
@@ -667,6 +667,54 @@ defmodule Glific.AssistantsTest do
       assert {:error, _} =
                Assistants.update_assistant(assistant.id, %{
                  name: "Updated Name",
+                 organization_id: organization_id
+               })
+    end
+  end
+
+  describe "create_assistant/1" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "returns only the human-readable message when Kaapi returns a 409 conflict",
+         %{organization_id: organization_id, knowledge_base_version: kbv} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 409,
+            body: %{
+              error: "Config with name 'testing90990' already exists in this project",
+              data: nil,
+              metadata: nil,
+              success: false
+            }
+          }
+      end)
+
+      assert {:error, "Config with name 'testing90990' already exists in this project"} =
+               Assistants.create_assistant(%{
+                 name: "testing90990",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kbv.knowledge_base_id,
+                 organization_id: organization_id
+               })
+    end
+
+    test "returns generic error when Kaapi error body does not contain a binary message",
+         %{organization_id: organization_id, knowledge_base_version: kbv} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: %{message: "Internal Server Error"}}}
+      end)
+
+      assert {:error, "Unknown error occurred, please retry again."} ==
+               Assistants.create_assistant(%{
+                 name: "test_fallback",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kbv.knowledge_base_id,
                  organization_id: organization_id
                })
     end
