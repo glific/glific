@@ -919,16 +919,14 @@ defmodule Glific.Assistants do
     params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
 
     Enum.each(knowledge_base_version.assistant_config_versions, fn config_version ->
-      if config_version.assistant.active_config_version_id == config_version.id do
-        case update_assistant_version(config_version, params) do
-          {:ok, _} ->
-            :ok
+      case update_assistant_version(config_version, params) do
+        {:ok, _} ->
+          :ok
 
-          {:error, changeset} ->
-            Logger.error(
-              "Failed to update assistant version #{config_version.id}: #{inspect(changeset)}"
-            )
-        end
+        {:error, changeset} ->
+          Logger.error(
+            "Failed to update assistant version #{config_version.id}: #{inspect(changeset)}"
+          )
       end
     end)
   end
