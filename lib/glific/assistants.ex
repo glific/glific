@@ -372,27 +372,36 @@ defmodule Glific.Assistants do
   @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
           {:ok, map()} | {:error, any()}
   defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
-    with {:ok, assistant} <- Repo.insert(build_assistant_changeset(kaapi_config)),
-         {:ok, config_version} <-
-           Repo.insert(
-             build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
-           ),
-         {:ok, assistant} <-
-           assistant
-           |> Assistant.set_active_config_version_changeset(%{
-             active_config_version_id: config_version.id
-           })
-           |> Repo.update() do
-      Repo.insert_all(
-        "assistant_config_version_knowledge_base_versions",
-        build_knowledge_base_link(
-          config_version,
-          knowledge_base_version,
-          kaapi_config.organization_id
-        )
+    Multi.new()
+    |> Multi.insert(:assistant, build_assistant_changeset(kaapi_config))
+    |> Multi.insert(
+      :config_version,
+      &build_config_version_changeset(&1.assistant, kaapi_config, knowledge_base_version)
+    )
+    |> Multi.update(:assistant_with_active_config, fn %{
+                                                        assistant: assistant,
+                                                        config_version: config_version
+                                                      } ->
+      Assistant.set_active_config_version_changeset(assistant, %{
+        active_config_version_id: config_version.id
+      })
+    end)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        kaapi_config.organization_id
       )
+    )
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{assistant_with_active_config: assistant, config_version: config_version}} ->
+        {:ok, %{assistant: assistant, config_version: config_version}}
 
-      {:ok, %{assistant: assistant, config_version: config_version}}
+      {:error, _failed, changeset, _changes} ->
+        {:error, changeset}
     end
   end
 
