@@ -108,7 +108,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      "https://2944-2409-40d2-2001-ad0c-c98b-7865-eb43-39ed.ngrok-free.app" <>
         "/webhook/flow_resume"
 
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
@@ -613,7 +613,11 @@ defmodule Glific.Clients.CommonWebhook do
            }),
          assistant <- Repo.preload(assistant, :active_config_version),
          %{version_number: version_number} <- assistant.active_config_version do
-      {:ok, {assistant.kaapi_uuid, version_number}}
+      if is_nil(assistant.kaapi_uuid) do
+        {:error, "Assistant is still being set up"}
+      else
+        {:ok, {assistant.kaapi_uuid, version_number}}
+      end
     else
       {:error, _} ->
         {:error, "Assistant not found: #{assistant_display_id}"}

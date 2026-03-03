@@ -285,12 +285,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                   model: "gpt-4o-mini",
                   instructions: "You are a helpful assistant",
                   temperature: 1.0,
-                  tools: [
-                    %{
-                      type: "file_search",
-                      vector_store_ids: ["vs_3fa85f64"]
-                    }
-                  ]
+                  knowledge_base_ids: ["vs_3fa85f64"]
                 }
               },
               id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -312,12 +307,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
             model: "gpt-4o-mini",
             instructions: "You are a helpful assistant",
             temperature: 1.0,
-            tools: [
-              %{
-                type: "file_search",
-                vector_store_ids: ["vs_3fa85f64"]
-              }
-            ]
+            knowledge_base_ids: ["vs_3fa85f64"]
           }
         }
 
