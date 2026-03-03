@@ -108,7 +108,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      "https://2944-2409-40d2-2001-ad0c-c98b-7865-eb43-39ed.ngrok-free.app" <>
+      "https://api.#{organization.shortcode}.glific.com" <>
         "/webhook/flow_resume"
 
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)

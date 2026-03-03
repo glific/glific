@@ -600,7 +600,7 @@ defmodule Glific.Assistants do
 
   defp maybe_create_deferred_kaapi_configs(knowledge_base_version, "SUCCESSFUL") do
     knowledge_base_version =
-      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant) |> IO.inspect()
+      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
 
     case knowledge_base_version.assistant_config_versions do
       [config_version] when is_nil(config_version.assistant.kaapi_uuid) ->
@@ -708,7 +708,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://2944-2409-40d2-2001-ad0c-c98b-7865-eb43-39ed.ngrok-free.app" <>
+      "https://api.#{organization.shortcode}.glific.com" <>
         "/kaapi/knowledge_base_version"
 
     %{
@@ -849,8 +849,10 @@ defmodule Glific.Assistants do
   end
 
   @doc false
-  @spec delete_from_kaapi(String.t(), non_neg_integer()) ::
+  @spec delete_from_kaapi(String.t() | nil, non_neg_integer()) ::
           :ok | {:error, any()}
+
+  defp delete_from_kaapi(nil, _organization_id), do: :ok
 
   defp delete_from_kaapi(kaapi_uuid, organization_id) do
     case Kaapi.delete_config(kaapi_uuid, organization_id) do
