@@ -242,7 +242,6 @@ defmodule Glific.Assistants do
       else
         current_kb_version =
           List.first(assistant.active_config_version.knowledge_base_versions)
-          |> IO.inspect(label: "list first")
 
         kb_changed = knowledge_base_version.id != current_kb_version.id
 
@@ -600,8 +599,13 @@ defmodule Glific.Assistants do
          {:ok, knowledge_base_version} <- create_knowledge_base_version(knowledge_base, params),
          api_params <- build_collection_params(knowledge_base_version, params),
          {:ok, %{data: %{job_id: job_id}}} <-
-           create_kaapi_collection(api_params, params[:organization_id], knowledge_base,
-             knowledge_base_version, newly_created_kb),
+           create_kaapi_collection(
+             api_params,
+             params[:organization_id],
+             knowledge_base,
+             knowledge_base_version,
+             newly_created_kb
+           ),
          {:ok, knowledge_base_version} <-
            update_knowledge_base_version(knowledge_base_version, %{kaapi_job_id: job_id}) do
       Metrics.increment("Knowledge Base Created", params[:organization_id])
@@ -653,14 +657,18 @@ defmodule Glific.Assistants do
     )
 
     with {:error, reason} <- Repo.delete(knowledge_base_version) do
-      Logger.error("Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}")
+      Logger.error(
+        "Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}"
+      )
     end
 
     if newly_created_kb do
       Logger.warning("Cleaning up orphaned KnowledgeBase ID: #{knowledge_base.id}")
 
       with {:error, reason} <- Repo.delete(knowledge_base) do
-        Logger.error("Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}")
+        Logger.error(
+          "Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}"
+        )
       end
     end
 
@@ -866,7 +874,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://2944-2409-40d2-2001-ad0c-c98b-7865-eb43-39ed.ngrok-free.app" <>
+      "https://api.#{organization.shortcode}.glific.com" <>
         "/kaapi/knowledge_base_version"
 
     %{

@@ -422,7 +422,9 @@ defmodule Glific.AssistantsTest do
                Assistants.create_knowledge_base_with_version(params)
 
       # The existing KnowledgeBase should NOT be deleted
-      assert {:ok, _} = Repo.fetch(KnowledgeBase, existing_knowledge_base.id, skip_organization_id: true)
+      assert {:ok, _} =
+               Repo.fetch(KnowledgeBase, existing_knowledge_base.id, skip_organization_id: true)
+
       # The newly created KnowledgeBaseVersion should be cleaned up
       assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
     end
