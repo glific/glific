@@ -10,13 +10,6 @@ config :pbkdf2_elixir, :rounds, 1
 # Run `mix help test` for more information.
 config :glific, Glific.Repo, pool: Ecto.Adapters.SQL.Sandbox
 
-# We don't run a server during test. If one is required,
-# you can enable the server option below.
-config :glific, GlificWeb.Endpoint,
-  http: [port: 4002],
-  url: [host: "glific.test"],
-  server: false
-
 # Print only warnings and errors during test
 config :logger,
   level: :emergency,

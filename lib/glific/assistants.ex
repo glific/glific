@@ -13,6 +13,7 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
   alias Glific.Repo
@@ -217,8 +218,10 @@ defmodule Glific.Assistants do
     with :ok <- validate_knowledge_base_presence(user_params),
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_by_version_id(user_params[:knowledge_base_version_id]),
-         {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version) do
-      create_assistant_transaction(kaapi_config, knowledge_base_version)
+         {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
+         {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
+      Metrics.increment("Assistant Created", user_params[:organization_id])
+      {:ok, result}
     end
   end
 
@@ -246,6 +249,7 @@ defmodule Glific.Assistants do
             |> preload_assistant_associations()
             |> transform_to_legacy_shape()
 
+          Metrics.increment("Assistant Updated", assistant.organization_id)
           {:ok, assistant_result}
         end
       end
@@ -335,7 +339,7 @@ defmodule Glific.Assistants do
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
         Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
-        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
+        {:error, kaapi_error_message(failed_value)}
     end
   end
 
@@ -473,9 +477,13 @@ defmodule Glific.Assistants do
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
         Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
-        {:error, "Failed at #{failed_operation}: #{inspect(failed_value)}"}
+        {:error, kaapi_error_message(failed_value)}
     end
   end
+
+  @spec kaapi_error_message(map() | any()) :: String.t()
+  defp kaapi_error_message(%{body: %{error: message}}) when is_binary(message), do: message
+  defp kaapi_error_message(_value), do: "Unknown error occurred, please retry again."
 
   @spec generate_assistant_name(String.t() | nil) :: String.t()
   defp generate_assistant_name(name) when name in [nil, ""] do
@@ -512,6 +520,8 @@ defmodule Glific.Assistants do
 
     with {:ok, _} <- validate_file_format(params.media.filename),
          {:ok, %{data: document_data}} <- Kaapi.upload_document(document_params, organization_id) do
+      Metrics.increment("Assistant File Uploaded", organization_id)
+
       {:ok,
        %{
          file_id: document_data[:id],
@@ -539,8 +549,10 @@ defmodule Glific.Assistants do
           {:ok, Assistant.t()} | {:error, any()}
   def delete_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         :ok <- delete_from_kaapi(assistant.kaapi_uuid, assistant.organization_id) do
-      Repo.delete(assistant)
+         :ok <- delete_from_kaapi(assistant.kaapi_uuid, assistant.organization_id),
+         {:ok, deleted} <- Repo.delete(assistant) do
+      Metrics.increment("Assistant Deleted", assistant.organization_id)
+      {:ok, deleted}
     end
   end
 
@@ -568,6 +580,7 @@ defmodule Glific.Assistants do
            Kaapi.create_collection(api_params, params[:organization_id]),
          {:ok, knowledge_base_version} <-
            update_knowledge_base_version(knowledge_base_version, %{kaapi_job_id: job_id}) do
+      Metrics.increment("Knowledge Base Created", params[:organization_id])
       {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}}
     else
       {:error, %Ecto.Changeset{} = error} ->
