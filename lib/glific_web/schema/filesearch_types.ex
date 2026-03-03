@@ -44,6 +44,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :assistant_result do
@@ -125,6 +126,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :size, :integer
   end
 
   @desc "Filtering options for VectorStore"
