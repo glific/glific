@@ -52,8 +52,13 @@ defmodule Glific.Assistants.AssistantTest do
         size: 0
       })
 
+    tmp_path =
+      Path.join(System.tmp_dir!(), "test_upload_#{System.unique_integer([:positive])}.pdf")
+
+    File.write!(tmp_path, "fake pdf content for testing")
+
     upload = %Plug.Upload{
-      path: "/var/folders/test/multipart-1727169241-575672640710-1",
+      path: tmp_path,
       content_type: "application/pdf",
       filename: "sample.pdf"
     }
@@ -363,9 +368,7 @@ defmodule Glific.Assistants.AssistantTest do
         knowledge_base_id: kb.id
       }
 
-      assert {:error, error} = Assistants.create_assistant(params)
-      assert is_binary(error)
-      assert String.contains?(error, "Failed at kaapi_uuid")
+      assert {:error, "Kaapi service error"} = Assistants.create_assistant(params)
 
       :meck.unload(Partners)
     end
@@ -571,7 +574,7 @@ defmodule Glific.Assistants.AssistantTest do
         shortcode: "kaapi",
         keys: %{},
         secrets: %{
-          "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+          "api_key" => "sk_test_key"
         },
         is_active: true
       })
