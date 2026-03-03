@@ -18,6 +18,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   alias Glific.TaskSupervisor
   alias Glific.ThirdParty.Kaapi
 
+  @default_model "gpt-4o"
+
   @doc """
   Migrate all assistants to the new unified API structure
   """
@@ -124,10 +126,10 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       description: nil,
       prompt: openai_assistant.instructions,
       assistant_id: openai_assistant.assistant_id,
-      model: openai_assistant.model,
+      model: @default_model,
       temperature: openai_assistant.temperature,
       organization_id: openai_assistant.organization_id,
-      vector_store_ids: get_vector_store_ids(openai_assistant.vector_store)
+      knowledge_base_ids: get_vector_store_ids(openai_assistant.vector_store)
     }
   end
 
