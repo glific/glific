@@ -656,7 +656,8 @@ defmodule Glific.Assistants do
         Map.put(files, info.file_id, info)
       end)
 
-    total_size = Enum.reduce(params.media_info, 0, fn info, acc -> acc + (info[:file_size] || 0) end)
+    total_size =
+      Enum.reduce(params.media_info, 0, fn info, acc -> acc + (info[:file_size] || 0) end)
 
     params = %{
       knowledge_base_id: knowledge_base.id,
