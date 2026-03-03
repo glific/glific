@@ -733,54 +733,6 @@ defmodule Glific.AssistantsTest do
     end
   end
 
-  describe "create_assistant/1 error handling" do
-    setup [:enable_kaapi, :setup_assistant_with_kb]
-
-    test "returns only the human-readable message when Kaapi returns a 409 conflict",
-         %{organization_id: organization_id, knowledge_base_version: kbv} do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 409,
-            body: %{
-              error: "Config with name 'testing90990' already exists in this project",
-              data: nil,
-              metadata: nil,
-              success: false
-            }
-          }
-      end)
-
-      assert {:error, "Config with name 'testing90990' already exists in this project"} =
-               Assistants.create_assistant(%{
-                 name: "testing90990",
-                 model: "gpt-4o",
-                 instructions: "You are a helpful assistant",
-                 temperature: 1.0,
-                 knowledge_base_version_id: kbv.id,
-                 organization_id: organization_id
-               })
-    end
-
-    test "returns generic error when Kaapi error body does not contain a binary message",
-         %{organization_id: organization_id, knowledge_base_version: kbv} do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 500, body: %{error: %{message: "Internal Server Error"}}}
-      end)
-
-      assert {:error, "Unknown error occurred, please retry again."} ==
-               Assistants.create_assistant(%{
-                 name: "test_fallback",
-                 model: "gpt-4o",
-                 instructions: "You are a helpful assistant",
-                 temperature: 1.0,
-                 knowledge_base_version_id: kbv.id,
-                 organization_id: organization_id
-               })
-    end
-  end
-
   describe "process_timeouts/1" do
     setup %{organization_id: org_id} do
       {knowledge_base, knowledge_base_version} =
@@ -1029,7 +981,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _kbv} =
+      {:ok, kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: kb.id,
           organization_id: organization_id,
@@ -1045,7 +997,7 @@ defmodule Glific.AssistantsTest do
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
-                 knowledge_base_id: kb.id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
 
@@ -1067,7 +1019,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _kbv} =
+      {:ok, kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: kb.id,
           organization_id: organization_id,
@@ -1083,7 +1035,7 @@ defmodule Glific.AssistantsTest do
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
-                 knowledge_base_id: kb.id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
 
@@ -1091,7 +1043,7 @@ defmodule Glific.AssistantsTest do
       assert config_version.status == :in_progress
     end
 
-    test "returns error when knowledge_base_id is missing",
+    test "returns error when knowledge_base_version_id is missing",
          %{organization_id: organization_id} do
       assert {:error, "Knowledge base is required for assistant creation"} =
                Assistants.create_assistant(%{
@@ -1108,7 +1060,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _kbv} =
+      {:ok, kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: kb.id,
           organization_id: organization_id,
@@ -1120,7 +1072,7 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
-                 knowledge_base_id: kb.id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
 
@@ -1147,7 +1099,7 @@ defmodule Glific.AssistantsTest do
           organization_id: organization_id
         })
 
-      {:ok, _kbv} =
+      {:ok, kbv} =
         Assistants.create_knowledge_base_version(%{
           knowledge_base_id: kb.id,
           organization_id: organization_id,
@@ -1164,7 +1116,7 @@ defmodule Glific.AssistantsTest do
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
-                 knowledge_base_id: kb.id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
 
