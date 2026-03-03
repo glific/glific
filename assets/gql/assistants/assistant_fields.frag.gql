@@ -8,7 +8,7 @@ fragment AssistantFields on AssistantResult {
     new_version_in_progress
     vector_store {
       id
-      vector_store_id
+      knowledge_base_version_id
       name
       status
       legacy

@@ -208,7 +208,7 @@ defmodule Glific.Assistants.AssistantTest do
   describe "create_assistant/1" do
     test "creates assistant successfully with knowledge base", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -223,7 +223,7 @@ defmodule Glific.Assistants.AssistantTest do
         temperature: 0.7,
         model: "gpt-4o-mini",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -290,7 +290,7 @@ defmodule Glific.Assistants.AssistantTest do
 
     test "generates temp name when name is nil", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -302,7 +302,7 @@ defmodule Glific.Assistants.AssistantTest do
         name: nil,
         instructions: "You are helpful",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -316,7 +316,7 @@ defmodule Glific.Assistants.AssistantTest do
 
     test "uses default values when optional params are missing", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -327,7 +327,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Minimal Assistant",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -345,7 +345,7 @@ defmodule Glific.Assistants.AssistantTest do
 
     test "returns error when Kaapi API fails", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -365,7 +365,7 @@ defmodule Glific.Assistants.AssistantTest do
         name: "Failing Assistant",
         instructions: "You are helpful",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:error, "Kaapi service error"} = Assistants.create_assistant(params)
@@ -375,7 +375,7 @@ defmodule Glific.Assistants.AssistantTest do
 
     test "active_config_version_id is set correctly", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -386,7 +386,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "Active Config Test",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)
@@ -402,7 +402,7 @@ defmodule Glific.Assistants.AssistantTest do
 
     test "links config version to knowledge base version", %{
       organization_id: organization_id,
-      knowledge_base: kb
+      knowledge_base_version: kb_version
     } do
       :meck.new(Partners, [:passthrough])
 
@@ -413,7 +413,7 @@ defmodule Glific.Assistants.AssistantTest do
       params = %{
         name: "KB Link Test",
         organization_id: organization_id,
-        knowledge_base_id: kb.id
+        knowledge_base_version_id: kb_version.id
       }
 
       assert {:ok, result} = Assistants.create_assistant(params)

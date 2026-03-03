@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
 
   object :vector_store do
     field :id, :id
+    field :knowledge_base_version_id, :string
     field :vector_store_id, :string
     field :name, :string
 
@@ -97,7 +98,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :instructions, :string
     field :description, :string
     field :temperature, :float
-    field :knowledge_base_id, :string
+    field :knowledge_base_version_id, :string
   end
 
   input_object :file_info_input do

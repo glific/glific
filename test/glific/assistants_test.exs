@@ -755,7 +755,7 @@ defmodule Glific.AssistantsTest do
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
-                 knowledge_base_id: kbv.knowledge_base_id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
     end
@@ -773,7 +773,7 @@ defmodule Glific.AssistantsTest do
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
-                 knowledge_base_id: kbv.knowledge_base_id,
+                 knowledge_base_version_id: kbv.id,
                  organization_id: organization_id
                })
     end
