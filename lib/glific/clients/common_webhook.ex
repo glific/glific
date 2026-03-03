@@ -16,6 +16,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Repo
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
+  alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
   alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
@@ -85,43 +86,12 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("unified-llm-call", fields, headers) do
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
-        "/webhook/flow_resume"
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
-
-    request_metadata = %{
-      organization_id: organization_id,
-      flow_id: flow_id,
-      contact_id: contact_id,
-      timestamp: timestamp,
-      signature: signature,
-      webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
-    }
 
     with {:ok, {kaapi_uuid, version_number}} <-
            lookup_kaapi_config(fields["assistant_id"], organization_id),
@@ -147,7 +117,84 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Generic Kaapi STT webhook (async — result delivered via flow_resume callback).
+  # Optional fields from flow node: provider, model, language (input language for transcription)
+  def webhook("speech_to_text", fields, _headers) do
+    {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
+
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    stt_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"]
+    }
+
+    Glific.Metrics.increment("Kaapi STT Call", organization_id)
+    Kaapi.speech_to_text(fields["speech"], callback_url, request_metadata, organization_id, stt_opts)
+  end
+
+  # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
+  # Falls back to OpenAI when speech_engine is "open_ai".
+  # Optional fields from flow node: provider, model, language, voice
+  def webhook("text_to_speech", fields, _headers) do
+    text = fields["text"]
+    {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
+
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    tts_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"],
+      voice: fields["voice"]
+    }
+
+    Glific.Metrics.increment("Kaapi TTS Call", organization_id)
+    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+  end
+
   def webhook(function, fields, _headers), do: webhook(function, fields)
+
+  # Uses Gemini for STT via Bhasini flow nodes
+  def webhook("speech_to_text_with_bhasini", fields) do
+    case Bhasini.validate_params(fields) do
+      {:ok, contact} ->
+        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+        Gemini.speech_to_text(fields["speech"], contact.organization_id)
+
+      {:error, error} ->
+        error
+    end
+  end
+
+  # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes
+  def webhook("text_to_speech_with_bhasini", fields) do
+    text = fields["text"]
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = Contacts.preload_contact_language(contact_id)
+    source_language = contact.language.label |> String.downcase()
+    speech_engine = Map.get(fields, "speech_engine", "")
+
+    cond do
+      speech_engine == "open_ai" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      speech_engine == "bhashini" ->
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
+
+      source_language == "english" ->
+        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+      true ->
+        Glific.Metrics.increment("Gemini TTS Call", org_id)
+        Gemini.text_to_speech(org_id, text)
+    end
+  end
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -233,44 +280,6 @@ defmodule Glific.Clients.CommonWebhook do
 
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
-  end
-
-  # This webhook will call Bhashini speech-to-text API
-  def webhook("speech_to_text_with_bhasini", fields) do
-    case Bhasini.validate_params(fields) do
-      {:ok, contact} ->
-        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-        Gemini.speech_to_text(fields["speech"], contact.organization_id)
-
-      {:error, error} ->
-        error
-    end
-  end
-
-  # This webhook will call Bhashini text-to-speech API
-  def webhook("text_to_speech_with_bhasini", fields) do
-    text = fields["text"]
-    org_id = fields["organization_id"]
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.label |> String.downcase()
-    speech_engine = Map.get(fields, "speech_engine", "")
-
-    cond do
-      speech_engine == "open_ai" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-      speech_engine == "bhashini" ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
-
-      source_language == "english" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-      true ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
-    end
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do
@@ -568,6 +577,51 @@ defmodule Glific.Clients.CommonWebhook do
 
         {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
     end
+  end
+
+  @spec parse_flow_fields(map()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  defp parse_flow_fields(fields) do
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    {organization_id, flow_id, contact_id}
+  end
+
+  # Builds the callback URL and request_metadata map needed for all Kaapi async calls
+  # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
+  @spec build_flow_resume_metadata(non_neg_integer(), non_neg_integer(), non_neg_integer(), map()) ::
+          {String.t(), map()}
+  defp build_flow_resume_metadata(organization_id, flow_id, contact_id, fields) do
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        timestamp
+      )
+
+    organization = Partners.organization(organization_id)
+    callback_url = "https://api.#{organization.shortcode}.glific.com/webhook/flow_resume"
+
+    request_metadata = %{
+      organization_id: organization_id,
+      flow_id: flow_id,
+      contact_id: contact_id,
+      timestamp: timestamp,
+      signature: signature,
+      webhook_log_id: fields["webhook_log_id"],
+      result_name: fields["result_name"]
+    }
+
+    {callback_url, request_metadata}
   end
 
   @spec maybe_put_response_id(map(), map()) :: map()
