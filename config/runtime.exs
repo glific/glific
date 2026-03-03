@@ -7,8 +7,8 @@ import Dotenvy
 
 source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 
-ssl_port = Application.get_env(:glific, GlificWeb.Endpoint)[:https][:port] || 443
-http_port = Application.get_env(:glific, GlificWeb.Endpoint)[:http][:port] || 4000
+ssl_port = env!("SSL_PORT", :integer, 443)
+http_port = env!("HTTP_PORT", :integer, 4000)
 
 # Helper function to create SSL opts
 db_ssl_opts = fn db_type ->
