@@ -943,7 +943,8 @@ defmodule Glific.Partners do
   defp validate_secrets?(secrets, "gupshup"),
     do:
       non_nil_string(secrets["app_name"]) &&
-        non_nil_string(secrets["api_key"])
+        non_nil_string(secrets["api_key"]) &&
+        non_nil_string(secrets["app_id"])
 
   defp validate_secrets?(secrets, "gupshup_enterprise"),
     do:
@@ -1027,12 +1028,7 @@ defmodule Glific.Partners do
       cond do
         not valid_bsp?(credential) ->
           Glific.Metrics.increment("Gupshup Credential Update Failed")
-          {:error, "App Name and API Key can't be empty"}
-
-        credential.is_active ->
-          update_organization(organization, %{bsp_id: credential.provider.id})
-
-          set_bsp_app_id(organization, "gupshup")
+          {:error, "App Name and API Key and App ID can't be empty"}
 
         true ->
           update_organization(organization, %{bsp_id: credential.provider.id})
@@ -1360,53 +1356,6 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
-  end
-
-  @doc """
-  Set BSP APP id whenever we update the bsp credentials.
-  """
-  @spec set_bsp_app_id(Organization.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  def set_bsp_app_id(org, "gupshup") do
-    # restricting this function for BSP only
-    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup", group: "bsp"})
-
-    {:ok, bsp_cred} =
-      Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
-
-    case PartnerAPI.fetch_app_details(org.id) do
-      %{"id" => app_id} ->
-        update_gupshup_secrets(bsp_cred, app_id, org)
-
-      error ->
-        Glific.Metrics.increment("Gupshup Credential Update Failed")
-        update_gupshup_secrets(bsp_cred, "NA", org)
-        {:error, error}
-    end
-  end
-
-  def set_bsp_app_id(org, shortcode) do
-    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
-
-    Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
-  end
-
-  @spec update_gupshup_secrets(Credential.t(), String.t(), Organization.t()) ::
-          {:ok, Credential.t()} | {:error, any()}
-  defp update_gupshup_secrets(bsp_cred, app_id, org) do
-    updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
-    attrs = %{secrets: updated_secrets, organization_id: org.id}
-
-    bsp_cred
-    |> Credential.changeset(attrs)
-    |> Repo.update()
-    |> tap(fn _ ->
-      if app_id != "NA" do
-        remove_organization_cache(org.id, org.shortcode)
-
-        Repo.put_process_state(org.id)
-        PartnerAPI.apply_gupshup_settings(org.id)
-      end
-    end)
   end
 
   @doc """

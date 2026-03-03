@@ -174,21 +174,6 @@ defmodule Glific.PartnersTest do
       assert %{"status" => "success"} == result
     end
 
-    test "test app link using api key" do
-      org = SeedsDev.seed_organizations()
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body: "{\"partnerId\":49,\"status\":\"success\"}"
-          }
-      end)
-
-      {:ok, result} = PartnerAPI.link_gupshup_app(org.id)
-      assert %{"partnerId" => 49, "status" => "success"} == result
-    end
-
     test "successfully fetches HSM templates" do
       org = SeedsDev.seed_organizations()
 
@@ -985,27 +970,6 @@ defmodule Glific.PartnersTest do
 
     test "update_credential/2 for gupshup  should update credentials",
          %{organization_id: organization_id} = _attrs do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          {:ok,
-           %Tesla.Env{
-             status: 200,
-             body:
-               Jason.encode!(%{
-                 "partnerAppsList" => [%{"id" => "app_id", "name" => "some_app"}]
-               })
-           }}
-
-        %{method: :post} ->
-          {:error,
-           %Tesla.Env{
-             status: 400,
-             body: %{
-               "error" => "Re-linking"
-             }
-           }}
-      end)
-
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       assert {:ok, %Credential{} = credential} =
@@ -1014,7 +978,7 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{},
         shortcode: provider.shortcode,
-        secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "app_id"},
         organization_id: organization_id
       }
 
@@ -1033,73 +997,16 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{},
         shortcode: provider.shortcode,
-        secrets: %{"app_name" => "", "api_key" => ""},
+        secrets: %{"app_name" => "", "api_key" => "", "app_id" => ""},
         organization_id: organization_id
       }
 
-      {:error, "App Name and API Key can't be empty"} =
+      {:error, "App Name and API Key and App ID can't be empty"} =
         Partners.update_credential(credential, valid_update_attrs)
-    end
-
-    test "update_credential/2 for gupshup with linking error",
-         %{organization_id: organization_id} = _attrs do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          {:error,
-           %Tesla.Env{
-             status: 400,
-             body:
-               Jason.encode!(%{
-                 "error" => "some error"
-               })
-           }}
-
-        %{method: :post} ->
-          {:error,
-           %Tesla.Env{
-             status: 400,
-             body: %{
-               "error" => "non-relink"
-             }
-           }}
-      end)
-
-      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
-
-      assert {:ok, %Credential{} = credential} =
-               Repo.fetch_by(Credential, %{provider_id: provider.id})
-
-      valid_update_attrs = %{
-        keys: %{},
-        shortcode: provider.shortcode,
-        secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
-        organization_id: organization_id
-      }
-
-      {:error, _} = Partners.update_credential(credential, valid_update_attrs)
-
-      assert {:ok, %Credential{} = credential} =
-               Repo.fetch_by(Credential, %{provider_id: provider.id})
-
-      assert credential.secrets["app_id"] == "NA"
     end
 
     test "update_credential/2 for gupshup with first time linking",
          %{organization_id: organization_id} = _attrs do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          {:ok,
-           %Tesla.Env{
-             status: 200,
-             body:
-               Jason.encode!(%{
-                 "partnerApps" => %{
-                   "id" => "app_id"
-                 }
-               })
-           }}
-      end)
-
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       assert {:ok, %Credential{} = credential} =
@@ -1108,32 +1015,18 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{},
         shortcode: provider.shortcode,
-        secrets: %{"app_name" => "some_app", "api_key" => "some_key"},
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
         organization_id: organization_id
       }
 
       {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
       assert "some_app" == updated_credential.secrets["app_name"]
-      assert "app_id" == updated_credential.secrets["app_id"]
+      assert "some_key" == updated_credential.secrets["api_key"]
+      assert "some_id" == updated_credential.secrets["app_id"]
     end
 
     test "update_credential/2 for gupshup should send email notification to support",
          %{organization_id: organization_id} = _attrs do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          {:ok,
-           %Tesla.Env{
-             status: 200,
-             body:
-               Jason.encode!(%{
-                 "partnerAppsList" => [%{"id" => "test_app_id", "name" => "test_app"}]
-               })
-           }}
-
-        %{method: :post} ->
-          {:error, %Tesla.Env{status: 400, body: %{"error" => "Re-linking"}}}
-      end)
-
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       assert {:ok, %Credential{} = credential} =
@@ -1142,7 +1035,7 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{},
         shortcode: provider.shortcode,
-        secrets: %{"app_name" => "test_app", "api_key" => "test_key"},
+        secrets: %{"app_name" => "test_app", "api_key" => "test_key", "app_id" => "test_app_id"},
         organization_id: organization_id
       }
 
@@ -1717,6 +1610,11 @@ defmodule Glific.PartnersTest do
   describe "test sucessful response on the api: applying for template/3" do
     test "successfull response for applying for HSM template" do
       Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200
+          }
+
         %{method: :post} ->
           %Tesla.Env{
             status: 200,

@@ -34,29 +34,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
 
   @doc """
-  Fetch app details by org id, will link the app if not linked
-  """
-  @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
-  def fetch_app_details(org_id) do
-    link_gupshup_app(org_id)
-    |> case do
-      {:ok, res} ->
-        res["partnerApps"]
-
-      {:error, error} ->
-        error = "#{inspect(error)}"
-
-        if String.contains?(error, "Re-linking") do
-          fetch_gupshup_app_details(org_id)
-        else
-          Glific.log_exception(%Error{message: "Linking App to partner failed due to #{error}"})
-
-          "Linking App to partner failed, please double-check and enter correct App name and API key"
-        end
-    end
-  end
-
-  @doc """
   Fetches Partner token and App Access token to get tier information
   for an organization with input app id
   """
@@ -102,24 +79,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
           raise(error)
       end
     end
-  end
-
-  @doc """
-    App Link Using API key (works to get app ID the first time while creating)
-  """
-  @spec link_gupshup_app(non_neg_integer()) :: tuple()
-  def link_gupshup_app(org_id) do
-    organization = Partners.organization(org_id)
-    gupshup_secrets = organization.services["bsp"].secrets
-
-    post_request(
-      @partner_url <> "/api/appLink",
-      %{
-        apiKey: gupshup_secrets["api_key"],
-        appName: gupshup_secrets["app_name"]
-      },
-      token_type: :partner_token
-    )
   end
 
   @wallet_name "4000202160_wallet"
