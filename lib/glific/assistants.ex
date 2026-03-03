@@ -734,6 +734,17 @@ defmodule Glific.Assistants do
     :ok
   end
 
+  # Finds config versions that were deferred while the knowledge base was still processing
+  # and couldn't be synced to Kaapi yet. The filter catches two cases:
+  #
+  # 1. is_nil(cv.assistant.kaapi_uuid) — The assistant was created while the knowledge base
+  #    was still processing, so it never got registered with Kaapi at all.
+  # 2. cv.id != cv.assistant.active_config_version_id — The assistant was updated with a new
+  #    config version while the knowledge base was processing. The new config version exists
+  #    locally but hasn't been pushed to Kaapi yet, so it's not the active one.
+  #
+  # In both cases, now that the knowledge base is ready, the deferred config can finally
+  # be sent to Kaapi via create_deferred_kaapi_config.
   defp maybe_create_deferred_kaapi_configs(knowledge_base_version, "SUCCESSFUL") do
     knowledge_base_version =
       Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
