@@ -368,6 +368,65 @@ defmodule Glific.AssistantsTest do
                Assistants.create_knowledge_base_with_version(params)
     end
 
+    test "cleans up newly created KnowledgeBase and KnowledgeBaseVersion when Kaapi fails",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Internal server error"}
+          }
+      end)
+
+      kb_count_before = Repo.aggregate(KnowledgeBase, :count, :id)
+      kbv_count_before = Repo.aggregate(KnowledgeBaseVersion, :count, :id)
+
+      params = %{
+        media_info: [%{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}],
+        organization_id: organization_id
+      }
+
+      assert {:error, "Failed to create knowledge base"} =
+               Assistants.create_knowledge_base_with_version(params)
+
+      # Both newly created records should have been cleaned up
+      assert Repo.aggregate(KnowledgeBase, :count, :id) == kb_count_before
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
+    end
+
+    test "cleans up KnowledgeBaseVersion but NOT existing KnowledgeBase when Kaapi fails",
+         %{organization_id: organization_id} do
+      {:ok, existing_knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Existing KB",
+          organization_id: organization_id
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Internal server error"}
+          }
+      end)
+
+      kbv_count_before = Repo.aggregate(KnowledgeBaseVersion, :count, :id)
+
+      params = %{
+        id: existing_knowledge_base.id,
+        media_info: [%{file_id: "file_abc", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}],
+        organization_id: organization_id
+      }
+
+      assert {:error, "Failed to create knowledge base"} =
+               Assistants.create_knowledge_base_with_version(params)
+
+      # The existing KnowledgeBase should NOT be deleted
+      assert {:ok, _} = Repo.fetch(KnowledgeBase, existing_knowledge_base.id, skip_organization_id: true)
+      # The newly created KnowledgeBaseVersion should be cleaned up
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
+    end
+
     test "returns error when knowledge base id does not exist",
          %{organization_id: organization_id} do
       params = %{
