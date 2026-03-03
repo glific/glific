@@ -975,15 +975,19 @@ defmodule Glific.AssistantsTest do
                })
     end
 
-    test "generates name when not provided",
+    test "uses default values when optional params are missing",
          %{organization_id: organization_id, knowledge_base: kb} do
-      assert {:ok, %{assistant: assistant}} =
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  knowledge_base_id: kb.id,
                  organization_id: organization_id
                })
 
       assert String.starts_with?(assistant.name, "Assistant-")
+      assert config_version.model == "gpt-4o-mini"
+      assert config_version.prompt == "You are a helpful assistant"
+      assert config_version.description == "Assistant configuration"
+      assert config_version.settings["temperature"] == 1
     end
   end
 
