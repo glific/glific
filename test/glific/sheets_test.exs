@@ -404,6 +404,12 @@ defmodule Glific.SheetsTest do
 
       assert updated_sheet.failure_reason =~
                "Failed to insert all rows likely due to duplicate keys"
+
+      # DB rolled back: no partial SheetData rows for the affected sheet
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
     end
 
     test "handles errors when key is missing", %{organization_id: organization_id} do
