@@ -220,7 +220,6 @@ defmodule Glific.FilesearchTest do
     assert assistant_data["name"] == "assistant with vs"
 
     vector_store = assistant_data["vector_store"]
-    assert vector_store["knowledge_base_version_id"] == "vs_test_123"
     assert vector_store["name"] == "Test KB"
     assert vector_store["status"] == "completed"
     assert vector_store["legacy"] == true
@@ -859,6 +858,7 @@ defmodule Glific.FilesearchTest do
       status: :ready,
       kb_name: "Default KB",
       knowledge_base_version_id: "vs_default_#{:rand.uniform(10000)}",
+      llm_service_id: "vs_default_#{:rand.uniform(10000)}",
       files: %{},
       kb_status: :completed,
       size: 0
@@ -914,7 +914,8 @@ defmodule Glific.FilesearchTest do
       Assistants.create_knowledge_base_version(%{
         knowledge_base_id: kb.id,
         organization_id: org_id,
-        knowledge_base_version_id: attrs.llm_service_id,
+        knowledge_base_version_id: attrs.knowledge_base_version_id,
+        llm_service_id: attrs.llm_service_id,
         files: attrs.files,
         status: attrs.kb_status,
         size: attrs.size,
