@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
   object :vector_store do
     field :id, :id
     field :knowledge_base_version_id, :string
+    field :vector_store_id, :string
     field :name, :string
 
     field :files, list_of(:file_info) do

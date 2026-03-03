@@ -141,6 +141,7 @@ defmodule Glific.Assistants do
         %{
           id: knowledge_base.id,
           knowledge_base_version_id: knowledge_base_version.id,
+          vector_store_id: knowledge_base_version.llm_service_id,
           name: knowledge_base.name,
           files: knowledge_base_version.files || %{},
           size: knowledge_base_version.size || 0,
@@ -682,7 +683,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      "https://73b3-2401-4900-5ee9-80c7-6cce-8c71-64e0-dfb7.ngrok-free.app" <>
         "/kaapi/knowledge_base_version"
 
     %{
