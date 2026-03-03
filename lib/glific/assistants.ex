@@ -240,13 +240,14 @@ defmodule Glific.Assistants do
       if no_changes?(user_params, assistant, knowledge_base_version) do
         get_assistant(assistant.id)
       else
-        current_kb_version =
+        current_knowledge_base_version =
           List.first(assistant.active_config_version.knowledge_base_versions)
 
-        kb_changed = knowledge_base_version.id != current_kb_version.id
+        knowledge_base_changed =
+          knowledge_base_version.id != current_knowledge_base_version.id
 
         with {:ok, config_params} <- build_kaapi_config(user_params, knowledge_base_version) do
-          if kb_changed and knowledge_base_version.status != :completed do
+          if knowledge_base_changed and knowledge_base_version.status != :completed do
             with {:ok, _config_version} <-
                    deferred_update_transaction(assistant, config_params, knowledge_base_version) do
               assistant_result =
@@ -358,7 +359,11 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec create_kaapi_config_version(Assistant.t(), map()) :: {:ok, String.t()} | {:error, any()}
+  @spec create_kaapi_config_version(Assistant.t(), map()) ::
+          {:ok, String.t()} | {:error, any()}
+  defp create_kaapi_config_version(%{kaapi_uuid: nil}, _kaapi_config),
+    do: {:error, "Assistant setup is still in progress"}
+
   defp create_kaapi_config_version(assistant, kaapi_config) do
     case Kaapi.create_config_version(
            assistant.kaapi_uuid,
