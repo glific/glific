@@ -984,7 +984,11 @@ defmodule Glific.AssistantsTest do
 
     {:ok, assistant} =
       %Assistant{}
-      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+      |> Assistant.changeset(%{
+        name: "Test Assistant",
+        organization_id: organization_id,
+        kaapi_uuid: "test_kaapi_uuid"
+      })
       |> Repo.insert()
 
     {:ok, config_version} =
@@ -1012,6 +1016,479 @@ defmodule Glific.AssistantsTest do
     Partners.organization(organization_id)
 
     %{assistant: assistant, config_version: config_version, knowledge_base_version: kbv}
+  end
+
+  describe "create_assistant/1" do
+    test "creates assistant and config version with nil kaapi_uuid",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "vs_test_123",
+          size: 0
+        })
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "New Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert is_nil(assistant.kaapi_uuid)
+      assert assistant.name == "New Assistant"
+      assert assistant.active_config_version_id == config_version.id
+      assert config_version.model == "gpt-4o"
+      assert config_version.prompt == "You are a helpful assistant"
+
+      config_version = Repo.preload(config_version, :knowledge_base_versions)
+      assert length(config_version.knowledge_base_versions) == 1
+    end
+
+    test "creates assistant with in-progress KB and sets config status to in_progress",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "In-Progress KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-abc123",
+          size: 500
+        })
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Deferred Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert is_nil(assistant.kaapi_uuid)
+      assert config_version.status == :in_progress
+    end
+
+    test "returns error when knowledge_base_id is missing",
+         %{organization_id: organization_id} do
+      assert {:error, "Knowledge base is required for assistant creation"} =
+               Assistants.create_assistant(%{
+                 name: "No KB Assistant",
+                 organization_id: organization_id
+               })
+    end
+
+    test "uses default values when optional params are missing",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Default Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "vs_defaults_test",
+          size: 0
+        })
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert String.starts_with?(assistant.name, "Assistant-")
+      assert config_version.model == "gpt-4o"
+      assert config_version.prompt == "You are a helpful assistant"
+      assert config_version.description == "Assistant configuration"
+
+      temperature =
+        config_version.settings[:temperature] || config_version.settings["temperature"]
+
+      assert temperature == 1
+    end
+  end
+
+  describe "create_assistant with in-progress KB" do
+    setup [:enable_kaapi]
+
+    test "skips Kaapi call and creates assistant with nil kaapi_uuid when KB is in-progress",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "In-Progress KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-abc123def456",
+          size: 500
+        })
+
+      # No Tesla mock — if Kaapi is called, this will fail
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Deferred Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_id: kb.id,
+                 organization_id: organization_id
+               })
+
+      assert is_nil(assistant.kaapi_uuid)
+      assert config_version.status == :in_progress
+    end
+  end
+
+  describe "handle_knowledge_base_callback deferred config" do
+    setup [:enable_kaapi]
+
+    test "creates deferred Kaapi config when KB callback is SUCCESSFUL",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Deferred KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-abc123",
+          size: 500,
+          kaapi_job_id: "job_deferred_123"
+        })
+
+      # Create assistant with nil kaapi_uuid (simulating deferred creation)
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Deferred Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "kaapi",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      link_kbv_to_acv(kbv, config_version, organization_id)
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      assert is_nil(assistant.kaapi_uuid)
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_deferred_uuid_123"}}}
+      end)
+
+      result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_deferred_123",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "real_vs_id_456"},
+            "error_message" => nil
+          }
+        })
+
+      assert %KnowledgeBaseVersion{} = result
+
+      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert updated_assistant.kaapi_uuid == "kaapi_deferred_uuid_123"
+    end
+
+    test "marks config version as failed when deferred Kaapi call fails",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Failed Deferred KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-fail123",
+          size: 500,
+          kaapi_job_id: "job_deferred_fail"
+        })
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Failed Deferred Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "kaapi",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      link_kbv_to_acv(kbv, config_version, organization_id)
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_deferred_fail",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "real_vs_id_789"},
+            "error_message" => nil
+          }
+        })
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :failed
+      assert updated_cv.failure_reason =~ "Deferred Kaapi config creation failed"
+    end
+  end
+
+  describe "update_assistant with in-progress KB (deferred update)" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "keeps old active_config_version_id when KB is in-progress",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_config_version
+         } do
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "New In-Progress KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_new" => %{"filename" => "new_doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-update-test",
+          size: 300
+        })
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_id: new_kb.id,
+                 organization_id: organization_id
+               })
+
+      {:ok, updated_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert updated_assistant.active_config_version_id == original_config_version.id
+
+      # A new config version should have been created but not activated
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      assert result.status == "ready"
+    end
+
+    test "callback after deferred update calls create_config_version and activates new config",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_config_version
+         } do
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Deferred Update KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_new" => %{"filename" => "new_doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-deferred-update",
+          size: 300,
+          kaapi_job_id: "job_deferred_update_123"
+        })
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_id: new_kb.id,
+                 name: "Updated Deferred Name",
+                 organization_id: organization_id
+               })
+
+      # Verify active config is still the original
+      {:ok, pre_callback_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert pre_callback_assistant.active_config_version_id == original_config_version.id
+
+      # Now simulate SUCCESSFUL callback
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_config_version_update_123"}}}
+      end)
+
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_deferred_update_123",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "real_vs_id_update"},
+            "error_message" => nil
+          }
+        })
+
+      # After callback, active_config_version_id should be updated to new config
+      {:ok, post_callback_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert post_callback_assistant.active_config_version_id != original_config_version.id
+
+      # New config version should be :ready
+      new_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_config_version.id)
+        |> Repo.one()
+
+      assert new_config.status == :ready
+    end
+
+    test "callback failure after deferred update marks config as failed and keeps old active",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_config_version
+         } do
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Failed Deferred Update KB",
+          organization_id: organization_id
+        })
+
+      {:ok, _new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_new" => %{"filename" => "new_doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-failed-update",
+          size: 300,
+          kaapi_job_id: "job_deferred_update_fail"
+        })
+
+      # No Tesla mock for the update itself
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_id: new_kb.id,
+                 organization_id: organization_id
+               })
+
+      # Simulate SUCCESSFUL callback but Kaapi create_config_version fails
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_deferred_update_fail",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "real_vs_id_fail"},
+            "error_message" => nil
+          }
+        })
+
+      # active_config_version_id should still be the original
+      {:ok, post_callback_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      assert post_callback_assistant.active_config_version_id == original_config_version.id
+
+      # New config version should be :failed
+      new_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_config_version.id)
+        |> Repo.one()
+
+      assert new_config.status == :failed
+      assert new_config.failure_reason =~ "Deferred Kaapi config creation failed"
+    end
   end
 
   describe "delete_assistant/1" do
@@ -1050,6 +1527,21 @@ defmodule Glific.AssistantsTest do
       assert {:error, _} = Assistants.delete_assistant(assistant.id)
       # assistant should still exist
       assert {:ok, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+    end
+
+    test "deletes assistant when kaapi_uuid is nil without calling Kaapi",
+         %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "No Kaapi UUID Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      # No Tesla mock — if Kaapi is called, this will fail
+      assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
+      assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
     end
   end
 end
