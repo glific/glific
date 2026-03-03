@@ -731,6 +731,25 @@ defmodule Glific.Assistants do
       "Skipping deferred Kaapi config creation for KB version #{knowledge_base_version.id}, status: #{status}"
     )
 
+    knowledge_base_version =
+      knowledge_base_version |> Repo.preload([{:assistant_config_versions, :assistant}])
+
+    Enum.filter(knowledge_base_version.assistant_config_versions, fn cv ->
+      is_nil(cv.assistant.kaapi_uuid) or cv.id != cv.assistant.active_config_version_id
+    end)
+    |> case do
+      [assistant_version] ->
+        assistant_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed"
+        })
+        |> Repo.update()
+
+      _ ->
+        nil
+    end
+
     :ok
   end
 

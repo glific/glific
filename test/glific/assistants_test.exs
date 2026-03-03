@@ -1411,18 +1411,12 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      # Simulate SUCCESSFUL callback but Kaapi create_config_version fails
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
-      end)
-
       _result =
         Assistants.handle_knowledge_base_callback(%{
           "data" => %{
             "job_id" => "job_deferred_update_fail",
-            "status" => "SUCCESSFUL",
-            "collection" => %{"knowledge_base_id" => "real_vs_id_fail"},
+            "status" => "FAILED",
+            "collection" => nil,
             "error_message" => nil
           }
         })
