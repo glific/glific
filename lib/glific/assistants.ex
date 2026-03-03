@@ -246,30 +246,30 @@ defmodule Glific.Assistants do
         knowledge_base_changed =
           knowledge_base_version.id != current_knowledge_base_version.id
 
-        with {:ok, config_params} <- build_kaapi_config(user_params, knowledge_base_version) do
-          if knowledge_base_changed and knowledge_base_version.status != :completed do
-            with {:ok, _config_version} <-
-                   deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-              assistant_result =
-                assistant
-                |> preload_assistant_associations()
-                |> transform_to_legacy_shape()
+        {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
-              Metrics.increment("Assistant Updated", assistant.organization_id)
-              {:ok, assistant_result}
-            end
-          else
-            with {:ok, updated_assistant} <-
-                   update_assistant_transaction(assistant, config_params, knowledge_base_version),
-                 {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
-              assistant_result =
-                updated_assistant
-                |> preload_assistant_associations()
-                |> transform_to_legacy_shape()
+        if knowledge_base_changed and knowledge_base_version.status != :completed do
+          with {:ok, _config_version} <-
+                 deferred_update_transaction(assistant, config_params, knowledge_base_version) do
+            assistant_result =
+              assistant
+              |> preload_assistant_associations()
+              |> transform_to_legacy_shape()
 
-              Metrics.increment("Assistant Updated", assistant.organization_id)
-              {:ok, assistant_result}
-            end
+            Metrics.increment("Assistant Updated", assistant.organization_id)
+            {:ok, assistant_result}
+          end
+        else
+          with {:ok, updated_assistant} <-
+                 update_assistant_transaction(assistant, config_params, knowledge_base_version),
+               {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
+            assistant_result =
+              updated_assistant
+              |> preload_assistant_associations()
+              |> transform_to_legacy_shape()
+
+            Metrics.increment("Assistant Updated", assistant.organization_id)
+            {:ok, assistant_result}
           end
         end
       end
