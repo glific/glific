@@ -495,7 +495,8 @@ defmodule Glific.Assistants do
        %{
          file_id: document_data[:id],
          filename: document_data[:fname],
-         uploaded_at: document_data[:inserted_at]
+         uploaded_at: document_data[:inserted_at],
+         file_size: File.stat!(params.media.path).size
        }}
     else
       {:error, %{status: status, body: body}} ->
@@ -686,10 +687,14 @@ defmodule Glific.Assistants do
         Map.put(files, info.file_id, info)
       end)
 
+    total_size =
+      Enum.reduce(params.media_info, 0, fn info, acc -> acc + (info[:file_size] || 0) end)
+
     params = %{
       knowledge_base_id: knowledge_base.id,
       organization_id: params[:organization_id],
       files: files_details,
+      size: total_size,
       status: :in_progress,
       llm_service_id: generate_temporary_llm_service_id()
     }

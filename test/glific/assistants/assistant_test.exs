@@ -52,8 +52,13 @@ defmodule Glific.Assistants.AssistantTest do
         size: 0
       })
 
+    tmp_path =
+      Path.join(System.tmp_dir!(), "test_upload_#{System.unique_integer([:positive])}.pdf")
+
+    File.write!(tmp_path, "fake pdf content for testing")
+
     upload = %Plug.Upload{
-      path: "/var/folders/test/multipart-1727169241-575672640710-1",
+      path: tmp_path,
       content_type: "application/pdf",
       filename: "sample.pdf"
     }
