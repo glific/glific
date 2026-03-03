@@ -36,12 +36,14 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :id, :string
     field :name, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :file_result do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :kaapi_assistant_result do
@@ -102,6 +104,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   @desc "Filtering options for VectorStore"

@@ -98,7 +98,12 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
-      %{id: id, name: info["filename"], uploaded_at: info["uploaded_at"]}
+      %{
+        id: id,
+        name: info["filename"],
+        uploaded_at: info["uploaded_at"],
+        file_size: info["file_size"]
+      }
     end)
     |> then(&{:ok, &1})
   end
