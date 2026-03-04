@@ -1477,7 +1477,8 @@ defmodule Glific.AssistantsTest do
                  name: second_assistant.name,
                  organization_id: organization_id
                })
-               assert %{name: ["has already been taken"]} == errors_on(changeset)
+
+      assert %{name: ["has already been taken"]} == errors_on(changeset)
     end
   end
 

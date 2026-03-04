@@ -187,7 +187,6 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert {"has already been taken", _} = changeset.errors[:assistant_display_id]
     end
-
   end
 
   describe "set_active_config_version_changeset/2" do
