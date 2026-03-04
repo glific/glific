@@ -562,6 +562,10 @@ defmodule Glific.Sheets do
     end
   end
 
+  defp format_notification_message(%Tesla.Env{} = env) do
+    env |> Map.drop([:headers, :__client__]) |> inspect()
+  end
+
   defp format_notification_message(error), do: inspect(error)
 
   @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
