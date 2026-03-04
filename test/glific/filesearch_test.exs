@@ -244,7 +244,8 @@ defmodule Glific.FilesearchTest do
     create_unified_assistant(%{
       organization_id: attrs.organization_id,
       name: "new assistant 2",
-      kaapi_uuid: "asst_abc2"
+      kaapi_uuid: "asst_abc2",
+      kb_name: "new KB"
     })
 
     # fetch all
@@ -269,7 +270,8 @@ defmodule Glific.FilesearchTest do
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "new assistant 3",
-        kaapi_uuid: "asst_xyz"
+        kaapi_uuid: "asst_xyz",
+        kb_name: "Third KB"
       })
 
     # limit 1, offset 2
