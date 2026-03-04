@@ -1437,6 +1437,48 @@ defmodule Glific.AssistantsTest do
       assert new_config.status == :failed
       assert new_config.failure_reason =~ "Deferred Kaapi config creation failed"
     end
+
+    test "returns error when deferred_update_transaction fails due to duplicate assistant name",
+         %{
+           organization_id: organization_id,
+           assistant: existing_assistant
+         } do
+      {:ok, second_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Second Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "second_kaapi_uuid_unique_test"
+        })
+        |> Repo.insert()
+
+      # Create an in-progress KB to trigger the deferred update path
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "In-Progress KB for Name Conflict",
+          organization_id: organization_id
+        })
+
+      {:ok, new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_new" => %{"filename" => "new_doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-name-conflict-test",
+          size: 300
+        })
+
+      # Attempt to rename existing_assistant to the name already taken by second_assistant.
+      # deferred_update_transaction should fail on the unique [:name, :organization_id] constraint.
+      assert {:error, changeset} =
+               Assistants.update_assistant(existing_assistant.id, %{
+                 knowledge_base_version_id: new_kbv.id,
+                 name: second_assistant.name,
+                 organization_id: organization_id
+               })
+               assert %{name: ["has already been taken"]} == errors_on(changeset)
+    end
   end
 
   describe "delete_assistant/1" do
@@ -1490,6 +1532,51 @@ defmodule Glific.AssistantsTest do
       # No Tesla mock — if Kaapi is called, this will fail
       assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
       assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+    end
+  end
+
+  describe "Assistant changeset unique constraints" do
+    test "rejects duplicate name within the same organization",
+         %{organization_id: organization_id} do
+      assert {:ok, _} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Unique Name Test",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Unique Name Test",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = changeset.errors[:name]
+    end
+
+    test "rejects duplicate assistant_display_id",
+         %{organization_id: organization_id} do
+      assert {:ok, first} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Display ID Test A",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Display ID Test B",
+                 organization_id: organization_id,
+                 assistant_display_id: first.assistant_display_id
+               })
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = changeset.errors[:assistant_display_id]
     end
   end
 end
