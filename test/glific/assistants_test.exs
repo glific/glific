@@ -950,7 +950,7 @@ defmodule Glific.AssistantsTest do
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
         organization_id: organization_id,
-        provider: "kaapi",
+        provider: "openai",
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
         settings: %{"temperature" => 1.0},
@@ -1161,7 +1161,7 @@ defmodule Glific.AssistantsTest do
         |> AssistantConfigVersion.changeset(%{
           assistant_id: assistant.id,
           organization_id: organization_id,
-          provider: "kaapi",
+          provider: "openai",
           model: "gpt-4o",
           prompt: "You are a helpful assistant",
           settings: %{"temperature" => 1.0},
@@ -1233,7 +1233,7 @@ defmodule Glific.AssistantsTest do
         |> AssistantConfigVersion.changeset(%{
           assistant_id: assistant.id,
           organization_id: organization_id,
-          provider: "kaapi",
+          provider: "openai",
           model: "gpt-4o",
           prompt: "You are a helpful assistant",
           settings: %{"temperature" => 1.0},

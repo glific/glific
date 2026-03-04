@@ -171,7 +171,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         assistant_id: assistant.id,
         prompt: kaapi_params.prompt,
         model: kaapi_params.model,
-        provider: "kaapi",
+        provider: "openai",
         settings: %{temperature: kaapi_params.temperature},
         status: :ready,
         organization_id: kaapi_params.organization_id
