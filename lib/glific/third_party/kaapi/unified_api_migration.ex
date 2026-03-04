@@ -260,7 +260,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         on: v.id == a.vector_store_id,
         distinct: [v.id]
       )
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,
