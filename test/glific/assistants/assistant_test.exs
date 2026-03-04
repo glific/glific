@@ -144,6 +144,49 @@ defmodule Glific.Assistants.AssistantTest do
       assert changeset.valid? == false
       assert %{name: ["can't be blank"]} = errors_on(changeset)
     end
+
+    test "rejects duplicate name within the same organization",
+         %{organization_id: organization_id} do
+      assert {:ok, _} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Unique Name Test",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Unique Name Test",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = changeset.errors[:name]
+    end
+
+    test "rejects duplicate assistant_display_id",
+         %{organization_id: organization_id} do
+      assert {:ok, first} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Display ID Test A",
+                 organization_id: organization_id
+               })
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %Assistant{}
+               |> Assistant.changeset(%{
+                 name: "Display ID Test B",
+                 organization_id: organization_id,
+                 assistant_display_id: first.assistant_display_id
+               })
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = changeset.errors[:assistant_display_id]
+    end
   end
 
   describe "set_active_config_version_changeset/2" do

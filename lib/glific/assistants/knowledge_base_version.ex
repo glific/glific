@@ -80,6 +80,9 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     |> validate_required(@required_fields)
     |> assoc_constraint(:knowledge_base)
     |> unique_constraint([:knowledge_base_id, :version_number])
+    |> unique_constraint([:llm_service_id, :organization_id],
+      name: :knowledge_base_versions_llm_service_id_organization_id_index
+    )
   end
 
   @doc """

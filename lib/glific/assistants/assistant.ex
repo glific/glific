@@ -74,6 +74,12 @@ defmodule Glific.Assistants.Assistant do
     |> validate_required(@required_fields)
     |> add_display_id()
     |> unique_constraint(:assistant_display_id)
+    |> unique_constraint([:name, :organization_id],
+      name: :assistants_name_organization_id_index
+    )
+    |> unique_constraint([:assistant_display_id, :organization_id],
+      name: :assistants_assistant_display_id_organization_id_index
+    )
   end
 
   defp add_display_id(changeset) do

@@ -92,6 +92,72 @@ defmodule Glific.Assistants.KnowledgeBaseVersionTest do
       assert get_change(changeset, :status) == nil
       assert get_field(changeset, :status) == :in_progress
     end
+
+    test "rejects duplicate version_number within the same knowledge base",
+         %{organization_id: organization_id} do
+      {:ok, knowledge_base} =
+        %KnowledgeBase{}
+        |> KnowledgeBase.changeset(%{
+          name: "Unique Constraint Test KB",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      attrs = %{
+        knowledge_base_id: knowledge_base.id,
+        files: %{"file1.pdf" => %{"size" => 1024}},
+        status: :completed,
+        llm_service_id: "vs_version_constraint_a",
+        organization_id: organization_id,
+        version_number: 1
+      }
+
+      assert {:ok, _knowledge_base_version} =
+               %KnowledgeBaseVersion{}
+               |> KnowledgeBaseVersion.changeset(attrs)
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %KnowledgeBaseVersion{}
+               |> KnowledgeBaseVersion.changeset(%{
+                 attrs
+                 | llm_service_id: "vs_version_constraint_b"
+               })
+               |> Repo.insert()
+
+      assert %{knowledge_base_id: ["has already been taken"]} = errors_on(changeset)
+    end
+
+    test "rejects duplicate llm_service_id within the same organization",
+         %{organization_id: organization_id} do
+      {:ok, knowledge_base} =
+        %KnowledgeBase{}
+        |> KnowledgeBase.changeset(%{
+          name: "Unique Constraint Test KB",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      attrs = %{
+        knowledge_base_id: knowledge_base.id,
+        files: %{"file1.pdf" => %{"size" => 1024}},
+        status: :completed,
+        llm_service_id: "vs_llm_constraint_shared",
+        organization_id: organization_id
+      }
+
+      assert {:ok, _} =
+               %KnowledgeBaseVersion{}
+               |> KnowledgeBaseVersion.changeset(attrs)
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %KnowledgeBaseVersion{}
+               |> KnowledgeBaseVersion.changeset(attrs)
+               |> Repo.insert()
+
+      assert %{llm_service_id: ["has already been taken"]} = errors_on(changeset)
+    end
   end
 
   describe "ExAudit tracking" do
