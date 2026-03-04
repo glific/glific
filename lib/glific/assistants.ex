@@ -498,7 +498,7 @@ defmodule Glific.Assistants do
       description: kaapi_config.description,
       prompt: kaapi_config.prompt,
       model: kaapi_config.model,
-      provider: "kaapi",
+      provider: "openai",
       settings: %{temperature: kaapi_config.temperature},
       status: status,
       organization_id: kaapi_config.organization_id
