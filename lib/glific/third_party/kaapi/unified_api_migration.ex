@@ -33,7 +33,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       from(oa in OpenAIAssistant,
         preload: [:vector_store]
       )
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     Logger.info("Starting migration for #{length(openai_assistants)} assistants")
 
