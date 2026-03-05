@@ -1030,6 +1030,28 @@ defmodule Glific.PartnersTest do
 
     test "update_credential/2 for gupshup should send email notification to support",
          %{organization_id: organization_id} = _attrs do
+      # Validates that the verify_otp template is submitted
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/test_app_id/token"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{
+          method: :post,
+          url: "https://partner.gupshup.io/partner/app/test_app_id/templates",
+          body: body
+        } ->
+          if body =~ "vertical=verify_otp" do
+            {:ok,
+             %Tesla.Env{
+               status: 200,
+               body: Jason.encode!(%{template: %{id: Ecto.UUID.generate()}})
+             }}
+          end
+      end)
+
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       assert {:ok, %Credential{} = credential} =
