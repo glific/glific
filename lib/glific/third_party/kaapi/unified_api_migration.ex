@@ -381,6 +381,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
     end
   end
 
+  @spec migrate_model(String.t()) :: String.t()
   defp migrate_model(model) when model in @supported_models, do: model
 
   defp migrate_model(model) do
