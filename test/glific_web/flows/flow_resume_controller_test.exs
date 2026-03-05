@@ -475,5 +475,155 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       assert message.body == "failure"
     end
+
+    test "returns 200 and ignores request when signature is invalid", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{"type" => "text", "content" => %{"value" => "hello"}}
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => "invalid_signature",
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "response"
+        },
+        "success" => true
+      }
+
+      conn = post(conn, "/webhook/flow_resume", params)
+      assert json_response(conn, 200) == ""
+    end
+
+    test "resumes flow with No Response when success: true but no webhook_log_id", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _tail] = flow.nodes
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(
+          organization_id,
+          Jason.encode!(signature_payload),
+          timestamp
+        )
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{"type" => "text", "content" => %{"value" => "hello"}},
+            "conversation_id" => "conv_no_log"
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => signature,
+          "timestamp" => timestamp,
+          "result_name" => "response"
+        },
+        "success" => true
+      }
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      conn = post(conn, "/webhook/flow_resume", params)
+      assert json_response(conn, 200) == ""
+    end
+
+    test "returns 200 when TTS audio upload fails (bad base64)", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _tail] = flow.nodes
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(
+          organization_id,
+          Jason.encode!(signature_payload),
+          timestamp
+        )
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "conversation_id" => "conv_tts_bad",
+            "output" => %{
+              "type" => "audio",
+              "content" => %{"value" => "!!!not_valid_base64!!!"}
+            }
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => signature,
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "response"
+        },
+        "success" => true
+      }
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      conn = post(conn, "/webhook/flow_resume", params)
+      assert json_response(conn, 200) == ""
+    end
   end
 end
