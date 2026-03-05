@@ -171,7 +171,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
         assistant_id: assistant.id,
         prompt: kaapi_params.prompt,
-        model: migrate_model(kaapi_params.model),
+        model: kaapi_params.model,
         provider: "openai",
         settings: %{temperature: kaapi_params.temperature},
         status: :ready,
