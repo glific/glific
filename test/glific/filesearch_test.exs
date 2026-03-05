@@ -199,7 +199,7 @@ defmodule Glific.FilesearchTest do
         name: "assistant with vs",
         kaapi_uuid: "asst_vs",
         kb_name: "Test KB",
-        vector_store_id: "vs_test_123",
+        knowledge_base_version_id: "vs_test_123",
         files: %{
           "file_1" => %{
             "filename" => "test.pdf",
@@ -220,7 +220,6 @@ defmodule Glific.FilesearchTest do
     assert assistant_data["name"] == "assistant with vs"
 
     vector_store = assistant_data["vector_store"]
-    assert vector_store["vector_store_id"] == "vs_test_123"
     assert vector_store["name"] == "Test KB"
     assert vector_store["status"] == "completed"
     assert vector_store["legacy"] == true
@@ -245,7 +244,8 @@ defmodule Glific.FilesearchTest do
     create_unified_assistant(%{
       organization_id: attrs.organization_id,
       name: "new assistant 2",
-      kaapi_uuid: "asst_abc2"
+      kaapi_uuid: "asst_abc2",
+      kb_name: "new KB"
     })
 
     # fetch all
@@ -270,7 +270,8 @@ defmodule Glific.FilesearchTest do
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "new assistant 3",
-        kaapi_uuid: "asst_xyz"
+        kaapi_uuid: "asst_xyz",
+        kb_name: "Third KB"
       })
 
     # limit 1, offset 2
@@ -858,7 +859,8 @@ defmodule Glific.FilesearchTest do
       temperature: 1.0,
       status: :ready,
       kb_name: "Default KB",
-      vector_store_id: "vs_default_#{:rand.uniform(10000)}",
+      knowledge_base_version_id: "vs_default_#{:rand.uniform(10000)}",
+      llm_service_id: "vs_default_#{:rand.uniform(10000)}",
       files: %{},
       kb_status: :completed,
       size: 0
@@ -914,7 +916,8 @@ defmodule Glific.FilesearchTest do
       Assistants.create_knowledge_base_version(%{
         knowledge_base_id: kb.id,
         organization_id: org_id,
-        llm_service_id: attrs.vector_store_id,
+        knowledge_base_version_id: attrs.knowledge_base_version_id,
+        llm_service_id: attrs.llm_service_id,
         files: attrs.files,
         status: attrs.kb_status,
         size: attrs.size,

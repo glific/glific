@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :vector_store do
     field :id, :id
+    field :knowledge_base_version_id, :string
     field :vector_store_id, :string
     field :name, :string
 
@@ -38,12 +39,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :id, :string
     field :name, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :file_result do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :assistant_result do
@@ -118,13 +121,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :instructions, :string
     field :description, :string
     field :temperature, :float
-    field :knowledge_base_id, :string
+    field :knowledge_base_version_id, :string
   end
 
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   @desc "Filtering options for VectorStore"

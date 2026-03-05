@@ -60,11 +60,9 @@ defmodule Glific.WhatsappFormsRevisions do
   def list_revisions(whatsapp_form_id, limit) do
     WhatsappFormRevision
     |> where([r], r.whatsapp_form_id == ^whatsapp_form_id)
-    |> join(:inner, [r], f in WhatsappForms.WhatsappForm,
-      on: f.id == r.whatsapp_form_id
-    )
+    |> join(:inner, [r], f in WhatsappForms.WhatsappForm, on: f.id == r.whatsapp_form_id)
     |> select_merge([r, f], %{is_current: r.id == f.revision_id})
-    |> order_by([r, f], [desc: r.id == f.revision_id, desc: r.revision_number])
+    |> order_by([r, f], desc: r.id == f.revision_id, desc: r.revision_number)
     |> limit(^limit)
     |> Repo.all()
   end
