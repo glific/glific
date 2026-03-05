@@ -5,6 +5,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorkerTest do
 
   alias Glific.{
     Fixtures,
+    Flows.Flow,
     Flows.FlowContext,
     Partners,
     Repo
@@ -91,7 +92,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorkerTest do
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: @org_id})
 
-      flow = Glific.Flows.Flow.get_loaded_flow(@org_id, "published", %{keyword: "call_and_wait"})
+      flow = Flow.get_loaded_flow(@org_id, "published", %{keyword: "call_and_wait"})
       [node | _] = flow.nodes
 
       {:ok, context} =
@@ -166,7 +167,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorkerTest do
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: @org_id})
 
-      flow = Glific.Flows.Flow.get_loaded_flow(@org_id, "published", %{keyword: "call_and_wait"})
+      flow = Flow.get_loaded_flow(@org_id, "published", %{keyword: "call_and_wait"})
       [node | _] = flow.nodes
 
       {:ok, context} =
