@@ -611,7 +611,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  # Keep 3-arg version for backward compatibility with existing callers
+  @doc false
   @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def unified_llm_and_wait(action, context, is_active?),
