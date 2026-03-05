@@ -968,8 +968,30 @@ defmodule Glific.PartnersTest do
       assert "updated_user_id" == updated_credential.secrets["user_id"]
     end
 
-    test "update_credential/2 for gupshup  should update credentials",
+    test "update_credential/2 for gupshup should update credentials",
          %{organization_id: organization_id} = _attrs do
+      # Validates that the verify_otp template is submitted
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{
+          method: :post,
+          url: "https://partner.gupshup.io/partner/app/some_id/templates",
+          body: body
+        } ->
+          if body =~ "vertical=verify_otp" do
+            {:ok,
+             %Tesla.Env{
+               status: 200,
+               body: Jason.encode!(%{template: %{id: Ecto.UUID.generate()}})
+             }}
+          end
+      end)
+
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       assert {:ok, %Credential{} = credential} =
@@ -978,13 +1000,14 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{},
         shortcode: provider.shortcode,
-        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "app_id"},
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
         organization_id: organization_id
       }
 
       {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
       assert "some_app" == updated_credential.secrets["app_name"]
-      assert "app_id" == updated_credential.secrets["app_id"]
+      assert "some_id" == updated_credential.secrets["app_id"]
+      assert "some_key" == updated_credential.secrets["api_key"]
     end
 
     test "update_credential/2 for gupshup with empty creds, should error out",
@@ -1003,26 +1026,6 @@ defmodule Glific.PartnersTest do
 
       {:error, "App Name and API Key and App ID can't be empty"} =
         Partners.update_credential(credential, valid_update_attrs)
-    end
-
-    test "update_credential/2 for gupshup with first time linking",
-         %{organization_id: organization_id} = _attrs do
-      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
-
-      assert {:ok, %Credential{} = credential} =
-               Repo.fetch_by(Credential, %{provider_id: provider.id})
-
-      valid_update_attrs = %{
-        keys: %{},
-        shortcode: provider.shortcode,
-        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
-        organization_id: organization_id
-      }
-
-      {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
-      assert "some_app" == updated_credential.secrets["app_name"]
-      assert "some_key" == updated_credential.secrets["api_key"]
-      assert "some_id" == updated_credential.secrets["app_id"]
     end
 
     test "update_credential/2 for gupshup should send email notification to support",

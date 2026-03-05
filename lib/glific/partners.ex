@@ -31,6 +31,7 @@ defmodule Glific.Partners do
     Providers.Maytapi.WAWorker,
     Repo,
     RepoReplica,
+    Saas.Queries,
     Settings.Language,
     Stats,
     Users.User
@@ -1027,6 +1028,7 @@ defmodule Glific.Partners do
     result =
       if valid_bsp?(credential) do
         update_organization(organization, %{bsp_id: credential.provider.id})
+        Queries.sync_templates(%{organization: organization})
         {:ok, credential}
       else
         Glific.Metrics.increment("Gupshup Credential Update Failed")
