@@ -475,7 +475,7 @@ defmodule Glific.Sheets do
       {:error, error} ->
         Notifications.create_notification(%{
           category: "Flow",
-          message: format_notification_message(error),
+          message: format_notification_message(spreadsheet_id, error),
           severity: Notifications.types().warning,
           organization_id: context.organization_id,
           entity: %{
@@ -554,19 +554,38 @@ defmodule Glific.Sheets do
 
   defp trim_value(value), do: value
 
-  @spec format_notification_message(any()) :: String.t()
-  defp format_notification_message(%Tesla.Env{body: body}) when is_binary(body) do
+  @spec format_notification_message(String.t(), any()) :: String.t()
+  defp format_notification_message(_, %Tesla.Env{body: body}) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, %{"error" => %{"message" => message}}} -> message
       _ -> body
     end
   end
 
-  defp format_notification_message(%Tesla.Env{} = env) do
-    env |> Map.drop([:headers, :__client__]) |> inspect()
+  defp format_notification_message(spreadsheet_id, %Tesla.Env{status: status} = env) do
+    cond do
+      status in 400..499 ->
+        "Invalid request, please check the spreadsheet id"
+
+      status in 500..599 ->
+        "Failed to write to the spreadsheet, please retry after some time"
+
+      true ->
+        Logger.error(
+          "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(env)}"
+        )
+
+        "Unknown error occured, please reach out to support"
+    end
   end
 
-  defp format_notification_message(error), do: inspect(error)
+  defp format_notification_message(spreadsheet_id, error) do
+    Logger.error(
+      "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(error)}"
+    )
+
+    "Unknown error occured, please reach out to support"
+  end
 
   @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
   defp generate_error_message(changeset) do

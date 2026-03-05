@@ -598,5 +598,123 @@ defmodule Glific.SheetsTest do
         assert notification.message == "The caller does not have permission"
       end
     end
+
+    test "creates a notification with a generic 5xx error message when Google Sheets returns 500 without body",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 500
+            }
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message ==
+                 "Failed to write to the spreadsheet, please retry after some time"
+      end
+    end
+
+    defmodule RandomWriteError do
+      defstruct [:reason]
+    end
+
+    test "creates a notification with a generic unknown error message when Google Sheets returns a non-Tesla.Env error",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        random_error = %RandomWriteError{reason: "some random failure"}
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            {:error, random_error}
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message ==
+                 "Unknown error occured, please reach out to support"
+      end
+    end
   end
 end
