@@ -35,7 +35,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorker do
   Standard Oban perform entry point.
 
   Expected job args:
-  - `"webhook_name"` — `"speech_to_text_with_bhasini"` or `"text_to_speech_with_bhasini"`
+  - `"webhook_name"` — `"speech_to_text"` or `"text_to_speech"`
   - `"fields"` — map of fields passed to CommonWebhook (already includes org_id, contact_id, etc.)
   - `"webhook_log_id"` — ID of the pre-created WebhookLog entry
   - `"context_id"` — FlowContext ID to wake on failure
@@ -103,15 +103,25 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorker do
     end
   end
 
-  @spec wake_flow_with_failure(non_neg_integer(), non_neg_integer()) :: :ok
+  @spec wake_flow_with_failure(non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}
   defp wake_flow_with_failure(context_id, organization_id) do
     context =
       Repo.get!(FlowContext, context_id)
       |> Repo.preload(:flow)
 
     failure_message = Messages.create_temp_message(organization_id, "Failure")
-    FlowContext.wakeup_one(context, failure_message)
-    :ok
+
+    case FlowContext.wakeup_one(context, failure_message) do
+      {:ok, _context, _messages} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error(
+          "Failed to wake flow context #{context_id} for org=#{organization_id}: #{inspect(reason)}"
+        )
+
+        {:error, "Failed to wake flow context #{context_id}: #{inspect(reason)}"}
+    end
   end
 
   @doc """

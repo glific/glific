@@ -128,16 +128,21 @@ defmodule Glific.Flows.Webhook do
           |> Map.put("flow_id", context.flow_id)
           |> Map.put("contact_id", context.contact_id)
 
-        SttTtsWorker.enqueue(
-          webhook_name,
-          fields,
-          webhook_log.id,
-          context.id,
-          context.organization_id
-        )
+        case SttTtsWorker.enqueue(
+               webhook_name,
+               fields,
+               webhook_log.id,
+               context.id,
+               context.organization_id
+             ) do
+          {:ok, _job} ->
+            wait_time = action.wait_time || 60
+            update_context_for_wait(context, wait_time)
 
-        wait_time = action.wait_time || 60
-        update_context_for_wait(context, wait_time)
+          {:error, changeset} ->
+            update_log(webhook_log.id, inspect(changeset))
+            {:ok, context, [failure_message]}
+        end
     end
   end
 

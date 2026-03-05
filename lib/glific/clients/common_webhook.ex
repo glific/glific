@@ -581,10 +581,13 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec parse_flow_fields(map()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   defp parse_flow_fields(fields) do
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-    {organization_id, flow_id, contact_id}
+    with {:ok, organization_id} <- Glific.parse_maybe_integer(fields["organization_id"]),
+         {:ok, flow_id} <- Glific.parse_maybe_integer(fields["flow_id"]),
+         {:ok, contact_id} <- Glific.parse_maybe_integer(fields["contact_id"]) do
+      {organization_id, flow_id, contact_id}
+    else
+      _ -> raise ArgumentError, "Invalid flow metadata for Kaapi webhook: #{inspect(fields)}"
+    end
   end
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls

@@ -124,7 +124,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   defp upload_tts_audio(base64_audio, organization_id) do
     uuid = Ecto.UUID.generate()
     remote_name = "Kaapi/outbound/#{uuid}.ogg"
-    ogg_file = System.tmp_dir!() <> "#{uuid}.ogg"
+    ogg_file = Path.join(System.tmp_dir!(), "#{uuid}.ogg")
 
     with {:ok, decoded_audio} <- Base.decode64(base64_audio),
          :ok <- File.write(ogg_file, decoded_audio),
