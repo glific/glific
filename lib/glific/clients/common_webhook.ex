@@ -613,7 +613,11 @@ defmodule Glific.Clients.CommonWebhook do
            }),
          assistant <- Repo.preload(assistant, :active_config_version),
          %{version_number: version_number} <- assistant.active_config_version do
-      {:ok, {assistant.kaapi_uuid, version_number}}
+      if is_nil(assistant.kaapi_uuid) do
+        {:error, "Assistant is still being set up"}
+      else
+        {:ok, {assistant.kaapi_uuid, version_number}}
+      end
     else
       {:error, _} ->
         {:error, "Assistant not found: #{assistant_display_id}"}
