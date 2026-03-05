@@ -383,5 +383,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
   defp migrate_model(model) when model in @supported_models, do: model
 
-  defp migrate_model(_), do: @default_model
+  defp migrate_model(model) do
+    if String.starts_with?(model, "ft:"), do: model, else: @default_model
+  end
 end
