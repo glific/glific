@@ -80,6 +80,9 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     |> validate_required(@required_fields)
     |> assoc_constraint(:knowledge_base)
     |> unique_constraint([:knowledge_base_id, :version_number])
+    |> unique_constraint([:llm_service_id, :organization_id],
+      name: :knowledge_base_versions_llm_service_id_organization_id_index
+    )
   end
 
   @doc """
@@ -97,5 +100,14 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
       nil -> {:error, ["KnowledgeBaseVersion", "Resource not found"]}
       kb_version -> {:ok, kb_version}
     end)
+  end
+
+  @doc """
+  Fetches the knowledge base version by version id
+  """
+  @spec get_by_version_id(non_neg_integer()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
+  def get_by_version_id(knowledge_base_version_id) do
+    Repo.fetch_by(KnowledgeBaseVersion, id: knowledge_base_version_id)
   end
 end
