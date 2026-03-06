@@ -8,7 +8,6 @@ defmodule Glific.OnboardTest do
   alias Faker.Phone
 
   alias Glific.{
-    Contacts,
     Fixtures,
     Mails.NewPartnerOnboardedMail,
     Partners,
