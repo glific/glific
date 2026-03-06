@@ -123,17 +123,17 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   defp upload_tts_audio(base64_audio, organization_id) do
     uuid = Ecto.UUID.generate()
-    remote_name = "Kaapi/outbound/#{uuid}.ogg"
-    ogg_file = Path.join(System.tmp_dir!(), "#{uuid}.ogg")
+    remote_name = "Kaapi/outbound/#{uuid}.mp3"
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
 
     with {:ok, decoded_audio} <- Base.decode64(base64_audio),
-         :ok <- File.write(ogg_file, decoded_audio),
-         {:ok, media_meta} <- GcsWorker.upload_media(ogg_file, remote_name, organization_id) do
-      File.rm(ogg_file)
+         :ok <- File.write(mp3_file, decoded_audio),
+         {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
+      File.rm(mp3_file)
       media_meta.url
     else
       error ->
-        File.rm(ogg_file)
+        File.rm(mp3_file)
         Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
         nil
     end
