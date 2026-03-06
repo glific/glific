@@ -38,29 +38,40 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
       tbl TEXT;
       rows_deleted BIGINT;
     BEGIN
-      -- Null out nullable foreign keys on the organization row to avoid FK violations.
-      -- bsp_id and default_language_id are NOT NULL so they cannot be nullified here;
-      -- they reference global tables (providers, languages) that are never deleted anyway.
-      UPDATE organizations
-      SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL
-      WHERE id = org_id;
+      -- Disable FK triggers temporarily so alphabetical deletion order does not
+      -- cause RESTRICT violations between org-scoped tables (e.g. whatsapp_forms
+      -- references whatsapp_form_revisions). Re-enabled after the loop.
+      SET session_replication_role = 'replica';
 
-      -- Dynamically delete from all tables with organization_id column
-      FOR tbl IN
-        SELECT table_name
-        FROM information_schema.columns
-        WHERE column_name = 'organization_id'
-          AND table_schema = 'public'
-          AND table_name != 'organizations'
-        ORDER BY table_name
-      LOOP
-        EXECUTE format('DELETE FROM %I WHERE organization_id = %s', tbl, org_id);
-        GET DIAGNOSTICS rows_deleted = ROW_COUNT;
-        IF rows_deleted > 0 THEN
-          RAISE NOTICE 'Deleted % rows from %', rows_deleted, tbl;
-        END IF;
-      END LOOP;
-    END;
+      BEGIN
+        -- Null out nullable foreign keys on the organization row to avoid FK violations.
+        -- bsp_id and default_language_id are NOT NULL so they cannot be nullified here;
+        -- they reference global tables (providers, languages) that are never deleted anyway.
+        UPDATE organizations
+        SET contact_id = NULL, newcontact_flow_id = NULL, optin_flow_id = NULL
+        WHERE id = org_id;
+
+        -- Dynamically delete from all tables with organization_id column
+        FOR tbl IN
+          SELECT table_name
+          FROM information_schema.columns
+          WHERE column_name = 'organization_id'
+            AND table_schema = 'public'
+            AND table_name != 'organizations'
+          ORDER BY table_name
+        LOOP
+          EXECUTE format('DELETE FROM %I WHERE organization_id = %s', tbl, org_id);
+          GET DIAGNOSTICS rows_deleted = ROW_COUNT;
+          IF rows_deleted > 0 THEN
+            RAISE NOTICE 'Deleted % rows from %', rows_deleted, tbl;
+          END IF;
+        END LOOP;
+
+        SET session_replication_role = 'origin';
+      EXCEPTION WHEN OTHERS THEN
+        SET session_replication_role = 'origin';
+        RAISE;
+      END;
     $$ LANGUAGE plpgsql;
     """)
   end
