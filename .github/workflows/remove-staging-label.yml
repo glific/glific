@@ -1,5 +1,9 @@
 name: Remove all labels on merge
 
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   pull_request:
     types: [closed]
