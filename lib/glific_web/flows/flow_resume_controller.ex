@@ -6,7 +6,15 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Contacts.Contact, Flows.FlowContext, Flows.Webhook, Messages, Partners, Repo}
+  alias Glific.{
+    Contacts.Contact,
+    Flows.FlowContext,
+    Flows.Webhook,
+    GCS.GcsWorker,
+    Messages,
+    Partners,
+    Repo
+  }
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -25,6 +33,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
       %{
         success: result["success"],
         message: response["message"] || result["error"],
+        error_type: result["error_type"],
+        reason: result["reason"],
         thread_id: response["thread_id"]
       }
 
@@ -69,16 +79,28 @@ defmodule GlificWeb.Flows.FlowResumeController do
   # New format from unified-llm-call (/api/v1/llm/call):
   # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
   # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
+  # For TTS (output type "audio"), the base64 audio is decoded and uploaded to GCS, returning a media_url.
   @spec parse_callback_response(map()) :: map()
   defp parse_callback_response(%{"metadata" => metadata, "data" => data})
        when is_map(metadata) and map_size(metadata) > 0 do
     response_data = get_in(data || %{}, ["response"]) || %{}
-    message_text = get_in(response_data, ["output", "content", "value"])
+    output = get_in(response_data, ["output"]) || %{}
+    output_type = get_in(output, ["type"])
     conversation_id = response_data["conversation_id"]
 
-    metadata
-    |> Map.put("message", message_text)
-    |> Map.put("thread_id", conversation_id)
+    base = Map.put(metadata, "thread_id", conversation_id)
+
+    case output_type do
+      "audio" ->
+        {:ok, organization_id} = metadata["organization_id"] |> Glific.parse_maybe_integer()
+        base64_audio = get_in(output, ["content", "value"])
+        media_url = upload_tts_audio(base64_audio, organization_id)
+        Map.put(base, "message", media_url)
+
+      _ ->
+        message_text = get_in(output, ["content", "value"])
+        Map.put(base, "message", message_text)
+    end
   end
 
   # Old format from call_and_wait (/api/v1/responses):
@@ -94,6 +116,27 @@ defmodule GlificWeb.Flows.FlowResumeController do
     )
 
     %{}
+  end
+
+  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) :: String.t() | nil
+  defp upload_tts_audio(nil, _organization_id), do: nil
+
+  defp upload_tts_audio(base64_audio, organization_id) do
+    uuid = Ecto.UUID.generate()
+    remote_name = "Kaapi/outbound/#{uuid}.mp3"
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
+
+    with {:ok, decoded_audio} <- Base.decode64(base64_audio),
+         :ok <- File.write(mp3_file, decoded_audio),
+         {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
+      File.rm(mp3_file)
+      media_meta.url
+    else
+      error ->
+        File.rm(mp3_file)
+        Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
+        nil
+    end
   end
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()

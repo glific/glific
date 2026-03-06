@@ -12,6 +12,7 @@ defmodule Glific.Flows.Webhook do
   alias Glific.Messages.Message
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.SttTtsWorker
 
   use Oban.Worker,
     queue: :webhook,
@@ -39,6 +40,8 @@ defmodule Glific.Flows.Webhook do
     "parse_via_chat_gpt",
     "filesearch-gpt",
     "voice-filesearch-gpt",
+    "speech_to_text",
+    "text_to_speech",
     "speech_to_text_with_bhasini",
     "nmt_tts_with_bhasini",
     "call_and_wait"
@@ -66,6 +69,81 @@ defmodule Glific.Flows.Webhook do
     end
 
     nil
+  end
+
+  @doc """
+  Execute a Kaapi STT webhook (async — flow waits for callback via flow_resume).
+
+  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
+  that enforces per-organization rate limiting before calling Kaapi.
+  """
+  @spec execute_kaapi_stt(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_kaapi_stt(action, context) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, _secrets} ->
+        enqueue_stt_tts_job(action, context, "speech_to_text")
+
+      {:error, _reason} ->
+        unified_llm_and_wait(action, context, false, "speech_to_text")
+    end
+  end
+
+  @doc """
+  Execute a Kaapi TTS webhook (async — flow waits for callback via flow_resume).
+
+  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
+  that enforces per-organization rate limiting before calling Kaapi.
+  """
+  @spec execute_kaapi_tts(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_kaapi_tts(action, context) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, _secrets} ->
+        enqueue_stt_tts_job(action, context, "text_to_speech")
+
+      {:error, _reason} ->
+        unified_llm_and_wait(action, context, false, "text_to_speech")
+    end
+  end
+
+  @spec enqueue_stt_tts_job(Action.t(), FlowContext.t(), String.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp enqueue_stt_tts_job(action, context, webhook_name) do
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
+
+    case create_body(context, action.body) do
+      {:error, message} ->
+        webhook_log = create_log(action, %{}, action.headers, context)
+        update_log(webhook_log, message)
+        {:ok, context, [failure_message]}
+
+      {fields, _body} ->
+        webhook_log = create_log(action, fields, action.headers, context)
+
+        fields =
+          fields
+          |> Map.put("webhook_log_id", webhook_log.id)
+          |> Map.put("result_name", action.result_name)
+          |> Map.put("flow_id", context.flow_id)
+          |> Map.put("contact_id", context.contact_id)
+
+        case SttTtsWorker.enqueue(
+               webhook_name,
+               fields,
+               webhook_log.id,
+               context.id,
+               context.organization_id
+             ) do
+          {:ok, _job} ->
+            wait_time = action.wait_time || 60
+            update_context_for_wait(context, wait_time)
+
+          {:error, changeset} ->
+            update_log(webhook_log.id, inspect(changeset))
+            {:ok, context, [failure_message]}
+        end
+    end
   end
 
   @doc """
@@ -489,9 +567,9 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for the unified LLM API to send a response.
   """
-  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
+  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, false) do
+  def unified_llm_and_wait(action, context, false, _webhook_name) do
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
     webhook_log = create_log(action, %{}, action.headers, context)
     update_log(webhook_log.id, "Kaapi is not active")
@@ -507,7 +585,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, context, [failure_message]}
   end
 
-  def unified_llm_and_wait(action, context, true) do
+  def unified_llm_and_wait(action, context, true, webhook_name) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -529,13 +607,19 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        do_unified_llm_and_wait(params, failure_message)
+        do_unified_llm_and_wait(params, failure_message, webhook_name)
     end
   end
 
-  @spec do_unified_llm_and_wait(map(), Message.t()) ::
+  @doc false
+  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_unified_llm_and_wait(params, failure_message) do
+  def unified_llm_and_wait(action, context, is_active?),
+    do: unified_llm_and_wait(action, context, is_active?, "unified-llm-call")
+
+  @spec do_unified_llm_and_wait(map(), Message.t(), String.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp do_unified_llm_and_wait(params, failure_message, webhook_name) do
     webhook_log_id = params.webhook_log.id
 
     fields =
@@ -556,18 +640,24 @@ defmodule Glific.Flows.Webhook do
       headers: headers,
       action: params.action,
       context: params.context,
-      failure_message: failure_message
+      failure_message: failure_message,
+      webhook_name: webhook_name
     })
   end
 
   @spec process_unified_llm_call(map()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp process_unified_llm_call(params) do
-    response = CommonWebhook.webhook("unified-llm-call", params.fields, params.headers)
+    webhook_name = Map.get(params, :webhook_name, "unified-llm-call")
+    response = CommonWebhook.webhook(webhook_name, params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
         update_log(params.webhook_log_id, data)
+        wait_time = params.action.wait_time || 60
+        update_context_for_wait(params.context, wait_time)
+
+      %{success: true} ->
         wait_time = params.action.wait_time || 60
         update_context_for_wait(params.context, wait_time)
 
