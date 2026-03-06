@@ -8,10 +8,9 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
 
     # Partial index for fast filtering of non-deleted organizations
     create index(:organizations, [:deleted_at],
-      where: "deleted_at IS NULL",
-      name: :organizations_active_index
-    )
-
+             where: "deleted_at IS NULL",
+             name: :organizations_active_index
+           )
 
     create_delete_organization_data_function()
   end
@@ -20,7 +19,6 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
     execute("DROP FUNCTION IF EXISTS delete_organization_data(BIGINT)")
 
     drop_if_exists index(:organizations, [:deleted_at], name: :organizations_active_index)
-
 
     alter table(:organizations) do
       remove(:deleted_at)
@@ -72,6 +70,7 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
         SET session_replication_role = 'origin';
         RAISE;
       END;
+    END;
     $$ LANGUAGE plpgsql;
     """)
   end

@@ -305,17 +305,13 @@ defmodule Glific.EraseTest do
 
     # All related data should be deleted
     {:ok, result} =
-      Repo.query(
-        "SELECT count(*) FROM messages WHERE organization_id = #{organization.id}"
-      )
+      Repo.query("SELECT count(*) FROM messages WHERE organization_id = #{organization.id}")
 
     [[count]] = result.rows
     assert count == 0
 
     {:ok, result} =
-      Repo.query(
-        "SELECT count(*) FROM contacts WHERE organization_id = #{organization.id}"
-      )
+      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = #{organization.id}")
 
     [[count]] = result.rows
     assert count == 0
