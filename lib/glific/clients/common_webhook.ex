@@ -143,7 +143,6 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
-  # Falls back to OpenAI when speech_engine is "open_ai".
   # Optional fields from flow node: provider, model, language, voice
   def webhook("text_to_speech", fields, _headers) do
     text = fields["text"]
