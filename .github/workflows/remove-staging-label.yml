@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Remove all labels
-        uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0
+        uses: actions-ecosystem/action-remove-labels@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ join(github.event.pull_request.labels.*.name, ',') }}
