@@ -19,7 +19,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          labels=$(echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | jq -r '.[]')
-          for label in $labels; do
+          echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | jq -r '.[]' | while IFS= read -r label; do
             gh pr edit "$PR_NUMBER" --remove-label "$label" --repo "$GITHUB_REPOSITORY" || true
           done
