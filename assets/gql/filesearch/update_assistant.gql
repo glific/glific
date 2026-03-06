@@ -1,9 +1,0 @@
-#import "./unified_assistant_fields.frag.gql"
-
-mutation updateAssistant($id: ID!, $input: AssistantInput! = {}) {
-    updateAssistant(id: $id, input: $input) {
-        ...UnifiedAssistantFields
-
-        ...UnifiedErrorFields
-    }
-}
