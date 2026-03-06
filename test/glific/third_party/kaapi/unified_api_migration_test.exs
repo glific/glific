@@ -260,13 +260,13 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
         organization_id: attrs.organization_id,
         shortcode: "kaapi",
         keys: %{},
-        secrets: %{"api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"},
+        secrets: %{"api_key" => "sk_test_key"},
         is_active: true
       })
 
     valid_update_attrs = %{
       keys: %{},
-      secrets: %{"api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"},
+      secrets: %{"api_key" => "sk_test_key"},
       is_active: true,
       organization_id: attrs.organization_id,
       shortcode: "kaapi"
@@ -384,7 +384,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
 
     assert config_version.prompt == expected_prompt
     assert config_version.model == expected_model
-    assert config_version.provider == "kaapi"
+    assert config_version.provider == "openai"
     assert config_version.settings["temperature"] == expected_temperature
     assert config_version.status == :ready
     assert config_version.inserted_at == expected_inserted_at

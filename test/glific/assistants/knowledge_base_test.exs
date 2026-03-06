@@ -5,6 +5,7 @@ defmodule Glific.Assistants.KnowledgeBaseTest do
   use Glific.DataCase
 
   alias Glific.Assistants.KnowledgeBase
+  alias Glific.Repo
 
   setup %{organization_id: organization_id} do
     valid_attrs = %{
@@ -54,6 +55,21 @@ defmodule Glific.Assistants.KnowledgeBaseTest do
       errors = errors_on(changeset)
       assert %{name: ["can't be blank"]} = errors
       assert %{organization_id: ["can't be blank"]} = errors
+    end
+
+    test "rejects duplicate name within the same organization",
+         %{valid_attrs: valid_attrs} do
+      assert {:ok, _} =
+               %KnowledgeBase{}
+               |> KnowledgeBase.changeset(valid_attrs)
+               |> Repo.insert()
+
+      assert {:error, changeset} =
+               %KnowledgeBase{}
+               |> KnowledgeBase.changeset(valid_attrs)
+               |> Repo.insert()
+
+      assert {"has already been taken", _} = changeset.errors[:name]
     end
   end
 end

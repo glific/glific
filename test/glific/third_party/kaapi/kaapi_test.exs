@@ -10,7 +10,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     project_name: "Glific"
   }
 
-  @org_kaapi_api_key "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+  @org_kaapi_api_key "sk_test_key"
 
   test "onboard_to_kaapi/1 returns {:ok, %{api_key: key}} on 200 with api_key" do
     mock(fn
@@ -285,12 +285,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                   model: "gpt-4o-mini",
                   instructions: "You are a helpful assistant",
                   temperature: 1.0,
-                  tools: [
-                    %{
-                      type: "file_search",
-                      vector_store_ids: ["vs_3fa85f64"]
-                    }
-                  ]
+                  knowledge_base_ids: ["vs_3fa85f64"]
                 }
               },
               id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -312,12 +307,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
             model: "gpt-4o-mini",
             instructions: "You are a helpful assistant",
             temperature: 1.0,
-            tools: [
-              %{
-                type: "file_search",
-                vector_store_ids: ["vs_3fa85f64"]
-              }
-            ]
+            knowledge_base_ids: ["vs_3fa85f64"]
           }
         }
 

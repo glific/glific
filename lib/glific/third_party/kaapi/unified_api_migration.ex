@@ -18,6 +18,8 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   alias Glific.TaskSupervisor
   alias Glific.ThirdParty.Kaapi
 
+  @default_model "gpt-4o"
+
   @doc """
   Migrate all assistants to the new unified API structure
   """
@@ -31,7 +33,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       from(oa in OpenAIAssistant,
         preload: [:vector_store]
       )
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     Logger.info("Starting migration for #{length(openai_assistants)} assistants")
 
@@ -124,10 +126,10 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       description: nil,
       prompt: openai_assistant.instructions,
       assistant_id: openai_assistant.assistant_id,
-      model: openai_assistant.model,
+      model: @default_model,
       temperature: openai_assistant.temperature,
       organization_id: openai_assistant.organization_id,
-      vector_store_ids: get_vector_store_ids(openai_assistant.vector_store)
+      knowledge_base_ids: get_vector_store_ids(openai_assistant.vector_store)
     }
   end
 
@@ -169,7 +171,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         assistant_id: assistant.id,
         prompt: kaapi_params.prompt,
         model: kaapi_params.model,
-        provider: "kaapi",
+        provider: "openai",
         settings: %{temperature: kaapi_params.temperature},
         status: :ready,
         organization_id: kaapi_params.organization_id
@@ -258,7 +260,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         on: v.id == a.vector_store_id,
         distinct: [v.id]
       )
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,

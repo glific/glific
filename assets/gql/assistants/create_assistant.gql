@@ -1,7 +1,9 @@
-#import "./kaapi_assistant_fields.frag.gql"
+#import "./assistant_fields.frag.gql"
 
 mutation createAssistant($input: AssistantInput! = {}) {
   createAssistant(input: $input) {
-    ...KaapiAssistantFields
+    ...AssistantFields
+
+    ...ErrorFields
   }
 }

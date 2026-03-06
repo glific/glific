@@ -1,11 +1,9 @@
-defmodule GlificWeb.Schema.FilesearchTypes do
+defmodule GlificWeb.Schema.AssistantTypes do
   @moduledoc """
-  GraphQL Representation of Glific's Filesearch DataType
+  GraphQL Representation of Glific's Assistant DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -16,6 +14,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :vector_store do
     field :id, :id
+    field :knowledge_base_version_id, :string
     field :vector_store_id, :string
     field :name, :string
 
@@ -38,17 +37,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :id, :string
     field :name, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   object :file_result do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
-  end
-
-  object :assistant_result do
-    field :assistant, :assistant
-    field :errors, list_of(:input_error)
+    field :file_size, :integer
   end
 
   object :kaapi_assistant_result do
@@ -68,28 +64,12 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :updated_at, :datetime
   end
 
-  object :assistant do
-    field :id, :id
-    field :name, :string
-    field :assistant_id, :string
-    field :model, :string
-    field :instructions, :string
-    field :temperature, :float
-
-    field :vector_store, :vector_store do
-      resolve(dataloader(Repo))
-    end
-
-    field :inserted_at, :datetime
-    field :updated_at, :datetime
-  end
-
-  object :unified_assistant_result do
-    field :assistant, :unified_assistant
+  object :assistant_result do
+    field :assistant, :assistant
     field :errors, list_of(:input_error)
   end
 
-  object :unified_assistant do
+  object :assistant do
     field :id, :id
     field :assistant_display_id, :string
     field :name, :string
@@ -118,13 +98,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     field :instructions, :string
     field :description, :string
     field :temperature, :float
-    field :knowledge_base_id, :string
+    field :knowledge_base_version_id, :string
   end
 
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
     field :uploaded_at, :string
+    field :file_size, :integer
   end
 
   @desc "Filtering options for VectorStore"
@@ -172,7 +153,7 @@ defmodule GlificWeb.Schema.FilesearchTypes do
     end
 
     @desc "Update Assistant"
-    field :update_assistant, :unified_assistant_result do
+    field :update_assistant, :assistant_result do
       arg(:input, :assistant_input)
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
@@ -182,14 +163,14 @@ defmodule GlificWeb.Schema.FilesearchTypes do
 
   object :filesearch_queries do
     @desc "Get Assistant"
-    field :assistant, :unified_assistant_result do
+    field :assistant, :assistant_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.get_assistant/3)
     end
 
     @desc "List Assistants"
-    field :assistants, list_of(:unified_assistant) do
+    field :assistants, list_of(:assistant) do
       arg(:filter, :assistant_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
