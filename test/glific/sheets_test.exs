@@ -713,7 +713,7 @@ defmodule Glific.SheetsTest do
           |> Enum.find(&(&1.category == "Flow"))
 
         assert notification.message ==
-                 "Unknown error occured, please reach out to support"
+                 "Unknown error occurred, please reach out to support"
       end
     end
   end
