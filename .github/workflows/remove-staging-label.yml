@@ -1,0 +1,17 @@
+name: Remove all labels on merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  remove-labels:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove all labels
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ join(github.event.pull_request.labels.*.name, ',') }}
