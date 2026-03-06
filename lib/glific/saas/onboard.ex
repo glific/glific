@@ -254,8 +254,11 @@ defmodule Glific.Saas.Onboard do
     if organization.is_active do
       {:error, "Organization is still active"}
     else
-      with :ok <- Erase.delete_all_organization_data(delete_organization_id) do
-        Partners.delete_organization(organization)
+      # Soft-delete first so the org is immediately marked deleted even if data
+      # erasure fails — this prevents any new data being written to the org.
+      with {:ok, organization} <- Partners.delete_organization(organization),
+           :ok <- Erase.delete_all_organization_data(organization.id) do
+        {:ok, organization}
       end
     end
   end

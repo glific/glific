@@ -12,20 +12,6 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
       name: :organizations_active_index
     )
 
-    # Keep shortcode globally unique (even across soft-deleted orgs)
-    drop_if_exists unique_index(:organizations, [:shortcode])
-    execute("DROP INDEX IF EXISTS organizations_shortcode_index")
-
-    create unique_index(:organizations, [:shortcode])
-
-    # Replace contact_id unique constraint with partial unique index (only non-deleted orgs)
-    drop_if_exists unique_index(:organizations, [:contact_id])
-    execute("DROP INDEX IF EXISTS organizations_contact_id_index")
-
-    create unique_index(:organizations, [:contact_id],
-      where: "deleted_at IS NULL",
-      name: :organizations_contact_id_active_index
-    )
 
     create_delete_organization_data_function()
   end
@@ -35,18 +21,6 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
 
     drop_if_exists index(:organizations, [:deleted_at], name: :organizations_active_index)
 
-    drop_if_exists unique_index(:organizations, [:shortcode])
-    execute("DROP INDEX IF EXISTS organizations_shortcode_index")
-
-    drop_if_exists unique_index(:organizations, [:contact_id],
-                     name: :organizations_contact_id_active_index
-                   )
-
-    # Remove soft-deleted orgs before recreating plain unique index on contact_id to avoid conflicts
-    execute("DELETE FROM organizations WHERE deleted_at IS NOT NULL")
-
-    create unique_index(:organizations, [:shortcode])
-    create unique_index(:organizations, [:contact_id])
 
     alter table(:organizations) do
       remove(:deleted_at)
