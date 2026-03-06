@@ -132,7 +132,14 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
-    Kaapi.speech_to_text(fields["speech"], callback_url, request_metadata, organization_id, stt_opts)
+
+    Kaapi.speech_to_text(
+      fields["speech"],
+      callback_url,
+      request_metadata,
+      organization_id,
+      stt_opts
+    )
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).

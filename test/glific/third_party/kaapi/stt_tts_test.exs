@@ -93,7 +93,8 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
 
     test "returns timeout error on HTTP 408 from Kaapi" do
       mock(fn
-        %Tesla.Env{method: :get} -> %Tesla.Env{status: 200, body: "audio"}
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
 
         %Tesla.Env{method: :post} ->
           %Tesla.Env{status: 408, body: %{"error" => "request timed out"}}
@@ -113,7 +114,8 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
 
     test "returns service_unavailable on HTTP 5xx from Kaapi" do
       mock(fn
-        %Tesla.Env{method: :get} -> %Tesla.Env{status: 200, body: "audio"}
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
 
         %Tesla.Env{method: :post} ->
           %Tesla.Env{status: 503, body: %{"error" => "service unavailable"}}
@@ -133,7 +135,8 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
 
     test "applies opts overrides in payload" do
       mock(fn
-        %Tesla.Env{method: :get} -> %Tesla.Env{status: 200, body: "audio"}
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
 
         %Tesla.Env{method: :post, body: body} ->
           decoded = Jason.decode!(body)

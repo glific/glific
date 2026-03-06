@@ -76,7 +76,8 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorkerTest do
   describe "perform/1 — speech_to_text" do
     test "returns :ok when Kaapi acknowledges STT request (success: true)" do
       mock(fn
-        %Tesla.Env{method: :get} -> %Tesla.Env{status: 200, body: "audio_bytes"}
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio_bytes"}
 
         %Tesla.Env{method: :post} ->
           %Tesla.Env{status: 200, body: %{"job_id" => "stt-123", "status" => "queued"}}
