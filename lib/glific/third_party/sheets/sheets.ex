@@ -575,7 +575,7 @@ defmodule Glific.Sheets do
           "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(env)}"
         )
 
-        "Unknown error occured, please reach out to support"
+        "Unknown error occurred, please reach out to support"
     end
   end
 
@@ -584,7 +584,7 @@ defmodule Glific.Sheets do
       "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(error)}"
     )
 
-    "Unknown error occured, please reach out to support"
+    "Unknown error occurred, please reach out to support"
   end
 
   @spec generate_error_message(Ecto.Changeset.t()) :: String.t()
