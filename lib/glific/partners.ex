@@ -197,7 +197,7 @@ defmodule Glific.Partners do
     do:
       Repo.list_filter(
         args,
-        Organization,
+        non_deleted_organizations_query(),
         &Repo.opts_with_name/2,
         &filter_organization_with/2,
         skip_organization_id: true
@@ -210,6 +210,7 @@ defmodule Glific.Partners do
   def active_organizations(orgs, suspended \\ false) do
     Organization
     |> where([q], q.is_active == true)
+    |> where([q], is_nil(q.deleted_at))
     |> select([q], [q.id, q.name, q.last_communication_at])
     |> where([q], q.is_suspended == ^suspended)
     |> restrict_orgs(orgs)
@@ -234,10 +235,14 @@ defmodule Glific.Partners do
     do:
       Repo.count_filter(
         args,
-        Organization,
+        non_deleted_organizations_query(),
         &filter_organization_with/2,
         skip_organization_id: true
       )
+
+  @spec non_deleted_organizations_query() :: Ecto.Query.t()
+  defp non_deleted_organizations_query,
+    do: from(o in Organization, where: is_nil(o.deleted_at))
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
@@ -465,9 +470,17 @@ defmodule Glific.Partners do
   @spec delete_organization(Organization.t()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
-    # we are deleting an organization that is one of the SaaS users, not the current users org
-    # setting timeout as the deleting organization is an expensive operation
-    Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
+    organization
+    |> Organization.changeset(%{deleted_at: DateTime.utc_now()})
+    |> Repo.update(skip_organization_id: true)
+    |> case do
+      {:ok, updated_org} ->
+        remove_organization_cache(updated_org.id, updated_org.shortcode)
+        {:ok, updated_org}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -600,22 +613,27 @@ defmodule Glific.Partners do
     Logger.info("Loading organization cache: #{cache_key}")
 
     organization =
-      if is_integer(cache_key) do
-        get_organization!(cache_key) |> fill_cache()
-      else
-        case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
-          {:ok, organization} ->
-            organization |> fill_cache()
-
-          _ ->
-            raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
-        end
-      end
+      cache_key
+      |> fetch_non_deleted_organization()
+      |> fill_cache()
 
     # we are already storing this in the cache (in the function fill_cache),
     # so we can ask cachex to ignore the value. We need to do this since we are
     # storing multiple keys for the same object
     {:ignore, organization}
+  end
+
+  @spec fetch_non_deleted_organization(integer | String.t()) :: Organization.t()
+  defp fetch_non_deleted_organization(id) when is_integer(id) do
+    Organization
+    |> where([o], o.id == ^id and is_nil(o.deleted_at))
+    |> Repo.one!(skip_organization_id: true)
+  end
+
+  defp fetch_non_deleted_organization(shortcode) when is_binary(shortcode) do
+    Organization
+    |> where([o], o.shortcode == ^shortcode and is_nil(o.deleted_at))
+    |> Repo.one!(skip_organization_id: true)
   end
 
   @doc """
@@ -777,6 +795,7 @@ defmodule Glific.Partners do
   defp unsuspend_org_list(time \\ DateTime.utc_now()) do
     Organization
     |> where([q], q.is_active == true)
+    |> where([q], is_nil(q.deleted_at))
     |> select([q], q.id)
     |> where([q], q.is_suspended == true)
     |> where([q], q.suspended_until < ^time)
