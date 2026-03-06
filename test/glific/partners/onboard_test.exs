@@ -748,7 +748,7 @@ defmodule Glific.OnboardTest do
     assert %{is_valid: false} = Onboard.setup(attrs)
   end
 
-  test "Seeding works even if we are creating a new org with an already present shortcode in seed migration" do
+  test "Shortcode cannot be reused after org is soft-deleted" do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
@@ -760,30 +760,14 @@ defmodule Glific.OnboardTest do
     assert result.organization.name == "First"
     assert result.organization.shortcode == "newglific"
 
-    simulator_contacts =
-      Contacts.list_contacts(%{
-        filter: %{term: "Glific"},
-        organization_id: result.organization.id
-      })
-
-    assert length(simulator_contacts) > 0
-
     {:ok, _} =
       Partners.get_organization!(result.organization.id) |> Partners.delete_organization()
 
+    # Shortcode is permanently reserved — reuse must be rejected
     result = Onboard.setup(attrs)
 
-    assert result.organization.name == "First"
-    assert result.organization.shortcode == "newglific"
-
-    # if we don't delete the existing migration, length of simulator_contacts here will be 0
-    simulator_contacts =
-      Contacts.list_contacts(%{
-        filter: %{term: "Glific"},
-        organization_id: result.organization.id
-      })
-
-    assert length(simulator_contacts) > 0
+    assert result.is_valid == false
+    assert Map.has_key?(result.messages, :shortcode)
   end
 
   test "We don't delete the existing migrations if shortcode doesnt exist" do
