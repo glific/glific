@@ -407,7 +407,7 @@ defmodule Glific.Saas.Queries do
     with true <- Regex.match?(~r/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, shortcode),
          nil <-
            Organization
-           |> where([o], o.shortcode == ^shortcode and is_nil(o.deleted_at))
+           |> where([o], o.shortcode == ^shortcode)
            |> Repo.one(skip_organization_id: true) do
       result
     else
