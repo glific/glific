@@ -105,7 +105,10 @@ defmodule GlificWeb.Router do
   scope "/" do
     pipe_through([:api, :api_protected])
 
-    forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
+    forward("/api", Absinthe.Plug,
+      schema: GlificWeb.Schema,
+      before_send: {GlificWeb.Schema, :absinthe_before_send}
+    )
   end
 
   # BSP webhooks

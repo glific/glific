@@ -198,6 +198,26 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def upload_evaluation_dataset(params, org_api_key) do
+    multipart =
+      Tesla.Multipart.new()
+      |> Tesla.Multipart.add_file(params.file.path,
+        name: "file",
+        filename: params.file.filename,
+        headers: [{"content-type", params.file.content_type}]
+      )
+      |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
+      |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
+
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/evaluations/datasets", multipart, opts: opts)
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [
@@ -213,21 +233,25 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     end)
   end
 
-  # Private
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
     {:ok, body}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
+  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error}}}) do
     Glific.Metrics.increment("Kaapi Failed")
-    {:error, %{status: status, body: body}}
+    {:error, error}
+  end
+
+  defp parse_kaapi_response({:ok, %Tesla.Env{body: body}}) do
+    Glific.Metrics.increment("Kaapi Failed")
+    {:error, body}
   end
 
   defp parse_kaapi_response(error) do
     if {:error, :timeout} == error, do: Glific.Metrics.increment("Kaapi Timedout")
-    error
+    {:error, "Request timed out, please try again later."}
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)

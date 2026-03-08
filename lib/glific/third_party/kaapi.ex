@@ -322,6 +322,38 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def upload_evaluation_dataset(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
+      case result do
+        %{data: %{dataset_name: dataset_name}} ->
+          Logger.info(
+            "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{inspect(result)}"
+          )
+
+          {:ok, %{name: dataset_name}}
+
+        _ ->
+          Logger.error("Failed to upload evaluation dataset to Kaapi, result: #{inspect(result)}")
+          {:error, "An unknown error occurred, please contact Glific support."}
+      end
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Failed to upload evaluation dataset to Kaapi",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   defp insert_kaapi_provider(organization_id, api_key) do
