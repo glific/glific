@@ -41,6 +41,28 @@ defmodule Glific.Sheets.GoogleSheets do
   end
 
   @doc """
+  Read all rows from the spreadsheet using authenticated service account.
+  Returns a list of lists where the first list is headers and the rest are data rows.
+  """
+  @spec read_sheet_data(non_neg_integer(), String.t()) ::
+          {:ok, list(list(String.t()))} | {:error, any()}
+  def read_sheet_data(org_id, spreadsheet_id) do
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
+      case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
+        {:ok, %{values: values}} when is_list(values) ->
+          IO.inspect(values, label: "read_sheet_data_values")
+          {:ok, values}
+
+        {:ok, %{values: nil}} ->
+          {:ok, []}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
+
+  @doc """
   Insert new row to the spreadsheet.
   """
   @spec insert_row(non_neg_integer(), String.t(), map()) :: {:ok, any()} | {:error, any()}

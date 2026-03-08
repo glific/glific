@@ -15,7 +15,6 @@ defmodule Glific.Sheets do
     Messages,
     Notifications,
     Repo,
-    Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
@@ -62,21 +61,20 @@ defmodule Glific.Sheets do
     end
   end
 
-  defp validate_sheet(%{type: "READ", url: url} = _attrs) when not is_nil(url) do
-    client =
-      Tesla.client([
-        {Tesla.Middleware.FollowRedirects, max_redirects: 5}
-      ])
+  defp validate_sheet(%{type: "READ", url: url} = attrs) when not is_nil(url) do
+    spreadsheet_id = extract_spreadsheet_id(url)
 
-    Tesla.get(client, url)
-    |> case do
-      # Accept both 200s and 300s
-      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
+    case GoogleSheets.get_headers(attrs.organization_id, spreadsheet_id) do
+      {:ok, headers} ->
+        IO.inspect(headers, label: "headers found")
         {:ok, true}
 
-      _ ->
+      {:error, "Google API is not active"} ->
+        {:error, "Please add the credentials for Google Sheets from the settings menu"}
+
+      {:error, reason} ->
         {:error,
-         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
+         "Cannot access sheet. Please ensure the service account has at least viewer permissions: #{inspect(reason)}"}
     end
   end
 
@@ -216,12 +214,18 @@ defmodule Glific.Sheets do
     Glific.Metrics.increment("Sheets Read")
 
     last_synced_at = DateTime.utc_now()
-    export_url = build_export_url(sheet.url)
+    spreadsheet_id = extract_spreadsheet_id(sheet.url)
 
     sync_result =
-      [url: export_url]
-      |> ApiClient.get_csv_content()
-      |> run_sync_transaction(sheet, last_synced_at)
+      case GoogleSheets.read_sheet_data(sheet.organization_id, spreadsheet_id) do
+        {:ok, rows} ->
+          rows
+          |> convert_rows_to_csv_format()
+          |> run_sync_transaction(sheet, last_synced_at)
+
+        {:error, reason} ->
+          handle_sync_failure(sheet, inspect(reason))
+      end
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
@@ -258,15 +262,18 @@ defmodule Glific.Sheets do
     |> List.first()
   end
 
-  @spec build_export_url(String.t()) :: String.t()
-  defp build_export_url(sheet_url) do
-    # https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id
-    [base_url, _gid] = String.split(sheet_url, ["edit", "view", "comment"])
-    {:ok, uri} = URI.new(sheet_url)
+  # Converts the Google Sheets API response (list of lists) into the
+  # {:ok, map} format expected by run_sync_transaction.
+  # The first list is treated as headers; subsequent lists are data rows.
+  @spec convert_rows_to_csv_format(list(list(String.t()))) :: list({:ok, map()})
+  def convert_rows_to_csv_format([]), do: []
 
-    gid = uri.fragment || ""
-    export_url = base_url <> "export?format=csv&" <> gid
-    String.trim_trailing(export_url, "&")
+  def convert_rows_to_csv_format([headers | rows]) do
+    Enum.map(rows, fn row ->
+      padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
+      row_map = headers |> Enum.zip(padded_row) |> Map.new()
+      {:ok, row_map}
+    end)
   end
 
   @spec report_sync_result(boolean(), Sheet.t()) :: :success | :failed
