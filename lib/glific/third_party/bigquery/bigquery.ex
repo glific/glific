@@ -750,8 +750,11 @@ defmodule Glific.BigQuery do
           PARTITION BY delta.id ORDER BY delta.updated_at DESC
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta
-        WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
-          '#{timezone}')) a WHERE a.rn <> 1 ORDER BY id);
+        WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{timezone}')
+                AND update_at > DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAYS), '#{timezone}')
+      ) a
+      WHERE a.rn <> 1 ORDER BY id
+    );
     """
   end
 
