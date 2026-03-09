@@ -32,6 +32,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
     field(:unified_api_enabled, :boolean)
+    field(:ai_evaluations_enabled, :boolean)
   end
 
   object :organization_export_result do

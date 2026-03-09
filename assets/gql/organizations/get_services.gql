@@ -15,6 +15,7 @@ query organizationServices {
     ask_me_bot_enabled
     whatsapp_forms_enabled
     unified_api_enabled
+    ai_evaluations_enabled
     errors {
       key
       message
