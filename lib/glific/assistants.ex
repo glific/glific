@@ -241,10 +241,14 @@ defmodule Glific.Assistants do
         get_assistant(assistant.id)
       else
         current_knowledge_base_version =
-          List.first(assistant.active_config_version.knowledge_base_versions)
+          maybe_link_knowledge_base(
+            assistant,
+            knowledge_base_version,
+            user_params
+          )
 
         knowledge_base_changed =
-          knowledge_base_version.id != current_knowledge_base_version.id
+                      knowledge_base_version.id != current_knowledge_base_version.id
 
         {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
@@ -299,11 +303,16 @@ defmodule Glific.Assistants do
     active_config = assistant.active_config_version
     current_kb_version = List.first(active_config.knowledge_base_versions)
 
-    user_params[:name] == assistant.name and
-      user_params[:instructions] == active_config.prompt and
-      user_params[:model] == active_config.model and
-      user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
-      knowledge_base_version.id == current_kb_version.id
+    # If there's no current KB version but one is being provided, it's a change
+    if is_nil(current_kb_version) and not is_nil(knowledge_base_version) do
+      false
+    else
+      user_params[:name] == assistant.name and
+        user_params[:instructions] == active_config.prompt and
+        user_params[:model] == active_config.model and
+        user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
+        knowledge_base_version.id == current_kb_version.id
+    end
   end
 
   @spec update_assistant_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
@@ -475,6 +484,30 @@ defmodule Glific.Assistants do
         updated_at: DateTime.utc_now()
       }
     ]
+  end
+
+  # When the active config has no KB link and a knowledge_base_version_id was explicitly
+  # provided, creates the bridge entry and returns the newly linked KB version.
+  # Otherwise returns the existing current KB version.
+  @spec maybe_link_knowledge_base(Assistant.t(), KnowledgeBaseVersion.t(), map()) ::
+          KnowledgeBaseVersion.t() | nil
+  defp maybe_link_knowledge_base(assistant, knowledge_base_version, user_params) do
+    current = List.first(assistant.active_config_version.knowledge_base_versions)
+
+    if is_nil(current) and not is_nil(user_params[:knowledge_base_version_id]) do
+      Repo.insert_all(
+        "assistant_config_version_knowledge_base_versions",
+        build_knowledge_base_link(
+          assistant.active_config_version,
+          knowledge_base_version,
+          assistant.organization_id
+        )
+      )
+
+      knowledge_base_version
+    else
+      current
+    end
   end
 
   @spec build_assistant_changeset(map()) :: Ecto.Changeset.t()
