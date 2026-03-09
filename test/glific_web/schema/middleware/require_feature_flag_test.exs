@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
     test "returns resolution unchanged when feature flag is enabled for the organization" do
       organization_id = 1
 
-      FunWithFlags.enable(:is_ai_evaluations_enabled,
+      FunWithFlags.enable(:ai_evaluations,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{current_user: user}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:is_ai_evaluations_enabled, "Feature not enabled."})
+        RequireFeatureFlag.call(resolution, {:ai_evaluations, "Feature not enabled."})
 
       assert result == resolution
       assert result.state != :resolved
@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
     test "returns error when feature flag is disabled for the organization" do
       organization_id = 1
 
-      FunWithFlags.disable(:is_ai_evaluations_enabled,
+      FunWithFlags.disable(:ai_evaluations,
         for_actor: %{organization_id: organization_id}
       )
 
@@ -32,7 +32,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{current_user: user}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:is_ai_evaluations_enabled, "AI Evaluations feature is not enabled for the organization."})
+        RequireFeatureFlag.call(resolution, {:ai_evaluations, "AI Evaluations feature is not enabled for the organization."})
 
       assert result.state == :resolved
       assert [error_msg | _] = result.errors
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:is_ai_evaluations_enabled, "Feature not enabled."})
+        RequireFeatureFlag.call(resolution, {:ai_evaluations, "Feature not enabled."})
 
       assert result.state == :resolved
       assert [error_msg | _] = result.errors

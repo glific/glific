@@ -27,7 +27,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :create_golden_qa, :golden_qa_result do
       arg(:input, non_null(:golden_qa_input))
       middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:is_ai_evaluations_enabled, "AI Evaluations"})
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_golden_qa/3)
     end
   end

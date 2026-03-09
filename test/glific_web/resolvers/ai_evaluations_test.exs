@@ -305,7 +305,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
     test "create_golden_qa works when AI evaluations flag is enabled (resolver called with flag on)",
          %{staff: user, upload: upload} do
-      FunWithFlags.enable(:is_ai_evaluations_enabled,
+      FunWithFlags.enable(:ai_evaluations,
         for_actor: %{organization_id: user.organization_id}
       )
 
