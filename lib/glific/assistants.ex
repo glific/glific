@@ -248,7 +248,7 @@ defmodule Glific.Assistants do
           )
 
         knowledge_base_changed =
-                      knowledge_base_version.id != current_knowledge_base_version.id
+          knowledge_base_version.id != current_knowledge_base_version.id
 
         {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
@@ -303,8 +303,8 @@ defmodule Glific.Assistants do
     active_config = assistant.active_config_version
     current_kb_version = List.first(active_config.knowledge_base_versions)
 
-    # If there's no current KB version but one is being provided, it's a change
-    if is_nil(current_kb_version) and not is_nil(knowledge_base_version) do
+    # If there's no current KB version, adding one is always a change
+    if is_nil(current_kb_version) do
       false
     else
       user_params[:name] == assistant.name and
