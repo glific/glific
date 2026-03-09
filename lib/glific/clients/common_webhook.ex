@@ -4,7 +4,6 @@ defmodule Glific.Clients.CommonWebhook do
   """
 
   alias Glific.ASR.Bhasini
-  alias Glific.ASR.GoogleASR
   alias Glific.Assistants.Assistant
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
@@ -125,10 +124,14 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
+    contact = Contacts.preload_contact_language(contact_id)
+    contact_language = contact.language.label |> String.downcase()
+
     stt_opts = %{
       provider: fields["provider"],
       model: fields["model"],
-      language: fields["language"]
+      language: fields["language"],
+      output_language: contact_language
     }
 
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
@@ -277,15 +280,6 @@ defmodule Glific.Clients.CommonWebhook do
     else
       {:error, error} -> error
     end
-  end
-
-  # This webhook will call Google speech-to-text API
-  def webhook("speech_to_text", fields) do
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Contacts.preload_contact_language(contact_id)
-
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do

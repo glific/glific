@@ -294,7 +294,7 @@ defmodule Glific.ThirdParty.Kaapi do
       Map.merge(%{success: true}, body)
     else
       {:error, :download_failed} ->
-        %{success: false, error_type: "unsupported_format", reason: "Audio file download failed"}
+        %{success: false, error_type: "download_failed", reason: "Audio file download failed"}
 
       error ->
         handle_kaapi_error(error, organization_id, "STT", "transcription_failed")
@@ -379,7 +379,7 @@ defmodule Glific.ThirdParty.Kaapi do
               instructions: "Transcribe the audio verbatim",
               input_language: opts[:language] || "auto",
               temperature: 0.5,
-              output_language: "english"
+              output_language: opts[:output_language] || "english"
             }
           }
         }
