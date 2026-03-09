@@ -6,7 +6,7 @@ defmodule Glific.Repo.Migrations.AddKaapiUuidToAssistants do
       add_if_not_exists :kaapi_uuid, :string, null: true, comment: "Kaapi UUID for the config"
 
       add_if_not_exists :active_config_version_id,
-                        references(:assistant_config_versions, on_delete: :nilify_all),
+                        references(:assistant_config_versions, on_delete: :nothing),
                         comment: "Reference to the currently active configuration version"
     end
 
