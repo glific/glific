@@ -467,7 +467,7 @@ defmodule Glific.Partners do
   def delete_organization(%Organization{} = organization) do
     organization
     |> Organization.changeset(%{deleted_at: DateTime.utc_now()})
-    |> Repo.update(skip_organization_id: true)
+    |> Repo.update()
     |> case do
       {:ok, updated_org} ->
         remove_organization_cache(updated_org.id, updated_org.shortcode)
@@ -607,7 +607,7 @@ defmodule Glific.Partners do
     cache_key = cachex_key |> elem(1) |> elem(1)
     Logger.info("Loading organization cache: #{cache_key}")
 
-    clauses = if is_integer(cache_key), do: [id: cache_key], else: [shortcode: cache_key]
+    clauses = if is_integer(cache_key), do: %{id: cache_key}, else: %{shortcode: cache_key}
 
     organization =
       case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
