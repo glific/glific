@@ -204,13 +204,6 @@ defmodule Glific.Partners.Organization do
   end
 
   @doc """
-  Base query that filters out soft-deleted organizations. Use this as the default
-  starting point for all organization queries. To include deleted orgs, use `from(o in Organization)` directly.
-  """
-  @spec active() :: Ecto.Query.t()
-  def active, do: from(o in Organization, where: is_nil(o.deleted_at))
-
-  @doc """
   Standard changeset pattern we use for all data types
   """
   @spec changeset(Organization.t(), map()) :: Ecto.Changeset.t()

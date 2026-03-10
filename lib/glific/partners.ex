@@ -197,7 +197,7 @@ defmodule Glific.Partners do
     do:
       Repo.list_filter(
         args,
-        Organization.active(),
+        Organization,
         &Repo.opts_with_name/2,
         &filter_organization_with/2,
         skip_organization_id: true
@@ -208,7 +208,7 @@ defmodule Glific.Partners do
   """
   @spec active_organizations(list(), boolean) :: map()
   def active_organizations(orgs, suspended \\ false) do
-    Organization.active()
+    Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name, q.last_communication_at])
     |> where([q], q.is_suspended == ^suspended)
@@ -234,7 +234,7 @@ defmodule Glific.Partners do
     do:
       Repo.count_filter(
         args,
-        Organization.active(),
+        Organization,
         &filter_organization_with/2,
         skip_organization_id: true
       )
@@ -610,7 +610,7 @@ defmodule Glific.Partners do
     clauses = if is_integer(cache_key), do: [id: cache_key], else: [shortcode: cache_key]
 
     organization =
-      case Repo.fetch_by(Organization.active(), clauses, skip_organization_id: true) do
+      case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
         {:ok, org} -> fill_cache(org)
         _ -> raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
       end
@@ -778,7 +778,7 @@ defmodule Glific.Partners do
 
   @spec unsuspend_org_list(DateTime.t()) :: list()
   defp unsuspend_org_list(time \\ DateTime.utc_now()) do
-    Organization.active()
+    Organization
     |> where([q], q.is_active == true)
     |> select([q], q.id)
     |> where([q], q.is_suspended == true)
