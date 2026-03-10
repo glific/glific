@@ -8,28 +8,28 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   # 20MB
   @max_golden_qa_file_size 20 * 1024 * 1024
 
-    @doc """
-    Create a Golden QA configuration after validating the input.
-    """
-    @spec create_golden_qa(map(), map(), map()) :: {:ok, map()}
-    def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
-          context: %{current_user: user}
-        }) do
-      result =
-        with :ok <- validate_golden_qa_name(name),
-             :ok <- validate_duplication_factor(factor),
-             :ok <- validate_golden_qa_file_size(file) do
-          Kaapi.upload_evaluation_dataset(
-            %{dataset_name: name, file: file, duplication_factor: factor},
-            user.organization_id
-          )
-        end
-
-      case result do
-        {:ok, res} -> {:ok, %{golden_qa: res}}
-        {:error, msg} -> {:ok, %{errors: [%{message: msg}]}}
+  @doc """
+  Create a Golden QA configuration after validating the input.
+  """
+  @spec create_golden_qa(map(), map(), map()) :: {:ok, map()}
+  def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
+        context: %{current_user: user}
+      }) do
+    result =
+      with :ok <- validate_golden_qa_name(name),
+            :ok <- validate_duplication_factor(factor),
+            :ok <- validate_golden_qa_file_size(file) do
+        Kaapi.upload_evaluation_dataset(
+          %{dataset_name: name, file: file, duplication_factor: factor},
+          user.organization_id
+        )
       end
+
+    case result do
+      {:ok, res} -> {:ok, %{golden_qa: res}}
+      {:error, msg} -> {:ok, %{errors: [%{message: msg}]}}
     end
+  end
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_name(name) do

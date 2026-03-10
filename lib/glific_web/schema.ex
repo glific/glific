@@ -282,21 +282,6 @@ defmodule GlificWeb.Schema do
   end
 
   @doc """
-  Called by Absinthe.Plug before sending the response. Sets HTTP 403 when
-  a feature-flag middleware blocked the request.
-  """
-  @spec absinthe_before_send(Plug.Conn.t(), Absinthe.Blueprint.t() | map()) :: Plug.Conn.t()
-  def absinthe_before_send(conn, %{execution: %{context: context}}) do
-    if context[:feature_flag_forbidden] do
-      Plug.Conn.put_status(conn, 403)
-    else
-      conn
-    end
-  end
-
-  def absinthe_before_send(conn, _), do: conn
-
-  @doc """
   Validation function for all subscriptions received by the system
   """
   @spec config_fun(map(), map()) :: {:ok, Keyword.t()} | {:error, String.t()}

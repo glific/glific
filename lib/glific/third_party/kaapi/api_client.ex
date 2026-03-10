@@ -239,24 +239,14 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:ok, body}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: %{error: error}}}) do
+  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
     Glific.Metrics.increment("Kaapi Failed")
-    {:error, error}
-  end
-
-  defp parse_kaapi_response({:ok, %Tesla.Env{body: body}}) do
-    Glific.Metrics.increment("Kaapi Failed")
-    {:error, body}
-  end
-
-  defp parse_kaapi_response({:error, :timeout}) do
-    Glific.Metrics.increment("Kaapi Timedout")
-    {:error, "Request timed out, please try again later."}
+    {:error, %{status: status, body: body}}
   end
 
   defp parse_kaapi_response(error) do
-    Glific.Metrics.increment("Kaapi Failed")
-    {:error, error}
+    if {:error, :timeout} == error, do: Glific.Metrics.increment("Kaapi Timedout")
+    error
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)

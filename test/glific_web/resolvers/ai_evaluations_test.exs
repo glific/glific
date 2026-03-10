@@ -18,7 +18,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: "valid_dataset",
+                dataset_name: "valid_dataset"
               }
             }
           }
@@ -272,7 +272,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: reason}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert reason == "Request timed out, please try again later."
+      assert reason == :timeout
     end
 
     test "accepts valid name with underscores and numbers", %{
@@ -301,40 +301,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
       assert golden_qa.name == "dataset_2024_v1"
-    end
-
-    test "create_golden_qa works when AI evaluations flag is enabled (resolver called with flag on)",
-         %{staff: user, upload: upload} do
-      FunWithFlags.enable(:ai_evaluations,
-        for_actor: %{organization_id: user.organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              data: %{
-                dataset_name: "flag_enabled_dataset",
-              }
-            }
-          }
-      end)
-
-      args = %{
-        input: %{
-          name: "flag_enabled_dataset",
-          file: upload,
-          duplication_factor: 2
-        }
-      }
-
-      resolution = %{context: %{current_user: user}}
-
-      assert {:ok, %{golden_qa: golden_qa}} =
-               AIEvaluations.create_golden_qa(nil, args, resolution)
-
-      assert golden_qa.name == "flag_enabled_dataset"
     end
   end
 

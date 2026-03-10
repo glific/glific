@@ -4,7 +4,6 @@ mutation create_golden_qa($input: GoldenQaInput!) {
     create_golden_qa(input: $input) {
         golden_qa {
             name
-            duplication_factor
         }
         ...ErrorFields
     }

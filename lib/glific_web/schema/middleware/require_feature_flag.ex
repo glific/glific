@@ -2,16 +2,16 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlag do
   @moduledoc """
   Middleware that checks if a given feature flag is enabled for the current user's organization.
   If the flag is disabled, returns a 403-style error and halts resolution.
-  Configuration: `{flag_atom, error_message}` e.g. `{:ai_evaluations, "AI Evaluations feature is not enabled for the organization."}`
+  Configuration: `{flag_name, feature_name}` e.g. `{:ai_evaluations, "AI Evaluations"}`
   """
   @behaviour Absinthe.Middleware
 
   @doc """
-  Receives resolution and config `{flag, message}`. Uses `resolution.context.current_user.organization_id`
+  Receives resolution and config `{flag, feature_name}`. Uses `resolution.context.current_user.organization_id`
   to check the flag. If enabled, returns resolution unchanged; otherwise puts error result.
   """
   @spec call(Absinthe.Resolution.t(), {atom(), String.t()}) :: Absinthe.Resolution.t()
-  def call(resolution, {flag, message}) do
+  def call(resolution, {flag, feature_name}) do
     with %{organization_id: organization_id} <- get_current_user(resolution),
          true <- FunWithFlags.enabled?(flag, for: %{organization_id: organization_id}) do
       resolution
@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlag do
       _ ->
         resolution
         |> put_forbidden_in_context()
-        |> Absinthe.Resolution.put_result({:error, "#{message} is not enabled for the organization."})
+        |> Absinthe.Resolution.put_result({:error, "#{feature_name} is not enabled for the organization."})
     end
   end
 
