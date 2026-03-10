@@ -145,13 +145,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
   end
 
   @spec track_kaapi_latency(map()) :: :ok
-  defp track_kaapi_latency(%{"timestamp" => timestamp, "output_type" => output_type})
+  defp track_kaapi_latency(%{"timestamp" => timestamp, "call_type" => call_type})
        when is_integer(timestamp) do
     now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
     duration_ms = (now - timestamp) / 1_000
 
     Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
-      output_type: output_type || "text"
+      call_type: call_type
     })
   end
 

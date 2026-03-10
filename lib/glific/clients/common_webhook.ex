@@ -90,6 +90,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
+    request_metadata = Map.put(request_metadata, :call_type, "llm")
+
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
     with {:ok, {kaapi_uuid, version_number}} <-
@@ -124,6 +126,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
+    request_metadata = Map.put(request_metadata, :call_type, "stt")
+
     contact = Contacts.preload_contact_language(contact_id)
     contact_language = contact.language.label |> String.downcase()
 
@@ -153,6 +157,8 @@ defmodule Glific.Clients.CommonWebhook do
 
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    request_metadata = Map.put(request_metadata, :call_type, "tts")
 
     tts_opts = %{
       provider: fields["provider"],
