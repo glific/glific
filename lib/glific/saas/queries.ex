@@ -405,13 +405,11 @@ defmodule Glific.Saas.Queries do
 
   def validate_shortcode(result, shortcode) do
     with true <- Regex.match?(~r/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, shortcode),
-         nil <-
-           Organization
-           |> where([o], o.shortcode == ^shortcode)
-           |> Repo.one(skip_organization_id: true) do
+         {:error, _} <-
+           Repo.fetch_by(Organization, [shortcode: shortcode], skip_organization_id: true) do
       result
     else
-      %Organization{} ->
+      {:ok, _} ->
         dgettext("error", "Shortcode has already been taken.")
         |> error(result, :shortcode)
 
