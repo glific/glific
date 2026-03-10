@@ -1,5 +1,5 @@
-fragment UnifiedAssistantFields on UnifiedAssistantResult {
-  assistant {
+query Assistants($filter: AssistantFilter, $opts: Opts) {
+  Assistants(filter: $filter, opts: $opts) {
     id
     name
     assistant_id
@@ -8,11 +8,10 @@ fragment UnifiedAssistantFields on UnifiedAssistantResult {
     new_version_in_progress
     vector_store {
       id
-      vector_store_id
+      knowledge_base_version_id
       name
       status
       legacy
-      size
       files {
         id
         name
@@ -21,12 +20,5 @@ fragment UnifiedAssistantFields on UnifiedAssistantResult {
     }
     inserted_at
     updated_at
-  }
-}
-
-fragment UnifiedErrorFields on UnifiedAssistantResult {
-  errors {
-    key
-    message
   }
 }

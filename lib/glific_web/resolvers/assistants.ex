@@ -16,7 +16,7 @@ defmodule GlificWeb.Resolvers.Assistants do
       response = %{
         id: knowledge_base.id,
         name: knowledge_base.name,
-        vector_store_id: knowledge_base_version.llm_service_id,
+        knowledge_base_version_id: knowledge_base_version.id,
         files: knowledge_base_version.files,
         size: knowledge_base_version.size,
         status: knowledge_base_version.status,

@@ -38,7 +38,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       knowledge_base = query_data.data["create_knowledge_base"]["knowledge_base"]
       assert knowledge_base["id"] != nil
       assert knowledge_base["name"] != nil
-      assert knowledge_base["vector_store_id"] != nil
+      assert knowledge_base["knowledge_base_version_id"] != nil
       assert knowledge_base["status"] == "in_progress"
     end
 
@@ -77,7 +77,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       assert response["id"] == to_string(knowledge_base.id)
       assert response["name"] == knowledge_base.name
-      assert response["vector_store_id"] != nil
+      assert response["knowledge_base_version_id"] != nil
       assert response["status"] == "in_progress"
     end
 
@@ -111,7 +111,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       shortcode: "kaapi",
       keys: %{},
       secrets: %{
-        "api_key" => "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+        "api_key" => "sk_test_key"
       },
       is_active: true
     })

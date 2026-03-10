@@ -97,7 +97,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_assistant_config(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_assistant_config(params, organization_id) do
-    config_blob = build_config_blob(params, params.vector_store_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids)
 
     body = %{
       name: params.name,
@@ -133,7 +133,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_config_version(binary(), map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_config_version(config_id, params, organization_id) do
-    config_blob = build_config_blob(params, params.vector_store_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids)
 
     body = %{
       commit_message: params[:description] || "",
@@ -254,17 +254,12 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec build_config_blob(map(), list(String.t())) :: map()
-  defp build_config_blob(params, vector_store_ids) do
+  defp build_config_blob(params, knowledge_base_ids) do
     completion_params = %{
-      model: params.model || "gpt-4o-mini",
+      model: params.model || "gpt-4o",
       instructions: params.prompt || "You are a helpful assistant",
       temperature: params.temperature || 1.0,
-      tools: [
-        %{
-          type: "file_search",
-          vector_store_ids: vector_store_ids
-        }
-      ]
+      knowledge_base_ids: knowledge_base_ids
     }
 
     %{
