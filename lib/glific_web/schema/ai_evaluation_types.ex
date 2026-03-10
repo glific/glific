@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   end
 
   object :ai_evaluation_mutations do
-  @desc "Create Golden QA"
+    @desc "Create Golden QA"
     field :create_golden_qa, :golden_qa_result do
       arg(:input, non_null(:golden_qa_input))
       middleware(Authorize, :staff)

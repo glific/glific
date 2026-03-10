@@ -17,8 +17,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       }) do
     result =
       with :ok <- validate_golden_qa_name(name),
-            :ok <- validate_duplication_factor(factor),
-            :ok <- validate_golden_qa_file_size(file) do
+           :ok <- validate_duplication_factor(factor),
+           :ok <- validate_golden_qa_file_size(file) do
         Kaapi.upload_evaluation_dataset(
           %{dataset_name: name, file: file, duplication_factor: factor},
           user.organization_id

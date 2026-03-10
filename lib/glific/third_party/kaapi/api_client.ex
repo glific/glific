@@ -198,6 +198,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Upload an evaluation dataset to Kaapi
+  """
   @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
   def upload_evaluation_dataset(params, org_api_key) do
     multipart =

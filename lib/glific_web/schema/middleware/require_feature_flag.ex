@@ -19,7 +19,9 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlag do
       _ ->
         resolution
         |> put_forbidden_in_context()
-        |> Absinthe.Resolution.put_result({:error, "#{feature_name} is not enabled for the organization."})
+        |> Absinthe.Resolution.put_result(
+          {:error, "#{feature_name} is not enabled for the organization."}
+        )
     end
   end
 

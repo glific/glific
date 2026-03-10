@@ -322,6 +322,9 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
+  """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def upload_evaluation_dataset(params, organization_id) do

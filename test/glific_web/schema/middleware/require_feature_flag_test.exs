@@ -32,7 +32,10 @@ defmodule GlificWeb.Schema.Middleware.RequireFeatureFlagTest do
       resolution = %Absinthe.Resolution{context: %{current_user: user}}
 
       result =
-        RequireFeatureFlag.call(resolution, {:ai_evaluations, "AI Evaluations feature is not enabled for the organization."})
+        RequireFeatureFlag.call(
+          resolution,
+          {:ai_evaluations, "AI Evaluations feature is not enabled for the organization."}
+        )
 
       assert result.state == :resolved
       assert [error_msg | _] = result.errors
