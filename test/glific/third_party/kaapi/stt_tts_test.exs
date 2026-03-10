@@ -66,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
         )
 
       assert result.success == false
-      assert result.error_type == "unsupported_format"
+      assert result.error_type == "download_failed"
       assert result.reason =~ "download"
     end
 
