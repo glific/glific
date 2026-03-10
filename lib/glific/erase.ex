@@ -120,10 +120,10 @@ defmodule Glific.Erase do
     with {:ok, organization} <-
            Repo.fetch(Organization, organization_id, skip_organization_id: true),
          true <- can_delete_organization?(organization),
-         :ok <- delete_all_organization_data(organization_id),
-         {:ok, deleted_organization} <- Partners.delete_organization(organization) do
+         {:ok, deleted_organization} <- Partners.delete_organization(organization),
+         :ok <- delete_all_organization_data(organization_id) do
       Logger.info(
-        "Successfully soft-deleted organization #{deleted_organization.name} (ID: #{organization_id})"
+        "Successfully deleted organization #{deleted_organization.name} (ID: #{organization_id})"
       )
 
       send_success_notification(deleted_organization)

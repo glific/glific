@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
     # Partial index for fast filtering of non-deleted organizations
     create index(:organizations, [:deleted_at],
              where: "deleted_at IS NULL",
-             name: :organizations_active_index
+             name: :organizations_deleted_index
            )
 
     create_delete_organization_data_function()
@@ -18,7 +18,7 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
   def down do
     execute("DROP FUNCTION IF EXISTS delete_organization_data(BIGINT)")
 
-    drop_if_exists index(:organizations, [:deleted_at], name: :organizations_active_index)
+    drop_if_exists index(:organizations, [:deleted_at], name: :organizations_deleted_index)
 
     alter table(:organizations) do
       remove(:deleted_at)
@@ -36,6 +36,13 @@ defmodule Glific.Repo.Migrations.AddDeletedAtToOrganizations do
       tbl TEXT;
       rows_deleted BIGINT;
     BEGIN
+      -- Guard: refuse to erase data for an org that has not been soft-deleted yet.
+      IF NOT EXISTS (
+        SELECT 1 FROM organizations WHERE id = org_id AND deleted_at IS NOT NULL
+      ) THEN
+        RAISE EXCEPTION 'Organization % has not been soft-deleted. Call delete_organization first.', org_id;
+      END IF;
+
       -- Disable FK triggers temporarily so alphabetical deletion order does not
       -- cause RESTRICT violations between org-scoped tables (e.g. whatsapp_forms
       -- references whatsapp_form_revisions). Re-enabled after the loop.

@@ -65,7 +65,7 @@ defmodule Glific.RepoHelpers do
       """
       @spec list_filter(
               map(),
-              Ecto.Queryable.t(),
+              atom(),
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
               Keyword.t()
@@ -104,7 +104,7 @@ defmodule Glific.RepoHelpers do
       """
       @spec list_filter_query(
               map(),
-              Ecto.Queryable.t(),
+              atom(),
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()) | nil,
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
             ) :: Ecto.Queryable.t()
@@ -129,7 +129,7 @@ defmodule Glific.RepoHelpers do
       """
       @spec count_filter(
               map(),
-              Ecto.Queryable.t(),
+              atom(),
               (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
               Keyword.t()
             ) :: integer
