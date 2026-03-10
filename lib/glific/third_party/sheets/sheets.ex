@@ -221,7 +221,6 @@ defmodule Glific.Sheets do
     csv_content_list =
       [url: export_url]
       |> ApiClient.get_csv_content()
-      |> Enum.to_list()
 
     sync_result =
       case decode_all_csv_rows(csv_content_list) do
@@ -315,7 +314,7 @@ defmodule Glific.Sheets do
           sanitized_message =
             if String.contains?(err_string, "Escape sequence started on line") or
                  String.contains?(err_string, "Stray escape character on line") do
-              "Invalid escape characters found"
+              "Sheet is not accessible or not found."
             else
               err_string
             end
