@@ -733,6 +733,105 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "update_assistant/2 with no existing knowledge base" do
+    setup [:enable_kaapi]
+
+    setup %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Test Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "test_kaapi_uuid"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      # Create a KB version NOT linked to the assistant
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Unlinked KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "vs_unlinked_123",
+          size: 500
+        })
+
+      Partners.organization(organization_id)
+
+      %{assistant: assistant, config_version: config_version, knowledge_base_version: kbv}
+    end
+
+    test "links knowledge base when updating assistant with no existing KB",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: config_version,
+           knowledge_base_version: kbv
+         } do
+      # Verify no bridge entry exists before update
+      bridge_count_before =
+        "assistant_config_version_knowledge_base_versions"
+        |> where([b], b.assistant_config_version_id == ^config_version.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert bridge_count_before == 0
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_link_kb"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: config_version.prompt,
+                 model: config_version.model,
+                 temperature: get_in(config_version.settings, ["temperature"]),
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      # Verify bridge entry was created for the active config version
+      bridge_count_after =
+        "assistant_config_version_knowledge_base_versions"
+        |> where([b], b.assistant_config_version_id == ^config_version.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert bridge_count_after == 1
+
+      # Verify the response includes the KB data
+      assert result.vector_store_data != nil
+      assert result.vector_store_data.vector_store_id == "vs_unlinked_123"
+    end
+  end
+
   describe "process_timeouts/1" do
     setup %{organization_id: org_id} do
       {knowledge_base, knowledge_base_version} =

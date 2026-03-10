@@ -251,6 +251,63 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
       assert Repo.aggregate(Assistant, :count, :id) == 0
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == 0
     end
+
+    test "preserves supported model during migration", %{organization_id: organization_id} do
+      openai_assistant = create_openai_assistant(organization_id, nil, %{model: "gpt-4o-mini"})
+
+      result = UnifiedApiMigration.migrate_assistants()
+      assert result.success == 1
+
+      {:ok, assistant} =
+        Repo.fetch_by(Assistant, %{
+          name: openai_assistant.name,
+          organization_id: organization_id
+        })
+
+      {:ok, config_version} =
+        Repo.fetch_by(AssistantConfigVersion, %{assistant_id: assistant.id})
+
+      assert config_version.model == "gpt-4o-mini"
+    end
+
+    test "preserves fine-tuned model during migration", %{organization_id: organization_id} do
+      fine_tuned_model = "ft:gpt-4o-mini:my-org:custom-model:abc123"
+      openai_assistant = create_openai_assistant(organization_id, nil, %{model: fine_tuned_model})
+
+      result = UnifiedApiMigration.migrate_assistants()
+      assert result.success == 1
+
+      {:ok, assistant} =
+        Repo.fetch_by(Assistant, %{
+          name: openai_assistant.name,
+          organization_id: organization_id
+        })
+
+      {:ok, config_version} =
+        Repo.fetch_by(AssistantConfigVersion, %{assistant_id: assistant.id})
+
+      assert config_version.model == fine_tuned_model
+    end
+
+    test "falls back to default model for unsupported model during migration", %{
+      organization_id: organization_id
+    } do
+      openai_assistant = create_openai_assistant(organization_id, nil, %{model: "gpt-3.5-turbo"})
+
+      result = UnifiedApiMigration.migrate_assistants()
+      assert result.success == 1
+
+      {:ok, assistant} =
+        Repo.fetch_by(Assistant, %{
+          name: openai_assistant.name,
+          organization_id: organization_id
+        })
+
+      {:ok, config_version} =
+        Repo.fetch_by(AssistantConfigVersion, %{assistant_id: assistant.id})
+
+      assert config_version.model == "gpt-4o"
+    end
   end
 
   # ---- Helper functions ----
