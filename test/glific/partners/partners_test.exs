@@ -635,8 +635,12 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Organization{} = deleted_org} = Partners.delete_organization(organization)
       assert deleted_org.deleted_at != nil
 
-      # Organization record is preserved (accessible by ID)
-      assert %Organization{} = Partners.get_organization!(organization.id)
+      # Organization record is preserved (accessible by ID with include_deleted)
+      assert %Organization{} =
+               Repo.get!(Organization, organization.id,
+                 skip_organization_id: true,
+                 include_deleted: true
+               )
 
       # But excluded from list queries
       org_list = Partners.list_organizations(%{filter: %{name: organization.name}})

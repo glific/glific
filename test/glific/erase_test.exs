@@ -255,7 +255,7 @@ defmodule Glific.EraseTest do
 
     # Organization record is preserved with deleted_at set
     {:ok, deleted_org} =
-      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+      Repo.fetch(Organization, organization.id, skip_organization_id: true, include_deleted: true)
 
     assert deleted_org.deleted_at != nil
   end
@@ -299,7 +299,7 @@ defmodule Glific.EraseTest do
 
     # Organization record preserved with deleted_at set
     {:ok, deleted_org} =
-      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+      Repo.fetch(Organization, organization.id, skip_organization_id: true, include_deleted: true)
 
     assert deleted_org.deleted_at != nil
 

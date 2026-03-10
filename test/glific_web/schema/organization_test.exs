@@ -689,7 +689,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     # After job completes, organization is soft-deleted (record preserved with deleted_at)
     {:ok, deleted_org} =
-      Repo.fetch(Organization, organization.id, skip_organization_id: true)
+      Repo.fetch(Organization, organization.id, skip_organization_id: true, include_deleted: true)
 
     assert deleted_org.deleted_at != nil
 
