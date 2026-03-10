@@ -401,7 +401,7 @@ defmodule Glific.ThirdParty.Kaapi do
             params: %{
               model: opts[:model] || "gemini-2.5-pro-preview-tts",
               voice: opts[:voice] || "Kore",
-              language: opts[:language] || "hindi",
+              language: opts[:language],
               response_format: "mp3"
             }
           }

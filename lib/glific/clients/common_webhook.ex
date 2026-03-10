@@ -154,10 +154,13 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
+    contact = Contacts.preload_contact_language(contact_id)
+    contact_language = contact.language.label |> String.downcase()
+
     tts_opts = %{
       provider: fields["provider"],
       model: fields["model"],
-      language: fields["language"],
+      language: fields["language"] || contact_language,
       voice: fields["voice"]
     }
 
