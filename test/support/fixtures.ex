@@ -4,6 +4,7 @@ defmodule Glific.Fixtures do
   """
 
   import Ecto.Query, warn: false
+  import Mock
 
   alias GlificWeb.Flows
 
@@ -1081,57 +1082,98 @@ defmodule Glific.Fixtures do
   """
   @spec sheet_fixture(map()) :: Sheet.t()
   def sheet_fixture(attrs \\ %{}) do
-    Tesla.Mock.mock(fn
-      %{
-        method: :get,
+    organization_id = Map.get(attrs, :organization_id, 1)
+
+    Partners.create_credential(%{
+      shortcode: "google_sheets",
+      secrets: %{
+        "service_account" =>
+          Jason.encode!(%{
+            project_id: "test_project",
+            private_key_id: "test_key_id",
+            client_email: "test@test.iam.gserviceaccount.com",
+            private_key: "test_private_key"
+          })
+      },
+      is_active: true,
+      organization_id: organization_id
+    })
+
+    with_mock(Goth.Token, [],
+      fetch: fn _url ->
+        {:ok, %{token: "fake_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://commondatastorage.googleapis.com" <> _} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "video/mp4"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "values" => [
+                  ["Key", "Day", "Message English", "Video link", "Message Hindi"],
+                  [
+                    "7/11/2022",
+                    "1",
+                    "Hi welcome to Glific. ",
+                    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+                    "Glific में आपका स्वागत है।"
+                  ],
+                  [
+                    "8/11/2022",
+                    "2",
+                    "Do you want to explore various programs that we have?",
+                    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+                    "क्या आप हमारे पास मौजूद विभिन्न कार्यक्रमों का पता लगाना चाहते हैं?"
+                  ],
+                  [
+                    "9/11/2022",
+                    "3",
+                    "Click on this link to know more about Glific",
+                    "",
+                    "Glific के बारे में अधिक जानने के लिए इस लिंक पर क्लिक करें"
+                  ],
+                  [
+                    "10/11/2022",
+                    "4",
+                    "Please share your usecase",
+                    "",
+                    "कृपया अपना उपयोगकेस साझा करें"
+                  ]
+                ]
+              })
+          }
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: "{}"}
+      end)
+
+      valid_attrs = %{
+        label: "sample sheet",
         url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
-      } ->
-        %Tesla.Env{
-          status: 200
-        }
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        type: "READ",
+        auto_sync: true
+      }
 
-      %{
-        method: :get,
-        url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&gid=0"
-      } ->
-        %Tesla.Env{
-          body:
-            "Key,Day,Message English,Video link,Message Hindi\r\n7/11/2022,1,Hi welcome to Glific. ,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,Glific में आपका स्वागत है।\r\n8/11/2022,2,Do you want to explore various programs that we have?,http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4,क्या आप हमारे पास मौजूद विभिन्न कार्यक्रमों का पता लगाना चाहते हैं?\r\n9/11/2022,3,Click on this link to know more about Glific,,Glific के बारे में अधिक जानने के लिए इस लिंक पर क्लिक करें\r\n10/11/2022,4,Please share your usecase,,कृपया अपना उपयोगकेस साझा करें",
-          status: 200
-        }
+      attrs = Map.merge(valid_attrs, attrs)
 
-      %{
-        method: :get,
-        url:
-          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
-      } ->
-        %Tesla.Env{
-          headers: [
-            {"content-type", "video/mp4"},
-            {"content-length", "3209581"}
-          ],
-          method: :get,
-          status: 200
-        }
-    end)
+      {:ok, sheet} =
+        attrs
+        |> Sheets.create_sheet()
 
-    valid_attrs = %{
-      label: "sample sheet",
-      url:
-        "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
-      type: "READ",
-      auto_sync: true
-    }
-
-    attrs = Map.merge(valid_attrs, attrs)
-
-    {:ok, sheet} =
-      attrs
-      |> Sheets.create_sheet()
-
-    sheet
+      sheet
+    end
   end
 
   @doc """

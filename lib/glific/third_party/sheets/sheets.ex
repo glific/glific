@@ -65,8 +65,7 @@ defmodule Glific.Sheets do
     spreadsheet_id = extract_spreadsheet_id(url)
 
     case GoogleSheets.get_headers(attrs.organization_id, spreadsheet_id) do
-      {:ok, headers} ->
-        IO.inspect(headers, label: "headers found")
+      {:ok, _headers} ->
         {:ok, true}
 
       {:error, "Google API is not active"} ->
@@ -262,27 +261,35 @@ defmodule Glific.Sheets do
     |> List.first()
   end
 
-  # Converts the Google Sheets API response (list of lists) into the
-  # {:ok, map} format expected by run_sync_transaction.
-  # The first list is treated as headers; subsequent lists are data rows.
-  # Example:
-  #   Input:  [["key", "age", "name"], ["1", "22", "name"]]
-  #   Output: [{:ok, %{"key" => "1", "age" => "22", "name" => "name"}}]
+  @doc """
+  Converts the Google Sheets API response (list of lists) into the
+  `{:ok, map}` format expected by `run_sync_transaction/3`.
+  The first list is treated as headers; subsequent lists are data rows.
+
+  ## Examples
+
+      iex> convert_rows_to_csv_format([["key", "age"], ["1", "22"]])
+      [{:ok, %{"key" => "1", "age" => "22"}}]
+
+  """
   @spec convert_rows_to_csv_format(list(list(String.t()))) :: list({:ok, map()})
   def convert_rows_to_csv_format([]), do: []
 
   def convert_rows_to_csv_format([headers | rows]) do
-    Enum.map(rows, fn row ->
-      padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
+    if Enum.any?(headers, &(&1 == "")) or length(headers) != length(Enum.uniq(headers)) do
+      [{:error, "Repeated or missing headers"}]
+    else
+      Enum.map(rows, fn row ->
+        padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
 
-      row_map =
-        headers
-        |> Enum.zip(padded_row)
-        |> Map.new()
+        row_map =
+          headers
+          |> Enum.zip(padded_row)
+          |> Map.new()
 
-      IO.inspect(row_map, label: "Converted Row Map")
-      {:ok, row_map}
-    end)
+        {:ok, row_map}
+      end)
+    end
   end
 
   @spec report_sync_result(boolean(), Sheet.t()) :: :success | :failed
@@ -336,7 +343,7 @@ defmodule Glific.Sheets do
         end
 
       [{:error, err}] ->
-        {:error, handle_sync_failure(sheet, inspect(err))}
+        {:error, handle_sync_failure(sheet, if(is_binary(err), do: err, else: inspect(err)))}
 
       _ ->
         {:error, handle_sync_failure(sheet, "Unknown error or empty content")}
