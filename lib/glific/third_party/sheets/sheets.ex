@@ -265,6 +265,9 @@ defmodule Glific.Sheets do
   # Converts the Google Sheets API response (list of lists) into the
   # {:ok, map} format expected by run_sync_transaction.
   # The first list is treated as headers; subsequent lists are data rows.
+  # Example:
+  #   Input:  [["key", "age", "name"], ["1", "22", "name"]]
+  #   Output: [{:ok, %{"key" => "1", "age" => "22", "name" => "name"}}]
   @spec convert_rows_to_csv_format(list(list(String.t()))) :: list({:ok, map()})
   def convert_rows_to_csv_format([]), do: []
 
@@ -277,6 +280,7 @@ defmodule Glific.Sheets do
         |> Enum.zip(padded_row)
         |> Map.new()
 
+      IO.inspect(row_map, label: "Converted Row Map")
       {:ok, row_map}
     end)
   end
