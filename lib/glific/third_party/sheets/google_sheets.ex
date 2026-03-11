@@ -100,7 +100,8 @@ defmodule Glific.Sheets.GoogleSheets do
   are unavailable or the API call fails.
   Returns a list of `{:ok, map()}` rows where each map has header names as keys.
   """
-  @spec read_sheet_data(non_neg_integer(), String.t()) :: {:ok, list({:ok, map()})}
+  @spec read_sheet_data(non_neg_integer(), String.t()) ::
+          {:ok, list({:ok, map()})} | {:error, any()}
   def read_sheet_data(org_id, sheet_url) do
     spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
     gid = extract_gid(sheet_url)
@@ -109,10 +110,19 @@ defmodule Glific.Sheets.GoogleSheets do
          {:ok, sheet_name} <- find_sheet_name(conn, spreadsheet_id, gid),
          range = "'#{sheet_name}'!A:ZZ",
          {:ok, %{values: values}} when not is_nil(values) <-
-           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, range) do
-      {:ok, convert_rows_to_csv_format(values)}
+           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, range),
+         {:ok, rows} <- convert_rows_to_csv_format(values) do
+      {:ok, rows}
     else
-      _ -> {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+      {:error, "Google API is not active"} ->
+        {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+
+      {:ok, %{values: nil}} ->
+        {:ok, []}
+
+      {:error, reason} ->
+        Logger.warning("Google Sheets API read failed for #{sheet_url}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
@@ -147,22 +157,25 @@ defmodule Glific.Sheets.GoogleSheets do
   ## Examples
 
       iex> convert_rows_to_csv_format([["key", "age"], ["1", "22"]])
-      [{:ok, %{"key" => "1", "age" => "22"}}]
+      {:ok, [{:ok, %{"key" => "1", "age" => "22"}}]}
 
   """
-  @spec convert_rows_to_csv_format(list(list(String.t()))) :: list({:ok, map()})
-  def convert_rows_to_csv_format([]), do: []
+  @spec convert_rows_to_csv_format(list(list(String.t()))) ::
+          {:ok, list({:ok, map()})} | {:error, String.t()}
+  def convert_rows_to_csv_format([]), do: {:ok, []}
 
   def convert_rows_to_csv_format([headers | rows]) do
-    Enum.map(rows, fn row ->
-      padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
+    if Enum.any?(headers, &(&1 == "")) or length(headers) != length(Enum.uniq(headers)) do
+      {:error, "Repeated or missing headers"}
+    else
+      rows =
+        Enum.map(rows, fn row ->
+          padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
+          row_map = headers |> Enum.zip(padded_row) |> Map.new()
+          {:ok, row_map}
+        end)
 
-      row_map =
-        headers
-        |> Enum.zip(padded_row)
-        |> Map.new()
-
-      {:ok, row_map}
-    end)
+      {:ok, rows}
+    end
   end
 end
