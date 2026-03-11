@@ -15,7 +15,6 @@ defmodule Glific.Sheets do
     Messages,
     Notifications,
     Repo,
-    Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
@@ -218,10 +217,8 @@ defmodule Glific.Sheets do
     last_synced_at = DateTime.utc_now()
     export_url = build_export_url(sheet.url)
 
-    sync_result =
-      [url: export_url]
-      |> ApiClient.get_csv_content()
-      |> run_sync_transaction(sheet, last_synced_at)
+    {:ok, rows} = GoogleSheets.read_sheet_data(sheet.organization_id, export_url)
+    sync_result = run_sync_transaction(rows, sheet, last_synced_at)
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)

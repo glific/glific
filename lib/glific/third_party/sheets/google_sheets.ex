@@ -4,6 +4,8 @@ defmodule Glific.Sheets.GoogleSheets do
   """
 
   alias Glific.Partners
+  alias Glific.Sheets
+  alias Glific.Sheets.ApiClient
 
   alias GoogleApi.Sheets.V4.{
     Api.Spreadsheets,
@@ -88,5 +90,56 @@ defmodule Glific.Sheets.GoogleSheets do
       {:error, _error} ->
         {:error, "Invalid Service Account JSON"}
     end
+  end
+
+  @doc """
+  Read all rows from the spreadsheet using authenticated service account.
+  Returns a list of lists where the first list is headers and the rest are data rows.
+  """
+  @spec read_sheet_data(non_neg_integer(), String.t()) ::
+          {:ok, list({:ok, map()})} | {:error, any()}
+  def read_sheet_data(org_id, sheet_url) do
+    case fetch_credentials(org_id) do
+      {:ok, %{conn: conn}} ->
+        spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
+
+        case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
+          {:ok, %{values: values}} ->
+            {:ok, convert_rows_to_csv_format(values)}
+
+          {:error, _reason} ->
+            {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+        end
+
+      {:error, _reason} ->
+        {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+    end
+  end
+
+  @doc """
+  Converts the Google Sheets API response (list of lists) into the
+  `{:ok, map}` format expected by `run_sync_transaction/3`.
+  The first list is treated as headers; subsequent lists are data rows.
+
+  ## Examples
+
+      iex> convert_rows_to_csv_format([["key", "age"], ["1", "22"]])
+      [{:ok, %{"key" => "1", "age" => "22"}}]
+
+  """
+  @spec convert_rows_to_csv_format(list(list(String.t()))) :: list({:ok, map()})
+  def convert_rows_to_csv_format([]), do: []
+
+  def convert_rows_to_csv_format([headers | rows]) do
+    Enum.map(rows, fn row ->
+      padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
+
+      row_map =
+        headers
+        |> Enum.zip(padded_row)
+        |> Map.new()
+
+      {:ok, row_map}
+    end)
   end
 end
