@@ -99,20 +99,14 @@ defmodule Glific.Sheets.GoogleSheets do
   @spec read_sheet_data(non_neg_integer(), String.t()) ::
           {:ok, list({:ok, map()})} | {:error, any()}
   def read_sheet_data(org_id, sheet_url) do
-    case fetch_credentials(org_id) do
-      {:ok, %{conn: conn}} ->
-        spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
+    spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
 
-        case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
-          {:ok, %{values: values}} ->
-            {:ok, convert_rows_to_csv_format(values)}
-
-          {:error, _reason} ->
-            {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
-        end
-
-      {:error, _reason} ->
-        {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id),
+         {:ok, %{values: values}} <-
+           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
+      {:ok, convert_rows_to_csv_format(values)}
+    else
+      _ -> {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
     end
   end
 
