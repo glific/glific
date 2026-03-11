@@ -311,6 +311,10 @@ defmodule Glific.Sheets do
         {:error, err}, _ ->
           err_string = inspect(err)
 
+          # This is because we currently don't parse Tesla sheet download errors and instead let the code flow into
+          # CSV.decode() which causes errors because then the contet is html which is not csv compatible.
+          # This is a temporary fix to handle the errors gracefully. We need to parse the Tesla sheet download errors and pass them to CSV.decode
+          # so that we can handle the errors gracefully.
           sanitized_message =
             if String.contains?(err_string, "Escape sequence started on line") or
                  String.contains?(err_string, "Stray escape character on line") do

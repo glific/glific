@@ -471,10 +471,6 @@ defmodule Glific.SheetsTest do
       # Should handle the CSV parsing error gracefully
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
-      # This is because we currently don't parse Tesla sheet download errors and pass them to CSV.decode
-      # which causes errors where stray characters are present in the body.
-      # TODO: We need to parse the Tesla sheet download errors and pass them to CSV.decode
-      # so that we can handle the errors gracefully.
       assert updated_sheet.failure_reason == "Sheet is not accessible or not found."
     end
 
