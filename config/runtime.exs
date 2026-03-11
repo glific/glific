@@ -169,6 +169,10 @@ config :glific, Glific.ThirdParty.Kaapi.ApiClient,
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
   gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
 
+config :glific,
+  base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
+  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil)
+
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 

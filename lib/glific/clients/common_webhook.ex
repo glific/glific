@@ -54,7 +54,7 @@ defmodule Glific.Clients.CommonWebhook do
       organization = Partners.organization(organization_id)
 
       callback_url =
-        "https://api.#{organization.shortcode}.glific.com" <>
+        Glific.api_callback_base(organization.shortcode) <>
           "/webhook/flow_resume"
 
       payload =
@@ -108,7 +108,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/webhook/flow_resume"
 
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
@@ -652,7 +652,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/webhook/flow_resume?" <>
         "organization_id=#{organization_id}&" <>
         "flow_id=#{flow_id}&" <>

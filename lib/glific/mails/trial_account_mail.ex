@@ -236,7 +236,7 @@ defmodule Glific.Mails.TrialAccountMail do
       <p>To help you get started:</p>
 
       <ol>
-        <li>Here's the link to the platform: <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a></li>
+        <li>Here's the link to the platform: <a href="https://#{shortcode}.#{Glific.base_domain()}">https://#{shortcode}.#{Glific.base_domain()}</a></li>
         <li>Here's a short <a href="https://www.youtube.com/watch?v=OH4rDB6wlx0">video</a> that shows you how to create your first flow on Glific</li>
       </ol>
 
@@ -266,7 +266,7 @@ defmodule Glific.Mails.TrialAccountMail do
         <li><strong>Organization:</strong> #{trial_user.organization_name}</li>
         <li><strong>Email:</strong> #{trial_user.email}</li>
         <li><strong>Phone Number:</strong> #{trial_user.phone}</li>
-        <li><strong>Login URL:</strong> <a href="https://#{shortcode}.glific.com">https://#{shortcode}.glific.com</a></li>
+        <li><strong>Login URL:</strong> <a href="https://#{shortcode}.#{Glific.base_domain()}">https://#{shortcode}.#{Glific.base_domain()}</a></li>
       </ul>
 
       <p>Best,<br>
