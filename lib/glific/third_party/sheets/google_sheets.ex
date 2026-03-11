@@ -165,13 +165,20 @@ defmodule Glific.Sheets.GoogleSheets do
   def convert_rows_to_csv_format([]), do: {:ok, []}
 
   def convert_rows_to_csv_format([headers | rows]) do
-    if Enum.any?(headers, &(&1 == "")) or length(headers) != length(Enum.uniq(headers)) do
+    trimmed_headers = Enum.map(headers, &String.trim/1)
+
+    if Enum.any?(trimmed_headers, &(&1 == "")) or
+         length(trimmed_headers) != length(Enum.uniq(trimmed_headers)) do
       {:error, "Repeated or missing headers"}
     else
       rows =
         Enum.map(rows, fn row ->
-          padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
-          row_map = headers |> Enum.zip(padded_row) |> Map.new()
+          padded_row =
+            row
+            |> Enum.map(&String.trim/1)
+            |> then(&(&1 ++ List.duplicate("", max(0, length(trimmed_headers) - length(&1)))))
+
+          row_map = trimmed_headers |> Enum.zip(padded_row) |> Map.new()
           {:ok, row_map}
         end)
 
