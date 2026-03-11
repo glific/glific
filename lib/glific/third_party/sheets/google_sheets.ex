@@ -98,8 +98,7 @@ defmodule Glific.Sheets.GoogleSheets do
   are unavailable or the API call fails.
   Returns a list of `{:ok, map()}` rows where each map has header names as keys.
   """
-  @spec read_sheet_data(non_neg_integer(), String.t()) ::
-          {:ok, list({:ok, map()})} | {:error, any()}
+  @spec read_sheet_data(non_neg_integer(), String.t()) :: {:ok, list({:ok, map()})}
   def read_sheet_data(org_id, sheet_url) do
     spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
 
