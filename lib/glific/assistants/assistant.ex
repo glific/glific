@@ -73,7 +73,6 @@ defmodule Glific.Assistants.Assistant do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> add_display_id()
-    |> unique_constraint(:assistant_display_id)
     |> unique_constraint([:name, :organization_id],
       name: :assistants_name_organization_id_index
     )
