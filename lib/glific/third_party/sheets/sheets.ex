@@ -271,7 +271,12 @@ defmodule Glific.Sheets do
   def convert_rows_to_csv_format([headers | rows]) do
     Enum.map(rows, fn row ->
       padded_row = row ++ List.duplicate("", max(0, length(headers) - length(row)))
-      row_map = headers |> Enum.zip(padded_row) |> Map.new()
+
+      row_map =
+        headers
+        |> Enum.zip(padded_row)
+        |> Map.new()
+
       {:ok, row_map}
     end)
   end
@@ -296,10 +301,7 @@ defmodule Glific.Sheets do
   end
 
   @spec run_sync_transaction(Enumerable.t(), Sheet.t(), DateTime.t()) :: map()
-  defp run_sync_transaction(csv_content, sheet, last_synced_at) do
-    # Convert the stream to a list once to avoid consumption issues
-    csv_content_list = Enum.to_list(csv_content)
-
+  defp run_sync_transaction(csv_content_list, sheet, last_synced_at) do
     delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
 
     Multi.new()

@@ -49,12 +49,8 @@ defmodule Glific.Sheets.GoogleSheets do
   def read_sheet_data(org_id, spreadsheet_id) do
     with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
       case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
-        {:ok, %{values: values}} when is_list(values) ->
-          IO.inspect(values, label: "read_sheet_data_values")
+        {:ok, %{values: values}} ->
           {:ok, values}
-
-        {:ok, %{values: nil}} ->
-          {:ok, []}
 
         {:error, reason} ->
           {:error, reason}
