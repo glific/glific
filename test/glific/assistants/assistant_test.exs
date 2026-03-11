@@ -103,11 +103,16 @@ defmodule Glific.Assistants.AssistantTest do
     end
 
     test "unique assistant_display_id has to be unique", %{valid_attrs: valid_attrs} do
-      assert {:ok, _assistant} =
+      assert {:ok, assistant} =
                Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
 
+      duplicate_attrs =
+        valid_attrs
+        |> Map.put(:name, "Different Name")
+        |> Map.put(:assistant_display_id, assistant.assistant_display_id)
+
       assert {:error, changeset} =
-               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+               Assistant.changeset(%Assistant{}, duplicate_attrs) |> Glific.Repo.insert()
 
       assert %{assistant_display_id: ["has already been taken"]} = errors_on(changeset)
     end
