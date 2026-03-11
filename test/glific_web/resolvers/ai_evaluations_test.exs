@@ -228,7 +228,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: reason}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert reason != nil
+      assert reason == "Invalid dataset format"
     end
 
     test "returns errors when Kaapi is not configured", %{upload: upload} do
@@ -272,7 +272,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: reason}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert reason == :timeout
+      assert reason == "Timeout occurred, please try again."
     end
 
     test "accepts valid name with underscores and numbers", %{

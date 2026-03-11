@@ -23,11 +23,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           %{dataset_name: name, file: file, duplication_factor: factor},
           user.organization_id
         )
-      end
+    end
 
     case result do
       {:ok, res} -> {:ok, %{golden_qa: res}}
-      {:error, msg} -> {:ok, %{errors: [%{message: msg}]}}
+      {:error, :timeout} -> {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
+      {:error, %{status: _, body: %{:error => error}}} -> {:ok, %{errors: [%{message: error}]}}
+      {:error, msg} when is_binary(msg) -> {:ok, %{errors: [%{message: msg}]}}
+      {:error, _err} -> {:ok, %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 
