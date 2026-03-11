@@ -116,6 +116,29 @@ defmodule Glific.Sheets.GoogleSheets do
     end
   end
 
+  @spec extract_gid(String.t()) :: non_neg_integer()
+  defp extract_gid(sheet_url) do
+    case Regex.run(~r/[#?&]gid=(\d+)/, sheet_url) do
+      [_, gid] -> String.to_integer(gid)
+      _ -> 0
+    end
+  end
+
+  @spec find_sheet_name(Tesla.Client.t(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp find_sheet_name(conn, spreadsheet_id, gid) do
+    case Spreadsheets.sheets_spreadsheets_get(conn, spreadsheet_id) do
+      {:ok, %{sheets: sheets}} when is_list(sheets) ->
+        case Enum.find(sheets, fn s -> s.properties.sheetId == gid end) do
+          nil -> {:error, "Sheet with gid #{gid} not found"}
+          sheet -> {:ok, sheet.properties.title}
+        end
+
+      _ ->
+        {:error, "Failed to fetch spreadsheet metadata"}
+    end
+  end
+
   @doc """
   Converts the Google Sheets API response (list of lists) into the
   `{:ok, map}` format expected by `run_sync_transaction/3`.
