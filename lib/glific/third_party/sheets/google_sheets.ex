@@ -93,8 +93,10 @@ defmodule Glific.Sheets.GoogleSheets do
   end
 
   @doc """
-  Read all rows from the spreadsheet using authenticated service account.
-  Returns a list of lists where the first list is headers and the rest are data rows.
+  Read all rows from the spreadsheet.
+  Tries authenticated access first; falls back to public CSV export if credentials
+  are unavailable or the API call fails.
+  Returns a list of `{:ok, map()}` rows where each map has header names as keys.
   """
   @spec read_sheet_data(non_neg_integer(), String.t()) ::
           {:ok, list({:ok, map()})} | {:error, any()}
@@ -102,7 +104,7 @@ defmodule Glific.Sheets.GoogleSheets do
     spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
 
     with {:ok, %{conn: conn}} <- fetch_credentials(org_id),
-         {:ok, %{values: values}} <-
+         {:ok, %{values: values}} when not is_nil(values) <-
            Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
       {:ok, convert_rows_to_csv_format(values)}
     else
