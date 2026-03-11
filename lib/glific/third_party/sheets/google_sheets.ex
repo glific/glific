@@ -3,6 +3,8 @@ defmodule Glific.Sheets.GoogleSheets do
   Glific Google sheet API layer
   """
 
+  require Logger
+
   alias Glific.Partners
   alias Glific.Sheets
   alias Glific.Sheets.ApiClient
@@ -101,10 +103,13 @@ defmodule Glific.Sheets.GoogleSheets do
   @spec read_sheet_data(non_neg_integer(), String.t()) :: {:ok, list({:ok, map()})}
   def read_sheet_data(org_id, sheet_url) do
     spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
+    gid = extract_gid(sheet_url)
 
     with {:ok, %{conn: conn}} <- fetch_credentials(org_id),
+         {:ok, sheet_name} <- find_sheet_name(conn, spreadsheet_id, gid),
+         range = "'#{sheet_name}'!A:ZZ",
          {:ok, %{values: values}} when not is_nil(values) <-
-           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "A:ZZ") do
+           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, range) do
       {:ok, convert_rows_to_csv_format(values)}
     else
       _ -> {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}

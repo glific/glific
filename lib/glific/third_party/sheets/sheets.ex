@@ -218,9 +218,8 @@ defmodule Glific.Sheets do
     export_url = build_export_url(sheet.url)
 
     sync_result =
-      with {:ok, rows} <- GoogleSheets.read_sheet_data(sheet.organization_id, export_url) do
-        run_sync_transaction(rows, sheet, last_synced_at)
-      else
+      case GoogleSheets.read_sheet_data(sheet.organization_id, export_url) do
+        {:ok, rows} -> run_sync_transaction(rows, sheet, last_synced_at)
         {:error, reason} -> handle_sync_failure(sheet, inspect(reason))
       end
 
