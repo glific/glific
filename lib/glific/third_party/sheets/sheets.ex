@@ -124,9 +124,8 @@ defmodule Glific.Sheets do
   @spec check_public_access(String.t()) :: {:ok, true} | {:error, String.t()}
   defp check_public_access(url) do
     client = Tesla.client([{Tesla.Middleware.FollowRedirects, max_redirects: 5}])
-    header_url = build_export_url(url) <> "&range=A1:ZZ1"
 
-    case Tesla.get(client, header_url) do
+    case Tesla.get(client, url) do
       {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
         {:ok, true}
 
