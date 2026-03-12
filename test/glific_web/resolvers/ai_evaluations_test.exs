@@ -155,7 +155,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "File size must not exceed 20MB"
+      assert msg == "File size must not exceed 1MB"
     end
 
     test "returns errors when file path is unreadable", %{staff: user} do
@@ -203,7 +203,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: reason}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert reason != nil
+      assert reason =~ "Internal server error"
     end
 
     test "returns errors when Kaapi API returns error body", %{staff: user, upload: upload} do

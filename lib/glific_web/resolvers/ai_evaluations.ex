@@ -2,11 +2,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @moduledoc """
   Resolvers for AI Evaluations
   """
+  require Logger
 
   alias Glific.ThirdParty.Kaapi
 
-  # 20MB
-  @max_golden_qa_file_size 20 * 1024 * 1024
+  # 1MB
+  @max_golden_qa_file_size 1 * 1024 * 1024
 
   @doc """
   Create a Golden QA configuration after validating the input.
@@ -18,7 +19,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     result =
       with :ok <- validate_golden_qa_name(name),
            :ok <- validate_duplication_factor(factor),
-           :ok <- validate_golden_qa_file_size(file) do
+           :ok <- validate_golden_qa_file_size(file, user) do
         Kaapi.upload_evaluation_dataset(
           %{dataset_name: name, file: file, duplication_factor: factor},
           user.organization_id
@@ -59,16 +60,17 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   defp validate_duplication_factor(_factor),
     do: {:error, "Duplication factor must be between 1 and 5"}
 
-  @spec validate_golden_qa_file_size(struct()) :: :ok | {:error, String.t()}
-  defp validate_golden_qa_file_size(%{path: path}) do
+  @spec validate_golden_qa_file_size(struct(), map()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_file_size(%{path: path}, %{id: id, organization_id: organization_id}) do
     case File.stat(path) do
       {:ok, %{size: size}} when size <= @max_golden_qa_file_size ->
         :ok
 
       {:ok, %{size: _size}} ->
-        {:error, "File size must not exceed 20MB"}
+        {:error, "File size must not exceed 1MB"}
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error("Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}")
         {:error, "Unable to read uploaded file for size validation"}
     end
   end
