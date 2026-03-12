@@ -465,9 +465,17 @@ defmodule Glific.Partners do
   @spec delete_organization(Organization.t()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
-    # we are deleting an organization that is one of the SaaS users, not the current users org
-    # setting timeout as the deleting organization is an expensive operation
-    Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
+    organization
+    |> Organization.changeset(%{deleted_at: DateTime.utc_now()})
+    |> Repo.update()
+    |> case do
+      {:ok, updated_org} ->
+        remove_organization_cache(updated_org.id, updated_org.shortcode)
+        {:ok, updated_org}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -599,17 +607,12 @@ defmodule Glific.Partners do
     cache_key = cachex_key |> elem(1) |> elem(1)
     Logger.info("Loading organization cache: #{cache_key}")
 
-    organization =
-      if is_integer(cache_key) do
-        get_organization!(cache_key) |> fill_cache()
-      else
-        case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
-          {:ok, organization} ->
-            organization |> fill_cache()
+    clauses = if is_integer(cache_key), do: %{id: cache_key}, else: %{shortcode: cache_key}
 
-          _ ->
-            raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
-        end
+    organization =
+      case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
+        {:ok, org} -> fill_cache(org)
+        _ -> raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
       end
 
     # we are already storing this in the cache (in the function fill_cache),
