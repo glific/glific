@@ -54,7 +54,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+      assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
     end
 
     test "returns errors when name contains special characters", %{
@@ -74,7 +74,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+      assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
     end
 
     test "returns errors when name contains non-ASCII characters", %{
@@ -94,7 +94,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+      assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
     end
 
     test "returns errors when duplication_factor is 0", %{staff: user, upload: upload} do

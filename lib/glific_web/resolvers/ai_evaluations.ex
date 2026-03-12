@@ -47,10 +47,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_name(name) do
-    if Regex.match?(~r/^[A-Za-z0-9_]+$/, name) do
+    if Regex.match?(~r/^[a-z0-9_]+$/, name) do
       :ok
     else
-      {:error, "Name can only contain alphanumeric characters and underscores"}
+      {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
     end
   end
 
