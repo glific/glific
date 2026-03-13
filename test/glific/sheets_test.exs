@@ -309,9 +309,107 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Key: has already been taken (Value: key1)"
+      assert updated_sheet.failure_reason ==
+               "Failed to insert all rows likely due to duplicate keys: expected 2, got 1"
 
       # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles chunked inserts with small chunk size", %{organization_id: organization_id} do
+      original_chunk_size = Application.get_env(:glific, :sheets_chunk_size)
+
+      Application.put_env(:glific, :sheets_chunk_size, 2)
+
+      on_exit(fn ->
+        if original_chunk_size do
+          Application.put_env(:glific, :sheets_chunk_size, original_chunk_size)
+        else
+          Application.delete_env(:glific, :sheets_chunk_size)
+        end
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,Message\r\n" <>
+                "key1,val1,Hello\r\n" <>
+                "key2,val2,World\r\n" <>
+                "key3,val3,Foo\r\n" <>
+                "key4,val4,Bar"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "chunked insert sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :success
+      assert updated_sheet.sheet_data_count == 4
+
+      sheet_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(sheet_data) == 4
+
+      Enum.each(["key1", "key2", "key3", "key4"], fn key ->
+        assert Enum.any?(sheet_data, fn sd -> sd.key == key end)
+      end)
+    end
+
+    test "handles duplicate key errors across chunks", %{organization_id: organization_id} do
+      original_chunk_size = Application.get_env(:glific, :sheets_chunk_size)
+
+      Application.put_env(:glific, :sheets_chunk_size, 2)
+
+      on_exit(fn ->
+        if original_chunk_size do
+          Application.put_env(:glific, :sheets_chunk_size, original_chunk_size)
+        else
+          Application.delete_env(:glific, :sheets_chunk_size)
+        end
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,Message\r\n" <>
+                "key1,val1,Hello\r\n" <>
+                "key2,val2,World\r\n" <>
+                "key1,val3,Again\r\n" <>
+                "key3,val4,Ok"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "duplicate keys across chunks sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason =~
+               "Failed to insert all rows likely due to duplicate keys"
+
+      # DB rolled back: no partial SheetData rows for the affected sheet
       sheet_data_count =
         SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
 
@@ -374,7 +472,7 @@ defmodule Glific.SheetsTest do
       # Should handle the CSV parsing error gracefully
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
-      assert updated_sheet.failure_reason =~ "Escape sequence started on line 2:\\n\\n\\"
+      assert updated_sheet.failure_reason == "Sheet is not accessible or not found."
     end
 
     test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
