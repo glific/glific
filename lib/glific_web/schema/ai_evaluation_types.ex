@@ -17,11 +17,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :name, :string
   end
 
-  object :golden_qa_result do
-    field :golden_qa, :golden_qa
-    field :errors, list_of(:input_error)
-  end
-
   object :evaluation do
     field :status, :string
     field :errors, list_of(:input_error)
@@ -32,6 +27,11 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :experiment_name, non_null(:string)
     field :config_id, non_null(:id)
     field :config_version, non_null(:id)
+  end
+
+  object :golden_qa_result do
+    field :golden_qa, :golden_qa
+    field :errors, list_of(:input_error)
   end
 
   object :ai_evaluation_mutations do

@@ -1,9 +1,13 @@
 defmodule GlificWeb.Resolvers.AIEvaluationsTest do
   use GlificWeb.ConnCase
+  import Mock
 
   alias Glific.Partners
   alias Glific.Users
   alias GlificWeb.Resolvers.AIEvaluations
+
+  @create_golden_qa_success_metric "Golden QA Create Success"
+  @create_golden_qa_failure_metric "Golden QA Create Failure"
 
   describe "create_golden_qa/3" do
     setup [:enable_kaapi, :create_upload_file]
@@ -34,10 +38,19 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      assert {:ok, %{golden_qa: golden_qa}} =
-               AIEvaluations.create_golden_qa(nil, args, resolution)
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{golden_qa: golden_qa}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert golden_qa.name == "valid_dataset"
+        assert golden_qa.name == "valid_dataset"
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_success_metric,
+                   user.organization_id
+                 )
+               )
+      end
     end
 
     test "returns errors when name contains spaces", %{staff: user, upload: upload} do
@@ -51,10 +64,19 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      assert {:ok, %{errors: [%{message: msg}]}} =
-               AIEvaluations.create_golden_qa(nil, args, resolution)
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+        assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
+                 )
+               )
+      end
     end
 
     test "returns errors when name contains special characters", %{
@@ -74,7 +96,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+      assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
     end
 
     test "returns errors when name contains non-ASCII characters", %{
@@ -94,7 +116,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Name can only contain alphanumeric characters and underscores"
+      assert msg == "Name can only contain lowercase alphanumeric characters and underscores"
     end
 
     test "returns errors when duplication_factor is 0", %{staff: user, upload: upload} do
@@ -155,7 +177,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "File size must not exceed 20MB"
+      assert msg == "File size must not exceed 1MB"
     end
 
     test "returns errors when file path is unreadable", %{staff: user} do
@@ -203,7 +225,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: reason}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert reason != nil
+      assert reason =~ "Internal server error"
     end
 
     test "returns errors when Kaapi API returns error body", %{staff: user, upload: upload} do

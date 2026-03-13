@@ -217,29 +217,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
-  @doc """
-  Upload an evaluation dataset to Kaapi
-  """
-  @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
-  def upload_evaluation_dataset(params, org_api_key) do
-    multipart =
-      Tesla.Multipart.new()
-      |> Tesla.Multipart.add_file(params.file.path,
-        name: "file",
-        filename: params.file.filename,
-        headers: [{"content-type", params.file.content_type}]
-      )
-      |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
-      |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
-
-    opts = [adapter: [recv_timeout: 60_000]]
-
-    org_api_key
-    |> client()
-    |> Tesla.post("/api/v1/evaluations/datasets", multipart, opts: opts)
-    |> parse_kaapi_response()
-  end
-
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [

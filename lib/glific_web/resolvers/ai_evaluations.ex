@@ -2,11 +2,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @moduledoc """
   Resolvers for AI Evaluations
   """
+  require Logger
 
-  alias Glific.ThirdParty.Kaapi
+  alias Glific.{Metrics, ThirdParty.Kaapi}
 
-  # 20MB
-  @max_golden_qa_file_size 20 * 1024 * 1024
+  # 1MB
+  @max_golden_qa_file_size 1 * 1024 * 1024
+  @create_golden_qa_success_metric "Golden QA Create Success"
+  @create_golden_qa_failure_metric "Golden QA Create Failure"
 
   @doc """
   Create a Golden QA configuration after validating the input.
@@ -15,20 +18,18 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
         context: %{current_user: user}
       }) do
-    result =
-      with :ok <- validate_golden_qa_name(name),
-           :ok <- validate_duplication_factor(factor),
-           :ok <- validate_golden_qa_file_size(file) do
-        Kaapi.upload_evaluation_dataset(
-          %{dataset_name: name, file: file, duplication_factor: factor},
-          user.organization_id
-        )
-      end
+    dataset = %{
+      dataset_name: name,
+      file: file,
+      duplication_factor: factor
+    }
 
-    case result do
-      {:ok, res} ->
-        {:ok, %{golden_qa: res}}
-
+    with :ok <- validate_golden_qa_name(name),
+         :ok <- validate_duplication_factor(factor),
+         :ok <- validate_golden_qa_file_size(file, user),
+         {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+      {:ok, %{golden_qa: res}}
+    else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
@@ -42,14 +43,23 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
+    |> case do
+      {:ok, %{errors: _} = data} ->
+        Metrics.increment(@create_golden_qa_failure_metric, user.organization_id)
+        {:ok, data}
+
+      {:ok, data} ->
+        Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
+        {:ok, data}
+    end
   end
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_name(name) do
-    if Regex.match?(~r/^[A-Za-z0-9_]+$/, name) do
+    if Regex.match?(~r/^[a-z0-9_]+$/, name) do
       :ok
     else
-      {:error, "Name can only contain alphanumeric characters and underscores"}
+      {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
     end
   end
 
@@ -59,16 +69,20 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   defp validate_duplication_factor(_factor),
     do: {:error, "Duplication factor must be between 1 and 5"}
 
-  @spec validate_golden_qa_file_size(struct()) :: :ok | {:error, String.t()}
-  defp validate_golden_qa_file_size(%{path: path}) do
+  @spec validate_golden_qa_file_size(struct(), map()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_file_size(%{path: path}, %{id: id, organization_id: organization_id}) do
     case File.stat(path) do
       {:ok, %{size: size}} when size <= @max_golden_qa_file_size ->
         :ok
 
       {:ok, %{size: _size}} ->
-        {:error, "File size must not exceed 20MB"}
+        {:error, "File size must not exceed 1MB"}
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.error(
+          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}"
+        )
+
         {:error, "Unable to read uploaded file for size validation"}
     end
   end
