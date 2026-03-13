@@ -1016,4 +1016,123 @@ defmodule Glific.Flows.CommonWebhookTest do
     assert %{error: "Certificate template not found" <> _} =
              CommonWebhook.webhook("create_certificate", invalid_fields)
   end
+
+  describe "speech_to_text webhook" do
+    setup do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, _} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "test_api_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      %{fields: stt_fields(contact.id)}
+    end
+
+    test "returns success when Kaapi acknowledges the STT request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
+      end)
+
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == true
+    end
+
+    test "returns download_failed error when audio download fails", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 403, body: "Forbidden"}
+      end)
+
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == false
+      assert result.error_type == "download_failed"
+      assert result.reason == "Audio file download failed"
+    end
+
+    test "returns service_unavailable error when Kaapi returns 500", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 500, body: %{"error" => "internal error"}}
+      end)
+
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == false
+      assert result.error_type == "service_unavailable"
+    end
+  end
+
+  describe "text_to_speech webhook" do
+    setup do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, _} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "test_api_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      %{fields: tts_fields(contact.id)}
+    end
+
+    test "returns success when Kaapi acknowledges the TTS request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
+      end)
+
+      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      assert result.success == true
+    end
+
+    test "returns rate_limited error when Kaapi returns 429", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 429, body: %{"error" => "too many requests"}}
+      end)
+
+      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      assert result.success == false
+      assert result.error_type == "rate_limited"
+    end
+
+    test "returns timeout error when Kaapi times out", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> {:error, :timeout}
+      end)
+
+      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      assert result.success == false
+      assert result.error_type == "timeout"
+    end
+  end
+
+  defp stt_fields(contact_id) do
+    %{
+      "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
+
+  defp tts_fields(contact_id) do
+    %{
+      "text" => "Hello world",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
 end
