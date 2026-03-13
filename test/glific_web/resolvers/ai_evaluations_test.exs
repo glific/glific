@@ -334,7 +334,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{status: "started"}
+            body: %{data: %{status: "processing"}}
           }
       end)
 
