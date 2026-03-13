@@ -15,7 +15,6 @@ defmodule Glific.Sheets do
     Messages,
     Notifications,
     Repo,
-    Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
@@ -62,21 +61,17 @@ defmodule Glific.Sheets do
     end
   end
 
-  defp validate_sheet(%{type: "READ", url: url} = _attrs) when not is_nil(url) do
-    client =
-      Tesla.client([
-        {Tesla.Middleware.FollowRedirects, max_redirects: 5}
-      ])
+  defp validate_sheet(%{type: "READ", url: url} = attrs) when not is_nil(url) do
+    case GoogleSheets.fetch_credentials(attrs.organization_id) do
+      {:ok, _} ->
+        spreadsheet_id = extract_spreadsheet_id(url)
+        check_read_access(attrs.organization_id, spreadsheet_id)
 
-    Tesla.get(client, url)
-    |> case do
-      # Accept both 200s and 300s
-      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
-        {:ok, true}
+      {:error, "Google API is not active"} ->
+        check_public_access(url)
 
-      _ ->
-        {:error,
-         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -104,6 +99,46 @@ defmodule Glific.Sheets do
 
       {:error, reason} ->
         {:error, "Failed to verify edit access: #{inspect(reason)}"}
+    end
+  end
+
+  @spec check_read_access(non_neg_integer(), String.t()) :: {:ok, true} | {:error, String.t()}
+  defp check_read_access(org_id, spreadsheet_id) do
+    case GoogleSheets.get_headers(org_id, spreadsheet_id) do
+      {:ok, _headers} ->
+        {:ok, true}
+
+      {:error, %Tesla.Env{status: 403}} ->
+        {:error,
+         "No read access to the Google Sheet. Please ensure the service account has viewer permissions."}
+
+      {:error, %Tesla.Env{status: 404}} ->
+        {:error,
+         "Google Sheet not found. Please ensure the URL is correct and the service account has access."}
+
+      {:error, reason} ->
+        {:error, "Failed to verify read access: #{inspect(reason)}"}
+    end
+  end
+
+  @spec check_public_access(String.t()) :: {:ok, true} | {:error, String.t()}
+  defp check_public_access(url) do
+    client = Tesla.client([{Tesla.Middleware.FollowRedirects, max_redirects: 5}])
+
+    header_url =
+      try do
+        build_export_url(url) <> "&range=A1:ZZ1"
+      rescue
+        MatchError -> url
+      end
+
+    case Tesla.get(client, header_url) do
+      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
+        {:ok, true}
+
+      _ ->
+        {:error,
+         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
     end
   end
 
@@ -218,22 +253,15 @@ defmodule Glific.Sheets do
     last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
     export_url = build_export_url(sheet.url)
 
-    csv_content_list =
-      [url: export_url]
-      |> ApiClient.get_csv_content()
-
     sync_result =
-      case decode_all_csv_rows(csv_content_list) do
-        {:ok, decoded_rows} ->
-          run_sync_transaction(sheet, last_synced_at, decoded_rows)
-
-        {:error, message} ->
-          %{sync_successful?: false, error_message: message}
+      with {:ok, rows} <- GoogleSheets.read_sheet_data(sheet.organization_id, export_url),
+           {:ok, decoded_rows} <- decode_all_csv_rows(rows),
+           {:ok, sync_result} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
+        sync_result
+      else
+        {:error, reason} ->
+          handle_sync_failure(sheet, inspect(reason))
       end
-
-    if not sync_result.sync_successful? do
-      log_sync_failure(sheet, sync_result.error_message)
-    end
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
