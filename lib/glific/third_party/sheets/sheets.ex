@@ -249,18 +249,18 @@ defmodule Glific.Sheets do
 
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
+    export_url = build_export_url(sheet.url)
 
     last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
-    export_url = build_export_url(sheet.url)
 
     sync_result =
       with {:ok, rows} <- GoogleSheets.read_sheet_data(sheet.organization_id, export_url),
            {:ok, decoded_rows} <- decode_all_csv_rows(rows),
-           {:ok, sync_result} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
-        sync_result
+           {:ok} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
+        handle_sync_result(:ok, sheet)
       else
-        {:error, reason} ->
-          handle_sync_failure(sheet, inspect(reason))
+        error ->
+          handle_sync_result(error, sheet)
       end
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
@@ -373,19 +373,19 @@ defmodule Glific.Sheets do
     |> Repo.transaction()
     |> case do
       {:ok, _} ->
-        %{sync_successful?: true, error_message: nil}
+        {:ok}
 
       {:error, :delete_sheet_data, reason, _changes} ->
-        %{sync_successful?: false, error_message: error_reason_to_string(reason)}
+        {:error, error_reason_to_string(reason)}
 
       {:error, :validate_headers, message, _} when is_binary(message) ->
-        %{sync_successful?: false, error_message: message}
+        {:error, message}
 
       {:error, :process_sheet_data, message, _} when is_binary(message) ->
-        %{sync_successful?: false, error_message: message}
+        {:error, message}
 
       {:error, _, other, _} ->
-        %{sync_successful?: false, error_message: error_reason_to_string(other)}
+        {:error, error_reason_to_string(other)}
     end
   end
 
@@ -457,13 +457,27 @@ defmodule Glific.Sheets do
     end
   end
 
-  @spec log_sync_failure(Sheet.t(), String.t()) :: :ok
-  defp log_sync_failure(sheet, reason) do
+  @spec handle_sync_result(:ok | :error, Sheet.t()) :: %{
+          sync_successful?: boolean(),
+          error_message: String.t() | nil
+        }
+  defp handle_sync_result(:ok, sheet) do
+    Logger.info("Sheet sync successful. org id: #{sheet.organization_id}, sheet_id: #{sheet.id}")
+
+    %{sync_successful?: true, error_message: nil}
+  end
+
+  defp handle_sync_result({:error, reason}, sheet) do
+    reason =
+      if String.contains?(reason, "Stray escape character on line"),
+        do: "Sheet not found or inaccessible",
+        else: reason
+
     Logger.error(
-      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
+      "Sheet sync failed. Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
     )
 
-    :ok
+    %{sync_successful?: false, error_message: reason}
   end
 
   @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
