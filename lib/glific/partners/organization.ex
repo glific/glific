@@ -48,7 +48,8 @@ defmodule Glific.Partners.Organization do
     :suspended_until,
     :parent_org,
     :is_trial_org,
-    :trial_expiration_date
+    :trial_expiration_date,
+    :deleted_at
   ]
 
   @type t() :: %__MODULE__{
@@ -90,7 +91,8 @@ defmodule Glific.Partners.Organization do
           parent_org: String.t() | nil,
           setting: Setting.t() | nil,
           is_trial_org: boolean() | false,
-          trial_expiration_date: :utc_datetime | nil
+          trial_expiration_date: :utc_datetime | nil,
+          deleted_at: :utc_datetime | nil
         }
 
   schema "organizations" do
@@ -158,6 +160,9 @@ defmodule Glific.Partners.Organization do
     # lets add support for suspending orgs briefly
     field(:is_suspended, :boolean, default: false)
     field(:suspended_until, :utc_datetime)
+
+    # soft delete timestamp
+    field(:deleted_at, :utc_datetime)
 
     # 2085
     # Lets create a virtual field for now to conditionally enable
