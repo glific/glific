@@ -46,6 +46,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Create AI Evaluation"
     field :create_evaluation, :evaluation_result do
       arg(:input, non_null(:evaluation_input))
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_evaluation/3)
     end
   end
