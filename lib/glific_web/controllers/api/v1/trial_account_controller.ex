@@ -46,7 +46,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
       json(conn, %{
         success: true,
         data: %{
-          login_url: "https://#{organization.shortcode}.glific.com/login"
+          login_url: "https://#{organization.shortcode}.#{Glific.base_domain()}/login"
         }
       })
     else
