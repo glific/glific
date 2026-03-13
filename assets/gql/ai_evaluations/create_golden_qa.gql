@@ -1,10 +1,10 @@
 #import "./golden_qa_fields.frag.gql"
 
 mutation CreateGoldenQA($input: GoldenQaInput!) {
-    createGoldenQA(input: $input) {
-        goldenQA {
-            name
-        }
-        ...ErrorFields
+  createGoldenQA(input: $input) {
+    goldenQA {
+      name
     }
+    ...ErrorFields
+  }
 }
