@@ -879,6 +879,57 @@ defmodule Glific.SheetsTest do
     end
   end
 
+  describe "GoogleSheets.convert_rows_to_csv_format/1" do
+    test "returns empty list for empty input" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([])
+    end
+
+    test "maps rows to header keys correctly" do
+      rows = [["key", "age"], ["1", "22"], ["2", "30"]]
+
+      assert {:ok, results} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert {:ok, %{"key" => "1", "age" => "22"}} = Enum.at(results, 0)
+      assert {:ok, %{"key" => "2", "age" => "30"}} = Enum.at(results, 1)
+    end
+
+    test "pads short rows with empty strings when row has fewer columns than headers" do
+      # row has 2 values but headers have 4 — missing columns should be ""
+      rows = [["key", "age", "city", "country"], ["1", "22"]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+      assert row_map["city"] == ""
+      assert row_map["country"] == ""
+    end
+
+    test "trims whitespace from headers and row values" do
+      rows = [["  key  ", " age "], ["  1  ", "  22  "]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+    end
+
+    test "returns error for empty header" do
+      rows = [["key", "", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "returns error for duplicate headers" do
+      rows = [["key", "key", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "handles row with only headers and no data rows" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([["key", "age"]])
+    end
+  end
+
   describe "GoogleSheets.get_headers/2" do
     test "returns headers from first row via Google Sheets API", %{
       organization_id: organization_id

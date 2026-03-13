@@ -125,7 +125,14 @@ defmodule Glific.Sheets do
   defp check_public_access(url) do
     client = Tesla.client([{Tesla.Middleware.FollowRedirects, max_redirects: 5}])
 
-    case Tesla.get(client, url) do
+    header_url =
+      try do
+        build_export_url(url) <> "&range=A1:ZZ1"
+      rescue
+        MatchError -> url
+      end
+
+    case Tesla.get(client, header_url) do
       {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
         {:ok, true}
 
