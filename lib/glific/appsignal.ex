@@ -53,6 +53,7 @@ defmodule Glific.Appsignal do
       System.convert_time_unit(measurement.duration, :native, :millisecond)
 
     status = meta.env.status
+    url = get_template_url(meta.env)
 
     if :rand.uniform() < sampling_rate * sampling_scale / 100 do
       cond do
@@ -61,7 +62,7 @@ defmodule Glific.Appsignal do
           Appsignal.increment_counter("tesla_request_error_count", 1, %{
             provider: meta[:provider],
             error: meta.error,
-            url: meta.env.url,
+            url: url,
             method: meta.env.method
           })
 
@@ -69,7 +70,7 @@ defmodule Glific.Appsignal do
           Appsignal.increment_counter("tesla_request_error_count", 1, %{
             provider: meta[:provider],
             error: status,
-            url: meta.env.url,
+            url: url,
             method: meta.env.method
           })
 
@@ -79,7 +80,7 @@ defmodule Glific.Appsignal do
             request_duration_milliseconds,
             %{
               method: meta.env.method,
-              url: meta.env.url,
+              url: url,
               provider: meta[:provider]
             }
           )
@@ -167,9 +168,17 @@ defmodule Glific.Appsignal do
     rows
   end
 
+  @spec get_template_url(Tesla.Env.t()) :: String.t()
+  defp get_template_url(%Tesla.Env{opts: opts, url: url}) do
+    case Keyword.get(opts, :req_url) do
+      nil -> url
+      req_url -> req_url
+    end
+  end
+
   @spec record_tesla_event(any(), any(), integer()) :: any()
   defp record_tesla_event(measurement, meta, time) do
-    metadata = %{method: meta.env.method, url: meta.env.url}
+    metadata = %{method: meta.env.method, url: get_template_url(meta.env)}
 
     request_duration_microseconds =
       System.convert_time_unit(measurement.duration, :native, :microsecond)

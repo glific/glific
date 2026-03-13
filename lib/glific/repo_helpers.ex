@@ -375,6 +375,8 @@ defmodule Glific.RepoHelpers do
       @impl true
       @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
       def prepare_query(_operation, query, opts) do
+        query = filter_soft_deleted_orgs(query, opts)
+
         cond do
           opts[:skip_organization_id] ||
             opts[:schema_migration] ||
@@ -395,6 +397,18 @@ defmodule Glific.RepoHelpers do
       @spec sub_query?(Ecto.Query.t()) :: boolean()
       defp sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
       defp sub_query?(_query), do: false
+
+      @spec filter_soft_deleted_orgs(Ecto.Query.t(), Keyword.t()) :: Ecto.Query.t()
+      defp filter_soft_deleted_orgs(
+             %{from: %{source: {"organizations", Glific.Partners.Organization}}} = query,
+             opts
+           ) do
+        if opts[:include_deleted],
+          do: query,
+          else: Ecto.Query.where(query, [o], is_nil(o.deleted_at))
+      end
+
+      defp filter_soft_deleted_orgs(query, _opts), do: query
 
       @organization_key {__MODULE__, :organization_id}
       @user_key {__MODULE__, :user}
