@@ -1335,7 +1335,8 @@ defmodule Glific.Partners do
       "ask_me_bot_enabled" => Flags.get_ask_me_bot_enabled(organization),
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
-      "unified_api_enabled" => Flags.get_flag_enabled(:unified_api_enabled, organization)
+      "unified_api_enabled" => Flags.get_flag_enabled(:unified_api_enabled, organization),
+      "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization)
     }
   end
 
