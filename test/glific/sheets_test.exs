@@ -11,6 +11,7 @@ defmodule Glific.SheetsTest do
     Partners,
     Repo,
     Sheets,
+    Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
     Sheets.Worker
@@ -715,6 +716,254 @@ defmodule Glific.SheetsTest do
         assert notification.message ==
                  "Unknown error occurred, please reach out to support"
       end
+    end
+  end
+
+  @spreadsheet_id "1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw"
+  @sheet_url "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/edit#gid=0"
+  @export_url "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/export?format=csv&gid=0"
+  @sheets_base_url "https://sheets.googleapis.com/v4/spreadsheets/#{@spreadsheet_id}"
+
+  @service_account_json Jason.encode!(%{
+                          project_id: "DEFAULT PROJECT ID",
+                          private_key_id: "DEFAULT API KEY",
+                          client_email: "DEFAULT CLIENT EMAIL",
+                          private_key: "DEFAULT PRIVATE KEY"
+                        })
+
+  defp setup_google_sheets_credential(organization_id) do
+    Partners.create_credential(%{
+      shortcode: "google_sheets",
+      secrets: %{"service_account" => @service_account_json},
+      is_active: true,
+      organization_id: organization_id
+    })
+  end
+
+  defp spreadsheet_metadata_response do
+    Jason.encode!(%{
+      spreadsheetId: @spreadsheet_id,
+      sheets: [
+        %{
+          properties: %{
+            sheetId: 0,
+            title: "Sheet1",
+            index: 0
+          }
+        }
+      ]
+    })
+  end
+
+  defp values_response(rows) do
+    Jason.encode!(%{
+      range: "'Sheet1'!A1:ZZ1000",
+      majorDimension: "ROWS",
+      values: rows
+    })
+  end
+
+  describe "GoogleSheets.read_sheet_data/2 authenticated API path" do
+    test "returns rows from Google Sheets API when credentials are available", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.starts_with?(url, @sheets_base_url <> "/values/") do
+              %Tesla.Env{
+                status: 200,
+                body: values_response([["name", "age"], ["Alice", "30"], ["Bob", "25"]])
+              }
+            end
+        end)
+
+        assert {:ok, rows} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+        assert length(rows) == 2
+        assert {:ok, %{"name" => "Alice", "age" => "30"}} = Enum.at(rows, 0)
+        assert {:ok, %{"name" => "Bob", "age" => "25"}} = Enum.at(rows, 1)
+      end
+    end
+
+    test "falls back to public CSV when Google API is not active", %{
+      organization_id: organization_id
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "name,age\r\nAlice,30\r\nBob,25"}
+      end)
+
+      assert {:ok, rows} = GoogleSheets.read_sheet_data(organization_id, @export_url)
+      assert length(rows) == 2
+      assert {:ok, %{"name" => "Alice", "age" => "30"}} = Enum.at(rows, 0)
+    end
+
+    test "returns empty list when sheet has no data", %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.starts_with?(url, @sheets_base_url <> "/values/") do
+              %Tesla.Env{
+                status: 200,
+                body: Jason.encode!(%{range: "'Sheet1'!A1:ZZ1", majorDimension: "ROWS"})
+              }
+            end
+        end)
+
+        assert {:ok, []} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+      end
+    end
+
+    test "returns error when API call fails (non-credential error)", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                Jason.encode!(%{
+                  error: %{code: 403, message: "The caller does not have permission"}
+                })
+            }
+        end)
+
+        assert {:error, _reason} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+      end
+    end
+
+    test "returns error when gid does not match any sheet", %{organization_id: organization_id} do
+      sheet_url_unknown_gid =
+        "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/edit#gid=9999"
+
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+        end)
+
+        assert {:error, "Sheet with gid 9999 not found"} =
+                 GoogleSheets.read_sheet_data(organization_id, sheet_url_unknown_gid)
+      end
+    end
+  end
+
+  describe "GoogleSheets.convert_rows_to_csv_format/1" do
+    test "returns empty list for empty input" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([])
+    end
+
+    test "maps rows to header keys correctly" do
+      rows = [["key", "age"], ["1", "22"], ["2", "30"]]
+
+      assert {:ok, results} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert {:ok, %{"key" => "1", "age" => "22"}} = Enum.at(results, 0)
+      assert {:ok, %{"key" => "2", "age" => "30"}} = Enum.at(results, 1)
+    end
+
+    test "pads short rows with empty strings when row has fewer columns than headers" do
+      # row has 2 values but headers have 4 — missing columns should be ""
+      rows = [["key", "age", "city", "country"], ["1", "22"]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+      assert row_map["city"] == ""
+      assert row_map["country"] == ""
+    end
+
+    test "trims whitespace from headers and row values" do
+      rows = [["  key  ", " age "], ["  1  ", "  22  "]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+    end
+
+    test "returns error for empty header" do
+      rows = [["key", "", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "returns error for duplicate headers" do
+      rows = [["key", "key", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "handles row with only headers and no data rows" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([["key", "age"]])
+    end
+  end
+
+  describe "GoogleSheets.get_headers/2" do
+    test "returns headers from first row via Google Sheets API", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.contains?(url, "/values/1%3A1") or String.contains?(url, "/values/1:1") do
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    range: "Sheet1!A1:ZZ1",
+                    majorDimension: "ROWS",
+                    values: [["name", "age", "city"]]
+                  })
+              }
+            end
+        end)
+
+        assert {:ok, ["name", "age", "city"]} =
+                 GoogleSheets.get_headers(organization_id, @spreadsheet_id)
+      end
+    end
+
+    test "returns error when Google API is not active", %{organization_id: organization_id} do
+      assert {:error, "Google API is not active"} =
+               GoogleSheets.get_headers(organization_id, @spreadsheet_id)
     end
   end
 end

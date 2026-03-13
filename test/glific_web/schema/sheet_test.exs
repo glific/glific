@@ -257,7 +257,11 @@ defmodule GlificWeb.Schema.SheetTest do
 
   test "validate_sheet returns appropriate error for inaccessible URL", %{manager: user} do
     Tesla.Mock.mock(fn
-      %{method: :get, url: "https://docs.google.com/spreadsheets/d/restricted_id/edit#gid=0"} ->
+      %{
+        method: :get,
+        url:
+          "https://docs.google.com/spreadsheets/d/restricted_id/export?format=csv&gid=0&range=A1:ZZ1"
+      } ->
         {:ok, %Tesla.Env{status: 403, body: "Forbidden"}}
     end)
 
