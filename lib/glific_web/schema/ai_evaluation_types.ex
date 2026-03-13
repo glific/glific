@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :name, :string
   end
 
-  object :evaluation do
+  object :evaluation_result do
     field :status, :string
     field :errors, list_of(:input_error)
   end
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     end
 
     @desc "Create AI Evaluation"
-    field :create_evaluation, :evaluation do
+    field :create_evaluation, :evaluation_result do
       arg(:input, non_null(:evaluation_input))
       resolve(&Resolvers.AIEvaluations.create_evaluation/3)
     end
