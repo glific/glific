@@ -4,10 +4,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   require Logger
 
-  alias Glific.ThirdParty.Kaapi
+  alias Glific.{Metrics, ThirdParty.Kaapi}
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
+  @create_golden_qa_success_metric "Golden QA Create Success"
+  @create_golden_qa_failure_metric "Golden QA Create Failure"
 
   @doc """
   Create a Golden QA configuration after validating the input.
@@ -16,20 +18,18 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
         context: %{current_user: user}
       }) do
-    result =
-      with :ok <- validate_golden_qa_name(name),
-           :ok <- validate_duplication_factor(factor),
-           :ok <- validate_golden_qa_file_size(file, user) do
-        Kaapi.upload_evaluation_dataset(
-          %{dataset_name: name, file: file, duplication_factor: factor},
-          user.organization_id
-        )
-      end
+    dataset = %{
+      dataset_name: name,
+      file: file,
+      duplication_factor: factor
+    }
 
-    case result do
-      {:ok, res} ->
-        {:ok, %{golden_qa: res}}
-
+    with :ok <- validate_golden_qa_name(name),
+         :ok <- validate_duplication_factor(factor),
+         :ok <- validate_golden_qa_file_size(file, user),
+         {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+      {:ok, %{golden_qa: res}}
+    else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
@@ -42,6 +42,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, _err} ->
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
+    end
+    |> case do
+      {:ok, %{errors: _} = data} ->
+        Metrics.increment(@create_golden_qa_failure_metric, user.organization_id)
+        {:ok, data}
+
+      {:ok, data} ->
+        Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
+        {:ok, data}
     end
   end
 
@@ -70,7 +79,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error, "File size must not exceed 1MB"}
 
       {:error, reason} ->
-        Logger.error("Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}")
+        Logger.error(
+          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}"
+        )
+
         {:error, "Unable to read uploaded file for size validation"}
     end
   end
