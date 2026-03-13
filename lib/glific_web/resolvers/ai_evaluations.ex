@@ -72,4 +72,27 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error, "Unable to read uploaded file for size validation"}
     end
   end
+
+  @doc """
+    Create an AI Evaluation by sending the input to Kaapi and handling the response.
+  """
+  @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
+  def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
+    case Kaapi.create_evaluation(input, user.organization_id) do
+      {:ok, %{data: %{status: status}}} ->
+        {:ok, %{status: status}}
+
+      {:error, :timeout} ->
+        {:error, "Timeout occurred, please try again."}
+
+      {:error, %{body: %{:error => error}}} ->
+        {:error, error}
+
+      {:error, msg} when is_binary(msg) ->
+        {:error, msg}
+
+      {:error, _} ->
+        {:error, "An unknown error occurred, please contact Glific support."}
+    end
+  end
 end

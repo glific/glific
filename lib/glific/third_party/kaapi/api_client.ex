@@ -199,6 +199,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create an evaluation in Kaapi
+  """
+  @spec create_evaluation(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi
   """
   @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
