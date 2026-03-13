@@ -256,7 +256,7 @@ defmodule Glific.Sheets do
     sync_result =
       with {:ok, rows} <- GoogleSheets.read_sheet_data(sheet.organization_id, export_url),
            {:ok, decoded_rows} <- decode_all_csv_rows(rows),
-           {:ok} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
+           {:ok, nil} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
         handle_sync_result(:ok, sheet)
       else
         error ->
@@ -360,7 +360,8 @@ defmodule Glific.Sheets do
     end
   end
 
-  @spec run_sync_transaction(Sheet.t(), DateTime.t(), [map()]) :: map()
+  @spec run_sync_transaction(Sheet.t(), DateTime.t(), [map()]) ::
+          {:ok, nil} | {:error, String.t()}
   defp run_sync_transaction(sheet, last_synced_at, decoded_rows) do
     delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
 
@@ -373,7 +374,7 @@ defmodule Glific.Sheets do
     |> Repo.transaction()
     |> case do
       {:ok, _} ->
-        {:ok}
+        {:ok, nil}
 
       {:error, :delete_sheet_data, reason, _changes} ->
         {:error, error_reason_to_string(reason)}
@@ -457,7 +458,7 @@ defmodule Glific.Sheets do
     end
   end
 
-  @spec handle_sync_result(:ok | :error, Sheet.t()) :: %{
+  @spec handle_sync_result(:ok | {:error, term()}, Sheet.t()) :: %{
           sync_successful?: boolean(),
           error_message: String.t() | nil
         }
@@ -468,16 +469,22 @@ defmodule Glific.Sheets do
   end
 
   defp handle_sync_result({:error, reason}, sheet) do
-    reason =
-      if String.contains?(reason, "Stray escape character on line"),
-        do: "Sheet not found or inaccessible",
-        else: reason
+    reason = normalize_sync_error_reason(reason)
 
     Logger.error(
       "Sheet sync failed. Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
     )
 
     %{sync_successful?: false, error_message: reason}
+  end
+
+  @spec normalize_sync_error_reason(term()) :: String.t()
+  defp normalize_sync_error_reason(reason) do
+    reason = if is_binary(reason), do: reason, else: inspect(reason)
+
+    if String.contains?(reason, "Stray escape character on line"),
+      do: "Sheet not found or inaccessible",
+      else: reason
   end
 
   @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
