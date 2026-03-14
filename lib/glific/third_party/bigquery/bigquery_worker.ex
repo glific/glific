@@ -496,6 +496,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
+          |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
           | acc
         ]
@@ -1593,7 +1594,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec apply_action_clause(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
-    do: query |> where([m], m.id >= ^min_id and m.id <= ^max_id)
+    do: query |> where([m], m.id > ^min_id and m.id <= ^max_id)
 
   defp apply_action_clause(
          query,
