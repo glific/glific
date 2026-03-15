@@ -48,22 +48,23 @@ defmodule Glific.ThirdParty.Kaapi do
   def onboard(params) do
     with {:ok, %{data: %{api_key: api_key}}} <- ApiClient.onboard_to_kaapi(params),
          {:ok, _} <- insert_kaapi_provider(params.organization_id, api_key) do
-      Logger.info("KAAPI onboarding success for org: #{params.organization_id}")
+      Logger.info("Kaapi onboarding success for org: #{params.organization_id}")
 
       FunWithFlags.enable(
         :is_kaapi_enabled,
         for_actor: %{organization_id: params.organization_id}
       )
 
-      {:ok, "KAAPI onboarding successful for org #{params.organization_id}"}
+      {:ok, "Kaapi onboarding successful for org #{params.organization_id}"}
     else
       {:error, error} ->
         Glific.log_exception(%Error{
-          message:
-            "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
+          message: "Kaapi onboarding failed",
+          organization_id: params.organization_id,
+          reason: inspect(error)
         })
 
-        {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
+        {:error, "Kaapi onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
     end
   end
 
@@ -76,15 +77,16 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, result} <-
            ApiClient.ingest_ai_assistants(secrets["api_key"], assistant_id) do
       Logger.info(
-        "KAAPI ingest successful for org: #{organization_id}, assistant: #{assistant_id}"
+        "Kaapi ingest successful for org: #{organization_id}, assistant: #{assistant_id}"
       )
 
       {:ok, result}
     else
       {:error, reason} ->
         Glific.log_exception(%Error{
-          message:
-            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
+          message: "Assistant import failed in Kaapi for assistant_id=#{assistant_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
         })
 
         {:error, reason}
@@ -114,14 +116,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi Config creation failed for name #{params.name}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi Config creation failed for name #{params.name}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -149,14 +148,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi Config Version creation failed for Config ID #{config_id}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi Config Version creation failed for Config ID #{config_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -181,20 +177,17 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, result} <-
            ApiClient.update_assistant(assistant_id, params, secrets["api_key"]) do
       Logger.info(
-        "KAAPI AI Assistant update successful for org: #{organization_id}, assistant: #{assistant_id}"
+        "Kaapi AI Assistant update successful for org: #{organization_id}, assistant: #{assistant_id}"
       )
 
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi AI Assistant update failed for assistant_id=#{assistant_id}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi AI Assistant update failed for assistant_id=#{assistant_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -208,19 +201,16 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
            ApiClient.delete_assistant(assistant_id, secrets["api_key"]) do
-      Logger.info("KAAPI AI Assistant delete successful for, assistant: #{assistant_id}")
+      Logger.info("Kaapi AI Assistant delete successful for, assistant: #{assistant_id}")
 
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -240,14 +230,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to create Kaapi Knowledge Base creation job",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Failed to create Kaapi Knowledge Base creation job",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -279,19 +266,16 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
            ApiClient.upload_document(params, secrets["api_key"]) do
-      Logger.info("KAAPI document upload successful for, file: #{params.filename}")
+      Logger.info("Kaapi document upload successful for, file: #{params.filename}")
 
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi document upload failed for, filename=#{params.filename}",
-            reason: inspect(reason),
-            organization_id: organization_id
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi document upload failed for, filename=#{params.filename}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -305,18 +289,16 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <-
            ApiClient.delete_config(uuid, secrets["api_key"]) do
-      Logger.info("KAAPI config delete successful for org: #{organization_id}, config: #{uuid}")
+      Logger.info("Kaapi config delete successful for org: #{organization_id}, config: #{uuid}")
 
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message:
-              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi config delete failed for config=#{uuid}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -339,27 +321,21 @@ defmodule Glific.ThirdParty.Kaapi do
           {:ok, %{name: dataset_name}}
 
         error ->
-          Appsignal.send_error(
-            %Error{
-              message: "Got unexpected response from Kaapi while uploading evaluation dataset",
-              organization_id: organization_id,
-              reason: inspect(error)
-            },
-            []
-          )
+          Glific.log_exception(%Error{
+            message: "Got unexpected response from Kaapi while uploading evaluation dataset",
+            organization_id: organization_id,
+            reason: inspect(error)
+          })
 
           {:error, "An unknown error occurred, please contact Glific support."}
       end
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to upload evaluation dataset to Kaapi",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Failed to upload evaluation dataset to Kaapi",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end

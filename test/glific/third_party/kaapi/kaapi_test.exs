@@ -35,7 +35,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end)
 
     assert {:error,
-            %{status: 422, body: %{error: "API key already exists for this user and project."}}} =
+            "Kaapi API request failed: API key already exists for this user and project."} =
              ApiClient.onboard_to_kaapi(@params)
   end
 
@@ -48,7 +48,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         }
     end)
 
-    assert {:error, %{status: 400, body: %{error: "Bad request"}}} =
+    assert {:error, "Kaapi API request failed: Bad request"} =
              ApiClient.onboard_to_kaapi(@params)
   end
 
@@ -61,7 +61,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         }
     end)
 
-    assert {:error, %{status: 307, body: %{message: "Redirected"}}} =
+    assert {:error, "Kaapi API request failed: An unknown error occurred, please contact Glific support."} =
              ApiClient.onboard_to_kaapi(@params)
   end
 
@@ -74,7 +74,24 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         }
     end)
 
-    assert {:error, %{status: 404, body: %{message: "Not Found"}}} =
+    assert {:error, "Kaapi API request failed: An unknown error occurred, please contact Glific support."} =
+             ApiClient.onboard_to_kaapi(@params)
+  end
+
+  test "returns normalized field-level validation error from kaapi" do
+    mock(fn
+      %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 422,
+          body: %{
+            error: "Validation Failed",
+            errors: %{field: "dataset_name", message: "Field required"}
+          }
+        }
+    end)
+
+    assert {:error,
+            "Kaapi API request failed: Validation Failed - dataset_name: Field required"} =
              ApiClient.onboard_to_kaapi(@params)
   end
 
@@ -151,7 +168,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
           }
       end)
 
-      assert {:error, %{status: 409, body: ^response_body}} =
+      assert {:error, "Kaapi API request failed: Assistant already exists"} =
                ApiClient.create_assistant(params, @org_kaapi_api_key)
     end
   end
@@ -213,7 +230,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         %Tesla.Env{status: 404, body: %{error: "Not Found", data: %{}}}
       end)
 
-      assert {:error, %{status: 404, body: %{error: "Not Found", data: %{}}}} =
+      assert {:error, "Kaapi API request failed: Not Found"} =
                ApiClient.update_assistant("invalid_id", params, @org_kaapi_api_key)
     end
   end
@@ -257,7 +274,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       params = %{name: "Test Collection"}
 
-      assert {:error, %{status: 422, body: ^response_body}} =
+      assert {:error, "Kaapi API request failed: Invalid parameters"} =
                ApiClient.create_collection(params, @org_kaapi_api_key)
     end
 
@@ -328,7 +345,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
       config_id = "config_123"
       body = %{name: "Test Config Version"}
 
-      assert {:error, %{status: 422, body: ^response_body}} =
+      assert {:error, "Kaapi API request failed: Invalid parameters"} =
                ApiClient.create_config_version(config_id, body, @org_kaapi_api_key)
     end
 
@@ -365,7 +382,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         %Tesla.Env{status: 404, body: %{error: "Not Found", data: %{}}}
       end)
 
-      assert {:error, %{status: 404, body: %{error: "Not Found", data: %{}}}} =
+      assert {:error, "Kaapi API request failed: Not Found"} =
                ApiClient.delete_assistant("invalid_id", @org_kaapi_api_key)
     end
   end

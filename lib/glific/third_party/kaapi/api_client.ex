@@ -17,6 +17,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         Tesla.Middleware.KeepRequest,
         Tesla.Middleware.PathParams,
+        Tesla.Middleware.Logger,
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
     )
@@ -250,15 +251,68 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     {:ok, body}
   end
 
-  defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}}) do
+  defp parse_kaapi_response({:ok, %Tesla.Env{body: body}}) do
     Glific.Metrics.increment("Kaapi Failed")
-    {:error, %{status: status, body: body}}
+    {:error, normalize_kaapi_error(body)}
   end
 
   defp parse_kaapi_response(error) do
     if {:error, :timeout} == error, do: Glific.Metrics.increment("Kaapi Timedout")
     error
   end
+
+  @spec normalize_kaapi_error(any()) :: String.t()
+  defp normalize_kaapi_error(body) do
+    status_prefix = "Kaapi API request failed"
+    global_error = extract_global_error(body)
+    validation_error = extract_validation_error(body)
+
+    cond do
+      validation_error != nil and global_error != nil ->
+        "#{status_prefix}: #{global_error} - #{validation_error}"
+
+      validation_error != nil ->
+        "#{status_prefix}: #{validation_error}"
+
+      global_error != nil ->
+        "#{status_prefix}: #{global_error}"
+
+      true ->
+        "#{status_prefix}: An unknown error occurred, please contact Glific support."
+    end
+  end
+
+  @spec extract_global_error(any()) :: String.t() | nil
+  defp extract_global_error(%{error: error}) when is_binary(error), do: error
+  defp extract_global_error(%{"error" => error}) when is_binary(error), do: error
+  defp extract_global_error(error) when is_binary(error), do: error
+  defp extract_global_error(_), do: nil
+
+  @spec extract_validation_error(any()) :: String.t() | nil
+  defp extract_validation_error(%{errors: errors}), do: parse_validation_errors(errors)
+  defp extract_validation_error(%{"errors" => errors}), do: parse_validation_errors(errors)
+  defp extract_validation_error(_), do: nil
+
+  @spec parse_validation_errors(any()) :: String.t() | nil
+  defp parse_validation_errors(%{field: field, message: message})
+       when is_binary(field) and is_binary(message),
+       do: "#{field}: #{message}"
+
+  defp parse_validation_errors(%{"field" => field, "message" => message})
+       when is_binary(field) and is_binary(message),
+       do: "#{field}: #{message}"
+
+  defp parse_validation_errors(errors) when is_list(errors) do
+    errors
+    |> Enum.map(&parse_validation_errors/1)
+    |> Enum.reject(&is_nil/1)
+    |> case do
+      [] -> nil
+      parsed_errors -> Enum.join(parsed_errors, ", ")
+    end
+  end
+
+  defp parse_validation_errors(_), do: nil
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]

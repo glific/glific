@@ -72,6 +72,9 @@ defmodule Glific.Clients.CommonWebhook do
         {:ok, body} ->
           Map.merge(%{success: true}, body)
 
+        {:error, reason} when is_binary(reason) ->
+          %{success: false, reason: reason}
+
         {:error, %{status: _status, body: body}} ->
           result = Jason.encode!(body)
           %{success: false, reason: result}
