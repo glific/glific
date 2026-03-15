@@ -1,0 +1,14 @@
+query AssistantVersions($assistant_id: ID!) {
+  assistantVersions(assistantId: $assistant_id) {
+    id
+    version_number
+    model
+    prompt
+    settings
+    status
+    is_live
+    description
+    inserted_at
+    updated_at
+  }
+}

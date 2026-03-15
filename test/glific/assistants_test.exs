@@ -492,8 +492,8 @@ defmodule Glific.AssistantsTest do
       assert config_count == 2
     end
 
-    test "creates a new config version when temperature changes",
-         %{organization_id: organization_id, assistant: assistant} do
+    test "creates a new config version when temperature changes but does not change active version",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp"}}}
@@ -505,7 +505,8 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      assert result.temperature == 0.5
+      # Active version is unchanged — result still reflects the old live version
+      assert result.temperature == get_in(config_version.settings, ["temperature"])
 
       config_count =
         AssistantConfigVersion
@@ -515,8 +516,8 @@ defmodule Glific.AssistantsTest do
       assert config_count == 2
     end
 
-    test "creates a new config version when model changes",
-         %{organization_id: organization_id, assistant: assistant} do
+    test "creates a new config version when model changes but does not change active version",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model"}}}
@@ -528,7 +529,8 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      assert result.model == "gpt-4o-mini"
+      # Active version is unchanged — result still reflects the old live version
+      assert result.model == config_version.model
 
       config_count =
         AssistantConfigVersion
@@ -538,8 +540,8 @@ defmodule Glific.AssistantsTest do
       assert config_count == 2
     end
 
-    test "creates a new config version when instructions change",
-         %{organization_id: organization_id, assistant: assistant} do
+    test "creates a new config version when instructions change but does not change active version",
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions"}}}
@@ -551,7 +553,8 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      assert result.instructions == "You are a specialized assistant"
+      # Active version is unchanged — result still reflects the old live version
+      assert result.instructions == config_version.prompt
 
       config_count =
         AssistantConfigVersion
@@ -692,7 +695,7 @@ defmodule Glific.AssistantsTest do
     end
 
     test "multiple fields changing creates only one new config version",
-         %{organization_id: organization_id, assistant: assistant} do
+         %{organization_id: organization_id, assistant: assistant, config_version: config_version} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_multi"}}}
@@ -706,9 +709,10 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
+      # Name update is reflected immediately; model/temperature reflect the old live version
       assert result.name == "Multi-Update Name"
-      assert result.model == "gpt-4o-mini"
-      assert result.temperature == 0.7
+      assert result.model == config_version.model
+      assert result.temperature == get_in(config_version.settings, ["temperature"])
 
       config_count =
         AssistantConfigVersion
@@ -808,7 +812,7 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_link_kb"}}}
       end)
 
-      assert {:ok, result} =
+      assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  name: assistant.name,
                  instructions: config_version.prompt,
@@ -826,9 +830,13 @@ defmodule Glific.AssistantsTest do
 
       assert bridge_count_after == 1
 
-      # Verify the response includes the KB data
-      assert result.vector_store_data != nil
-      assert result.vector_store_data.vector_store_id == "vs_unlinked_123"
+      # Verify a new config version was also created
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
     end
   end
 
@@ -1632,6 +1640,129 @@ defmodule Glific.AssistantsTest do
       # No Tesla mock — if Kaapi is called, this will fail
       assert {:ok, %Assistant{}} = Assistants.delete_assistant(assistant.id)
       assert {:error, _} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+    end
+  end
+
+  describe "list_assistant_config_versions/1" do
+    setup [:setup_assistant_with_kb]
+
+    test "returns versions ordered by version_number desc with is_live flag",
+         %{assistant: assistant, config_version: config_version, organization_id: organization_id} do
+      {:ok, second_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Updated prompt",
+          settings: %{"temperature" => 0.5},
+          status: :ready,
+          version_number: 2
+        })
+        |> Repo.insert()
+
+      versions = Assistants.list_assistant_config_versions(assistant.id)
+
+      assert length(versions) == 2
+      [first | [second]] = versions
+
+      # Ordered newest first
+      assert first.id == second_version.id
+      assert second.id == config_version.id
+
+      # is_live reflects active_config_version_id
+      live_version = Enum.find(versions, & &1.is_live)
+      assert live_version.id == assistant.active_config_version_id
+    end
+
+    test "returns error when assistant does not exist" do
+      assert {:error, _} = Assistants.list_assistant_config_versions(0)
+    end
+  end
+
+  describe "set_live_version/2" do
+    setup [:setup_assistant_with_kb]
+
+    test "updates active_config_version_id when version is ready",
+         %{assistant: assistant, config_version: config_version, organization_id: organization_id} do
+      {:ok, second_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Second prompt",
+          settings: %{},
+          status: :ready,
+          version_number: 2
+        })
+        |> Repo.insert()
+
+      assert {:ok, result} = Assistants.set_live_version(assistant.id, second_version.id)
+      assert result.active_config_version_id == second_version.id
+      assert result.live_version_number == second_version.version_number
+
+      # Can also switch back to the first version
+      assert {:ok, result2} = Assistants.set_live_version(assistant.id, config_version.id)
+      assert result2.active_config_version_id == config_version.id
+    end
+
+    test "returns error when version is not in ready status",
+         %{assistant: assistant, organization_id: organization_id} do
+      {:ok, in_progress_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "In progress prompt",
+          settings: %{},
+          status: :in_progress,
+          version_number: 2
+        })
+        |> Repo.insert()
+
+      assert {:error, "Version must be in ready status to be set as live"} =
+               Assistants.set_live_version(assistant.id, in_progress_version.id)
+    end
+
+    test "returns error when version does not belong to assistant",
+         %{assistant: assistant, organization_id: organization_id} do
+      {:ok, other_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Other Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, other_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: other_assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Other prompt",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      assert {:error, _} = Assistants.set_live_version(assistant.id, other_version.id)
+    end
+
+    test "returns error when assistant does not exist",
+         %{config_version: config_version} do
+      assert {:error, _} = Assistants.set_live_version(0, config_version.id)
+    end
+
+    test "returns error when version does not exist",
+         %{assistant: assistant} do
+      assert {:error, _} = Assistants.set_live_version(assistant.id, 0)
     end
   end
 

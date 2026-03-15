@@ -69,6 +69,30 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :assistant_config_version do
+    field :id, :id
+    field :version_number, :integer
+    field :model, :string
+    field :prompt, :string
+    field :settings, :json
+    field :status, :string
+    field :is_live, :boolean
+    field :description, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  object :set_live_version_result do
+    field :assistant, :live_version_assistant
+    field :errors, list_of(:input_error)
+  end
+
+  object :live_version_assistant do
+    field :id, :id
+    field :active_config_version_id, :id
+    field :live_version_number, :integer
+  end
+
   object :assistant do
     field :id, :id
     field :assistant_display_id, :string
@@ -159,6 +183,14 @@ defmodule GlificWeb.Schema.AssistantTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.update_assistant/3)
     end
+
+    @desc "Set a config version as the live version for an assistant"
+    field :set_live_version, :set_live_version_result do
+      arg(:assistant_id, non_null(:id))
+      arg(:version_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.set_live_version/3)
+    end
   end
 
   object :filesearch_queries do
@@ -181,6 +213,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :list_openai_models, list_of(:string) do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.list_models/3)
+    end
+
+    @desc "List all config versions for an assistant"
+    field :assistant_versions, list_of(:assistant_config_version) do
+      arg(:assistant_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.list_assistant_versions/3)
     end
   end
 end
