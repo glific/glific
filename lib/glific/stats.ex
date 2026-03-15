@@ -602,7 +602,7 @@ defmodule Glific.Stats do
       optin: optin,
       duration: duration,
       date_range: get_date_label(duration),
-      dashboard_link: "https://#{org.shortcode}.glific.com/",
+      dashboard_link: "https://#{org.shortcode}.#{Glific.base_domain()}/",
       parent_org: org.parent_org
     }
 
