@@ -120,6 +120,28 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field(:name, :string)
   end
 
+  object :assistant_config_version do
+    field :id, :id
+    field :assistant_id, :id
+    field :kaapi_uuid, :string
+    field :version_number, :integer
+    field :description, :string
+    field :prompt, :string
+    field :provider, :string
+    field :model, :string
+    field :settings, :json
+    field :status, :string
+    field :failure_reason, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  @desc "Filtering options for Assistant Config Versions"
+  input_object :assistant_config_version_filter do
+    @desc "Filter by assistant id"
+    field(:assistant_id, :id)
+  end
+
   object :filesearch_mutations do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
@@ -175,6 +197,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.list_assistants/3)
+    end
+
+    @desc "List Assistant Config Versions"
+    field :assistant_config_versions, list_of(:assistant_config_version) do
+      arg(:filter, :assistant_config_version_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Assistants.list_assistant_config_versions/3)
     end
 
     @desc "List models"

@@ -7,6 +7,14 @@ defmodule GlificWeb.Resolvers.Assistants do
   alias Glific.Assistants
 
   @doc """
+  List all assistant config versions, optionally filtered by assistant_id.
+  """
+  @spec list_assistant_config_versions(map(), map(), map()) :: {:ok, list(map())}
+  def list_assistant_config_versions(_, params, _context) do
+    {:ok, Assistants.list_assistant_config_versions(params)}
+  end
+
+  @doc """
   Create a new knowledge base with the given parameters.
   """
   @spec create_knowledge_base(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}

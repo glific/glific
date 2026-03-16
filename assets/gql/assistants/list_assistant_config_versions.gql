@@ -1,0 +1,17 @@
+query AssistantConfigVersions($filter: AssistantConfigVersionFilter) {
+  assistantConfigVersions(filter: $filter) {
+    id
+    assistantId
+    kaapiUuid
+    versionNumber
+    description
+    prompt
+    provider
+    model
+    settings
+    status
+    failureReason
+    insertedAt
+    updatedAt
+  }
+}
