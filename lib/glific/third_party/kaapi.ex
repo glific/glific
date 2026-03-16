@@ -376,7 +376,6 @@ defmodule Glific.ThirdParty.Kaapi do
             type: "stt",
             params: %{
               model: opts[:model] || "gemini-2.5-pro",
-              instructions: "Transcribe the audio verbatim",
               input_language: opts[:language] || "auto",
               output_language: opts[:output_language] || "english"
             }
