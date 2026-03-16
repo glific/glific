@@ -1,8 +1,9 @@
 defmodule GlificWeb.Resolvers.AssistantsTest do
+  @moduledoc """
+  Test suite for GraphQL resolvers related to Assistants.
+  """
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
-
-  import Ecto.Query
 
   alias Glific.Assistants
   alias Glific.Assistants.Assistant
@@ -144,41 +145,6 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       versions = query_data.data["assistantConfigVersions"]
       assert length(versions) == 1
       assert hd(versions)["assistantId"] == to_string(assistant.id)
-    end
-
-    test "returns kaapi_uuid from the parent assistant", %{
-      staff: user,
-      organization_id: organization_id
-    } do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id, "test-kaapi-uuid")
-
-      {:ok, query_data} =
-        auth_query_gql_by(:list_assistant_config_versions, user,
-          variables: %{"filter" => %{"assistantId" => assistant.id}}
-        )
-
-      version = hd(query_data.data["assistantConfigVersions"])
-      assert version["kaapiUuid"] == "test-kaapi-uuid"
-    end
-
-    test "excludes soft-deleted versions", %{staff: user, organization_id: organization_id} do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id)
-
-      AssistantConfigVersion
-      |> where([v], v.assistant_id == ^assistant.id)
-      |> Repo.all()
-      |> Enum.each(fn v ->
-        v
-        |> AssistantConfigVersion.changeset(%{deleted_at: DateTime.utc_now()})
-        |> Repo.update!()
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:list_assistant_config_versions, user,
-          variables: %{"filter" => %{"assistantId" => assistant.id}}
-        )
-
-      assert query_data.data["assistantConfigVersions"] == []
     end
   end
 

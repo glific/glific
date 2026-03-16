@@ -54,6 +54,12 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/list_models.gql"
   )
 
+  load_gql(
+    :list_assistant_config_versions,
+    GlificWeb.Schema,
+    "assets/gql/assistants/list_assistant_config_versions.gql"
+  )
+
   setup do
     FunWithFlags.disable(:is_kaapi_enabled,
       for_actor: %{organization_id: 1}
@@ -317,6 +323,63 @@ defmodule Glific.FilesearchTest do
       )
 
     assert %{"name" => "new assistant 3"} = List.first(result.data["Assistants"])
+  end
+
+  test "list assistant config versions, returns all versions for org", attrs do
+    {assistant, _config_version} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "Assistant A",
+        kaapi_uuid: "asst_cv_001",
+        kb_name: "KB A"
+      })
+
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "Assistant B",
+      kaapi_uuid: "asst_cv_002",
+      kb_name: "KB B"
+    })
+
+    {:ok, result} =
+      auth_query_gql_by(:list_assistant_config_versions, attrs.user, variables: %{})
+
+    versions = result.data["assistantConfigVersions"]
+    assert length(versions) == 2
+    assert Enum.all?(versions, &(&1["status"] == "ready"))
+    assert Enum.any?(versions, &(&1["assistantId"] == to_string(assistant.id)))
+  end
+
+  test "list assistant config versions, filters by assistant_id and without filter", attrs do
+    {assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "Filtered Assistant",
+        kaapi_uuid: "asst_cv_filter",
+        kb_name: "KB Filter"
+      })
+
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "Other Assistant",
+      kaapi_uuid: "asst_cv_other",
+      kb_name: "KB Other"
+    })
+
+    {:ok, result} =
+      auth_query_gql_by(:list_assistant_config_versions, attrs.user,
+        variables: %{"filter" => %{"assistantId" => assistant.id}}
+      )
+
+    versions = result.data["assistantConfigVersions"]
+    assert length(versions) == 1
+    assert hd(versions)["assistantId"] == to_string(assistant.id)
+
+    {:ok, result} =
+      auth_query_gql_by(:list_assistant_config_versions, attrs.user, variables: %{})
+
+    versions = result.data["assistantConfigVersions"]
+    assert length(versions) == 2
   end
 
   test "list_models, success api response", attrs do
