@@ -131,6 +131,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :model, :string
     field :settings, :json
     field :status, :string
+    field :assistant_name, :string
     field :failure_reason, :string
     field :inserted_at, :datetime
     field :updated_at, :datetime

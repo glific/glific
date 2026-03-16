@@ -4,6 +4,7 @@ query AssistantConfigVersions {
     assistantId
     kaapiUuid
     versionNumber
+    assistantName
     description
     prompt
     provider

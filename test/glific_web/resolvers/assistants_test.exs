@@ -128,12 +128,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     } do
       {:ok, assistant} = create_assistant_with_config_version(organization_id)
 
-      assistant_configaration_version_list =
+      assistant_configuration_version_list =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> Repo.all()
 
-      assert length(assistant_configaration_version_list) == 3
+      assert length(assistant_configuration_version_list) == 3
 
       {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
 

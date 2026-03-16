@@ -67,7 +67,9 @@ defmodule Glific.Assistants do
     |> Repo.all()
     |> Repo.preload(:assistant)
     |> Enum.map(fn version ->
-      Map.put(version, :kaapi_uuid, version.assistant.kaapi_uuid)
+      version
+      |> Map.put(:kaapi_uuid, version.assistant.kaapi_uuid)
+      |> Map.put(:assistant_name, version.assistant.name)
     end)
   end
 
