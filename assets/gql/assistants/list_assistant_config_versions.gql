@@ -1,5 +1,5 @@
-query AssistantConfigVersions($filter: AssistantConfigVersionFilter) {
-  assistantConfigVersions(filter: $filter) {
+query AssistantConfigVersions {
+  assistantConfigVersions {
     id
     assistantId
     kaapiUuid

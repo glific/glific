@@ -124,27 +124,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       staff: user,
       organization_id: organization_id
     } do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id)
+      {:ok, _assistant} = create_assistant_with_config_version(organization_id)
 
-      {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user, variables: %{})
-
-      versions = query_data.data["assistantConfigVersions"]
-      assert length(versions) >= 1
-      assert Enum.any?(versions, &(&1["assistantId"] == to_string(assistant.id)))
-    end
-
-    test "filters by assistant_id", %{staff: user, organization_id: organization_id} do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id)
-      {:ok, _other} = create_assistant_with_config_version(organization_id)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:list_assistant_config_versions, user,
-          variables: %{"filter" => %{"assistantId" => assistant.id}}
-        )
+      {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
 
       versions = query_data.data["assistantConfigVersions"]
       assert length(versions) == 1
-      assert hd(versions)["assistantId"] == to_string(assistant.id)
     end
   end
 

@@ -7,11 +7,11 @@ defmodule GlificWeb.Resolvers.Assistants do
   alias Glific.Assistants
 
   @doc """
-  List all assistant config versions, optionally filtered by assistant_id.
+  List all assistant config versions.
   """
   @spec list_assistant_config_versions(map(), map(), map()) :: {:ok, list(map())}
-  def list_assistant_config_versions(_, params, _context) do
-    {:ok, Assistants.list_assistant_config_versions(params)}
+  def list_assistant_config_versions(_, _params, _context) do
+    {:ok, Assistants.list_assistant_config_versions()}
   end
 
   @doc """

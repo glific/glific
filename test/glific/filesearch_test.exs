@@ -326,7 +326,7 @@ defmodule Glific.FilesearchTest do
   end
 
   test "list assistant config versions, returns all versions for org", attrs do
-    {assistant, _config_version} =
+    {_assistant, _config_version} =
       create_unified_assistant(%{
         organization_id: attrs.organization_id,
         name: "Assistant A",
@@ -342,41 +342,7 @@ defmodule Glific.FilesearchTest do
     })
 
     {:ok, result} =
-      auth_query_gql_by(:list_assistant_config_versions, attrs.user, variables: %{})
-
-    versions = result.data["assistantConfigVersions"]
-    assert length(versions) == 2
-    assert Enum.all?(versions, &(&1["status"] == "ready"))
-    assert Enum.any?(versions, &(&1["assistantId"] == to_string(assistant.id)))
-  end
-
-  test "list assistant config versions, filters by assistant_id and without filter", attrs do
-    {assistant, _} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "Filtered Assistant",
-        kaapi_uuid: "asst_cv_filter",
-        kb_name: "KB Filter"
-      })
-
-    create_unified_assistant(%{
-      organization_id: attrs.organization_id,
-      name: "Other Assistant",
-      kaapi_uuid: "asst_cv_other",
-      kb_name: "KB Other"
-    })
-
-    {:ok, result} =
-      auth_query_gql_by(:list_assistant_config_versions, attrs.user,
-        variables: %{"filter" => %{"assistantId" => assistant.id}}
-      )
-
-    versions = result.data["assistantConfigVersions"]
-    assert length(versions) == 1
-    assert hd(versions)["assistantId"] == to_string(assistant.id)
-
-    {:ok, result} =
-      auth_query_gql_by(:list_assistant_config_versions, attrs.user, variables: %{})
+      auth_query_gql_by(:list_assistant_config_versions, attrs.user)
 
     versions = result.data["assistantConfigVersions"]
     assert length(versions) == 2

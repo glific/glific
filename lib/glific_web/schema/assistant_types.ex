@@ -136,12 +136,6 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :updated_at, :datetime
   end
 
-  @desc "Filtering options for Assistant Config Versions"
-  input_object :assistant_config_version_filter do
-    @desc "Filter by assistant id"
-    field(:assistant_id, :id)
-  end
-
   object :filesearch_mutations do
     @desc "Upload filesearch file"
     field :upload_filesearch_file, :file_result do
@@ -201,7 +195,6 @@ defmodule GlificWeb.Schema.AssistantTypes do
 
     @desc "List Assistant Config Versions"
     field :assistant_config_versions, list_of(:assistant_config_version) do
-      arg(:filter, :assistant_config_version_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.list_assistant_config_versions/3)
     end

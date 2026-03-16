@@ -57,13 +57,12 @@ defmodule Glific.Assistants do
   }
 
   @doc """
-  Lists all assistant config versions, optionally filtered by assistant_id.
+  Lists all assistant config versions.
   """
-  @spec list_assistant_config_versions(map()) :: list(map())
-  def list_assistant_config_versions(args) do
+  @spec list_assistant_config_versions() :: list(map())
+  def list_assistant_config_versions do
     AssistantConfigVersion
     |> where([v], is_nil(v.deleted_at))
-    |> maybe_filter_by_assistant(args[:filter])
     |> order_by([v], desc: v.version_number)
     |> Repo.all()
     |> Repo.preload(:assistant)
@@ -71,13 +70,6 @@ defmodule Glific.Assistants do
       Map.put(version, :kaapi_uuid, version.assistant.kaapi_uuid)
     end)
   end
-
-  @spec maybe_filter_by_assistant(Ecto.Query.t(), map() | nil) :: Ecto.Query.t()
-  defp maybe_filter_by_assistant(query, %{assistant_id: assistant_id})
-       when not is_nil(assistant_id),
-       do: where(query, [v], v.assistant_id == ^assistant_id)
-
-  defp maybe_filter_by_assistant(query, _), do: query
 
   @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
