@@ -5,6 +5,8 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.Assistants
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
@@ -124,12 +126,20 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       staff: user,
       organization_id: organization_id
     } do
-      {:ok, _assistant} = create_assistant_with_config_version(organization_id)
+      {:ok, assistant} = create_assistant_with_config_version(organization_id)
+
+      assistant_configaration_version_list =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.all()
+
+      assert length(assistant_configaration_version_list) == 3
 
       {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
 
       versions = query_data.data["assistantConfigVersions"]
       assert length(versions) == 1
+      assert hd(versions)["status"] == "ready"
     end
   end
 
@@ -140,6 +150,32 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         name: "Test Assistant #{System.unique_integer()}",
         organization_id: organization_id,
         kaapi_uuid: kaapi_uuid
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :failed,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :in_progress,
+        organization_id: organization_id
       })
       |> Repo.insert()
 

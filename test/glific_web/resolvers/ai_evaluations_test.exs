@@ -350,7 +350,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       resolution = %{context: %{current_user: user}}
 
       assert {:ok, %{status: status}} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert status != nil
+      assert status == "processing"
     end
 
     test "returns error when Kaapi is not configured", %{} do
@@ -370,7 +370,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       resolution = %{context: %{current_user: user_no_kaapi}}
 
       assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert is_binary(reason)
+      assert reason == "Kaapi is not active"
     end
 
     test "returns error when Kaapi API returns 500", %{staff: user} do
@@ -391,7 +391,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       resolution = %{context: %{current_user: user}}
 
       assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert is_binary(reason)
+      assert reason =~ "Internal server error"
     end
 
     test "returns error on timeout", %{staff: user} do

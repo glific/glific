@@ -63,7 +63,7 @@ defmodule Glific.Assistants do
   def list_assistant_config_versions do
     AssistantConfigVersion
     |> where([v], is_nil(v.deleted_at))
-    |> order_by([v], desc: v.version_number)
+    |> where([v], v.status == :ready)
     |> Repo.all()
     |> Repo.preload(:assistant)
     |> Enum.map(fn version ->

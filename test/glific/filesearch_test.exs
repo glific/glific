@@ -54,12 +54,6 @@ defmodule Glific.FilesearchTest do
     "assets/gql/filesearch/list_models.gql"
   )
 
-  load_gql(
-    :list_assistant_config_versions,
-    GlificWeb.Schema,
-    "assets/gql/assistants/list_assistant_config_versions.gql"
-  )
-
   setup do
     FunWithFlags.disable(:is_kaapi_enabled,
       for_actor: %{organization_id: 1}
@@ -323,29 +317,6 @@ defmodule Glific.FilesearchTest do
       )
 
     assert %{"name" => "new assistant 3"} = List.first(result.data["Assistants"])
-  end
-
-  test "list assistant config versions, returns all versions for org", attrs do
-    {_assistant, _config_version} =
-      create_unified_assistant(%{
-        organization_id: attrs.organization_id,
-        name: "Assistant A",
-        kaapi_uuid: "asst_cv_001",
-        kb_name: "KB A"
-      })
-
-    create_unified_assistant(%{
-      organization_id: attrs.organization_id,
-      name: "Assistant B",
-      kaapi_uuid: "asst_cv_002",
-      kb_name: "KB B"
-    })
-
-    {:ok, result} =
-      auth_query_gql_by(:list_assistant_config_versions, attrs.user)
-
-    versions = result.data["assistantConfigVersions"]
-    assert length(versions) == 2
   end
 
   test "list_models, success api response", attrs do
