@@ -22,7 +22,7 @@ defmodule Glific.Gigalixir do
   """
   @spec create_domain(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def create_domain(shortcode) do
-    domain = "#{shortcode}.glific.com"
+    domain = "#{shortcode}.#{Glific.base_domain()}"
     body = %{"fqdn" => domain}
 
     case post("/", Jason.encode!(body)) do

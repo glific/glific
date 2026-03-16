@@ -41,7 +41,7 @@ if Code.ensure_loaded?(Plug) do
            %SubdomainPlugConfig{endpoint: endpoint}
          ) do
       root_host = endpoint.config(:url)[:host]
-      glific_subdomain = "glific.com"
+      glific_subdomain = Glific.base_domain()
 
       cond do
         host in ["0.0.0.0", "www.example.com", "glific.gigalixirapp.com"] ->

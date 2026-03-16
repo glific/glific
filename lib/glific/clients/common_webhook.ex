@@ -54,7 +54,7 @@ defmodule Glific.Clients.CommonWebhook do
       organization = Partners.organization(organization_id)
 
       callback_url =
-        "https://api.#{organization.shortcode}.glific.com" <>
+        Glific.api_callback_base(organization.shortcode) <>
           "/webhook/flow_resume"
 
       payload =
@@ -618,7 +618,10 @@ defmodule Glific.Clients.CommonWebhook do
       )
 
     organization = Partners.organization(organization_id)
-    callback_url = "https://api.#{organization.shortcode}.glific.com/webhook/flow_resume"
+
+    callback_url =
+      Glific.api_callback_base(organization.shortcode) <>
+        "/webhook/flow_resume"
 
     request_metadata = %{
       organization_id: organization_id,
@@ -715,7 +718,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/webhook/flow_resume?" <>
         "organization_id=#{organization_id}&" <>
         "flow_id=#{flow_id}&" <>
