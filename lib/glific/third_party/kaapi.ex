@@ -323,6 +323,20 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Create an evaluation on Kaapi.
+  """
+  @spec create_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
   """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
