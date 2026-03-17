@@ -49,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.MessageMedia,
     Partners,
     Profiles.Profile,
+    Partners.Saas,
     Repo,
     RepoReplica,
     Searches.SavedSearch,
@@ -93,34 +94,42 @@ defmodule Glific.BigQuery.BigQueryWorker do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
 
+    list_of_table = [
+      "contacts",
+      "contacts_fields",
+      "contacts_groups",
+      "contacts_wa_groups",
+      "flow_counts",
+      "flow_contexts",
+      "flow_labels",
+      "flow_results",
+      "groups",
+      "interactive_templates",
+      "messages_media",
+      "message_broadcasts",
+      "message_broadcast_contacts",
+      "messages",
+      "profiles",
+      "tickets",
+      "wa_groups",
+      "wa_groups_collections",
+      "wa_messages",
+      "wa_reactions",
+      "whatsapp_forms",
+      "whatsapp_forms_responses",
+      "certificate_templates",
+      "issued_certificates"
+    ]
+
+    list_of_table =
+      if(organization_id == Saas.organization_id()) do
+        list_of_table ++ ["trial_users"]
+      else
+        list_of_table
+      end
+
     if credential do
-      [
-        "contacts",
-        "contacts_fields",
-        "contacts_groups",
-        "contacts_wa_groups",
-        "flow_counts",
-        "flow_contexts",
-        "flow_labels",
-        "flow_results",
-        "groups",
-        "interactive_templates",
-        "messages_media",
-        "message_broadcasts",
-        "message_broadcast_contacts",
-        "messages",
-        "profiles",
-        "tickets",
-        "trial_users",
-        "wa_groups",
-        "wa_groups_collections",
-        "wa_messages",
-        "wa_reactions",
-        "whatsapp_forms",
-        "whatsapp_forms_responses",
-        "certificate_templates",
-        "issued_certificates"
-      ]
+      list_of_table
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
 
