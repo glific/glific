@@ -34,7 +34,9 @@ defmodule Glific.AIEvaluationsTest do
 
       assert %{
                name: ["can't be blank"],
-               dataset_id: ["can't be blank"]
+               dataset_id: ["can't be blank"],
+               assistant_config_version_id: ["can't be blank"],
+               status: ["can't be blank"]
              } = errors_on(changeset)
     end
 

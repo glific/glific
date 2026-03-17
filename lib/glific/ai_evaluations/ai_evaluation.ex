@@ -35,7 +35,8 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     :name,
     :status,
     :organization_id,
-    :dataset_id
+    :dataset_id,
+    :assistant_config_version_id
   ]
 
   @optional_fields [
