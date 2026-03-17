@@ -135,7 +135,11 @@ defmodule Glific.WhatsappFormsResponses do
       ordered_row =
         Enum.map(headers, fn header ->
           value = Map.get(payload, header, "")
-          if is_list(value), do: Enum.join(value, ", "), else: value
+          cond do
+            is_list(value) -> Enum.join(value, ", ")
+            is_map(value) -> Jason.encode!(value)
+            true -> value
+          end
         end)
 
       {:ok, ordered_row}
