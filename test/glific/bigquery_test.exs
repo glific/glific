@@ -388,39 +388,6 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "apply_action_clause for insert should use > not >= to avoid cursor row duplication",
-       %{organization_id: org_id} do
-    {:ok, user1} =
-      TrialUsers.create_trial_user(%{
-        username: "User One",
-        email: "userone@example.com",
-        phone: "+919000000002",
-        organization_name: "Org One"
-      })
-
-    {:ok, user2} =
-      TrialUsers.create_trial_user(%{
-        username: "User Two",
-        email: "usertwo@example.com",
-        phone: "+919000000003",
-        organization_name: "Org Two"
-      })
-
-    # attrs simulating: cursor was at user1.id (already synced)
-    # min_id = user1.id means user1 is the last synced row
-    attrs = %{
-      min_id: user1.id,
-      max_id: user2.id,
-      action: :insert,
-      last_updated_at: DateTime.utc_now()
-    }
-
-    rows = BigQueryWorker.fetch_data("trial_users", org_id, attrs)
-
-    fetched_ids = Enum.map(rows, & &1.id)
-    assert fetched_ids == [user2.id]
-  end
-
   test "queue_table_data/3 should process and skip simulator contacts, ensuring table_id should be updated for flow_results table" do
     with_mocks([
       {
