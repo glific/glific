@@ -11,8 +11,7 @@ defmodule Glific.BigQueryTest do
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
-    Seeds.SeedsDev,
-    TrialUsers
+    Seeds.SeedsDev
   }
 
   setup_with_mocks([
