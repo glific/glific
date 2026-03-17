@@ -30,16 +30,16 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def onboard_to_kaapi(params) do
     api_key = kaapi_config(:kaapi_api_key)
 
-    credential =
-      %{}
-      |> maybe_put_credential(:openai, params[:openai_api_key])
-      |> maybe_put_credential(:google, params[:google_api_key])
+    credentials =
+      []
+      |> maybe_append_credential(:openai, params[:openai_api_key])
+      |> maybe_append_credential(:google, params[:google_api_key])
 
     body = %{organization_name: params.organization_name, project_name: params.project_name}
 
     body =
-      if map_size(credential) > 0,
-        do: Map.merge(body, %{credential: credential, is_active: true}),
+      if credentials != [],
+        do: Map.put(body, :credentials, credentials),
         else: body
 
     opts = [adapter: [recv_timeout: 30_000]]
@@ -60,7 +60,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     org_api_key
     |> client()
-    |> Tesla.patch("/api/v1/organizations/credentials", params, opts: opts)
+    |> Tesla.post("/api/v1/credentials", params, opts: opts)
     |> parse_kaapi_response()
   end
 
@@ -269,11 +269,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     end)
   end
 
-  @spec maybe_put_credential(map(), atom(), String.t() | nil) :: map()
-  defp maybe_put_credential(credential, _provider, nil), do: credential
+  @spec maybe_append_credential(list(), atom(), String.t() | nil) :: list()
+  defp maybe_append_credential(credentials, _provider, nil), do: credentials
 
-  defp maybe_put_credential(credential, provider, api_key),
-    do: Map.put(credential, provider, %{api_key: api_key})
+  defp maybe_append_credential(credentials, provider, api_key),
+    do: credentials ++ [%{provider => %{api_key: api_key}}]
 
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
