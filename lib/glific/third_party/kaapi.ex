@@ -69,6 +69,53 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Update an existing Kaapi project with the Google API key.
+  """
+  @spec update_google_api_key(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def update_google_api_key(organization_id) do
+    update_provider_credential(
+      organization_id,
+      "google",
+      %{google: %{api_key: Glific.get_google_api_key()}}
+    )
+  end
+
+  @doc """
+  Update an existing Kaapi project with the OpenAI API key.
+  """
+  @spec update_openai_api_key(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def update_openai_api_key(organization_id) do
+    update_provider_credential(
+      organization_id,
+      "openai",
+      %{openai: %{api_key: Glific.get_open_ai_key()}}
+    )
+  end
+
+  @spec update_provider_credential(non_neg_integer(), String.t(), map()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp update_provider_credential(organization_id, provider, credential) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, _} <-
+           ApiClient.update_organization_credentials(
+             %{provider: provider, credential: credential, is_active: true},
+             secrets["api_key"]
+           ) do
+      Logger.info("KAAPI #{provider} credential update success for org: #{organization_id}")
+      {:ok, "KAAPI #{provider} credential updated for org #{organization_id}"}
+    else
+      {:error, error} ->
+        Glific.log_exception(%Error{
+          message:
+            "KAAPI #{provider} credential update failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+        })
+
+        {:error,
+         "KAAPI #{provider} credential update failed for org #{organization_id}: #{inspect(error)}"}
+    end
+  end
+
+  @doc """
   Ingest an AI assistant to Kaapi
   """
   @spec ingest_ai_assistant(non_neg_integer(), binary()) :: {:ok, map()} | {:error, any()}

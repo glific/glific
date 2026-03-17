@@ -14,6 +14,10 @@ defmodule Glific.Flows.Webhook do
   alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.SttTtsWorker
 
+  @webhook_unified_llm "unified-llm-call"
+  @webhook_speech_to_text "speech_to_text"
+  @webhook_text_to_speech "text_to_speech"
+
   use Oban.Worker,
     queue: :webhook,
     max_attempts: 2,
@@ -82,10 +86,10 @@ defmodule Glific.Flows.Webhook do
   def execute_kaapi_stt(action, context) do
     case Kaapi.fetch_kaapi_creds(context.organization_id) do
       {:ok, _secrets} ->
-        enqueue_stt_tts_job(action, context, "speech_to_text")
+        enqueue_stt_tts_job(action, context, @webhook_speech_to_text)
 
       {:error, _reason} ->
-        unified_llm_and_wait(action, context, false, "speech_to_text")
+        unified_llm_and_wait(action, context, false, @webhook_speech_to_text)
     end
   end
 
@@ -100,10 +104,10 @@ defmodule Glific.Flows.Webhook do
   def execute_kaapi_tts(action, context) do
     case Kaapi.fetch_kaapi_creds(context.organization_id) do
       {:ok, _secrets} ->
-        enqueue_stt_tts_job(action, context, "text_to_speech")
+        enqueue_stt_tts_job(action, context, @webhook_text_to_speech)
 
       {:error, _reason} ->
-        unified_llm_and_wait(action, context, false, "text_to_speech")
+        unified_llm_and_wait(action, context, false, @webhook_text_to_speech)
     end
   end
 
@@ -156,10 +160,10 @@ defmodule Glific.Flows.Webhook do
          api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
       updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
       updated_action = %{action | headers: updated_headers}
-      unified_llm_and_wait(updated_action, context, true)
+      unified_llm_and_wait(updated_action, context, true, @webhook_unified_llm)
     else
       {:error, _error} ->
-        unified_llm_and_wait(action, context, false)
+        unified_llm_and_wait(action, context, false, @webhook_unified_llm)
     end
   end
 
@@ -611,12 +615,6 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @doc false
-  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, is_active?),
-    do: unified_llm_and_wait(action, context, is_active?, "unified-llm-call")
-
   @spec do_unified_llm_and_wait(map(), Message.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp do_unified_llm_and_wait(params, failure_message, webhook_name) do
@@ -648,8 +646,7 @@ defmodule Glific.Flows.Webhook do
   @spec process_unified_llm_call(map()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp process_unified_llm_call(params) do
-    webhook_name = Map.get(params, :webhook_name, "unified-llm-call")
-    response = CommonWebhook.webhook(webhook_name, params.fields, params.headers)
+    response = CommonWebhook.webhook(params.webhook_name, params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
