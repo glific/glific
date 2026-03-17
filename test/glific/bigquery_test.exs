@@ -390,7 +390,6 @@ defmodule Glific.BigQueryTest do
 
   test "apply_action_clause for insert should use > not >= to avoid cursor row duplication",
        %{organization_id: org_id} do
-    # create two trial users
     {:ok, user1} =
       TrialUsers.create_trial_user(%{
         username: "User One",
