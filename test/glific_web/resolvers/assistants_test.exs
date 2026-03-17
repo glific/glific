@@ -1,14 +1,28 @@
 defmodule GlificWeb.Resolvers.AssistantsTest do
+  @moduledoc """
+  Test suite for GraphQL resolvers related to Assistants.
+  """
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.Assistants
+  alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Partners
+  alias Glific.Repo
 
   load_gql(
     :create_knowledge_base,
     GlificWeb.Schema,
     "assets/gql/assistants/create_knowledge_base.gql"
+  )
+
+  load_gql(
+    :list_assistant_config_versions,
+    GlificWeb.Schema,
+    "assets/gql/assistants/list_assistant_config_versions.gql"
   )
 
   describe "create_knowledge_base/3" do
@@ -103,6 +117,89 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert [error | _] = query_data.errors
       assert error[:message] == "Failed to create knowledge base"
     end
+  end
+
+  describe "list_assistant_config_versions/3" do
+    setup :enable_kaapi
+
+    test "returns all config versions for the organization", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} = create_assistant_with_config_version(organization_id)
+
+      assistant_configuration_version_list =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.all()
+
+      assert length(assistant_configuration_version_list) == 3
+
+      {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
+
+      versions = query_data.data["assistantConfigVersions"]
+      assert length(versions) == 1
+      assert hd(versions)["status"] == "ready"
+    end
+  end
+
+  defp create_assistant_with_config_version(organization_id, kaapi_uuid \\ nil) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{
+        name: "Test Assistant #{System.unique_integer()}",
+        organization_id: organization_id,
+        kaapi_uuid: kaapi_uuid
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :failed,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :in_progress,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, assistant} =
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    {:ok, assistant}
   end
 
   defp enable_kaapi(%{organization_id: organization_id}) do

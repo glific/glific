@@ -229,6 +229,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Create an evaluation in Kaapi
+  """
+  @spec create_evaluation(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [
