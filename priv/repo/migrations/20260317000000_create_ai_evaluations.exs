@@ -20,7 +20,8 @@ defmodule Glific.Repo.Migrations.CreateAIEvaluations do
       add :dataset_id, :integer, null: false
 
       add :assistant_config_version_id,
-          references(:assistant_config_versions, on_delete: :nilify_all)
+          references(:assistant_config_versions, on_delete: :nilify_all),
+          null: false
 
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
       timestamps(type: :utc_datetime)
