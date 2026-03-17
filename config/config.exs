@@ -175,6 +175,7 @@ config :ex_audit,
   ecto_repos: [Glific.Repo],
   version_schema: Glific.Version,
   tracked_schemas: [
+    Glific.Contacts.Contact,
     Glific.Flows.Flow,
     Glific.Partners.Credential,
     Glific.Triggers.Trigger,
