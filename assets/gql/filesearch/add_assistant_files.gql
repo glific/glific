@@ -1,9 +1,0 @@
-#import "./assistant_fields.frag.gql"
-
-mutation add_assistant_files($media_info: [FileInfoInput!]!, $id: ID!) {
-  add_assistant_files(media_info: $media_info, id: $id) {
-    ...AssistantFields
-
-    ...ErrorFields
-  }
-}

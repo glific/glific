@@ -5,6 +5,7 @@ defmodule Glific.Clients.CommonWebhook do
 
   alias Glific.ASR.Bhasini
   alias Glific.ASR.GoogleASR
+  alias Glific.Assistants.Assistant
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Contacts
@@ -53,7 +54,7 @@ defmodule Glific.Clients.CommonWebhook do
       organization = Partners.organization(organization_id)
 
       callback_url =
-        "https://api.#{organization.shortcode}.glific.com" <>
+        Glific.api_callback_base(organization.shortcode) <>
           "/webhook/flow_resume"
 
       payload =
@@ -64,7 +65,6 @@ defmodule Glific.Clients.CommonWebhook do
         |> Map.put("webhook_log_id", webhook_log_id)
         |> Map.put("result_name", result_name)
         |> maybe_put_response_id(fields)
-        |> Jason.encode!()
 
       {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
@@ -81,6 +81,69 @@ defmodule Glific.Clients.CommonWebhook do
       end
     else
       do_call_and_wait(fields, headers)
+    end
+  end
+
+  def webhook("unified-llm-call", fields, headers) do
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback_url =
+      Glific.api_callback_base(organization.shortcode) <>
+        "/webhook/flow_resume"
+
+    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+
+    request_metadata = %{
+      organization_id: organization_id,
+      flow_id: flow_id,
+      contact_id: contact_id,
+      timestamp: timestamp,
+      signature: signature,
+      webhook_log_id: fields["webhook_log_id"],
+      result_name: fields["result_name"]
+    }
+
+    with {:ok, {kaapi_uuid, version_number}} <-
+           lookup_kaapi_config(fields["assistant_id"], organization_id),
+         payload =
+           build_unified_llm_payload(
+             fields,
+             kaapi_uuid,
+             version_number,
+             callback_url,
+             request_metadata
+           ),
+         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
+      Map.merge(%{success: true}, body)
+    else
+      {:error, %{status: _status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body)}
+
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason}
+
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
     end
   end
 
@@ -515,6 +578,55 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec build_conversation(String.t() | nil) :: map()
+  defp build_conversation(nil), do: %{auto_create: true}
+  defp build_conversation(thread_id), do: %{id: thread_id}
+
+  defp build_unified_llm_payload(
+         fields,
+         kaapi_uuid,
+         version_number,
+         callback_url,
+         request_metadata
+       ) do
+    %{
+      query: %{
+        input: fields["question"],
+        conversation: build_conversation(fields["thread_id"])
+      },
+      config: %{
+        id: kaapi_uuid,
+        version: version_number
+      },
+      callback_url: callback_url,
+      request_metadata: request_metadata
+    }
+  end
+
+  @spec lookup_kaapi_config(String.t(), non_neg_integer()) ::
+          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+  defp lookup_kaapi_config(assistant_display_id, organization_id) do
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{
+             assistant_display_id: assistant_display_id,
+             organization_id: organization_id
+           }),
+         assistant <- Repo.preload(assistant, :active_config_version),
+         %{version_number: version_number} <- assistant.active_config_version do
+      if is_nil(assistant.kaapi_uuid) do
+        {:error, "Assistant is still being set up"}
+      else
+        {:ok, {assistant.kaapi_uuid, version_number}}
+      end
+    else
+      {:error, _} ->
+        {:error, "Assistant not found: #{assistant_display_id}"}
+
+      nil ->
+        {:error, "No active config version found for assistant #{assistant_display_id}"}
+    end
+  end
+
   @spec do_call_and_wait(map(), list()) :: map()
   defp do_call_and_wait(fields, headers) do
     endpoint = fields["endpoint"]
@@ -540,7 +652,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/webhook/flow_resume?" <>
         "organization_id=#{organization_id}&" <>
         "flow_id=#{flow_id}&" <>

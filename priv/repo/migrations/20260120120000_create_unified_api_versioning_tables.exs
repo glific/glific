@@ -14,9 +14,9 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
   def down do
     drop_triggers()
     drop_if_exists(table(:assistant_config_version_knowledge_base_versions))
-
     drop_if_exists(table(:knowledge_base_versions))
     drop_if_exists(table(:knowledge_bases))
+
     drop_if_exists(table(:assistant_config_versions))
     drop_if_exists(table(:assistants))
     drop_enums()
@@ -68,7 +68,6 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
 
       add :description, :text, comment: "Description for this version"
       add :prompt, :text, null: false, comment: "Prompt/instructions for this version"
-      add :kaapi_uuid, :string, null: false, comment: "Kaapi UUID for the config"
 
       add :provider, :string,
         null: false,
@@ -217,7 +216,7 @@ defmodule Glific.Repo.Migrations.CreateUnifiedApiVersioningTables do
     CREATE OR REPLACE FUNCTION set_knowledge_base_version_number()
     RETURNS trigger AS $$
     BEGIN
-      
+
       PERFORM id FROM knowledge_bases WHERE id = NEW.knowledge_base_id FOR UPDATE;
       SELECT COALESCE(MAX(version_number), 0) + 1
       INTO NEW.version_number

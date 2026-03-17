@@ -24,7 +24,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
 
     Name: #{org.name}
     Email: #{org.email}
-    Login URL: https://#{org.shortcode}.glific.com
+    Login URL: https://#{org.shortcode}.#{Glific.base_domain()}
     """
 
     opts = [

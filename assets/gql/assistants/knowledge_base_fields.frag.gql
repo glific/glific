@@ -1,0 +1,6 @@
+fragment ErrorFields on KnowledgeBaseResult {
+    errors {
+        key
+        message
+    }
+}

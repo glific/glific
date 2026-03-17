@@ -5,13 +5,15 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   alias Glific.{
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
     Assistants.KnowledgeBaseVersion,
     Enums.KnowledgeBaseStatus,
-    Partners.Organization
+    Partners.Organization,
+    Repo
   }
 
   @type t() :: %__MODULE__{
@@ -21,7 +23,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
           knowledge_base: KnowledgeBase.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: non_neg_integer() | nil,
           files: map() | nil,
-          size: non_neg_integer() | nil,
+          size: non_neg_integer(),
           status: KnowledgeBaseStatus.t(),
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -49,7 +51,7 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
   schema "knowledge_base_versions" do
     field(:version_number, :integer)
     field(:files, :map)
-    field(:size, :integer)
+    field(:size, :integer, default: 0)
 
     field(:status, KnowledgeBaseStatus, default: :in_progress)
 
@@ -78,5 +80,34 @@ defmodule Glific.Assistants.KnowledgeBaseVersion do
     |> validate_required(@required_fields)
     |> assoc_constraint(:knowledge_base)
     |> unique_constraint([:knowledge_base_id, :version_number])
+    |> unique_constraint([:llm_service_id, :organization_id],
+      name: :knowledge_base_versions_llm_service_id_organization_id_index
+    )
+  end
+
+  @doc """
+  Fetches the knowledge base version
+  """
+  @spec get_knowledge_base_version(integer()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
+  def get_knowledge_base_version(kb_id) do
+    KnowledgeBaseVersion
+    |> where([kbv], kbv.knowledge_base_id == ^kb_id)
+    |> order_by([kbv], desc: kbv.version_number)
+    |> limit(1)
+    |> Repo.one()
+    |> then(fn
+      nil -> {:error, ["KnowledgeBaseVersion", "Resource not found"]}
+      kb_version -> {:ok, kb_version}
+    end)
+  end
+
+  @doc """
+  Fetches the knowledge base version by version id
+  """
+  @spec get_by_version_id(non_neg_integer()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, [String.t()]}
+  def get_by_version_id(knowledge_base_version_id) do
+    Repo.fetch_by(KnowledgeBaseVersion, id: knowledge_base_version_id)
   end
 end

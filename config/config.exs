@@ -14,7 +14,7 @@ config :glific,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id, :user_id, :org_id]
+  metadata: [:request_id, :user_id, :org_id, :params]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
@@ -175,6 +175,7 @@ config :ex_audit,
   ecto_repos: [Glific.Repo],
   version_schema: Glific.Version,
   tracked_schemas: [
+    Glific.Contacts.Contact,
     Glific.Flows.Flow,
     Glific.Partners.Credential,
     Glific.Triggers.Trigger,

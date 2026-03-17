@@ -1,0 +1,13 @@
+fragment KaapiAssistantFields on KaapiAssistantResult {
+  assistant {
+    id
+    name
+    description
+    inserted_at
+    updated_at
+  }
+  errors {
+    key
+    message
+  }
+}

@@ -42,5 +42,8 @@ defmodule Glific.Assistants.KnowledgeBase do
     knowledge_base
     |> cast(attrs, @required_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:name, :organization_id],
+      name: :knowledge_bases_name_organization_id_index
+    )
   end
 end

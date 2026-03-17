@@ -1085,10 +1085,13 @@ defmodule Glific.Fixtures do
       %{
         method: :get,
         url:
-          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0"
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&gid=0&range=A1:ZZ1"
       } ->
         %Tesla.Env{
-          status: 200
+          status: 200,
+          url:
+            "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/export?format=csv&gid=0&range=A1:ZZ1",
+          body: "Key,Day,Message English,Video link,Message Hindi"
         }
 
       %{

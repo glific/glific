@@ -13,8 +13,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Tesla.client(
       [
         {Tesla.Middleware.BaseUrl, base_url},
-        {Tesla.Middleware.Headers, headers(api_key)},
+        {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        Tesla.Middleware.KeepRequest,
+        Tesla.Middleware.PathParams,
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
     )
@@ -51,13 +53,26 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Calls Kaapi Responses API with the given payload.
   """
-  @spec call_responses_api(String.t(), binary()) :: {:ok, any()} | {:error, any()}
+  @spec call_responses_api(map(), binary()) :: {:ok, any()} | {:error, any()}
   def call_responses_api(payload, org_api_key) do
-    opts = [adapter: [recv_timeout: 300_000]]
+    opts = [adapter: [recv_timeout: 60_000]]
 
     org_api_key
     |> client()
     |> Tesla.post("/api/v1/responses", payload, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Calls Kaapi Unified LLM API with the given payload.
+  """
+  @spec call_llm(map(), binary()) :: {:ok, any()} | {:error, any()}
+  def call_llm(payload, org_api_key) do
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/llm/call", payload, opts: opts)
     |> parse_kaapi_response()
   end
 
@@ -79,7 +94,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def update_assistant(assistant_id, body, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.patch("/api/v1/assistant/#{assistant_id}", body)
+    |> Tesla.patch("/api/v1/assistant/:assistant_id", body,
+      opts: [path_params: [assistant_id: assistant_id]]
+    )
     |> parse_kaapi_response()
   end
 
@@ -90,7 +107,55 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def delete_assistant(assistant_id, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.delete("/api/v1/assistant/#{assistant_id}")
+    |> Tesla.delete("/api/v1/assistant/:assistant_id",
+      opts: [path_params: [assistant_id: assistant_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Create a config in Kaapi (replaces old assistant creation)
+  """
+  @spec create_config(map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_config(body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/configs/", body)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Create a config version in Kaapi.
+  """
+  @spec create_config_version(binary(), map(), binary()) :: {:ok, map()} | {:error, String.t()}
+  def create_config_version(config_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/configs/:config_id/versions", body,
+      opts: [path_params: [config_id: config_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Create a collection in Kaapi.
+  """
+  @spec create_collection(map(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def create_collection(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/collections/", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Delete a config in Kaapi
+  """
+  @spec delete_config(binary(), binary()) :: {:ok, map()} | {:error, map() | String.t()}
+  def delete_config(uuid, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/configs/:uuid", opts: [path_params: [uuid: uuid]])
     |> parse_kaapi_response()
   end
 
@@ -99,11 +164,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   """
   @spec ingest_ai_assistants(non_neg_integer, String.t()) :: {:ok, any()} | {:error, String.t()}
   def ingest_ai_assistants(org_api_key, assistant_id) do
-    opts = [adapter: [recv_timeout: 30_000]]
+    opts = [adapter: [recv_timeout: 30_000], path_params: [assistant_id: assistant_id]]
 
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/assistant/#{assistant_id}/ingest", %{}, opts: opts)
+    |> Tesla.post("/api/v1/assistant/:assistant_id/ingest", %{}, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         {:ok, %{message: "Assistant synced successfully"}}
@@ -117,7 +182,79 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     end
   end
 
-  # Private
+  @doc """
+  Upload a document to Kaapi
+  """
+  @spec upload_document(map(), binary()) :: {:ok, map()} | {:error, any()}
+  def upload_document(params, org_api_key) do
+    content_type = MIME.from_path(params.filename)
+
+    multipart =
+      Tesla.Multipart.new()
+      |> Tesla.Multipart.add_file(params.path,
+        name: "src",
+        filename: params.filename,
+        headers: [{"content-type", content_type}]
+      )
+      |> add_optional_fields(params)
+
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/documents/", multipart, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Upload an evaluation dataset to Kaapi
+  """
+  @spec upload_evaluation_dataset(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def upload_evaluation_dataset(params, org_api_key) do
+    multipart =
+      Tesla.Multipart.new()
+      |> Tesla.Multipart.add_file(params.file.path,
+        name: "file",
+        filename: params.file.filename,
+        headers: [{"content-type", params.file.content_type}]
+      )
+      |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
+      |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
+
+    opts = [adapter: [recv_timeout: 60_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/evaluations/datasets", multipart, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Create an evaluation in Kaapi
+  """
+  @spec create_evaluation(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v1/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
+  @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
+  defp add_optional_fields(multipart, params) do
+    [
+      {:target_format, params[:target_format]},
+      {:callback_url, params[:callback_url]}
+    ]
+    |> Enum.reduce(multipart, fn {field, value}, acc ->
+      if value do
+        Tesla.Multipart.add_field(acc, to_string(field), value)
+      else
+        acc
+      end
+    end)
+  end
+
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
@@ -136,11 +273,4 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
   defp kaapi_config(key), do: kaapi_config()[key]
-
-  defp headers(api_key) do
-    [
-      {"X-API-KEY", api_key},
-      {"content-type", "application/json"}
-    ]
-  end
 end
