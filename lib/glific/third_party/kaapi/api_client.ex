@@ -60,7 +60,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
     org_api_key
     |> client()
-    |> Tesla.post("/api/v1/credentials", params, opts: opts)
+    |> Tesla.patch("/api/v1/credentials", params, opts: opts)
     |> parse_kaapi_response()
   end
 
