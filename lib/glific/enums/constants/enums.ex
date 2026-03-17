@@ -138,6 +138,7 @@ defmodule Glific.Enums.Constants do
 
       @assistant_config_version_status_const [:in_progress, :ready, :failed]
       @knowledge_base_status_const [:in_progress, :completed, :failed]
+      @ai_evaluation_status_const [:create_in_progress, :in_process, :failed, :completed]
     end
   end
 end
