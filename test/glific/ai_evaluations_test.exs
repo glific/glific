@@ -59,6 +59,7 @@ defmodule Glific.AIEvaluationsTest do
 
       changeset = AIEvaluation.changeset(%AIEvaluation{}, attrs)
       assert changeset.valid?
+      assert changeset.data.status == :create_in_progress
     end
 
     test "changeset with optional fields", %{organization_id: organization_id} do
