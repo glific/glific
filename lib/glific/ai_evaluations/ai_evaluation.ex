@@ -8,6 +8,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
+    Assistants.AssistantConfigVersion,
     Enums.AIEvaluationStatus,
     Partners.Organization
   }
@@ -19,11 +20,12 @@ defmodule Glific.AIEvaluations.AIEvaluation do
           status: AIEvaluationStatus.t(),
           failure_reason: String.t() | nil,
           results: map(),
-          kaapi_evaluation_id: String.t() | nil,
-          dataset_id: String.t() | nil,
-          config_id: String.t() | nil,
-          config_version: String.t() | nil,
+          kaapi_evaluation_id: non_neg_integer() | nil,
+          dataset_id: non_neg_integer() | nil,
           organization_id: non_neg_integer() | nil,
+          assistant_config_version_id: non_neg_integer() | nil,
+          assistant_config_version:
+            AssistantConfigVersion.t() | Ecto.Association.NotLoaded.t() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
@@ -33,15 +35,13 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     :name,
     :status,
     :organization_id,
-    :dataset_id,
-    :config_id,
-    :config_version,
-    :kaapi_evaluation_id
+    :dataset_id
   ]
 
   @optional_fields [
     :failure_reason,
-    :results
+    :results,
+    :kaapi_evaluation_id
   ]
 
   schema "ai_evaluations" do
@@ -49,11 +49,9 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     field(:status, AIEvaluationStatus, default: :create_in_progress)
     field(:failure_reason, :string)
     field(:results, :map, default: %{})
-    field(:kaapi_evaluation_id, :string)
-    field(:dataset_id, :string)
-    field(:config_id, :string)
-    field(:config_version, :string)
-
+    field(:kaapi_evaluation_id, :integer)
+    field(:dataset_id, :integer)
+    belongs_to(:assistant_config_version, AssistantConfigVersion)
     belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)

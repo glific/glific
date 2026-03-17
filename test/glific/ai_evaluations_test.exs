@@ -7,18 +7,16 @@ defmodule Glific.AIEvaluationsTest do
   @valid_attrs %{
     name: "test_experiment",
     status: :create_in_progress,
-    dataset_id: "dataset_abc123",
-    config_id: "config_abc123",
-    config_version: "version_abc123",
-    kaapi_evaluation_id: "eval_abc123"
+    dataset_id: 123,
+    kaapi_evaluation_id: 123,
+    assistant_config_version_id: 1
   }
 
   @invalid_attrs %{
     name: nil,
     status: nil,
     dataset_id: nil,
-    config_id: nil,
-    config_version: nil,
+    assistant_config_version_id: nil,
     kaapi_evaluation_id: nil
   }
 
@@ -36,10 +34,7 @@ defmodule Glific.AIEvaluationsTest do
 
       assert %{
                name: ["can't be blank"],
-               dataset_id: ["can't be blank"],
-               config_id: ["can't be blank"],
-               config_version: ["can't be blank"],
-               kaapi_evaluation_id: ["can't be blank"]
+               dataset_id: ["can't be blank"]
              } = errors_on(changeset)
     end
 
@@ -67,6 +62,7 @@ defmodule Glific.AIEvaluationsTest do
         @valid_attrs
         |> Map.put(:organization_id, organization_id)
         |> Map.put(:failure_reason, "Something went wrong")
+        |> Map.put(:kaapi_evaluation_id, 123)
         |> Map.put(:results, %{"score" => 0.95})
 
       changeset = AIEvaluation.changeset(%AIEvaluation{}, attrs)
