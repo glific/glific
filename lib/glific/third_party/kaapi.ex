@@ -321,7 +321,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   # Error type strings surfaced in webhook logs and flow failure path.
   # Each string is checked as a substring of the Kaapi error message body.
-  @kaapi_error_types ~w(transcription_failed unsupported_format duration_exceeded rate_limited timeout service_unavailable)
+  @kaapi_error_types ~w(transcription_failed unsupported_format duration_exceeded rate_limited timeout service_unavailable invalid_request)
 
   @doc """
   Initiates async Speech-to-Text via Kaapi unified LLM API.
@@ -379,11 +379,15 @@ defmodule Glific.ThirdParty.Kaapi do
     do: %{success: false, error_type: "timeout", reason: "Request timed out"}
 
   defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
+       when status in 400..499,
+       do: %{success: false, error_type: "invalid_request", reason: extract_error_message(body)}
+
+  defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
        when status in 500..599,
-       do: %{success: false, error_type: "service_unavailable", reason: classify_error(body)}
+       do: %{success: false, error_type: "service_unavailable", reason: extract_error_message(body)}
 
   defp handle_kaapi_error({:error, %{status: _status, body: body}}, _org_id, _label, _fallback),
-    do: %{success: false, error_type: "transcription_failed", reason: classify_error(body)}
+    do: %{success: false, error_type: classify_error(body), reason: extract_error_message(body)}
 
   defp handle_kaapi_error({:error, reason}, organization_id, label, fallback_type) do
     Glific.log_exception(%Error{
@@ -393,19 +397,21 @@ defmodule Glific.ThirdParty.Kaapi do
     %{success: false, error_type: fallback_type, reason: inspect(reason)}
   end
 
-  @spec classify_error(map() | String.t() | any()) :: String.t()
-  defp classify_error(body) when is_map(body) do
-    error_message = body["error"] || body["message"] || inspect(body)
+  @spec extract_error_message(map() | any()) :: String.t()
+  defp extract_error_message(body) when is_map(body),
+    do: body["error"] || body["message"] || inspect(body)
 
-    error_message =
-      if is_binary(error_message),
-        do: String.downcase(error_message),
-        else: inspect(error_message)
+  defp extract_error_message(body), do: inspect(body)
 
-    Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(error_message, &1))
+  @spec classify_error(map() | any()) :: String.t()
+  defp classify_error(body) do
+    message =
+      body
+      |> extract_error_message()
+      |> then(&if is_binary(&1), do: String.downcase(&1), else: inspect(&1))
+
+    Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(message, &1))
   end
-
-  defp classify_error(body), do: inspect(body)
 
   @spec stt_payload(String.t(), String.t(), map(), map()) :: map()
   defp stt_payload(encoded_audio, callback_url, request_metadata, opts) do
