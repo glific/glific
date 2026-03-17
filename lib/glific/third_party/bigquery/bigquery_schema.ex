@@ -3163,6 +3163,12 @@ defmodule Glific.BigQuery.Schema do
         name: "bq_inserted_at",
         type: "DATETIME",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
