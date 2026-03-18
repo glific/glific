@@ -1381,7 +1381,9 @@ defmodule Glific.AssistantsTest do
       assert %KnowledgeBaseVersion{} = result
 
       {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      updated_assistant = updated_assistant |> Repo.preload([:active_config_version])
       assert updated_assistant.kaapi_uuid == "kaapi_deferred_uuid_123"
+      assert updated_assistant.active_config_version.status == :ready
     end
 
     test "marks config version as failed when deferred Kaapi call fails",

@@ -61,15 +61,19 @@ defmodule GlificWeb.KaapiControllerTest do
            knowledge_base_version: knowledge_base_version,
            organization_id: organization_id
          } do
-      {:ok, assistant} =
+      {:ok, assistant1} =
         %Assistant{}
-        |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+        |> Assistant.changeset(%{
+          name: "Test Assistant 1",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_test_1"
+        })
         |> Repo.insert()
 
       {:ok, assistant_version1} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
+          assistant_id: assistant1.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -79,10 +83,24 @@ defmodule GlificWeb.KaapiControllerTest do
         })
         |> Repo.insert()
 
+      {:ok, _} =
+        assistant1
+        |> Assistant.changeset(%{active_config_version_id: assistant_version1.id})
+        |> Repo.update()
+
+      {:ok, assistant2} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Test Assistant 2",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_test_2"
+        })
+        |> Repo.insert()
+
       {:ok, assistant_version2} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
+          assistant_id: assistant2.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -91,6 +109,11 @@ defmodule GlificWeb.KaapiControllerTest do
           status: :in_progress
         })
         |> Repo.insert()
+
+      {:ok, _} =
+        assistant2
+        |> Assistant.changeset(%{active_config_version_id: assistant_version2.id})
+        |> Repo.update()
 
       Repo.insert_all(
         "assistant_config_version_knowledge_base_versions",
@@ -145,15 +168,19 @@ defmodule GlificWeb.KaapiControllerTest do
            knowledge_base_version: knowledge_base_version,
            organization_id: organization_id
          } do
-      {:ok, assistant} =
+      {:ok, assistant1} =
         %Assistant{}
-        |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+        |> Assistant.changeset(%{
+          name: "Test Assistant 1",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_test_1"
+        })
         |> Repo.insert()
 
       {:ok, assistant_version1} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
+          assistant_id: assistant1.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -163,10 +190,24 @@ defmodule GlificWeb.KaapiControllerTest do
         })
         |> Repo.insert()
 
+      {:ok, _} =
+        assistant1
+        |> Assistant.changeset(%{active_config_version_id: assistant_version1.id})
+        |> Repo.update()
+
+      {:ok, assistant2} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Test Assistant 2",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_test_2"
+        })
+        |> Repo.insert()
+
       {:ok, assistant_version2} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
+          assistant_id: assistant2.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -175,6 +216,11 @@ defmodule GlificWeb.KaapiControllerTest do
           status: :in_progress
         })
         |> Repo.insert()
+
+      {:ok, _} =
+        assistant2
+        |> Assistant.changeset(%{active_config_version_id: assistant_version2.id})
+        |> Repo.update()
 
       Repo.insert_all(
         "assistant_config_version_knowledge_base_versions",

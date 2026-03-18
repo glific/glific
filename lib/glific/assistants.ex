@@ -894,6 +894,10 @@ defmodule Glific.Assistants do
           |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
           |> Repo.update()
 
+          config_version
+          |> AssistantConfigVersion.changeset(%{status: :ready})
+          |> Repo.update()
+
         {:error, reason} ->
           Logger.error(
             "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
@@ -1028,6 +1032,9 @@ defmodule Glific.Assistants do
 
     params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
 
+    # Only update config versions that are the assistant's current active version
+    # and already registered with Kaapi. Deferred versions are handled separately
+    # by maybe_create_deferred_kaapi_configs.
     knowledge_base_version.assistant_config_versions
     |> Enum.reject(&deferred_config_version?/1)
     |> Enum.each(fn config_version ->
