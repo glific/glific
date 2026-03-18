@@ -16,6 +16,22 @@
     "response_format_example": "{\"success\": true, \"response\": {\"summary\": \"A car parked near trees on a sunny road.\", \"detected_objects\": [\"car\", \"tree\", \"road\"]}}"
   },
   {
+    "name": "speech_to_text",
+    "body": "{\n\"speech\": \"\"\n}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "response_format_example": "{\"success\": true, \"response\": \"Hello, how can I help you today?\"}"
+  },
+  {
+    "name": "text_to_speech",
+    "body": "{\n\"text\": \"\"\n}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "response_format_example": "{\"success\": true, \"media_url\": \"https://storage.googleapis.com/glific-media-bucket/Kaapi/outbound/3d92ac4f-ae77-4f85-bf8a-2a4f81e1a2b5.ogg\"}"
+  },
+  {
     "name": "speech_to_text_with_bhasini",
     "body": "{\n\"speech\": \"\",\n\"contact\": \"\"\n}",
     "headers": {
