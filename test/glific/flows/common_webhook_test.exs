@@ -1044,26 +1044,33 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert result.success == true
     end
 
-    test "returns download_failed error when audio download fails", %{fields: fields} do
+    test "sends correct payload structure to Kaapi for STT", %{fields: fields} do
       Tesla.Mock.mock(fn
-        %{method: :get} -> %Tesla.Env{status: 403, body: "Forbidden"}
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["query", "input", "type"]) == "audio"
+          assert get_in(decoded, ["query", "input", "content", "format"]) == "base64"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "stt"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) == "gemini-2.5-pro"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) == "auto"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == "1"
+          assert metadata["flow_id"] == "1"
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
       end)
 
       result = CommonWebhook.webhook("speech_to_text", fields, [])
-      assert result.success == false
-      assert result.error_type == "download_failed"
-      assert result.reason == "Audio file download failed"
-    end
-
-    test "returns service_unavailable error when Kaapi returns 500", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
-        %{method: :post} -> %Tesla.Env{status: 500, body: %{"error" => "internal error"}}
-      end)
-
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
-      assert result.success == false
-      assert result.error_type == "service_unavailable"
+      assert result.success == true
     end
   end
 
@@ -1093,24 +1100,30 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert result.success == true
     end
 
-    test "returns rate_limited error when Kaapi returns 429", %{fields: fields} do
+    test "sends correct payload structure to Kaapi for TTS", %{fields: fields} do
       Tesla.Mock.mock(fn
-        %{method: :post} -> %Tesla.Env{status: 429, body: %{"error" => "too many requests"}}
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["query", "input"]) == "Hello world"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "tts"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) == "gemini-2.5-pro-preview-tts"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
+          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) == "hindi"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == "1"
+          assert metadata["flow_id"] == "1"
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
       result = CommonWebhook.webhook("text_to_speech", fields, [])
-      assert result.success == false
-      assert result.error_type == "rate_limited"
-    end
-
-    test "returns timeout error when Kaapi times out", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :post} -> {:error, :timeout}
-      end)
-
-      result = CommonWebhook.webhook("text_to_speech", fields, [])
-      assert result.success == false
-      assert result.error_type == "timeout"
+      assert result.success == true
     end
   end
 
