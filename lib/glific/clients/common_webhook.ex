@@ -20,6 +20,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
 
+  import Ecto.Query, warn: false
   require Logger
 
   @doc """
