@@ -94,93 +94,57 @@ defmodule Glific.Clients.CommonWebhook do
 
     stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
 
-    with %{success: true, asr_response_text: transcribed_text} <-
-           webhook("speech_to_text_with_bhasini", stt_fields) do
-      updated_fields = Map.put(fields, "question", transcribed_text)
+    case webhook("speech_to_text_with_bhasini", stt_fields) do
+      %{success: true, asr_response_text: transcribed_text} ->
+        updated_fields = Map.put(fields, "question", transcribed_text)
 
-      voice_metadata = %{
-        voice_post_process: %{
-          source_language: fields["source_language"],
-          target_language: fields["target_language"],
-          speech_engine: fields["speech_engine"] || ""
+        voice_metadata = %{
+          voice_post_process: %{
+            source_language: fields["source_language"],
+            target_language: fields["target_language"],
+            speech_engine: fields["speech_engine"] || ""
+          }
         }
-      }
 
-      do_unified_llm_call(updated_fields, headers,
-        callback_path: "/kaapi/voice_flow_resume",
-        extra_metadata: voice_metadata
-      )
-    else
+        do_unified_llm_call(updated_fields, headers,
+          callback_path: "/kaapi/voice_flow_resume",
+          extra_metadata: voice_metadata
+        )
+
       _ ->
         %{success: false, reason: "Speech to text failed"}
     end
   end
 
-  defp do_unified_llm_call(fields, headers, opts) do
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback_url =
-      Glific.api_callback_base(organization.shortcode) <> Keyword.fetch!(opts, :callback_path)
-
-    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
-
-    request_metadata =
-      %{
-        organization_id: organization_id,
-        flow_id: flow_id,
-        contact_id: contact_id,
-        timestamp: timestamp,
-        signature: signature,
-        webhook_log_id: fields["webhook_log_id"],
-        result_name: fields["result_name"]
-      }
-      |> Map.merge(Keyword.get(opts, :extra_metadata, %{}))
-
-    with {:ok, {kaapi_uuid, version_number}} <-
-           lookup_kaapi_config(fields["assistant_id"], organization_id),
-         payload =
-           build_unified_llm_payload(
-             fields,
-             kaapi_uuid,
-             version_number,
-             callback_url,
-             request_metadata
-           ),
-         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
-      Map.merge(%{success: true}, body)
-    else
-      {:error, %{status: _status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body)}
-
-      {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason}
-
-      {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
-    end
-  end
-
   def webhook(function, fields, _headers), do: webhook(function, fields)
+
+  @doc """
+  Performs voice post-processing on a Kaapi LLM response: runs NMT+TTS to
+  translate and generate audio, then merges translated_text and media_url
+  into the response map.
+  """
+  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
+  def voice_post_process(organization_id, success, response) do
+    llm_response_text = response["message"] || ""
+    voice_fields = response["voice_post_process"] || %{}
+
+    tts_result =
+      if success && llm_response_text != "" do
+        webhook("nmt_tts_with_bhasini", %{
+          "text" => llm_response_text,
+          "organization_id" => organization_id,
+          "source_language" => voice_fields["source_language"],
+          "target_language" => voice_fields["target_language"],
+          "speech_engine" => voice_fields["speech_engine"] || ""
+        })
+      else
+        %{success: false, translated_text: llm_response_text, media_url: nil}
+      end
+
+    response
+    |> Map.put("translated_text", tts_result[:translated_text] || tts_result["translated_text"])
+    |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
+  end
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -440,6 +404,70 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  defp do_unified_llm_call(fields, headers, opts) do
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
+
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
+
+    organization = Partners.organization(organization_id)
+
+    callback_url =
+      Glific.api_callback_base(organization.shortcode) <> Keyword.fetch!(opts, :callback_path)
+
+    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+
+    request_metadata =
+      %{
+        organization_id: organization_id,
+        flow_id: flow_id,
+        contact_id: contact_id,
+        timestamp: timestamp,
+        signature: signature,
+        webhook_log_id: fields["webhook_log_id"],
+        result_name: fields["result_name"]
+      }
+      |> Map.merge(Keyword.get(opts, :extra_metadata, %{}))
+
+    with {:ok, {kaapi_uuid, version_number}} <-
+           lookup_kaapi_config(fields["assistant_id"], organization_id),
+         payload =
+           build_unified_llm_payload(
+             fields,
+             kaapi_uuid,
+             version_number,
+             callback_url,
+             request_metadata
+           ),
+         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
+      Map.merge(%{success: true}, body)
+    else
+      {:error, %{status: _status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body)}
+
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason}
+
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
+    end
+  end
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do

@@ -44,26 +44,8 @@ defmodule GlificWeb.KaapiController do
   defp do_voice_flow_resume(organization_id, result, response) do
     organization = Partners.organization(organization_id)
 
-    llm_response_text = response["message"] || ""
-    voice_fields = response["voice_post_process"] || %{}
-
-    tts_result =
-      if result["success"] && llm_response_text != "" do
-        CommonWebhook.webhook("nmt_tts_with_bhasini", %{
-          "text" => llm_response_text,
-          "organization_id" => organization_id,
-          "source_language" => voice_fields["source_language"],
-          "target_language" => voice_fields["target_language"],
-          "speech_engine" => voice_fields["speech_engine"] || ""
-        })
-      else
-        %{success: false, translated_text: llm_response_text, media_url: nil}
-      end
-
     voice_response =
-      response
-      |> Map.put("translated_text", tts_result[:translated_text] || tts_result["translated_text"])
-      |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
+      CommonWebhook.voice_post_process(organization_id, result["success"], response)
 
     {:ok, webhook_log_id} = Glific.parse_maybe_integer(response["webhook_log_id"])
     Webhook.update_log(webhook_log_id, voice_response)
