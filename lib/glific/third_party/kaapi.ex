@@ -405,11 +405,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec classify_error(map() | any()) :: String.t()
   defp classify_error(body) do
-    message =
-      body
-      |> extract_error_message()
-      |> then(&if is_binary(&1), do: String.downcase(&1), else: inspect(&1))
-
+    message = body |> extract_error_message() |> String.downcase()
     Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(message, &1))
   end
 
