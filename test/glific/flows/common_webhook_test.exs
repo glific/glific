@@ -1060,8 +1060,8 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) == "auto"
 
           metadata = decoded["request_metadata"]
-          assert metadata["organization_id"] == "1"
-          assert metadata["flow_id"] == "1"
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
           assert metadata["webhook_log_id"] == 1
           assert metadata["result_name"] == "response"
           assert decoded["callback_url"] =~ "/webhook/flow_resume"
@@ -1113,8 +1113,8 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) == "hindi"
 
           metadata = decoded["request_metadata"]
-          assert metadata["organization_id"] == "1"
-          assert metadata["flow_id"] == "1"
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
           assert metadata["webhook_log_id"] == 1
           assert metadata["result_name"] == "response"
           assert decoded["callback_url"] =~ "/webhook/flow_resume"
