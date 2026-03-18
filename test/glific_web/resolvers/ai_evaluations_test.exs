@@ -320,11 +320,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      # assert {:ok, %{golden_qa: golden_qa} } =
-      a = AIEvaluations.create_golden_qa(nil, args, resolution)
-      IO.inspect(a, label: "create_golden_qa result")
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      # assert golden_qa.name == "dataset_2024_v1"
+      assert golden_qa.name == "dataset_2024_v1"
     end
   end
 
