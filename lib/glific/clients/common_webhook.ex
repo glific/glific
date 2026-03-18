@@ -85,6 +85,38 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook("unified-llm-call", fields, headers) do
+    do_unified_llm_call(fields, headers, callback_path: "/webhook/flow_resume")
+  end
+
+  def webhook("unified-voice-llm-call", fields, headers) do
+    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    Glific.Metrics.increment("Voice Unified LLM Call", organization_id)
+
+    stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
+
+    with %{success: true, asr_response_text: transcribed_text} <-
+           webhook("speech_to_text_with_bhasini", stt_fields) do
+      updated_fields = Map.put(fields, "question", transcribed_text)
+
+      voice_metadata = %{
+        voice_post_process: %{
+          source_language: fields["source_language"],
+          target_language: fields["target_language"],
+          speech_engine: fields["speech_engine"] || ""
+        }
+      }
+
+      do_unified_llm_call(updated_fields, headers,
+        callback_path: "/kaapi/voice_flow_resume",
+        extra_metadata: voice_metadata
+      )
+    else
+      _ ->
+        %{success: false, reason: "Speech to text failed"}
+    end
+  end
+
+  defp do_unified_llm_call(fields, headers, opts) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
     {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
@@ -108,20 +140,21 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
-        "/webhook/flow_resume"
+      Glific.api_callback_base(organization.shortcode) <> Keyword.fetch!(opts, :callback_path)
 
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
-    request_metadata = %{
-      organization_id: organization_id,
-      flow_id: flow_id,
-      contact_id: contact_id,
-      timestamp: timestamp,
-      signature: signature,
-      webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
-    }
+    request_metadata =
+      %{
+        organization_id: organization_id,
+        flow_id: flow_id,
+        contact_id: contact_id,
+        timestamp: timestamp,
+        signature: signature,
+        webhook_log_id: fields["webhook_log_id"],
+        result_name: fields["result_name"]
+      }
+      |> Map.merge(Keyword.get(opts, :extra_metadata, %{}))
 
     with {:ok, {kaapi_uuid, version_number}} <-
            lookup_kaapi_config(fields["assistant_id"], organization_id),

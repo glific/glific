@@ -641,6 +641,23 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "voice-filesearch-gpt"} = action,
+        context,
+        []
+      ) do
+    cond do
+      FunWithFlags.enabled?(:unified_api_enabled,
+        for: %{organization_id: context.organization_id}
+      ) ->
+        Webhook.execute_unified_voice_filesearch(action, context)
+
+      true ->
+        Webhook.execute(action, context)
+        {:wait, context, []}
+    end
+  end
+
+  def execute(
         %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
         context,
         []

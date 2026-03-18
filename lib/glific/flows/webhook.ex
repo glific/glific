@@ -86,6 +86,24 @@ defmodule Glific.Flows.Webhook do
   end
 
   @doc """
+  Execute a voice filesearch webhook via unified LLM API.
+  STT, LLM call, and NMT+TTS.
+  """
+  @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_unified_voice_filesearch(action, context) do
+    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
+         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
+      updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
+      updated_action = %{action | headers: updated_headers}
+      voice_unified_llm_and_wait(updated_action, context)
+    else
+      {:error, _error} ->
+        unified_llm_and_wait(action, context, false)
+    end
+  end
+
+  @doc """
   Execute a filesearch webhook routed through Kaapi responses API (/api/v1/responses).
   """
   @spec execute_kaapi_filesearch(Action.t(), FlowContext.t()) ::
@@ -533,9 +551,9 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_unified_llm_and_wait(map(), Message.t()) ::
+  @spec do_unified_llm_and_wait(map(), Message.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_unified_llm_and_wait(params, failure_message) do
+  defp do_unified_llm_and_wait(params, failure_message, webhook_type \\ "unified-llm-call") do
     webhook_log_id = params.webhook_log.id
 
     fields =
@@ -550,20 +568,23 @@ defmodule Glific.Flows.Webhook do
       |> add_signature(params.context.organization_id, params.body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    process_unified_llm_call(%{
-      webhook_log_id: webhook_log_id,
-      fields: fields,
-      headers: headers,
-      action: params.action,
-      context: params.context,
-      failure_message: failure_message
-    })
+    process_unified_llm_call(
+      %{
+        webhook_log_id: webhook_log_id,
+        fields: fields,
+        headers: headers,
+        action: params.action,
+        context: params.context,
+        failure_message: failure_message
+      },
+      webhook_type
+    )
   end
 
-  @spec process_unified_llm_call(map()) ::
+  @spec process_unified_llm_call(map(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_unified_llm_call(params) do
-    response = CommonWebhook.webhook("unified-llm-call", params.fields, params.headers)
+  defp process_unified_llm_call(params, webhook_type) do
+    response = CommonWebhook.webhook(webhook_type, params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
@@ -672,6 +693,34 @@ defmodule Glific.Flows.Webhook do
       _ ->
         update_log(params.webhook_log_id, "Something went wrong")
         {:ok, params.context, [params.failure_message]}
+    end
+  end
+
+  @spec voice_unified_llm_and_wait(map(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp voice_unified_llm_and_wait(action, context) do
+    parsed_attrs = parse_header_and_url(action, context)
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
+
+    case create_body(context, action.body) do
+      {:error, message} ->
+        webhook_log = create_log(action, %{}, action.headers, context)
+        update_log(webhook_log, message)
+        {:ok, context, [failure_message]}
+
+      {fields, body} ->
+        webhook_log = create_log(action, fields, action.headers, context)
+
+        params = %{
+          action: action,
+          context: context,
+          webhook_log: webhook_log,
+          fields: fields,
+          body: body,
+          headers: parsed_attrs.header
+        }
+
+        do_unified_llm_and_wait(params, failure_message, "unified-voice-llm-call")
     end
   end
 
