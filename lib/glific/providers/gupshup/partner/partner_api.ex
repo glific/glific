@@ -551,7 +551,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # case we can pass in the function
     callback_url =
       if is_nil(callback_url) do
-        "https://api.#{organization.shortcode}.glific.com/gupshup"
+        Glific.api_callback_base(organization.shortcode) <> "/gupshup"
       else
         callback_url
       end

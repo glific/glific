@@ -57,6 +57,24 @@ defmodule Glific.Assistants do
   }
 
   @doc """
+  Lists all assistant config versions.
+  """
+  @spec list_assistant_config_versions() :: list(map())
+  def list_assistant_config_versions do
+    AssistantConfigVersion
+    |> where([v], is_nil(v.deleted_at))
+    |> where([v], v.status == :ready)
+    |> Repo.all()
+    |> Repo.preload(:assistant)
+    |> Enum.map(fn version ->
+      version
+      |> Map.put(:kaapi_uuid, version.assistant.kaapi_uuid)
+      |> Map.put(:assistant_name, version.assistant.name)
+    end)
+    |> Enum.sort_by(& &1.assistant_name)
+  end
+
+  @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
   """
 
@@ -979,7 +997,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/kaapi/knowledge_base_version"
 
     %{
