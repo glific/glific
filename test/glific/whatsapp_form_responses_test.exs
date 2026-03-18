@@ -185,6 +185,96 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
+  test "write_to_google_sheet/2 stringifies map values like calendar_range",
+       %{organization_id: organization_id} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: url} when is_binary(url) ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "values" => [
+                [
+                  "timestamp",
+                  "contact_phone_number",
+                  "whatsapp_form_id",
+                  "whatsapp_form_name",
+                  "calendar_range"
+                ]
+              ]
+            })
+        }
+
+      %{method: :post, url: _url} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+              "updates" => %{
+                "spreadsheetId" => "1A2B3C4D5E6F7G8H9I0J",
+                "updatedRange" => "A1:A1",
+                "updatedRows" => 1,
+                "updatedColumns" => 1,
+                "updatedCells" => 1
+              }
+            })
+        }
+    end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      sheet_attrs = %{
+        shortcode: "google_sheets",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: organization_id
+      }
+
+      Partners.create_credential(sheet_attrs)
+
+      whatsapp_form =
+        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+
+      payload = %{
+        "contact_number" => "919425010449",
+        "organization_id" => organization_id,
+        "raw_response" => %{
+          "calendar_range" => %{
+            "end-date" => "2025-12-11",
+            "start-date" => "2025-12-02"
+          },
+          "flow_token" => "unused"
+        },
+        "submitted_at" => "2026-03-17T12:47:36.000000Z",
+        "whatsapp_form_id" => whatsapp_form.id,
+        "whatsapp_form_name" => whatsapp_form.name
+      }
+
+      {:ok, values} =
+        WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
+
+      calendar_value = Enum.at(values, 4)
+      assert is_binary(calendar_value)
+
+      assert calendar_value ==
+               Jason.encode!(%{"end-date" => "2025-12-11", "start-date" => "2025-12-02"})
+    end
+  end
+
   test "write_to_google_sheet/2 returns error when Google API is not active",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
