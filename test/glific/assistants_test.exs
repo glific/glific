@@ -1261,8 +1261,6 @@ defmodule Glific.AssistantsTest do
                })
 
       {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-      IO.inspect(updated_assistant, label: "Created Assistant")
-
       assert updated_assistant.kaapi_uuid == "kaapi_uuid_from_create"
     end
 
@@ -1449,6 +1447,71 @@ defmodule Glific.AssistantsTest do
       assert updated_cv.status == :failed
       assert updated_cv.failure_reason =~ "Deferred Kaapi config creation failed"
     end
+
+    test "preserves actual KB failure reason on deferred config when callback is FAILED",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "KB With Real Error",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-real-error",
+          size: 500,
+          kaapi_job_id: "job_real_error_123"
+        })
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Real Error Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      link_kbv_to_acv(kbv, config_version, organization_id)
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_real_error_123",
+            "status" => "FAILED",
+            "error_message" => "Invalid documents: unsupported format"
+          }
+        })
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :failed
+      assert updated_cv.failure_reason == "Invalid documents: unsupported format"
+    end
   end
 
   describe "update_assistant with in-progress KB (deferred update)" do
@@ -1602,7 +1665,7 @@ defmodule Glific.AssistantsTest do
             "job_id" => "job_deferred_update_fail",
             "status" => "FAILED",
             "collection" => nil,
-            "error_message" => nil
+            "error_message" => "Vector store creation failed due to invalid documents"
           }
         })
 
@@ -1620,7 +1683,7 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert new_config.status == :failed
-      assert new_config.failure_reason =~ "Deferred Kaapi config creation failed"
+      assert new_config.failure_reason =~ "Vector store creation failed due to invalid documents"
     end
 
     test "returns error when deferred_update_transaction fails due to duplicate assistant name",
