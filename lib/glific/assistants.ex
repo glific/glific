@@ -239,6 +239,14 @@ defmodule Glific.Assistants do
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
          {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
+
+      # If the knowledge base is already completed (callback arrived before assistant creation),
+      # register the config with Kaapi immediately since the deferred flow won't trigger.
+      if knowledge_base_version.status == :completed do
+        config_version = Repo.preload(result.config_version, :assistant)
+        create_deferred_kaapi_config(config_version, knowledge_base_version)
+      end
+
       {:ok, result}
     end
   end

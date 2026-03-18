@@ -1224,6 +1224,92 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "create_assistant with already-completed KB" do
+    setup [:enable_kaapi]
+
+    test "registers with Kaapi immediately when KB callback arrived before assistant creation",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Already Completed KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "vs_already_ready_123",
+          size: 500
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_from_create"}}}
+      end)
+
+      assert {:ok, %{assistant: assistant}} =
+               Assistants.create_assistant(%{
+                 name: "Late Save Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      IO.inspect(updated_assistant, label: "Created Assistant")
+
+      assert updated_assistant.kaapi_uuid == "kaapi_uuid_from_create"
+    end
+
+    test "marks config as failed when Kaapi call fails for already-completed KB",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Completed KB Kaapi Fail",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "vs_kaapi_fail_456",
+          size: 500
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Fail Kaapi Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert is_nil(updated_assistant.kaapi_uuid)
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :failed
+      assert updated_cv.failure_reason =~ "Kaapi config creation failed"
+    end
+  end
+
   describe "handle_knowledge_base_callback deferred config" do
     setup [:enable_kaapi]
 
