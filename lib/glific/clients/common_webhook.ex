@@ -118,6 +118,34 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
+  # callback path so the response is post-processed (NMT+TTS) before resuming the flow.
+  def webhook("unified-voice-llm-call", fields, headers) do
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
+
+    Glific.Metrics.increment("Voice Unified LLM Call", org_id)
+
+    case webhook("speech_to_text_with_bhasini", stt_fields) do
+      %{success: true, asr_response_text: transcribed_text} ->
+        updated_fields = Map.put(fields, "question", transcribed_text)
+
+        do_unified_llm_call(updated_fields, headers,
+          callback_path: "/kaapi/voice_flow_resume",
+          extra_metadata: %{
+            voice_post_process: %{
+              source_language: fields["source_language"],
+              target_language: fields["target_language"],
+              speech_engine: fields["speech_engine"] || ""
+            }
+          }
+        )
+
+      _ ->
+        %{success: false, reason: "Speech to text failed"}
+    end
+  end
+
   # Generic Kaapi STT webhook (async — result delivered via flow_resume callback).
   # Optional fields from flow node: provider, model, language (input language for transcription)
   def webhook("speech_to_text", fields, _headers) do
@@ -209,34 +237,6 @@ defmodule Glific.Clients.CommonWebhook do
         Glific.Metrics.increment("Gemini TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
     end
-  end
-
-  @doc """
-  Performs voice post-processing on a Kaapi LLM response: runs NMT+TTS to
-  translate and generate audio, then merges translated_text and media_url
-  into the response map.
-  """
-  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
-  def voice_post_process(organization_id, success, response) do
-    llm_response_text = response["message"] || ""
-    voice_fields = response["voice_post_process"] || %{}
-
-    tts_result =
-      if success && llm_response_text != "" do
-        webhook("nmt_tts_with_bhasini", %{
-          "text" => llm_response_text,
-          "organization_id" => organization_id,
-          "source_language" => voice_fields["source_language"],
-          "target_language" => voice_fields["target_language"],
-          "speech_engine" => voice_fields["speech_engine"] || ""
-        })
-      else
-        %{success: false, translated_text: llm_response_text, media_url: nil}
-      end
-
-    response
-    |> Map.put("translated_text", tts_result[:translated_text] || tts_result["translated_text"])
-    |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
   end
 
   @doc """
@@ -450,6 +450,34 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
+
+  @doc """
+  Performs voice post-processing on a Kaapi LLM response: runs NMT+TTS to
+  translate and generate audio, then merges translated_text and media_url
+  into the response map.
+  """
+  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
+  def voice_post_process(organization_id, success, response) do
+    llm_response_text = response["message"] || ""
+    voice_fields = response["voice_post_process"] || %{}
+
+    tts_result =
+      if success && llm_response_text != "" do
+        webhook("nmt_tts_with_bhasini", %{
+          "text" => llm_response_text,
+          "organization_id" => organization_id,
+          "source_language" => voice_fields["source_language"],
+          "target_language" => voice_fields["target_language"],
+          "speech_engine" => voice_fields["speech_engine"] || ""
+        })
+      else
+        %{success: false, translated_text: llm_response_text, media_url: nil}
+      end
+
+    response
+    |> Map.put("translated_text", tts_result[:translated_text] || tts_result["translated_text"])
+    |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
+  end
 
   defp do_unified_llm_call(fields, headers, opts) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()

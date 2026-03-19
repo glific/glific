@@ -643,7 +643,7 @@ defmodule Glific.Flows.Webhook do
     })
   end
 
-  @spec process_unified_llm_call(map(), String.t()) ::
+  @spec process_unified_llm_call(map()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp process_unified_llm_call(params) do
     response = CommonWebhook.webhook(params.webhook_name, params.fields, params.headers)
@@ -762,31 +762,23 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec voice_unified_llm_and_wait(map(), FlowContext.t()) ::
+  @doc """
+  Execute a voice unified LLM webhook (async — flow waits for voice_flow_resume callback).
+
+  Fetches Kaapi creds, injects the API key, then delegates to unified_llm_and_wait with
+  the "unified-voice-llm-call" webhook name. CommonWebhook handles the synchronous STT
+  step before making the async LLM call.
+  """
+  @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp voice_unified_llm_and_wait(action, context) do
-    parsed_attrs = parse_header_and_url(action, context)
-    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
-
-    case create_body(context, action.body) do
-      {:error, message} ->
-        webhook_log = create_log(action, %{}, action.headers, context)
-        update_log(webhook_log, message)
-        {:ok, context, [failure_message]}
-
-      {fields, body} ->
-        webhook_log = create_log(action, fields, action.headers, context)
-
-        params = %{
-          action: action,
-          context: context,
-          webhook_log: webhook_log,
-          fields: fields,
-          body: body,
-          headers: parsed_attrs.header
-        }
-
-        do_unified_llm_and_wait(params, failure_message, "unified-voice-llm-call")
+  def execute_unified_voice_filesearch(action, context) do
+    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
+         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
+      updated_action = %{action | headers: Map.put(action.headers, "X-API-KEY", api_key)}
+      unified_llm_and_wait(updated_action, context, true, "unified-voice-llm-call")
+    else
+      _ ->
+        unified_llm_and_wait(action, context, false, "unified-voice-llm-call")
     end
   end
 

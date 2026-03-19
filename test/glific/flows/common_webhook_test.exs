@@ -1059,8 +1059,12 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["query", "input", "content", "format"]) == "base64"
           assert get_in(decoded, ["config", "blob", "completion", "type"]) == "stt"
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
-          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) == "gemini-2.5-pro"
-          assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) == "auto"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-2.5-pro"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) ==
+                   "auto"
 
           metadata = decoded["request_metadata"]
           assert metadata["organization_id"] == 1
@@ -1111,9 +1115,14 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["query", "input"]) == "Hello world"
           assert get_in(decoded, ["config", "blob", "completion", "type"]) == "tts"
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
-          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) == "gemini-2.5-pro-preview-tts"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-2.5-pro-preview-tts"
+
           assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
-          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) == "hindi"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
+                   "hindi"
 
           metadata = decoded["request_metadata"]
           assert metadata["organization_id"] == 1
