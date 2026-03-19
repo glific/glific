@@ -185,7 +185,7 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
-  test "write_to_google_sheet/2 stringifies map values like calendar_range",
+  test "write_to_google_sheet/2 stringifies map values like calendar_range and list values like options ",
        %{organization_id: organization_id} do
     Tesla.Mock.mock(fn
       %{method: :get, url: url} when is_binary(url) ->
@@ -199,7 +199,8 @@ defmodule Glific.WhatsappFormResponsesTest do
                   "contact_phone_number",
                   "whatsapp_form_id",
                   "whatsapp_form_name",
-                  "calendar_range"
+                  "calendar_range",
+                  "options"
                 ]
               ]
             })
@@ -257,6 +258,10 @@ defmodule Glific.WhatsappFormResponsesTest do
             "end-date" => "2025-12-11",
             "start-date" => "2025-12-02"
           },
+          "options" => [
+            "option1",
+            "option2"
+          ],
           "flow_token" => "unused"
         },
         "submitted_at" => "2026-03-17T12:47:36.000000Z",
@@ -268,10 +273,13 @@ defmodule Glific.WhatsappFormResponsesTest do
         WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form)
 
       calendar_value = Enum.at(values, 4)
+      options_value = Enum.at(values, 5)
       assert is_binary(calendar_value)
 
       assert calendar_value ==
                Jason.encode!(%{"end-date" => "2025-12-11", "start-date" => "2025-12-02"})
+
+      assert options_value == Enum.join(["option1", "option2"], ", ")
     end
   end
 
