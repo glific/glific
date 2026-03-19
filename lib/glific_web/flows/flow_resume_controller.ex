@@ -129,6 +129,12 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %{response_key => voice_response},
         message
       )
+    else
+      false ->
+        Logger.warning("Voice flow resume validation failed for org #{organization_id}")
+
+      {:error, reason} ->
+        Logger.warning("Voice flow resume contact lookup failed: #{inspect(reason)}")
     end
 
     :ok

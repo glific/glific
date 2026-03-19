@@ -460,9 +460,13 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, translated_text: llm_response_text, media_url: nil}
       end
 
+    translated_text =
+      tts_result[:translated_text] ||
+        llm_response_text
+
     response
-    |> Map.put("translated_text", tts_result[:translated_text] || tts_result["translated_text"])
-    |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
+    |> Map.put("translated_text", translated_text)
+    |> Map.put("media_url", tts_result[:media_url])
   end
 
   defp do_unified_llm_call(fields, headers, callback_url, request_metadata) do
