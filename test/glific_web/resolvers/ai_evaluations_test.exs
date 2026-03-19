@@ -22,7 +22,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: "valid_dataset"
+                dataset_name: "valid_dataset",
+                dataset_id: "12345"
               }
             }
           }
@@ -305,7 +306,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "dataset_2024_v1", duplication_factor: 2}}
+            body: %{data: %{dataset_name: "dataset_2024_v1", dataset_id: "12345"}}
           }
       end)
 
