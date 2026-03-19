@@ -81,7 +81,7 @@ defmodule Glific.Templates.InteractiveTemplateTest do
                  type: type,
                  interactive_content: %{a: 1},
                  organization_id: org_id,
-                 language_id: language_fixture().id
+                 language_id: (language_fixture().id + 1)
                })
                |> Repo.insert()
 

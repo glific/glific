@@ -3,6 +3,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   The Flow Editor Controller
   """
 
+  alias Glific.Flags
+
   use GlificWeb, :controller
 
   plug(:set_appsignal_namespace)
@@ -653,7 +655,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   # :unified_stt_tts feature flag is enabled for the organisation.
   @spec maybe_filter_stt_tts_webhooks(list(map()), non_neg_integer()) :: list(map())
   defp maybe_filter_stt_tts_webhooks(webhooks, organization_id) do
-    if FunWithFlags.enabled?(:unified_stt_tts, for: %{organization_id: organization_id}) do
+    if Flags.get_unified_stt_tts_enabled?(organization_id) do
       webhooks
     else
       Enum.reject(webhooks, &MapSet.member?(@stt_tts_webhook_names, &1["name"]))
