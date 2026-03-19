@@ -7,6 +7,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   require Logger
 
   alias Glific.{
+    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.Webhook,
@@ -75,6 +76,50 @@ defmodule GlificWeb.Flows.FlowResumeController do
     end
 
     # always return 200 and an empty response
+    json(conn, "")
+  end
+
+  @doc """
+  Callback for voice unified LLM calls.
+  Receives the Kaapi LLM response, performs NMT+TTS (translate + generate audio),
+  then resumes the flow with translated_text + media_url.
+  """
+  @spec voice_flow_resume(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def voice_flow_resume(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        result
+      ) do
+    response = parse_callback_response(result)
+    organization = Partners.organization(organization_id)
+    Repo.put_process_state(organization.id)
+
+    voice_response =
+      CommonWebhook.voice_post_process(organization_id, result["success"], response)
+
+    if response["webhook_log_id"],
+      do: Webhook.update_log(response["webhook_log_id"], voice_response)
+
+    response_key = response["result_name"] || "response"
+
+    message =
+      if result["success"],
+        do: Messages.create_temp_message(organization_id, "Success"),
+        else: Messages.create_temp_message(organization_id, "Failure")
+
+    with true <- validate_request(organization_id, response),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             id: response["contact_id"],
+             organization_id: organization.id
+           }) do
+      FlowContext.resume_contact_flow(
+        contact,
+        response["flow_id"],
+        %{response_key => voice_response},
+        message
+      )
+    end
+
     json(conn, "")
   end
 
