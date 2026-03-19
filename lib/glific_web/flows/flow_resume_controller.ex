@@ -4,6 +4,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   """
 
   use GlificWeb, :controller
+  use Publicist
   require Logger
 
   alias Glific.{
