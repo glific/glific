@@ -7,6 +7,43 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
 
+  object :ai_evaluation do
+    field :id, :id
+    field :name, :string
+    field :status, :string
+    field :failure_reason, :string
+    field :results, :json
+    field :kaapi_evaluation_id, :integer
+    field :dataset_id, :integer
+    field :assistant_config_version_id, :id
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  input_object :ai_evaluation_filter do
+    field :name, :string
+    field :status, :string
+  end
+
+  object :ai_evaluation_queries do
+    @desc "List AI Evaluations"
+    field :ai_evaluations, list_of(:ai_evaluation) do
+      arg(:filter, :ai_evaluation_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_ai_evaluations/3)
+    end
+
+    @desc "Count AI Evaluations"
+    field :count_ai_evaluations, :integer do
+      arg(:filter, :ai_evaluation_filter)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
+    end
+  end
+
   input_object :golden_qa_input do
     field :name, non_null(:string)
     field :file, non_null(:upload)
