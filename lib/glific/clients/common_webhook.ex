@@ -86,7 +86,10 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("unified-llm-call", fields, headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
-    {callback_url, request_metadata} = build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
     request_metadata = Map.put(request_metadata, :call_type, "llm")
     do_unified_llm_call(fields, headers, callback_url, request_metadata)
   end
@@ -103,7 +106,15 @@ defmodule Glific.Clients.CommonWebhook do
       %{success: true, asr_response_text: transcribed_text} ->
         updated_fields = Map.put(fields, "question", transcribed_text)
         {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
-        {callback_url, request_metadata} = build_flow_resume_metadata(organization_id, flow_id, contact_id, updated_fields, "/kaapi/voice_flow_resume")
+
+        {callback_url, request_metadata} =
+          build_flow_resume_metadata(
+            organization_id,
+            flow_id,
+            contact_id,
+            updated_fields,
+            "/kaapi/voice_flow_resume"
+          )
 
         request_metadata =
           Map.merge(request_metadata, %{
@@ -657,9 +668,21 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls
   # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
-  @spec build_flow_resume_metadata(non_neg_integer(), non_neg_integer(), non_neg_integer(), map(), String.t()) ::
+  @spec build_flow_resume_metadata(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          map(),
+          String.t()
+        ) ::
           {String.t(), map()}
-  defp build_flow_resume_metadata(organization_id, flow_id, contact_id, fields, callback_path \\ "/webhook/flow_resume") do
+  defp build_flow_resume_metadata(
+         organization_id,
+         flow_id,
+         contact_id,
+         fields,
+         callback_path \\ "/webhook/flow_resume"
+       ) do
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
