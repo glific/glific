@@ -25,7 +25,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   @spec onboard_organizations_from_db() :: {:ok, any()} | {:error, String.t()}
   def onboard_organizations_from_db do
     organizations = fetch_eligible_orgs()
-    {:ok, process_orgs_concurrently(organizations)}
+    {:ok, process_orgs_concurrently(organizations, &process_org_record/1)}
   end
 
   @doc """
@@ -35,7 +35,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
           {:ok, any()} | {:error, String.t()}
   def onboard_organizations_from_db(ids) when is_list(ids) do
     organizations = fetch_eligible_orgs(ids)
-    {:ok, process_orgs_concurrently(organizations)}
+    {:ok, process_orgs_concurrently(organizations, &process_org_record/1)}
   end
 
   @spec fetch_eligible_orgs(nil | [non_neg_integer()]) :: [map()]
@@ -70,12 +70,90 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     Repo.all(query, skip_organization_id: true)
   end
 
-  @spec process_orgs_concurrently([map()]) :: [map()]
-  defp process_orgs_concurrently(organizations) do
+  @spec process_org_record(map()) :: String.t()
+  defp process_org_record(%{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode}) do
+    organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
+
+    params = %{
+      organization_id: id,
+      organization_name: organization_name,
+      project_name: shortcode,
+      openai_api_key: Glific.get_open_ai_key(),
+      google_api_key: Glific.get_google_api_key()
+    }
+
+    case Kaapi.onboard(params) do
+      {:ok, _result} ->
+        "Org #{id} onboarded successfully"
+
+      {:error, error} ->
+        "Org #{id} onboarding failed: #{inspect(error)}"
+    end
+  end
+
+  @doc """
+  Update the Google API key for all organizations already onboarded to Kaapi.
+  """
+  @spec update_google_key_for_existing_orgs() :: {:ok, any()} | {:error, String.t()}
+  def update_google_key_for_existing_orgs do
+    {:ok, process_orgs_concurrently(fetch_onboarded_orgs(), &update_org_google_key/1)}
+  end
+
+  @doc """
+  Update the Google API key for specific organization IDs already onboarded to Kaapi.
+  """
+  @spec update_google_key_for_existing_orgs([non_neg_integer()]) ::
+          {:ok, any()} | {:error, String.t()}
+  def update_google_key_for_existing_orgs(ids) when is_list(ids) do
+    {:ok, process_orgs_concurrently(fetch_onboarded_orgs(ids), &update_org_google_key/1)}
+  end
+
+  @doc """
+  Update the OpenAI API key for all organizations already onboarded to Kaapi.
+  """
+  @spec update_openai_key_for_existing_orgs() :: {:ok, any()} | {:error, String.t()}
+  def update_openai_key_for_existing_orgs do
+    {:ok, process_orgs_concurrently(fetch_onboarded_orgs(), &update_org_openai_key/1)}
+  end
+
+  @doc """
+  Update the OpenAI API key for specific organization IDs already onboarded to Kaapi.
+  """
+  @spec update_openai_key_for_existing_orgs([non_neg_integer()]) ::
+          {:ok, any()} | {:error, String.t()}
+  def update_openai_key_for_existing_orgs(ids) when is_list(ids) do
+    {:ok, process_orgs_concurrently(fetch_onboarded_orgs(ids), &update_org_openai_key/1)}
+  end
+
+  @spec fetch_onboarded_orgs(nil | [non_neg_integer()]) :: [map()]
+  defp fetch_onboarded_orgs(ids \\ nil) do
+    {:ok, %Provider{id: provider_id}} =
+      Repo.fetch_by(Provider, %{shortcode: "kaapi"})
+
+    base_query =
+      from(o in Organization,
+        where: o.status in [:active, :suspended, :forced_suspension],
+        join: c in Credential,
+        on: c.organization_id == o.id and c.provider_id == ^provider_id,
+        select: %{id: o.id},
+        distinct: o.id
+      )
+
+    query =
+      case ids do
+        nil -> base_query
+        list when is_list(list) -> from(o in subquery(base_query), where: o.id in ^list)
+      end
+
+    Repo.all(query, skip_organization_id: true)
+  end
+
+  @spec process_orgs_concurrently([map()], (map() -> String.t())) :: [map()]
+  defp process_orgs_concurrently(organizations, fun) do
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,
       organizations,
-      &process_org_record/1,
+      fun,
       max_concurrency: 20,
       timeout: 60_000,
       on_timeout: :kill_task
@@ -85,36 +163,28 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
         {:ok, result}
 
       {:exit, :timeout} ->
-        Logger.error("KAAPI_ONBOARD_TIMEOUT: Organization onboard timed out after 60 seconds")
+        Logger.error("KAAPI_MIGRATION_TIMEOUT: Organization update timed out after 60 seconds")
         {:error, :timeout}
 
       {:exit, reason} ->
-        Logger.error(
-          "KAAPI_ONBOARD_EXIT: Organization onboard exited with reason: #{inspect(reason)}"
-        )
-
+        Logger.error("KAAPI_MIGRATION_EXIT: Organization update exited with reason: #{inspect(reason)}")
         {:error, reason}
     end)
   end
 
-  @spec process_org_record(map()) :: String.t()
-  defp process_org_record(%{id: id, name: org_name, parent_org: parent_org, shortcode: shortcode}) do
-    open_ai_key = Application.fetch_env!(:glific, :open_ai)
-    organization_name = if parent_org in [nil, ""], do: org_name, else: parent_org
+  @spec update_org_google_key(map()) :: String.t()
+  defp update_org_google_key(%{id: id}) do
+    case Kaapi.update_google_api_key(id) do
+      {:ok, _} -> "Org #{id} google_api_key updated successfully"
+      {:error, error} -> "Org #{id} google_api_key update failed: #{inspect(error)}"
+    end
+  end
 
-    params = %{
-      organization_id: id,
-      organization_name: organization_name,
-      project_name: shortcode,
-      openai_api_key: open_ai_key
-    }
-
-    case Kaapi.onboard(params) do
-      {:ok, _result} ->
-        "Org #{id} onboarded successfully"
-
-      {:error, error} ->
-        "Org #{id} onboarding failed: #{inspect(error)}"
+  @spec update_org_openai_key(map()) :: String.t()
+  defp update_org_openai_key(%{id: id}) do
+    case Kaapi.update_openai_api_key(id) do
+      {:ok, _} -> "Org #{id} openai_api_key updated successfully"
+      {:error, error} -> "Org #{id} openai_api_key update failed: #{inspect(error)}"
     end
   end
 

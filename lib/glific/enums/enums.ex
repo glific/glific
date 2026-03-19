@@ -126,6 +126,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.KnowledgeBaseStatus.__enum_map__()
   Glific.Enums.knowledge_base_status_const()
+
+  iex> Glific.Enums.AIEvaluationStatus.__enum_map__()
+  Glific.Enums.ai_evaluation_status_const()
   """
 
   defmacro api_status_const,
@@ -202,4 +205,7 @@ defmodule Glific.Enums do
 
   defmacro knowledge_base_status_const,
     do: Macro.expand(@knowledge_base_status_const, __CALLER__)
+
+  defmacro ai_evaluation_status_const,
+    do: Macro.expand(@ai_evaluation_status_const, __CALLER__)
 end
