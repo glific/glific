@@ -29,7 +29,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
-    respone_key = response["result_name"] || "response"
+    response_key = response["result_name"] || "response"
 
     message =
       case {result["success"], response["webhook_log_id"]} do
@@ -57,7 +57,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{respone_key => response},
+        %{response_key => response},
         message
       )
     end

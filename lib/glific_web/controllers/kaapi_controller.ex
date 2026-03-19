@@ -50,7 +50,7 @@ defmodule GlificWeb.KaapiController do
     {:ok, webhook_log_id} = Glific.parse_maybe_integer(response["webhook_log_id"])
     Webhook.update_log(webhook_log_id, voice_response)
 
-    respone_key = response["result_name"] || "response"
+    response_key = response["result_name"] || "response"
 
     message =
       if result["success"],
@@ -66,7 +66,7 @@ defmodule GlificWeb.KaapiController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{respone_key => voice_response},
+        %{response_key => voice_response},
         message
       )
     end
