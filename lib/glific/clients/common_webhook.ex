@@ -86,36 +86,9 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("unified-llm-call", fields, headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
-
-    {callback_url, request_metadata} =
-      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
-
+    {callback_url, request_metadata} = build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
     request_metadata = Map.put(request_metadata, :call_type, "llm")
-
-    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
-
-    with {:ok, {kaapi_uuid, version_number}} <-
-           lookup_kaapi_config(fields["assistant_id"], organization_id),
-         payload =
-           build_unified_llm_payload(
-             fields,
-             kaapi_uuid,
-             version_number,
-             callback_url,
-             request_metadata
-           ),
-         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
-      Map.merge(%{success: true}, body)
-    else
-      {:error, %{status: _status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body)}
-
-      {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason}
-
-      {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
-    end
+    do_unified_llm_call(fields, headers, callback_url, request_metadata)
   end
 
   # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
@@ -129,17 +102,19 @@ defmodule Glific.Clients.CommonWebhook do
     case webhook("speech_to_text_with_bhasini", stt_fields) do
       %{success: true, asr_response_text: transcribed_text} ->
         updated_fields = Map.put(fields, "question", transcribed_text)
+        {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
+        {callback_url, request_metadata} = build_flow_resume_metadata(organization_id, flow_id, contact_id, updated_fields, "/kaapi/voice_flow_resume")
 
-        do_unified_llm_call(updated_fields, headers,
-          callback_path: "/kaapi/voice_flow_resume",
-          extra_metadata: %{
+        request_metadata =
+          Map.merge(request_metadata, %{
             voice_post_process: %{
               source_language: fields["source_language"],
               target_language: fields["target_language"],
               speech_engine: fields["speech_engine"] || ""
             }
-          }
-        )
+          })
+
+        do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
 
       _ ->
         %{success: false, reason: "Speech to text failed"}
@@ -479,45 +454,9 @@ defmodule Glific.Clients.CommonWebhook do
     |> Map.put("media_url", tts_result[:media_url] || tts_result["media_url"])
   end
 
-  defp do_unified_llm_call(fields, headers, opts) do
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback_url =
-      Glific.api_callback_base(organization.shortcode) <> Keyword.fetch!(opts, :callback_path)
-
+  defp do_unified_llm_call(fields, headers, callback_url, request_metadata) do
     {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
-
-    request_metadata =
-      %{
-        organization_id: organization_id,
-        flow_id: flow_id,
-        contact_id: contact_id,
-        timestamp: timestamp,
-        signature: signature,
-        webhook_log_id: fields["webhook_log_id"],
-        result_name: fields["result_name"]
-      }
-      |> Map.merge(Keyword.get(opts, :extra_metadata, %{}))
+    {organization_id, _, _} = parse_flow_fields(fields)
 
     with {:ok, {kaapi_uuid, version_number}} <-
            lookup_kaapi_config(fields["assistant_id"], organization_id),
@@ -718,9 +657,9 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls
   # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
-  @spec build_flow_resume_metadata(non_neg_integer(), non_neg_integer(), non_neg_integer(), map()) ::
+  @spec build_flow_resume_metadata(non_neg_integer(), non_neg_integer(), non_neg_integer(), map(), String.t()) ::
           {String.t(), map()}
-  defp build_flow_resume_metadata(organization_id, flow_id, contact_id, fields) do
+  defp build_flow_resume_metadata(organization_id, flow_id, contact_id, fields, callback_path \\ "/webhook/flow_resume") do
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
@@ -739,9 +678,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
-        "/webhook/flow_resume"
+    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
