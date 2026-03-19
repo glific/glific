@@ -244,9 +244,7 @@ defmodule Glific.Assistants do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(user_params) do
-    with :ok <- validate_knowledge_base_presence(user_params),
-         {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_by_version_id(user_params[:knowledge_base_version_id]),
+    with {:ok, knowledge_base_version} <- resolve_optional_knowledge_base(user_params),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
          {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
@@ -318,7 +316,7 @@ defmodule Glific.Assistants do
   defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
       [knowledge_base_version | _] -> {:ok, knowledge_base_version}
-      [] -> {:error, "No knowledge base linked to this assistant"}
+      [] -> {:ok, nil}
     end
   end
 
@@ -457,16 +455,14 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
-  defp validate_knowledge_base_presence(user_params) do
-    if is_nil(user_params[:knowledge_base_version_id]) do
-      {:error, "Knowledge base is required for assistant creation"}
-    else
-      :ok
-    end
-  end
+  @spec resolve_optional_knowledge_base(map()) :: {:ok, KnowledgeBaseVersion.t() | nil}
+  defp resolve_optional_knowledge_base(%{knowledge_base_version_id: kb_id})
+       when not is_nil(kb_id),
+       do: KnowledgeBaseVersion.get_by_version_id(kb_id)
 
-  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t()) :: {:ok, map()}
+  defp resolve_optional_knowledge_base(_user_params), do: {:ok, nil}
+
+  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t() | nil) :: {:ok, map()}
   defp build_kaapi_config(user_params, knowledge_base_version) do
     prompt = user_params[:instructions] || "You are a helpful assistant"
     description = user_params[:description] || "Assistant configuration"
@@ -477,14 +473,14 @@ defmodule Glific.Assistants do
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
       description: description,
-      knowledge_base_ids: [knowledge_base_version.llm_service_id],
+      knowledge_base_ids: if(knowledge_base_version, do: [knowledge_base_version.llm_service_id], else: []),
       prompt: prompt
     }
 
     {:ok, config}
   end
 
-  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
+  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t() | nil) ::
           {:ok, map()} | {:error, any()}
   defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
     Multi.new()
@@ -501,15 +497,7 @@ defmodule Glific.Assistants do
         active_config_version_id: config_version.id
       })
     end)
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Repo.transaction()
     |> case do
       {:ok, %{assistant_with_active_config: assistant, config_version: config_version}} ->
@@ -518,6 +506,23 @@ defmodule Glific.Assistants do
       {:error, _failed, changeset, _changes} ->
         {:error, changeset}
     end
+  end
+
+  @spec maybe_link_knowledge_base(Multi.t(), KnowledgeBaseVersion.t() | nil, non_neg_integer()) ::
+          Multi.t()
+  defp maybe_link_knowledge_base(multi, nil, _organization_id), do: multi
+
+  defp maybe_link_knowledge_base(multi, knowledge_base_version, organization_id) do
+    Multi.insert_all(
+      multi,
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        organization_id
+      )
+    )
   end
 
   @spec build_knowledge_base_link(
@@ -570,8 +575,21 @@ defmodule Glific.Assistants do
     })
   end
 
-  @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
+  @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t() | nil) ::
           Ecto.Changeset.t()
+  defp build_config_version_changeset(assistant, kaapi_config, nil) do
+    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+      assistant_id: assistant.id,
+      description: kaapi_config.description,
+      prompt: kaapi_config.prompt,
+      model: kaapi_config.model,
+      provider: "openai",
+      settings: %{temperature: kaapi_config.temperature},
+      status: :ready,
+      organization_id: kaapi_config.organization_id
+    })
+  end
+
   defp build_config_version_changeset(assistant, kaapi_config, knowledge_base_version) do
     status =
       if knowledge_base_version.status == :completed,
