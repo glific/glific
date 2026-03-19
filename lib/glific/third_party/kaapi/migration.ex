@@ -167,7 +167,10 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
         {:error, :timeout}
 
       {:exit, reason} ->
-        Logger.error("KAAPI_MIGRATION_EXIT: Organization update exited with reason: #{inspect(reason)}")
+        Logger.error(
+          "KAAPI_MIGRATION_EXIT: Organization update exited with reason: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end)
   end

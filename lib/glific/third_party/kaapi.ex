@@ -384,7 +384,11 @@ defmodule Glific.ThirdParty.Kaapi do
 
   defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
        when status in 500..599,
-       do: %{success: false, error_type: "service_unavailable", reason: extract_error_message(body)}
+       do: %{
+         success: false,
+         error_type: "service_unavailable",
+         reason: extract_error_message(body)
+       }
 
   defp handle_kaapi_error({:error, %{status: _status, body: body}}, _org_id, _label, _fallback),
     do: %{success: false, error_type: classify_error(body), reason: extract_error_message(body)}
