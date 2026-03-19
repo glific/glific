@@ -7,6 +7,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   plug(:set_appsignal_namespace)
 
+  @stt_tts_webhook_names MapSet.new(["speech_to_text", "text_to_speech"])
+
   alias Glific.{
     Contacts,
     Dialogflow,
@@ -444,6 +446,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     webhook =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
       |> Jason.decode!()
+      |> maybe_filter_stt_tts_webhooks(conn.assigns[:organization_id])
 
     results = %{
       context: completion,
@@ -644,6 +647,17 @@ defmodule GlificWeb.Flows.FlowEditorController do
       end)
 
     json(conn, results)
+  end
+
+  # Filters out speech_to_text / text_to_speech webhook entries unless the
+  # :unified_stt_tts feature flag is enabled for the organisation.
+  @spec maybe_filter_stt_tts_webhooks(list(map()), non_neg_integer()) :: list(map())
+  defp maybe_filter_stt_tts_webhooks(webhooks, organization_id) do
+    if FunWithFlags.enabled?(:unified_stt_tts, for: %{organization_id: organization_id}) do
+      webhooks
+    else
+      Enum.reject(webhooks, &MapSet.member?(@stt_tts_webhook_names, &1["name"]))
+    end
   end
 
   @doc false
