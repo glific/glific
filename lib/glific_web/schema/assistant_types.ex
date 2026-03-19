@@ -79,6 +79,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :temperature, :float
     field :status, :string
     field :new_version_in_progress, :boolean
+    field :live_version_number, :integer
 
     field :vector_store, :vector_store do
       resolve(&Resolvers.Filesearch.resolve_vector_store/3)
@@ -198,6 +199,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :assistant_config_versions, list_of(:assistant_config_version) do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.list_assistant_config_versions/3)
+    end
+
+    @desc "Get a count of all assistants filtered by various criteria"
+    field :count_assistants, :integer do
+      arg(:filter, :assistant_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.count_assistants/3)
     end
 
     @desc "List models"

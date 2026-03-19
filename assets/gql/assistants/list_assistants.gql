@@ -6,6 +6,7 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
     temperature
     status
     new_version_in_progress
+    live_version_number
     vector_store {
       id
       knowledge_base_version_id
