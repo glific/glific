@@ -103,13 +103,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
   @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
   defp do_voice_flow_resume(organization_id, result, response) do
     organization = Partners.organization(organization_id)
-
-    voice_response =
-      CommonWebhook.voice_post_process(organization_id, result["success"], response)
-
-    if response["webhook_log_id"],
-      do: Webhook.update_log(response["webhook_log_id"], voice_response)
-
     response_key = response["result_name"] || "response"
 
     message =
@@ -123,6 +116,12 @@ defmodule GlificWeb.Flows.FlowResumeController do
              id: response["contact_id"],
              organization_id: organization.id
            }) do
+      voice_response =
+        CommonWebhook.voice_post_process(organization_id, result["success"], response)
+
+      if response["webhook_log_id"],
+        do: Webhook.update_log(response["webhook_log_id"], voice_response)
+
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],

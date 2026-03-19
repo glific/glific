@@ -127,8 +127,8 @@ defmodule Glific.Clients.CommonWebhook do
 
         do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
 
-      _ ->
-        %{success: false, reason: "Speech to text failed"}
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
     end
   end
 
