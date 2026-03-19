@@ -52,6 +52,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   object :golden_qa do
     field :name, :string
+    field :dataset_id, :id
   end
 
   object :evaluation_result do

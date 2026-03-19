@@ -533,12 +533,12 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
       case result do
-        %{data: %{dataset_name: dataset_name}} ->
+        %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
           Logger.info(
             "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{inspect(result)}"
           )
 
-          {:ok, %{name: dataset_name}}
+          {:ok, %{name: dataset_name, dataset_id: dataset_id}}
 
         error ->
           Appsignal.send_error(
