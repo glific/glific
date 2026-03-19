@@ -90,8 +90,18 @@ defmodule GlificWeb.Flows.FlowResumeController do
         result
       ) do
     response = parse_callback_response(result)
+
+    Task.start(fn ->
+      Repo.put_process_state(organization_id)
+      do_voice_flow_resume(organization_id, result, response)
+    end)
+
+    json(conn, "")
+  end
+
+  @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
+  defp do_voice_flow_resume(organization_id, result, response) do
     organization = Partners.organization(organization_id)
-    Repo.put_process_state(organization.id)
 
     voice_response =
       CommonWebhook.voice_post_process(organization_id, result["success"], response)
@@ -120,7 +130,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       )
     end
 
-    json(conn, "")
+    :ok
   end
 
   # New format from unified-llm-call (/api/v1/llm/call):
