@@ -45,6 +45,12 @@ defmodule Glific.MessagesTest do
                 "messageId" => Faker.String.base64(36)
               })
           }
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/details"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{appDetails: %{name: "Glific42", id: "Glific42"}})
+          }
       end)
 
       :ok

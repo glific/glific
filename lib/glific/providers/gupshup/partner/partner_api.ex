@@ -99,19 +99,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Fetch Gupshup app details by orgId or Gupshup app name
+  Fetch Gupshup app details by orgId, Gupshup app name or Gupshup app ID
   """
-  @spec fetch_gupshup_app_details(non_neg_integer() | String.t()) :: map() | String.t()
+  @spec fetch_gupshup_app_details(non_neg_integer() | Keyword.t()) :: map() | String.t()
   def fetch_gupshup_app_details(org_id) when is_number(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
     gupshup_app_name = gupshup_secrets["app_name"]
-    do_fetch_app_details(gupshup_app_name)
+    fetch_app_details_by_app_name(gupshup_app_name)
   end
 
-  def fetch_gupshup_app_details(app_name) when is_binary(app_name) do
-    do_fetch_app_details(app_name)
-  end
+  def fetch_gupshup_app_details(app_name: app_name), do: fetch_app_details_by_app_name(app_name)
+  def fetch_gupshup_app_details(app_id: app_id), do: fetch_app_details_by_app_id(app_id)
 
   @doc """
   Enable template messaging for an app.
@@ -570,8 +569,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     "template-asset-#{media_name}.#{file_format}"
   end
 
-  @spec do_fetch_app_details(String.t()) :: map() | String.t()
-  defp do_fetch_app_details(app_name) do
+  @spec fetch_app_details_by_app_name(String.t()) :: map() | String.t()
+  defp fetch_app_details_by_app_name(app_name) do
     with {:ok, %{"partnerAppsList" => list}} <-
            get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token),
          [app | _] <- Enum.filter(list, fn app -> app["name"] == app_name end) do
@@ -586,6 +585,25 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       _ ->
         "Invalid Gupshup App"
+    end
+  end
+
+  @spec fetch_app_details_by_app_id(String.t()) :: map() | String.t()
+  defp fetch_app_details_by_app_id(app_id) do
+    url = @app_url <> app_id <> "/details"
+
+    url
+    |> get_request(token_type: :partner_token)
+    |> case do
+      {:ok, %{"appDetails" => app_details}} ->
+        app_details
+
+      {:error, error} ->
+        Glific.log_exception(%Error{
+          message: "Fetching app details for app #{app_id} failed due to #{error}"
+        })
+
+        "Fetching app details failed, please double check App name, App ID and API key are correct"
     end
   end
 end

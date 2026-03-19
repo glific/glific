@@ -375,7 +375,7 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_app(map(), String.t()) :: map()
   defp validate_app(result, app_name) do
-    case PartnerAPI.fetch_gupshup_app_details(app_name) do
+    case PartnerAPI.fetch_gupshup_app_details(app_name: app_name) do
       resp when is_map(resp) -> result
       _ -> error("Invalid Gupshup App", result, :app_name)
     end

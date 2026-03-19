@@ -31,7 +31,6 @@ defmodule Glific.Partners do
     Providers.Maytapi.WAWorker,
     Repo,
     RepoReplica,
-    Saas.Queries,
     Settings.Language,
     Stats,
     Users.User
@@ -1031,8 +1030,7 @@ defmodule Glific.Partners do
     result =
       if valid_bsp?(credential) do
         update_organization(organization, %{bsp_id: credential.provider.id})
-        Queries.sync_templates(%{organization: organization})
-        {:ok, credential}
+        verify_gupshup_credentials(credential, organization)
       else
         Glific.Metrics.increment("Gupshup Credential Update Failed")
         {:error, "App Name and API Key and App ID can't be empty"}
@@ -1077,6 +1075,47 @@ defmodule Glific.Partners do
   end
 
   defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
+
+  @doc """
+  Verify BSP credentials and update the organization cache.
+  """
+  @spec verify_gupshup_credentials(Credential.t(), Organization.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def verify_gupshup_credentials(credential, org) do
+    %{secrets: %{"app_id" => app_id, "app_name" => app_name}} = credential
+
+    case PartnerAPI.fetch_gupshup_app_details(app_id: app_id) do
+      %{"name" => ^app_name, "id" => ^app_id} ->
+        remove_organization_cache(org.id, org.shortcode)
+
+        Repo.put_process_state(org.id)
+        PartnerAPI.apply_gupshup_settings(org.id)
+        {:ok, credential}
+
+      %{"name" => _, "id" => _} ->
+        Glific.Metrics.increment("Gupshup Credential Update Failed")
+        reset_gupshup_secrets(credential, org)
+        {:error, "App Name and/or App ID invalid"}
+
+      error ->
+        Glific.Metrics.increment("Gupshup Credential Update Failed")
+        reset_gupshup_secrets(credential, org)
+        {:error, error}
+    end
+  end
+
+  @spec reset_gupshup_secrets(Credential.t(), Organization.t()) ::
+          {:ok, Credential.t()} | {:error, any()}
+  defp reset_gupshup_secrets(bsp_cred, org) do
+    updated_secrets =
+      Map.merge(bsp_cred.secrets, %{"app_id" => "NA", "app_name" => "NA", "api_key" => "NA"})
+
+    attrs = %{secrets: updated_secrets, organization_id: org.id}
+
+    bsp_cred
+    |> Credential.changeset(attrs)
+    |> Repo.update()
+  end
 
   @doc """
   Removing organization and service cache

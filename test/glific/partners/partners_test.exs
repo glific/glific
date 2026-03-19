@@ -979,16 +979,24 @@ defmodule Glific.PartnersTest do
       assert "updated_user_id" == updated_credential.secrets["user_id"]
     end
 
-    test "update_credential/2 for gupshup should update credentials",
+    test "update_credential/2 for gupshup should update credentials and apply gupshup settings",
          %{organization_id: organization_id} = _attrs do
-      # Validates that the verify_otp template is submitted
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
 
+        # Validates that the app details are fetched
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/details"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: Jason.encode!(%{appDetails: %{name: "some_app", id: "some_id"}})
+           }}
+
         %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
 
+        # Validates that the verify_otp template is submitted
         %{
           method: :post,
           url: "https://partner.gupshup.io/partner/app/some_id/templates",
@@ -1001,6 +1009,14 @@ defmodule Glific.PartnersTest do
                body: Jason.encode!(%{template: %{id: Ecto.UUID.generate()}})
              }}
           end
+
+        # Validates that template messaging is enabled
+        %{method: :put, url: "https://partner.gupshup.io/partner/app/some_id/appPreference"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        # Validates that the subscription is set
+        %{method: :post, url: "https://partner.gupshup.io/partner/app/some_id/subscription"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{status: "success"})}}
       end)
 
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
@@ -1019,6 +1035,91 @@ defmodule Glific.PartnersTest do
       assert "some_app" == updated_credential.secrets["app_name"]
       assert "some_id" == updated_credential.secrets["app_id"]
       assert "some_key" == updated_credential.secrets["api_key"]
+    end
+
+    test "update_credential/2 for gupshup with mismatched App Name and App ID should give proper error" <>
+           "should give proper error and reset secrets",
+         %{organization_id: organization_id} = _attrs do
+      # Validates that the verify_otp template is submitted
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/details"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: Jason.encode!(%{appDetails: %{name: "different_app", id: "some_id"}})
+           }}
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
+        organization_id: organization_id
+      }
+
+      {:error, "App Name and/or App ID invalid"} =
+        Partners.update_credential(credential, valid_update_attrs)
+
+      assert {:ok, %Credential{} = updated_credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      assert "NA" == updated_credential.secrets["app_name"]
+      assert "NA" == updated_credential.secrets["app_id"]
+      assert "NA" == updated_credential.secrets["api_key"]
+    end
+
+    test "update_credential/2 for gupshup with invalid App ID should give proper error" <>
+           "should give proper error and reset secrets",
+         %{organization_id: organization_id} = _attrs do
+      # Validates that the verify_otp template is submitted
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/token"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/some_id/details"} ->
+          {:ok,
+           %Tesla.Env{
+             status: 422,
+             body: Jason.encode!(%{success: false, message: "Invalid App ID"})
+           }}
+
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+      end)
+
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      valid_update_attrs = %{
+        keys: %{},
+        shortcode: provider.shortcode,
+        secrets: %{"app_name" => "some_app", "api_key" => "some_key", "app_id" => "some_id"},
+        organization_id: organization_id
+      }
+
+      {:error,
+       "Fetching app details failed, please double check App name, App ID and API key are correct"} =
+        Partners.update_credential(credential, valid_update_attrs)
+
+      assert {:ok, %Credential{} = updated_credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      assert "NA" == updated_credential.secrets["app_name"]
+      assert "NA" == updated_credential.secrets["app_id"]
+      assert "NA" == updated_credential.secrets["api_key"]
     end
 
     test "update_credential/2 for gupshup with empty creds, should error out",
@@ -1045,6 +1146,12 @@ defmodule Glific.PartnersTest do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/test_app_id/token"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
+
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/test_app_id/details"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"appDetails" => %{"name" => "test_app", "id" => "test_app_id"}})
+          }
 
         %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
           {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{success: true})}}
