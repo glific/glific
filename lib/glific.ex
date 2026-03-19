@@ -486,6 +486,14 @@ defmodule Glific do
   end
 
   @doc """
+  Get default Google Gemini API key (used for Kaapi TTS/STT and other Google services)
+  """
+  @spec get_google_api_key() :: String.t() | nil
+  def get_google_api_key do
+    Application.fetch_env!(:glific, :gemini_api_key)
+  end
+
+  @doc """
   Get default Google Translate key
   """
   @spec get_google_translate_key() :: String.t()

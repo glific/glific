@@ -6,7 +6,15 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Contacts.Contact, Flows.FlowContext, Flows.Webhook, Messages, Partners, Repo}
+  alias Glific.{
+    Contacts.Contact,
+    Flows.FlowContext,
+    Flows.Webhook,
+    GCS.GcsWorker,
+    Messages,
+    Partners,
+    Repo
+  }
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -16,7 +24,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = parse_callback_response(result)
+    response = result |> parse_callback_response() |> maybe_upload_tts_audio()
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
@@ -25,6 +33,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
       %{
         success: result["success"],
         message: response["message"] || result["error"],
+        error_type: result["error_type"],
+        reason: result["reason"],
         thread_id: response["thread_id"]
       }
 
@@ -48,6 +58,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
           nil
       end
 
+    track_kaapi_latency(response)
+
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
@@ -69,16 +81,20 @@ defmodule GlificWeb.Flows.FlowResumeController do
   # New format from unified-llm-call (/api/v1/llm/call):
   # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
   # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
+  # For TTS (output type "audio"), "message" holds the raw base64 and "output_type" is set
+  # so that maybe_upload_tts_audio/1 can upload it to GCS and replace "message" with the media URL.
   @spec parse_callback_response(map()) :: map()
   defp parse_callback_response(%{"metadata" => metadata, "data" => data})
        when is_map(metadata) and map_size(metadata) > 0 do
     response_data = get_in(data || %{}, ["response"]) || %{}
-    message_text = get_in(response_data, ["output", "content", "value"])
+    output = get_in(response_data, ["output"]) || %{}
+    output_type = get_in(output, ["type"])
     conversation_id = response_data["conversation_id"]
 
     metadata
-    |> Map.put("message", message_text)
     |> Map.put("thread_id", conversation_id)
+    |> Map.put("output_type", output_type)
+    |> Map.put("message", get_in(output, ["content", "value"]))
   end
 
   # Old format from call_and_wait (/api/v1/responses):
@@ -95,6 +111,51 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     %{}
   end
+
+  @spec maybe_upload_tts_audio(map()) :: map()
+  defp maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
+    {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
+    media_url = upload_tts_audio(base64_audio, organization_id)
+
+    response
+    |> Map.put("message", media_url)
+  end
+
+  defp maybe_upload_tts_audio(response), do: response
+
+  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) :: String.t() | nil
+  defp upload_tts_audio(nil, _organization_id), do: nil
+
+  defp upload_tts_audio(base64_audio, organization_id) do
+    uuid = Ecto.UUID.generate()
+    remote_name = "Kaapi/outbound/#{uuid}.mp3"
+    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
+
+    with {:ok, decoded_audio} <- Base.decode64(base64_audio),
+         :ok <- File.write(mp3_file, decoded_audio),
+         {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
+      File.rm(mp3_file)
+      media_meta.url
+    else
+      error ->
+        File.rm(mp3_file)
+        Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
+        nil
+    end
+  end
+
+  @spec track_kaapi_latency(map()) :: :ok
+  defp track_kaapi_latency(%{"timestamp" => timestamp, "call_type" => call_type})
+       when is_integer(timestamp) do
+    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    duration_ms = (now - timestamp) / 1_000
+
+    Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
+      call_type: call_type
+    })
+  end
+
+  defp track_kaapi_latency(_response), do: :ok
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do

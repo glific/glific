@@ -12,6 +12,11 @@ defmodule Glific.Flows.Webhook do
   alias Glific.Messages.Message
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.SttTtsWorker
+
+  @webhook_unified_llm "unified-llm-call"
+  @webhook_speech_to_text "speech_to_text"
+  @webhook_text_to_speech "text_to_speech"
 
   use Oban.Worker,
     queue: :webhook,
@@ -39,6 +44,8 @@ defmodule Glific.Flows.Webhook do
     "parse_via_chat_gpt",
     "filesearch-gpt",
     "voice-filesearch-gpt",
+    "speech_to_text",
+    "text_to_speech",
     "speech_to_text_with_bhasini",
     "nmt_tts_with_bhasini",
     "call_and_wait"
@@ -69,6 +76,81 @@ defmodule Glific.Flows.Webhook do
   end
 
   @doc """
+  Execute a Kaapi STT webhook (async — flow waits for callback via flow_resume).
+
+  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
+  that enforces per-organization rate limiting before calling Kaapi.
+  """
+  @spec execute_kaapi_stt(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_kaapi_stt(action, context) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, _secrets} ->
+        enqueue_stt_tts_job(action, context, @webhook_speech_to_text)
+
+      {:error, _reason} ->
+        unified_llm_and_wait(action, context, false, @webhook_speech_to_text)
+    end
+  end
+
+  @doc """
+  Execute a Kaapi TTS webhook (async — flow waits for callback via flow_resume).
+
+  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
+  that enforces per-organization rate limiting before calling Kaapi.
+  """
+  @spec execute_kaapi_tts(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_kaapi_tts(action, context) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, _secrets} ->
+        enqueue_stt_tts_job(action, context, @webhook_text_to_speech)
+
+      {:error, _reason} ->
+        unified_llm_and_wait(action, context, false, @webhook_text_to_speech)
+    end
+  end
+
+  @spec enqueue_stt_tts_job(Action.t(), FlowContext.t(), String.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  defp enqueue_stt_tts_job(action, context, webhook_name) do
+    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
+
+    case create_body(context, action.body) do
+      {:error, message} ->
+        webhook_log = create_log(action, %{}, action.headers, context)
+        update_log(webhook_log, message)
+        {:ok, context, [failure_message]}
+
+      {fields, _body} ->
+        webhook_log = create_log(action, fields, action.headers, context)
+
+        fields =
+          fields
+          |> Map.put("webhook_log_id", webhook_log.id)
+          |> Map.put("result_name", action.result_name)
+          |> Map.put("flow_id", context.flow_id)
+          |> Map.put("contact_id", context.contact_id)
+
+        case SttTtsWorker.enqueue(
+               webhook_name,
+               fields,
+               webhook_log.id,
+               context.id,
+               context.organization_id
+             ) do
+          {:ok, _job} ->
+            wait_time = action.wait_time || 60
+            update_context_for_wait(context, wait_time)
+
+          {:error, changeset} ->
+            update_log(webhook_log.id, inspect(changeset))
+            {:ok, context, [failure_message]}
+        end
+    end
+  end
+
+  @doc """
   Execute a filesearch webhook routed through the unified LLM API (/api/v1/llm/call).
   """
   @spec execute_unified_filesearch(Action.t(), FlowContext.t()) ::
@@ -78,28 +160,10 @@ defmodule Glific.Flows.Webhook do
          api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
       updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
       updated_action = %{action | headers: updated_headers}
-      unified_llm_and_wait(updated_action, context, true)
+      unified_llm_and_wait(updated_action, context, true, @webhook_unified_llm)
     else
       {:error, _error} ->
-        unified_llm_and_wait(action, context, false)
-    end
-  end
-
-  @doc """
-  Execute a voice filesearch webhook via unified LLM API.
-  STT, LLM call, and NMT+TTS.
-  """
-  @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def execute_unified_voice_filesearch(action, context) do
-    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
-         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
-      updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
-      updated_action = %{action | headers: updated_headers}
-      voice_unified_llm_and_wait(updated_action, context)
-    else
-      {:error, _error} ->
-        unified_llm_and_wait(action, context, false)
+        unified_llm_and_wait(action, context, false, @webhook_unified_llm)
     end
   end
 
@@ -507,9 +571,9 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for the unified LLM API to send a response.
   """
-  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean()) ::
+  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, false) do
+  def unified_llm_and_wait(action, context, false, _webhook_name) do
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
     webhook_log = create_log(action, %{}, action.headers, context)
     update_log(webhook_log.id, "Kaapi is not active")
@@ -525,7 +589,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, context, [failure_message]}
   end
 
-  def unified_llm_and_wait(action, context, true) do
+  def unified_llm_and_wait(action, context, true, webhook_name) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -547,13 +611,13 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        do_unified_llm_and_wait(params, failure_message)
+        do_unified_llm_and_wait(params, failure_message, webhook_name)
     end
   end
 
   @spec do_unified_llm_and_wait(map(), Message.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_unified_llm_and_wait(params, failure_message, webhook_type \\ "unified-llm-call") do
+  defp do_unified_llm_and_wait(params, failure_message, webhook_name) do
     webhook_log_id = params.webhook_log.id
 
     fields =
@@ -568,27 +632,29 @@ defmodule Glific.Flows.Webhook do
       |> add_signature(params.context.organization_id, params.body)
       |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    process_unified_llm_call(
-      %{
-        webhook_log_id: webhook_log_id,
-        fields: fields,
-        headers: headers,
-        action: params.action,
-        context: params.context,
-        failure_message: failure_message
-      },
-      webhook_type
-    )
+    process_unified_llm_call(%{
+      webhook_log_id: webhook_log_id,
+      fields: fields,
+      headers: headers,
+      action: params.action,
+      context: params.context,
+      failure_message: failure_message,
+      webhook_name: webhook_name
+    })
   end
 
   @spec process_unified_llm_call(map(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_unified_llm_call(params, webhook_type) do
-    response = CommonWebhook.webhook(webhook_type, params.fields, params.headers)
+  defp process_unified_llm_call(params) do
+    response = CommonWebhook.webhook(params.webhook_name, params.fields, params.headers)
 
     case response do
       %{success: true, data: data} ->
         update_log(params.webhook_log_id, data)
+        wait_time = params.action.wait_time || 60
+        update_context_for_wait(params.context, wait_time)
+
+      %{success: true} ->
         wait_time = params.action.wait_time || 60
         update_context_for_wait(params.context, wait_time)
 
