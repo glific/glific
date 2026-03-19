@@ -3,8 +3,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   API Client for Kaapi Integration.
   """
 
-  require Logger
-
   # client with runtime config (API key / base URL).
   defp client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
