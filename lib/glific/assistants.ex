@@ -347,7 +347,7 @@ defmodule Glific.Assistants do
           KnowledgeBaseVersion.t(),
           boolean()
         ) ::
-          {:ok, map()} | {:error, any()}
+          {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
   defp update_assistant_transaction(
          assistant,
          kaapi_config,
@@ -446,7 +446,7 @@ defmodule Glific.Assistants do
   end
 
   @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
-          {:ok, map()} | {:error, any()}
+          {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
   defp handle_update_transaction_result(result) do
     case result do
       {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
