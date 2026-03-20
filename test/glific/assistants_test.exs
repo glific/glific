@@ -1085,7 +1085,7 @@ defmodule Glific.AssistantsTest do
           knowledge_base_id: kb.id,
           organization_id: organization_id,
           files: %{},
-          status: :completed,
+          status: :in_progress,
           llm_service_id: "vs_test_123",
           size: 0
         })
@@ -1164,7 +1164,7 @@ defmodule Glific.AssistantsTest do
           knowledge_base_id: kb.id,
           organization_id: organization_id,
           files: %{},
-          status: :completed,
+          status: :in_progress,
           llm_service_id: "vs_defaults_test",
           size: 0
         })
@@ -1287,7 +1287,7 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
       end)
 
-      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+      assert {:error, reason} =
                Assistants.create_assistant(%{
                  name: "Fail Kaapi Assistant",
                  model: "gpt-4o",
@@ -1297,14 +1297,20 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-      assert is_nil(updated_assistant.kaapi_uuid)
+      assert reason =~ "Deferred Kaapi config creation failed"
+
+      assistant =
+        Repo.one(from a in Assistant, where: a.name == "Fail Kaapi Assistant", limit: 1)
+
+      assert is_nil(assistant.kaapi_uuid)
 
       {:ok, updated_cv} =
-        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+        Repo.fetch(AssistantConfigVersion, assistant.active_config_version_id,
+          skip_organization_id: true
+        )
 
       assert updated_cv.status == :failed
-      assert updated_cv.failure_reason =~ "Kaapi config creation failed"
+      assert updated_cv.failure_reason =~ "Deferred Kaapi config creation failed"
     end
   end
 

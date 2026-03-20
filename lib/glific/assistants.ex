@@ -237,16 +237,9 @@ defmodule Glific.Assistants do
          {:ok, knowledge_base_version} <-
            KnowledgeBaseVersion.get_by_version_id(user_params[:knowledge_base_version_id]),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
-         {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
+         {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version),
+         {:ok, _config_version} <- maybe_register_with_kaapi(result, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
-
-      # If the knowledge base is already completed (callback arrived before assistant creation),
-      # register the config with Kaapi immediately since the deferred flow won't trigger.
-      if knowledge_base_version.status == :completed do
-        config_version = Repo.preload(result.config_version, :assistant)
-        create_deferred_kaapi_config(config_version, knowledge_base_version)
-      end
-
       {:ok, result}
     end
   end
@@ -481,6 +474,18 @@ defmodule Glific.Assistants do
     {:ok, config}
   end
 
+  # If the KB is already completed (callback arrived before assistant creation),
+  # register the config with Kaapi immediately since the deferred flow won't trigger.
+  @spec maybe_register_with_kaapi(map(), KnowledgeBaseVersion.t()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp maybe_register_with_kaapi(result, %{status: :completed} = knowledge_base_version) do
+    config_version = Repo.preload(result.config_version, :assistant)
+    create_deferred_kaapi_config(config_version, knowledge_base_version)
+  end
+
+  defp maybe_register_with_kaapi(result, _knowledge_base_version),
+    do: {:ok, result.config_version}
+
   @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
           {:ok, map()} | {:error, any()}
   defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
@@ -570,9 +575,11 @@ defmodule Glific.Assistants do
   @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
           Ecto.Changeset.t()
   defp build_config_version_changeset(assistant, kaapi_config, knowledge_base_version) do
+    # Config version starts as :in_progress when KB is completed because Kaapi
+    # registration hasn't happened yet. create_deferred_kaapi_config sets :ready on success.
     status =
       if knowledge_base_version.status == :completed,
-        do: :ready,
+        do: :in_progress,
         else: knowledge_base_version.status
 
     AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
@@ -867,13 +874,15 @@ defmodule Glific.Assistants do
     case deferred do
       [config_version] ->
         create_deferred_kaapi_config(config_version, knowledge_base_version)
+        :ok
 
       _ ->
         :ok
     end
   end
 
-  @spec create_deferred_kaapi_config(AssistantConfigVersion.t(), KnowledgeBaseVersion.t()) :: :ok
+  @spec create_deferred_kaapi_config(AssistantConfigVersion.t(), KnowledgeBaseVersion.t()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
   defp create_deferred_kaapi_config(config_version, knowledge_base_version) do
     assistant = config_version.assistant
 
@@ -909,6 +918,8 @@ defmodule Glific.Assistants do
             failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
           })
           |> Repo.update()
+
+          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
       end
     else
       case Kaapi.create_config_version(
@@ -936,10 +947,10 @@ defmodule Glific.Assistants do
             failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
           })
           |> Repo.update()
+
+          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
       end
     end
-
-    :ok
   end
 
   # Private
