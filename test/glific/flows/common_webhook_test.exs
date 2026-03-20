@@ -1291,7 +1291,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       result =
         CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
 
-      assert result == %{success: false, reason: "Speech to text failed"}
+      assert result == %{success: false, reason: "File download failed"}
     end
 
     test "uses /kaapi/voice_flow_resume callback path and includes voice metadata" do

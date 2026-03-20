@@ -9,7 +9,6 @@ defmodule Glific.Flows.ActionTest do
     Fixtures,
     Flows,
     Flows.ContactField,
-    Flows.Webhook,
     Groups,
     Groups.ContactGroup,
     Partners,
@@ -25,6 +24,7 @@ defmodule Glific.Flows.ActionTest do
     Flow,
     FlowContext,
     Node,
+    Webhook,
     WebhookLog
   }
 
