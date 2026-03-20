@@ -279,14 +279,15 @@ defmodule Glific.Assistants do
           format_assistant_result(assistant)
         else
           false ->
-            with {:ok, updated_assistant} <-
+            with {:ok, updated_assistant, config_version} <-
                    update_assistant_transaction(
                      assistant,
                      config_params,
                      knowledge_base_version,
                      needs_active_config_link
                    ),
-                 {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
+                 {:ok, _} <-
+                   create_kaapi_config_version(updated_assistant, config_version, config_params) do
               format_assistant_result(updated_assistant)
             end
 
@@ -412,21 +413,34 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec create_kaapi_config_version(Assistant.t(), map()) ::
-          {:ok, String.t()} | {:error, any()}
-  defp create_kaapi_config_version(%{kaapi_uuid: nil}, _kaapi_config),
+  @spec create_kaapi_config_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp create_kaapi_config_version(%{kaapi_uuid: nil}, _config_version, _kaapi_config),
     do: {:error, "Assistant setup is still in progress"}
 
-  defp create_kaapi_config_version(assistant, kaapi_config) do
+  defp create_kaapi_config_version(assistant, config_version, kaapi_config) do
     case Kaapi.create_config_version(
            assistant.kaapi_uuid,
            kaapi_config,
            kaapi_config.organization_id
          ) do
-      {:ok, kaapi_response} ->
-        {:ok, kaapi_response.data.id}
+      {:ok, _kaapi_response} ->
+        config_version
+        |> AssistantConfigVersion.changeset(%{status: :ready})
+        |> Repo.update()
 
       {:error, reason} ->
+        Logger.error(
+          "Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
+
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Kaapi config version creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
+
         {:error, reason}
     end
   end
@@ -435,8 +449,8 @@ defmodule Glific.Assistants do
           {:ok, map()} | {:error, any()}
   defp handle_update_transaction_result(result) do
     case result do
-      {:ok, %{updated_assistant: assistant}} ->
-        {:ok, assistant}
+      {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
+        {:ok, assistant, config_version}
 
       {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
         {:error, changeset}
@@ -576,7 +590,8 @@ defmodule Glific.Assistants do
           Ecto.Changeset.t()
   defp build_config_version_changeset(assistant, kaapi_config, knowledge_base_version) do
     # Config version starts as :in_progress when KB is completed because Kaapi
-    # registration hasn't happened yet. create_deferred_kaapi_config sets :ready on success.
+    # registration hasn't happened yet. The Kaapi call (create_deferred_kaapi_config
+    # or create_kaapi_config_version) sets :ready on success, :failed on failure.
     status =
       if knowledge_base_version.status == :completed,
         do: :in_progress,
