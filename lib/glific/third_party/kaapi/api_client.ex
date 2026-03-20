@@ -3,8 +3,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   API Client for Kaapi Integration.
   """
 
-  require Logger
-
   # client with runtime config (API key / base URL).
   defp client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
@@ -17,6 +15,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         Tesla.Middleware.KeepRequest,
         Tesla.Middleware.PathParams,
+        {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
     )

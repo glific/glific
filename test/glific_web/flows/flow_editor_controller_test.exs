@@ -325,10 +325,147 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert json_response(conn, 200)["results"] != []
     end
 
-    test "completion", %{conn: conn, access_token: token} do
+    test "completion with unified_stt_tts flag disabled excludes stt/tts webhooks",
+         %{conn: conn, access_token: token} do
+      organization_id = conn.assigns[:organization_id]
+
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
       conn =
         get_auth_token(conn, token)
         |> get("/flow-editor/completion", %{})
+
+      webhook_names =
+        json_response(conn, 200)["webhook"]
+        |> Enum.map(& &1["name"])
+
+      refute "speech_to_text" in webhook_names
+      refute "text_to_speech" in webhook_names
+    end
+
+    test "completion with unified_stt_tts flag enabled includes stt/tts webhooks",
+         %{conn: conn, access_token: token} do
+      organization_id = conn.assigns[:organization_id]
+
+      FunWithFlags.enable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+
+      webhook_names =
+        json_response(conn, 200)["webhook"]
+        |> Enum.map(& &1["name"])
+
+      assert "speech_to_text" in webhook_names
+      assert "text_to_speech" in webhook_names
+
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "completion without unified_stt_tts flag set defaults to excluding stt/tts webhooks",
+         %{conn: conn, access_token: token} do
+      FunWithFlags.clear(:unified_stt_tts)
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+
+      webhook_names =
+        json_response(conn, 200)["webhook"]
+        |> Enum.map(& &1["name"])
+
+      refute "speech_to_text" in webhook_names
+      refute "text_to_speech" in webhook_names
+    end
+
+    test "completion returns non-stt/tts webhooks regardless of flag state",
+         %{conn: conn, access_token: token} do
+      organization_id = conn.assigns[:organization_id]
+
+      all_webhooks =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
+        |> Jason.decode!()
+
+      non_stt_tts_names =
+        all_webhooks
+        |> Enum.map(& &1["name"])
+        |> Enum.reject(&(&1 in ["speech_to_text", "text_to_speech"]))
+
+      # Flag disabled
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      resp_disabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      disabled_names = Enum.map(resp_disabled["webhook"], & &1["name"])
+      assert Enum.all?(non_stt_tts_names, &(&1 in disabled_names))
+
+      # Flag enabled
+      FunWithFlags.enable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      resp_enabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      enabled_names = Enum.map(resp_enabled["webhook"], & &1["name"])
+      assert Enum.all?(non_stt_tts_names, &(&1 in enabled_names))
+
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "completion webhook count matches expectation based on flag state",
+         %{conn: conn, access_token: token} do
+      organization_id = conn.assigns[:organization_id]
+
+      all_webhook_count =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
+        |> Jason.decode!()
+        |> length()
+
+      # Flag enabled — full list
+      FunWithFlags.enable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      resp_enabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      assert length(resp_enabled["webhook"]) == all_webhook_count
+
+      # Flag disabled — minus 2
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      resp_disabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      assert length(resp_disabled["webhook"]) == all_webhook_count - 2
+    end
+
+    test "completion context and functions keys unchanged regardless of flag",
+         %{conn: conn, access_token: token} do
+      organization_id = conn.assigns[:organization_id]
 
       completion =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
@@ -338,15 +475,35 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
         |> Jason.decode!()
 
-      webhook =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/webhook.json"))
-        |> Jason.decode!()
+      # Flag disabled
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
 
-      assert json_response(conn, 200) == %{
-               "context" => completion,
-               "functions" => functions,
-               "webhook" => webhook
-             }
+      resp_disabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      assert resp_disabled["context"] == completion
+      assert resp_disabled["functions"] == functions
+
+      # Flag enabled
+      FunWithFlags.enable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      resp_enabled =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
+        |> json_response(200)
+
+      assert resp_enabled["context"] == completion
+      assert resp_enabled["functions"] == functions
+
+      FunWithFlags.disable(:unified_stt_tts,
+        for_actor: %{organization_id: organization_id}
+      )
     end
 
     test "activity", %{conn: conn, access_token: token} do
