@@ -49,6 +49,12 @@ defmodule Glific.FilesearchTest do
   )
 
   load_gql(
+    :count_assistants,
+    GlificWeb.Schema,
+    "assets/gql/assistants/count_assistants.gql"
+  )
+
+  load_gql(
     :list_models,
     GlificWeb.Schema,
     "assets/gql/filesearch/list_models.gql"
@@ -254,6 +260,11 @@ defmodule Glific.FilesearchTest do
 
     assert length(result.data["Assistants"]) == 2
 
+    # live_version_number is nil when version_number not set on config version
+    assert Enum.all?(result.data["Assistants"], fn a ->
+             Map.has_key?(a, "live_version_number")
+           end)
+
     # limit 1
     {:ok, result} =
       auth_query_gql_by(:assistants, attrs.user,
@@ -317,6 +328,35 @@ defmodule Glific.FilesearchTest do
       )
 
     assert %{"name" => "new assistant 3"} = List.first(result.data["Assistants"])
+  end
+
+  test "count assistants", attrs do
+    {:ok, result} = auth_query_gql_by(:count_assistants, attrs.user, variables: %{})
+    assert result.data["countAssistants"] == 0
+
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "assistant A",
+      kaapi_uuid: "asst_count_1",
+      kb_name: "KB count 1"
+    })
+
+    create_unified_assistant(%{
+      organization_id: attrs.organization_id,
+      name: "assistant B",
+      kaapi_uuid: "asst_count_2",
+      kb_name: "KB count 2"
+    })
+
+    {:ok, result} = auth_query_gql_by(:count_assistants, attrs.user, variables: %{})
+    assert result.data["countAssistants"] == 2
+
+    {:ok, result} =
+      auth_query_gql_by(:count_assistants, attrs.user,
+        variables: %{"filter" => %{"name" => "assistant A"}}
+      )
+
+    assert result.data["countAssistants"] == 1
   end
 
   test "list_models, success api response", attrs do
