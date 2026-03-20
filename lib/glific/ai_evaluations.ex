@@ -43,9 +43,6 @@ defmodule Glific.AIEvaluations do
 
       {:name, name}, query ->
         where(query, [e], ilike(e.name, ^"%#{name}%"))
-
-      _, query ->
-        query
     end)
   end
 end

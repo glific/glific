@@ -1,0 +1,3 @@
+query countAiEvaluations($filter: AiEvaluationFilter) {
+  countAiEvaluations(filter: $filter)
+}
