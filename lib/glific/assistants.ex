@@ -90,6 +90,16 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Counts assistants filtered by the given args.
+  """
+  @spec count_assistants(map()) :: integer()
+  def count_assistants(args) do
+    args
+    |> Repo.list_filter_query(Assistant, nil, &Repo.filter_with/2)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Gets a single assistant from the unified API tables, transformed to legacy shape.
   """
   @spec get_assistant(integer()) :: {:ok, map()} | {:error, any()}
@@ -143,6 +153,7 @@ defmodule Glific.Assistants do
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
+      live_version_number: active_config_version.version_number,
       vector_store_data: build_vector_store_data(active_config_version),
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
