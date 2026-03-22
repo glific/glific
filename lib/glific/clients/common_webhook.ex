@@ -678,13 +678,13 @@ defmodule Glific.Clients.CommonWebhook do
              organization_id: organization_id
            }),
          assistant <- Repo.preload(assistant, :active_config_version),
-         %{version_number: version_number} <- assistant.active_config_version do
-      if is_nil(assistant.kaapi_uuid) do
-        {:error, "Assistant is still being set up"}
-      else
-        {:ok, {assistant.kaapi_uuid, version_number}}
-      end
+         %{kaapi_version: kaapi_version} <- assistant.active_config_version,
+         {:ok, kaapi_uuid} <- fetch_kaapi_uuid(assistant) do
+      {:ok, {kaapi_uuid, kaapi_version}}
     else
+      {:error, :missing_kaapi_uuid} ->
+        {:error, "Assistant is still being set up"}
+
       {:error, _} ->
         {:error, "Assistant not found: #{assistant_display_id}"}
 
@@ -692,6 +692,10 @@ defmodule Glific.Clients.CommonWebhook do
         {:error, "No active config version found for assistant #{assistant_display_id}"}
     end
   end
+
+  @spec fetch_kaapi_uuid(map()) :: map()
+  defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
+  defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
   @spec do_call_and_wait(map(), list()) :: map()
   defp do_call_and_wait(fields, headers) do

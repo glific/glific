@@ -126,6 +126,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :assistant_id, :id
     field :kaapi_uuid, :string
     field :version_number, :integer
+    field :kaapi_version, :integer
     field :description, :string
     field :prompt, :string
     field :provider, :string
