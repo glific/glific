@@ -244,11 +244,51 @@ defmodule Glific.Assistants do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(user_params) do
-    with {:ok, knowledge_base_version} <- resolve_optional_knowledge_base(user_params),
+    with {:ok, knowledge_base_version} <-
+           resolve_optional_knowledge_base(user_params) |> IO.inspect(label: "kb_version"),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
          {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
-      {:ok, result}
+
+      if is_nil(knowledge_base_version) do
+        with {:ok, updated_assistant} <-
+               create_kaapi_config_immediately(
+                 result.assistant,
+                 result.config_version,
+                 kaapi_config
+               ) do
+          {:ok, %{result | assistant: updated_assistant}}
+        end
+      else
+        {:ok, result}
+      end
+    end
+  end
+
+  @spec create_kaapi_config_immediately(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, Assistant.t()} | {:error, String.t()}
+  defp create_kaapi_config_immediately(assistant, config_version, kaapi_config) do
+    case Kaapi.create_assistant_config(kaapi_config, kaapi_config.organization_id) do
+      {:ok, kaapi_response} ->
+        config_version
+        |> AssistantConfigVersion.changeset(%{status: :ready})
+        |> Repo.update()
+
+        assistant
+        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
+        |> Repo.update()
+
+      {:error, error} ->
+        config_version
+        |> AssistantConfigVersion.changeset(%{status: :failed})
+        |> Repo.update()
+
+        Glific.log_exception(%Error{
+          message: "Kaapi config creation failed for assistant. Reason: #{inspect(error)}",
+          reason: inspect(error)
+        })
+
+        {:error, "Kaapi config creation failed for assistant, Reason: #{inspect(error)}"}
     end
   end
 
@@ -473,7 +513,8 @@ defmodule Glific.Assistants do
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
       description: description,
-      knowledge_base_ids: if(knowledge_base_version, do: [knowledge_base_version.llm_service_id], else: []),
+      knowledge_base_ids:
+        if(knowledge_base_version, do: [knowledge_base_version.llm_service_id], else: []),
       prompt: prompt
     }
 
@@ -585,7 +626,7 @@ defmodule Glific.Assistants do
       model: kaapi_config.model,
       provider: "openai",
       settings: %{temperature: kaapi_config.temperature},
-      status: :ready,
+      status: :in_progress,
       organization_id: kaapi_config.organization_id
     })
   end
