@@ -693,7 +693,7 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec fetch_kaapi_uuid(map()) :: map()
+  @spec fetch_kaapi_uuid(map()) :: {:ok, String.t()} | {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
