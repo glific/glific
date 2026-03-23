@@ -261,16 +261,14 @@ defmodule Glific.Assistants do
   """
   @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def clone_assistant(id) do
-    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}) do
-         assistant  = Repo.preload(assistant, active_config_version: :knowledge_base_versions)
-      active_config = assistant.active_config_version
-
-      AssistantCloneWorker.new(%{
-        assistant_id: assistant.id,
-        organization_id: assistant.organization_id
-      })
-      
-      %{message: "Assistant clone initiated"}
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         {:ok, _job} <-
+           AssistantCloneWorker.new(%{
+             assistant_id: assistant.id,
+             organization_id: assistant.organization_id
+           })
+           |> Oban.insert() do
+      {:ok, %{message: "Assistant clone initiated"}}
     end
   end
 

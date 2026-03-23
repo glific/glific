@@ -202,6 +202,43 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     {:ok, assistant}
   end
 
+  load_gql(
+    :clone_assistant,
+    GlificWeb.Schema,
+    "assets/gql/assistants/clone_assistant.gql"
+  )
+
+  describe "clone_assistant/3" do
+    setup :enable_kaapi
+
+    test "initiates clone for an existing assistant", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} = create_assistant_with_config_version(organization_id, "kaapi_clone_test")
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id}
+        )
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "returns error when assistant not found", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => -1}
+        )
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == nil
+      assert [%{"key" => _, "message" => "Resource not found"}] = result["errors"]
+    end
+  end
+
   defp enable_kaapi(%{organization_id: organization_id}) do
     Partners.create_credential(%{
       organization_id: organization_id,
