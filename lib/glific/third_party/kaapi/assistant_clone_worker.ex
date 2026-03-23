@@ -21,6 +21,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @base_url "https://api.openai.com/v1"
   @page_limit 100
+  @max_poll_duration_ms 20 * 60 * 1_000
+  @initial_backoff_ms 5_000
+  @max_backoff_ms 60_000
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
@@ -211,6 +214,69 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp upload_document(file, organization_id) do
     document_params = %{path: file, filename: Path.basename(file)}
     Kaapi.upload_document(document_params, organization_id)
+  end
+
+  @spec poll_kaapi_for_collection_status(String.t(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
+  defp poll_kaapi_for_collection_status(collection_job_id, organization_id) do
+    poll_kaapi_for_collection_status(
+      collection_job_id,
+      organization_id,
+      @initial_backoff_ms,
+      System.monotonic_time(:millisecond)
+    )
+  end
+
+  @spec poll_kaapi_for_collection_status(
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          integer()
+        ) :: :ok | {:error, String.t()}
+  defp poll_kaapi_for_collection_status(
+         collection_job_id,
+         organization_id,
+         backoff_ms,
+         start_time_ms
+       ) do
+    case Kaapi.get_collection_status(collection_job_id, organization_id) do
+      {:ok, "SUCCESFUL"} ->
+        Logger.info(
+          "AssistantCloneWorker: Collection #{collection_job_id} status is SUCCESFUL"
+        )
+
+        :ok
+
+      {:ok, status} ->
+        elapsed_ms = System.monotonic_time(:millisecond) - start_time_ms
+
+        if elapsed_ms + backoff_ms >= @max_poll_duration_ms do
+          Logger.error("AssistantCloneWorker: Polling timed out for collection #{collection_job_id}, last status: #{status}")
+
+          {:error, "Polling timed out after 20 minutes, last status: #{status}"}
+        else
+          Logger.info(
+            "AssistantCloneWorker: Collection #{collection_job_id} status: #{status}, retrying in #{backoff_ms}ms"
+          )
+
+          Process.sleep(backoff_ms)
+          next_backoff = min(backoff_ms * 2, @max_backoff_ms)
+
+          poll_kaapi_for_collection_status(
+            collection_job_id,
+            organization_id,
+            next_backoff,
+            start_time_ms
+          )
+        end
+
+      {:error, reason} ->
+        Logger.error(
+          "AssistantCloneWorker: Failed to get collection status for #{collection_job_id}: #{inspect(reason)}"
+        )
+
+        {:error, inspect(reason)}
+    end
   end
 
   defp auth_headers() do
