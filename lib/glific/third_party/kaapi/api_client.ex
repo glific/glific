@@ -223,11 +223,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       )
       |> add_optional_fields(params)
 
-    opts = [adapter: [recv_timeout: 60_000, pool: false, connect_timeout: 15_000]]
-
     org_api_key
-    |> client()
-    |> Tesla.post("/api/v1/documents/", multipart, opts: opts)
+    |> upload_client()
+    |> Tesla.post("/api/v1/documents/", multipart)
     |> parse_kaapi_response()
   end
 
@@ -300,6 +298,24 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   defp parse_kaapi_response(error) do
     if {:error, :timeout} == error, do: Glific.Metrics.increment("Kaapi Timedout")
     error
+  end
+
+  defp upload_client(api_key) do
+    Glific.Metrics.increment("Kaapi Requests")
+    base_url = kaapi_config(:kaapi_endpoint)
+
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, base_url},
+        {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
+        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        Tesla.Middleware.KeepRequest,
+        Tesla.Middleware.PathParams,
+        {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
+      ],
+      {Tesla.Adapter.Hackney, [recv_timeout: 60_000, connect_timeout: 15_000, pool: false]}
+    )
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)
