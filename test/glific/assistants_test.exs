@@ -208,68 +208,6 @@ defmodule Glific.AssistantsTest do
     end
   end
 
-  describe "update_assistant_version/2" do
-    setup %{organization_id: organization_id} do
-      {:ok, assistant} =
-        %Assistant{}
-        |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
-        |> Repo.insert()
-
-      {:ok, assistant_version} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
-          organization_id: organization_id,
-          provider: "openai",
-          model: "gpt-4",
-          prompt: "You are a helpful assistant",
-          settings: %{"temperature" => 0.7},
-          status: :in_progress
-        })
-        |> Repo.insert()
-
-      %{assistant_version: assistant_version}
-    end
-
-    test "updates with valid attrs", %{assistant_version: av} do
-      assert {:ok, %AssistantConfigVersion{} = updated} =
-               Assistants.update_assistant_version(av, %{
-                 status: :failed,
-                 description: "Updated description",
-                 prompt: "New system prompt",
-                 failure_reason: "Kaapi API error",
-                 model: "gpt-4o",
-                 settings: %{"temperature" => 0.5}
-               })
-
-      assert updated.description == "Updated description"
-      assert updated.prompt == "New system prompt"
-      assert updated.status == :failed
-      assert updated.failure_reason == "Kaapi API error"
-      assert updated.model == "gpt-4o"
-      assert updated.settings == %{"temperature" => 0.5}
-    end
-
-    test "returns error with invalid attrs", %{assistant_version: av} do
-      assert {:error, changeset} =
-               Assistants.update_assistant_version(av, %{status: :invalid, prompt: nil})
-
-      assert %{status: ["is invalid"], prompt: ["can't be blank"]} == errors_on(changeset)
-    end
-
-    test "preserves unchanged fields after update", %{assistant_version: av} do
-      assert {:ok, %AssistantConfigVersion{} = updated} =
-               Assistants.update_assistant_version(av, %{status: :ready})
-
-      assert updated.prompt == av.prompt
-      assert updated.provider == av.provider
-      assert updated.model == av.model
-      assert updated.settings == av.settings
-      assert updated.assistant_id == av.assistant_id
-      assert updated.organization_id == av.organization_id
-    end
-  end
-
   describe "create_knowledge_base_with_version/1" do
     setup :enable_kaapi
 
@@ -1252,7 +1190,7 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, %{assistant: assistant}} =
                Assistants.create_assistant(%{
-                 name: "Late Save Assistant",
+                 name: "Test Assistant",
                  model: "gpt-4o",
                  instructions: "You are a helpful assistant",
                  temperature: 1.0,
@@ -1834,6 +1772,287 @@ defmodule Glific.AssistantsTest do
                |> Repo.insert()
 
       assert {"has already been taken", _} = changeset.errors[:assistant_display_id]
+    end
+  end
+
+  describe "end-to-end: create assistant, receive callback, verify state" do
+    setup [:enable_kaapi]
+
+    test "create assistant -> KB callback -> Kaapi config created -> correct DB state",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{job_id: "job_001"}}}
+      end)
+
+      {:ok, %{knowledge_base_version: kbv}} =
+        Assistants.create_knowledge_base_with_version(%{
+          media_info: [
+            %{file_id: "file_1", filename: "doc.pdf", uploaded_at: DateTime.utc_now()}
+          ],
+          organization_id: organization_id
+        })
+
+      assert kbv.status == :in_progress
+
+      # Create assistant while KB is still processing
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Test Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 0.7,
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      # Verify initial state: no kaapi_uuid, config in progress
+      assert is_nil(assistant.kaapi_uuid)
+      assert config_version.status == :in_progress
+      assert assistant.active_config_version_id == config_version.id
+
+      # Verify get_assistant returns new_version_in_progress: true
+      {:ok, fetched} = Assistants.get_assistant(assistant.id)
+      assert fetched.new_version_in_progress == true
+      assert fetched.status == "in_progress"
+      assert is_nil(fetched.assistant_id)
+
+      # SUCCESSFUL KB callback from Kaapi
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_001"}}}
+      end)
+
+      result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_001",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "vs_001"},
+            "error_message" => nil
+          }
+        })
+
+      assert %KnowledgeBaseVersion{} = result
+
+      # Step 4: Verify final DB state
+      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert updated_assistant.kaapi_uuid == "kaapi_uuid_001"
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :ready
+
+      {:ok, updated_kbv} = Repo.fetch(KnowledgeBaseVersion, kbv.id, skip_organization_id: true)
+      assert updated_kbv.status == :completed
+      assert updated_kbv.llm_service_id == "vs_001"
+
+      # Verify get_assistant now shows ready state
+      {:ok, final_fetched} = Assistants.get_assistant(assistant.id)
+      assert final_fetched.new_version_in_progress == false
+      assert final_fetched.status == "ready"
+      assert final_fetched.assistant_id == "kaapi_uuid_001"
+    end
+  end
+
+  describe "end-to-end: callback arrives before assistant save" do
+    setup [:enable_kaapi]
+
+    test "KB callback completes first, then assistant creation registers with Kaapi immediately",
+         %{organization_id: organization_id} do
+      # Create KB and simulate immediate callback (before assistant is saved)
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-001",
+          size: 500,
+          kaapi_job_id: "job_002"
+        })
+
+      # Callback arrives — no assistant exists yet, so no config version to update
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_002",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "vs_002"},
+            "error_message" => nil
+          }
+        })
+
+      {:ok, completed_kbv} = Repo.fetch(KnowledgeBaseVersion, kbv.id, skip_organization_id: true)
+      assert completed_kbv.status == :completed
+
+      # User now saves assistant — KB is already completed, should register with Kaapi immediately
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_002"}}}
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Test Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      # Verify assistant was registered with Kaapi immediately
+      {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert updated_assistant.kaapi_uuid == "kaapi_uuid_002"
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :ready
+
+      # Verify get_assistant shows correct state
+      {:ok, fetched} = Assistants.get_assistant(assistant.id)
+      assert fetched.new_version_in_progress == false
+      assert fetched.status == "ready"
+      assert fetched.assistant_id == "kaapi_uuid_002"
+    end
+  end
+
+  describe "end-to-end: update assistant" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "update assistant with same KB -> new config version registered with Kaapi",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_cv
+         } do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cv_001"}}}
+      end)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Updated Assistant",
+                 instructions: "You are a specialized assistant",
+                 temperature: 0.5,
+                 organization_id: organization_id
+               })
+
+      assert result.name == "Updated Assistant"
+      assert result.instructions == "You are a specialized assistant"
+      assert result.temperature == 0.5
+
+      # Verify new config version was created
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      # New config version should be ready
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
+      assert new_cv.status == :ready
+      assert new_cv.prompt == "You are a specialized assistant"
+
+      # get_assistant should show updated state
+      {:ok, fetched} = Assistants.get_assistant(assistant.id)
+      assert fetched.new_version_in_progress == false
+      assert fetched.status == "ready"
+      assert fetched.name == "Updated Assistant"
+    end
+
+    test "update assistant with new in-progress KB -> deferred, then callback completes",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: original_cv
+         } do
+      # Create a new KB that's still processing
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{job_id: "job_003"}}}
+      end)
+
+      {:ok, %{knowledge_base_version: new_kbv}} =
+        Assistants.create_knowledge_base_with_version(%{
+          media_info: [
+            %{file_id: "new_file", filename: "new.pdf", uploaded_at: DateTime.utc_now()}
+          ],
+          organization_id: organization_id
+        })
+
+      # Update assistant with the new in-progress KB
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_version_id: new_kbv.id,
+                 name: "Updated Assistant",
+                 organization_id: organization_id
+               })
+
+      # Active config should still be the original (deferred)
+      {:ok, pre_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert pre_callback.active_config_version_id == original_cv.id
+
+      # A new config version should exist but not be active
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      # get_assistant should show new_version_in_progress
+      {:ok, fetched} = Assistants.get_assistant(assistant.id)
+      assert fetched.new_version_in_progress == true
+
+      # Simulate SUCCESSFUL KB callback
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cv_002"}}}
+      end)
+
+      _result =
+        Assistants.handle_knowledge_base_callback(%{
+          "data" => %{
+            "job_id" => "job_003",
+            "status" => "SUCCESSFUL",
+            "collection" => %{"knowledge_base_id" => "vs_003"},
+            "error_message" => nil
+          }
+        })
+
+      # After callback, active config should be the new one
+      {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert post_callback.active_config_version_id != original_cv.id
+
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
+      assert new_cv.status == :ready
+
+      # get_assistant should show final ready state
+      {:ok, final_fetched} = Assistants.get_assistant(assistant.id)
+      assert final_fetched.new_version_in_progress == false
+      assert final_fetched.status == "ready"
     end
   end
 end

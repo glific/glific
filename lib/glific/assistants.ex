@@ -50,12 +50,6 @@ defmodule Glific.Assistants do
     "PROCESSING" => :in_progress
   }
 
-  @assistant_config_version_status_mapping %{
-    "SUCCESSFUL" => :ready,
-    "FAILED" => :failed,
-    "PROCESSING" => :in_progress
-  }
-
   @doc """
   Lists all assistant config versions.
   """
@@ -138,10 +132,11 @@ defmodule Glific.Assistants do
     active_config_version = assistant.active_config_version
 
     new_version_in_progress =
-      Enum.any?(assistant.config_versions, fn config_version ->
-        config_version.id != assistant.active_config_version_id and
-          config_version.status == :in_progress
-      end)
+      active_config_version.status == :in_progress or
+        Enum.any?(assistant.config_versions, fn config_version ->
+          config_version.id != assistant.active_config_version_id and
+            config_version.status == :in_progress
+        end)
 
     %{
       id: assistant.id,
@@ -813,16 +808,12 @@ defmodule Glific.Assistants do
           %{status: data["status"], llm_service_id: llm_service_id}
       end
 
-    assistant_version_params = %{status: data["status"], failure_reason: data["error_message"]}
-
     with {:ok, knowledge_base_version} <-
            Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id}),
          {:ok, knowledge_base_version} <-
            apply_callback_updates(knowledge_base_version, knowledge_base_version_params),
          :ok <-
-           update_linked_assistant_versions(knowledge_base_version, assistant_version_params),
-         :ok <-
-           maybe_create_deferred_kaapi_configs(
+           update_linked_config_version(
              knowledge_base_version,
              data["status"],
              data["error_message"]
@@ -843,29 +834,18 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec maybe_create_deferred_kaapi_configs(
-          KnowledgeBaseVersion.t(),
-          String.t(),
-          String.t() | nil
-        ) ::
+  @spec update_linked_config_version(KnowledgeBaseVersion.t(), String.t(), String.t() | nil) ::
           :ok
-  defp maybe_create_deferred_kaapi_configs(knowledge_base_version, status, error_message)
+  defp update_linked_config_version(knowledge_base_version, status, error_message)
        when status != "SUCCESSFUL" do
-    Logger.info(
-      "Skipping deferred Kaapi config creation for KB version #{knowledge_base_version.id}, status: #{status}"
-    )
-
     knowledge_base_version =
-      knowledge_base_version |> Repo.preload([{:assistant_config_versions, :assistant}])
+      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
 
     failure_reason = error_message || "Knowledge base creation failed with status #{status}"
 
-    Enum.filter(knowledge_base_version.assistant_config_versions, fn cv ->
-      deferred_config_version?(cv)
-    end)
-    |> case do
-      [assistant_version] ->
-        assistant_version
+    case knowledge_base_version.assistant_config_versions do
+      [config_version] ->
+        config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
           failure_reason: failure_reason
@@ -879,32 +859,21 @@ defmodule Glific.Assistants do
     :ok
   end
 
-  # Finds config versions that were deferred while the knowledge base was still processing
-  # and couldn't be synced to Kaapi yet. The filter catches two cases:
-  #
-  # 1. is_nil(cv.assistant.kaapi_uuid) — The assistant was created while the knowledge base
-  #    was still processing, so it never got registered with Kaapi at all.
-  # 2. cv.id != cv.assistant.active_config_version_id — The assistant was updated with a new
-  #    config version while the knowledge base was processing. The new config version exists
-  #    locally but hasn't been pushed to Kaapi yet, so it's not the active one.
-  #
-  # In both cases, now that the knowledge base is ready, the deferred config can finally
-  # be sent to Kaapi via create_deferred_kaapi_config.
-  defp maybe_create_deferred_kaapi_configs(knowledge_base_version, "SUCCESSFUL", _error_message) do
+  # When the knowledge base is ready, register the linked config version with Kaapi
+  # and update its status based on the Kaapi response.
+  defp update_linked_config_version(knowledge_base_version, "SUCCESSFUL", _error_message) do
     knowledge_base_version =
       Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
 
-    deferred =
-      Enum.filter(knowledge_base_version.assistant_config_versions, &deferred_config_version?/1)
-
-    case deferred do
+    case knowledge_base_version.assistant_config_versions do
       [config_version] ->
         create_deferred_kaapi_config(config_version, knowledge_base_version)
-        :ok
 
       _ ->
-        :ok
+        nil
     end
+
+    :ok
   end
 
   @spec create_deferred_kaapi_config(AssistantConfigVersion.t(), KnowledgeBaseVersion.t()) ::
@@ -1060,48 +1029,6 @@ defmodule Glific.Assistants do
   defp apply_callback_updates(knowledge_base_version, %{status: status} = params) do
     params = Map.put(params, :status, @knowledge_base_version_status_mapping[status])
     update_knowledge_base_version(knowledge_base_version, params)
-  end
-
-  @spec update_linked_assistant_versions(KnowledgeBaseVersion.t(), map()) :: :ok
-  defp update_linked_assistant_versions(knowledge_base_version, %{status: status} = params) do
-    knowledge_base_version =
-      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
-
-    params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
-
-    # Only update config versions that are the assistant's current active version
-    # and already registered with Kaapi. Deferred versions are handled separately
-    # by maybe_create_deferred_kaapi_configs.
-    knowledge_base_version.assistant_config_versions
-    |> Enum.reject(&deferred_config_version?/1)
-    |> Enum.each(fn config_version ->
-      case update_assistant_version(config_version, params) do
-        {:ok, _} ->
-          :ok
-
-        {:error, changeset} ->
-          Logger.error(
-            "Failed to update assistant version #{config_version.id}: #{inspect(changeset)}"
-          )
-      end
-    end)
-  end
-
-  # A config version is "deferred" if its assistant hasn't been registered with Kaapi yet,
-  # or if it's not the assistant's current active version. These are handled separately
-  # by maybe_create_deferred_kaapi_configs/2 to avoid double-updating and losing failure reasons.
-  @spec deferred_config_version?(AssistantConfigVersion.t()) :: boolean()
-  defp deferred_config_version?(config_version) do
-    assistant = config_version.assistant
-    is_nil(assistant.kaapi_uuid) or config_version.id != assistant.active_config_version_id
-  end
-
-  @spec update_assistant_version(AssistantConfigVersion.t(), map()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  defp update_assistant_version(assistant_version, params) do
-    assistant_version
-    |> AssistantConfigVersion.changeset(params)
-    |> Repo.update()
   end
 
   @doc """

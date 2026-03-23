@@ -55,25 +55,32 @@ defmodule GlificWeb.KaapiControllerTest do
       assert updated_knowledge_base_version.status == :failed
     end
 
-    test "updates linked assistant config versions on successful callback",
+    test "updates linked assistant config version on successful callback",
          %{
            conn: conn,
            knowledge_base_version: knowledge_base_version,
            organization_id: organization_id
          } do
-      {:ok, assistant1} =
+      Tesla.Mock.mock_global(fn
+        %Tesla.Env{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_config_123"}}
+          }
+      end)
+
+      {:ok, assistant} =
         %Assistant{}
         |> Assistant.changeset(%{
-          name: "Test Assistant 1",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi_uuid_test_1"
+          name: "Test Assistant",
+          organization_id: organization_id
         })
         |> Repo.insert()
 
-      {:ok, assistant_version1} =
+      {:ok, assistant_version} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant1.id,
+          assistant_id: assistant.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -84,49 +91,15 @@ defmodule GlificWeb.KaapiControllerTest do
         |> Repo.insert()
 
       {:ok, _} =
-        assistant1
-        |> Assistant.changeset(%{active_config_version_id: assistant_version1.id})
-        |> Repo.update()
-
-      {:ok, assistant2} =
-        %Assistant{}
-        |> Assistant.changeset(%{
-          name: "Test Assistant 2",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi_uuid_test_2"
-        })
-        |> Repo.insert()
-
-      {:ok, assistant_version2} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant2.id,
-          organization_id: organization_id,
-          provider: "openai",
-          model: "gpt-4",
-          prompt: "You are a story_teller",
-          settings: %{},
-          status: :in_progress
-        })
-        |> Repo.insert()
-
-      {:ok, _} =
-        assistant2
-        |> Assistant.changeset(%{active_config_version_id: assistant_version2.id})
+        assistant
+        |> Assistant.changeset(%{active_config_version_id: assistant_version.id})
         |> Repo.update()
 
       Repo.insert_all(
         "assistant_config_version_knowledge_base_versions",
         [
           %{
-            assistant_config_version_id: assistant_version1.id,
-            knowledge_base_version_id: knowledge_base_version.id,
-            organization_id: organization_id,
-            inserted_at: DateTime.utc_now(),
-            updated_at: DateTime.utc_now()
-          },
-          %{
-            assistant_config_version_id: assistant_version2.id,
+            assistant_config_version_id: assistant_version.id,
             knowledge_base_version_id: knowledge_base_version.id,
             organization_id: organization_id,
             inserted_at: DateTime.utc_now(),
@@ -157,30 +130,28 @@ defmodule GlificWeb.KaapiControllerTest do
 
       assert updated_knowledge_base_version.status == :completed
 
-      for updated_assistant_version <- updated_knowledge_base_version.assistant_config_versions do
-        assert updated_assistant_version.status == :ready
-      end
+      [updated_assistant_version] = updated_knowledge_base_version.assistant_config_versions
+      assert updated_assistant_version.status == :ready
     end
 
-    test "updates linked assistant config versions on failure callback",
+    test "updates linked assistant config version on failure callback",
          %{
            conn: conn,
            knowledge_base_version: knowledge_base_version,
            organization_id: organization_id
          } do
-      {:ok, assistant1} =
+      {:ok, assistant} =
         %Assistant{}
         |> Assistant.changeset(%{
-          name: "Test Assistant 1",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi_uuid_test_1"
+          name: "Test Assistant",
+          organization_id: organization_id
         })
         |> Repo.insert()
 
-      {:ok, assistant_version1} =
+      {:ok, assistant_version} =
         %AssistantConfigVersion{}
         |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant1.id,
+          assistant_id: assistant.id,
           organization_id: organization_id,
           provider: "openai",
           model: "gpt-4",
@@ -191,49 +162,15 @@ defmodule GlificWeb.KaapiControllerTest do
         |> Repo.insert()
 
       {:ok, _} =
-        assistant1
-        |> Assistant.changeset(%{active_config_version_id: assistant_version1.id})
-        |> Repo.update()
-
-      {:ok, assistant2} =
-        %Assistant{}
-        |> Assistant.changeset(%{
-          name: "Test Assistant 2",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi_uuid_test_2"
-        })
-        |> Repo.insert()
-
-      {:ok, assistant_version2} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant2.id,
-          organization_id: organization_id,
-          provider: "openai",
-          model: "gpt-4",
-          prompt: "You are a story_teller",
-          settings: %{},
-          status: :in_progress
-        })
-        |> Repo.insert()
-
-      {:ok, _} =
-        assistant2
-        |> Assistant.changeset(%{active_config_version_id: assistant_version2.id})
+        assistant
+        |> Assistant.changeset(%{active_config_version_id: assistant_version.id})
         |> Repo.update()
 
       Repo.insert_all(
         "assistant_config_version_knowledge_base_versions",
         [
           %{
-            assistant_config_version_id: assistant_version1.id,
-            knowledge_base_version_id: knowledge_base_version.id,
-            organization_id: organization_id,
-            inserted_at: DateTime.utc_now(),
-            updated_at: DateTime.utc_now()
-          },
-          %{
-            assistant_config_version_id: assistant_version2.id,
+            assistant_config_version_id: assistant_version.id,
             knowledge_base_version_id: knowledge_base_version.id,
             organization_id: organization_id,
             inserted_at: DateTime.utc_now(),
@@ -264,10 +201,9 @@ defmodule GlificWeb.KaapiControllerTest do
 
       assert updated_knowledge_base_version.status == :failed
 
-      for updated_assistant_version <- updated_knowledge_base_version.assistant_config_versions do
-        assert updated_assistant_version.status == :failed
-        assert updated_assistant_version.failure_reason == "Processing failed"
-      end
+      [updated_assistant_version] = updated_knowledge_base_version.assistant_config_versions
+      assert updated_assistant_version.status == :failed
+      assert updated_assistant_version.failure_reason == "Processing failed"
     end
 
     test "returns 200 when job_id is not found",
@@ -315,6 +251,23 @@ defmodule GlificWeb.KaapiControllerTest do
   end
 
   defp setup_knowledge_base(%{organization_id: organization_id}) do
+    {:ok, credential} =
+      Glific.Partners.create_credential(%{
+        organization_id: organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"}
+      })
+
+    {:ok, _credential} =
+      Glific.Partners.update_credential(credential, %{
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"},
+        is_active: true,
+        organization_id: organization_id,
+        shortcode: "kaapi"
+      })
+
     {:ok, knowledge_base} =
       Assistants.create_knowledge_base(%{
         name: "Test Knowledge Base",
