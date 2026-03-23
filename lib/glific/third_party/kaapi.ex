@@ -301,6 +301,31 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+
+  """
+  @spec get_collection_status(String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, any()}
+  def get_collection_status(collection_job_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{data: %{status: status}}} <-
+           ApiClient.get_collection_status(collection_job_id, secrets["api_key"]) do
+      {:ok, status}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Failed to get Kaapi collection status",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec build_config_blob(map(), list(String.t())) :: map()
   defp build_config_blob(params, knowledge_base_ids) do
     completion_params = %{

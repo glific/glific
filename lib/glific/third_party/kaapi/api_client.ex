@@ -161,6 +161,13 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  def get_collection_status(collection_job_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/collections/jobs/#{collection_job_id}")
+    |> parse_kaapi_response()
+  end
+
   @doc """
   Delete a config in Kaapi
   """

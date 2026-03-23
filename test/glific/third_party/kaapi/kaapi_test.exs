@@ -272,6 +272,43 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "get_collection_status/2" do
+    test "successfully gets collection status" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              status: "SUCCESSFUL"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{data: %{status: "SUCCESSFUL"}, success: true}} =
+               ApiClient.get_collection_status("job_3fa85f64", @org_kaapi_api_key)
+    end
+
+    test "returns error for failures" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            success: false,
+            error: %{
+              message: "Invalid request"
+            }
+          }
+        }
+      end)
+
+      assert {:error,
+              %{status: 400, body: %{success: false, error: %{message: "Invalid request"}}}} =
+               ApiClient.get_collection_status("job_3fa85f64", @org_kaapi_api_key)
+    end
+  end
+
   describe "create_config_version/3" do
     test "successfully creates config version in kaapi" do
       mock(fn %Tesla.Env{method: :post} ->
