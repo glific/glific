@@ -18,6 +18,7 @@ defmodule Glific.Assistants do
   alias Glific.Partners
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
 
   defmodule Error do
     @moduledoc """
@@ -260,19 +261,16 @@ defmodule Glific.Assistants do
   """
   @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def clone_assistant(id) do
-    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         assistant <-
-           Repo.preload(assistant, active_config_version: :knowledge_base_versions) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}) do
+         assistant  = Repo.preload(assistant, active_config_version: :knowledge_base_versions)
       active_config = assistant.active_config_version
 
-      clone_params = %{
-        name: "Copy of #{assistant.name}",
-        instructions: active_config.prompt,
-        model: active_config.model,
-        temperature: get_in(active_config.settings || %{}, ["temperature"]) || 1,
-        description: active_config.description,
+      AssistantCloneWorker.new(%{
+        assistant_id: assistant.id,
         organization_id: assistant.organization_id
-      }
+      })
+      
+      %{message: "Assistant clone initiated"}
     end
   end
 

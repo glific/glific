@@ -89,6 +89,11 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :updated_at, :datetime
   end
 
+  object :clone_result do
+    field :message, :string
+    field :errors, list_of(:input_error)
+  end
+
   input_object :vector_store_input do
     field :name, :string
   end
@@ -179,7 +184,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     end
 
     @desc "Clone an existing Assistant"
-    field :clone_assistant, :kaapi_assistant_result do
+    field :clone_assistant, :clone_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.clone_assistant/3)
