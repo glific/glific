@@ -223,7 +223,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       )
       |> add_optional_fields(params)
 
-    opts = [adapter: [recv_timeout: 60_000]]
+    opts = [adapter: [recv_timeout: 60_000, pool: false, connect_timeout: 15_000]]
 
     org_api_key
     |> client()

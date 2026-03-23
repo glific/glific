@@ -14,6 +14,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   alias Glific.{
     Assistants,
     Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
     Repo,
     ThirdParty.Kaapi
@@ -35,7 +36,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
          assistant <- Repo.preload(assistant, active_config_version: :knowledge_base_versions),
          {:ok, knowledge_base_version} <- get_knowledge_base_version(assistant),
-         params <- assistant_params(assistant, organization_id),
          {:ok, files} <-
            list_all_files(knowledge_base_version.llm_service_id),
          :ok <-
@@ -50,7 +50,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          file_ids = Enum.map(file_data, & &1.file_id),
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
-         {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id) do
+         {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
+         params <- assistant_params(assistant, organization_id, llm_service_id),
+         {:ok, %{data: %{id: kaapi_uuid}}} <-
+           Kaapi.create_assistant_config(params, organization_id),
+         {:ok, knowledge_base_version} <-
+           create_cloned_knowledge_base(file_data, llm_service_id, organization_id),
+         :ok <- create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
       Logger.info(
         "AssistantCloneWorker: Successfully cloned assistant #{assistant_id} for org #{organization_id}"
       )
@@ -82,8 +88,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
-  @spec assistant_params(Assistant.t(), non_neg_integer()) :: map()
-  defp assistant_params(assistant, organization_id) do
+  @spec assistant_params(Assistant.t(), non_neg_integer(), String.t()) :: map()
+  defp assistant_params(assistant, organization_id, knowledge_base_id) do
     active_config = assistant.active_config_version
 
     %{
@@ -92,7 +98,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       model: active_config.model,
       temperature: get_in(active_config.settings || %{}, ["temperature"]) || 1,
       description: "Cloned version",
-      organization_id: organization_id
+      organization_id: organization_id,
+      knowledge_base_ids: [knowledge_base_id]
     }
   end
 
@@ -287,6 +294,77 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         )
 
         {:error, inspect(reason)}
+    end
+  end
+
+  defp create_cloned_knowledge_base(file_data, llm_service_id, organization_id) do
+    files =
+      Enum.reduce(file_data, %{}, fn file, acc ->
+        Map.put(acc, file.file_id, file)
+      end)
+
+    total_size = Enum.reduce(file_data, 0, fn file, acc -> acc + (file.file_size || 0) end)
+
+    with {:ok, kb} <-
+           Assistants.create_knowledge_base(%{
+             name: "Cloned-KB-#{Ecto.UUID.generate() |> String.split("-") |> List.first()}",
+             organization_id: organization_id
+           }),
+         {:ok, kb_version} <-
+           Assistants.create_knowledge_base_version(%{
+             knowledge_base_id: kb.id,
+             organization_id: organization_id,
+             files: files,
+             size: total_size,
+             status: :completed,
+             llm_service_id: llm_service_id
+           }) do
+      Logger.info("Created cloned KB #{kb.id} with version #{kb_version.id}")
+      {:ok, kb_version}
+    end
+  end
+
+  defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
+    with {:ok, assistant} <-
+           Assistant.changeset(%Assistant{}, %{
+             name: params.name,
+             organization_id: params.organization_id,
+             kaapi_uuid: kaapi_uuid
+           })
+           |> Repo.insert(),
+         {:ok, assistant_version} <-
+           AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+             assistant_id: assistant.id,
+             description: params.description,
+             prompt: params.prompt,
+             model: params.model,
+             provider: "openai",
+             settings: %{temperature: params.temperature},
+             status: :ready,
+             organization_id: params.organization_id
+             # add kaapi_version_nummber here
+           })
+           |> Repo.insert(),
+         {:ok, _assistant} <-
+           Assistant.set_active_config_version_changeset(assistant, %{
+             active_config_version_id: assistant_version.id
+           })
+           |> Repo.update(),
+         bridge_table_params = [
+           %{
+             assistant_config_version_id: assistant_version.id,
+             knowledge_base_version_id: knowledge_base_version.id,
+             organization_id: params.organization_id,
+             inserted_at: DateTime.utc_now(),
+             updated_at: DateTime.utc_now()
+           }
+         ],
+         _ <-
+           Repo.insert_all(
+             "assistant_config_version_knowledge_base_versions",
+             bridge_table_params
+           ) do
+      :ok
     end
   end
 

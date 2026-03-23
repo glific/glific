@@ -218,9 +218,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       {:ok, assistant} = create_assistant_with_config_version(organization_id, "kaapi_clone_test")
 
       {:ok, query_data} =
-        auth_query_gql_by(:clone_assistant, user,
-          variables: %{"id" => assistant.id}
-        )
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => assistant.id})
 
       result = query_data.data["cloneAssistant"]
       assert result["message"] == "Assistant clone initiated"
@@ -229,9 +227,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
     test "returns error when assistant not found", %{staff: user} do
       {:ok, query_data} =
-        auth_query_gql_by(:clone_assistant, user,
-          variables: %{"id" => -1}
-        )
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})
 
       result = query_data.data["cloneAssistant"]
       assert result["message"] == nil
