@@ -99,6 +99,7 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("unified-voice-llm-call", fields, headers) do
     {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
+    voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     Glific.Metrics.increment("Voice Unified LLM Call", org_id)
 
@@ -113,11 +114,13 @@ defmodule Glific.Clients.CommonWebhook do
             flow_id,
             contact_id,
             updated_fields,
-            "/kaapi/voice_flow_resume"
+            "/kaapi/voice_flow_resume",
+            voice_start_timestamp
           )
 
         request_metadata =
           Map.merge(request_metadata, %{
+            call_type: "voice_llm",
             voice_post_process: %{
               source_language: fields["source_language"],
               target_language: fields["target_language"],
@@ -688,9 +691,10 @@ defmodule Glific.Clients.CommonWebhook do
          flow_id,
          contact_id,
          fields,
-         callback_path \\ "/webhook/flow_resume"
+         callback_path \\ "/webhook/flow_resume",
+         timestamp \\ nil
        ) do
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    timestamp = timestamp || DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
       "organization_id" => organization_id,

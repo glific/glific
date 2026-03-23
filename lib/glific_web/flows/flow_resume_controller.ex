@@ -122,6 +122,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
       if response["webhook_log_id"],
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
+      track_kaapi_latency(response)
+
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
