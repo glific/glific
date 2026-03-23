@@ -33,18 +33,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       }) do
     Repo.put_process_state(organization_id)
 
-    IO.puts("CloneWorker: Starting clone for assistant #{assistant_id}")
-
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
          assistant <- Repo.preload(assistant, active_config_version: :knowledge_base_versions),
          {:ok, knowledge_base_version} <- get_knowledge_base_version(assistant),
-         _ =
-           IO.puts(
-             "CloneWorker: Listing files from OpenAI vector store #{knowledge_base_version.llm_service_id}"
-           ),
          {:ok, files} <-
            list_all_files(knowledge_base_version.llm_service_id),
-         _ = IO.puts("CloneWorker: Downloading #{length(files)} file(s)"),
          :ok <-
            download_files(
              files,
@@ -52,24 +45,15 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              assistant.name,
              organization_id
            ),
-         _ = IO.puts("CloneWorker: Uploading files to Kaapi"),
          file_data <-
            upload_files_to_kaapi(assistant.name, organization_id),
-         _ = IO.puts("CloneWorker: Uploaded #{length(file_data)} file(s), creating collection"),
          file_ids = Enum.map(file_data, & &1.file_id),
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
-         _ = IO.puts("CloneWorker: Collection created, job_id: #{job_id}. Starting polling..."),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
-         _ =
-           IO.puts(
-             "CloneWorker: Polling complete, kb_id: #{llm_service_id}. Creating Kaapi config..."
-           ),
          params <- assistant_params(assistant, organization_id, llm_service_id),
          {:ok, %{data: %{id: kaapi_uuid}}} <-
            Kaapi.create_assistant_config(params, organization_id),
-         _ =
-           IO.puts("CloneWorker: Kaapi config created: #{kaapi_uuid}. Creating Glific records..."),
          {:ok, knowledge_base_version} <-
            create_cloned_knowledge_base(file_data, llm_service_id, job_id, organization_id),
          :ok <- create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
