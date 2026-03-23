@@ -1,0 +1,7 @@
+#import "./kaapi_assistant_fields.frag.gql"
+
+mutation cloneAssistant($id: ID!) {
+  cloneAssistant(id: $id) {
+    ...KaapiAssistantFields
+  }
+}

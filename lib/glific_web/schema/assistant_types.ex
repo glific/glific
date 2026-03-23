@@ -177,6 +177,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.update_assistant/3)
     end
+
+    @desc "Clone an existing Assistant"
+    field :clone_assistant, :kaapi_assistant_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Assistants.clone_assistant/3)
+    end
   end
 
   object :filesearch_queries do
