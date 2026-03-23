@@ -305,12 +305,12 @@ defmodule Glific.ThirdParty.Kaapi do
 
   """
   @spec get_collection_status(String.t(), non_neg_integer()) ::
-          {:ok, String.t()} | {:error, any()}
+          {:ok, map()} | {:error, any()}
   def get_collection_status(collection_job_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, %{data: %{status: status}}} <-
+         {:ok, %{data: data}} <-
            ApiClient.get_collection_status(collection_job_id, secrets["api_key"]) do
-      {:ok, status}
+      {:ok, data}
     else
       {:error, reason} ->
         Appsignal.send_error(

@@ -36,7 +36,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          assistant <- Repo.preload(assistant, active_config_version: :knowledge_base_versions),
          {:ok, knowledge_base_version} <- get_knowledge_base_version(assistant),
          params <- assistant_params(assistant, organization_id),
-         {:ok, files} <- list_all_files(knowledge_base_version.llm_service_id),
+         {:ok, files} <-
+           list_all_files(knowledge_base_version.llm_service_id),
          :ok <-
            download_files(
              files,
@@ -44,7 +45,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              assistant.name,
              organization_id
            ),
-         file_data <- upload_files_to_kaapi(assistant.name, organization_id) do
+         file_data <-
+           upload_files_to_kaapi(assistant.name, organization_id),
+         file_ids = Enum.map(file_data, & &1.file_id),
+         {:ok, %{data: %{job_id: job_id}}} <-
+           Kaapi.create_collection(%{documents: file_ids}, organization_id),
+         {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id) do
       Logger.info(
         "AssistantCloneWorker: Successfully cloned assistant #{assistant_id} for org #{organization_id}"
       )
@@ -133,6 +139,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Logger.info(
       "File downloads for #{assistant_name} done. #{succeeded} downloaded, #{failed} failed"
     )
+
+    :ok
   end
 
   defp download_file(%{"id" => file_id} = _file, vector_store_id, assistant_name, organization_id) do
@@ -165,13 +173,18 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     case Req.get("#{@base_url}/vector_stores/#{vector_store_id}/files/#{file_id}/content",
            headers: auth_headers()
          ) do
-      {:ok, %{status: 200, body: %{"data" => [%{"text" => content}]}}} ->
+      {:ok, %{status: 200, body: %{"data" => data}}} when is_list(data) ->
+        content =
+          data
+          |> Enum.filter(&(&1["type"] == "text"))
+          |> Enum.map_join("\n", & &1["text"])
+
         dest =
           Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}/#{filename}")
 
-        binary = if is_binary(content), do: content, else: Jason.encode!(content)
-        File.write!(dest, binary)
-        Logger.info("-> saved (#{byte_size(binary)} bytes)")
+        File.mkdir_p!(Path.dirname(dest))
+        File.write!(dest, content)
+        Logger.info("-> saved (#{byte_size(content)} bytes)")
         :ok
 
       {:ok, %{status: status, body: body}} ->
@@ -191,16 +204,18 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
     path
     |> File.ls!()
-    |> Enum.map(fn file ->
-      case upload_document(file, organization_id) do
+    |> Enum.map(fn filename ->
+      file_path = Path.join(path, filename)
+
+      case upload_document(file_path, organization_id) do
         {:ok, %{data: document_data}} ->
-          Logger.info("File #{document_data[:fname]} uploaded for #{assistant_name}")
+          Logger.info("File #{filename} uploaded for #{assistant_name}")
 
           %{
             file_id: document_data[:id],
-            filename: document_data[:fname],
+            filename: filename,
             uploaded_at: document_data[:inserted_at],
-            file_size: File.stat!(file).size
+            file_size: File.stat!(file_path).size
           }
 
         {:error, reason} ->
@@ -217,7 +232,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   end
 
   @spec poll_kaapi_for_collection_status(String.t(), non_neg_integer()) ::
-          :ok | {:error, String.t()}
+          {:ok, String.t()} | {:error, String.t()}
   defp poll_kaapi_for_collection_status(collection_job_id, organization_id) do
     poll_kaapi_for_collection_status(
       collection_job_id,
@@ -227,12 +242,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     )
   end
 
-  @spec poll_kaapi_for_collection_status(
-          String.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          integer()
-        ) :: :ok | {:error, String.t()}
   defp poll_kaapi_for_collection_status(
          collection_job_id,
          organization_id,
@@ -240,18 +249,20 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          start_time_ms
        ) do
     case Kaapi.get_collection_status(collection_job_id, organization_id) do
-      {:ok, "SUCCESFUL"} ->
+      {:ok, %{status: "SUCCESFUL", collection: %{knowledge_base_id: kb_id}}} ->
         Logger.info(
-          "AssistantCloneWorker: Collection #{collection_job_id} status is SUCCESFUL"
+          "AssistantCloneWorker: Collection #{collection_job_id} is SUCCESFUL, kb_id: #{kb_id}"
         )
 
-        :ok
+        {:ok, kb_id}
 
-      {:ok, status} ->
+      {:ok, %{status: status}} ->
         elapsed_ms = System.monotonic_time(:millisecond) - start_time_ms
 
         if elapsed_ms + backoff_ms >= @max_poll_duration_ms do
-          Logger.error("AssistantCloneWorker: Polling timed out for collection #{collection_job_id}, last status: #{status}")
+          Logger.error(
+            "AssistantCloneWorker: Polling timed out for collection #{collection_job_id}, last status: #{status}"
+          )
 
           {:error, "Polling timed out after 20 minutes, last status: #{status}"}
         else
