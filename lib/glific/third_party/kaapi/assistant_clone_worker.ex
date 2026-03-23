@@ -6,7 +6,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   """
 
   use Oban.Worker,
-    queue: :default,
+    queue: :clone_assistant,
     max_attempts: 2
 
   require Logger
@@ -191,7 +191,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Enum.map(fn file ->
       case upload_document(file, organization_id) do
         {:ok, %{data: document_data}} ->
-          Logger.info("File #{document_params.filename} uploaded for #{assistant_name}")
+          Logger.info("File #{document_data[:fname]} uploaded for #{assistant_name}")
 
           %{
             file_id: document_data[:id],
