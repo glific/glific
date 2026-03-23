@@ -161,6 +161,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Get the status of a collection in Kaapi.
+  """
+  @spec get_collection_status(String.t(), String.t()) ::
+          {:ok, map()} | {:error, map() | String.t()}
   def get_collection_status(collection_job_id, org_api_key) do
     org_api_key
     |> client()
