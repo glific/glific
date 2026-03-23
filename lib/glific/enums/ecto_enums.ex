@@ -158,3 +158,9 @@ defenum(
   :knowledge_base_status_enum,
   Glific.Enums.knowledge_base_status_const()
 )
+
+defenum(
+  Glific.Enums.AIEvaluationStatus,
+  :ai_evaluation_status_enum,
+  Glific.Enums.ai_evaluation_status_const()
+)
