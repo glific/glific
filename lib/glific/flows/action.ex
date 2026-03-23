@@ -661,14 +661,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    if FunWithFlags.enabled?(:unified_api_enabled,
-         for: %{organization_id: context.organization_id}
-       ) do
-      Webhook.execute_unified_voice_filesearch(action, context)
-    else
-      Webhook.execute(action, context)
-      {:wait, context, []}
-    end
+    Webhook.execute_unified_voice_filesearch(action, context)
   end
 
   def execute(
