@@ -1150,6 +1150,138 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
   end
 
+  describe "unified-llm-call lookup_kaapi_config" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      :ok
+    end
+
+    test "returns error when assistant not found" do
+      fields = %{
+        "assistant_id" => "nonexistent_id",
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Assistant not found"
+    end
+
+    test "returns error when kaapi_version_number is nil" do
+      alias Glific.Assistants.{Assistant, AssistantConfigVersion}
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Version Nil Test",
+          organization_id: 1,
+          kaapi_uuid: "kaapi_uuid_test"
+        })
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready,
+          kaapi_version_number: nil
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config.id
+        })
+        |> Repo.update()
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Kaapi version number not found"
+    end
+
+    test "returns error when kaapi_uuid is nil" do
+      alias Glific.Assistants.{Assistant, AssistantConfigVersion}
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "No UUID Test",
+          organization_id: 1
+        })
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config.id
+        })
+        |> Repo.update()
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Assistant is still being set up"
+    end
+  end
+
   defp tts_fields(contact_id) do
     %{
       "text" => "Hello world",
@@ -1180,6 +1312,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
         version_number: 1,
+        kaapi_version_number: 1,
         prompt: "You are a helpful assistant.",
         provider: "openai",
         model: "gpt-4o",

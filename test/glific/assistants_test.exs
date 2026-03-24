@@ -473,7 +473,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_abc"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_abc", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -490,13 +490,19 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      {:ok, updated_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      updated_assistant = Repo.preload(updated_assistant, :active_config_version)
+      assert updated_assistant.active_config_version.kaapi_version_number == 2
     end
 
     test "creates a new config version when temperature changes",
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -519,7 +525,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -542,7 +548,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -581,7 +587,7 @@ defmodule Glific.AssistantsTest do
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_kb"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_kb", version: 2}}}
       end)
 
       assert {:ok, _result} =
@@ -626,7 +632,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp2"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp2", version: 2}}}
       end)
 
       assert {:ok, _result} =
@@ -649,7 +655,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model2"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model2", version: 2}}}
       end)
 
       assert {:ok, _result} =
@@ -672,7 +678,10 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions2"}}}
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "new_kaapi_uuid_instructions2", version: 2}}
+          }
       end)
 
       assert {:ok, _result} =
@@ -695,7 +704,7 @@ defmodule Glific.AssistantsTest do
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_multi"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_multi", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -805,7 +814,7 @@ defmodule Glific.AssistantsTest do
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_link_kb"}}}
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_link_kb", version: 2}}}
       end)
 
       assert {:ok, result} =
@@ -1281,7 +1290,10 @@ defmodule Glific.AssistantsTest do
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_deferred_uuid_123"}}}
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_deferred_uuid_123", version: %{version: 1}}}
+          }
       end)
 
       result =
@@ -1298,6 +1310,12 @@ defmodule Glific.AssistantsTest do
 
       {:ok, updated_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
       assert updated_assistant.kaapi_uuid == "kaapi_deferred_uuid_123"
+
+      {:ok, updated_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert updated_cv.status == :ready
+      assert updated_cv.kaapi_version_number == 1
     end
 
     test "marks config version as failed when deferred Kaapi call fails",
@@ -1451,7 +1469,10 @@ defmodule Glific.AssistantsTest do
       # Now simulate SUCCESSFUL callback
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_config_version_update_123"}}}
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_config_version_update_123", version: 2}}
+          }
       end)
 
       _result =
@@ -1478,6 +1499,7 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert new_config.status == :ready
+      assert new_config.kaapi_version_number == 2
     end
 
     test "callback failure after deferred update marks config as failed and keeps old active",

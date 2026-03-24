@@ -434,11 +434,25 @@ defmodule Glific.Assistants do
            kaapi_config.organization_id
          ) do
       {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        update_active_config_kaapi_version_number(assistant, kaapi_version_number)
+
         {:ok, kaapi_response.data.id}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec update_active_config_kaapi_version_number(Assistant.t(), non_neg_integer()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp update_active_config_kaapi_version_number(assistant, kaapi_version_number) do
+    assistant = Repo.preload(assistant, :active_config_version)
+
+    assistant.active_config_version
+    |> AssistantConfigVersion.changeset(%{kaapi_version_number: kaapi_version_number})
+    |> Repo.update()
   end
 
   @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
@@ -884,6 +898,15 @@ defmodule Glific.Assistants do
     if is_nil(assistant.kaapi_uuid) do
       case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
         {:ok, kaapi_response} ->
+          kaapi_version_number = kaapi_response.data.version.version
+
+          config_version
+          |> AssistantConfigVersion.changeset(%{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
+          |> Repo.update()
+
           assistant
           |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
           |> Repo.update()
@@ -906,13 +929,18 @@ defmodule Glific.Assistants do
              kaapi_config,
              assistant.organization_id
            ) do
-        {:ok, _kaapi_response} ->
+        {:ok, kaapi_response} ->
+          kaapi_version_number = kaapi_response.data.version
+
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()
 
           config_version
-          |> AssistantConfigVersion.changeset(%{status: :ready})
+          |> AssistantConfigVersion.changeset(%{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
           |> Repo.update()
 
         {:error, reason} ->
