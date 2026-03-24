@@ -1312,6 +1312,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
         version_number: 1,
+        kaapi_version_number: 1,
         prompt: "You are a helpful assistant.",
         provider: "openai",
         model: "gpt-4o",
