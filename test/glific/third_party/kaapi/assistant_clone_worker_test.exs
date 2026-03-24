@@ -159,7 +159,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                 status: 200,
                 body: %{
                   data: %{
-                    status: "SUCCESFUL",
+                    status: "SUCCESSFUL",
                     collection: %{knowledge_base_id: "cloned_kb_id_456"}
                   }
                 }
@@ -255,6 +255,120 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id
                  })
       end
+    end
+
+    test "returns error when Kaapi collection creation fails", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+            end
+        end)
+
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+      end
+
+      File.rm_rf!(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
+    end
+
+    test "returns error when Kaapi config creation fails", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_123"}}}
+
+              String.contains?(url, "configs") ->
+                %Tesla.Env{status: 500, body: %{error: "Config creation failed"}}
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs") do
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  data: %{
+                    status: "SUCCESSFUL",
+                    collection: %{knowledge_base_id: "kb_123"}
+                  }
+                }
+              }
+            end
+        end)
+
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+      end
+
+      File.rm_rf!(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
     end
   end
 

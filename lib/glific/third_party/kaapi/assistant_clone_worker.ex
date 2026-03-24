@@ -69,13 +69,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         )
 
         {:error, inspect(reason)}
-
-      :error ->
-        Logger.error(
-          "AssistantCloneWorker: Failed to clone assistant #{assistant_id} for org #{organization_id}"
-        )
-
-        {:error, "Failed to clone assistant"}
     end
   end
 
@@ -417,8 +410,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
   end
 
-  @spec auth_headers() :: [tuple()]
-  defp auth_headers() do
+  @spec auth_headers :: [tuple()]
+  defp auth_headers do
     api_key = Glific.get_open_ai_key()
 
     [
