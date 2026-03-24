@@ -1142,13 +1142,16 @@ defmodule Glific.AssistantsTest do
       assert config_version.status == :in_progress
     end
 
-    test "returns error when knowledge_base_version_id is missing",
+    test "creates assistant without knowledge_base_version_id",
          %{organization_id: organization_id} do
-      assert {:error, "Knowledge base is required for assistant creation"} =
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  name: "No KB Assistant",
                  organization_id: organization_id
                })
+
+      assert assistant.name == "No KB Assistant"
+      assert config_version.status == :ready
     end
 
     test "uses default values when optional params are missing",
