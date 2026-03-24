@@ -144,6 +144,8 @@ defmodule Glific.Assistants do
           config_version.status == :in_progress
       end)
 
+    vector_store_data = build_vector_store_data(active_config_version)
+
     %{
       id: assistant.id,
       assistant_display_id: assistant.assistant_display_id,
@@ -155,7 +157,8 @@ defmodule Glific.Assistants do
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
       live_version_number: active_config_version.version_number,
-      vector_store_data: build_vector_store_data(active_config_version),
+      legacy: if(vector_store_data, do: vector_store_data.legacy, else: false),
+      vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
     }
