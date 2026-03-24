@@ -1532,10 +1532,6 @@ defmodule Glific.Flows.ActionTest do
        attrs do
     Partners.organization(attrs.organization_id)
 
-    FunWithFlags.enable(:unified_api_enabled,
-      for_actor: %{organization_id: attrs.organization_id}
-    )
-
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =

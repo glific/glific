@@ -668,6 +668,21 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       conn = post(conn, "/kaapi/voice_flow_resume", params)
       assert json_response(conn, 200) == ""
+
+      # Call do_voice_flow_resume directly to verify the flow is NOT resumed
+      response = FlowResumeController.parse_callback_response(params)
+
+      with_mock FlowContext,
+        resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
+        assert :ok =
+                 FlowResumeController.do_voice_flow_resume(
+                   organization_id,
+                   params,
+                   response
+                 )
+
+        refute called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+      end
     end
 
     test "do_voice_flow_resume resumes flow with voice response on success", %{

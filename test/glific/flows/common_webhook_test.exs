@@ -1224,13 +1224,18 @@ defmodule Glific.Flows.CommonWebhookTest do
           "result_name" => "result"
         }
 
+      test_pid = self()
+
       Tesla.Mock.mock(fn
         %Tesla.Env{method: :get, url: "https://example.com/audio.ogg"} ->
+          send(test_pid, :audio_downloaded)
           %Tesla.Env{status: 200, body: "fake-audio-bytes"}
 
-        %Tesla.Env{method: :post, url: url} ->
+        %Tesla.Env{method: :post, url: url, body: body} ->
           cond do
             String.contains?(url, "generativelanguage.googleapis.com") ->
+              send(test_pid, {:stt_called, body})
+
               %Tesla.Env{
                 status: 200,
                 body: %{
@@ -1246,6 +1251,8 @@ defmodule Glific.Flows.CommonWebhookTest do
               }
 
             String.contains?(url, "/api/v1/llm/call") ->
+              send(test_pid, {:llm_called, body})
+
               %Tesla.Env{
                 status: 200,
                 body: %{data: %{message: "LLM call started", success: true}}
@@ -1260,6 +1267,42 @@ defmodule Glific.Flows.CommonWebhookTest do
         CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
 
       assert result.success == true
+
+      # Verify STT pipeline: audio was downloaded and sent to Gemini for transcription
+      assert_received :audio_downloaded
+      assert_received {:stt_called, stt_body}
+      stt_body = if is_binary(stt_body), do: Jason.decode!(stt_body), else: stt_body
+
+      inline_data =
+        get_in(stt_body, ["contents", Access.at(0), "parts", Access.at(0), "inline_data"])
+
+      assert inline_data["mime_type"] == "audio/mp3"
+      assert inline_data["data"] == Base.encode64("fake-audio-bytes")
+
+      # Verify the unified LLM call receives the correct payload
+      assert_received {:llm_called, llm_body}
+      llm_body = if is_binary(llm_body), do: Jason.decode!(llm_body), else: llm_body
+
+      # Query contains the transcribed text from STT
+      assert get_in(llm_body, ["query", "input"]) == "Hello world"
+      assert get_in(llm_body, ["query", "conversation", "auto_create"]) == true
+
+      # Config contains the assistant's Kaapi UUID and version
+      assert is_binary(get_in(llm_body, ["config", "id"]))
+      assert is_integer(get_in(llm_body, ["config", "version"]))
+
+      # Callback URL points to voice_flow_resume (not regular flow_resume)
+      assert String.contains?(llm_body["callback_url"], "/kaapi/voice_flow_resume")
+
+      # Request metadata includes flow context and voice post-processing fields
+      metadata = llm_body["request_metadata"]
+      assert metadata["organization_id"] == organization_id
+      assert metadata["flow_id"] == 1
+      assert metadata["contact_id"] == contact.id
+      assert metadata["webhook_log_id"] == 1
+      assert metadata["result_name"] == "result"
+      assert metadata["voice_post_process"]["source_language"] == "english"
+      assert metadata["voice_post_process"]["target_language"] == "hindi"
     end
 
     test "returns failure when STT fails" do
