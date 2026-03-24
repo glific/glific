@@ -6,19 +6,21 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   # client with runtime config (API key / base URL).
   defp client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
+    Tesla.client(middlewares(api_key) ++ Glific.get_tesla_retry_middleware())
+  end
+
+  defp middlewares(api_key) do
     base_url = kaapi_config(:kaapi_endpoint)
 
-    Tesla.client(
-      [
-        {Tesla.Middleware.BaseUrl, base_url},
-        {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
-        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        Tesla.Middleware.KeepRequest,
-        Tesla.Middleware.PathParams,
-        {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
-        {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
-      ] ++ Glific.get_tesla_retry_middleware()
-    )
+    [
+      {Tesla.Middleware.BaseUrl, base_url},
+      {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
+      {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+      Tesla.Middleware.KeepRequest,
+      Tesla.Middleware.PathParams,
+      {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
+    ]
   end
 
   @doc """
@@ -302,19 +304,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp upload_client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
-    base_url = kaapi_config(:kaapi_endpoint)
 
     Tesla.client(
-      [
-        {Tesla.Middleware.BaseUrl, base_url},
-        {Tesla.Middleware.Headers, [{"X-API-KEY", api_key}]},
-        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        Tesla.Middleware.KeepRequest,
-        Tesla.Middleware.PathParams,
-        {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
-        {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
-      ],
-      {Tesla.Adapter.Hackney, [recv_timeout: 60_000, connect_timeout: 15_000, pool: false]}
+      middlewares(api_key),
+      {Tesla.Adapter.Hackney, [recv_timeout: 60_000, pool: :kaapi_upload_pool]}
     )
   end
 
