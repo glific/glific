@@ -495,7 +495,7 @@ defmodule Glific.AssistantsTest do
         Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
 
       updated_assistant = Repo.preload(updated_assistant, :active_config_version)
-      assert updated_assistant.active_config_version.kaapi_version == 2
+      assert updated_assistant.active_config_version.kaapi_version_number == 2
     end
 
     test "creates a new config version when temperature changes",
@@ -1315,7 +1315,7 @@ defmodule Glific.AssistantsTest do
         Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
 
       assert updated_cv.status == :ready
-      assert updated_cv.kaapi_version == 1
+      assert updated_cv.kaapi_version_number == 1
     end
 
     test "marks config version as failed when deferred Kaapi call fails",
@@ -1499,7 +1499,7 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert new_config.status == :ready
-      assert new_config.kaapi_version == 2
+      assert new_config.kaapi_version_number == 2
     end
 
     test "callback failure after deferred update marks config as failed and keeps old active",

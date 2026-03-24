@@ -20,7 +20,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
           assistant_id: non_neg_integer() | nil,
           assistant: Assistant.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: non_neg_integer() | nil,
-          kaapi_version: non_neg_integer() | nil,
+          kaapi_version_number: non_neg_integer() | nil,
           description: String.t() | nil,
           prompt: String.t() | nil,
           provider: String.t() | nil,
@@ -50,13 +50,13 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     :description,
     :failure_reason,
     :version_number,
-    :kaapi_version,
+    :kaapi_version_number,
     :deleted_at
   ]
 
   schema "assistant_config_versions" do
     field(:version_number, :integer)
-    field(:kaapi_version, :integer)
+    field(:kaapi_version_number, :integer)
     field(:description, :string)
     field(:prompt, :string)
 
