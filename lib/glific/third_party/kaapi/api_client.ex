@@ -304,11 +304,13 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp upload_client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
+    adapter = kaapi_config(:upload_adapter)
 
-    Tesla.client(
-      middlewares(api_key),
-      {Tesla.Adapter.Hackney, [recv_timeout: 60_000, pool: :kaapi_upload_pool]}
-    )
+    if adapter do
+      Tesla.client(middlewares(api_key), adapter)
+    else
+      Tesla.client(middlewares(api_key))
+    end
   end
 
   defp kaapi_config, do: Application.fetch_env!(:glific, __MODULE__)

@@ -266,8 +266,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         get: fn url, _opts ->
           cond do
             String.contains?(url, "/files/file_001/content") ->
-              {:ok,
-               %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
 
             String.contains?(url, "/files/file_001") ->
               {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
@@ -315,8 +314,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         get: fn url, _opts ->
           cond do
             String.contains?(url, "/files/file_001/content") ->
-              {:ok,
-               %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
 
             String.contains?(url, "/files/file_001") ->
               {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}

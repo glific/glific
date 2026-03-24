@@ -168,10 +168,16 @@ config :glific, Glific.Erase,
 config :glific,
   appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 100)
 
+upload_adapter =
+  if config_env() == :test,
+    do: nil,
+    else: {Tesla.Adapter.Hackney, [recv_timeout: 60_000, pool: :kaapi_upload_pool]}
+
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),
   kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret"),
-  collection_batch_size: env!("KAAPI_COLLECTION_BATCH_SIZE", :integer, 10)
+  kaapi_collection_batch_size: env!("KAAPI_COLLECTION_BATCH_SIZE", :integer, 10),
+  upload_adapter: upload_adapter
 
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
   gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
