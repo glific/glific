@@ -65,7 +65,7 @@ defmodule GlificWeb.KaapiControllerTest do
         %Tesla.Env{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{id: "kaapi_config_123"}}
+            body: %{data: %{id: "kaapi_config_123", version: %{version: 1}}}
           }
       end)
 
