@@ -90,6 +90,16 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Counts assistants filtered by the given args.
+  """
+  @spec count_assistants(map()) :: integer()
+  def count_assistants(args) do
+    args
+    |> Repo.list_filter_query(Assistant, nil, &Repo.filter_with/2)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Gets a single assistant from the unified API tables, transformed to legacy shape.
   """
   @spec get_assistant(integer()) :: {:ok, map()} | {:error, any()}
@@ -143,6 +153,7 @@ defmodule Glific.Assistants do
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
+      live_version_number: active_config_version.version_number,
       vector_store_data: build_vector_store_data(active_config_version),
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
@@ -431,11 +442,25 @@ defmodule Glific.Assistants do
            kaapi_config.organization_id
          ) do
       {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        update_active_config_kaapi_version_number(assistant, kaapi_version_number)
+
         {:ok, kaapi_response.data.id}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec update_active_config_kaapi_version_number(Assistant.t(), non_neg_integer()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
+  defp update_active_config_kaapi_version_number(assistant, kaapi_version_number) do
+    assistant = Repo.preload(assistant, :active_config_version)
+
+    assistant.active_config_version
+    |> AssistantConfigVersion.changeset(%{kaapi_version_number: kaapi_version_number})
+    |> Repo.update()
   end
 
   @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
@@ -890,6 +915,15 @@ defmodule Glific.Assistants do
     if is_nil(assistant.kaapi_uuid) do
       case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
         {:ok, kaapi_response} ->
+          kaapi_version_number = kaapi_response.data.version.version
+
+          config_version
+          |> AssistantConfigVersion.changeset(%{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
+          |> Repo.update()
+
           assistant
           |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
           |> Repo.update()
@@ -916,13 +950,18 @@ defmodule Glific.Assistants do
              kaapi_config,
              assistant.organization_id
            ) do
-        {:ok, _kaapi_response} ->
+        {:ok, kaapi_response} ->
+          kaapi_version_number = kaapi_response.data.version
+
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()
 
           config_version
-          |> AssistantConfigVersion.changeset(%{status: :ready})
+          |> AssistantConfigVersion.changeset(%{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
           |> Repo.update()
 
         {:error, reason} ->

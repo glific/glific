@@ -3,8 +3,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   API Client for Kaapi Integration.
   """
 
-  require Logger
-
   # client with runtime config (API key / base URL).
   defp client(api_key) do
     Glific.Metrics.increment("Kaapi Requests")
@@ -17,6 +15,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
         Tesla.Middleware.KeepRequest,
         Tesla.Middleware.PathParams,
+        {Tesla.Middleware.Logger, filter_headers: ["X-API-KEY"]},
         {Tesla.Middleware.Telemetry, metadata: %{provider: "Kaapi", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
     )
@@ -30,23 +29,37 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def onboard_to_kaapi(params) do
     api_key = kaapi_config(:kaapi_api_key)
 
-    body = %{
-      organization_name: params.organization_name,
-      project_name: params.project_name
-    }
+    credentials =
+      []
+      |> maybe_append_credential(:openai, params[:openai_api_key])
+      |> maybe_append_credential(:google, params[:google_api_key])
+
+    body = %{organization_name: params.organization_name, project_name: params.project_name}
 
     body =
-      if params[:openai_api_key] do
-        Map.put(body, :openai_api_key, params[:openai_api_key])
-      else
-        body
-      end
+      if credentials != [],
+        do: Map.put(body, :credentials, credentials),
+        else: body
 
     opts = [adapter: [recv_timeout: 30_000]]
 
     api_key
     |> client()
     |> Tesla.post("/api/v1/onboard", body, opts: opts)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Update credentials (e.g. google_api_key) for an existing Kaapi organization project.
+  """
+  @spec update_organization_credentials(map(), binary()) ::
+          {:ok, map()} | {:error, map() | String.t()}
+  def update_organization_credentials(params, org_api_key) do
+    opts = [adapter: [recv_timeout: 30_000]]
+
+    org_api_key
+    |> client()
+    |> Tesla.patch("/api/v1/credentials", params, opts: opts)
     |> parse_kaapi_response()
   end
 
@@ -254,6 +267,12 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       end
     end)
   end
+
+  @spec maybe_append_credential(list(), atom(), String.t() | nil) :: list()
+  defp maybe_append_credential(credentials, _provider, nil), do: credentials
+
+  defp maybe_append_credential(credentials, provider, api_key),
+    do: credentials ++ [%{provider => %{api_key: api_key}}]
 
   @spec parse_kaapi_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
   defp parse_kaapi_response({:ok, %Tesla.Env{status: status, body: body}})

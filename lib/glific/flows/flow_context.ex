@@ -936,7 +936,7 @@ defmodule Glific.Flows.FlowContext do
   Process one context at a time that is ready to be woken
   """
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context

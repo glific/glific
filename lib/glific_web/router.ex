@@ -129,6 +129,7 @@ defmodule GlificWeb.Router do
   # Special routes for Kaapi Callbacks. All callbacks from Kaapi should be handled here.
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
+    post("/voice_flow_resume", Flows.FlowResumeController, :voice_flow_resume)
   end
 
   # """
