@@ -131,12 +131,7 @@ defmodule Glific.Assistants do
 
     active_config_version = assistant.active_config_version
 
-    new_version_in_progress =
-      active_config_version.status == :in_progress or
-        Enum.any?(assistant.config_versions, fn config_version ->
-          config_version.id != assistant.active_config_version_id and
-            config_version.status == :in_progress
-        end)
+    new_version_in_progress = assistant.config_versions != []
 
     %{
       id: assistant.id,
@@ -839,7 +834,10 @@ defmodule Glific.Assistants do
   defp update_linked_config_version(knowledge_base_version, status, error_message)
        when status != "SUCCESSFUL" do
     knowledge_base_version =
-      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
+      Repo.preload(knowledge_base_version, [
+        :knowledge_base,
+        assistant_config_versions: :assistant
+      ])
 
     failure_reason = error_message || "Knowledge base creation failed with status #{status}"
 
@@ -851,6 +849,17 @@ defmodule Glific.Assistants do
           failure_reason: failure_reason
         })
         |> Repo.update()
+
+        send_kb_notification(
+          knowledge_base_version,
+          "Knowledge Base creation failed for assistant \"#{config_version.assistant.name}\". " <>
+            "Reason: #{failure_reason}. Please try again.",
+          %{
+            assistant_name: config_version.assistant.name,
+            config_version_id: config_version.id,
+            failure_reason: failure_reason
+          }
+        )
 
       _ ->
         nil
@@ -1111,19 +1120,34 @@ defmodule Glific.Assistants do
       |> Enum.map(& &1.name)
       |> Enum.uniq()
 
-    Notifications.create_notification(%{
-      category: "Assistant",
-      message: "Knowledge Base creation timeout",
-      severity: Notifications.types().warning,
-      organization_id: knowledge_base_version.organization_id,
-      entity: %{
-        knowledge_base_version_id: knowledge_base_version.id,
-        knowledge_base_id: knowledge_base_version.knowledge_base_id,
-        knowledge_base_name: knowledge_base_version.knowledge_base.name,
-        version_number: knowledge_base_version.version_number,
+    send_kb_notification(
+      knowledge_base_version,
+      "Knowledge Base creation timeout",
+      %{
         affected_config_version_ids: affected_config_version_ids,
         affected_assistant_names: affected_assistant_names
       }
+    )
+  end
+
+  defp send_kb_notification(knowledge_base_version, message, entity) do
+    entity =
+      Map.merge(
+        %{
+          knowledge_base_version_id: knowledge_base_version.id,
+          knowledge_base_id: knowledge_base_version.knowledge_base_id,
+          knowledge_base_name: knowledge_base_version.knowledge_base.name,
+          version_number: knowledge_base_version.version_number
+        },
+        entity
+      )
+
+    Notifications.create_notification(%{
+      category: "Assistant",
+      message: message,
+      severity: Notifications.types().warning,
+      organization_id: knowledge_base_version.organization_id,
+      entity: entity
     })
   end
 
