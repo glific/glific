@@ -326,47 +326,66 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   end
 
   defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
-    with {:ok, assistant} <-
-           Assistant.changeset(%Assistant{}, %{
-             name: params.name,
-             organization_id: params.organization_id,
-             kaapi_uuid: kaapi_uuid
-           })
-           |> Repo.insert(),
-         {:ok, assistant_version} <-
-           AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
-             assistant_id: assistant.id,
-             description: params.description,
-             prompt: params.prompt,
-             model: params.model,
-             provider: "openai",
-             settings: %{temperature: params.temperature},
-             status: :ready,
-             organization_id: params.organization_id
-             # add kaapi_version_nummber here
-           })
-           |> Repo.insert(),
-         {:ok, _assistant} <-
-           Assistant.set_active_config_version_changeset(assistant, %{
-             active_config_version_id: assistant_version.id
-           })
-           |> Repo.update(),
-         bridge_table_params = [
-           %{
-             assistant_config_version_id: assistant_version.id,
-             knowledge_base_version_id: knowledge_base_version.id,
-             organization_id: params.organization_id,
-             inserted_at: DateTime.utc_now(),
-             updated_at: DateTime.utc_now()
-           }
-         ],
+    with {:ok, assistant} <- create_assistant(params, kaapi_uuid),
+         {:ok, assistant_version} <- create_assistant_version(assistant, params),
+         {:ok, _assistant} <- set_active_config_version(assistant, assistant_version),
          _ <-
-           Repo.insert_all(
-             "assistant_config_version_knowledge_base_versions",
-             bridge_table_params
+           link_assistant_version_and_knowledge_base(
+             assistant_version,
+             knowledge_base_version,
+             params
            ) do
       :ok
     end
+  end
+
+  defp create_assistant(params, kaapi_uuid) do
+    Assistant.changeset(%Assistant{}, %{
+      name: params.name,
+      organization_id: params.organization_id,
+      kaapi_uuid: kaapi_uuid
+    })
+    |> Repo.insert()
+  end
+
+  defp create_assistant_version(assistant, params) do
+    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+      assistant_id: assistant.id,
+      description: params.description,
+      prompt: params.prompt,
+      model: params.model,
+      provider: "openai",
+      settings: %{temperature: params.temperature},
+      status: :ready,
+      organization_id: params.organization_id
+      # add kaapi_version_nummber here
+    })
+    |> Repo.insert()
+  end
+
+  defp set_active_config_version(assistant, assistant_version) do
+    Assistant.set_active_config_version_changeset(assistant, %{
+      active_config_version_id: assistant_version.id
+    })
+    |> Repo.update()
+  end
+
+  defp link_assistant_version_and_knowledge_base(
+         assistant_version,
+         knowledge_base_version,
+         params
+       ) do
+    entries = [
+      %{
+        assistant_config_version_id: assistant_version.id,
+        knowledge_base_version_id: knowledge_base_version.id,
+        organization_id: params.organization_id,
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      }
+    ]
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
   end
 
   defp auth_headers() do
