@@ -257,6 +257,40 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       end
     end
 
+    test "handles file content download failure gracefully", %{assistant: assistant} do
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 500, body: %{"error" => "content unavailable"}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{status: 500, body: %{error: "No documents provided"}}
+        end)
+
+        # Content download fails, so no files are saved.
+        # upload_files_to_kaapi finds empty dir, returns [].
+        # create_collection is called with empty file_ids and fails.
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+      end
+    end
+
     test "returns error when Kaapi collection creation fails", %{assistant: assistant} do
       clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
       File.mkdir_p!(clone_dir)

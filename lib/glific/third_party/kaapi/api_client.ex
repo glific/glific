@@ -9,6 +9,11 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     Tesla.client(middlewares(api_key) ++ Glific.get_tesla_retry_middleware())
   end
 
+  defp client(api_key, adapter) do
+    Glific.Metrics.increment("Kaapi Requests")
+    Tesla.client(middlewares(api_key), adapter)
+  end
+
   defp middlewares(api_key) do
     base_url = kaapi_config(:kaapi_endpoint)
 
@@ -303,13 +308,9 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   defp upload_client(api_key) do
-    Glific.Metrics.increment("Kaapi Requests")
-    adapter = kaapi_config(:upload_adapter)
-
-    if adapter do
-      Tesla.client(middlewares(api_key), adapter)
-    else
-      Tesla.client(middlewares(api_key))
+    case kaapi_config(:upload_adapter) do
+      nil -> client(api_key)
+      adapter -> client(api_key, adapter)
     end
   end
 

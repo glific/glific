@@ -209,6 +209,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   @spec upload_files_to_kaapi(String.t(), non_neg_integer()) :: [map()]
   defp upload_files_to_kaapi(assistant_name, organization_id) do
     path = Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}")
+    File.mkdir_p!(path)
 
     path
     |> File.ls!()
