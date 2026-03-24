@@ -1,5 +1,6 @@
 defmodule GlificWeb.Flows.FlowResumeControllerTest do
   use GlificWeb.ConnCase
+  use Publicist
   import Mock
 
   alias Glific.{
@@ -8,6 +9,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.FlowContext,
     Seeds.SeedsDev
   }
+
+  alias GlificWeb.Flows.FlowResumeController
 
   setup do
     SeedsDev.seed_organizations()
@@ -562,6 +565,175 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
+    end
+
+    test "voice_flow_resume resumes the flow after voice post-processing", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _tail] = flow.nodes
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(
+          organization_id,
+          Jason.encode!(signature_payload),
+          timestamp
+        )
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "conversation_id" => "conv_voice_123",
+            "output" => %{"type" => "text", "content" => %{"value" => "Voice answer"}}
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => signature,
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "result",
+          "voice_post_process" => %{
+            "source_language" => "english",
+            "target_language" => "english",
+            "speech_engine" => ""
+          }
+        },
+        "success" => true
+      }
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      assert json_response(conn, 200) == ""
+    end
+
+    test "voice_flow_resume returns 200 for unexpected callback format", %{
+      conn: conn
+    } do
+      conn = post(conn, "/kaapi/voice_flow_resume", %{"unexpected" => "format"})
+      assert json_response(conn, 200) == ""
+    end
+
+    test "voice_flow_resume returns 200 for invalid signature", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "conversation_id" => "conv_voice_invalid",
+            "output" => %{"type" => "text", "content" => %{"value" => "should not appear"}}
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => "invalid_signature",
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "result"
+        },
+        "success" => true
+      }
+
+      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      assert json_response(conn, 200) == ""
+
+      # Call do_voice_flow_resume directly to verify the flow is NOT resumed
+      response = FlowResumeController.parse_callback_response(params)
+
+      with_mock FlowContext,
+        resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
+        assert :ok =
+                 FlowResumeController.do_voice_flow_resume(
+                   organization_id,
+                   params,
+                   response
+                 )
+
+        refute called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+      end
+    end
+
+    test "do_voice_flow_resume resumes flow with voice response on success", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _tail] = flow.nodes
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "webhook_log_id" => webhook_log.id,
+        "result_name" => "result",
+        "message" => "Voice answer"
+      }
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      assert :ok =
+               FlowResumeController.do_voice_flow_resume(
+                 organization_id,
+                 %{"success" => false},
+                 response
+               )
     end
 
     test "returns 200 when TTS audio upload fails (bad base64)", %{
