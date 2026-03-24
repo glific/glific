@@ -2517,5 +2517,31 @@ defmodule Glific.AssistantsTest do
       assert final_fetched.new_version_in_progress == false
       assert final_fetched.status == "ready"
     end
+
+    test "returns error when a config version is still in progress",
+         %{
+           organization_id: organization_id,
+           assistant: assistant
+         } do
+      # Insert an in-progress config version for this assistant
+      {:ok, _in_progress_cv} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "pending prompt",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      assert {:error, "Assistant setup is still in progress"} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Should Fail",
+                 organization_id: organization_id
+               })
+    end
   end
 end
