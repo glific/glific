@@ -4,9 +4,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
   """
 
   use GlificWeb, :controller
+  use Publicist
   require Logger
 
   alias Glific.{
+    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.FlowContext,
     Flows.Webhook,
@@ -39,7 +41,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
-    respone_key = response["result_name"] || "response"
+    response_key = response["result_name"] || "response"
 
     message =
       case {result["success"], response["webhook_log_id"]} do
@@ -69,13 +71,74 @@ defmodule GlificWeb.Flows.FlowResumeController do
       FlowContext.resume_contact_flow(
         contact,
         response["flow_id"],
-        %{respone_key => response},
+        %{response_key => response},
         message
       )
     end
 
     # always return 200 and an empty response
     json(conn, "")
+  end
+
+  @doc """
+  Callback for voice unified LLM calls.
+  Receives the Kaapi LLM response, performs NMT+TTS (translate + generate audio),
+  then resumes the flow with translated_text + media_url.
+  """
+  @spec voice_flow_resume(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def voice_flow_resume(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        result
+      ) do
+    response = parse_callback_response(result)
+
+    Task.start(fn ->
+      Repo.put_process_state(organization_id)
+      do_voice_flow_resume(organization_id, result, response)
+    end)
+
+    json(conn, "")
+  end
+
+  @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
+  defp do_voice_flow_resume(organization_id, result, response) do
+    organization = Partners.organization(organization_id)
+    response_key = response["result_name"] || "response"
+
+    message =
+      if result["success"],
+        do: Messages.create_temp_message(organization_id, "Success"),
+        else: Messages.create_temp_message(organization_id, "Failure")
+
+    with true <- validate_request(organization_id, response),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             id: response["contact_id"],
+             organization_id: organization.id
+           }) do
+      voice_response =
+        CommonWebhook.voice_post_process(organization_id, result["success"], response)
+
+      if response["webhook_log_id"],
+        do: Webhook.update_log(response["webhook_log_id"], voice_response)
+
+      track_kaapi_latency(response)
+
+      FlowContext.resume_contact_flow(
+        contact,
+        response["flow_id"],
+        %{response_key => voice_response},
+        message
+      )
+    else
+      false ->
+        Logger.warning("Voice flow resume validation failed for org #{organization_id}")
+
+      {:error, reason} ->
+        Logger.warning("Voice flow resume contact lookup failed: #{inspect(reason)}")
+    end
+
+    :ok
   end
 
   # New format from unified-llm-call (/api/v1/llm/call):

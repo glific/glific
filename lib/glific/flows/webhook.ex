@@ -84,13 +84,7 @@ defmodule Glific.Flows.Webhook do
   @spec execute_kaapi_stt(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_kaapi_stt(action, context) do
-    case Kaapi.fetch_kaapi_creds(context.organization_id) do
-      {:ok, _secrets} ->
-        enqueue_stt_tts_job(action, context, @webhook_speech_to_text)
-
-      {:error, _reason} ->
-        unified_llm_and_wait(action, context, false, @webhook_speech_to_text)
-    end
+    enqueue_stt_tts_job(action, context, @webhook_speech_to_text)
   end
 
   @doc """
@@ -102,18 +96,22 @@ defmodule Glific.Flows.Webhook do
   @spec execute_kaapi_tts(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_kaapi_tts(action, context) do
-    case Kaapi.fetch_kaapi_creds(context.organization_id) do
-      {:ok, _secrets} ->
-        enqueue_stt_tts_job(action, context, @webhook_text_to_speech)
-
-      {:error, _reason} ->
-        unified_llm_and_wait(action, context, false, @webhook_text_to_speech)
-    end
+    enqueue_stt_tts_job(action, context, @webhook_text_to_speech)
   end
 
   @spec enqueue_stt_tts_job(Action.t(), FlowContext.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   defp enqueue_stt_tts_job(action, context, webhook_name) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, _secrets} ->
+        do_enqueue_stt_tts_job(action, context, webhook_name)
+
+      {:error, _reason} ->
+        kaapi_not_active_error(action, context)
+    end
+  end
+
+  defp do_enqueue_stt_tts_job(action, context, webhook_name) do
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
     case create_body(context, action.body) do
@@ -156,15 +154,7 @@ defmodule Glific.Flows.Webhook do
   @spec execute_unified_filesearch(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_unified_filesearch(action, context) do
-    with {:ok, kaapi_secrets} <- Kaapi.fetch_kaapi_creds(context.organization_id),
-         api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
-      updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
-      updated_action = %{action | headers: updated_headers}
-      unified_llm_and_wait(updated_action, context, true, @webhook_unified_llm)
-    else
-      {:error, _error} ->
-        unified_llm_and_wait(action, context, false, @webhook_unified_llm)
-    end
+    unified_llm_and_wait(action, context, @webhook_unified_llm)
   end
 
   @doc """
@@ -569,11 +559,23 @@ defmodule Glific.Flows.Webhook do
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 
   @doc """
-  The function updates the flow_context and waits for the unified LLM API to send a response.
+  The function fetches Kaapi creds, injects the API key, then updates the
+  flow_context and waits for the unified LLM API to send a response.
   """
-  @spec unified_llm_and_wait(map(), FlowContext.t(), boolean(), String.t()) ::
+  @spec unified_llm_and_wait(Action.t(), FlowContext.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, false, _webhook_name) do
+  def unified_llm_and_wait(action, context, webhook_name) do
+    case Kaapi.fetch_kaapi_creds(context.organization_id) do
+      {:ok, %{"api_key" => api_key}} when is_binary(api_key) ->
+        updated_action = %{action | headers: Map.put(action.headers, "X-API-KEY", api_key)}
+        do_unified_llm_call(updated_action, context, webhook_name)
+
+      _ ->
+        kaapi_not_active_error(action, context)
+    end
+  end
+
+  defp kaapi_not_active_error(action, context) do
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
     webhook_log = create_log(action, %{}, action.headers, context)
     update_log(webhook_log.id, "Kaapi is not active")
@@ -589,7 +591,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, context, [failure_message]}
   end
 
-  def unified_llm_and_wait(action, context, true, webhook_name) do
+  defp do_unified_llm_call(action, context, webhook_name) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -760,6 +762,19 @@ defmodule Glific.Flows.Webhook do
         update_log(params.webhook_log_id, "Something went wrong")
         {:ok, params.context, [params.failure_message]}
     end
+  end
+
+  @doc """
+  Execute a voice unified LLM webhook (async — flow waits for voice_flow_resume callback).
+
+  Fetches Kaapi creds, injects the API key, then delegates to unified_llm_and_wait with
+  the "unified-voice-llm-call" webhook name. CommonWebhook handles the synchronous STT
+  step before making the async LLM call.
+  """
+  @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]}
+  def execute_unified_voice_filesearch(action, context) do
+    unified_llm_and_wait(action, context, "unified-voice-llm-call")
   end
 
   @spec update_context_for_wait(FlowContext.t(), integer()) ::
