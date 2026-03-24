@@ -103,10 +103,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     }
   end
 
+  @spec list_all_files(String.t()) :: {:ok, [map()]} | {:error, String.t()}
   defp list_all_files(vector_store_id) do
     list_files_page(vector_store_id, nil, [])
   end
 
+  @spec list_files_page(String.t(), String.t() | nil, [map()]) ::
+          {:ok, [map()]} | {:error, String.t()}
   defp list_files_page(vector_store_id, after_cursor, acc) do
     params = [limit: @page_limit] ++ if(after_cursor, do: [after: after_cursor], else: [])
 
@@ -134,6 +137,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec download_files([map()], String.t(), String.t(), non_neg_integer()) :: :ok
   defp download_files(files, vector_store_id, assistant_name, organization_id) do
     results =
       Enum.map(files, fn file ->
@@ -150,6 +154,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     :ok
   end
 
+  @spec download_file(map(), String.t(), String.t(), non_neg_integer()) :: :ok | :error
   defp download_file(%{"id" => file_id} = _file, vector_store_id, assistant_name, organization_id) do
     Logger.info("Fetching metadata for #{file_id}")
 
@@ -176,6 +181,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec fetch_and_save(String.t(), String.t(), String.t(), String.t(), non_neg_integer()) ::
+          :ok | :error
   defp fetch_and_save(file_id, filename, vector_store_id, assistant_name, organization_id) do
     case Req.get("#{@base_url}/vector_stores/#{vector_store_id}/files/#{file_id}/content",
            headers: auth_headers()
@@ -206,6 +213,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec upload_files_to_kaapi(String.t(), non_neg_integer()) :: [map()]
   defp upload_files_to_kaapi(assistant_name, organization_id) do
     path = Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}")
 
@@ -233,6 +241,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Enum.reject(&(&1 == nil))
   end
 
+  @spec upload_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
   defp upload_document(file, organization_id) do
     document_params = %{path: file, filename: Path.basename(file)}
     Kaapi.upload_document(document_params, organization_id)
@@ -249,6 +258,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     )
   end
 
+  @spec poll_kaapi_for_collection_status(
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: {:ok, String.t()} | {:error, String.t()}
   defp poll_kaapi_for_collection_status(
          collection_job_id,
          organization_id,
@@ -297,6 +312,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec create_cloned_knowledge_base([map()], String.t(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
   defp create_cloned_knowledge_base(file_data, llm_service_id, kaapi_job_id, organization_id) do
     files =
       Enum.reduce(file_data, %{}, fn file, acc ->
@@ -325,6 +342,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec create_cloned_assistant(map(), KnowledgeBaseVersion.t(), String.t()) ::
+          :ok | {:error, any()}
   defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
     with {:ok, assistant} <- create_assistant(params, kaapi_uuid),
          {:ok, assistant_version} <- create_assistant_version(assistant, params),
@@ -339,6 +358,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
+  @spec create_assistant(map(), String.t()) :: {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   defp create_assistant(params, kaapi_uuid) do
     Assistant.changeset(%Assistant{}, %{
       name: params.name,
@@ -348,6 +368,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Repo.insert()
   end
 
+  @spec create_assistant_version(Assistant.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
   defp create_assistant_version(assistant, params) do
     AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
       assistant_id: assistant.id,
@@ -363,6 +385,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Repo.insert()
   end
 
+  @spec set_active_config_version(Assistant.t(), AssistantConfigVersion.t()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
   defp set_active_config_version(assistant, assistant_version) do
     Assistant.set_active_config_version_changeset(assistant, %{
       active_config_version_id: assistant_version.id
@@ -370,6 +394,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Repo.update()
   end
 
+  @spec link_assistant_version_and_knowledge_base(
+          AssistantConfigVersion.t(),
+          KnowledgeBaseVersion.t(),
+          map()
+        ) :: {non_neg_integer(), nil | [term()]} | {:error, Ecto.Changeset.t()}
   defp link_assistant_version_and_knowledge_base(
          assistant_version,
          knowledge_base_version,
@@ -388,6 +417,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
   end
 
+  @spec auth_headers() :: [tuple()]
   defp auth_headers() do
     api_key = Glific.get_open_ai_key()
 
