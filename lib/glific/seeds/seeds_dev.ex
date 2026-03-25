@@ -4,6 +4,8 @@ if Code.ensure_loaded?(Faker) do
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
 
+    require Logger
+
     alias Faker.Phone
 
     alias Glific.{
@@ -26,6 +28,7 @@ if Code.ensure_loaded?(Faker) do
       Messages.MessageMedia,
       Notifications,
       Notifications.Notification,
+      Partners,
       Partners.Billing,
       Partners.Organization,
       Partners.Provider,
@@ -47,6 +50,53 @@ if Code.ensure_loaded?(Faker) do
     }
 
     alias Faker.Lorem.Shakespeare
+
+    @doc false
+    @spec seed_kaapi_credential(Organization.t() | nil) :: :ok
+    def seed_kaapi_credential(organization \\ nil) do
+      organization = get_organization(organization)
+      Repo.put_organization_id(organization.id)
+
+      api_key =
+        case System.get_env("KAAPI_API_KEY") do
+          nil -> nil
+          value when is_binary(value) -> String.trim(value)
+        end
+
+      if api_key in [nil, ""] do
+        Logger.info("Skipping Kaapi credential seed: KAAPI_API_KEY not set")
+        :ok
+      else
+        case Repo.fetch_by(Provider, %{shortcode: "kaapi"}) do
+          {:ok, _provider} ->
+            upsert_kaapi_credential(organization.id, api_key)
+            :ok
+
+          {:error, _reason} ->
+            Logger.info("Skipping Kaapi credential seed: provider kaapi not found")
+            :ok
+        end
+      end
+    end
+
+    defp upsert_kaapi_credential(organization_id, api_key) do
+      case Partners.get_credential(%{organization_id: organization_id, shortcode: "kaapi"}) do
+        {:ok, credential} ->
+          Partners.update_credential(credential, %{
+            secrets: %{"api_key" => api_key},
+            is_active: true
+          })
+
+        {:error, _reason} ->
+          Partners.create_credential(%{
+            organization_id: organization_id,
+            shortcode: "kaapi",
+            keys: %{},
+            secrets: %{"api_key" => api_key},
+            is_active: true
+          })
+      end
+    end
 
     @doc """
     Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
@@ -2021,6 +2071,8 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization()
 
       Repo.put_organization_id(organization.id)
+
+      seed_kaapi_credential(organization)
 
       seed_contacts(organization)
 
