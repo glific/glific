@@ -171,7 +171,9 @@ config :glific,
 upload_adapter =
   if config_env() == :test,
     do: nil,
-    else: {Tesla.Adapter.Hackney, [recv_timeout: 60_000, pool: :kaapi_upload_pool]}
+    else:
+      {Tesla.Adapter.Hackney,
+       [recv_timeout: 60_000, connect_timeout: 15_000, pool: :kaapi_upload_pool]}
 
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),

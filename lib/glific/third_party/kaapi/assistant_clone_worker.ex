@@ -16,6 +16,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
+    Notifications,
     Repo,
     ThirdParty.Kaapi
   }
@@ -28,9 +29,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
-  def perform(%Oban.Job{
-        args: %{"assistant_id" => assistant_id, "organization_id" => organization_id}
-      }) do
+  def perform(
+        %Oban.Job{
+          args: %{"assistant_id" => assistant_id, "organization_id" => organization_id},
+          attempt: attempt,
+          max_attempts: max_attempts
+        } = _job
+      ) do
     Repo.put_process_state(organization_id)
 
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
@@ -47,7 +52,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
            ),
          file_data <-
            upload_files_to_kaapi(assistant.name, organization_id),
-         file_ids = Enum.map(file_data, & &1.file_id),
+         {:ok, file_ids} <- validate_uploaded_files(file_data),
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
@@ -57,19 +62,78 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, knowledge_base_version} <-
            create_cloned_knowledge_base(file_data, llm_service_id, job_id, organization_id),
          :ok <- create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
+      update_clone_status(assistant, "completed")
+
+      send_clone_notification(
+        organization_id,
+        "Assistant '#{assistant.name}' cloned successfully",
+        :info
+      )
+
       Logger.info(
         "AssistantCloneWorker: Successfully cloned assistant #{assistant_id} for org #{organization_id}"
       )
 
+      cleanup_temp_files(organization_id)
       :ok
     else
       {:error, reason} ->
-        Logger.error(
-          "AssistantCloneWorker: Failed to clone assistant #{assistant_id} for org #{organization_id}: #{inspect(reason)}"
-        )
-
+        last_attempt? = attempt >= max_attempts
+        handle_clone_failure(assistant_id, organization_id, reason, last_attempt?)
+        cleanup_temp_files(organization_id)
         {:error, inspect(reason)}
     end
+  end
+
+  @spec handle_clone_failure(non_neg_integer(), non_neg_integer(), any(), boolean()) :: :ok
+  defp handle_clone_failure(assistant_id, organization_id, reason, last_attempt?) do
+    Logger.error(
+      "AssistantCloneWorker: Failed to clone assistant #{assistant_id} for org #{organization_id}: #{inspect(reason)}"
+    )
+
+    if last_attempt? do
+      case Repo.fetch_by(Assistant, %{id: assistant_id}) do
+        {:ok, assistant} -> update_clone_status(assistant, "failed")
+        _ -> :ok
+      end
+
+      send_clone_notification(
+        organization_id,
+        "Assistant cloning failed: #{inspect(reason)}",
+        :warning
+      )
+    end
+
+    :ok
+  end
+
+  @spec update_clone_status(Assistant.t(), String.t()) :: :ok
+  defp update_clone_status(assistant, status) do
+    assistant
+    |> Ecto.Changeset.change(%{clone_status: status})
+    |> Repo.update()
+
+    :ok
+  end
+
+  @spec send_clone_notification(non_neg_integer(), String.t(), atom()) :: :ok
+  defp send_clone_notification(organization_id, message, severity) do
+    Notifications.create_notification(%{
+      category: "Assistant",
+      message: message,
+      severity: Map.get(Notifications.types(), severity),
+      organization_id: organization_id,
+      entity: %{type: "assistant_clone"}
+    })
+
+    :ok
+  end
+
+  @spec cleanup_temp_files(non_neg_integer()) :: :ok
+  defp cleanup_temp_files(organization_id) do
+    path = Path.join(System.tmp_dir!(), "clone/#{organization_id}")
+    File.rm_rf(path)
+    :ok
   end
 
   @spec get_knowledge_base_version(Assistant.t()) ::
@@ -80,6 +144,15 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       [] -> {:error, "No knowledge base version found"}
     end
   end
+
+  @spec validate_uploaded_files([map()]) :: {:ok, [String.t()]} | {:error, String.t()}
+  defp validate_uploaded_files([]) do
+    Logger.info("No files were uploaded successfully, cannot create collection")
+    {:error, "No files were uploaded successfully, cannot create collection"}
+  end
+
+  defp validate_uploaded_files(file_data),
+    do: {:ok, Enum.map(file_data, & &1.file_id)}
 
   @spec assistant_params(Assistant.t(), non_neg_integer(), String.t()) :: map()
   defp assistant_params(assistant, organization_id, knowledge_base_id) do

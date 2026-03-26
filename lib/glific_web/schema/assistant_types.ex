@@ -81,6 +81,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :new_version_in_progress, :boolean
     field :live_version_number, :integer
     field :legacy, :boolean
+    field :clone_status, :string
 
     field :vector_store, :vector_store do
       resolve(&Resolvers.Filesearch.resolve_vector_store/3)

@@ -87,6 +87,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       })
       |> Repo.update()
 
+    on_exit(fn ->
+      File.rm_rf(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
+    end)
+
     %{assistant: assistant, config_version: config_version, knowledge_base_version: kbv}
   end
 
@@ -193,8 +197,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.status == :ready
       end
 
-      # Clean up temp files
-      File.rm_rf!(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
     end
 
     test "returns error when assistant not found" do
@@ -336,7 +338,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                  })
       end
 
-      File.rm_rf!(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
     end
 
     test "returns error when Kaapi config creation fails", %{assistant: assistant} do
@@ -400,7 +401,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                  })
       end
 
-      File.rm_rf!(Path.join(System.tmp_dir!(), "clone/#{@org_id}"))
     end
   end
 

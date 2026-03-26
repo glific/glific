@@ -158,6 +158,7 @@ defmodule Glific.Assistants do
       new_version_in_progress: new_version_in_progress,
       live_version_number: active_config_version.version_number,
       legacy: if(vector_store_data, do: vector_store_data.legacy, else: false),
+      clone_status: assistant.clone_status,
       vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
@@ -265,6 +266,10 @@ defmodule Glific.Assistants do
   @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def clone_assistant(id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         {:ok, _assistant} <-
+           assistant
+           |> Ecto.Changeset.change(%{clone_status: "in_progress"})
+           |> Repo.update(),
          {:ok, _job} <-
            AssistantCloneWorker.new(%{
              assistant_id: assistant.id,
@@ -273,6 +278,32 @@ defmodule Glific.Assistants do
            |> Oban.insert() do
       {:ok, %{message: "Assistant clone initiated"}}
     end
+  end
+
+  @doc """
+  Marks legacy assistants (inserted before March 9, 2026) that have a knowledge base
+  with clone_status "pending" so they can be identified for cloning.
+  """
+  @spec mark_legacy_assistants_for_cloning :: {non_neg_integer(), nil}
+  def mark_legacy_assistants_for_cloning do
+    cutoff_date = ~U[2026-03-09 00:00:00Z]
+
+    assistant_ids =
+      from(a in Assistant,
+        join: acv in AssistantConfigVersion,
+        on: acv.id == a.active_config_version_id,
+        join: link in "assistant_config_version_knowledge_base_versions",
+        on: link.assistant_config_version_id == acv.id,
+        join: kbv in KnowledgeBaseVersion,
+        on: kbv.id == link.knowledge_base_version_id,
+        where: a.inserted_at < ^cutoff_date,
+        where: is_nil(kbv.kaapi_job_id),
+        select: a.id
+      )
+      |> Repo.all()
+
+    from(a in Assistant, where: a.id in ^assistant_ids)
+    |> Repo.update_all(set: [clone_status: "pending"])
   end
 
   @doc """
@@ -1018,7 +1049,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
+      "https://3206-2409-40d2-206a-4572-343f-fec6-db8b-40bc.ngrok-free.app" <>
         "/kaapi/knowledge_base_version"
 
     %{
