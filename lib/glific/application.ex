@@ -54,7 +54,10 @@ defmodule Glific.Application do
       {Task.Supervisor, name: Glific.Broadcast.Supervisor},
 
       ## Add Generic task supervisor
-      {Task.Supervisor, name: Glific.TaskSupervisor}
+      {Task.Supervisor, name: Glific.TaskSupervisor},
+
+      # Dedicated hackney pool for Kaapi document uploads
+      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:

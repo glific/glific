@@ -18,6 +18,7 @@ defmodule Glific.Assistants do
   alias Glific.Partners
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
 
   defmodule Error do
     @moduledoc """
@@ -133,6 +134,8 @@ defmodule Glific.Assistants do
 
     new_version_in_progress = assistant.config_versions != []
 
+    vector_store_data = build_vector_store_data(active_config_version)
+
     %{
       id: assistant.id,
       assistant_display_id: assistant.assistant_display_id,
@@ -144,7 +147,9 @@ defmodule Glific.Assistants do
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
       live_version_number: active_config_version.version_number,
-      vector_store_data: build_vector_store_data(active_config_version),
+      legacy: if(vector_store_data, do: vector_store_data.legacy, else: false),
+      clone_status: assistant.clone_status,
+      vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at
     }
@@ -242,6 +247,27 @@ defmodule Glific.Assistants do
          {:ok, _config_version} <- maybe_register_with_kaapi(result, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
       {:ok, result}
+    end
+  end
+
+  @doc """
+  Clones an existing assistant by copying its config (prompt, model, temperature)
+  into a new assistant record.
+  """
+  @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def clone_assistant(id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         {:ok, _job} <-
+           AssistantCloneWorker.new(%{
+             assistant_id: assistant.id,
+             organization_id: assistant.organization_id
+           })
+           |> Oban.insert(),
+         {:ok, _assistant} <-
+           assistant
+           |> Ecto.Changeset.change(%{clone_status: "in_progress"})
+           |> Repo.update() do
+      {:ok, %{message: "Assistant clone initiated"}}
     end
   end
 

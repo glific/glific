@@ -35,4 +35,13 @@ defmodule GlificWeb.Resolvers.Assistants do
       {:ok, %{knowledge_base: response}}
     end
   end
+
+  @doc """
+  Clone an existing assistant by ID.
+  """
+  @spec clone_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
+  def clone_assistant(_, %{id: id}, _) do
+    Assistants.clone_assistant(id)
+  end
 end

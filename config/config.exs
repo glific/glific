@@ -47,7 +47,8 @@ oban_queues = [
   ],
   gpt_webhook_queue: 20,
   contact_import: 10,
-  gupshup_high_tps: 10
+  gupshup_high_tps: 10,
+  clone_assistant: 5
 ]
 
 oban_crontab = [
