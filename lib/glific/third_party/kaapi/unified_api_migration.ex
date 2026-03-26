@@ -405,6 +405,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         join: kbv in KnowledgeBaseVersion,
         on: kbv.id == link.knowledge_base_version_id,
         where: a.inserted_at < ^cutoff_date,
+        where: a.clone_status == "none",
         where: is_nil(kbv.kaapi_job_id),
         select: a.id
       )
