@@ -5,16 +5,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   # client with runtime config (API key / base URL).
   defp client(api_key) do
-    Glific.Metrics.increment("Kaapi Requests")
     Tesla.client(middlewares(api_key) ++ Glific.get_tesla_retry_middleware())
   end
 
   defp client(api_key, adapter) do
-    Glific.Metrics.increment("Kaapi Requests")
     Tesla.client(middlewares(api_key) ++ Glific.get_tesla_retry_middleware(), adapter)
   end
 
   defp middlewares(api_key) do
+    Glific.Metrics.increment("Kaapi Requests")
     base_url = kaapi_config(:kaapi_endpoint)
 
     [

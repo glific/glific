@@ -7,7 +7,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   use Oban.Worker,
     queue: :clone_assistant,
-    max_attempts: 2
+    max_attempts: 2,
+    unique: [fields: [:args], keys: [:assistant_id, :organization_id], period: :infinity]
 
   require Logger
 
@@ -117,7 +118,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp update_clone_status(assistant, status) do
     assistant
     |> Ecto.Changeset.change(%{clone_status: status})
-    |> Repo.update()
+    |> Repo.update!()
 
     :ok
   end
@@ -214,18 +215,22 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp download_files(files, vector_store_id, assistant_name, organization_id) do
     results =
       Enum.map(files, fn file ->
-        download_file(file, vector_store_id, assistant_name, organization_id)
+        {file["id"], download_file(file, vector_store_id, assistant_name, organization_id)}
       end)
 
-    succeeded = Enum.count(results, &(&1 == :ok))
-    failed = length(results) - succeeded
+    failed_files =
+      results
+      |> Enum.filter(fn {_id, result} -> result == :error end)
+      |> Enum.map(fn {id, _} -> id end)
+
+    succeeded = length(results) - length(failed_files)
 
     Logger.info(
-      "File downloads for #{assistant_name} done. #{succeeded} downloaded, #{failed} failed"
+      "File downloads for #{assistant_name} done. #{succeeded} downloaded, #{length(failed_files)} failed"
     )
 
     if succeeded == 0 and length(files) > 0 do
-      {:error, "All #{failed} file downloads failed for #{assistant_name}"}
+      {:error, "#{length(failed_files)} file downloads failed for #{assistant_name}: #{Enum.join(failed_files, ", ")}"}
     else
       :ok
     end
@@ -295,28 +300,44 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     path = Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}")
     File.mkdir_p!(path)
 
-    path
-    |> File.ls!()
-    |> Enum.map(fn filename ->
-      file_path = Path.join(path, filename)
+    results =
+      path
+      |> File.ls!()
+      |> Enum.map(fn filename ->
+        file_path = Path.join(path, filename)
 
-      case upload_document(file_path, organization_id) do
-        {:ok, %{data: document_data}} ->
-          Logger.info("File #{filename} uploaded for #{assistant_name}")
+        case upload_document(file_path, organization_id) do
+          {:ok, %{data: document_data}} ->
+            Logger.info("File #{filename} uploaded for #{assistant_name}")
 
-          %{
-            file_id: document_data[:id],
-            filename: filename,
-            uploaded_at: document_data[:inserted_at],
-            file_size: File.stat!(file_path).size
-          }
+            {:ok,
+             %{
+               file_id: document_data[:id],
+               filename: filename,
+               uploaded_at: document_data[:inserted_at],
+               file_size: File.stat!(file_path).size
+             }}
 
-        {:error, reason} ->
-          Logger.error("FAILED (upload document error for #{assistant_name}): #{inspect(reason)}")
-          nil
-      end
-    end)
-    |> Enum.reject(&(&1 == nil))
+          {:error, reason} ->
+            Logger.error(
+              "FAILED (upload document error for #{assistant_name}): #{inspect(reason)}"
+            )
+
+            {:error, filename}
+        end
+      end)
+
+    failed_files = for {:error, filename} <- results, do: filename
+
+    if failed_files != [] do
+      send_clone_notification(
+        organization_id,
+        "Failed to upload #{length(failed_files)} file(s) during cloning of '#{assistant_name}': #{Enum.join(failed_files, ", ")}",
+        :warning
+      )
+    end
+
+    for {:ok, file_data} <- results, do: file_data
   end
 
   @spec upload_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
