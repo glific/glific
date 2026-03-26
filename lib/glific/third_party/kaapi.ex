@@ -279,9 +279,6 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec create_collection(map(), non_neg_integer()) :: {:ok, map()} | {:error, map() | String.t()}
   def create_collection(params, organization_id) do
-    batch_size = Application.get_env(:glific, ApiClient)[:kaapi_collection_batch_size] || 10
-    params = Map.put_new(params, :batch_size, batch_size)
-
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.create_collection(params, secrets["api_key"]) do
       Logger.info(
