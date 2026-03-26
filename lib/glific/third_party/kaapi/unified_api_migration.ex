@@ -409,9 +409,9 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         where: is_nil(kbv.kaapi_job_id),
         select: a.id
       )
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     from(a in Assistant, where: a.id in ^assistant_ids)
-    |> Repo.update_all(set: [clone_status: "pending"])
+    |> Repo.update_all([set: [clone_status: "pending"]], skip_organization_id: true)
   end
 end
