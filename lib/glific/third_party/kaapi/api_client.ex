@@ -11,7 +11,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
 
   defp client(api_key, adapter) do
     Glific.Metrics.increment("Kaapi Requests")
-    Tesla.client(middlewares(api_key), adapter)
+    Tesla.client(middlewares(api_key) ++ Glific.get_tesla_retry_middleware(), adapter)
   end
 
   defp middlewares(api_key) do

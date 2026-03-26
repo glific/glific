@@ -302,7 +302,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-
+  Gets the status of a collection creation job in Kaapi.
   """
   @spec get_collection_status(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}

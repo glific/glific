@@ -1049,7 +1049,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://3206-2409-40d2-206a-4572-343f-fec6-db8b-40bc.ngrok-free.app" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/kaapi/knowledge_base_version"
 
     %{

@@ -57,11 +57,17 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
          params <- assistant_params(assistant, organization_id, llm_service_id),
-         {:ok, %{data: %{id: kaapi_uuid}}} <-
+         {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          {:ok, knowledge_base_version} <-
            create_cloned_knowledge_base(file_data, llm_service_id, job_id, organization_id),
-         :ok <- create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
+         :ok <-
+           create_cloned_assistant(
+             params,
+             knowledge_base_version,
+             kaapi_uuid,
+             kaapi_config_version
+           ) do
       update_clone_status(assistant, "completed")
 
       send_clone_notification(
@@ -203,7 +209,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
-  @spec download_files([map()], String.t(), String.t(), non_neg_integer()) :: :ok
+  @spec download_files([map()], String.t(), String.t(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
   defp download_files(files, vector_store_id, assistant_name, organization_id) do
     results =
       Enum.map(files, fn file ->
@@ -217,7 +224,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       "File downloads for #{assistant_name} done. #{succeeded} downloaded, #{failed} failed"
     )
 
-    :ok
+    if succeeded == 0 and length(files) > 0 do
+      {:error, "All #{failed} file downloads failed for #{assistant_name}"}
+    else
+      :ok
+    end
   end
 
   @spec download_file(map(), String.t(), String.t(), non_neg_integer()) :: :ok | :error
@@ -409,11 +420,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
-  @spec create_cloned_assistant(map(), KnowledgeBaseVersion.t(), String.t()) ::
+  @spec create_cloned_assistant(map(), KnowledgeBaseVersion.t(), String.t(), non_neg_integer()) ::
           :ok | {:error, any()}
-  defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid) do
+  defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid, kaapi_config_version) do
     with {:ok, assistant} <- create_assistant(params, kaapi_uuid),
-         {:ok, assistant_version} <- create_assistant_version(assistant, params),
+         {:ok, assistant_version} <-
+           create_assistant_version(assistant, params, kaapi_config_version),
          {:ok, _assistant} <- set_active_config_version(assistant, assistant_version),
          _ <-
            link_assistant_version_and_knowledge_base(
@@ -435,9 +447,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     |> Repo.insert()
   end
 
-  @spec create_assistant_version(Assistant.t(), map()) ::
+  @spec create_assistant_version(Assistant.t(), map(), non_neg_integer()) ::
           {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  defp create_assistant_version(assistant, params) do
+  defp create_assistant_version(assistant, params, kaapi_config_version) do
     AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
       assistant_id: assistant.id,
       description: params.description,
@@ -446,8 +458,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       provider: "openai",
       settings: %{temperature: params.temperature},
       status: :ready,
-      organization_id: params.organization_id
-      # add kaapi_version_nummber here
+      organization_id: params.organization_id,
+      kaapi_version_number: kaapi_config_version
     })
     |> Repo.insert()
   end
