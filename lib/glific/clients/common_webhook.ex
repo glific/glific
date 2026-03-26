@@ -91,27 +91,47 @@ defmodule Glific.Clients.CommonWebhook do
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
     request_metadata = Map.put(request_metadata, :call_type, "llm")
+    do_unified_llm_call(fields, headers, callback_url, request_metadata)
+  end
 
-    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+  # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
+  # callback path so the response is post-processed (NMT+TTS) before resuming the flow.
+  def webhook("unified-voice-llm-call", fields, headers) do
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
+    voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    with {:ok, {kaapi_uuid, version_number}} <-
-           lookup_kaapi_config(fields["assistant_id"], organization_id),
-         payload =
-           build_unified_llm_payload(
-             fields,
-             kaapi_uuid,
-             version_number,
-             callback_url,
-             request_metadata
-           ),
-         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
-      Map.merge(%{success: true}, body)
-    else
-      {:error, %{status: _status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body)}
+    Glific.Metrics.increment("Voice Unified LLM Call", org_id)
 
-      {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason}
+    case webhook("speech_to_text_with_bhasini", stt_fields) do
+      %{success: true, asr_response_text: transcribed_text} ->
+        updated_fields = Map.put(fields, "question", transcribed_text)
+        {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
+
+        {callback_url, request_metadata} =
+          build_flow_resume_metadata(
+            organization_id,
+            flow_id,
+            contact_id,
+            updated_fields,
+            "/kaapi/voice_flow_resume",
+            voice_start_timestamp
+          )
+
+        request_metadata =
+          Map.merge(request_metadata, %{
+            call_type: "voice_llm",
+            voice_post_process: %{
+              source_language: fields["source_language"],
+              target_language: fields["target_language"],
+              speech_engine: fields["speech_engine"] || ""
+            }
+          })
+
+        do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
+
+      %{success: false} = stt_failure ->
+        %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
 
       {:error, reason} ->
         %{success: false, reason: inspect(reason)}
@@ -423,6 +443,66 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
+  @doc """
+  Performs voice post-processing on a Kaapi LLM response: runs NMT+TTS to
+  translate and generate audio, then merges translated_text and media_url
+  into the response map.
+  """
+  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
+  def voice_post_process(organization_id, success, response) do
+    llm_response_text = response["message"] || ""
+    voice_fields = response["voice_post_process"] || %{}
+
+    tts_result =
+      if success && llm_response_text != "" do
+        webhook("nmt_tts_with_bhasini", %{
+          "text" => llm_response_text,
+          "organization_id" => organization_id,
+          "source_language" => voice_fields["source_language"],
+          "target_language" => voice_fields["target_language"],
+          "speech_engine" => voice_fields["speech_engine"] || ""
+        })
+      else
+        %{success: false, translated_text: llm_response_text, media_url: nil}
+      end
+
+    translated_text =
+      tts_result[:translated_text] ||
+        llm_response_text
+
+    response
+    |> Map.put("translated_text", translated_text)
+    |> Map.put("media_url", tts_result[:media_url])
+  end
+
+  defp do_unified_llm_call(fields, headers, callback_url, request_metadata) do
+    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+    {organization_id, _, _} = parse_flow_fields(fields)
+
+    with {:ok, {kaapi_uuid, version_number}} <-
+           lookup_kaapi_config(fields["assistant_id"], organization_id),
+         payload =
+           build_unified_llm_payload(
+             fields,
+             kaapi_uuid,
+             version_number,
+             callback_url,
+             request_metadata
+           ),
+         {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
+      Map.merge(%{success: true}, body)
+    else
+      {:error, %{status: _status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body)}
+
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason}
+
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
+    end
+  end
+
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do
     case Enum.find(components, fn component -> type in component["types"] end) do
@@ -598,10 +678,23 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls
   # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
-  @spec build_flow_resume_metadata(non_neg_integer(), non_neg_integer(), non_neg_integer(), map()) ::
+  @spec build_flow_resume_metadata(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          map(),
+          String.t()
+        ) ::
           {String.t(), map()}
-  defp build_flow_resume_metadata(organization_id, flow_id, contact_id, fields) do
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+  defp build_flow_resume_metadata(
+         organization_id,
+         flow_id,
+         contact_id,
+         fields,
+         callback_path \\ "/webhook/flow_resume",
+         timestamp \\ nil
+       ) do
+    timestamp = timestamp || DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{
       "organization_id" => organization_id,
@@ -619,9 +712,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
-        "/webhook/flow_resume"
+    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
@@ -678,20 +769,28 @@ defmodule Glific.Clients.CommonWebhook do
              organization_id: organization_id
            }),
          assistant <- Repo.preload(assistant, :active_config_version),
-         %{version_number: version_number} <- assistant.active_config_version do
-      if is_nil(assistant.kaapi_uuid) do
-        {:error, "Assistant is still being set up"}
-      else
-        {:ok, {assistant.kaapi_uuid, version_number}}
-      end
+         {:ok, kaapi_uuid} <- fetch_kaapi_uuid(assistant),
+         %{kaapi_version_number: kaapi_version_number} when not is_nil(kaapi_version_number) <-
+           assistant.active_config_version do
+      {:ok, {kaapi_uuid, kaapi_version_number}}
     else
+      {:error, :missing_kaapi_uuid} ->
+        {:error, "Assistant is still being set up"}
+
       {:error, _} ->
         {:error, "Assistant not found: #{assistant_display_id}"}
 
       nil ->
         {:error, "No active config version found for assistant #{assistant_display_id}"}
+
+      %{kaapi_version_number: nil} ->
+        {:error, "Kaapi version number not found"}
     end
   end
+
+  @spec fetch_kaapi_uuid(map()) :: {:ok, String.t()} | {:error, :missing_kaapi_uuid}
+  defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
+  defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
   @spec do_call_and_wait(map(), list()) :: map()
   defp do_call_and_wait(fields, headers) do

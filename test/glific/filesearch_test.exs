@@ -127,7 +127,7 @@ defmodule Glific.FilesearchTest do
       %{method: :post, url: "This is not a secret/api/v1/configs/asst_abc_upd/versions"} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{id: "config-version-id-1"}}
+          body: %{data: %{id: "config-version-id-1", version: 1}}
         }
     end)
 
