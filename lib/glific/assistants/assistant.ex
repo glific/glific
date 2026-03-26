@@ -19,6 +19,7 @@ defmodule Glific.Assistants.Assistant do
           description: String.t() | nil,
           kaapi_uuid: String.t() | nil,
           assistant_display_id: String.t() | nil,
+          clone_status: String.t() | nil,
           active_config_version_id: non_neg_integer() | nil,
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -38,7 +39,8 @@ defmodule Glific.Assistants.Assistant do
     :description,
     :active_config_version_id,
     :kaapi_uuid,
-    :assistant_display_id
+    :assistant_display_id,
+    :clone_status
   ]
 
   schema "assistants" do
@@ -46,6 +48,7 @@ defmodule Glific.Assistants.Assistant do
     field(:description, :string)
     field(:kaapi_uuid, :string)
     field(:assistant_display_id, :string)
+    field(:clone_status, :string, default: "none")
 
     belongs_to(:organization, Organization)
     belongs_to(:active_config_version, AssistantConfigVersion)
