@@ -230,7 +230,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     )
 
     if succeeded == 0 and length(files) > 0 do
-      {:error, "#{length(failed_files)} file downloads failed for #{assistant_name}: #{Enum.join(failed_files, ", ")}"}
+      {:error,
+       "#{length(failed_files)} file downloads failed for #{assistant_name}: #{Enum.join(failed_files, ", ")}"}
     else
       :ok
     end
@@ -240,15 +241,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp download_file(%{"id" => file_id} = _file, vector_store_id, assistant_name, organization_id) do
     Logger.info("Fetching metadata for #{file_id}")
 
-    case Req.get("#{@base_url}/vector_stores/#{vector_store_id}/files/#{file_id}",
-           headers: auth_headers()
-         ) do
+    case Req.get("#{@base_url}/files/#{file_id}", headers: auth_headers()) do
       {:ok, %{status: 200, body: %{"filename" => filename} = _meta}} ->
         fetch_and_save(file_id, filename, vector_store_id, assistant_name, organization_id)
 
-      {:ok, %{status: 200, body: meta}} ->
+      {:ok, %{status: 200}} ->
         # Fallback filename if "filename" key is missing
-        filename = meta["filename"] || "#{file_id}.md"
+        filename = "#{file_id}.md"
         fetch_and_save(file_id, filename, vector_store_id, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
