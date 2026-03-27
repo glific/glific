@@ -376,6 +376,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
         {:ok, kb_id}
 
+      {:ok, %{status: "FAILED", error_message: reason}} ->
+        Logger.error(
+          "AssistantCloneWorker: Collection creation failed for #{collection_job_id} for reason: #{reason}"
+        )
+
+        {:error, "Collection creation failed for #{collection_job_id}"}
+
       {:ok, %{status: status}} ->
         elapsed_ms = System.monotonic_time(:millisecond) - start_time_ms
 
