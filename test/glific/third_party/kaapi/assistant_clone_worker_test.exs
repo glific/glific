@@ -196,7 +196,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.prompt == "You are a helpful assistant"
         assert cloned_config.status == :ready
       end
-
     end
 
     test "returns error when assistant not found" do
@@ -337,7 +336,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id
                  })
       end
-
     end
 
     test "returns error when Kaapi config creation fails", %{assistant: assistant} do
@@ -400,7 +398,193 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id
                  })
       end
+    end
+    
+    test "returns error immediately when collection status is FAILED", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
 
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_failed_123"}}}
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs/job_failed_123") do
+              %Tesla.Env{
+                status: 200,
+                body: %{data: %{status: "FAILED", collection: nil}}
+              }
+            end
+        end)
+
+        assert {:error, msg} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+
+        assert msg =~ "Collection creation failed for job_failed_123"
+      end
+    end
+
+    test "returns error when get_collection_status API call fails", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_err_123"}}}
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs/job_failed_123") do
+              %Tesla.Env{status: 503, body: %{error: "Service unavailable"}}
+            end
+        end)
+
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+      end
+    end
+
+    test "retries polling when status is PROCESSING before becoming SUCCESSFUL", %{
+      assistant: assistant
+    } do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      {:ok, call_counter} = Agent.start_link(fn -> 0 end)
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_retry_123"}}}
+
+              String.contains?(url, "configs") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+                }
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs") do
+              count = Agent.get_and_update(call_counter, fn n -> {n, n + 1} end)
+
+              if count == 0 do
+                %Tesla.Env{
+                  status: 200,
+                  body: %{data: %{status: "PROCESSING", collection: nil}}
+                }
+              else
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{
+                      status: "SUCCESSFUL",
+                      collection: %{knowledge_base_id: "cloned_kb_retry"}
+                    }
+                  }
+                }
+              end
+            end
+        end)
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id
+                 })
+
+        assert Agent.get(call_counter, & &1) >= 2
+      end
     end
   end
 
