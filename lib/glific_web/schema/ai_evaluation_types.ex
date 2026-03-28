@@ -56,10 +56,13 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   end
 
   object :evaluation_result do
-    field :status, :string
+    field :evaluation, :create_evaluation_result
     field :errors, list_of(:input_error)
   end
 
+  object :create_evaluation_result do
+    field :status, :string
+  end
   input_object :evaluation_input do
     field :dataset_id, non_null(:id)
     field :experiment_name, non_null(:string)

@@ -108,11 +108,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @doc """
     Create an AI Evaluation by sending the input to Kaapi and handling the response.
   """
-  @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
+  @spec create_evaluation(map(), map(), map()) :: {:ok, map()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
     case Kaapi.create_evaluation(input, user.organization_id) do
       {:ok, %{data: %{status: status}}} ->
-        {:ok, %{status: status}}
+        {:ok, %{evaluation: %{status: status}}}
 
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
@@ -121,10 +121,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error, error}
 
       {:error, msg} when is_binary(msg) ->
-        {:error, msg}
+        {:ok, %{errors: [%{message: msg}]}}
 
       {:error, _} ->
-        {:error, "An unknown error occurred, please contact Glific support."}
+        {:ok,
+         %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 end
