@@ -2,12 +2,69 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
   use GlificWeb.ConnCase
   import Mock
 
-  alias Glific.Partners
-  alias Glific.Users
+  alias Glific.{
+    AIEvaluations.AIEvaluation,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Partners,
+    Repo,
+    Users
+  }
+
   alias GlificWeb.Resolvers.AIEvaluations
 
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
+
+  describe "list_ai_evaluations/3" do
+    setup [:create_ai_evaluation_fixtures]
+
+    test "returns list of evaluations for the organization", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, %{}, resolution)
+      assert length(evaluations) >= 1
+      assert Enum.any?(evaluations, fn e -> e.id == evaluation.id end)
+    end
+
+    test "filters by status", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{status: "completed"}}
+
+      assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, args, resolution)
+      assert Enum.all?(evaluations, fn e -> e.status == :completed end)
+    end
+
+    test "filters by name", %{staff: user, evaluation: evaluation} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{name: evaluation.name}}
+
+      assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, args, resolution)
+      assert Enum.any?(evaluations, fn e -> e.id == evaluation.id end)
+    end
+  end
+
+  describe "count_ai_evaluations/3" do
+    setup [:create_ai_evaluation_fixtures]
+
+    test "returns count of evaluations for the organization", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, count} = AIEvaluations.count_ai_evaluations(nil, %{}, resolution)
+      assert count >= 1
+    end
+
+    test "returns count filtered by status", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{status: "completed"}}
+
+      assert {:ok, count} = AIEvaluations.count_ai_evaluations(nil, args, resolution)
+      assert is_integer(count)
+    end
+  end
 
   describe "create_golden_qa/3" do
     setup [:enable_kaapi, :create_upload_file]
@@ -414,6 +471,39 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:error, "Timeout occurred, please try again."} =
                AIEvaluations.create_evaluation(nil, args, resolution)
     end
+  end
+
+  defp create_ai_evaluation_fixtures(%{organization_id: organization_id}) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant.",
+        provider: "openai",
+        model: "gpt-4o",
+        settings: %{"temperature" => 0.7},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, evaluation} =
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(%{
+        name: "test_evaluation",
+        status: :completed,
+        dataset_id: 1,
+        assistant_config_version_id: config_version.id,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    %{evaluation: evaluation}
   end
 
   defp enable_kaapi(%{organization_id: organization_id}) do

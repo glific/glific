@@ -4,12 +4,30 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   require Logger
 
-  alias Glific.{Metrics, ThirdParty.Kaapi}
+  alias Glific.{AIEvaluations, Metrics, ThirdParty.Kaapi}
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
+
+  @doc """
+  List AI evaluations from the database.
+  """
+  @spec list_ai_evaluations(map(), map(), map()) :: {:ok, list()}
+  def list_ai_evaluations(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.list_ai_evaluations(args)}
+  end
+
+  @doc """
+  Count AI evaluations from the database.
+  """
+  @spec count_ai_evaluations(map(), map(), map()) :: {:ok, non_neg_integer()}
+  def count_ai_evaluations(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.count_ai_evaluations(args)}
+  end
 
   @doc """
   Create a Golden QA configuration after validating the input.
@@ -90,11 +108,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @doc """
     Create an AI Evaluation by sending the input to Kaapi and handling the response.
   """
-  @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
+  @spec create_evaluation(map(), map(), map()) :: {:ok, map()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
     case Kaapi.create_evaluation(input, user.organization_id) do
       {:ok, %{data: %{status: status}}} ->
-        {:ok, %{status: status}}
+        {:ok, %{evaluation: %{status: status}}}
 
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
@@ -103,10 +121,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error, error}
 
       {:error, msg} when is_binary(msg) ->
-        {:error, msg}
+        {:ok, %{errors: [%{message: msg}]}}
 
       {:error, _} ->
-        {:error, "An unknown error occurred, please contact Glific support."}
+        {:ok,
+         %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 end

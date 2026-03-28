@@ -1,0 +1,14 @@
+query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
+  aiEvaluations(filter: $filter, opts: $opts) {
+    id
+    name
+    status
+    failureReason
+    results
+    kaapiEvaluationId
+    datasetId
+    assistantConfigVersionId
+    insertedAt
+    updatedAt
+  }
+}
