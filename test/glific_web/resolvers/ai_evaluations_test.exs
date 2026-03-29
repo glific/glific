@@ -385,33 +385,51 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
   end
 
   describe "create_evaluation/3" do
-    setup [:enable_kaapi]
+    setup [:enable_kaapi, :create_config_version]
 
-    test "returns status on success", %{staff: user} do
+    test "returns evaluation with status and persists record in the database", %{
+      staff: user,
+      config_version: config_version
+    } do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{status: "processing"}}
+            body: %{
+              data: %{
+                id: 404,
+                status: "processing",
+                dataset_id: 427
+              }
+            }
           }
       end)
 
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
       args = %{
         input: %{
-          dataset_id: "1",
+          dataset_id: "427",
           experiment_name: "test_experiment",
           config_id: "2",
-          config_version: 1
+          config_version: config_version.version_number
         }
       }
 
       resolution = %{context: %{current_user: user}}
 
-      assert {:ok, %{status: status}} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert status == "processing"
+      assert {:ok, %{evaluation: evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.status == :processing
+      assert evaluation.kaapi_evaluation_id == 404
+      assert evaluation.dataset_id == 427
+      assert evaluation.name == "test_experiment"
+      assert evaluation.assistant_config_version_id == config_version.version_number
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before + 1
     end
 
-    test "returns error when Kaapi is not configured", %{} do
+    test "returns errors when Kaapi is not configured" do
       org = Glific.Fixtures.organization_fixture()
       Glific.Repo.put_organization_id(org.id)
       [user_no_kaapi] = Users.list_users(%{})
@@ -471,6 +489,30 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:error, "Timeout occurred, please try again."} =
                AIEvaluations.create_evaluation(nil, args, resolution)
     end
+  end
+
+  defp create_config_version(%{organization_id: organization_id}) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant.",
+        provider: "openai",
+        model: "gpt-4o",
+        settings: %{"temperature" => 1.0},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} = Repo.fetch(AssistantConfigVersion, config_version.id)
+
+    %{assistant: assistant, config_version: config_version}
   end
 
   defp create_ai_evaluation_fixtures(%{organization_id: organization_id}) do

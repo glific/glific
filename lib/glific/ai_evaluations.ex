@@ -35,6 +35,16 @@ defmodule Glific.AIEvaluations do
     |> Repo.aggregate(:count)
   end
 
+  @doc """
+  Creates an AI evaluation record in the database from a Kaapi response.
+  """
+  @spec create_ai_evaluation(map()) :: {:ok, AIEvaluation.t()} | {:error, Ecto.Changeset.t()}
+  def create_ai_evaluation(attrs) do
+    %AIEvaluation{}
+    |> AIEvaluation.changeset(attrs)
+    |> Repo.insert()
+  end
+
   @spec filter_with(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn

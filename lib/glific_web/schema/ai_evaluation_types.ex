@@ -25,25 +25,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :string
   end
 
-  object :ai_evaluation_queries do
-    @desc "List AI Evaluations"
-    field :ai_evaluations, list_of(:ai_evaluation) do
-      arg(:filter, :ai_evaluation_filter)
-      arg(:opts, :opts)
-      middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      resolve(&Resolvers.AIEvaluations.list_ai_evaluations/3)
-    end
-
-    @desc "Count AI Evaluations"
-    field :count_ai_evaluations, :integer do
-      arg(:filter, :ai_evaluation_filter)
-      middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
-    end
-  end
-
   input_object :golden_qa_input do
     field :name, non_null(:string)
     field :file, non_null(:upload)
@@ -63,6 +44,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   object :create_evaluation_result do
     field :status, :string
   end
+
   input_object :evaluation_input do
     field :dataset_id, non_null(:id)
     field :experiment_name, non_null(:string)
@@ -73,6 +55,25 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   object :golden_qa_result do
     field :golden_qa, :golden_qa
     field :errors, list_of(:input_error)
+  end
+
+  object :ai_evaluation_queries do
+    @desc "List AI Evaluations"
+    field :ai_evaluations, list_of(:ai_evaluation) do
+      arg(:filter, :ai_evaluation_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_ai_evaluations/3)
+    end
+
+    @desc "Count AI Evaluations"
+    field :count_ai_evaluations, :integer do
+      arg(:filter, :ai_evaluation_filter)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
+    end
   end
 
   object :ai_evaluation_mutations do
