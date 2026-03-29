@@ -2,6 +2,7 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Groups.WAGroups
   alias Glific.Messages
   use Glific.DataCase
+  import Mock
 
   alias Glific.{
     Contacts.Contact,
@@ -23,6 +24,7 @@ defmodule Glific.Flows.ActionTest do
     Flow,
     FlowContext,
     Node,
+    Webhook,
     WebhookLog
   }
 
@@ -1524,6 +1526,38 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
+  end
+
+  test "execute voice-filesearch-gpt action with unified_api_enabled routes to unified voice webhook",
+       attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "call_webhook",
+      method: "FUNCTION",
+      url: "voice-filesearch-gpt",
+      headers: %{"Accept" => "application/json"},
+      body:
+        Jason.encode!(%{
+          "speech" => "https://example.com/audio.ogg",
+          "assistant_id" => "asst_123"
+        }),
+      result_name: "llm",
+      node_uuid: "Test UUID"
+    }
+
+    with_mock Webhook,
+      execute_unified_voice_filesearch: fn _action, _context -> {:wait, context, []} end do
+      result = Action.execute(action, context, [])
+      assert {:wait, ^context, []} = result
+      assert called(Webhook.execute_unified_voice_filesearch(action, context))
+    end
   end
 
   test "execute a wa group unsupported action",
