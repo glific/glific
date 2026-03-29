@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   require Logger
 
-  alias Glific.{AIEvaluations, Metrics, ThirdParty.Kaapi}
+  alias Glific.{AIEvaluations, Assistants.AssistantConfigVersion, Metrics, Repo, ThirdParty.Kaapi}
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
@@ -111,7 +111,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    with {:ok, %{data: data}} <- Kaapi.create_evaluation(input, user.organization_id),
+    with {:ok, config_version} <-
+           Repo.fetch_by(AssistantConfigVersion, %{id: input.config_version}),
+         kaapi_input = Map.put(input, :config_version, config_version.version_number),
+         {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
              name: input.experiment_name,
