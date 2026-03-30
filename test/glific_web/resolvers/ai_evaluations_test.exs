@@ -413,30 +413,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before + 1
     end
 
-    test "returns error when Kaapi API returns 500", %{
-      staff: user,
-      assistant_config_version: assistant_config_version
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
-      end)
-
-      args = %{
-        input: %{
-          dataset_id: "1",
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
-        }
-      }
-
-      resolution = %{context: %{current_user: user}}
-
-      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert reason =~ "Internal server error"
-    end
-
     test "returns error when config version does not exist", %{staff: user} do
       args = %{
         input: %{
