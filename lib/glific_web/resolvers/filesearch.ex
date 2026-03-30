@@ -105,9 +105,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_assistant_versions(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, list(map())} | {:error, any()}
   def list_assistant_versions(_, %{assistant_id: assistant_id}, _) do
-    with {:ok, versions} <- Assistants.list_assistant_config_versions(assistant_id) do
-      {:ok, versions}
-    end
+    Assistants.list_assistant_config_versions(assistant_id)
   end
 
   @doc """
