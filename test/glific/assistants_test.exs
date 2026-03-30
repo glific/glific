@@ -1778,7 +1778,7 @@ defmodule Glific.AssistantsTest do
         })
         |> Repo.insert()
 
-      versions = Assistants.list_assistant_config_versions(assistant.id)
+      {:ok, versions} = Assistants.list_assistant_config_versions(assistant.id)
 
       assert length(versions) == 2
       [first | [second]] = versions
