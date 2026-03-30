@@ -119,7 +119,7 @@ defmodule Glific.Assistants do
       {:ok, %{id: 1, active_config_version_id: 2, live_version_number: 2}}
 
       iex> Glific.Assistants.set_live_version(1, 99)
-      {:error,["Glific.Assistants.AssistantConfigVersion", "Resource not found"]]}
+      {:error, ["Glific.Assistants.AssistantConfigVersion", "Resource not found"]}
   """
   @spec set_live_version(non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
