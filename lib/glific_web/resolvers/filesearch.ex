@@ -105,9 +105,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec list_assistant_versions(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, list(map())} | {:error, any()}
   def list_assistant_versions(_, %{assistant_id: assistant_id}, _) do
-    case Assistants.list_assistant_config_versions(assistant_id) do
-      {:error, reason} -> {:error, reason}
-      versions -> {:ok, versions}
+    with {:ok, versions} <- Assistants.list_assistant_config_versions(assistant_id) do
+      {:ok, versions}
     end
   end
 

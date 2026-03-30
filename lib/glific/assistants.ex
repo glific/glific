@@ -78,7 +78,7 @@ defmodule Glific.Assistants do
       iex> Glific.Assistants.list_assistant_config_versions(1)
       [%{id: 2, version_number: 2, is_live: true, ...}, %{id: 1, version_number: 1, is_live: false, ...}]
   """
-  @spec list_assistant_config_versions(non_neg_integer()) :: list(map())
+  @spec list_assistant_config_versions(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
   def list_assistant_config_versions(assistant_id) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}) do
       versions =
@@ -88,20 +88,21 @@ defmodule Glific.Assistants do
         )
         |> Repo.all()
 
-      Enum.map(versions, fn version ->
-        %{
-          id: version.id,
-          version_number: version.version_number,
-          model: version.model,
-          prompt: version.prompt,
-          settings: version.settings,
-          status: to_string(version.status),
-          is_live: version.id == assistant.active_config_version_id,
-          description: version.description,
-          inserted_at: version.inserted_at,
-          updated_at: version.updated_at
-        }
-      end)
+      {:ok,
+       Enum.map(versions, fn version ->
+         %{
+           id: version.id,
+           version_number: version.version_number,
+           model: version.model,
+           prompt: version.prompt,
+           settings: version.settings,
+           status: to_string(version.status),
+           is_live: version.id == assistant.active_config_version_id,
+           description: version.description,
+           inserted_at: version.inserted_at,
+           updated_at: version.updated_at
+         }
+       end)}
     end
   end
 
