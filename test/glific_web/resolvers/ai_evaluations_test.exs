@@ -22,7 +22,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
             status: 200,
             body: %{
               data: %{
-                dataset_name: "valid_dataset"
+                dataset_name: "valid_dataset",
+                dataset_id: "12345"
               }
             }
           }
@@ -305,7 +306,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: %{data: %{dataset_name: "dataset_2024_v1", duplication_factor: 2}}
+            body: %{data: %{dataset_name: "dataset_2024_v1", dataset_id: "12345"}}
           }
       end)
 
@@ -323,6 +324,95 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
       assert golden_qa.name == "dataset_2024_v1"
+    end
+  end
+
+  describe "create_evaluation/3" do
+    setup [:enable_kaapi]
+
+    test "returns status on success", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{status: "processing"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          dataset_id: "1",
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{status: status}} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert status == "processing"
+    end
+
+    test "returns error when Kaapi is not configured", %{} do
+      org = Glific.Fixtures.organization_fixture()
+      Glific.Repo.put_organization_id(org.id)
+      [user_no_kaapi] = Users.list_users(%{})
+
+      args = %{
+        input: %{
+          dataset_id: "1",
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user_no_kaapi}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "Kaapi is not active"
+    end
+
+    test "returns error when Kaapi API returns 500", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      args = %{
+        input: %{
+          dataset_id: "1",
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason =~ "Internal server error"
+    end
+
+    test "returns error on timeout", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> {:error, :timeout}
+      end)
+
+      args = %{
+        input: %{
+          dataset_id: "1",
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Timeout occurred, please try again."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
     end
   end
 

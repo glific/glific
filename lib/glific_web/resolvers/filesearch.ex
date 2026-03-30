@@ -83,6 +83,14 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  Get count of assistants filtered by various criteria
+  """
+  @spec count_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer()}
+  def count_assistants(_, params, _) do
+    {:ok, Assistants.count_assistants(params)}
+  end
+
+  @doc """
   Fetch available openai models
   """
   @spec list_models(Absinthe.Resolution.t(), map(), %{context: map()}) ::

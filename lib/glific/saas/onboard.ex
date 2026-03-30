@@ -470,13 +470,12 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp setup_kaapi_for_organization(organization) do
-    open_ai_key = Glific.get_open_ai_key()
-
     %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
       project_name: organization.shortcode,
-      openai_api_key: open_ai_key
+      openai_api_key: Glific.get_open_ai_key(),
+      google_api_key: Glific.get_google_api_key()
     }
     |> Kaapi.onboard()
   end

@@ -1,0 +1,3 @@
+query countAssistants($filter: AssistantFilter) {
+  countAssistants(filter: $filter)
+}

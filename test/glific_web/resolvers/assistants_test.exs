@@ -1,6 +1,11 @@
 defmodule GlificWeb.Resolvers.AssistantsTest do
+  @moduledoc """
+  Test suite for GraphQL resolvers related to Assistants.
+  """
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
+
+  import Ecto.Query
 
   alias Glific.Assistants
   alias Glific.Assistants.Assistant
@@ -12,6 +17,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     :create_knowledge_base,
     GlificWeb.Schema,
     "assets/gql/assistants/create_knowledge_base.gql"
+  )
+
+  load_gql(
+    :list_assistant_config_versions,
+    GlificWeb.Schema,
+    "assets/gql/assistants/list_assistant_config_versions.gql"
   )
 
   load_gql(
@@ -120,6 +131,122 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
   end
 
+  describe "list_assistant_config_versions/3" do
+    setup :enable_kaapi
+
+    test "returns all config versions for the organization", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} = create_assistant_with_config_version(organization_id)
+
+      assistant_configuration_version_list =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.all()
+
+      assert length(assistant_configuration_version_list) == 3
+
+      {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
+
+      versions = query_data.data["assistantConfigVersions"]
+      assert length(versions) == 1
+      assert hd(versions)["status"] == "ready"
+    end
+  end
+
+  defp create_assistant_with_config_version(organization_id, kaapi_uuid \\ nil) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{
+        name: "Test Assistant #{System.unique_integer()}",
+        organization_id: organization_id,
+        kaapi_uuid: kaapi_uuid
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :failed,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :in_progress,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, assistant} =
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    {:ok, assistant}
+  end
+
+  load_gql(
+    :clone_assistant,
+    GlificWeb.Schema,
+    "assets/gql/assistants/clone_assistant.gql"
+  )
+
+  describe "clone_assistant/3" do
+    setup :enable_kaapi
+
+    test "initiates clone for an existing assistant", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} = create_assistant_with_config_version(organization_id, "kaapi_clone_test")
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => assistant.id})
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "returns error when assistant not found", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == nil
+      assert [%{"key" => _, "message" => "Resource not found"}] = result["errors"]
+    end
+  end
+
   describe "assistant_versions/3" do
     test "returns all versions for an assistant ordered by version_number desc", %{
       staff: user,
@@ -164,9 +291,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         |> Repo.update()
 
       {:ok, query_data} =
-        auth_query_gql_by(:assistant_versions, user,
-          variables: %{"assistant_id" => assistant.id}
-        )
+        auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
 
       versions = query_data.data["assistantVersions"]
       assert length(versions) == 2
@@ -186,7 +311,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       versions = query_data.data["assistantVersions"]
       # Absinthe returns a list with nil entries or an empty list when the resolver errors
-      assert versions == [] or Enum.all?(versions, &(is_nil(&1["id"])))
+      assert versions == [] or Enum.all?(versions, &is_nil(&1["id"]))
     end
   end
 
@@ -249,7 +374,10 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     } do
       {:ok, assistant} =
         %Assistant{}
-        |> Assistant.changeset(%{name: "Live Version Error Test", organization_id: organization_id})
+        |> Assistant.changeset(%{
+          name: "Live Version Error Test",
+          organization_id: organization_id
+        })
         |> Repo.insert()
 
       {:ok, in_progress_version} =
