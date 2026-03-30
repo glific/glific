@@ -2,7 +2,7 @@ defmodule Glific.AIEvaluations do
   @moduledoc """
   Context module for AI Evaluations stored in the database.
   """
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
@@ -48,9 +48,6 @@ defmodule Glific.AIEvaluations do
   @spec filter_with(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
-      {:status, status}, query ->
-        where(query, [e], e.status == ^status)
-
       {:name, name}, query ->
         where(query, [e], ilike(e.name, ^"%#{name}%"))
     end)

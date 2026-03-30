@@ -5,7 +5,6 @@ query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
     status
     failureReason
     results
-    kaapiEvaluationId
     datasetId
     assistantConfigVersionId
     insertedAt

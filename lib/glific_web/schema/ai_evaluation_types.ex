@@ -13,7 +13,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :string
     field :failure_reason, :string
     field :results, :json
-    field :kaapi_evaluation_id, :integer
     field :dataset_id, :integer
     field :assistant_config_version_id, :id
     field :inserted_at, :datetime

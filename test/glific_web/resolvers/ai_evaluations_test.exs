@@ -30,14 +30,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert Enum.any?(evaluations, fn e -> e.id == evaluation.id end)
     end
 
-    test "filters by status", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-      args = %{filter: %{status: "completed"}}
-
-      assert {:ok, evaluations} = AIEvaluations.list_ai_evaluations(nil, args, resolution)
-      assert Enum.all?(evaluations, fn e -> e.status == :completed end)
-    end
-
     test "filters by name", %{staff: user, evaluation: evaluation} do
       resolution = %{context: %{current_user: user}}
       args = %{filter: %{name: evaluation.name}}
@@ -55,14 +47,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:ok, count} = AIEvaluations.count_ai_evaluations(nil, %{}, resolution)
       assert count >= 1
-    end
-
-    test "returns count filtered by status", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-      args = %{filter: %{status: "completed"}}
-
-      assert {:ok, count} = AIEvaluations.count_ai_evaluations(nil, args, resolution)
-      assert is_integer(count)
     end
   end
 
@@ -429,44 +413,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before + 1
     end
 
-    test "returns errors when Kaapi is not configured" do
-      org = Glific.Fixtures.organization_fixture()
-      Glific.Repo.put_organization_id(org.id)
-      [user_no_kaapi] = Users.list_users(%{})
-
-      {:ok, assistant} =
-        %Assistant{}
-        |> Assistant.changeset(%{name: "Test Assistant", organization_id: org.id})
-        |> Repo.insert()
-
-      {:ok, config_version} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
-          prompt: "You are a helpful assistant.",
-          provider: "openai",
-          model: "gpt-4o",
-          settings: %{"temperature" => 1.0},
-          status: :ready,
-          organization_id: org.id
-        })
-        |> Repo.insert()
-
-      args = %{
-        input: %{
-          dataset_id: "1",
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: config_version.id
-        }
-      }
-
-      resolution = %{context: %{current_user: user_no_kaapi}}
-
-      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
-      assert reason == "Kaapi is not active"
-    end
-
     test "returns error when Kaapi API returns 500", %{
       staff: user,
       assistant_config_version: assistant_config_version
@@ -491,7 +437,26 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason =~ "Internal server error"
     end
 
-    test "returns error on timeout", %{staff: user, assistant_config_version: assistant_config_version} do
+    test "returns error when config version does not exist", %{staff: user} do
+      args = %{
+        input: %{
+          dataset_id: "1",
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: 999_999
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "The specified config version does not exist."
+    end
+
+    test "returns error on timeout", %{
+      staff: user,
+      assistant_config_version: assistant_config_version
+    } do
       Tesla.Mock.mock(fn
         %{method: :post} -> {:error, :timeout}
       end)

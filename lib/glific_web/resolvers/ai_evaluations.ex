@@ -109,11 +109,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
   and returning the evaluation.
   """
-  @spec create_evaluation(map(), map(), map()) :: {:ok, map()}
+  @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
     with {:ok, config_version} <-
            Repo.fetch_by(AssistantConfigVersion, %{id: input.config_version}),
-         kaapi_input = Map.put(input, :config_version, config_version.version_number),
+         kaapi_input = Map.put(input, :config_version, config_version.kaapi_version_number),
          {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
@@ -134,6 +134,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, msg} when is_binary(msg) ->
         {:error, msg}
+
+      {:error, [_, "Resource not found"]} ->
+        {:error, "The specified config version does not exist."}
 
       {:error, _} ->
         {:error, "An unknown error occurred, please contact Glific support."}
