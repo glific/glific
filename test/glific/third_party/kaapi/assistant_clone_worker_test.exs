@@ -196,7 +196,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.prompt == "You are a helpful assistant"
         assert cloned_config.status == :ready
       end
-
     end
 
     test "returns error when assistant not found" do
@@ -337,7 +336,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id
                  })
       end
-
     end
 
     test "returns error when Kaapi config creation fails", %{assistant: assistant} do
@@ -400,7 +398,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    organization_id: @org_id
                  })
       end
-
     end
   end
 

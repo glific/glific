@@ -11,9 +11,7 @@ defmodule GlificWeb.Schema.ChatbotDiagnoseTest do
 
   test "chatbot_diagnose returns org-level data with no filters", %{staff: user} do
     result =
-      auth_query_gql_by(:diagnose, user,
-        variables: %{"input" => %{}}
-      )
+      auth_query_gql_by(:diagnose, user, variables: %{"input" => %{}})
 
     assert {:ok, query_data} = result
     data = get_in(query_data, [:data, "chatbotDiagnose"])

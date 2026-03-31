@@ -145,7 +145,6 @@ defmodule GlificWeb.Schema do
     import_fields(:ai_evaluation_queries)
 
     import_fields(:chatbot_diagnose_queries)
-
   end
 
   mutation do

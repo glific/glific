@@ -127,8 +127,8 @@ defmodule Glific.ChatbotDiagnose do
 
   defp resolve_sections(nil, contact_filter, flow_filter) do
     sections =
-      (if contact_filter, do: @contact_sections, else: []) ++
-        (if flow_filter, do: @flow_sections, else: []) ++
+      if(contact_filter, do: @contact_sections, else: []) ++
+        if(flow_filter, do: @flow_sections, else: []) ++
         ["NOTIFICATIONS", "OBAN_JOBS", "GROUPS", "TEMPLATES", "DIAGNOSTICS"]
 
     sections |> Enum.uniq()
@@ -337,7 +337,9 @@ defmodule Glific.ChatbotDiagnose do
     time_range = Map.get(opts, :time_range)
     limit = Map.get(opts, :limit, @default_limit)
 
-    if is_nil(contact) and is_nil(flow), do: [], else: do_fetch_flow_contexts(org_id, contact, flow, time_range, limit)
+    if is_nil(contact) and is_nil(flow),
+      do: [],
+      else: do_fetch_flow_contexts(org_id, contact, flow, time_range, limit)
   end
 
   defp do_fetch_flow_contexts(org_id, contact, flow, time_range, limit) do
@@ -361,8 +363,10 @@ defmodule Glific.ChatbotDiagnose do
         flow_name: if(Ecto.assoc_loaded?(fc.flow) and fc.flow, do: fc.flow.name, else: nil),
         flow_uuid: fc.flow_uuid,
         contact_id: fc.contact_id,
-        contact_name: if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.name, else: nil),
-        contact_phone: if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.phone, else: nil),
+        contact_name:
+          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.name, else: nil),
+        contact_phone:
+          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.phone, else: nil),
         status: fc.status,
         node_uuid: fc.node_uuid,
         parent_id: fc.parent_id,
@@ -384,7 +388,9 @@ defmodule Glific.ChatbotDiagnose do
     time_range = Map.get(opts, :time_range)
     limit = Map.get(opts, :limit, @default_limit)
 
-    if is_nil(contact) and is_nil(flow), do: [], else: do_fetch_flow_results(org_id, contact, flow, time_range, limit)
+    if is_nil(contact) and is_nil(flow),
+      do: [],
+      else: do_fetch_flow_results(org_id, contact, flow, time_range, limit)
   end
 
   defp do_fetch_flow_results(org_id, contact, flow, time_range, limit) do
@@ -407,7 +413,8 @@ defmodule Glific.ChatbotDiagnose do
         flow_id: fr.flow_id,
         flow_name: if(Ecto.assoc_loaded?(fr.flow) and fr.flow, do: fr.flow.name, else: nil),
         contact_id: fr.contact_id,
-        contact_name: if(Ecto.assoc_loaded?(fr.contact) and fr.contact, do: fr.contact.name, else: nil),
+        contact_name:
+          if(Ecto.assoc_loaded?(fr.contact) and fr.contact, do: fr.contact.name, else: nil),
         results: fr.results,
         inserted_at: fr.inserted_at,
         updated_at: fr.updated_at
