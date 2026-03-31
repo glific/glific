@@ -1194,7 +1194,10 @@ defmodule Glific.AssistantsTest do
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_from_create", version: %{version: 1}}}}
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_from_create", version: %{version: 1}}}
+          }
       end)
 
       assert {:ok, %{assistant: assistant}} =
@@ -1907,7 +1910,10 @@ defmodule Glific.AssistantsTest do
       # Step 2: SUCCESSFUL KB callback -> Kaapi config created
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_lifecycle", version: %{version: 1}}}}
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_lifecycle", version: %{version: 1}}}
+          }
       end)
 
       _result =

@@ -4,12 +4,30 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   require Logger
 
-  alias Glific.{Metrics, ThirdParty.Kaapi}
+  alias Glific.{AIEvaluations, Assistants.AssistantConfigVersion, Metrics, Repo, ThirdParty.Kaapi}
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
+
+  @doc """
+  List AI evaluations from the database.
+  """
+  @spec list_ai_evaluations(map(), map(), map()) :: {:ok, list()}
+  def list_ai_evaluations(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.list_ai_evaluations(args)}
+  end
+
+  @doc """
+  Count AI evaluations from the database.
+  """
+  @spec count_ai_evaluations(map(), map(), map()) :: {:ok, non_neg_integer()}
+  def count_ai_evaluations(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.count_ai_evaluations(args)}
+  end
 
   @doc """
   Create a Golden QA configuration after validating the input.
@@ -88,14 +106,26 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   end
 
   @doc """
-    Create an AI Evaluation by sending the input to Kaapi and handling the response.
+  Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
+  and returning the evaluation.
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    case Kaapi.create_evaluation(input, user.organization_id) do
-      {:ok, %{data: %{status: status}}} ->
-        {:ok, %{status: status}}
-
+    with {:ok, config_version} <-
+           Repo.fetch_by(AssistantConfigVersion, %{id: input.config_version}),
+         kaapi_input = Map.put(input, :config_version, config_version.kaapi_version_number),
+         {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
+         {:ok, evaluation} <-
+           AIEvaluations.create_ai_evaluation(%{
+             name: input.experiment_name,
+             status: String.to_existing_atom(data.status),
+             kaapi_evaluation_id: data.id,
+             dataset_id: data.dataset_id,
+             assistant_config_version_id: input.config_version,
+             organization_id: user.organization_id
+           }) do
+      {:ok, %{evaluation: evaluation}}
+    else
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
 
@@ -104,6 +134,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, msg} when is_binary(msg) ->
         {:error, msg}
+
+      {:error, [_, "Resource not found"]} ->
+        {:error, "The specified config version does not exist."}
 
       {:error, _} ->
         {:error, "An unknown error occurred, please contact Glific support."}
