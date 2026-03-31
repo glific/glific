@@ -29,11 +29,8 @@ defmodule Glific.AIEvaluations do
   Returns the count of AI evaluations for an organization.
   """
   @spec count_ai_evaluations(map()) :: non_neg_integer()
-  def count_ai_evaluations(args) do
-    args
-    |> Repo.list_filter_query(AIEvaluation, &Repo.opts_with_inserted_at/2, &filter_with/2)
-    |> Repo.aggregate(:count)
-  end
+  def count_ai_evaluations(args),
+    do: Repo.count_filter(args, AIEvaluation, &filter_with/2)
 
   @doc """
   Creates an AI evaluation record in the database from a Kaapi response.

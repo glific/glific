@@ -21,7 +21,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   input_object :ai_evaluation_filter do
     field :name, :string
-    field :status, :ai_evaluation_status_enum
   end
 
   input_object :golden_qa_input do
