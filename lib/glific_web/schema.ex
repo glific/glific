@@ -65,6 +65,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WhatsappFormTypes)
   import_types(__MODULE__.WhatsappFormResponseTypes)
   import_types(__MODULE__.WhatsappFormsRevisionTypes)
+  import_types(__MODULE__.ChatbotDiagnoseTypes)
 
   query do
     import_fields(:profile_queries)
@@ -140,6 +141,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_queries)
 
     import_fields(:whatsapp_form_revision_queries)
+
+    import_fields(:chatbot_diagnose_queries)
   end
 
   mutation do
