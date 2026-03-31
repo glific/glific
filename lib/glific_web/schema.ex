@@ -141,6 +141,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_queries)
 
     import_fields(:whatsapp_form_revision_queries)
+
+    import_fields(:ai_evaluation_queries)
   end
 
   mutation do
