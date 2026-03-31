@@ -65,6 +65,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WhatsappFormTypes)
   import_types(__MODULE__.WhatsappFormResponseTypes)
   import_types(__MODULE__.WhatsappFormsRevisionTypes)
+  import_types(__MODULE__.AskmeBotTypes)
 
   query do
     import_fields(:profile_queries)
@@ -218,6 +219,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_revision_mutations)
 
     import_fields(:ai_evaluation_mutations)
+
+    import_fields(:askme_bot_mutations)
   end
 
   subscription do
