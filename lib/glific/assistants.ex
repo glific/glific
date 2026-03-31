@@ -96,7 +96,7 @@ defmodule Glific.Assistants do
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
-           status: to_string(version.status),
+           status: version.status,
            is_live: version.id == assistant.active_config_version_id,
            description: version.description,
            inserted_at: version.inserted_at,
