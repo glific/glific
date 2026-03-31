@@ -5,6 +5,8 @@ defmodule Glific.ChatbotDiagnose do
   for AI chatbot consumption.
   """
 
+  require Logger
+
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -48,7 +50,7 @@ defmodule Glific.ChatbotDiagnose do
   Main entry point. Orchestrates which sections to fetch based on the include list
   and filters provided.
   """
-  @spec diagnose(non_neg_integer(), map()) :: {:ok, map()}
+  @spec diagnose(non_neg_integer(), map()) :: {:ok, map()} | {:error, String.t()}
   def diagnose(organization_id, args) do
     contact_filter = Map.get(args, :contact)
     flow_filter = Map.get(args, :flow)
@@ -85,7 +87,22 @@ defmodule Glific.ChatbotDiagnose do
 
     results =
       tasks
-      |> Task.await_many(15_000)
+      |> Task.yield_many(15_000)
+      |> Enum.map(fn
+        {_task, {:ok, result}} ->
+          result
+
+        {task, {:exit, reason}} ->
+          Logger.error("ChatbotDiagnose task failed: #{inspect(reason)}")
+          Task.shutdown(task, :brutal_kill)
+          nil
+
+        {task, nil} ->
+          Logger.error("ChatbotDiagnose task timed out")
+          Task.shutdown(task, :brutal_kill)
+          nil
+      end)
+      |> Enum.reject(&is_nil/1)
       |> Map.new()
 
     # Build diagnostics (computed, not a direct DB query)
@@ -164,7 +181,8 @@ defmodule Glific.ChatbotDiagnose do
           from(c in query, where: c.phone == ^filter.phone)
 
         Map.has_key?(filter, :name) ->
-          from(c in query, where: ilike(c.name, ^"%#{filter.name}%"))
+          escaped = escape_ilike(filter.name)
+          from(c in query, where: ilike(c.name, ^"%#{escaped}%"))
 
         true ->
           query
@@ -187,7 +205,8 @@ defmodule Glific.ChatbotDiagnose do
           from(f in query, where: f.uuid == ^filter.uuid)
 
         Map.has_key?(filter, :name) ->
-          from(f in query, where: ilike(f.name, ^"%#{filter.name}%"))
+          escaped = escape_ilike(filter.name)
+          from(f in query, where: ilike(f.name, ^"%#{escaped}%"))
 
         true ->
           query
@@ -321,7 +340,11 @@ defmodule Glific.ChatbotDiagnose do
       %{
         id: fr.id,
         flow_id: fr.flow_id,
-        definition: Jason.encode!(fr.definition),
+        definition:
+          case Jason.encode(fr.definition) do
+            {:ok, json} -> json
+            {:error, _} -> "{}"
+          end,
         status: fr.status,
         version: fr.version,
         revision_number: fr.revision_number,
@@ -342,46 +365,6 @@ defmodule Glific.ChatbotDiagnose do
       else: do_fetch_flow_contexts(org_id, contact, flow, time_range, limit)
   end
 
-  defp do_fetch_flow_contexts(org_id, contact, flow, time_range, limit) do
-    query =
-      from(fc in FlowContext,
-        where: fc.organization_id == ^org_id,
-        where: fc.inserted_at >= ^time_range,
-        order_by: [desc: fc.inserted_at],
-        limit: ^limit,
-        preload: [:flow, :contact]
-      )
-
-    query = if contact, do: from(fc in query, where: fc.contact_id == ^contact.id), else: query
-    query = if flow, do: from(fc in query, where: fc.flow_id == ^flow.id), else: query
-
-    Repo.all(query)
-    |> Enum.map(fn fc ->
-      %{
-        id: fc.id,
-        flow_id: fc.flow_id,
-        flow_name: if(Ecto.assoc_loaded?(fc.flow) and fc.flow, do: fc.flow.name, else: nil),
-        flow_uuid: fc.flow_uuid,
-        contact_id: fc.contact_id,
-        contact_name:
-          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.name, else: nil),
-        contact_phone:
-          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.phone, else: nil),
-        status: fc.status,
-        node_uuid: fc.node_uuid,
-        parent_id: fc.parent_id,
-        results: fc.results,
-        is_killed: fc.is_killed,
-        is_background_flow: fc.is_background_flow,
-        is_await_result: fc.is_await_result,
-        wakeup_at: fc.wakeup_at,
-        completed_at: fc.completed_at,
-        inserted_at: fc.inserted_at,
-        updated_at: fc.updated_at
-      }
-    end)
-  end
-
   defp fetch_section("FLOW_RESULTS", %{organization_id: org_id} = opts) do
     contact = Map.get(opts, :contact)
     flow = Map.get(opts, :flow)
@@ -391,35 +374,6 @@ defmodule Glific.ChatbotDiagnose do
     if is_nil(contact) and is_nil(flow),
       do: [],
       else: do_fetch_flow_results(org_id, contact, flow, time_range, limit)
-  end
-
-  defp do_fetch_flow_results(org_id, contact, flow, time_range, limit) do
-    query =
-      from(fr in FlowResult,
-        where: fr.organization_id == ^org_id,
-        where: fr.inserted_at >= ^time_range,
-        order_by: [desc: fr.inserted_at],
-        limit: ^limit,
-        preload: [:flow, :contact]
-      )
-
-    query = if contact, do: from(fr in query, where: fr.contact_id == ^contact.id), else: query
-    query = if flow, do: from(fr in query, where: fr.flow_id == ^flow.id), else: query
-
-    Repo.all(query)
-    |> Enum.map(fn fr ->
-      %{
-        id: fr.id,
-        flow_id: fr.flow_id,
-        flow_name: if(Ecto.assoc_loaded?(fr.flow) and fr.flow, do: fr.flow.name, else: nil),
-        contact_id: fr.contact_id,
-        contact_name:
-          if(Ecto.assoc_loaded?(fr.contact) and fr.contact, do: fr.contact.name, else: nil),
-        results: fr.results,
-        inserted_at: fr.inserted_at,
-        updated_at: fr.updated_at
-      }
-    end)
   end
 
   defp fetch_section("NOTIFICATIONS", %{
@@ -655,6 +609,77 @@ defmodule Glific.ChatbotDiagnose do
   # Catch-all for sections not yet implemented or unknown
   defp fetch_section(_section, _opts), do: nil
 
+  # --- Section fetcher helpers ---
+
+  defp do_fetch_flow_contexts(org_id, contact, flow, time_range, limit) do
+    query =
+      from(fc in FlowContext,
+        where: fc.organization_id == ^org_id,
+        where: fc.inserted_at >= ^time_range,
+        order_by: [desc: fc.inserted_at],
+        limit: ^limit,
+        preload: [:flow, :contact]
+      )
+
+    query = if contact, do: from(fc in query, where: fc.contact_id == ^contact.id), else: query
+    query = if flow, do: from(fc in query, where: fc.flow_id == ^flow.id), else: query
+
+    Repo.all(query)
+    |> Enum.map(fn fc ->
+      %{
+        id: fc.id,
+        flow_id: fc.flow_id,
+        flow_name: if(Ecto.assoc_loaded?(fc.flow) and fc.flow, do: fc.flow.name, else: nil),
+        flow_uuid: fc.flow_uuid,
+        contact_id: fc.contact_id,
+        contact_name:
+          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.name, else: nil),
+        contact_phone:
+          if(Ecto.assoc_loaded?(fc.contact) and fc.contact, do: fc.contact.phone, else: nil),
+        status: fc.status,
+        node_uuid: fc.node_uuid,
+        parent_id: fc.parent_id,
+        results: fc.results,
+        is_killed: fc.is_killed,
+        is_background_flow: fc.is_background_flow,
+        is_await_result: fc.is_await_result,
+        wakeup_at: fc.wakeup_at,
+        completed_at: fc.completed_at,
+        inserted_at: fc.inserted_at,
+        updated_at: fc.updated_at
+      }
+    end)
+  end
+
+  defp do_fetch_flow_results(org_id, contact, flow, time_range, limit) do
+    query =
+      from(fr in FlowResult,
+        where: fr.organization_id == ^org_id,
+        where: fr.inserted_at >= ^time_range,
+        order_by: [desc: fr.inserted_at],
+        limit: ^limit,
+        preload: [:flow, :contact]
+      )
+
+    query = if contact, do: from(fr in query, where: fr.contact_id == ^contact.id), else: query
+    query = if flow, do: from(fr in query, where: fr.flow_id == ^flow.id), else: query
+
+    Repo.all(query)
+    |> Enum.map(fn fr ->
+      %{
+        id: fr.id,
+        flow_id: fr.flow_id,
+        flow_name: if(Ecto.assoc_loaded?(fr.flow) and fr.flow, do: fr.flow.name, else: nil),
+        contact_id: fr.contact_id,
+        contact_name:
+          if(Ecto.assoc_loaded?(fr.contact) and fr.contact, do: fr.contact.name, else: nil),
+        results: fr.results,
+        inserted_at: fr.inserted_at,
+        updated_at: fr.updated_at
+      }
+    end)
+  end
+
   # --- Diagnostics ---
 
   defp compute_diagnostics(contact, flow, opts) do
@@ -694,7 +719,7 @@ defmodule Glific.ChatbotDiagnose do
           limit: 1
         )
         |> Repo.one()
-        |> is_truthy()
+        |> then(&(!is_nil(&1)))
       else
         nil
       end
@@ -705,7 +730,7 @@ defmodule Glific.ChatbotDiagnose do
       from(n in Notification,
         where: n.organization_id == ^org_id,
         where: n.inserted_at >= ^time_range,
-        where: n.severity in ^["error", "critical", "Error", "Critical"],
+        where: fragment("LOWER(?)", n.severity) in ^["error", "critical"],
         select: count(n.id)
       )
       |> Repo.one()
@@ -734,8 +759,12 @@ defmodule Glific.ChatbotDiagnose do
 
   # --- Helpers ---
 
-  defp is_truthy(nil), do: false
-  defp is_truthy(_), do: true
+  defp escape_ilike(value) when is_binary(value) do
+    value
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
 
   defp parse_time_range("1h"), do: DateTime.add(DateTime.utc_now(), -1, :hour)
   defp parse_time_range("3d"), do: DateTime.add(DateTime.utc_now(), -3, :day)

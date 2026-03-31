@@ -107,7 +107,7 @@ defmodule Glific.ChatbotDiagnoseTest do
         })
 
       diag = result.diagnostics
-      assert is_boolean(diag.contact_opted_in)
+      assert diag.contact_opted_in in [true, false]
       assert is_integer(diag.recent_error_count)
       assert is_integer(diag.pending_oban_jobs)
     end

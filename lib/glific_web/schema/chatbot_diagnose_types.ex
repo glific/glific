@@ -159,7 +159,7 @@ defmodule GlificWeb.Schema.ChatbotDiagnoseTypes do
     field :id, :id
     field :category, :string
     field :message, :string
-    field :severity, :json
+    field :severity, :string
     field :entity, :json
     field :is_read, :boolean
     field :inserted_at, :datetime
