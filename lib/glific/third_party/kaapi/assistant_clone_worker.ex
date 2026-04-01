@@ -230,7 +230,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     )
 
     if succeeded == 0 and length(files) > 0 do
-      {:error, "#{length(failed_files)} file downloads failed for #{assistant_name}: #{Enum.join(failed_files, ", ")}"}
+      {:error,
+       "#{length(failed_files)} file downloads failed for #{assistant_name}: #{Enum.join(failed_files, ", ")}"}
     else
       :ok
     end
