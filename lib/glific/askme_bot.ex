@@ -18,10 +18,11 @@ defmodule Glific.AskmeBot do
 
     query = Map.get(params, :query, "")
     conversation_id = Map.get(params, :conversation_id, "")
+    page_url = Map.get(params, :page_url, "")
     user = user_identifier(organization_id)
 
     body = %{
-      "inputs" => %{"page_url" => "https://glific.org"},
+      "inputs" => %{"page_url" => page_url},
       "query" => query,
       "response_mode" => "blocking",
       "conversation_id" => conversation_id,

@@ -15,11 +15,9 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
   end
 
   input_object :askme_bot_input do
-    @desc "The question to ask"
     field(:query, non_null(:string))
-
-    @desc "Dify conversation ID for follow-up questions (empty string for new conversation)"
     field(:conversation_id, :string)
+    field(:page_url, :string)
   end
 
   object :askme_bot_message do
