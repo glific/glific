@@ -12,19 +12,29 @@ defmodule Glific.Dify.ApiClient do
   """
   @spec chat_messages(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
   def chat_messages(body, api_key) do
-    Req.post(
+    [
       base_url: @endpoint,
       url: "/chat-messages",
       json: body,
       headers: headers(api_key),
       receive_timeout: 60_000
-    )
+    ]
+    |> maybe_add_plug()
+    |> Req.post()
     |> parse_response()
   end
 
   @spec headers(String.t()) :: list()
   defp headers(api_key) do
     [authorization: "Bearer " <> api_key]
+  end
+
+  defp maybe_add_plug(opts) do
+    if plug = Application.get_env(:glific, :dify_req_plug) do
+      Keyword.put(opts, :plug, plug)
+    else
+      opts
+    end
   end
 
   @spec parse_response({:ok, Req.Response.t()} | {:error, any()}) ::

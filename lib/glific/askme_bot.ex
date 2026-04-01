@@ -3,41 +3,55 @@ defmodule Glific.AskmeBot do
   Glific AskMeBot context module for business logic.
   """
 
+  alias Glific.AskmeBot.Conversation
   alias Glific.Dify.ApiClient
+  alias Glific.Repo
 
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskMe bot.
   Supports conversation history via conversation_id.
   """
-  @spec askme(map(), non_neg_integer()) ::
+  @spec askme(map(), map()) ::
           {:ok, map()} | {:error, String.t()}
-  def askme(params, organization_id) do
+  def askme(params, user) do
     Glific.Metrics.increment("AskMeBot Requests")
 
     query = Map.get(params, :query)
     conversation_id = Map.get(params, :conversation_id, "")
     page_url = Map.get(params, :page_url, "")
-    user = Map.get(params, :user_id)
 
     body = %{
       "inputs" => %{"page_url" => page_url},
       "query" => query,
       "response_mode" => "blocking",
       "conversation_id" => conversation_id,
-      "user" => user
+      "user" => user.id
     }
 
     case ApiClient.chat_messages(body, dify_api_key()) do
       {:ok, response} ->
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
-        # message_id = Map.get(response, "message_id", "")
+
+        create_conversation(resp_conversation_id, user)
 
         {:ok, %{answer: answer, conversation_id: resp_conversation_id}}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec create_conversation(String.t(), map()) ::
+          {:ok, Conversation.t()} | {:error, Ecto.Changeset.t()}
+  defp create_conversation(conversation_id, user) do
+    %Conversation{}
+    |> Conversation.changeset(%{
+      conversation_id: conversation_id,
+      user_id: user.id,
+      organization_id: user.organization_id
+    })
+    |> Repo.insert(on_conflict: :nothing)
   end
 
   @spec dify_api_key() :: String.t()

@@ -18,7 +18,6 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
     field(:query, non_null(:string))
     field(:conversation_id, :string)
     field(:page_url, :string)
-    field(:user_id, :string)
   end
 
   object :askme_bot_message do
