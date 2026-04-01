@@ -4,8 +4,6 @@ defmodule Glific.AskmeBot do
   """
 
   alias Glific.Dify.ApiClient
-  alias Glific.Partners.OrganizationData
-  alias Glific.Repo
 
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskMe bot.
@@ -16,10 +14,10 @@ defmodule Glific.AskmeBot do
   def askme(params, organization_id) do
     Glific.Metrics.increment("AskMeBot Requests")
 
-    query = Map.get(params, :query, "")
+    query = Map.get(params, :query)
     conversation_id = Map.get(params, :conversation_id, "")
     page_url = Map.get(params, :page_url, "")
-    user = user_identifier(organization_id)
+    user = Map.get(params, :user_id)
 
     body = %{
       "inputs" => %{"page_url" => page_url},
@@ -41,9 +39,6 @@ defmodule Glific.AskmeBot do
         {:error, reason}
     end
   end
-
-  @spec user_identifier(non_neg_integer()) :: String.t()
-  defp user_identifier(organization_id), do: "org-#{organization_id}"
 
   @spec dify_api_key() :: String.t()
   defp dify_api_key, do: Application.get_env(:glific, :dify_api_key, "")

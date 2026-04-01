@@ -142,11 +142,9 @@ defmodule GlificWeb.Schema do
 
     import_fields(:whatsapp_form_revision_queries)
 
-<<<<<<< HEAD
-    import_fields(:askme_bot_queries)
-=======
     import_fields(:ai_evaluation_queries)
->>>>>>> ea24aaba1ec216b3f2273ab1e13f45168a20030a
+
+    import_fields(:askme_bot_queries)
   end
 
   mutation do
