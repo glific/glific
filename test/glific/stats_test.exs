@@ -4,177 +4,566 @@ defmodule Glific.StatsTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Partners,
-    Seeds.SeedsDev,
-    Stats
+    Fixtures,
+    Flows.FlowContext,
+    MessageConversations,
+    Messages.Message,
+    Messages.MessageConversation,
+    Stats,
+    Users.User
   }
 
-  setup do
-    default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
-    SeedsDev.seed_contacts()
-    SeedsDev.seed_messages()
-    :ok
+  defp dt(date, time), do: DateTime.new!(date, time, "Etc/UTC")
+
+  defp update_contact(contact, updates) do
+    Repo.update_all(from(c in Contact, where: c.id == ^contact.id), set: updates)
   end
 
-  defp get_stats_count do
-    {:ok, result} = Repo.query("SELECT count(*) from stats")
-    [[count]] = result.rows
-    count
+  defp update_message(message, updates) do
+    Repo.update_all(from(m in Message, where: m.id == ^message.id), set: updates)
   end
 
-  test "Create a stat", attrs do
-    attrs = %{
-      organization_id: attrs.organization_id,
-      period: "hour",
-      hour: 0,
-      date: DateTime.to_date(DateTime.utc_now())
-    }
-
-    assert {:ok, stat} = Stats.create_stat(attrs)
-    assert stat.period == "hour"
+  defp update_message_conversation(conversation, updates) do
+    Repo.update_all(from(c in MessageConversation, where: c.id == ^conversation.id), set: updates)
   end
 
-  test "Update a stat", attrs do
-    attrs = %{
-      organization_id: attrs.organization_id,
-      period: "hour",
-      hour: 0,
-      date: DateTime.to_date(DateTime.utc_now())
-    }
-
-    assert {:ok, stat} = Stats.create_stat(attrs)
-
-    {:ok, stat} = Stats.update_stat(stat, %{period: "day"})
-    assert stat.period == "day"
+  defp update_flow_context(flow_context, updates) do
+    Repo.update_all(from(fc in FlowContext, where: fc.id == ^flow_context.id), set: updates)
   end
 
-  test "Call all the functions in stats, and ensure that the DB size increases", attrs do
-    initial = get_stats_count()
-
-    time = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    Stats.generate_stats([], false, time: time)
-    hour = get_stats_count()
-    assert hour > initial
-
-    time = Timex.end_of_day(time)
-    Stats.generate_stats([], false, time: time)
-    day = get_stats_count()
-    assert day > hour
-
-    time = Timex.end_of_week(time)
-    Stats.generate_stats([], false, time: time)
-    week = get_stats_count()
-    assert week > day
-
-    # Don't check for "month" - time chaining causes monthly stats to query a future month
-    # where no contacts exist, resulting in contacts: 0 and rejection by reject_empty()
-
-    # now lets list all the stat entries
-    stats = Stats.list_stats(%{filter: %{organization_id: attrs.organization_id}})
-    checks = %{"hour" => false, "day" => false, "week" => false}
-
-    stats
-    |> Enum.reduce(
-      checks,
-      fn s, acc -> Map.put(acc, s.period, true) end
-    )
-    |> Enum.map(fn {_k, v} -> assert v == true end)
-
-    # now lets set a filter that wont match
-    assert Stats.list_stats(%{
-             filter: %{
-               organization_id: attrs.organization_id,
-               period: "week",
-               hour: 24,
-               date: DateTime.to_date(time)
-             }
-           }) == []
+  defp update_user(user, updates) do
+    Repo.update_all(from(u in User, where: u.id == ^user.id), set: updates)
   end
 
-  test "count stats", attrs do
-    inital = Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}})
-    assert inital == 0
-
-    time = DateTime.utc_now() |> DateTime.truncate(:second)
-    Stats.generate_stats([], false, time: time)
-
-    assert Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}}) > inital
-  end
-
-  test "mail_stats/2", attrs do
-    org = Partners.get_organization!(attrs.organization_id)
-
-    assert {:ok, %{message: _error}} = Stats.mail_stats(org)
-  end
-
-  test "daily stats should count created contacts and active contacts separately", attrs do
-    org_id = attrs.organization_id
-    test_date = Date.utc_today()
-
-    yesterday = DateTime.utc_now() |> DateTime.add(-1, :day)
-    two_days_ago = DateTime.utc_now() |> DateTime.add(-2, :day)
-
-    initial_contacts_list =
-      Contacts.list_contacts(%{filter: %{organization_id: org_id}})
-
-    initial_contacts_today =
-      initial_contacts_list
-      |> Enum.filter(fn contact ->
-        DateTime.to_date(contact.inserted_at) == test_date
-      end)
-      |> length()
-
-    {:ok, old_contact1} =
+  defp create_contact(org_id, suffix) do
+    {:ok, contact} =
       Contacts.create_contact(%{
-        name: "Old Contact 1",
-        phone: "1234567890",
+        name: "Stats Contact #{suffix}",
+        phone: "91991#{suffix}",
         organization_id: org_id
       })
 
-    Repo.update_all(
-      from(c in Contact, where: c.id == ^old_contact1.id),
-      set: [inserted_at: yesterday]
-    )
+    contact
+  end
 
-    {:ok, old_contact2} =
-      Contacts.create_contact(%{
-        name: "Old Contact 2",
-        phone: "1234567891",
-        organization_id: org_id
+  defp create_message(org_id, suffix, flow, is_hsm) do
+    sender = Fixtures.contact_fixture(%{organization_id: org_id, phone: "91881#{suffix}"})
+    receiver = Fixtures.contact_fixture(%{organization_id: org_id, phone: "91771#{suffix}"})
+
+    Fixtures.message_fixture(%{
+      organization_id: org_id,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id,
+      flow: flow,
+      is_hsm: is_hsm
+    })
+  end
+
+  defp create_message_conversation(org_id, suffix) do
+    message = create_message(org_id, "66#{suffix}", :inbound, false)
+
+    {:ok, message_conversation} =
+      MessageConversations.create_message_conversation(%{
+        organization_id: org_id,
+        message_id: message.id,
+        conversation_id: "stats-conv-#{suffix}",
+        deduction_type: "conversation",
+        payload: %{},
+        is_billable: false
       })
 
-    Repo.update_all(
-      from(c in Contact, where: c.id == ^old_contact2.id),
-      set: [inserted_at: two_days_ago]
-    )
+    message_conversation
+  end
 
-    contacts_list = Contacts.list_contacts(%{filter: %{organization_id: org_id}})
+  defp create_flow_context(org_id, suffix) do
+    Fixtures.flow_context_fixture(%{
+      organization_id: org_id,
+      flow_uuid: Ecto.UUID.generate(),
+      node_uuid: Ecto.UUID.generate(),
+      status: "published",
+      uuid_map: %{"k#{suffix}" => "v#{suffix}"}
+    })
+  end
 
-    contacts_created_today =
-      contacts_list
-      |> Enum.filter(fn contact ->
-        DateTime.to_date(contact.inserted_at) == test_date
-      end)
+  defp create_user(org_id, suffix) do
+    Fixtures.user_fixture(%{
+      organization_id: org_id,
+      phone: "91661#{suffix}"
+    })
+  end
 
-    assert length(contacts_created_today) == initial_contacts_today
-
-    time = DateTime.new!(test_date, ~T[23:00:00], "Etc/UTC")
-    Stats.generate_stats([org_id], false, time: time, day: true)
-
-    daily_stats =
+  defp fetch_single_stat!(org_id, period, date, hour \\ 0) do
+    [stat] =
       Stats.list_stats(%{
         filter: %{
           organization_id: org_id,
-          period: "day",
-          date: test_date
+          period: period,
+          date: date,
+          hour: hour
         }
       })
 
-    # there should be 1 entry each day
-    assert length(daily_stats) == 1
-    [stat] = daily_stats
-    assert stat.contacts == length(contacts_created_today)
+    stat
+  end
+
+  test "create and update stat", %{organization_id: organization_id} do
+    attrs = %{organization_id: organization_id, period: "hour", hour: 0, date: ~D[2099-01-01]}
+    assert {:ok, stat} = Stats.create_stat(attrs)
+    assert stat.period == "hour"
+
+    assert {:ok, updated} = Stats.update_stat(stat, %{period: "day"})
+    assert updated.period == "day"
+  end
+
+  test "generate hourly stats with time boundaries across contacts, messages, conversations, flows and users",
+       %{organization_id: organization_id} do
+    date = ~D[2099-01-15]
+    time = dt(date, ~T[10:30:00])
+    start_dt = dt(date, ~T[10:00:00])
+    end_usec = dt(date, ~T[10:59:59.999999])
+    prev_usec = dt(date, ~T[09:59:59.999999])
+    next_dt = dt(date, ~T[11:00:00])
+
+    contact_start = create_contact(organization_id, "000001")
+    contact_end = create_contact(organization_id, "000002")
+    contact_prev = create_contact(organization_id, "000003")
+    contact_next = create_contact(organization_id, "000004")
+
+    update_contact(contact_start, last_message_at: start_dt)
+    update_contact(contact_end, last_message_at: end_usec)
+    update_contact(contact_prev, last_message_at: prev_usec)
+    update_contact(contact_next, last_message_at: next_dt)
+
+    msg_start = create_message(organization_id, "010001", :inbound, true)
+    msg_end = create_message(organization_id, "010002", :outbound, false)
+    msg_prev = create_message(organization_id, "010003", :inbound, true)
+    msg_next = create_message(organization_id, "010004", :outbound, true)
+
+    update_message(msg_start, inserted_at: start_dt)
+    update_message(msg_end, inserted_at: end_usec)
+    update_message(msg_prev, inserted_at: prev_usec)
+    update_message(msg_next, inserted_at: next_dt)
+
+    conv_start = create_message_conversation(organization_id, "020001")
+    conv_end = create_message_conversation(organization_id, "020002")
+    conv_prev = create_message_conversation(organization_id, "020003")
+    conv_next = create_message_conversation(organization_id, "020004")
+
+    update_message_conversation(conv_start, inserted_at: start_dt)
+    update_message_conversation(conv_end, inserted_at: end_usec)
+    update_message_conversation(conv_prev, inserted_at: prev_usec)
+    update_message_conversation(conv_next, inserted_at: next_dt)
+
+    flow_start = create_flow_context(organization_id, "030001")
+    flow_end = create_flow_context(organization_id, "030002")
+    flow_prev = create_flow_context(organization_id, "030003")
+    flow_next = create_flow_context(organization_id, "030004")
+
+    update_flow_context(flow_start, inserted_at: start_dt, completed_at: start_dt)
+    update_flow_context(flow_end, inserted_at: end_usec, completed_at: end_usec)
+    update_flow_context(flow_prev, inserted_at: prev_usec, completed_at: prev_usec)
+    update_flow_context(flow_next, inserted_at: next_dt, completed_at: next_dt)
+
+    user_start = create_user(organization_id, "040001")
+    user_end = create_user(organization_id, "040002")
+    user_prev = create_user(organization_id, "040003")
+    user_next = create_user(organization_id, "040004")
+
+    update_user(user_start, last_login_at: start_dt)
+    update_user(user_end, last_login_at: end_usec)
+    update_user(user_prev, last_login_at: prev_usec)
+    update_user(user_next, last_login_at: next_dt)
+
+    Stats.generate_stats([organization_id], false,
+      time: time,
+      day: false,
+      week: false,
+      month: false
+    )
+
+    stat = fetch_single_stat!(organization_id, "hour", date, 10)
+    assert stat.contacts == 0
+    assert stat.active == 2
+    assert stat.messages == 2
+    assert stat.inbound == 1
+    assert stat.outbound == 1
+    assert stat.hsm == 1
+    assert stat.conversations == 2
+    assert stat.flows_started == 2
+    assert stat.flows_completed == 2
+    assert stat.users == 1
+  end
+
+  test "generate daily stats with time boundaries across contacts, messages, conversations, flows and users",
+       %{organization_id: organization_id} do
+    date = ~D[2099-01-31]
+    time = dt(date, ~T[23:00:00])
+    start_dt = dt(date, ~T[00:00:00])
+    end_usec = dt(date, ~T[23:59:59.999999])
+    prev_usec = dt(Date.add(date, -1), ~T[23:59:59.999999])
+    next_dt = dt(Date.add(date, 1), ~T[00:00:00])
+
+    contact_start = create_contact(organization_id, "100001")
+    contact_end = create_contact(organization_id, "100002")
+    contact_prev = create_contact(organization_id, "100003")
+    contact_next = create_contact(organization_id, "100004")
+
+    update_contact(contact_start, inserted_at: start_dt, last_message_at: start_dt)
+    update_contact(contact_end, inserted_at: end_usec, last_message_at: end_usec)
+    update_contact(contact_prev, inserted_at: prev_usec, last_message_at: prev_usec)
+    update_contact(contact_next, inserted_at: next_dt, last_message_at: next_dt)
+
+    msg_start = create_message(organization_id, "110001", :inbound, true)
+    msg_end = create_message(organization_id, "110002", :outbound, false)
+    msg_prev = create_message(organization_id, "110003", :inbound, true)
+    msg_next = create_message(organization_id, "110004", :outbound, true)
+
+    update_message(msg_start, inserted_at: start_dt)
+    update_message(msg_end, inserted_at: end_usec)
+    update_message(msg_prev, inserted_at: prev_usec)
+    update_message(msg_next, inserted_at: next_dt)
+
+    conv_start = create_message_conversation(organization_id, "120001")
+    conv_end = create_message_conversation(organization_id, "120002")
+    conv_prev = create_message_conversation(organization_id, "120003")
+    conv_next = create_message_conversation(organization_id, "120004")
+
+    update_message_conversation(conv_start, inserted_at: start_dt)
+    update_message_conversation(conv_end, inserted_at: end_usec)
+    update_message_conversation(conv_prev, inserted_at: prev_usec)
+    update_message_conversation(conv_next, inserted_at: next_dt)
+
+    flow_start = create_flow_context(organization_id, "130001")
+    flow_end = create_flow_context(organization_id, "130002")
+    flow_prev = create_flow_context(organization_id, "130003")
+    flow_next = create_flow_context(organization_id, "130004")
+
+    update_flow_context(flow_start, inserted_at: start_dt, completed_at: start_dt)
+    update_flow_context(flow_end, inserted_at: end_usec, completed_at: end_usec)
+    update_flow_context(flow_prev, inserted_at: prev_usec, completed_at: prev_usec)
+    update_flow_context(flow_next, inserted_at: next_dt, completed_at: next_dt)
+
+    user_start = create_user(organization_id, "140001")
+    user_end = create_user(organization_id, "140002")
+    user_prev = create_user(organization_id, "140003")
+    user_next = create_user(organization_id, "140004")
+
+    update_user(user_start, last_login_at: start_dt)
+    update_user(user_end, last_login_at: end_usec)
+    update_user(user_prev, last_login_at: prev_usec)
+    update_user(user_next, last_login_at: next_dt)
+
+    Stats.generate_stats([organization_id], false,
+      time: time,
+      hour: false,
+      week: false,
+      month: false
+    )
+
+    stat = fetch_single_stat!(organization_id, "day", date)
+    assert stat.contacts == 2
+    assert stat.active == 2
+    assert stat.messages == 2
+    assert stat.inbound == 1
+    assert stat.outbound == 1
+    assert stat.hsm == 1
+    assert stat.conversations == 2
+    assert stat.flows_started == 2
+    assert stat.flows_completed == 2
+    assert stat.users == 1
+  end
+
+  test "generate weekly stats with boundaries and verify summary row permutations", %{
+    organization_id: organization_id
+  } do
+    week_anchor = dt(~D[2099-02-01], ~T[12:00:00])
+    week_start = week_anchor |> Timex.beginning_of_week() |> DateTime.to_date()
+    week_end = week_anchor |> Timex.end_of_week() |> DateTime.to_date()
+    time = dt(week_end, ~T[23:00:00])
+    start_dt = dt(week_start, ~T[00:00:00])
+    end_usec = dt(week_end, ~T[23:59:59.999999])
+    prev_usec = dt(Date.add(week_start, -1), ~T[23:59:59.999999])
+    next_dt = dt(Date.add(week_end, 1), ~T[00:00:00])
+
+    c1 = create_contact(organization_id, "200001")
+    c2 = create_contact(organization_id, "200002")
+    c3 = create_contact(organization_id, "200003")
+    c4 = create_contact(organization_id, "200004")
+
+    update_contact(c1, inserted_at: start_dt, last_message_at: start_dt, optin_time: start_dt)
+    update_contact(c2, inserted_at: end_usec, last_message_at: end_usec, optout_time: end_usec)
+    update_contact(c3, inserted_at: prev_usec, last_message_at: prev_usec, optin_time: prev_usec)
+    update_contact(c4, inserted_at: next_dt, last_message_at: next_dt, optout_time: next_dt)
+
+    msg_start = create_message(organization_id, "210001", :inbound, true)
+    msg_end = create_message(organization_id, "210002", :outbound, false)
+    msg_prev = create_message(organization_id, "210003", :inbound, true)
+    msg_next = create_message(organization_id, "210004", :outbound, true)
+
+    update_message(msg_start, inserted_at: start_dt)
+    update_message(msg_end, inserted_at: end_usec)
+    update_message(msg_prev, inserted_at: prev_usec)
+    update_message(msg_next, inserted_at: next_dt)
+
+    conv_start = create_message_conversation(organization_id, "220001")
+    conv_end = create_message_conversation(organization_id, "220002")
+    conv_prev = create_message_conversation(organization_id, "220003")
+    conv_next = create_message_conversation(organization_id, "220004")
+
+    update_message_conversation(conv_start, inserted_at: start_dt)
+    update_message_conversation(conv_end, inserted_at: end_usec)
+    update_message_conversation(conv_prev, inserted_at: prev_usec)
+    update_message_conversation(conv_next, inserted_at: next_dt)
+
+    flow_start = create_flow_context(organization_id, "230001")
+    flow_end = create_flow_context(organization_id, "230002")
+    flow_prev = create_flow_context(organization_id, "230003")
+    flow_next = create_flow_context(organization_id, "230004")
+
+    update_flow_context(flow_start, inserted_at: start_dt, completed_at: start_dt)
+    update_flow_context(flow_end, inserted_at: end_usec, completed_at: end_usec)
+    update_flow_context(flow_prev, inserted_at: prev_usec, completed_at: prev_usec)
+    update_flow_context(flow_next, inserted_at: next_dt, completed_at: next_dt)
+
+    user_start = create_user(organization_id, "240001")
+    user_end = create_user(organization_id, "240002")
+    user_prev = create_user(organization_id, "240003")
+    user_next = create_user(organization_id, "240004")
+
+    update_user(user_start, last_login_at: start_dt)
+    update_user(user_end, last_login_at: end_usec)
+    update_user(user_prev, last_login_at: prev_usec)
+    update_user(user_next, last_login_at: next_dt)
+
+    Stats.generate_stats([organization_id], false,
+      time: time,
+      hour: false,
+      day: false,
+      month: false
+    )
+
+    week_stat = fetch_single_stat!(organization_id, "week", week_start)
+    summary_stat = fetch_single_stat!(organization_id, "summary", week_start)
+
+    assert week_stat.contacts == 2
+    assert week_stat.messages == 2
+    assert week_stat.inbound == 1
+    assert week_stat.outbound == 1
+    assert week_stat.hsm == 1
+    assert week_stat.conversations == 2
+    assert week_stat.flows_started == 2
+    assert week_stat.flows_completed == 2
+    assert week_stat.users == 1
+
+    assert summary_stat.contacts >= 4
+    assert summary_stat.active >= 4
+    assert summary_stat.optin >= 2
+    assert summary_stat.optout >= 2
+    assert summary_stat.messages >= 4
+    assert summary_stat.inbound >= 2
+    assert summary_stat.outbound >= 2
+    assert summary_stat.hsm >= 3
+    assert summary_stat.conversations >= 4
+    assert summary_stat.flows_started == 0
+    assert summary_stat.flows_completed == 0
+    assert summary_stat.users >= 1
+  end
+
+  test "generate monthly stats with boundaries and verify summary row insert", %{
+    organization_id: organization_id
+  } do
+    month_start = ~D[2099-03-01]
+    month_end = ~D[2099-03-31]
+    time = dt(month_end, ~T[23:00:00])
+    start_dt = dt(month_start, ~T[00:00:00])
+    end_usec = dt(month_end, ~T[23:59:59.999999])
+    prev_usec = dt(Date.add(month_start, -1), ~T[23:59:59.999999])
+    next_dt = dt(Date.add(month_end, 1), ~T[00:00:00])
+
+    c1 = create_contact(organization_id, "300001")
+    c2 = create_contact(organization_id, "300002")
+    c3 = create_contact(organization_id, "300003")
+    c4 = create_contact(organization_id, "300004")
+
+    update_contact(c1, inserted_at: start_dt, last_message_at: start_dt, optin_time: start_dt)
+    update_contact(c2, inserted_at: end_usec, last_message_at: end_usec, optout_time: end_usec)
+    update_contact(c3, inserted_at: prev_usec, last_message_at: prev_usec, optin_time: prev_usec)
+    update_contact(c4, inserted_at: next_dt, last_message_at: next_dt, optout_time: next_dt)
+
+    msg_start = create_message(organization_id, "310001", :inbound, true)
+    msg_end = create_message(organization_id, "310002", :outbound, false)
+    msg_prev = create_message(organization_id, "310003", :inbound, true)
+    msg_next = create_message(organization_id, "310004", :outbound, true)
+
+    update_message(msg_start, inserted_at: start_dt)
+    update_message(msg_end, inserted_at: end_usec)
+    update_message(msg_prev, inserted_at: prev_usec)
+    update_message(msg_next, inserted_at: next_dt)
+
+    conv_start = create_message_conversation(organization_id, "320001")
+    conv_end = create_message_conversation(organization_id, "320002")
+    conv_prev = create_message_conversation(organization_id, "320003")
+    conv_next = create_message_conversation(organization_id, "320004")
+
+    update_message_conversation(conv_start, inserted_at: start_dt)
+    update_message_conversation(conv_end, inserted_at: end_usec)
+    update_message_conversation(conv_prev, inserted_at: prev_usec)
+    update_message_conversation(conv_next, inserted_at: next_dt)
+
+    flow_start = create_flow_context(organization_id, "330001")
+    flow_end = create_flow_context(organization_id, "330002")
+    flow_prev = create_flow_context(organization_id, "330003")
+    flow_next = create_flow_context(organization_id, "330004")
+
+    update_flow_context(flow_start, inserted_at: start_dt, completed_at: start_dt)
+    update_flow_context(flow_end, inserted_at: end_usec, completed_at: end_usec)
+    update_flow_context(flow_prev, inserted_at: prev_usec, completed_at: prev_usec)
+    update_flow_context(flow_next, inserted_at: next_dt, completed_at: next_dt)
+
+    user_start = create_user(organization_id, "340001")
+    user_end = create_user(organization_id, "340002")
+    user_prev = create_user(organization_id, "340003")
+    user_next = create_user(organization_id, "340004")
+
+    update_user(user_start, last_login_at: start_dt)
+    update_user(user_end, last_login_at: end_usec)
+    update_user(user_prev, last_login_at: prev_usec)
+    update_user(user_next, last_login_at: next_dt)
+
+    Stats.generate_stats([organization_id], false,
+      time: time,
+      hour: false,
+      day: false,
+      week: false
+    )
+
+    month_stat = fetch_single_stat!(organization_id, "month", month_start)
+    summary_stat = fetch_single_stat!(organization_id, "summary", month_start)
+
+    assert month_stat.contacts == 2
+    assert month_stat.messages == 2
+    assert month_stat.inbound == 1
+    assert month_stat.outbound == 1
+    assert month_stat.hsm == 1
+    assert month_stat.conversations == 2
+    assert month_stat.flows_started == 2
+    assert month_stat.flows_completed == 2
+    assert month_stat.users == 1
+
+    assert summary_stat.contacts >= 4
+    assert summary_stat.active >= 4
+    assert summary_stat.optin >= 2
+    assert summary_stat.optout >= 2
+    assert summary_stat.messages >= 4
+    assert summary_stat.inbound >= 2
+    assert summary_stat.outbound >= 2
+    assert summary_stat.hsm >= 3
+    assert summary_stat.conversations >= 4
+    assert summary_stat.flows_started == 0
+    assert summary_stat.flows_completed == 0
+    assert summary_stat.users >= 1
+  end
+
+  test "usage returns sum of messages and max users over day range", %{organization_id: organization_id} do
+    now = Date.utc_today()
+
+    {:ok, _} =
+      Stats.create_stat(%{
+        organization_id: organization_id,
+        period: "day",
+        date: Date.add(now, -2),
+        messages: 10,
+        users: 2
+      })
+
+    {:ok, _} =
+      Stats.create_stat(%{
+        organization_id: organization_id,
+        period: "day",
+        date: Date.add(now, -1),
+        messages: 7,
+        users: 4
+      })
+
+    {:ok, _} =
+      Stats.create_stat(%{
+        organization_id: organization_id,
+        period: "hour",
+        date: Date.add(now, -1),
+        hour: 5,
+        messages: 100,
+        users: 100
+      })
+
+    assert %{messages: 17, users: 4} =
+             Stats.usage(organization_id, Date.add(now, -2), Date.add(now, -1))
+  end
+
+  test "count_stats, list_stats filtering and reject_empty for missed used paths", %{
+    organization_id: organization_id
+  } do
+    assert Stats.count_stats(%{filter: %{organization_id: organization_id}}) == 0
+
+    assert {:ok, _} =
+             Stats.create_stat(%{
+               organization_id: organization_id,
+               period: "hour",
+               date: ~D[2099-05-01],
+               hour: 7,
+               messages: 3
+             })
+
+    assert Stats.count_stats(%{filter: %{organization_id: organization_id}}) == 1
+
+    filtered =
+      Stats.list_stats(%{
+        filter: %{organization_id: organization_id, period: "hour", date: ~D[2099-05-01], hour: 7}
+      })
+
+    assert length(filtered) == 1
+    assert Stats.list_stats(%{filter: %{organization_id: organization_id, period: "week"}}) == []
+
+    assert [%{messages: 1}] =
+             Stats.reject_empty(%{
+               a: %{
+                 contacts: 0,
+                 active: 0,
+                 optin: 0,
+                 optout: 0,
+                 messages: 0,
+                 inbound: 0,
+                 outbound: 0,
+                 hsm: 0,
+                 flows_started: 0,
+                 flows_completed: 0,
+                 conversations: 0
+               },
+               b: %{
+                 contacts: 0,
+                 active: 0,
+                 optin: 0,
+                 optout: 0,
+                 messages: 1,
+                 inbound: 0,
+                 outbound: 0,
+                 hsm: 0,
+                 flows_started: 0,
+                 flows_completed: 0,
+                 conversations: 0
+               }
+             })
+  end
+
+  test "get_daily_stats, get_weekly_stats and get_monthly_stats return input when period is disabled", %{
+    organization_id: organization_id
+  } do
+    base = %{test: :value}
+    time = dt(~D[2099-06-30], ~T[23:00:00])
+    opts = [time: time, date: DateTime.to_date(time), day: false, week: false, month: false]
+
+    assert Stats.get_daily_stats(base, [organization_id], opts) == base
+    assert Stats.get_weekly_stats(base, [organization_id], opts) == base
+    assert Stats.get_monthly_stats(base, [organization_id], opts) == base
   end
 end
