@@ -6,17 +6,21 @@ defmodule GlificWeb.Resolvers.AskmeBot do
   alias Glific.AskmeBot
 
   @doc """
+  Fetch message history for a conversation from Dify
+  """
+  @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(map())} | {:error, any}
+  def messages(_, %{conversation_id: _conversation_id}, %{context: %{current_user: _user}}) do
+    # add the message history here
+  end
+
+  @doc """
   Ask the AskMe bot a question and get an answer
   """
   @spec ask(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
   def ask(_, %{input: params}, %{context: %{current_user: user}}) do
-    dify_params = %{
-      "query" => Map.get(params, :query, ""),
-      "conversation_id" => Map.get(params, :conversation_id, "")
-    }
-
-    case AskmeBot.askme(dify_params, user.organization_id) do
+    case AskmeBot.askme(params, user.organization_id) do
       {:ok, result} ->
         {:ok, result}
 

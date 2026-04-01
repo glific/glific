@@ -22,6 +22,22 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
     field(:conversation_id, :string)
   end
 
+  object :askme_bot_message do
+    field(:id, :string)
+    field(:conversation_id, :string)
+    field(:query, :string)
+    field(:answer, :string)
+    field(:created_at, :integer)
+  end
+
+  object :askme_bot_queries do
+    field :askme_bot_messages, list_of(:askme_bot_message) do
+      arg(:conversation_id, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AskmeBot.messages/3)
+    end
+  end
+
   object :askme_bot_mutations do
     field :askme_bot, :askme_bot_result do
       arg(:input, non_null(:askme_bot_input))
