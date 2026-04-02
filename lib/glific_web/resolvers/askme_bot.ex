@@ -24,8 +24,9 @@ defmodule GlificWeb.Resolvers.AskmeBot do
   Fetch message history for a conversation from Dify
   """
   @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, list(map())} | {:error, any}
+          {:ok, map()} | {:error, any}
   def messages(_, %{conversation_id: _conversation_id}, %{context: %{current_user: _user}}) do
-    # add the message history here
+    # add the message history logic
+    {:ok, %{}}
   end
 end
