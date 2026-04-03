@@ -11,6 +11,7 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
   object :askme_bot_result do
     field(:answer, :string)
     field(:conversation_id, :string)
+    field(:conversation_name, :string)
     field(:errors, list_of(:input_error))
   end
 
@@ -28,9 +29,38 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
     field(:created_at, :integer)
   end
 
+  object :askme_bot_messages_result do
+    field(:messages, list_of(:askme_bot_message))
+    field(:has_more, :boolean)
+    field(:limit, :integer)
+  end
+
+  object :askme_bot_conversation do
+    field(:id, :string)
+    field(:name, :string)
+    field(:status, :string)
+    field(:created_at, :integer)
+    field(:updated_at, :integer)
+  end
+
+  object :askme_bot_conversations_result do
+    field(:conversations, list_of(:askme_bot_conversation))
+    field(:has_more, :boolean)
+    field(:limit, :integer)
+  end
+
   object :askme_bot_queries do
-    field :askme_bot_messages, list_of(:askme_bot_message) do
+    field :askme_bot_conversations, :askme_bot_conversations_result do
+      arg(:limit, :integer)
+      arg(:last_id, :string)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AskmeBot.get_conversations/3)
+    end
+
+    field :askme_bot_messages, :askme_bot_messages_result do
       arg(:conversation_id, non_null(:string))
+      arg(:limit, :integer)
+      arg(:first_id, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskmeBot.messages/3)
     end

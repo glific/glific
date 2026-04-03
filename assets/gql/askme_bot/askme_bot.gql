@@ -1,0 +1,10 @@
+mutation askme_bot($input: AskmeBotInput!) {
+    askmeBot(input: $input) {
+        answer
+        conversationId
+        conversationName
+        errors {
+            message
+        }
+    }
+}

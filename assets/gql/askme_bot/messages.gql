@@ -1,0 +1,13 @@
+query askme_bot_messages($conversationId: String!, $limit: Int, $firstId: String) {
+    askmeBotMessages(conversationId: $conversationId, limit: $limit, firstId: $firstId) {
+        messages {
+            id
+            conversationId
+            query
+            answer
+            createdAt
+        }
+        hasMore
+        limit
+    }
+}
