@@ -124,9 +124,11 @@ defmodule Glific.BigQuery do
   @spec ignore_updates_for_table() :: list()
   def ignore_updates_for_table do
     [
+      "assistant_config_version_knowledge_base_versions",
       "contact_histories",
       "flow_labels",
       "flows",
+      "knowledge_bases",
       "message_conversations",
       "stats",
       "stats_all",

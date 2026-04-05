@@ -123,7 +123,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "whatsapp_forms",
       "whatsapp_forms_responses",
       "certificate_templates",
-      "issued_certificates"
+      "issued_certificates",
+      "assistants",
+      "assistant_config_versions",
+      "knowledge_base_versions"
     ]
 
     list_of_table =
