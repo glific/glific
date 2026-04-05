@@ -101,8 +101,7 @@ defmodule Glific.BigQuery do
     "certificate_templates" => :certificate_templates_schema,
     "issued_certificates" => :issued_certificates_schema,
     "knowledge_bases" => :knowledge_base_schema,
-    "knowledge_base_versions" => :knowledge_base_version_schema,
-    "trial_users" => :trial_user_schemalib
+    "knowledge_base_versions" => :knowledge_base_version_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
