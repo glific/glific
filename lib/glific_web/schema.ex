@@ -59,6 +59,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.AssistantTypes)
+  import_types(__MODULE__.AIEvaluationTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
   import_types(__MODULE__.WhatsappFormTypes)
@@ -139,6 +140,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_queries)
 
     import_fields(:whatsapp_form_revision_queries)
+
+    import_fields(:ai_evaluation_queries)
   end
 
   mutation do
@@ -215,6 +218,8 @@ defmodule GlificWeb.Schema do
     import_fields(:whatsapp_form_mutations)
 
     import_fields(:whatsapp_form_revision_mutations)
+
+    import_fields(:ai_evaluation_mutations)
   end
 
   subscription do

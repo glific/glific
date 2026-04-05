@@ -1,0 +1,18 @@
+query AssistantConfigVersions {
+  assistantConfigVersions {
+    id
+    assistantId
+    kaapiUuid
+    versionNumber
+    assistantName
+    description
+    prompt
+    provider
+    model
+    settings
+    status
+    failureReason
+    insertedAt
+    updatedAt
+  }
+}

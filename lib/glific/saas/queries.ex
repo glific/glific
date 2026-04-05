@@ -332,27 +332,13 @@ defmodule Glific.Saas.Queries do
     }
 
     case Partners.create_credential(attrs) do
-      {:ok, %{secrets: %{"app_name" => "NA"}} = credential} ->
+      {:ok, credential} ->
         # This will be case in onboarding v2
 
         Map.put(result, :credential, credential)
 
-      {:ok, _credential} ->
-        update_bsp_id(result)
-
       {:error, errors} ->
         error(inspect(errors), result, :global)
-    end
-  end
-
-  @spec update_bsp_id(map()) :: map()
-  defp update_bsp_id(result) do
-    case Partners.set_bsp_app_id(result.organization, @default_provider) do
-      {:ok, credential} ->
-        Map.put(result, :credential, credential)
-
-      {:error, error} ->
-        error(error, result, :global)
     end
   end
 
@@ -389,7 +375,7 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_app(map(), String.t()) :: map()
   defp validate_app(result, app_name) do
-    case PartnerAPI.fetch_gupshup_app_details(app_name) do
+    case PartnerAPI.fetch_gupshup_app_details(app_name: app_name) do
       resp when is_map(resp) -> result
       _ -> error("Invalid Gupshup App", result, :app_name)
     end
@@ -406,7 +392,10 @@ defmodule Glific.Saas.Queries do
   def validate_shortcode(result, shortcode) do
     with true <- Regex.match?(~r/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, shortcode),
          {:error, _} <-
-           Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true) do
+           Repo.fetch_by(Organization, %{shortcode: shortcode},
+             skip_organization_id: true,
+             include_deleted: true
+           ) do
       result
     else
       {:ok, _} ->

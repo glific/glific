@@ -19,6 +19,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
   alias Glific.ThirdParty.Kaapi
 
   @default_model "gpt-4o"
+  @supported_models ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini"]
 
   @doc """
   Migrate all assistants to the new unified API structure
@@ -126,7 +127,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
       description: nil,
       prompt: openai_assistant.instructions,
       assistant_id: openai_assistant.assistant_id,
-      model: @default_model,
+      model: migrate_model(openai_assistant.model),
       temperature: openai_assistant.temperature,
       organization_id: openai_assistant.organization_id,
       knowledge_base_ids: get_vector_store_ids(openai_assistant.vector_store)
@@ -378,5 +379,39 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
         {:error, reason}
     end
+  end
+
+  @spec migrate_model(String.t()) :: String.t()
+  defp migrate_model(model) when model in @supported_models, do: model
+
+  defp migrate_model(model) do
+    if String.starts_with?(model, "ft:"), do: model, else: @default_model
+  end
+
+  @doc """
+  Marks legacy assistants (inserted before March 9, 2026) that have a knowledge base
+  without a kaapi_job_id with clone_status "pending" so they can be identified for cloning.
+  """
+  @spec mark_legacy_assistants_for_cloning :: {non_neg_integer(), nil}
+  def mark_legacy_assistants_for_cloning do
+    cutoff_date = ~U[2026-03-09 00:00:00Z]
+
+    assistant_ids =
+      from(a in Assistant,
+        join: acv in AssistantConfigVersion,
+        on: acv.id == a.active_config_version_id,
+        join: link in "assistant_config_version_knowledge_base_versions",
+        on: link.assistant_config_version_id == acv.id,
+        join: kbv in KnowledgeBaseVersion,
+        on: kbv.id == link.knowledge_base_version_id,
+        where: a.inserted_at < ^cutoff_date,
+        where: a.clone_status == "none",
+        where: is_nil(kbv.kaapi_job_id),
+        select: a.id
+      )
+      |> Repo.all(skip_organization_id: true)
+
+    from(a in Assistant, where: a.id in ^assistant_ids)
+    |> Repo.update_all([set: [clone_status: "pending"]], skip_organization_id: true)
   end
 end

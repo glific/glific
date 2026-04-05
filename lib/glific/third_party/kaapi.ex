@@ -6,6 +6,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   alias Glific.Partners
   alias Glific.Partners.Credential
+  alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
 
   # Update all Error struct data in this format
@@ -64,6 +65,53 @@ defmodule Glific.ThirdParty.Kaapi do
         })
 
         {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
+    end
+  end
+
+  @doc """
+  Update an existing Kaapi project with the Google API key.
+  """
+  @spec update_google_api_key(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def update_google_api_key(organization_id) do
+    update_provider_credential(
+      organization_id,
+      "google",
+      %{google: %{api_key: Glific.get_google_api_key()}}
+    )
+  end
+
+  @doc """
+  Update an existing Kaapi project with the OpenAI API key.
+  """
+  @spec update_openai_api_key(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def update_openai_api_key(organization_id) do
+    update_provider_credential(
+      organization_id,
+      "openai",
+      %{openai: %{api_key: Glific.get_open_ai_key()}}
+    )
+  end
+
+  @spec update_provider_credential(non_neg_integer(), String.t(), map()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp update_provider_credential(organization_id, provider, credential) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, _} <-
+           ApiClient.update_organization_credentials(
+             %{provider: provider, credential: credential, is_active: true},
+             secrets["api_key"]
+           ) do
+      Logger.info("KAAPI #{provider} credential update success for org: #{organization_id}")
+      {:ok, "KAAPI #{provider} credential updated for org #{organization_id}"}
+    else
+      {:error, error} ->
+        Glific.log_exception(%Error{
+          message:
+            "KAAPI #{provider} credential update failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+        })
+
+        {:error,
+         "KAAPI #{provider} credential update failed for org #{organization_id}: #{inspect(error)}"}
     end
   end
 
@@ -253,6 +301,31 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @doc """
+  Gets the status of a collection creation job in Kaapi.
+  """
+  @spec get_collection_status(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_collection_status(collection_job_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{data: data}} <-
+           ApiClient.get_collection_status(collection_job_id, secrets["api_key"]) do
+      {:ok, data}
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Failed to get Kaapi collection status",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
   @spec build_config_blob(map(), list(String.t())) :: map()
   defp build_config_blob(params, knowledge_base_ids) do
     completion_params = %{
@@ -268,6 +341,150 @@ defmodule Glific.ThirdParty.Kaapi do
         provider: params[:provider] || "openai",
         params: completion_params
       }
+    }
+  end
+
+  # Error type strings surfaced in webhook logs and flow failure path.
+  # Each string is checked as a substring of the Kaapi error message body.
+  @kaapi_error_types ~w(transcription_failed unsupported_format duration_exceeded rate_limited timeout service_unavailable invalid_request)
+
+  @doc """
+  Initiates async Speech-to-Text via Kaapi unified LLM API.
+
+  Downloads audio from `audio_url`, encodes it as base64, and calls Kaapi.
+  Kaapi will POST the result to `callback_url` with `request_metadata` echoed back
+  so the flow can be resumed. Returns `%{success: true}` on successful initiation.
+
+  Optional `opts` map keys: `provider`, `model`, `language` — override defaults when provided.
+  """
+  @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
+  def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
+    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+         {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+      Map.merge(%{success: true}, body)
+    else
+      {:error, :download_failed} ->
+        %{success: false, error_type: "download_failed", reason: "Audio file download failed"}
+
+      error ->
+        handle_kaapi_error(error, organization_id, "STT", "transcription_failed")
+    end
+  end
+
+  @doc """
+  Initiates async Text-to-Speech via Kaapi unified LLM API.
+
+  Calls Kaapi which will POST the result to `callback_url` with `request_metadata`
+  echoed back so the flow can be resumed. Returns `%{success: true}` on initiation.
+
+  Optional `opts` map keys: `provider`, `model`, `language`, `voice` — override defaults when provided.
+  """
+  @spec text_to_speech(non_neg_integer(), String.t(), String.t(), map(), map()) :: map()
+  def text_to_speech(organization_id, text, callback_url, request_metadata, opts \\ %{}) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         payload = tts_payload(text, callback_url, request_metadata, opts),
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+      Map.merge(%{success: true}, body)
+    else
+      error ->
+        handle_kaapi_error(error, organization_id, "TTS", "service_unavailable")
+    end
+  end
+
+  @spec handle_kaapi_error(tuple(), non_neg_integer(), String.t(), String.t()) :: map()
+  defp handle_kaapi_error({:error, %{status: 429}}, _org_id, _label, _fallback),
+    do: %{success: false, error_type: "rate_limited", reason: "Rate limit exceeded"}
+
+  defp handle_kaapi_error({:error, %{status: 408}}, _org_id, _label, _fallback),
+    do: %{success: false, error_type: "timeout", reason: "Request timed out"}
+
+  defp handle_kaapi_error({:error, :timeout}, _org_id, _label, _fallback),
+    do: %{success: false, error_type: "timeout", reason: "Request timed out"}
+
+  defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
+       when status in 400..499,
+       do: %{success: false, error_type: "invalid_request", reason: extract_error_message(body)}
+
+  defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
+       when status in 500..599,
+       do: %{
+         success: false,
+         error_type: "service_unavailable",
+         reason: extract_error_message(body)
+       }
+
+  defp handle_kaapi_error({:error, %{status: _status, body: body}}, _org_id, _label, _fallback),
+    do: %{success: false, error_type: classify_error(body), reason: extract_error_message(body)}
+
+  defp handle_kaapi_error({:error, reason}, organization_id, label, fallback_type) do
+    Glific.log_exception(%Error{
+      message: "Kaapi #{label} failed for org_id=#{organization_id}, reason=#{inspect(reason)}"
+    })
+
+    %{success: false, error_type: fallback_type, reason: inspect(reason)}
+  end
+
+  @spec extract_error_message(map() | any()) :: String.t()
+  defp extract_error_message(body) when is_map(body),
+    do: body["error"] || body["message"] || inspect(body)
+
+  defp extract_error_message(body), do: inspect(body)
+
+  @spec classify_error(map() | any()) :: String.t()
+  defp classify_error(body) do
+    message = body |> extract_error_message() |> String.downcase()
+    Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(message, &1))
+  end
+
+  @spec stt_payload(String.t(), String.t(), map(), map()) :: map()
+  defp stt_payload(encoded_audio, callback_url, request_metadata, opts) do
+    %{
+      query: %{
+        input: %{
+          type: "audio",
+          content: %{format: "base64", value: encoded_audio, mime_type: "audio/wav"}
+        }
+      },
+      config: %{
+        blob: %{
+          completion: %{
+            provider: opts[:provider] || "google",
+            type: "stt",
+            params: %{
+              model: opts[:model] || "gemini-2.5-pro",
+              input_language: opts[:language] || "auto",
+              output_language: opts[:output_language] || "english"
+            }
+          }
+        }
+      },
+      callback_url: callback_url,
+      request_metadata: request_metadata
+    }
+  end
+
+  @spec tts_payload(String.t(), String.t(), map(), map()) :: map()
+  defp tts_payload(text, callback_url, request_metadata, opts) do
+    %{
+      query: %{input: text},
+      config: %{
+        blob: %{
+          completion: %{
+            provider: opts[:provider] || "google",
+            type: "tts",
+            params: %{
+              model: opts[:model] || "gemini-2.5-pro-preview-tts",
+              voice: opts[:voice] || "Kore",
+              language: opts[:language] || "hindi",
+              response_format: "mp3"
+            }
+          }
+        }
+      },
+      callback_url: callback_url,
+      request_metadata: request_metadata
     }
   end
 
@@ -314,6 +531,63 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message:
               "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Create an evaluation on Kaapi.
+  """
+  @spec create_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
+  """
+  @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
+  def upload_evaluation_dataset(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
+      case result do
+        %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
+          Logger.info(
+            "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{inspect(result)}"
+          )
+
+          {:ok, %{name: dataset_name, dataset_id: dataset_id}}
+
+        error ->
+          Appsignal.send_error(
+            %Error{
+              message: "Got unexpected response from Kaapi while uploading evaluation dataset",
+              organization_id: organization_id,
+              reason: inspect(error)
+            },
+            []
+          )
+
+          {:error, "An unknown error occurred, please contact Glific support."}
+      end
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Failed to upload evaluation dataset to Kaapi",
+            organization_id: organization_id,
+            reason: inspect(reason)
           },
           []
         )

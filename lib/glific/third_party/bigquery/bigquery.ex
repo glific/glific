@@ -99,10 +99,14 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => :whatsapp_form_schema,
     "whatsapp_forms_responses" => :whatsapp_form_response_schema,
     "certificate_templates" => :certificate_templates_schema,
+<<<<<<< HEAD
     "issued_certificates" => :issued_certificates_schema,
     "knowledge_bases" => :knowledge_base_schema,
     "knowledge_base_versions" => :knowledge_base_version_schema,
     "trial_users" => :trial_user_schema
+=======
+    "issued_certificates" => :issued_certificates_schema
+>>>>>>> 2402d6ebe8b4580bcedf1776e23a05417414989c
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -110,7 +114,8 @@ defmodule Glific.BigQuery do
     if organization_id == Saas.organization_id() do
       Map.merge(@bigquery_tables, %{
         "stats_all" => :stats_all_schema,
-        "trackers_all" => :trackers_all_schema
+        "trackers_all" => :trackers_all_schema,
+        "trial_users" => :trial_user_schema
       })
     else
       @bigquery_tables

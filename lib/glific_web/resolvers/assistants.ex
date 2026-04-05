@@ -7,6 +7,14 @@ defmodule GlificWeb.Resolvers.Assistants do
   alias Glific.Assistants
 
   @doc """
+  List all assistant config versions.
+  """
+  @spec list_assistant_config_versions(map(), map(), map()) :: {:ok, list(map())}
+  def list_assistant_config_versions(_, _params, _context) do
+    {:ok, Assistants.list_assistant_config_versions()}
+  end
+
+  @doc """
   Create a new knowledge base with the given parameters.
   """
   @spec create_knowledge_base(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
@@ -26,5 +34,14 @@ defmodule GlificWeb.Resolvers.Assistants do
 
       {:ok, %{knowledge_base: response}}
     end
+  end
+
+  @doc """
+  Clone an existing assistant by ID.
+  """
+  @spec clone_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
+  def clone_assistant(_, %{id: id}, _) do
+    Assistants.clone_assistant(id)
   end
 end

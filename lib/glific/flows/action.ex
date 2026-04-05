@@ -641,6 +641,30 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "speech_to_text"} = action,
+        context,
+        []
+      ) do
+    Webhook.execute_kaapi_stt(action, context)
+  end
+
+  def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "text_to_speech"} = action,
+        context,
+        []
+      ) do
+    Webhook.execute_kaapi_tts(action, context)
+  end
+
+  def execute(
+        %{type: "call_webhook", method: "FUNCTION", url: "voice-filesearch-gpt"} = action,
+        context,
+        []
+      ) do
+    Webhook.execute_unified_voice_filesearch(action, context)
+  end
+
+  def execute(
         %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
         context,
         []

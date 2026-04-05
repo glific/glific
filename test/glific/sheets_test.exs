@@ -3,11 +3,15 @@ defmodule Glific.SheetsTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Fixtures,
+    Notifications,
+    Partners,
     Repo,
     Sheets,
+    Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
     Sheets.Worker
@@ -305,9 +309,107 @@ defmodule Glific.SheetsTest do
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
 
-      assert updated_sheet.failure_reason == "Key: has already been taken (Value: key1)"
+      assert updated_sheet.failure_reason ==
+               "Failed to insert all rows likely due to duplicate keys: expected 2, got 1"
 
       # No sheet data should be created
+      sheet_data_count =
+        SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
+
+      assert sheet_data_count == 0
+    end
+
+    test "handles chunked inserts with small chunk size", %{organization_id: organization_id} do
+      original_chunk_size = Application.get_env(:glific, :sheets_chunk_size)
+
+      Application.put_env(:glific, :sheets_chunk_size, 2)
+
+      on_exit(fn ->
+        if original_chunk_size do
+          Application.put_env(:glific, :sheets_chunk_size, original_chunk_size)
+        else
+          Application.delete_env(:glific, :sheets_chunk_size)
+        end
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,Message\r\n" <>
+                "key1,val1,Hello\r\n" <>
+                "key2,val2,World\r\n" <>
+                "key3,val3,Foo\r\n" <>
+                "key4,val4,Bar"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "chunked insert sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :success
+      assert updated_sheet.sheet_data_count == 4
+
+      sheet_data = SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.all()
+      assert length(sheet_data) == 4
+
+      Enum.each(["key1", "key2", "key3", "key4"], fn key ->
+        assert Enum.any?(sheet_data, fn sd -> sd.key == key end)
+      end)
+    end
+
+    test "handles duplicate key errors across chunks", %{organization_id: organization_id} do
+      original_chunk_size = Application.get_env(:glific, :sheets_chunk_size)
+
+      Application.put_env(:glific, :sheets_chunk_size, 2)
+
+      on_exit(fn ->
+        if original_chunk_size do
+          Application.put_env(:glific, :sheets_chunk_size, original_chunk_size)
+        else
+          Application.delete_env(:glific, :sheets_chunk_size)
+        end
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "Key,Value,Message\r\n" <>
+                "key1,val1,Hello\r\n" <>
+                "key2,val2,World\r\n" <>
+                "key1,val3,Again\r\n" <>
+                "key3,val4,Ok"
+          }
+      end)
+
+      attrs = %{
+        type: "READ",
+        label: "duplicate keys across chunks sheet",
+        url:
+          "https://docs.google.com/spreadsheets/d/1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw/edit#gid=0",
+        organization_id: organization_id
+      }
+
+      {:ok, sheet} = %Sheet{} |> Sheet.changeset(attrs) |> Repo.insert()
+
+      assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
+      assert updated_sheet.sync_status == :failed
+
+      assert updated_sheet.failure_reason =~
+               "Failed to insert all rows likely due to duplicate keys"
+
+      # DB rolled back: no partial SheetData rows for the affected sheet
       sheet_data_count =
         SheetData |> where([sd], sd.sheet_id == ^sheet.id) |> Repo.aggregate(:count)
 
@@ -370,7 +472,7 @@ defmodule Glific.SheetsTest do
       # Should handle the CSV parsing error gracefully
       assert {:ok, updated_sheet} = Sheets.sync_sheet_data(sheet)
       assert updated_sheet.sync_status == :failed
-      assert updated_sheet.failure_reason =~ "Escape sequence started on line 2:\\n\\n\\"
+      assert updated_sheet.failure_reason == "Sheet is not accessible or not found."
     end
 
     test "handles HTTP errors when fetching CSV", %{organization_id: organization_id} do
@@ -534,6 +636,432 @@ defmodule Glific.SheetsTest do
       assert Enum.any?(data_after_failed_sync, fn data ->
                data.key == "key1" && data.row_data["message"] == "Initial data"
              end)
+    end
+  end
+
+  describe "execute/2 WRITE action error handling" do
+    test "creates a notification with the API error message when Google Sheets returns 403",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                "{\n  \"error\": {\n    \"code\": 403,\n    \"message\": \"The caller does not have permission\",\n    \"status\": \"PERMISSION_DENIED\"\n  }\n}\n"
+            }
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message == "The caller does not have permission"
+      end
+    end
+
+    test "creates a notification with a generic 5xx error message when Google Sheets returns 500 without body",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 500
+            }
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message ==
+                 "Failed to write to the spreadsheet, please retry after some time"
+      end
+    end
+
+    defmodule RandomWriteError do
+      defstruct [:reason]
+    end
+
+    test "creates a notification with a generic unknown error message when Google Sheets returns a non-Tesla.Env error",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Partners.create_credential(%{
+          shortcode: "google_sheets",
+          secrets: %{
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
+          },
+          is_active: true,
+          organization_id: organization_id
+        })
+
+        random_error = %RandomWriteError{reason: "some random failure"}
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            {:error, random_error}
+        end)
+
+        action = %{
+          action_type: "WRITE",
+          url:
+            "https://docs.google.com/spreadsheets/d/1ZYiMW1PunIT6euVhkxQRXeebFzszGFecGzfzpAoVlFg/edit#gid=0",
+          range: "Sheet1!A:A",
+          row_data: ["Test data"]
+        }
+
+        context = %{
+          organization_id: organization_id,
+          contact_id: 1,
+          flow_id: 1,
+          results: %{},
+          flow: %{id: 1, uuid: "test-uuid", name: "Test Flow"}
+        }
+
+        {_ctx, result} = Sheets.execute(action, context)
+        assert result.body == "Failure"
+
+        notification =
+          Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+          |> Enum.find(&(&1.category == "Flow"))
+
+        assert notification.message ==
+                 "Unknown error occurred, please reach out to support"
+      end
+    end
+  end
+
+  @spreadsheet_id "1fRpFyicqrUFxd79u_dGC8UOHEtAT3rA-G2i4tvOgScw"
+  @sheet_url "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/edit#gid=0"
+  @export_url "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/export?format=csv&gid=0"
+  @sheets_base_url "https://sheets.googleapis.com/v4/spreadsheets/#{@spreadsheet_id}"
+
+  @service_account_json Jason.encode!(%{
+                          project_id: "DEFAULT PROJECT ID",
+                          private_key_id: "DEFAULT API KEY",
+                          client_email: "DEFAULT CLIENT EMAIL",
+                          private_key: "DEFAULT PRIVATE KEY"
+                        })
+
+  defp setup_google_sheets_credential(organization_id) do
+    Partners.create_credential(%{
+      shortcode: "google_sheets",
+      secrets: %{"service_account" => @service_account_json},
+      is_active: true,
+      organization_id: organization_id
+    })
+  end
+
+  defp spreadsheet_metadata_response do
+    Jason.encode!(%{
+      spreadsheetId: @spreadsheet_id,
+      sheets: [
+        %{
+          properties: %{
+            sheetId: 0,
+            title: "Sheet1",
+            index: 0
+          }
+        }
+      ]
+    })
+  end
+
+  defp values_response(rows) do
+    Jason.encode!(%{
+      range: "'Sheet1'!A1:ZZ1000",
+      majorDimension: "ROWS",
+      values: rows
+    })
+  end
+
+  describe "GoogleSheets.read_sheet_data/2 authenticated API path" do
+    test "returns rows from Google Sheets API when credentials are available", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.starts_with?(url, @sheets_base_url <> "/values/") do
+              %Tesla.Env{
+                status: 200,
+                body: values_response([["name", "age"], ["Alice", "30"], ["Bob", "25"]])
+              }
+            end
+        end)
+
+        assert {:ok, rows} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+        assert length(rows) == 2
+        assert {:ok, %{"name" => "Alice", "age" => "30"}} = Enum.at(rows, 0)
+        assert {:ok, %{"name" => "Bob", "age" => "25"}} = Enum.at(rows, 1)
+      end
+    end
+
+    test "falls back to public CSV when Google API is not active", %{
+      organization_id: organization_id
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "name,age\r\nAlice,30\r\nBob,25"}
+      end)
+
+      assert {:ok, rows} = GoogleSheets.read_sheet_data(organization_id, @export_url)
+      assert length(rows) == 2
+      assert {:ok, %{"name" => "Alice", "age" => "30"}} = Enum.at(rows, 0)
+    end
+
+    test "returns empty list when sheet has no data", %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.starts_with?(url, @sheets_base_url <> "/values/") do
+              %Tesla.Env{
+                status: 200,
+                body: Jason.encode!(%{range: "'Sheet1'!A1:ZZ1", majorDimension: "ROWS"})
+              }
+            end
+        end)
+
+        assert {:ok, []} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+      end
+    end
+
+    test "returns error when API call fails (non-credential error)", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                Jason.encode!(%{
+                  error: %{code: 403, message: "The caller does not have permission"}
+                })
+            }
+        end)
+
+        assert {:error, _reason} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+      end
+    end
+
+    test "returns error when gid does not match any sheet", %{organization_id: organization_id} do
+      sheet_url_unknown_gid =
+        "https://docs.google.com/spreadsheets/d/#{@spreadsheet_id}/edit#gid=9999"
+
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: @sheets_base_url} ->
+            %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+        end)
+
+        assert {:error, "Sheet with gid 9999 not found"} =
+                 GoogleSheets.read_sheet_data(organization_id, sheet_url_unknown_gid)
+      end
+    end
+  end
+
+  describe "GoogleSheets.convert_rows_to_csv_format/1" do
+    test "returns empty list for empty input" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([])
+    end
+
+    test "maps rows to header keys correctly" do
+      rows = [["key", "age"], ["1", "22"], ["2", "30"]]
+
+      assert {:ok, results} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert {:ok, %{"key" => "1", "age" => "22"}} = Enum.at(results, 0)
+      assert {:ok, %{"key" => "2", "age" => "30"}} = Enum.at(results, 1)
+    end
+
+    test "pads short rows with empty strings when row has fewer columns than headers" do
+      # row has 2 values but headers have 4 — missing columns should be ""
+      rows = [["key", "age", "city", "country"], ["1", "22"]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+      assert row_map["city"] == ""
+      assert row_map["country"] == ""
+    end
+
+    test "trims whitespace from headers and row values" do
+      rows = [["  key  ", " age "], ["  1  ", "  22  "]]
+
+      assert {:ok, [{:ok, row_map}]} = GoogleSheets.convert_rows_to_csv_format(rows)
+      assert row_map["key"] == "1"
+      assert row_map["age"] == "22"
+    end
+
+    test "returns error for empty header" do
+      rows = [["key", "", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "returns error for duplicate headers" do
+      rows = [["key", "key", "city"], ["1", "2", "3"]]
+
+      assert {:error, "Repeated or missing headers"} =
+               GoogleSheets.convert_rows_to_csv_format(rows)
+    end
+
+    test "handles row with only headers and no data rows" do
+      assert {:ok, []} = GoogleSheets.convert_rows_to_csv_format([["key", "age"]])
+    end
+  end
+
+  describe "GoogleSheets.get_headers/2" do
+    test "returns headers from first row via Google Sheets API", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: url} when is_binary(url) ->
+            if String.contains?(url, "/values/1%3A1") or String.contains?(url, "/values/1:1") do
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    range: "Sheet1!A1:ZZ1",
+                    majorDimension: "ROWS",
+                    values: [["name", "age", "city"]]
+                  })
+              }
+            end
+        end)
+
+        assert {:ok, ["name", "age", "city"]} =
+                 GoogleSheets.get_headers(organization_id, @spreadsheet_id)
+      end
+    end
+
+    test "returns error when Google API is not active", %{organization_id: organization_id} do
+      assert {:error, "Google API is not active"} =
+               GoogleSheets.get_headers(organization_id, @spreadsheet_id)
     end
   end
 end
