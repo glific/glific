@@ -333,6 +333,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             kaapi_uuid: row.kaapi_uuid,
             assistant_display_id: row.assistant_display_id,
             active_config_version_id: row.active_config_version_id,
+            clone_status: row.clone_status,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -362,6 +363,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             id: row.id,
             assistant_id: row.assistant_id,
             version_number: row.version_number,
+            kaapi_version_number: row.kaapi_version_number,
             description: row.description,
             prompt: row.prompt,
             provider: row.provider,

@@ -3216,6 +3216,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Clone status of the assistant",
+        name: "clone_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Time when the record entry was first made",
         name: "inserted_at",
         type: "DATETIME",
@@ -3263,6 +3269,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Version number",
         name: "version_number",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Kaapi version number",
+        name: "kaapi_version_number",
         type: "INTEGER",
         mode: "NULLABLE"
       },
