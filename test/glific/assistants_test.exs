@@ -1095,6 +1095,16 @@ defmodule Glific.AssistantsTest do
 
     test "creates assistant without knowledge_base_version_id",
          %{organization_id: organization_id} do
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_no_kb", version: %{version: 1}}}
+          }
+      end)
+
       assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  name: "No KB Assistant",
