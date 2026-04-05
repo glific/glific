@@ -634,7 +634,7 @@ defmodule Glific.Assistants do
 
   defp resolve_optional_knowledge_base(_user_params), do: {:ok, nil}
 
-  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t() | nil) :: {:ok, map()}
+  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t()) :: {:ok, map()}
   defp build_kaapi_config(user_params, knowledge_base_version) do
     prompt = user_params[:instructions] || "You are a helpful assistant"
     description = user_params[:description] || "Assistant configuration"
@@ -645,17 +645,13 @@ defmodule Glific.Assistants do
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
       description: description,
-      knowledge_base_ids:
-        if(knowledge_base_version, do: [knowledge_base_version.llm_service_id], else: []),
+      knowledge_base_ids: [knowledge_base_version.llm_service_id],
       prompt: prompt
     }
 
     {:ok, config}
   end
 
-<<<<<<< HEAD
-  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t() | nil) ::
-=======
   # If the KB is already completed (callback arrived before assistant creation),
   # register the config with Kaapi immediately since the deferred flow won't trigger.
   @spec maybe_register_with_kaapi(map(), KnowledgeBaseVersion.t()) ::
@@ -669,7 +665,6 @@ defmodule Glific.Assistants do
     do: {:ok, result.config_version}
 
   @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
->>>>>>> 2402d6ebe8b4580bcedf1776e23a05417414989c
           {:ok, map()} | {:error, any()}
   defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
     Multi.new()
@@ -686,7 +681,15 @@ defmodule Glific.Assistants do
         active_config_version_id: config_version.id
       })
     end)
-    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        kaapi_config.organization_id
+      )
+    )
     |> Repo.transaction()
     |> case do
       {:ok, %{assistant_with_active_config: assistant, config_version: config_version}} ->
