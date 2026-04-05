@@ -79,4 +79,7 @@ defmodule GlificWeb.Schema.EnumTypes do
 
   @desc "The WhatsApp Form Category enum"
   enum(:whatsapp_form_category_enum, values: Glific.Enums.whatsapp_form_category_const())
+
+  @desc "The AI Evaluation Status enum"
+  enum(:ai_evaluation_status_enum, values: Glific.Enums.ai_evaluation_status_const())
 end
