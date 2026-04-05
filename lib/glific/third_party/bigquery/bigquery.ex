@@ -9,6 +9,11 @@ defmodule Glific.BigQuery do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.AssistantConfigVersionKnowledgeBaseVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     BigQuery.BigQueryJob,
     BigQuery.Schema,
     Certificates.CertificateTemplate,
@@ -41,11 +46,6 @@ defmodule Glific.BigQuery do
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.SessionTemplate,
-    Assistants.Assistant,
-    Assistants.AssistantConfigVersion,
-    Assistants.AssistantConfigVersionKnowledgeBaseVersion,
-    Assistants.KnowledgeBase,
-    Assistants.KnowledgeBaseVersion,
     Tickets.Ticket,
     Trackers.Tracker,
     TrialUsers,
