@@ -1,8 +1,8 @@
-defmodule Glific.AskmeBotTest do
+defmodule Glific.AskGlificTest do
   use Glific.DataCase
 
-  alias Glific.AskmeBot
-  alias Glific.AskmeBot.Conversation
+  alias Glific.AskGlific
+  alias Glific.AskGlific.Conversation
   alias Glific.Repo
 
   @dify_success_response %{
@@ -24,14 +24,14 @@ defmodule Glific.AskmeBotTest do
 
     user =
       Glific.Fixtures.user_fixture(%{
-        name: "AskMe Test User",
+        name: "AskGlific Test User",
         roles: ["staff"]
       })
 
     %{user: user}
   end
 
-  describe "askme/2" do
+  describe "ask/2" do
     test "returns answer and conversation_id on success", %{user: user} do
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, @dify_success_response)
@@ -39,7 +39,7 @@ defmodule Glific.AskmeBotTest do
 
       params = %{query: "What is Glific?", page_url: "https://glific.org"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.answer == "Glific is a two-way communication platform."
       assert result.conversation_id == "conv-abc-123"
     end
@@ -51,7 +51,7 @@ defmodule Glific.AskmeBotTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:ok, _result} = AskmeBot.askme(params, user)
+      assert {:ok, _result} = AskGlific.ask(params, user)
 
       conversation = Repo.get_by(Conversation, conversation_id: "conv-abc-123")
       assert conversation != nil
@@ -65,11 +65,11 @@ defmodule Glific.AskmeBotTest do
       end)
 
       params = %{query: "What is Glific?"}
-      assert {:ok, _} = AskmeBot.askme(params, user)
+      assert {:ok, _} = AskGlific.ask(params, user)
 
       # Second message in same conversation
       params2 = %{query: "Tell me more", conversation_id: "conv-abc-123"}
-      assert {:ok, _} = AskmeBot.askme(params2, user)
+      assert {:ok, _} = AskGlific.ask(params2, user)
 
       conversations =
         Conversation
@@ -88,7 +88,7 @@ defmodule Glific.AskmeBotTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:error, error} = AskmeBot.askme(params, user)
+      assert {:error, error} = AskGlific.ask(params, user)
       assert error =~ "Dify API error"
     end
   end

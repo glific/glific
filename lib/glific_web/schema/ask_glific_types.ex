@@ -1,6 +1,6 @@
-defmodule GlificWeb.Schema.AskmeBotTypes do
+defmodule GlificWeb.Schema.AskGlificTypes do
   @moduledoc """
-  GraphQL Representation of AskMe Bot DataType
+  GraphQL Representation of AskGlific DataType
   """
 
   use Absinthe.Schema.Notation
@@ -8,19 +8,19 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-  object :askme_bot_result do
+  object :ask_glific_result do
     field(:answer, :string)
     field(:conversation_id, :string)
     field(:errors, list_of(:input_error))
   end
 
-  input_object :askme_bot_input do
+  input_object :ask_glific_input do
     field(:query, non_null(:string))
     field(:conversation_id, :string)
     field(:page_url, :string)
   end
 
-  object :askme_bot_message do
+  object :ask_glific_message do
     field(:id, :string)
     field(:conversation_id, :string)
     field(:query, :string)
@@ -28,19 +28,19 @@ defmodule GlificWeb.Schema.AskmeBotTypes do
     field(:created_at, :integer)
   end
 
-  object :askme_bot_queries do
-    field :askme_bot_messages, list_of(:askme_bot_message) do
+  object :ask_glific_queries do
+    field :ask_glific_messages, list_of(:ask_glific_message) do
       arg(:conversation_id, non_null(:string))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.AskmeBot.messages/3)
+      resolve(&Resolvers.AskGlific.messages/3)
     end
   end
 
-  object :askme_bot_mutations do
-    field :askme_bot, :askme_bot_result do
-      arg(:input, non_null(:askme_bot_input))
+  object :ask_glific_mutations do
+    field :ask_glific, :ask_glific_result do
+      arg(:input, non_null(:ask_glific_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.AskmeBot.ask/3)
+      resolve(&Resolvers.AskGlific.ask/3)
     end
   end
 end

@@ -1,17 +1,17 @@
-defmodule GlificWeb.Resolvers.AskmeBot do
+defmodule GlificWeb.Resolvers.AskGlific do
   @moduledoc """
-  AskMe Bot Resolver which sits between the GraphQL schema and Glific AskmeBot module.
+  AskGlific Resolver which sits between the GraphQL schema and Glific AskGlific module.
   """
 
-  alias Glific.AskmeBot
+  alias Glific.AskGlific
 
   @doc """
-  Ask the AskMe bot a question and get an answer
+  Ask the AskGlific bot a question and get an answer
   """
   @spec ask(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
   def ask(_, %{input: params}, %{context: %{current_user: user}}) do
-    case AskmeBot.askme(params, user) do
+    case AskGlific.ask(params, user) do
       {:ok, result} ->
         {:ok, result}
 
