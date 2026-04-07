@@ -126,6 +126,18 @@ defmodule GlificWeb.Router do
     get("/exotel/optin", ExotelController, :optin)
   end
 
+  pipeline :dify_authenticated do
+    plug(:accepts, ["json"])
+    plug(GlificWeb.DifyAuthPlug)
+  end
+
+  # Dify callback endpoints — authenticated via x-dify-api-key header
+  scope "/dify", GlificWeb do
+    pipe_through(:dify_authenticated)
+
+    post("/chatbot-diagnose", DifyController, :chatbot_diagnose)
+  end
+
   # Special routes for Kaapi Callbacks. All callbacks from Kaapi should be handled here.
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
