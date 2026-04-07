@@ -499,10 +499,8 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-      organization = Partners.organization(kaapi_config.organization_id)
-
       attrs =
-        if Flags.get_assistant_config_versions_enabled(organization) do
+        if Flags.get_assistant_config_versions_enabled(kaapi_config.organization_id) do
           %{name: kaapi_config.name}
         else
           %{name: kaapi_config.name, active_config_version_id: config_version.id}
@@ -1088,9 +1086,7 @@ defmodule Glific.Assistants do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version
 
-        organization = Partners.organization(assistant.organization_id)
-
-        unless Flags.get_assistant_config_versions_enabled(organization) do
+        unless Flags.get_assistant_config_versions_enabled(assistant.organization_id) do
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()

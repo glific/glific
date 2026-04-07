@@ -1374,7 +1374,7 @@ defmodule Glific.Partners do
       "unified_api_enabled" => Flags.get_flag_enabled(:unified_api_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
       "assistant_config_versions_enabled" =>
-        Flags.get_assistant_config_versions_enabled(organization)
+        Flags.get_assistant_config_versions_enabled(organization.id)
     }
   end
 
