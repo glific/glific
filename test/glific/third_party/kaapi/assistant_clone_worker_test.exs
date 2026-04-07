@@ -64,7 +64,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         model: "gpt-4o",
         prompt: "You are a helpful assistant",
         settings: %{"temperature" => 0.7},
-        status: :ready
+        status: :ready,
+        version_number: 1
       })
       |> Repo.insert()
 
@@ -174,12 +175,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert :ok =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   is_legacy: true
                  })
 
         cloned =
           Assistant
-          |> where([a], a.name == ^"Copy of #{assistant.name}")
+          |> where([a], a.name == ^"Copy of #{assistant.name} version1")
           |> Repo.one()
 
         assert cloned != nil
@@ -202,7 +204,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert {:error, _} =
                perform_job(AssistantCloneWorker, %{
                  assistant_id: -1,
-                 organization_id: @org_id
+                 organization_id: @org_id,
+                 is_legacy: true
                })
     end
 
@@ -239,7 +242,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert {:error, msg} =
                perform_job(AssistantCloneWorker, %{
                  assistant_id: no_kb_assistant.id,
-                 organization_id: @org_id
+                 organization_id: @org_id,
+                 is_legacy: true
                })
 
       assert msg =~ "No knowledge base version found"
@@ -253,7 +257,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   is_legacy: true
                  })
       end
     end
@@ -287,7 +292,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   is_legacy: true
                  })
       end
     end
@@ -333,7 +339,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   is_legacy: true
                  })
       end
     end
@@ -395,7 +402,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   is_legacy: true
                  })
       end
     end
@@ -440,7 +448,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           model: "gpt-4o",
           prompt: "You are a non-legacy assistant",
           settings: %{"temperature" => 0.5},
-          status: :ready
+          status: :ready,
+          version_number: 2
         })
         |> Repo.insert()
 
@@ -481,12 +490,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                perform_job(AssistantCloneWorker, %{
                  assistant_id: assistant.id,
                  version_id: non_legacy_config_version.id,
-                 organization_id: @org_id
+                 organization_id: @org_id,
+                 is_legacy: false
                })
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name}")
+        |> where([a], a.name == ^"Copy of #{assistant.name} version2")
         |> Repo.one()
 
       assert cloned != nil
@@ -515,7 +525,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert refreshed.clone_status == "completed"
     end
 
-    test "returns error when config version has no knowledge base linked", %{
+    test "successfully clones non-legacy assistant without knowledge base", %{
       assistant: assistant
     } do
       {:ok, no_kb_config} =
@@ -527,18 +537,107 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           model: "gpt-4o",
           prompt: "No KB config",
           settings: %{},
-          status: :ready
+          status: :ready,
+          version_number: 3
         })
         |> Repo.insert()
 
-      assert {:error, msg} =
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid_no_kb", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
                perform_job(AssistantCloneWorker, %{
                  assistant_id: assistant.id,
                  version_id: no_kb_config.id,
-                 organization_id: @org_id
+                 organization_id: @org_id,
+                 is_legacy: false
                })
 
-      assert msg =~ "No knowledge base version found"
+      cloned =
+        Assistant
+        |> where([a], a.name == ^"Copy of #{assistant.name} version3")
+        |> Repo.one()
+
+      assert cloned != nil
+      assert cloned.kaapi_uuid == "cloned_kaapi_uuid_no_kb"
+    end
+
+    test "successfully clones non-legacy assistant that has no knowledge base at all" do
+      {:ok, assistant_without_kb} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Assistant Without KB",
+          organization_id: @org_id,
+          kaapi_uuid: "kaapi_no_kb_uuid"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version_without_kb} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant_without_kb.id,
+          organization_id: @org_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Assistant with no KB at all",
+          settings: %{"temperature" => 0.5},
+          status: :ready,
+          version_number: 1
+        })
+        |> Repo.insert()
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_no_kb_uuid", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant_without_kb.id,
+                 version_id: config_version_without_kb.id,
+                 organization_id: @org_id,
+                 is_legacy: false
+               })
+
+      cloned =
+        Assistant
+        |> where([a], a.name == ^"Copy of #{assistant_without_kb.name} version1")
+        |> Repo.one()
+
+      assert cloned != nil
+      assert cloned.kaapi_uuid == "cloned_no_kb_uuid"
+
+      cloned_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^cloned.id)
+        |> Repo.one()
+
+      assert cloned_config.model == "gpt-4o"
+      assert cloned_config.prompt == "Assistant with no KB at all"
+
+      linked_kb_version_ids =
+        from(j in "assistant_config_version_knowledge_base_versions",
+          where: j.assistant_config_version_id == ^cloned_config.id,
+          select: j.knowledge_base_version_id
+        )
+        |> Repo.all()
+
+      assert linked_kb_version_ids == []
+
+      refreshed = Repo.get!(Assistant, assistant_without_kb.id)
+      assert refreshed.clone_status == "completed"
     end
 
     test "returns error when Kaapi config creation fails", %{
@@ -556,7 +655,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                perform_job(AssistantCloneWorker, %{
                  assistant_id: assistant.id,
                  version_id: non_legacy_config_version.id,
-                 organization_id: @org_id
+                 organization_id: @org_id,
+                 is_legacy: false
                })
     end
   end

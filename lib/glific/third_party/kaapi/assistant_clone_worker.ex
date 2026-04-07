@@ -36,7 +36,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
           args: %{
             "assistant_id" => assistant_id,
             "version_id" => version_id,
-            "organization_id" => organization_id
+            "organization_id" => organization_id,
+            "is_legacy" => false
           },
           attempt: attempt,
           max_attempts: max_attempts
@@ -49,7 +50,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          source_version <- Repo.preload(source_version, :knowledge_base_versions),
          {:ok, kb_version} <- get_kb_version_from_config(source_version),
          params <-
-           build_params_from_version(assistant, source_version, organization_id, kb_version),
+           assistant_params(
+             assistant,
+             source_version,
+             organization_id,
+             extract_knowledge_base_ids(kb_version)
+           ),
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
@@ -77,7 +83,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   def perform(
         %Oban.Job{
-          args: %{"assistant_id" => assistant_id, "organization_id" => organization_id},
+          args: %{
+            "assistant_id" => assistant_id,
+            "organization_id" => organization_id,
+            "is_legacy" => true
+          },
           attempt: attempt,
           max_attempts: max_attempts
         } = _job
@@ -102,7 +112,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
-         params <- assistant_params(assistant, organization_id, llm_service_id),
+         params <-
+           assistant_params(
+             assistant,
+             assistant.active_config_version,
+             organization_id,
+             [llm_service_id]
+           ),
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          {:ok, knowledge_base_version} <-
@@ -206,18 +222,17 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp validate_uploaded_files(file_data),
     do: {:ok, Enum.map(file_data, & &1.file_id)}
 
-  @spec assistant_params(Assistant.t(), non_neg_integer(), String.t()) :: map()
-  defp assistant_params(assistant, organization_id, knowledge_base_id) do
-    active_config = assistant.active_config_version
-
+  @spec assistant_params(Assistant.t(), AssistantConfigVersion.t(), non_neg_integer(), [String.t()]) ::
+          map()
+  defp assistant_params(assistant, config_version, organization_id, knowledge_base_ids) do
     %{
-      name: "Copy of #{assistant.name}",
-      prompt: active_config.prompt,
-      model: active_config.model,
-      temperature: get_in(active_config.settings || %{}, ["temperature"]) || 1,
+      name: "Copy of #{assistant.name} version#{config_version.version_number}",
+      prompt: config_version.prompt,
+      model: config_version.model,
+      temperature: get_in(config_version.settings, ["temperature"]) || 1,
       description: "Cloned version",
       organization_id: organization_id,
-      knowledge_base_ids: [knowledge_base_id]
+      knowledge_base_ids: knowledge_base_ids
     }
   end
 
@@ -487,19 +502,25 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
-  @spec create_cloned_assistant(map(), KnowledgeBaseVersion.t(), String.t(), non_neg_integer()) ::
-          :ok | {:error, any()}
+  @spec create_cloned_assistant(
+          map(),
+          KnowledgeBaseVersion.t() | nil,
+          String.t(),
+          non_neg_integer()
+        ) :: :ok | {:error, any()}
   defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid, kaapi_config_version) do
     with {:ok, assistant} <- create_assistant(params, kaapi_uuid),
          {:ok, assistant_version} <-
            create_assistant_version(assistant, params, kaapi_config_version),
-         {:ok, _assistant} <- set_active_config_version(assistant, assistant_version),
-         _ <-
-           link_assistant_version_and_knowledge_base(
-             assistant_version,
-             knowledge_base_version,
-             params
-           ) do
+         {:ok, _assistant} <- set_active_config_version(assistant, assistant_version) do
+      if knowledge_base_version do
+        link_assistant_version_and_knowledge_base(
+          assistant_version,
+          knowledge_base_version,
+          params
+        )
+      end
+
       :ok
     end
   end
@@ -563,31 +584,17 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
   end
 
+  @spec extract_knowledge_base_ids(KnowledgeBaseVersion.t() | nil) :: [String.t()]
+  defp extract_knowledge_base_ids(nil), do: []
+  defp extract_knowledge_base_ids(kb_version), do: [kb_version.llm_service_id]
+
   @spec get_kb_version_from_config(AssistantConfigVersion.t()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t()}
+          {:ok, KnowledgeBaseVersion.t() | nil}
   defp get_kb_version_from_config(config_version) do
     case config_version.knowledge_base_versions do
       [kb_version | _] -> {:ok, kb_version}
-      [] -> {:error, "No knowledge base version found for config version"}
+      [] -> {:ok, nil}
     end
-  end
-
-  @spec build_params_from_version(
-          Assistant.t(),
-          AssistantConfigVersion.t(),
-          non_neg_integer(),
-          KnowledgeBaseVersion.t()
-        ) :: map()
-  defp build_params_from_version(assistant, source_version, organization_id, kb_version) do
-    %{
-      name: "Copy of #{assistant.name}",
-      prompt: source_version.prompt,
-      model: source_version.model,
-      temperature: get_in(source_version.settings, ["temperature"]) || 1,
-      description: "Cloned version",
-      organization_id: organization_id,
-      knowledge_base_ids: [kb_version.llm_service_id]
-    }
   end
 
   @spec auth_headers :: [tuple()]
