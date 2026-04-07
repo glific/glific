@@ -8,11 +8,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   use Oban.Worker,
     queue: :clone_assistant,
     max_attempts: 2,
-    unique: [
-      fields: [:args],
-      keys: [:assistant_id, :version_id, :organization_id],
-      period: :infinity
-    ]
+    unique: [fields: [:args], keys: [:assistant_id, :organization_id], period: :infinity]
 
   require Logger
 
