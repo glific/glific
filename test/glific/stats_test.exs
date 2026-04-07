@@ -77,13 +77,21 @@ defmodule Glific.StatsTest do
   end
 
   defp create_flow_context(org_id, suffix) do
-    Fixtures.flow_context_fixture(%{
-      organization_id: org_id,
-      flow_uuid: Ecto.UUID.generate(),
-      node_uuid: Ecto.UUID.generate(),
-      status: "published",
-      uuid_map: %{"k#{suffix}" => "v#{suffix}"}
-    })
+    contact = Fixtures.contact_fixture(%{organization_id: org_id, phone: "91551#{suffix}"})
+
+    {:ok, flow_context} =
+      %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        node_uuid: Ecto.UUID.generate(),
+        status: "published",
+        uuid_map: %{"k#{suffix}" => "v#{suffix}"},
+        contact_id: contact.id,
+        organization_id: org_id
+      }
+      |> FlowContext.create_flow_context()
+
+    flow_context
   end
 
   defp create_user(org_id, suffix) do
@@ -300,9 +308,17 @@ defmodule Glific.StatsTest do
     assert stat.users == 2
   end
 
-  test "generate weekly stats with boundaries and verify summary row permutations", %{
-    organization_id: organization_id
-  } do
+  test "generate weekly stats with boundaries and verify summary row permutations" do
+    organization =
+      Fixtures.organization_fixture(%{
+        name: "Stats Weekly Org",
+        shortcode: "statsweekly#{System.unique_integer([:positive])}"
+      })
+
+    organization_id = organization.id
+    Repo.put_organization_id(organization_id)
+    RepoReplica.put_organization_id(organization_id)
+
     week_anchor = dt(~D[2099-02-01], ~T[12:00:00])
     week_start = week_anchor |> Timex.beginning_of_week() |> DateTime.to_date()
     week_end = week_anchor |> Timex.end_of_week() |> DateTime.to_date()
@@ -382,23 +398,34 @@ defmodule Glific.StatsTest do
     assert week_stat.flows_completed == 2
     assert week_stat.users == 2
 
-    assert summary_stat.contacts >= 4
-    assert summary_stat.active >= 4
-    assert summary_stat.optin >= 2
-    assert summary_stat.optout >= 2
-    assert summary_stat.messages >= 4
-    assert summary_stat.inbound >= 2
-    assert summary_stat.outbound >= 2
-    assert summary_stat.hsm >= 3
-    assert summary_stat.conversations >= 4
+    # Summary spans all records in this test org, including contacts/users created implicitly by
+    # fixtures: 4 explicit contacts + 8 from create_message + 8 from create_message_conversation
+    # + 4 from create_flow_context = 24 contacts; users are 1 org fixture user + 4 explicit = 5.
+    assert summary_stat.contacts == 24
+    assert summary_stat.active == 24
+    assert summary_stat.optin == 22
+    assert summary_stat.optout == 2
+    assert summary_stat.messages == 8
+    assert summary_stat.inbound == 6
+    assert summary_stat.outbound == 2
+    assert summary_stat.hsm == 3
+    assert summary_stat.conversations == 4
     assert summary_stat.flows_started == 0
     assert summary_stat.flows_completed == 0
-    assert summary_stat.users >= 1
+    assert summary_stat.users == 5
   end
 
-  test "generate monthly stats with boundaries and verify summary row insert", %{
-    organization_id: organization_id
-  } do
+  test "generate monthly stats with boundaries and verify summary row insert" do
+    organization =
+      Fixtures.organization_fixture(%{
+        name: "Stats Monthly Org",
+        shortcode: "statsmonthly#{System.unique_integer([:positive])}"
+      })
+
+    organization_id = organization.id
+    Repo.put_organization_id(organization_id)
+    RepoReplica.put_organization_id(organization_id)
+
     month_start = ~D[2099-03-01]
     month_end = ~D[2099-03-31]
     time = dt(month_end, ~T[23:00:00])
@@ -477,18 +504,21 @@ defmodule Glific.StatsTest do
     assert month_stat.flows_completed == 2
     assert month_stat.users == 2
 
-    assert summary_stat.contacts >= 4
-    assert summary_stat.active >= 4
-    assert summary_stat.optin >= 2
-    assert summary_stat.optout >= 2
-    assert summary_stat.messages >= 4
-    assert summary_stat.inbound >= 2
-    assert summary_stat.outbound >= 2
-    assert summary_stat.hsm >= 3
-    assert summary_stat.conversations >= 4
+    # Summary spans all records in this test org, including contacts/users created implicitly by
+    # fixtures: 4 explicit contacts + 8 from create_message + 8 from create_message_conversation
+    # + 4 from create_flow_context = 24 contacts; users are 1 org fixture user + 4 explicit = 5.
+    assert summary_stat.contacts == 24
+    assert summary_stat.active == 24
+    assert summary_stat.optin == 22
+    assert summary_stat.optout == 2
+    assert summary_stat.messages == 8
+    assert summary_stat.inbound == 6
+    assert summary_stat.outbound == 2
+    assert summary_stat.hsm == 3
+    assert summary_stat.conversations == 4
     assert summary_stat.flows_started == 0
     assert summary_stat.flows_completed == 0
-    assert summary_stat.users >= 1
+    assert summary_stat.users == 5
   end
 
   test "usage returns sum of messages and max users over day range", %{
