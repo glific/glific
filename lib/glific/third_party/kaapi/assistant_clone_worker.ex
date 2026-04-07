@@ -563,8 +563,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
   end
 
-  # Non-legacy helpers
-
   @spec get_kb_version_from_config(AssistantConfigVersion.t()) ::
           {:ok, KnowledgeBaseVersion.t()} | {:error, String.t()}
   defp get_kb_version_from_config(config_version) do

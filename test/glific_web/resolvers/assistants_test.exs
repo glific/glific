@@ -204,6 +204,31 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       })
       |> Repo.insert()
 
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{name: "Legacy KB", organization_id: organization_id})
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: organization_id,
+        status: :completed,
+        llm_service_id: "vs_legacy_123",
+        size: 100,
+        files: %{}
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: kb_version.id,
+        organization_id: organization_id,
+        inserted_at: now,
+        updated_at: now
+      }
+    ])
+
     {:ok, assistant} =
       assistant
       |> Assistant.set_active_config_version_changeset(%{
@@ -223,7 +248,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   describe "clone_assistant/3" do
     setup :enable_kaapi
 
-    test "initiates clone for an existing assistant", %{
+    test "initiates clone for a legacy assistant", %{
       staff: user,
       organization_id: organization_id
     } do
@@ -231,6 +256,23 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       {:ok, query_data} =
         auth_query_gql_by(:clone_assistant, user, variables: %{"id" => assistant.id})
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "initiates clone for a non-legacy assistant with version_id", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, {assistant, config_version}} =
+        create_assistant_with_config_version(organization_id, "kaapi_non_legacy_test")
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => config_version.id}
+        )
 
       result = query_data.data["cloneAssistant"]
       assert result["message"] == "Assistant clone initiated"
