@@ -431,10 +431,11 @@ defmodule Glific.Assistants do
             is_nil(previous_knowledge_base_version) and
               not is_nil(user_params[:knowledge_base_version_id])
 
+          previous_kb_id = kb_id(previous_knowledge_base_version)
+          new_kb_id = kb_id(knowledge_base_version)
+
           knowledge_base_changed =
-            not is_nil(previous_knowledge_base_version) and
-              not is_nil(knowledge_base_version) and
-              knowledge_base_version.id != previous_knowledge_base_version.id
+            previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
 
           {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
@@ -495,13 +496,9 @@ defmodule Glific.Assistants do
     active_config = assistant.active_config_version
     current_kb_version = List.first(active_config.knowledge_base_versions)
 
-    kb_unchanged =
-      case {current_kb_version, knowledge_base_version} do
-        {nil, nil} -> true
-        {nil, _} -> false
-        {_, nil} -> false
-        {current, new} -> current.id == new.id
-      end
+    current_kb_id = kb_id(current_kb_version)
+    new_kb_id = kb_id(knowledge_base_version)
+    kb_unchanged = current_kb_id == new_kb_id
 
     user_params[:name] == assistant.name and
       user_params[:instructions] == active_config.prompt and
@@ -509,6 +506,10 @@ defmodule Glific.Assistants do
       user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
       kb_unchanged
   end
+
+  @spec kb_id(KnowledgeBaseVersion.t() | nil) :: non_neg_integer() | nil
+  defp kb_id(nil), do: nil
+  defp kb_id(kb_version), do: kb_version.id
 
   @spec update_assistant_transaction(
           Assistant.t(),
@@ -1216,7 +1217,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://01da-2409-40d2-10e2-9927-19cf-920f-1b73-8d6.ngrok-free.app" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/kaapi/knowledge_base_version"
 
     %{
