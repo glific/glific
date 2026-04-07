@@ -112,10 +112,10 @@ defmodule Glific.Stats do
         opts,
         :time,
         Timex.shift(DateTime.utc_now(), hours: -1)
-        |> DateTime.truncate(:second)
-        |> Map.put(:minute, 0)
-        |> Map.put(:second, 0)
       )
+      |> DateTime.truncate(:second)
+      |> Map.put(:minute, 0)
+      |> Map.put(:second, 0)
 
     opts =
       opts
@@ -247,7 +247,7 @@ defmodule Glific.Stats do
     # check if we should emit hourly stats
     if Keyword.get(opts, :hour, true) do
       time = Keyword.get(opts, :time)
-      start = %{time | minute: 0, second: 0}
+      start = time
       finish = Timex.shift(start, hours: 1)
 
       stats

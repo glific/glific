@@ -195,6 +195,32 @@ defmodule Glific.StatsTest do
     assert stat.users == 1
   end
 
+  test "generate_stats normalizes time by truncating to second and clearing minute and second", %{
+    organization_id: organization_id
+  } do
+    date = ~D[2099-01-16]
+    time = dt(date, ~T[10:59:59.987654])
+    hour_start = dt(date, ~T[10:00:00])
+    next_hour_usec = dt(date, ~T[11:00:00.500000])
+
+    contact_in_hour = create_contact(organization_id, "050001")
+    contact_next_hour = create_contact(organization_id, "050002")
+
+    update_contact(contact_in_hour, last_message_at: hour_start)
+    update_contact(contact_next_hour, last_message_at: next_hour_usec)
+
+    Stats.generate_stats([organization_id], false,
+      time: time,
+      day: false,
+      week: false,
+      month: false
+    )
+
+    stat = fetch_single_stat!(organization_id, "hour", date, 10)
+
+    assert stat.active == 1
+  end
+
   test "generate daily stats with time boundaries across contacts, messages, conversations, flows and users",
        %{organization_id: organization_id} do
     date = ~D[2099-01-31]
