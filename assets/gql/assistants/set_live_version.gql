@@ -1,0 +1,13 @@
+mutation SetLiveVersion($assistantId: ID!, $versionId: ID!) {
+  setLiveVersion(assistantId: $assistantId, versionId: $versionId) {
+    assistant {
+      id
+      activeConfigVersionId
+      liveVersionNumber
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

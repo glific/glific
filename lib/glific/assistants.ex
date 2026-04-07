@@ -70,6 +70,89 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Lists all config versions for a given assistant, ordered by version_number descending.
+  Each version includes an `is_live` boolean indicating whether it is the active version.
+
+  ## Examples
+
+      iex> Glific.Assistants.list_assistant_config_versions(1)
+      [%{id: 2, version_number: 2, is_live: true, ...}, %{id: 1, version_number: 1, is_live: false, ...}]
+  """
+  @spec list_assistant_config_versions(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_assistant_config_versions(assistant_id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}) do
+      versions =
+        from(v in AssistantConfigVersion,
+          where: v.assistant_id == ^assistant_id,
+          order_by: [desc: v.version_number]
+        )
+        |> Repo.all()
+
+      {:ok,
+       Enum.map(versions, fn version ->
+         %{
+           id: version.id,
+           version_number: version.version_number,
+           model: version.model,
+           prompt: version.prompt,
+           settings: version.settings,
+           status: version.status,
+           is_live: version.id == assistant.active_config_version_id,
+           description: version.description,
+           inserted_at: version.inserted_at,
+           updated_at: version.updated_at
+         }
+       end)}
+    end
+  end
+
+  @doc """
+  Sets a specific config version as the live (active) version for an assistant.
+  Only versions with status `:ready` can be set as live.
+
+  Returns the updated assistant or an error if the version is not found, does not
+  belong to the assistant, or is not in `:ready` status.
+
+  ## Examples
+
+      iex> Glific.Assistants.set_live_version(1, 2)
+      {:ok, %{id: 1, active_config_version_id: 2, live_version_number: 2}}
+
+      iex> Glific.Assistants.set_live_version(1, 99)
+      {:error, ["Glific.Assistants.AssistantConfigVersion", "Resource not found"]}
+  """
+  @spec set_live_version(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def set_live_version(assistant_id, version_id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
+         {:ok, version} <-
+           Repo.fetch_by(AssistantConfigVersion, %{
+             id: version_id,
+             assistant_id: assistant_id
+           }),
+         :ok <- validate_version_ready(version),
+         {:ok, updated_assistant} <-
+           assistant
+           |> Assistant.set_active_config_version_changeset(%{
+             active_config_version_id: version_id
+           })
+           |> Repo.update() do
+      {:ok,
+       %{
+         id: updated_assistant.id,
+         active_config_version_id: updated_assistant.active_config_version_id,
+         live_version_number: version.version_number
+       }}
+    end
+  end
+
+  @spec validate_version_ready(AssistantConfigVersion.t()) :: :ok | {:error, String.t()}
+  defp validate_version_ready(%AssistantConfigVersion{status: :ready}), do: :ok
+
+  defp validate_version_ready(_version),
+    do: {:error, "Version must be in ready status to be set as live"}
+
+  @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
   """
 
