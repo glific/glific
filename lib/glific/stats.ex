@@ -469,7 +469,7 @@ defmodule Glific.Stats do
     query =
       User
       |> where([u], u.organization_id in ^org_id_list)
-      |> group_by([u], u.id)
+      |> group_by([u], u.organization_id)
       |> select([u], [count(u.id), u.organization_id])
 
     {period, _date} = period_date

@@ -192,7 +192,7 @@ defmodule Glific.StatsTest do
     assert stat.conversations == 2
     assert stat.flows_started == 2
     assert stat.flows_completed == 2
-    assert stat.users == 1
+    assert stat.users == 2
   end
 
   test "generate_stats normalizes time by truncating to second and clearing minute and second", %{
@@ -297,7 +297,7 @@ defmodule Glific.StatsTest do
     assert stat.conversations == 2
     assert stat.flows_started == 2
     assert stat.flows_completed == 2
-    assert stat.users == 1
+    assert stat.users == 2
   end
 
   test "generate weekly stats with boundaries and verify summary row permutations", %{
@@ -380,7 +380,7 @@ defmodule Glific.StatsTest do
     assert week_stat.conversations == 2
     assert week_stat.flows_started == 2
     assert week_stat.flows_completed == 2
-    assert week_stat.users == 1
+    assert week_stat.users == 2
 
     assert summary_stat.contacts >= 4
     assert summary_stat.active >= 4
@@ -475,7 +475,7 @@ defmodule Glific.StatsTest do
     assert month_stat.conversations == 2
     assert month_stat.flows_started == 2
     assert month_stat.flows_completed == 2
-    assert month_stat.users == 1
+    assert month_stat.users == 2
 
     assert summary_stat.contacts >= 4
     assert summary_stat.active >= 4
@@ -491,7 +491,9 @@ defmodule Glific.StatsTest do
     assert summary_stat.users >= 1
   end
 
-  test "usage returns sum of messages and max users over day range", %{organization_id: organization_id} do
+  test "usage returns sum of messages and max users over day range", %{
+    organization_id: organization_id
+  } do
     now = Date.utc_today()
 
     {:ok, _} =
@@ -581,9 +583,10 @@ defmodule Glific.StatsTest do
              })
   end
 
-  test "get_daily_stats, get_weekly_stats and get_monthly_stats return input when period is disabled", %{
-    organization_id: organization_id
-  } do
+  test "get_daily_stats, get_weekly_stats and get_monthly_stats return input when period is disabled",
+       %{
+         organization_id: organization_id
+       } do
     base = %{test: :value}
     time = dt(~D[2099-06-30], ~T[23:00:00])
     opts = [time: time, date: DateTime.to_date(time), day: false, week: false, month: false]
