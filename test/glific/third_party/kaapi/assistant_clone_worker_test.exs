@@ -399,7 +399,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                  })
       end
     end
-    
+
     test "returns error immediately when collection status is FAILED", %{assistant: assistant} do
       clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
       File.mkdir_p!(clone_dir)

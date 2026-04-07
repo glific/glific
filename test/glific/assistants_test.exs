@@ -755,7 +755,7 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_link_kb", version: 2}}}
       end)
 
-      assert {:ok, result} =
+      assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  name: assistant.name,
                  instructions: config_version.prompt,
@@ -773,9 +773,13 @@ defmodule Glific.AssistantsTest do
 
       assert bridge_count_after == 1
 
-      # Verify the response includes the KB data
-      assert result.vector_store_data != nil
-      assert result.vector_store_data.vector_store_id == "vs_unlinked_123"
+      # Verify a new config version was also created
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
     end
   end
 
