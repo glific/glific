@@ -433,6 +433,7 @@ defmodule Glific.Assistants do
 
           knowledge_base_changed =
             not is_nil(previous_knowledge_base_version) and
+              not is_nil(knowledge_base_version) and
               knowledge_base_version.id != previous_knowledge_base_version.id
 
           {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
@@ -489,27 +490,30 @@ defmodule Glific.Assistants do
     {:ok, assistant_result}
   end
 
-  @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t()) :: boolean()
+  @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t() | nil) :: boolean()
   defp no_changes?(user_params, assistant, knowledge_base_version) do
     active_config = assistant.active_config_version
     current_kb_version = List.first(active_config.knowledge_base_versions)
 
-    # If there's no current KB version, adding one is always a change
-    if is_nil(current_kb_version) do
-      false
-    else
-      user_params[:name] == assistant.name and
-        user_params[:instructions] == active_config.prompt and
-        user_params[:model] == active_config.model and
-        user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
-        knowledge_base_version.id == current_kb_version.id
-    end
+    kb_unchanged =
+      case {current_kb_version, knowledge_base_version} do
+        {nil, nil} -> true
+        {nil, _} -> false
+        {_, nil} -> false
+        {current, new} -> current.id == new.id
+      end
+
+    user_params[:name] == assistant.name and
+      user_params[:instructions] == active_config.prompt and
+      user_params[:model] == active_config.model and
+      user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
+      kb_unchanged
   end
 
   @spec update_assistant_transaction(
           Assistant.t(),
           map(),
-          KnowledgeBaseVersion.t(),
+          KnowledgeBaseVersion.t() | nil,
           boolean()
         ) ::
           {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
@@ -530,15 +534,7 @@ defmodule Glific.Assistants do
       :config_version,
       build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
     )
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
@@ -559,15 +555,7 @@ defmodule Glific.Assistants do
       :config_version,
       build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
     )
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Multi.update(:updated_assistant, fn _changes ->
       Assistant.changeset(assistant, %{name: kaapi_config.name})
     end)
@@ -1228,7 +1216,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
+      "https://01da-2409-40d2-10e2-9927-19cf-920f-1b73-8d6.ngrok-free.app" <>
         "/kaapi/knowledge_base_version"
 
     %{
