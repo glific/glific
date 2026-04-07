@@ -178,7 +178,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       })
       |> Repo.insert()
 
-    {:ok, _config_version1} =
+    {:ok, _config_version2} =
       %AssistantConfigVersion{}
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
@@ -203,6 +203,31 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         organization_id: organization_id
       })
       |> Repo.insert()
+
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{name: "Legacy KB", organization_id: organization_id})
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: organization_id,
+        status: :completed,
+        llm_service_id: "vs_legacy_123",
+        size: 100,
+        files: %{}
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: kb_version.id,
+        organization_id: organization_id,
+        inserted_at: now,
+        updated_at: now
+      }
+    ])
 
     {:ok, assistant} =
       assistant
