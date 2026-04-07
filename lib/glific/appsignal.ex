@@ -98,6 +98,19 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
+  def handle_event([:glific, repo, :query], measurement, _meta, _)
+      when repo in [:repo, :repo_replica] do
+    tags = %{repo: repo}
+
+    maybe_add_distribution_metric(measurement, :query_time, "glific.repo.query_time", tags)
+    maybe_add_distribution_metric(measurement, :idle_time, "glific.repo.idle_time", tags)
+    maybe_add_distribution_metric(measurement, :queue_time, "glific.repo.queue_time", tags)
+
+    if measurement |> Map.has_key?(:query_time) do
+      Appsignal.increment_counter("glific.repo.query_count", 1, tags)
+    end
+  end
+
   def handle_event(_, _, _, _), do: nil
 
   @doc """
@@ -191,5 +204,17 @@ defmodule Glific.Appsignal do
     )
     |> @span.set_name("Tesla #{metadata.method} #{host}")
     |> @span.set_attribute("appsignal:category", "tesla.request")
+  end
+
+  @spec maybe_add_distribution_metric(map(), atom(), String.t(), map()) :: :ok
+  defp maybe_add_distribution_metric(measurement, key, metric_name, tags) do
+    case Map.fetch(measurement, key) do
+      {:ok, value} ->
+        value_in_milliseconds = System.convert_time_unit(value, :native, :millisecond)
+        Appsignal.add_distribution_value(metric_name, value_in_milliseconds, tags)
+
+      :error ->
+        :ok
+    end
   end
 end
