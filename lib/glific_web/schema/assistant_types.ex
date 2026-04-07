@@ -213,6 +213,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     @desc "Clone an existing Assistant"
     field :clone_assistant, :clone_result do
       arg(:id, non_null(:id))
+      arg(:version_id, :id)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.clone_assistant/3)
     end

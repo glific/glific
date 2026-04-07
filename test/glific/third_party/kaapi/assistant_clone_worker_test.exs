@@ -411,4 +411,153 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert {:error, _} = Assistants.clone_assistant(-1)
     end
   end
+
+  describe "perform/1 non-legacy path" do
+    setup %{assistant: assistant} do
+      {:ok, non_legacy_knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Non-Legacy KB",
+          organization_id: @org_id
+        })
+
+      {:ok, non_legacy_knowledge_base_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: non_legacy_knowledge_base.id,
+          organization_id: @org_id,
+          files: %{"file_1" => %{"name" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "kaapi_kb_id_789",
+          kaapi_job_id: "kaapi_job_123",
+          size: 500
+        })
+
+      {:ok, non_legacy_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: @org_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a non-legacy assistant",
+          settings: %{"temperature" => 0.5},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: non_legacy_config_version.id,
+          knowledge_base_version_id: non_legacy_knowledge_base_version.id,
+          organization_id: @org_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      %{
+        non_legacy_config_version: non_legacy_config_version,
+        non_legacy_knowledge_base_version: non_legacy_knowledge_base_version
+      }
+    end
+
+    test "successfully clones non-legacy assistant", %{
+      assistant: assistant,
+      non_legacy_config_version: non_legacy_config_version,
+      non_legacy_knowledge_base_version: non_legacy_knowledge_base_version
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: non_legacy_config_version.id,
+                 organization_id: @org_id
+               })
+
+      cloned =
+        Assistant
+        |> where([a], a.name == ^"Copy of #{assistant.name}")
+        |> Repo.one()
+
+      assert cloned != nil
+      assert cloned.kaapi_uuid == "cloned_kaapi_uuid"
+      assert cloned.id != assistant.id
+
+      cloned_config =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^cloned.id)
+        |> Repo.one()
+
+      assert cloned_config.model == "gpt-4o"
+      assert cloned_config.prompt == "You are a non-legacy assistant"
+      assert cloned_config.status == :ready
+
+      linked_kb_version_ids =
+        from(j in "assistant_config_version_knowledge_base_versions",
+          where: j.assistant_config_version_id == ^cloned_config.id,
+          select: j.knowledge_base_version_id
+        )
+        |> Repo.all()
+
+      assert linked_kb_version_ids == [non_legacy_knowledge_base_version.id]
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "completed"
+    end
+
+    test "returns error when config version has no knowledge base linked", %{
+      assistant: assistant
+    } do
+      {:ok, no_kb_config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: @org_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "No KB config",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      assert {:error, msg} =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: no_kb_config.id,
+                 organization_id: @org_id
+               })
+
+      assert msg =~ "No knowledge base version found"
+    end
+
+    test "returns error when Kaapi config creation fails", %{
+      assistant: assistant,
+      non_legacy_config_version: non_legacy_config_version
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{status: 500, body: %{error: "Config creation failed"}}
+          end
+      end)
+
+      assert {:error, _} =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: non_legacy_config_version.id,
+                 organization_id: @org_id
+               })
+    end
+  end
 end

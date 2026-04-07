@@ -8,7 +8,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   use Oban.Worker,
     queue: :clone_assistant,
     max_attempts: 2,
-    unique: [fields: [:args], keys: [:assistant_id, :organization_id], period: :infinity]
+    unique: [
+      fields: [:args],
+      keys: [:assistant_id, :version_id, :organization_id],
+      period: :infinity
+    ]
 
   require Logger
 
@@ -30,6 +34,51 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
+
+  def perform(
+        %Oban.Job{
+          args: %{
+            "assistant_id" => assistant_id,
+            "version_id" => version_id,
+            "organization_id" => organization_id
+          },
+          attempt: attempt,
+          max_attempts: max_attempts
+        } = _job
+      ) do
+    Repo.put_process_state(organization_id)
+
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
+         {:ok, source_version} <- Repo.fetch_by(AssistantConfigVersion, %{id: version_id}),
+         source_version <- Repo.preload(source_version, :knowledge_base_versions),
+         {:ok, kb_version} <- get_kb_version_from_config(source_version),
+         params <-
+           build_params_from_version(assistant, source_version, organization_id, kb_version),
+         {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
+           Kaapi.create_assistant_config(params, organization_id),
+         :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
+      update_clone_status(assistant, "completed")
+
+      send_clone_notification(
+        organization_id,
+        "Assistant '#{assistant.name}' cloned successfully",
+        :info
+      )
+
+      Logger.info(
+        "AssistantCloneWorker: Successfully cloned non-legacy assistant #{assistant_id} " <>
+          "(version #{version_id}) for org #{organization_id}"
+      )
+
+      :ok
+    else
+      {:error, reason} ->
+        last_attempt? = attempt >= max_attempts
+        handle_clone_failure(assistant_id, organization_id, reason, last_attempt?)
+        {:error, inspect(reason)}
+    end
+  end
+
   def perform(
         %Oban.Job{
           args: %{"assistant_id" => assistant_id, "organization_id" => organization_id},
@@ -516,6 +565,35 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     ]
 
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
+  end
+
+  # Non-legacy helpers
+
+  @spec get_kb_version_from_config(AssistantConfigVersion.t()) ::
+          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t()}
+  defp get_kb_version_from_config(config_version) do
+    case config_version.knowledge_base_versions do
+      [kb_version | _] -> {:ok, kb_version}
+      [] -> {:error, "No knowledge base version found for config version"}
+    end
+  end
+
+  @spec build_params_from_version(
+          Assistant.t(),
+          AssistantConfigVersion.t(),
+          non_neg_integer(),
+          KnowledgeBaseVersion.t()
+        ) :: map()
+  defp build_params_from_version(assistant, source_version, organization_id, kb_version) do
+    %{
+      name: "Copy of #{assistant.name}",
+      prompt: source_version.prompt,
+      model: source_version.model,
+      temperature: get_in(source_version.settings, ["temperature"]) || 1,
+      description: "Cloned version",
+      organization_id: organization_id,
+      knowledge_base_ids: [kb_version.llm_service_id]
+    }
   end
 
   @spec auth_headers :: [tuple()]
