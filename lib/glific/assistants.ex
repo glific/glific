@@ -330,7 +330,7 @@ defmodule Glific.Assistants do
       Metrics.increment("Assistant Created", user_params[:organization_id])
 
       if is_nil(knowledge_base_version) do
-        create_kaapi_config_immediately(
+        create_config_without_knowledge_base(
           result.assistant,
           result.config_version,
           kaapi_config
@@ -341,9 +341,9 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec create_kaapi_config_immediately(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+  @spec create_config_without_knowledge_base(Assistant.t(), AssistantConfigVersion.t(), map()) ::
           {:ok, map()} | {:error, String.t()}
-  defp create_kaapi_config_immediately(assistant, config_version, kaapi_config) do
+  defp create_config_without_knowledge_base(assistant, config_version, kaapi_config) do
     case Kaapi.create_assistant_config(kaapi_config, kaapi_config.organization_id) do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version.version
