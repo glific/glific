@@ -1116,7 +1116,6 @@ defmodule Glific.Assistants do
         })
         |> Repo.update()
 
-
       {:error, reason} ->
         Logger.error(
           "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
