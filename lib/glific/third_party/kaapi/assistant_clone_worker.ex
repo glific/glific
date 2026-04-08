@@ -8,9 +8,16 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   use Oban.Worker,
     queue: :clone_assistant,
     max_attempts: 2,
-    unique: [fields: [:args], keys: [:assistant_id, :organization_id], period: :infinity]
+    unique: [
+      fields: [:args],
+      keys: [:assistant_id, :version_id, :organization_id],
+      period: :infinity,
+      states: [:available, :scheduled, :retryable, :executing]
+    ]
 
   require Logger
+
+  import Ecto.Query
 
   alias Glific.{
     Assistants,
@@ -30,9 +37,66 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
+
   def perform(
         %Oban.Job{
-          args: %{"assistant_id" => assistant_id, "organization_id" => organization_id},
+          args: %{
+            "assistant_id" => assistant_id,
+            "version_id" => version_id,
+            "organization_id" => organization_id,
+            "is_legacy" => false
+          },
+          attempt: attempt,
+          max_attempts: max_attempts
+        } = _job
+      ) do
+    Repo.put_process_state(organization_id)
+
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
+         {:ok, source_version} <- Repo.fetch_by(AssistantConfigVersion, %{id: version_id}),
+         source_version <- Repo.preload(source_version, :knowledge_base_versions),
+         {:ok, kb_version} <- get_kb_version_from_config(source_version),
+         name <- resolve_clone_name(assistant, source_version),
+         params <-
+           assistant_params(
+             name,
+             source_version,
+             organization_id,
+             extract_knowledge_base_ids(kb_version)
+           ),
+         {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
+           Kaapi.create_assistant_config(params, organization_id),
+         :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
+      update_clone_status(assistant, "")
+
+      send_clone_notification(
+        organization_id,
+        "Assistant '#{assistant.name}' cloned successfully",
+        :info
+      )
+
+      Logger.info(
+        "AssistantCloneWorker: Successfully cloned non-legacy assistant #{assistant_id} " <>
+          "(version #{version_id}) for org #{organization_id}"
+      )
+
+      :ok
+    else
+      {:error, reason} ->
+        last_attempt? = attempt >= max_attempts
+        handle_clone_failure(assistant_id, organization_id, reason, last_attempt?)
+        {:error, inspect(reason)}
+    end
+  end
+
+  def perform(
+        %Oban.Job{
+          args: %{
+            "assistant_id" => assistant_id,
+            "version_id" => _version_id,
+            "organization_id" => organization_id,
+            "is_legacy" => true
+          },
           attempt: attempt,
           max_attempts: max_attempts
         } = _job
@@ -57,7 +121,15 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
-         params <- assistant_params(assistant, organization_id, llm_service_id),
+         legacy_name <-
+           resolve_clone_name(assistant, assistant.active_config_version),
+         params <-
+           assistant_params(
+             legacy_name,
+             assistant.active_config_version,
+             organization_id,
+             [llm_service_id]
+           ),
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          {:ok, knowledge_base_version} <-
@@ -69,7 +141,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              kaapi_uuid,
              kaapi_config_version
            ) do
-      update_clone_status(assistant, "completed")
+      update_clone_status(assistant, "")
 
       send_clone_notification(
         organization_id,
@@ -161,19 +233,48 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp validate_uploaded_files(file_data),
     do: {:ok, Enum.map(file_data, & &1.file_id)}
 
-  @spec assistant_params(Assistant.t(), non_neg_integer(), String.t()) :: map()
-  defp assistant_params(assistant, organization_id, knowledge_base_id) do
-    active_config = assistant.active_config_version
-
+  @spec assistant_params(String.t(), AssistantConfigVersion.t(), non_neg_integer(), [String.t()]) ::
+          map()
+  defp assistant_params(name, config_version, organization_id, knowledge_base_ids) do
     %{
-      name: "Copy of #{assistant.name}",
-      prompt: active_config.prompt,
-      model: active_config.model,
-      temperature: get_in(active_config.settings || %{}, ["temperature"]) || 1,
+      name: name,
+      prompt: config_version.prompt,
+      model: config_version.model,
+      temperature: get_in(config_version.settings, ["temperature"]) || 1,
       description: "Cloned version",
       organization_id: organization_id,
-      knowledge_base_ids: [knowledge_base_id]
+      knowledge_base_ids: knowledge_base_ids
     }
+  end
+
+  @spec resolve_clone_name(Assistant.t(), AssistantConfigVersion.t()) :: String.t()
+  defp resolve_clone_name(assistant, config_version) do
+    base_name = "Copy of #{assistant.name} Version #{config_version.version_number}"
+    find_unique_name(base_name, 1)
+  end
+
+  @spec find_unique_name(String.t(), pos_integer()) :: String.t()
+  defp find_unique_name(base_name, 1) do
+    if assistant_name_taken?(base_name) do
+      find_unique_name(base_name, 2)
+    else
+      base_name
+    end
+  end
+
+  defp find_unique_name(base_name, n) do
+    candidate = "#{base_name} (#{n})"
+
+    if assistant_name_taken?(candidate) do
+      find_unique_name(base_name, n + 1)
+    else
+      candidate
+    end
+  end
+
+  @spec assistant_name_taken?(String.t()) :: boolean()
+  defp assistant_name_taken?(name) do
+    Assistant |> where([a], a.name == ^name) |> Repo.exists?()
   end
 
   @spec list_all_files(String.t()) :: {:ok, [map()]} | {:error, String.t()}
@@ -442,19 +543,25 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     end
   end
 
-  @spec create_cloned_assistant(map(), KnowledgeBaseVersion.t(), String.t(), non_neg_integer()) ::
-          :ok | {:error, any()}
+  @spec create_cloned_assistant(
+          map(),
+          KnowledgeBaseVersion.t() | nil,
+          String.t(),
+          non_neg_integer()
+        ) :: :ok | {:error, any()}
   defp create_cloned_assistant(params, knowledge_base_version, kaapi_uuid, kaapi_config_version) do
     with {:ok, assistant} <- create_assistant(params, kaapi_uuid),
          {:ok, assistant_version} <-
            create_assistant_version(assistant, params, kaapi_config_version),
-         {:ok, _assistant} <- set_active_config_version(assistant, assistant_version),
-         _ <-
-           link_assistant_version_and_knowledge_base(
-             assistant_version,
-             knowledge_base_version,
-             params
-           ) do
+         {:ok, _assistant} <- set_active_config_version(assistant, assistant_version) do
+      if knowledge_base_version do
+        link_assistant_version_and_knowledge_base(
+          assistant_version,
+          knowledge_base_version,
+          params
+        )
+      end
+
       :ok
     end
   end
@@ -516,6 +623,19 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     ]
 
     Repo.insert_all("assistant_config_version_knowledge_base_versions", entries)
+  end
+
+  @spec extract_knowledge_base_ids(KnowledgeBaseVersion.t() | nil) :: [String.t()]
+  defp extract_knowledge_base_ids(nil), do: []
+  defp extract_knowledge_base_ids(kb_version), do: [kb_version.llm_service_id]
+
+  @spec get_kb_version_from_config(AssistantConfigVersion.t()) ::
+          {:ok, KnowledgeBaseVersion.t() | nil}
+  defp get_kb_version_from_config(config_version) do
+    case config_version.knowledge_base_versions do
+      [kb_version | _] -> {:ok, kb_version}
+      [] -> {:ok, nil}
+    end
   end
 
   @spec auth_headers :: [tuple()]
