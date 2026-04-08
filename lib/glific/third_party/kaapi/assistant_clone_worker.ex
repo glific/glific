@@ -248,7 +248,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @spec resolve_clone_name(Assistant.t(), AssistantConfigVersion.t()) :: String.t()
   defp resolve_clone_name(assistant, config_version) do
-    base_name = "Copy of #{assistant.name} version#{config_version.version_number}"
+    base_name = "Copy of #{assistant.name} Version #{config_version.version_number}"
     find_unique_name(base_name, 1)
   end
 

@@ -182,7 +182,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
         cloned =
           Assistant
-          |> where([a], a.name == ^"Copy of #{assistant.name} version1")
+          |> where([a], a.name == ^"Copy of #{assistant.name} Version 1")
           |> Repo.one()
 
         assert cloned != nil
@@ -503,7 +503,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name} version2")
+        |> where([a], a.name == ^"Copy of #{assistant.name} Version 2")
         |> Repo.one()
 
       assert cloned != nil
@@ -550,7 +550,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       {:ok, _existing} =
         %Assistant{}
         |> Assistant.changeset(%{
-          name: "Copy of #{assistant.name} version2",
+          name: "Copy of #{assistant.name} Version 2",
           organization_id: @org_id,
           kaapi_uuid: "existing_uuid"
         })
@@ -566,7 +566,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name} version2 (2)")
+        |> where([a], a.name == ^"Copy of #{assistant.name} Version 2 (2)")
         |> Repo.one()
 
       assert cloned != nil
@@ -597,6 +597,13 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         })
         |> Repo.insert()
 
+      {:ok, assistant_without_kb} =
+        assistant_without_kb
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version_without_kb.id
+        })
+        |> Repo.update()
+
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           if String.contains?(url, "configs") do
@@ -617,7 +624,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       cloned =
         Assistant
-        |> where([a], a.name == ^"Copy of #{assistant_without_kb.name} version1")
+        |> where([a], a.name == ^"Copy of #{assistant_without_kb.name} Version 1")
         |> Repo.one()
 
       assert cloned != nil
