@@ -13,6 +13,7 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Flags
   alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
@@ -597,10 +598,17 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-      Assistant.changeset(assistant, %{
-        name: kaapi_config.name,
-        active_config_version_id: config_version.id
-      })
+
+      organization = Partners.organization(kaapi_config.organization_id)
+
+      attrs =
+        if Flags.get_assistant_config_versions_enabled(organization) do
+          %{name: kaapi_config.name}
+        else
+          %{name: kaapi_config.name, active_config_version_id: config_version.id}
+        end
+
+      Assistant.changeset(assistant, attrs)
     end)
     |> Repo.transaction()
     |> handle_update_transaction_result()
@@ -1143,70 +1151,84 @@ defmodule Glific.Assistants do
       organization_id: assistant.organization_id
     }
 
-    if is_nil(assistant.kaapi_uuid) do
-      case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
-        {:ok, kaapi_response} ->
-          kaapi_version_number = kaapi_response.data.version.version
+    if is_nil(assistant.kaapi_uuid),
+      do: deferred_create_new_assistant(assistant, config_version, kaapi_config),
+      else: deferred_create_new_version(assistant, config_version, kaapi_config)
+  end
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :ready,
-            kaapi_version_number: kaapi_version_number
-          })
-          |> Repo.update()
+  @spec deferred_create_new_assistant(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_assistant(assistant, config_version, kaapi_config) do
+    case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version.version
 
-          assistant
-          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-          |> Repo.update()
+        assistant
+        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
+        |> Repo.update()
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
 
-          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
-      end
-    else
-      case Kaapi.create_config_version(
-             assistant.kaapi_uuid,
-             kaapi_config,
-             assistant.organization_id
-           ) do
-        {:ok, kaapi_response} ->
-          kaapi_version_number = kaapi_response.data.version
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
 
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+    end
+  end
+
+  @spec deferred_create_new_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_version(assistant, config_version, kaapi_config) do
+    case Kaapi.create_config_version(
+           assistant.kaapi_uuid,
+           kaapi_config,
+           assistant.organization_id
+         ) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        organization = Partners.organization(assistant.organization_id)
+
+        unless Flags.get_assistant_config_versions_enabled(organization) do
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()
+        end
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :ready,
-            kaapi_version_number: kaapi_version_number
-          })
-          |> Repo.update()
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
 
-          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
-      end
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
     end
   end
 
