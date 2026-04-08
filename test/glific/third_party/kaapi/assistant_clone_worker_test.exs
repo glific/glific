@@ -522,7 +522,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == [non_legacy_knowledge_base_version.id]
 
       refreshed = Repo.get!(Assistant, assistant.id)
-      assert refreshed.clone_status == "none"
+      assert refreshed.clone_status == ""
     end
 
     test "auto-generates unique name with counter when clone name already exists", %{
@@ -564,50 +564,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
       assert cloned != nil
       assert cloned.kaapi_uuid == "cloned_kaapi_uuid_counter"
-    end
-
-    test "successfully clones non-legacy assistant without knowledge base", %{
-      assistant: assistant
-    } do
-      {:ok, no_kb_config} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
-          organization_id: @org_id,
-          provider: "openai",
-          model: "gpt-4o",
-          prompt: "No KB config",
-          settings: %{},
-          status: :ready,
-          version_number: 3
-        })
-        |> Repo.insert()
-
-      Tesla.Mock.mock(fn
-        %{method: :post, url: url} ->
-          if String.contains?(url, "configs") do
-            %Tesla.Env{
-              status: 200,
-              body: %{data: %{id: "cloned_kaapi_uuid_no_kb", version: %{version: 1}}}
-            }
-          end
-      end)
-
-      assert :ok =
-               perform_job(AssistantCloneWorker, %{
-                 assistant_id: assistant.id,
-                 version_id: no_kb_config.id,
-                 organization_id: @org_id,
-                 is_legacy: false
-               })
-
-      cloned =
-        Assistant
-        |> where([a], a.name == ^"Copy of #{assistant.name} version3")
-        |> Repo.one()
-
-      assert cloned != nil
-      assert cloned.kaapi_uuid == "cloned_kaapi_uuid_no_kb"
     end
 
     test "successfully clones non-legacy assistant that has no knowledge base at all" do
@@ -678,7 +634,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == []
 
       refreshed = Repo.get!(Assistant, assistant_without_kb.id)
-      assert refreshed.clone_status == "none"
+      assert refreshed.clone_status == ""
     end
 
     test "returns error when Kaapi config creation fails", %{

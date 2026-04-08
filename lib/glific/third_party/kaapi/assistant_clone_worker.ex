@@ -16,7 +16,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   require Logger
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Assistants,
@@ -66,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
-      update_clone_status(assistant, "none")
+      update_clone_status(assistant, "")
 
       send_clone_notification(
         organization_id,
@@ -139,7 +139,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              kaapi_uuid,
              kaapi_config_version
            ) do
-      update_clone_status(assistant, "none")
+      update_clone_status(assistant, "")
 
       send_clone_notification(
         organization_id,

@@ -277,7 +277,10 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         |> Repo.insert()
 
       {:ok, nl_kb} =
-        Assistants.create_knowledge_base(%{name: "Non-Legacy KB", organization_id: organization_id})
+        Assistants.create_knowledge_base(%{
+          name: "Non-Legacy KB",
+          organization_id: organization_id
+        })
 
       {:ok, nl_kbv} =
         Assistants.create_knowledge_base_version(%{
