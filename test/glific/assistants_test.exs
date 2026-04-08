@@ -2635,8 +2635,15 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
       {:ok, updated} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
       assert updated.active_config_version_id != original_cv.id
+      assert updated.active_config_version_id == new_cv.id
     end
   end
 
@@ -2737,8 +2744,15 @@ defmodule Glific.AssistantsTest do
         }
       })
 
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
       {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
       assert post_callback.active_config_version_id != original_cv.id
+      assert post_callback.active_config_version_id == new_cv.id
     end
   end
 end
