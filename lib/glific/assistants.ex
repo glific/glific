@@ -234,7 +234,8 @@ defmodule Glific.Assistants do
       clone_status: assistant.clone_status,
       vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
-      updated_at: assistant.updated_at
+      updated_at: assistant.updated_at,
+      active_config_version_id: assistant.active_config_version_id
     }
   end
 
@@ -361,7 +362,11 @@ defmodule Glific.Assistants do
 
   @spec enqueue_legacy_clone(Assistant.t()) :: {:ok, map()} | {:error, any()}
   defp enqueue_legacy_clone(assistant) do
-    job_args = %{assistant_id: assistant.id, organization_id: assistant.organization_id, is_legacy: true}
+    job_args = %{
+      assistant_id: assistant.id,
+      organization_id: assistant.organization_id,
+      is_legacy: true
+    }
 
     with {:ok, _job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
          {:ok, _assistant} <- mark_clone_in_progress(assistant) do

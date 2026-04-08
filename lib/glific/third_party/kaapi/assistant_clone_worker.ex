@@ -8,9 +8,15 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   use Oban.Worker,
     queue: :clone_assistant,
     max_attempts: 2,
-    unique: [fields: [:args], keys: [:assistant_id, :organization_id], period: :infinity]
+    unique: [
+      fields: [:args],
+      keys: [:assistant_id, :version_id, :organization_id],
+      period: :infinity
+    ]
 
   require Logger
+
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Assistants,
@@ -49,9 +55,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, source_version} <- Repo.fetch_by(AssistantConfigVersion, %{id: version_id}),
          source_version <- Repo.preload(source_version, :knowledge_base_versions),
          {:ok, kb_version} <- get_kb_version_from_config(source_version),
+         name <- resolve_clone_name(assistant, source_version),
          params <-
            assistant_params(
-             assistant,
+             name,
              source_version,
              organization_id,
              extract_knowledge_base_ids(kb_version)
@@ -59,7 +66,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
-      update_clone_status(assistant, "completed")
+      update_clone_status(assistant, "none")
 
       send_clone_notification(
         organization_id,
@@ -112,9 +119,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{job_id: job_id}}} <-
            Kaapi.create_collection(%{documents: file_ids}, organization_id),
          {:ok, llm_service_id} <- poll_kaapi_for_collection_status(job_id, organization_id),
+         legacy_name <-
+           resolve_clone_name(assistant, assistant.active_config_version),
          params <-
            assistant_params(
-             assistant,
+             legacy_name,
              assistant.active_config_version,
              organization_id,
              [llm_service_id]
@@ -130,7 +139,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              kaapi_uuid,
              kaapi_config_version
            ) do
-      update_clone_status(assistant, "completed")
+      update_clone_status(assistant, "none")
 
       send_clone_notification(
         organization_id,
@@ -222,11 +231,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   defp validate_uploaded_files(file_data),
     do: {:ok, Enum.map(file_data, & &1.file_id)}
 
-  @spec assistant_params(Assistant.t(), AssistantConfigVersion.t(), non_neg_integer(), [String.t()]) ::
+  @spec assistant_params(String.t(), AssistantConfigVersion.t(), non_neg_integer(), [String.t()]) ::
           map()
-  defp assistant_params(assistant, config_version, organization_id, knowledge_base_ids) do
+  defp assistant_params(name, config_version, organization_id, knowledge_base_ids) do
     %{
-      name: "Copy of #{assistant.name} version#{config_version.version_number}",
+      name: name,
       prompt: config_version.prompt,
       model: config_version.model,
       temperature: get_in(config_version.settings, ["temperature"]) || 1,
@@ -234,6 +243,36 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       organization_id: organization_id,
       knowledge_base_ids: knowledge_base_ids
     }
+  end
+
+  @spec resolve_clone_name(Assistant.t(), AssistantConfigVersion.t()) :: String.t()
+  defp resolve_clone_name(assistant, config_version) do
+    base_name = "Copy of #{assistant.name} version#{config_version.version_number}"
+    find_unique_name(base_name, 1)
+  end
+
+  @spec find_unique_name(String.t(), pos_integer()) :: String.t()
+  defp find_unique_name(base_name, 1) do
+    if assistant_name_taken?(base_name) do
+      find_unique_name(base_name, 2)
+    else
+      base_name
+    end
+  end
+
+  defp find_unique_name(base_name, n) do
+    candidate = "#{base_name} (#{n})"
+
+    if assistant_name_taken?(candidate) do
+      find_unique_name(base_name, n + 1)
+    else
+      candidate
+    end
+  end
+
+  @spec assistant_name_taken?(String.t()) :: boolean()
+  defp assistant_name_taken?(name) do
+    Assistant |> where([a], a.name == ^name) |> Repo.exists?()
   end
 
   @spec list_all_files(String.t()) :: {:ok, [map()]} | {:error, String.t()}

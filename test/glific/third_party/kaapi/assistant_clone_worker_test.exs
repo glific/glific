@@ -522,7 +522,48 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == [non_legacy_knowledge_base_version.id]
 
       refreshed = Repo.get!(Assistant, assistant.id)
-      assert refreshed.clone_status == "completed"
+      assert refreshed.clone_status == "none"
+    end
+
+    test "auto-generates unique name with counter when clone name already exists", %{
+      assistant: assistant,
+      non_legacy_config_version: non_legacy_config_version
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid_counter", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      # Pre-create an assistant with the base clone name to force counter usage
+      {:ok, _existing} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Copy of #{assistant.name} version2",
+          organization_id: @org_id,
+          kaapi_uuid: "existing_uuid"
+        })
+        |> Repo.insert()
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: non_legacy_config_version.id,
+                 organization_id: @org_id,
+                 is_legacy: false
+               })
+
+      cloned =
+        Assistant
+        |> where([a], a.name == ^"Copy of #{assistant.name} version2 (2)")
+        |> Repo.one()
+
+      assert cloned != nil
+      assert cloned.kaapi_uuid == "cloned_kaapi_uuid_counter"
     end
 
     test "successfully clones non-legacy assistant without knowledge base", %{
@@ -637,7 +678,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == []
 
       refreshed = Repo.get!(Assistant, assistant_without_kb.id)
-      assert refreshed.clone_status == "completed"
+      assert refreshed.clone_status == "none"
     end
 
     test "returns error when Kaapi config creation fails", %{
