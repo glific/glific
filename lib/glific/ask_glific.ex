@@ -32,10 +32,11 @@ defmodule Glific.AskGlific do
 
     is_new_conversation = conversation_id == ""
 
-    case ApiClient.chat_messages(body, dify_api_key()) do
+    case ApiClient.chat_messages(body) do
       {:ok, response} ->
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
+        message_id = Map.get(response, "message_id", "")
 
         create_conversation(resp_conversation_id, user)
 
@@ -50,8 +51,33 @@ defmodule Glific.AskGlific do
          %{
            answer: answer,
            conversation_id: resp_conversation_id,
-           conversation_name: conversation_name
+           conversation_name: conversation_name,
+           message_id: message_id
          }}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Submits feedback (like/dislike) for a Dify message.
+  """
+  @spec submit_feedback(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  def submit_feedback(params, user) do
+    message_id = Map.get(params, :message_id)
+    rating = Map.get(params, :rating)
+    content = Map.get(params, :content, "")
+
+    body = %{
+      "rating" => rating,
+      "user" => dify_user(user),
+      "content" => content
+    }
+
+    case ApiClient.message_feedback(message_id, body) do
+      {:ok, _response} ->
+        {:ok, %{success: true}}
 
       {:error, reason} ->
         {:error, reason}
@@ -80,7 +106,7 @@ defmodule Glific.AskGlific do
     limit = Map.get(params, :limit, 20)
     last_id = Map.get(params, :last_id, "")
 
-    case ApiClient.conversations(dify_user(user), dify_api_key(), limit, last_id) do
+    case ApiClient.conversations(dify_user(user), limit, last_id) do
       {:ok, response} ->
         conversations =
           response
@@ -110,7 +136,7 @@ defmodule Glific.AskGlific do
     first_id = Map.get(params, :first_id, "")
 
     if conversation_owned_by_user?(conversation_id, user.id) do
-      case ApiClient.messages(conversation_id, dify_user(user), dify_api_key(), limit, first_id) do
+      case ApiClient.messages(conversation_id, dify_user(user), limit, first_id) do
         {:ok, response} ->
           messages =
             response
@@ -140,14 +166,21 @@ defmodule Glific.AskGlific do
   end
 
   defp parse_message(msg) do
+    feedback = msg |> Map.get("feedback", nil) |> parse_feedback()
+
     %{
       id: Map.get(msg, "id", ""),
       conversation_id: Map.get(msg, "conversation_id", ""),
       query: Map.get(msg, "query", ""),
       answer: Map.get(msg, "answer", ""),
-      created_at: Map.get(msg, "created_at", 0)
+      created_at: Map.get(msg, "created_at", 0),
+      feedback: feedback
     }
   end
+
+  defp parse_feedback(nil), do: nil
+  defp parse_feedback(%{"rating" => rating}) when rating in ["like", "dislike"], do: rating
+  defp parse_feedback(_), do: nil
 
   defp parse_conversation(conv) do
     %{
@@ -163,8 +196,7 @@ defmodule Glific.AskGlific do
   defp generate_conversation_name(conversation_id, user) do
     case ApiClient.auto_generate_conversation_name(
            conversation_id,
-           dify_user(user),
-           dify_api_key()
+           dify_user(user)
          ) do
       {:ok, response} -> Map.get(response, "name")
       {:error, _reason} -> nil
@@ -173,7 +205,4 @@ defmodule Glific.AskGlific do
 
   @spec dify_user(map()) :: String.t()
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
-
-  @spec dify_api_key() :: String.t()
-  defp dify_api_key, do: Application.get_env(:glific, :dify_api_key, "")
 end

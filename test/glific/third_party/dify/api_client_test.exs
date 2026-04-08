@@ -3,8 +3,6 @@ defmodule Glific.Dify.ApiClientTest do
 
   alias Glific.Dify.ApiClient
 
-  @api_key "test-api-key"
-
   setup do
     test_pid = self()
     Application.put_env(:glific, :dify_req_plug, {Req.Test, test_pid})
@@ -36,7 +34,7 @@ defmodule Glific.Dify.ApiClientTest do
         "inputs" => %{}
       }
 
-      assert {:ok, response} = ApiClient.chat_messages(body, @api_key)
+      assert {:ok, response} = ApiClient.chat_messages(body)
       assert response["answer"] == "Hello!"
       assert response["conversation_id"] == "conv-123"
     end
@@ -48,7 +46,7 @@ defmodule Glific.Dify.ApiClientTest do
         |> Req.Test.json(%{"error" => "Rate limited"})
       end)
 
-      assert {:error, error} = ApiClient.chat_messages(%{"query" => "Hi"}, @api_key)
+      assert {:error, error} = ApiClient.chat_messages(%{"query" => "Hi"})
       assert error =~ "Dify API error (429)"
     end
   end
@@ -66,7 +64,7 @@ defmodule Glific.Dify.ApiClientTest do
         })
       end)
 
-      assert {:ok, response} = ApiClient.conversations("org-1", @api_key)
+      assert {:ok, response} = ApiClient.conversations("org-1")
       assert length(response["data"]) == 1
     end
 
@@ -80,7 +78,7 @@ defmodule Glific.Dify.ApiClientTest do
         Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 5})
       end)
 
-      assert {:ok, _} = ApiClient.conversations("org-1", @api_key, 5, "conv-xyz")
+      assert {:ok, _} = ApiClient.conversations("org-1", 5, "conv-xyz")
     end
 
     test "returns error on failure" do
@@ -90,7 +88,7 @@ defmodule Glific.Dify.ApiClientTest do
         |> Req.Test.json(%{"error" => "Internal"})
       end)
 
-      assert {:error, error} = ApiClient.conversations("org-1", @api_key)
+      assert {:error, error} = ApiClient.conversations("org-1")
       assert error =~ "Dify API error (500)"
     end
   end
@@ -110,7 +108,7 @@ defmodule Glific.Dify.ApiClientTest do
         })
       end)
 
-      assert {:ok, response} = ApiClient.messages("conv-1", "org-1", @api_key)
+      assert {:ok, response} = ApiClient.messages("conv-1", "org-1")
       assert length(response["data"]) == 1
     end
 
@@ -125,7 +123,7 @@ defmodule Glific.Dify.ApiClientTest do
         Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 10})
       end)
 
-      assert {:ok, _} = ApiClient.messages("conv-1", "org-1", @api_key, 10, "msg-050")
+      assert {:ok, _} = ApiClient.messages("conv-1", "org-1", 10, "msg-050")
     end
 
     test "returns error on failure" do
@@ -135,7 +133,36 @@ defmodule Glific.Dify.ApiClientTest do
         |> Req.Test.json(%{"error" => "Not found"})
       end)
 
-      assert {:error, error} = ApiClient.messages("conv-1", "org-1", @api_key)
+      assert {:error, error} = ApiClient.messages("conv-1", "org-1")
+      assert error =~ "Dify API error (404)"
+    end
+  end
+
+  describe "message_feedback/3" do
+    test "returns success on valid feedback" do
+      Req.Test.stub(self(), fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/v1/messages/msg-123/feedbacks"
+
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      body = %{"rating" => "like", "user" => "org-1", "content" => "Helpful!"}
+
+      assert {:ok, response} = ApiClient.message_feedback("msg-123", body)
+      assert response["result"] == "success"
+    end
+
+    test "returns error on failure" do
+      Req.Test.stub(self(), fn conn ->
+        conn
+        |> Plug.Conn.put_status(404)
+        |> Req.Test.json(%{"error" => "Message not found"})
+      end)
+
+      body = %{"rating" => "like", "user" => "org-1"}
+
+      assert {:error, error} = ApiClient.message_feedback("msg-999", body)
       assert error =~ "Dify API error (404)"
     end
   end
@@ -150,7 +177,7 @@ defmodule Glific.Dify.ApiClientTest do
       end)
 
       assert {:ok, response} =
-               ApiClient.auto_generate_conversation_name("conv-123", "org-1", @api_key)
+               ApiClient.auto_generate_conversation_name("conv-123", "org-1")
 
       assert response["name"] == "Auto Generated Name"
     end
@@ -163,7 +190,7 @@ defmodule Glific.Dify.ApiClientTest do
       end)
 
       assert {:error, error} =
-               ApiClient.auto_generate_conversation_name("conv-123", "org-1", @api_key)
+               ApiClient.auto_generate_conversation_name("conv-123", "org-1")
 
       assert error =~ "Dify API error (500)"
     end

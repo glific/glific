@@ -12,7 +12,18 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:answer, :string)
     field(:conversation_id, :string)
     field(:conversation_name, :string)
+    field(:message_id, :string)
     field(:errors, list_of(:input_error))
+  end
+
+  object :ask_glific_feedback_result do
+    field(:success, :boolean)
+  end
+
+  input_object :ask_glific_feedback_input do
+    field(:message_id, non_null(:string))
+    field(:rating, non_null(:string))
+    field(:content, :string)
   end
 
   input_object :ask_glific_input do
@@ -27,6 +38,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:query, :string)
     field(:answer, :string)
     field(:created_at, :integer)
+    field(:feedback, :string)
   end
 
   object :askme_bot_messages_result do
@@ -71,6 +83,12 @@ defmodule GlificWeb.Schema.AskGlificTypes do
       arg(:input, non_null(:ask_glific_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskGlific.ask/3)
+    end
+
+    field :ask_glific_feedback, :ask_glific_feedback_result do
+      arg(:input, non_null(:ask_glific_feedback_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AskGlific.submit_feedback/3)
     end
   end
 end

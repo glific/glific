@@ -3,6 +3,7 @@ mutation askme_bot($input: AskGlificInput!) {
         answer
         conversationId
         conversationName
+        messageId
         errors {
             message
         }

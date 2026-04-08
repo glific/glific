@@ -37,4 +37,13 @@ defmodule GlificWeb.Resolvers.AskGlific do
   def messages(_, %{conversation_id: conversation_id} = args, %{context: %{current_user: user}}) do
     AskGlific.get_messages(conversation_id, user, args)
   end
+
+  @doc """
+  Submit feedback for a Dify message.
+  """
+  @spec submit_feedback(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, map()} | {:error, any}
+  def submit_feedback(_, %{input: params}, %{context: %{current_user: user}}) do
+    AskGlific.submit_feedback(params, user)
+  end
 end

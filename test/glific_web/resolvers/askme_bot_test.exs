@@ -11,19 +11,25 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
   load_gql(
     :askme_bot,
     GlificWeb.Schema,
-    "assets/gql/askme_bot/askme_bot.gql"
+    "assets/gql/ask_glific/ask.gql"
   )
 
   load_gql(
     :conversations,
     GlificWeb.Schema,
-    "assets/gql/askme_bot/conversations.gql"
+    "assets/gql/ask_glific/conversations.gql"
   )
 
   load_gql(
     :messages,
     GlificWeb.Schema,
-    "assets/gql/askme_bot/messages.gql"
+    "assets/gql/ask_glific/messages.gql"
+  )
+
+  load_gql(
+    :feedback,
+    GlificWeb.Schema,
+    "assets/gql/ask_glific/feedback.gql"
   )
 
   setup do
@@ -252,6 +258,68 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       result = get_in(query_data, [:data, "askGlificMessages"])
       assert result["messages"] == []
       assert result["hasMore"] == false
+    end
+  end
+
+  describe "askme_bot_feedback mutation" do
+    test "submits like feedback successfully", %{staff: user} do
+      Req.Test.stub(self(), fn conn ->
+        assert conn.request_path == "/v1/messages/msg-gql-001/feedbacks"
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:feedback, user,
+          variables: %{
+            "input" => %{
+              "messageId" => "msg-gql-001",
+              "rating" => "like"
+            }
+          }
+        )
+
+      result = get_in(query_data, [:data, "askGlificFeedback"])
+      assert result["success"] == true
+    end
+
+    test "submits dislike feedback with content", %{staff: user} do
+      Req.Test.stub(self(), fn conn ->
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:feedback, user,
+          variables: %{
+            "input" => %{
+              "messageId" => "msg-gql-002",
+              "rating" => "dislike",
+              "content" => "Not helpful"
+            }
+          }
+        )
+
+      result = get_in(query_data, [:data, "askGlificFeedback"])
+      assert result["success"] == true
+    end
+
+    test "returns error on Dify failure", %{staff: user} do
+      Req.Test.stub(self(), fn conn ->
+        conn
+        |> Plug.Conn.put_status(404)
+        |> Req.Test.json(%{"error" => "Message not found"})
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:feedback, user,
+          variables: %{
+            "input" => %{
+              "messageId" => "msg-nonexistent",
+              "rating" => "like"
+            }
+          }
+        )
+
+      assert query_data.errors != nil
     end
   end
 end

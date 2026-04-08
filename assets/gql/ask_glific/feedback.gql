@@ -1,0 +1,5 @@
+mutation askme_bot_feedback($input: AskGlificFeedbackInput!) {
+    askGlificFeedback(input: $input) {
+        success
+    }
+}

@@ -10,13 +10,13 @@ defmodule Glific.Dify.ApiClient do
   @doc """
   Send a chat message to Dify and get a response.
   """
-  @spec chat_messages(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  def chat_messages(body, api_key) do
+  @spec chat_messages(map()) :: {:ok, map()} | {:error, String.t()}
+  def chat_messages(body) do
     [
       base_url: @endpoint,
       url: "/chat-messages",
       json: body,
-      headers: headers(api_key),
+      headers: headers(),
       receive_timeout: 60_000
     ]
     |> maybe_add_plug()
@@ -27,14 +27,14 @@ defmodule Glific.Dify.ApiClient do
   @doc """
   Fetch conversations from Dify for a given user.
   """
-  @spec conversations(String.t(), String.t(), non_neg_integer(), String.t()) ::
+  @spec conversations(String.t(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def conversations(user, api_key, limit \\ 20, last_id \\ "") do
+  def conversations(user, limit \\ 20, last_id \\ "") do
     [
       base_url: @endpoint,
       url: "/conversations",
       params: [user: user, limit: limit, last_id: last_id],
-      headers: headers(api_key),
+      headers: headers(),
       receive_timeout: 60_000
     ]
     |> maybe_add_plug()
@@ -45,14 +45,14 @@ defmodule Glific.Dify.ApiClient do
   @doc """
   Fetch messages for a conversation from Dify.
   """
-  @spec messages(String.t(), String.t(), String.t(), non_neg_integer(), String.t()) ::
+  @spec messages(String.t(), String.t(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def messages(conversation_id, user, api_key, limit \\ 20, first_id \\ "") do
+  def messages(conversation_id, user, limit \\ 20, first_id \\ "") do
     [
       base_url: @endpoint,
       url: "/messages",
       params: [conversation_id: conversation_id, user: user, limit: limit, first_id: first_id],
-      headers: headers(api_key),
+      headers: headers(),
       receive_timeout: 60_000
     ]
     |> maybe_add_plug()
@@ -61,17 +61,16 @@ defmodule Glific.Dify.ApiClient do
   end
 
   @doc """
-  Auto-generate a conversation name via Dify.
-  POST /conversations/:conversation_id/name with auto_generate: true
+  Submit feedback (like/dislike) for a message via Dify.
+  POST /messages/:message_id/feedbacks
   """
-  @spec auto_generate_conversation_name(String.t(), String.t(), String.t()) ::
-          {:ok, map()} | {:error, String.t()}
-  def auto_generate_conversation_name(conversation_id, user, api_key) do
+  @spec message_feedback(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  def message_feedback(message_id, body) do
     [
       base_url: @endpoint,
-      url: "/conversations/#{conversation_id}/name",
-      json: %{"user" => user, "auto_generate" => true},
-      headers: headers(api_key),
+      url: "/messages/#{message_id}/feedbacks",
+      json: body,
+      headers: headers(),
       receive_timeout: 60_000
     ]
     |> maybe_add_plug()
@@ -79,8 +78,28 @@ defmodule Glific.Dify.ApiClient do
     |> parse_response()
   end
 
-  @spec headers(String.t()) :: list()
-  defp headers(api_key) do
+  @doc """
+  Auto-generate a conversation name via Dify.
+  POST /conversations/:conversation_id/name with auto_generate: true
+  """
+  @spec auto_generate_conversation_name(String.t(), String.t()) ::
+          {:ok, map()} | {:error, String.t()}
+  def auto_generate_conversation_name(conversation_id, user) do
+    [
+      base_url: @endpoint,
+      url: "/conversations/#{conversation_id}/name",
+      json: %{"user" => user, "auto_generate" => true},
+      headers: headers(),
+      receive_timeout: 60_000
+    ]
+    |> maybe_add_plug()
+    |> Req.post()
+    |> parse_response()
+  end
+
+  @spec headers :: list()
+  defp headers do
+    api_key = dify_api_key()
     [authorization: "Bearer " <> api_key]
   end
 
@@ -108,4 +127,7 @@ defmodule Glific.Dify.ApiClient do
     Logger.error("HTTP error calling Dify: #{inspect(reason)}")
     {:error, "HTTP error calling Dify: #{inspect(reason)}"}
   end
+
+  @spec dify_api_key() :: String.t()
+  defp dify_api_key, do: Application.get_env(:glific, :dify_api_key, "")
 end

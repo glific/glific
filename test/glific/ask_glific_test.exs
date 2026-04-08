@@ -381,6 +381,21 @@ defmodule Glific.AskGlificTest do
       assert result.messages == []
     end
 
+    test "returns message_id in ask response", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        Req.Test.json(conn, %{
+          "answer" => "Hello!",
+          "conversation_id" => "conv-abc-123",
+          "message_id" => "msg-feedback-001"
+        })
+      end)
+
+      params = %{query: "What is Glific?", conversation_id: "conv-abc-123"}
+
+      assert {:ok, result} = AskGlific.ask(params, user)
+      assert result.message_id == "msg-feedback-001"
+    end
+
     test "handles messages with has_more true for pagination", %{user: user} do
       insert_conversation("conv-abc-123", user)
 
@@ -403,6 +418,62 @@ defmodule Glific.AskGlificTest do
       assert {:ok, result} = AskGlific.get_messages("conv-abc-123", user)
       assert length(result.messages) == 1
       assert result.has_more == true
+    end
+  end
+
+  describe "submit_feedback/2" do
+    test "submits like feedback successfully", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/v1/messages/msg-feedback-001/feedbacks"
+
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      params = %{message_id: "msg-feedback-001", rating: "like"}
+
+      assert {:ok, result} = AskGlific.submit_feedback(params, user)
+      assert result.success == true
+    end
+
+    test "submits dislike feedback successfully", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      params = %{message_id: "msg-feedback-002", rating: "dislike", content: "Not helpful"}
+
+      assert {:ok, result} = AskGlific.submit_feedback(params, user)
+      assert result.success == true
+    end
+
+    test "returns error on Dify API failure", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        conn
+        |> Plug.Conn.put_status(404)
+        |> Req.Test.json(%{"error" => "Message not found"})
+      end)
+
+      params = %{message_id: "msg-nonexistent", rating: "like"}
+
+      assert {:error, error} = AskGlific.submit_feedback(params, user)
+      assert error =~ "Dify API error"
+    end
+
+    test "sends correct user identifier and rating to Dify", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        {:ok, body, _conn} = Plug.Conn.read_body(conn)
+        parsed = Jason.decode!(body)
+        assert parsed["user"] == "org-#{user.organization_id}-user-#{user.id}"
+        assert parsed["rating"] == "like"
+        assert parsed["content"] == "Great answer!"
+
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      params = %{message_id: "msg-001", rating: "like", content: "Great answer!"}
+
+      assert {:ok, _result} = AskGlific.submit_feedback(params, user)
     end
   end
 end
