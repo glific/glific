@@ -11,7 +11,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
     unique: [
       fields: [:args],
       keys: [:assistant_id, :version_id, :organization_id],
-      period: :infinity
+      period: :infinity,
+      states: [:available, :scheduled, :retryable, :executing]
     ]
 
   require Logger
