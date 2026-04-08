@@ -198,6 +198,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.model == "gpt-4o"
         assert cloned_config.prompt == "You are a helpful assistant"
         assert cloned_config.status == :ready
+
+        refreshed = Repo.get!(Assistant, assistant.id)
+        assert refreshed.clone_status == "completed"
+
+        notification = Repo.one(from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1)
+        assert notification.message =~ "cloned successfully"
       end
     end
 
@@ -258,12 +264,25 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           {:ok, %{status: 500, body: %{"error" => "Internal server error"}}}
         end do
         assert {:error, _} =
-                 perform_job(AssistantCloneWorker, %{
-                   assistant_id: assistant.id,
-                   version_id: assistant.active_config_version_id,
-                   organization_id: @org_id,
-                   is_legacy: true
-                 })
+                 perform_job(
+                   AssistantCloneWorker,
+                   %{
+                     assistant_id: assistant.id,
+                     version_id: assistant.active_config_version_id,
+                     organization_id: @org_id,
+                     is_legacy: true
+                   },
+                   attempt: 2
+                 )
+
+        refreshed = Repo.get!(Assistant, assistant.id)
+        assert refreshed.clone_status == "failed"
+
+        notif = Glific.Repo.one(
+          from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1
+        )
+        assert notif.message =~ "Assistant cloning failed"
+
       end
     end
 
