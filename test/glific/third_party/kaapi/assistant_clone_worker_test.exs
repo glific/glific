@@ -198,6 +198,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.model == "gpt-4o"
         assert cloned_config.prompt == "You are a helpful assistant"
         assert cloned_config.status == :ready
+
+        refreshed = Repo.get!(Assistant, assistant.id)
+        assert refreshed.clone_status == "completed"
       end
     end
 
