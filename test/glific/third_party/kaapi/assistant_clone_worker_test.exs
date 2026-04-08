@@ -175,6 +175,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert :ok =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
                    organization_id: @org_id,
                    is_legacy: true
                  })
@@ -204,6 +205,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert {:error, _} =
                perform_job(AssistantCloneWorker, %{
                  assistant_id: -1,
+                 version_id: -1,
                  organization_id: @org_id,
                  is_legacy: true
                })
@@ -242,6 +244,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert {:error, msg} =
                perform_job(AssistantCloneWorker, %{
                  assistant_id: no_kb_assistant.id,
+                 version_id: config.id,
                  organization_id: @org_id,
                  is_legacy: true
                })
@@ -257,6 +260,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
                    organization_id: @org_id,
                    is_legacy: true
                  })
@@ -292,6 +296,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
                    organization_id: @org_id,
                    is_legacy: true
                  })
@@ -339,6 +344,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
                    organization_id: @org_id,
                    is_legacy: true
                  })
@@ -402,6 +408,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
                    organization_id: @org_id,
                    is_legacy: true
                  })

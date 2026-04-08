@@ -335,6 +335,89 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert result["errors"] == nil
     end
 
+    test "returns error when a clone is already in progress", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Conflict Test Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_conflict_test"
+        })
+        |> Repo.insert()
+
+      {:ok, nl_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Conflict Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, nl_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: nl_kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "kaapi_kb_conflict",
+          kaapi_job_id: "kaapi_job_conflict",
+          size: 100
+        })
+
+      {:ok, nl_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Conflict test prompt",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: nl_config_version.id,
+          knowledge_base_version_id: nl_kbv.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: nl_config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, first_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      assert first_result.data["cloneAssistant"]["message"] == "Assistant clone initiated"
+
+      {:ok, second_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      result = second_result.data["cloneAssistant"]
+      assert result["message"] == nil
+
+      assert [%{"message" => message}] = result["errors"]
+
+      assert message ==
+               "A clone is already in progress for this assistant. Please try again in a few minutes"
+    end
+
     test "returns error when assistant not found", %{staff: user} do
       {:ok, query_data} =
         auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})

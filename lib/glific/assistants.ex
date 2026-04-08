@@ -382,6 +382,7 @@ defmodule Glific.Assistants do
   Clones an existing assistant by copying its config (prompt, model, temperature)
   into a new assistant record.
   """
+  @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
   @spec clone_assistant(non_neg_integer(), non_neg_integer() | nil) ::
           {:ok, map()} | {:error, any()}
   def clone_assistant(id, version_id \\ nil) do
@@ -408,11 +409,13 @@ defmodule Glific.Assistants do
   defp enqueue_legacy_clone(assistant) do
     job_args = %{
       assistant_id: assistant.id,
+      version_id: assistant.active_config_version_id,
       organization_id: assistant.organization_id,
       is_legacy: true
     }
 
-    with {:ok, _job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
          {:ok, _assistant} <- mark_clone_in_progress(assistant) do
       {:ok, %{message: "Assistant clone initiated"}}
     end
@@ -431,11 +434,20 @@ defmodule Glific.Assistants do
       is_legacy: false
     }
 
-    with {:ok, _job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
          {:ok, _assistant} <- mark_clone_in_progress(assistant) do
       {:ok, %{message: "Assistant clone initiated"}}
     end
   end
+
+  @spec check_job_conflict(Oban.Job.t()) :: :ok | {:error, String.t()}
+  defp check_job_conflict(%{conflict?: true}),
+    do:
+      {:error,
+       "A clone is already in progress for this assistant. Please try again in a few minutes"}
+
+  defp check_job_conflict(_job), do: :ok
 
   @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
   defp mark_clone_in_progress(assistant) do

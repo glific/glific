@@ -92,6 +92,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         %Oban.Job{
           args: %{
             "assistant_id" => assistant_id,
+            "version_id" => _version_id,
             "organization_id" => organization_id,
             "is_legacy" => true
           },
