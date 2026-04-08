@@ -141,7 +141,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
              kaapi_uuid,
              kaapi_config_version
            ) do
-      update_clone_status(assistant, "")
+      update_clone_status(assistant, "completed")
 
       send_clone_notification(
         organization_id,
