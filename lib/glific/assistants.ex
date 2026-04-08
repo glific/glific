@@ -234,7 +234,8 @@ defmodule Glific.Assistants do
       clone_status: assistant.clone_status,
       vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
-      updated_at: assistant.updated_at
+      updated_at: assistant.updated_at,
+      active_config_version_id: assistant.active_config_version_id
     }
   end
 
@@ -382,20 +383,77 @@ defmodule Glific.Assistants do
   into a new assistant record.
   """
   @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def clone_assistant(id) do
+  @spec clone_assistant(non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  def clone_assistant(id, version_id \\ nil) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         {:ok, _job} <-
-           AssistantCloneWorker.new(%{
-             assistant_id: assistant.id,
-             organization_id: assistant.organization_id
-           })
-           |> Oban.insert(),
-         {:ok, _assistant} <-
-           assistant
-           |> Ecto.Changeset.change(%{clone_status: "in_progress"})
-           |> Repo.update() do
+         assistant <-
+           Repo.preload(assistant, active_config_version: :knowledge_base_versions) do
+      if legacy_assistant?(assistant) do
+        enqueue_legacy_clone(assistant)
+      else
+        enqueue_non_legacy_clone(assistant, version_id)
+      end
+    end
+  end
+
+  @spec legacy_assistant?(Assistant.t()) :: boolean()
+  defp legacy_assistant?(assistant) do
+    case assistant.active_config_version.knowledge_base_versions do
+      [%KnowledgeBaseVersion{kaapi_job_id: nil} | _] -> true
+      _ -> false
+    end
+  end
+
+  @spec enqueue_legacy_clone(Assistant.t()) :: {:ok, map()} | {:error, any()}
+  defp enqueue_legacy_clone(assistant) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: assistant.active_config_version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: true
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
       {:ok, %{message: "Assistant clone initiated"}}
     end
+  end
+
+  @spec enqueue_non_legacy_clone(Assistant.t(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  defp enqueue_non_legacy_clone(_assistant, nil),
+    do: {:error, "version_id is required to clone a non-legacy assistant"}
+
+  defp enqueue_non_legacy_clone(assistant, version_id) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: false
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
+      {:ok, %{message: "Assistant clone initiated"}}
+    end
+  end
+
+  @spec check_job_conflict(Oban.Job.t()) :: :ok | {:error, String.t()}
+  defp check_job_conflict(%{conflict?: true}),
+    do:
+      {:error,
+       "A clone is already in progress for this assistant. Please try again in a few minutes"}
+
+  defp check_job_conflict(_job), do: :ok
+
+  @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
+  defp mark_clone_in_progress(assistant) do
+    assistant
+    |> Ecto.Changeset.change(%{clone_status: "in_progress"})
+    |> Repo.update()
   end
 
   @doc """
