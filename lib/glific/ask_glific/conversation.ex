@@ -1,6 +1,6 @@
-defmodule Glific.AskmeBot.Conversation do
+defmodule Glific.AskGlific.Conversation do
   @moduledoc """
-  Schema for storing AskMe Bot conversations.
+  Schema for storing AskGlific conversations.
   """
 
   use Ecto.Schema
@@ -25,7 +25,7 @@ defmodule Glific.AskmeBot.Conversation do
           updated_at: :utc_datetime | nil
         }
 
-  schema "askme_bot_conversations" do
+  schema "ask_glific_conversations" do
     field :conversation_id, :string
 
     belongs_to :user, User

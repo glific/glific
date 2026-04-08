@@ -1,22 +1,22 @@
-defmodule Glific.AskmeBot do
+defmodule Glific.AskGlific do
   @moduledoc """
-  Glific AskMeBot context module for business logic.
+  Glific AskGlific context module for business logic.
   """
 
   import Ecto.Query, warn: false
 
-  alias Glific.AskmeBot.Conversation
+  alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
 
   @doc """
-  Calls the Dify chat-messages API and fetches the answer for AskMe bot.
+  Calls the Dify chat-messages API and fetches the answer for AskGlific bot.
   Supports conversation history via conversation_id.
   """
-  @spec askme(map(), map()) ::
+  @spec ask(map(), map()) ::
           {:ok, map()} | {:error, String.t()}
-  def askme(params, user) do
-    Glific.Metrics.increment("AskMeBot Requests")
+  def ask(params, user) do
+    Glific.Metrics.increment("AskGlific Requests")
 
     query = Map.get(params, :query)
     conversation_id = Map.get(params, :conversation_id, "")
