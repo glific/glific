@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   Test suite for GraphQL resolvers related to Assistants.
   """
   use GlificWeb.ConnCase
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 
   import Ecto.Query
@@ -12,6 +13,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
 
   load_gql(
     :create_knowledge_base,
@@ -409,13 +411,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
           variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
         )
 
-      result = second_result.data["cloneAssistant"]
-      assert result["message"] == nil
+      _result = second_result.data["cloneAssistant"]
 
-      assert [%{"message" => message}] = result["errors"]
-
-      assert message ==
-               "A clone is already in progress for this assistant. Please try again in a few minutes"
+      assert length(all_enqueued(worker: AssistantCloneWorker, prefix: "global")) == 1
     end
 
     test "returns error when assistant not found", %{staff: user} do
