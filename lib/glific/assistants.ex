@@ -161,7 +161,7 @@ defmodule Glific.Assistants do
   def list_assistants(args) do
     assistants =
       args
-      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
       |> Repo.all()
       |> preload_assistant_associations()
 
@@ -174,8 +174,34 @@ defmodule Glific.Assistants do
   @spec count_assistants(map()) :: integer()
   def count_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, nil, &Repo.filter_with/2)
+    |> Repo.list_filter_query(Assistant, nil, &filter_with/2)
     |> Repo.aggregate(:count)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    # When assistant_id is present, skip the name filter from Repo.filter_with so we can
+    # apply OR logic (name OR assistant_display_id) instead of AND.
+    base_filter =
+      if Map.has_key?(filter, :assistant_id),
+        do: Map.drop(filter, [:name]),
+        else: filter
+
+    query = Repo.filter_with(query, base_filter)
+
+    Enum.reduce(filter, query, fn
+      {:assistant_id, assistant_id}, query ->
+        name_term = Map.get(filter, :name, assistant_id)
+        name_pattern = "%#{name_term}%"
+        id_pattern = "%#{assistant_id}%"
+
+        from(a in query,
+          where: ilike(a.name, ^name_pattern) or ilike(a.assistant_display_id, ^id_pattern)
+        )
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """

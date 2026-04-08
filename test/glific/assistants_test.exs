@@ -1718,6 +1718,110 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "list_assistants/1" do
+    setup do
+      organization_id = 1
+
+      {:ok, assistant1} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Alpha Assistant",
+          organization_id: organization_id,
+          assistant_display_id: "asst_alpha000000000000000001"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant1.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant1} =
+        assistant1
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version1.id
+        })
+        |> Repo.update()
+
+      {:ok, assistant2} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Beta Assistant",
+          organization_id: organization_id,
+          assistant_display_id: "asst_beta0000000000000000001"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version2} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant2.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a beta assistant",
+          settings: %{"temperature" => 0.5},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant2} =
+        assistant2
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version2.id
+        })
+        |> Repo.update()
+
+      Partners.organization(organization_id)
+
+      %{assistant1: assistant1, assistant2: assistant2}
+    end
+
+    test "returns all assistants when no filter is given" do
+      results = Assistants.list_assistants(%{})
+      names = Enum.map(results, & &1.name)
+      assert "Alpha Assistant" in names
+      assert "Beta Assistant" in names
+    end
+
+    test "filters by name only" do
+      results = Assistants.list_assistants(%{filter: %{name: "Alpha"}})
+      assert length(results) == 1
+      assert hd(results).name == "Alpha Assistant"
+    end
+
+    test "filters by assistant_id matching assistant_display_id" do
+      results = Assistants.list_assistants(%{filter: %{assistant_id: "asst_beta"}})
+      assert length(results) == 1
+      assert hd(results).name == "Beta Assistant"
+    end
+
+    test "filters with OR logic when both name and assistant_id are provided" do
+      # name matches assistant1, assistant_id matches assistant2 — should return both
+      results =
+        Assistants.list_assistants(%{
+          filter: %{name: "Alpha", assistant_id: "asst_beta"}
+        })
+
+      names = Enum.map(results, & &1.name)
+      assert "Alpha Assistant" in names
+      assert "Beta Assistant" in names
+    end
+
+    test "returns empty list when no assistant matches" do
+      results = Assistants.list_assistants(%{filter: %{assistant_id: "asst_nonexistent_xyz"}})
+      assert results == []
+    end
+  end
+
   describe "delete_assistant/1" do
     test "deletes assistant with kaapi_uuid ",
          %{organization_id: organization_id} do
