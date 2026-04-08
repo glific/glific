@@ -1,5 +1,5 @@
-mutation askme_bot($input: AskmeBotInput!) {
-    askmeBot(input: $input) {
+mutation askme_bot($input: AskGlificInput!) {
+    askGlific(input: $input) {
         answer
         conversationId
         conversationName

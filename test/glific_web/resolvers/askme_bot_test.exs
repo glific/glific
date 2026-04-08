@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.AskmeBot.Conversation
+  alias Glific.AskGlific.Conversation
   alias Glific.Repo
 
   load_gql(
@@ -75,7 +75,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
           }
         )
 
-      result = get_in(query_data, [:data, "askmeBot"])
+      result = get_in(query_data, [:data, "askGlific"])
       assert result["answer"] == "Glific is great!"
       assert result["conversationId"] == "conv-gql-123"
       assert result["conversationName"] == "About Glific"
@@ -119,7 +119,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
           }
         )
 
-      result = get_in(query_data, [:data, "askmeBot"])
+      result = get_in(query_data, [:data, "askGlific"])
       assert result["answer"] == "More details here."
       assert result["conversationName"] == nil
     end
@@ -208,7 +208,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
           variables: %{"conversationId" => "conv-msg-123", "limit" => 50}
         )
 
-      result = get_in(query_data, [:data, "askmeBotMessages"])
+      result = get_in(query_data, [:data, "askGlificMessages"])
       messages = result["messages"]
       assert length(messages) == 1
       assert hd(messages)["id"] == "msg-001"
@@ -249,7 +249,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
           }
         )
 
-      result = get_in(query_data, [:data, "askmeBotMessages"])
+      result = get_in(query_data, [:data, "askGlificMessages"])
       assert result["messages"] == []
       assert result["hasMore"] == false
     end

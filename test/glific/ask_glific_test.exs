@@ -86,7 +86,7 @@ defmodule Glific.AskGlificTest do
     |> Repo.insert!()
   end
 
-  describe "askme/2" do
+  describe "ask/2" do
     test "returns answer and conversation_id on success", %{user: user} do
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, @dify_success_response)
@@ -112,7 +112,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_name == "What is Glific"
     end
 
@@ -123,7 +123,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "Tell me more", conversation_id: "conv-abc-123"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_name == nil
     end
 
@@ -171,7 +171,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:error, error} = AskmeBot.askme(params, user)
+      assert {:error, error} = AskGlific.ask(params, user)
       assert error =~ "Dify API error"
     end
 
@@ -182,7 +182,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.answer == ""
     end
 
@@ -193,7 +193,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "Hi"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_id == ""
     end
 
@@ -212,7 +212,7 @@ defmodule Glific.AskGlificTest do
 
       params = %{query: "What is Glific?"}
 
-      assert {:ok, result} = AskmeBot.askme(params, user)
+      assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_name == nil
     end
   end
@@ -223,7 +223,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, @dify_conversations_response)
       end)
 
-      assert {:ok, result} = AskmeBot.get_conversations(user)
+      assert {:ok, result} = AskGlific.get_conversations(user)
       assert length(result.conversations) == 2
       assert hd(result.conversations).id == "conv-abc-123"
       assert hd(result.conversations).name == "What is Glific"
@@ -234,7 +234,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, @dify_conversations_response)
       end)
 
-      assert {:ok, result} = AskmeBot.get_conversations(user)
+      assert {:ok, result} = AskGlific.get_conversations(user)
       conv = hd(result.conversations)
       assert conv.status == "normal"
       assert conv.created_at == 1_700_000_000
@@ -246,7 +246,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, @dify_conversations_response)
       end)
 
-      assert {:ok, result} = AskmeBot.get_conversations(user)
+      assert {:ok, result} = AskGlific.get_conversations(user)
       assert result.has_more == false
       assert result.limit == 20
     end
@@ -256,7 +256,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 20})
       end)
 
-      assert {:ok, result} = AskmeBot.get_conversations(user)
+      assert {:ok, result} = AskGlific.get_conversations(user)
       assert result.conversations == []
     end
 
@@ -269,7 +269,7 @@ defmodule Glific.AskGlificTest do
       end)
 
       assert {:ok, _result} =
-               AskmeBot.get_conversations(user, %{limit: 5, last_id: "conv-xyz"})
+               AskGlific.get_conversations(user, %{limit: 5, last_id: "conv-xyz"})
     end
 
     test "sends correct user identifier to Dify", %{user: user} do
@@ -279,7 +279,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 20})
       end)
 
-      assert {:ok, _result} = AskmeBot.get_conversations(user)
+      assert {:ok, _result} = AskGlific.get_conversations(user)
     end
 
     test "returns error on Dify API failure", %{user: user} do
@@ -289,7 +289,7 @@ defmodule Glific.AskGlificTest do
         |> Req.Test.json(%{"error" => "Server error"})
       end)
 
-      assert {:error, error} = AskmeBot.get_conversations(user)
+      assert {:error, error} = AskGlific.get_conversations(user)
       assert error =~ "Dify API error"
     end
   end
@@ -302,7 +302,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, @dify_messages_response)
       end)
 
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
+      assert {:ok, result} = AskGlific.get_messages("conv-abc-123", user)
       assert length(result.messages) == 2
 
       first = hd(result.messages)
@@ -323,12 +323,12 @@ defmodule Glific.AskGlificTest do
       insert_conversation("conv-abc-123", other_user)
 
       assert {:error, "Conversation not found"} =
-               AskmeBot.get_messages("conv-abc-123", user)
+               AskGlific.get_messages("conv-abc-123", user)
     end
 
     test "returns error for non-existent conversation", %{user: user} do
       assert {:error, "Conversation not found"} =
-               AskmeBot.get_messages("non-existent", user)
+               AskGlific.get_messages("non-existent", user)
     end
 
     test "returns has_more and limit from Dify response", %{user: user} do
@@ -338,7 +338,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, @dify_messages_response)
       end)
 
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
+      assert {:ok, result} = AskGlific.get_messages("conv-abc-123", user)
       assert result.has_more == false
       assert result.limit == 20
     end
@@ -354,7 +354,7 @@ defmodule Glific.AskGlificTest do
       end)
 
       assert {:ok, _result} =
-               AskmeBot.get_messages("conv-abc-123", user, %{limit: 10, first_id: "msg-050"})
+               AskGlific.get_messages("conv-abc-123", user, %{limit: 10, first_id: "msg-050"})
     end
 
     test "returns error on Dify API failure", %{user: user} do
@@ -366,7 +366,7 @@ defmodule Glific.AskGlificTest do
         |> Req.Test.json(%{"error" => "Server error"})
       end)
 
-      assert {:error, error} = AskmeBot.get_messages("conv-abc-123", user)
+      assert {:error, error} = AskGlific.get_messages("conv-abc-123", user)
       assert error =~ "Dify API error"
     end
 
@@ -377,7 +377,7 @@ defmodule Glific.AskGlificTest do
         Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 20})
       end)
 
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
+      assert {:ok, result} = AskGlific.get_messages("conv-abc-123", user)
       assert result.messages == []
     end
 
@@ -400,119 +400,7 @@ defmodule Glific.AskGlificTest do
         })
       end)
 
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
-      assert length(result.messages) == 1
-      assert result.has_more == true
-    end
-  end
-
-  describe "get_messages/3" do
-    test "returns messages for an owned conversation", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, @dify_messages_response)
-      end)
-
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
-      assert length(result.messages) == 2
-
-      first = hd(result.messages)
-      assert first.id == "msg-001"
-      assert first.query == "What is Glific?"
-      assert first.answer == "Glific is a two-way communication platform."
-      assert first.conversation_id == "conv-abc-123"
-      assert first.created_at == 1_700_000_100
-    end
-
-    test "returns error for conversation not owned by user", %{user: user} do
-      other_user =
-        Glific.Fixtures.user_fixture(%{
-          name: "Other User",
-          roles: ["staff"]
-        })
-
-      insert_conversation("conv-abc-123", other_user)
-
-      assert {:error, "Conversation not found"} =
-               AskmeBot.get_messages("conv-abc-123", user)
-    end
-
-    test "returns error for non-existent conversation", %{user: user} do
-      assert {:error, "Conversation not found"} =
-               AskmeBot.get_messages("non-existent", user)
-    end
-
-    test "returns has_more and limit from Dify response", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, @dify_messages_response)
-      end)
-
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
-      assert result.has_more == false
-      assert result.limit == 20
-    end
-
-    test "passes limit and first_id params to Dify", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        params = conn.params
-        assert params["limit"] == "10"
-        assert params["first_id"] == "msg-050"
-        Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 10})
-      end)
-
-      assert {:ok, _result} =
-               AskmeBot.get_messages("conv-abc-123", user, %{limit: 10, first_id: "msg-050"})
-    end
-
-    test "returns error on Dify API failure", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        conn
-        |> Plug.Conn.put_status(500)
-        |> Req.Test.json(%{"error" => "Server error"})
-      end)
-
-      assert {:error, error} = AskmeBot.get_messages("conv-abc-123", user)
-      assert error =~ "Dify API error"
-    end
-
-    test "handles empty message list", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{"data" => [], "has_more" => false, "limit" => 20})
-      end)
-
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
-      assert result.messages == []
-    end
-
-    test "handles messages with has_more true for pagination", %{user: user} do
-      insert_conversation("conv-abc-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{
-          "data" => [
-            %{
-              "id" => "msg-001",
-              "conversation_id" => "conv-abc-123",
-              "query" => "Q1",
-              "answer" => "A1",
-              "created_at" => 1_700_000_100
-            }
-          ],
-          "has_more" => true,
-          "limit" => 1
-        })
-      end)
-
-      assert {:ok, result} = AskmeBot.get_messages("conv-abc-123", user)
+      assert {:ok, result} = AskGlific.get_messages("conv-abc-123", user)
       assert length(result.messages) == 1
       assert result.has_more == true
     end
