@@ -1819,4 +1819,62 @@ defmodule Glific.ContactsTest do
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
     end
   end
+
+  describe "import_contacts with invisible Unicode characters" do
+    test "import_contact/3 strips invisible Unicode characters from phone numbers" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+
+      data =
+        "name,phone,Language,opt_in\nunicode_test,\u200F+91\u200B9989329297,english,2021-03-09 12:34:25\n"
+
+      [organization | _] = Partners.list_organizations()
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data
+      )
+
+      assert_enqueued(worker: ImportWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+
+      count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
+      assert count == 1
+    end
+
+    test "import_contact/3 does not create duplicate when same number has Unicode characters" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:admin])
+      [organization | _] = Partners.list_organizations()
+
+      data1 =
+        "name,phone,Language,opt_in\nclean_contact,+919876543210,english,2021-03-09 12:34:25\n"
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data1
+      )
+
+      Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+
+      data2 =
+        "name,phone,Language,opt_in\nunicode_contact,\u200E+919876543210\u200F,english,2021-03-09 12:34:25\n"
+
+      Import.import_contacts(
+        organization.id,
+        %{user: user, collection: "collection", type: :import_contact},
+        data: data2
+      )
+
+      Oban.drain_queue(queue: :contact_import, with_scheduled: true)
+
+      # Should still be only 1 contact, not duplicated
+      count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
+      assert count == 1
+    end
+  end
 end
