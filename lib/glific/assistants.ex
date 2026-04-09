@@ -598,7 +598,6 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-
       organization = Partners.organization(kaapi_config.organization_id)
 
       attrs =
@@ -1163,16 +1162,23 @@ defmodule Glific.Assistants do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version.version
 
-        assistant
-        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-        |> Repo.update()
-
-        config_version
-        |> AssistantConfigVersion.changeset(%{
-          status: :ready,
-          kaapi_version_number: kaapi_version_number
-        })
-        |> Repo.update()
+        Multi.new()
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{kaapi_uuid: kaapi_response.data.id})
+        )
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
+        )
+        |> Repo.transaction()
+        |> case do
+          {:ok, %{config_version: updated_config_version}} -> {:ok, updated_config_version}
+          {:error, _failed_op, changeset, _} -> {:error, changeset}
+        end
 
       {:error, reason} ->
         Logger.error(
