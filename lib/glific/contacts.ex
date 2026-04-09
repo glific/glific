@@ -1091,6 +1091,11 @@ defmodule Glific.Contacts do
   """
   @spec parse_phone_number(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def parse_phone_number(phone) do
+    phone =
+      phone
+      |> sanitize_phone_number()
+      |> String.trim()
+
     phone_with_plus =
       if String.starts_with?(phone, "+"), do: phone, else: "+#{phone}"
 
@@ -1105,5 +1110,10 @@ defmodule Glific.Contacts do
         {:error,
          "Phone number is not valid. Please enter the phone number with country code, without the + symbol."}
     end
+  end
+
+  @spec sanitize_phone_number(String.t()) :: String.t()
+  defp sanitize_phone_number(phone) do
+    String.replace(phone, ~r/[^\d+]/, "")
   end
 end
