@@ -41,7 +41,7 @@ defmodule GlificWeb.Resolvers.Assistants do
   """
   @spec clone_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
-  def clone_assistant(_, %{id: id}, _) do
-    Assistants.clone_assistant(id)
+  def clone_assistant(_, %{id: id} = args, _) do
+    Assistants.clone_assistant(id, Map.get(args, :version_id))
   end
 end

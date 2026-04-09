@@ -100,6 +100,26 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
+  List all config versions for a given assistant.
+  """
+  @spec list_assistant_versions(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(map())} | {:error, any()}
+  def list_assistant_versions(_, %{assistant_id: assistant_id}, _) do
+    Assistants.list_assistant_config_versions(assistant_id)
+  end
+
+  @doc """
+  Set a specific config version as the live (active) version for an assistant.
+  """
+  @spec set_live_version(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
+  def set_live_version(_, %{assistant_id: assistant_id, version_id: version_id}, _) do
+    with {:ok, result} <- Assistants.set_live_version(assistant_id, version_id) do
+      {:ok, %{assistant: result}}
+    end
+  end
+
+  @doc """
   Return the details of the files in a VectorStore.
   Handles both unified API (map) and legacy (VectorStore struct) data.
   """

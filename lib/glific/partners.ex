@@ -585,6 +585,7 @@ defmodule Glific.Partners do
       |> Flags.set_is_whatsapp_forms_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:unified_api_enabled)
+      |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1371,7 +1372,9 @@ defmodule Glific.Partners do
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "unified_api_enabled" => Flags.get_flag_enabled(:unified_api_enabled, organization),
-      "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization)
+      "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
+      "assistant_config_versions_enabled" =>
+        Flags.get_assistant_config_versions_enabled(organization)
     }
   end
 
