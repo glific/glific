@@ -180,31 +180,17 @@ defmodule Glific.Assistants do
 
   @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    assistant_id = filter[:assistant_id]
-    name = filter[:name]
+    query = Repo.filter_with(query, filter)
 
-    # Only apply OR logic when assistant_id is a non-blank string; otherwise let
-    # Repo.filter_with handle the name filter normally (or skip it if blank).
-    has_assistant_id? = not is_nil(assistant_id) and assistant_id != ""
+    Enum.reduce(filter, query, fn
+      {:name_or_assistant_id, term}, query ->
+        from(a in query,
+          where: ilike(a.name, ^"%#{term}%") or ilike(a.assistant_display_id, ^"%#{term}%")
+        )
 
-    base_filter =
-      if has_assistant_id?,
-        do: Map.drop(filter, [:name]),
-        else: filter
-
-    query = Repo.filter_with(query, base_filter)
-
-    if has_assistant_id? do
-      name_term = if not is_nil(name) and name != "", do: name, else: assistant_id
-      name_pattern = "%#{name_term}%"
-      id_pattern = "%#{assistant_id}%"
-
-      from(a in query,
-        where: ilike(a.name, ^name_pattern) or ilike(a.assistant_display_id, ^id_pattern)
-      )
-    else
-      query
-    end
+      _, query ->
+        query
+    end)
   end
 
   @doc """

@@ -1798,26 +1798,29 @@ defmodule Glific.AssistantsTest do
       assert hd(results).name == "Alpha Assistant"
     end
 
-    test "filters by assistant_id matching assistant_display_id" do
-      results = Assistants.list_assistants(%{filter: %{assistant_id: "asst_beta"}})
+    test "filters by name_or_assistant_id matching name" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "Alpha"}})
+      assert length(results) == 1
+      assert hd(results).name == "Alpha Assistant"
+    end
+
+    test "filters by name_or_assistant_id matching assistant_display_id" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "asst_beta"}})
       assert length(results) == 1
       assert hd(results).name == "Beta Assistant"
     end
 
-    test "filters with OR logic when both name and assistant_id are provided" do
-      # name matches assistant1, assistant_id matches assistant2 — should return both
-      results =
-        Assistants.list_assistants(%{
-          filter: %{name: "Alpha", assistant_id: "asst_beta"}
-        })
-
+    test "filters by name_or_assistant_id returns all matches across both fields" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "Assistant"}})
       names = Enum.map(results, & &1.name)
       assert "Alpha Assistant" in names
       assert "Beta Assistant" in names
     end
 
-    test "returns empty list when no assistant matches" do
-      results = Assistants.list_assistants(%{filter: %{assistant_id: "asst_nonexistent_xyz"}})
+    test "returns empty list when no assistant matches name_or_assistant_id" do
+      results =
+        Assistants.list_assistants(%{filter: %{name_or_assistant_id: "asst_nonexistent_xyz"}})
+
       assert results == []
     end
   end
