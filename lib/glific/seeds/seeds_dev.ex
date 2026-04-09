@@ -52,7 +52,7 @@ if Code.ensure_loaded?(Faker) do
     alias Faker.Lorem.Shakespeare
 
     @doc false
-    @spec seed_kaapi_credential(Organization.t() | nil) :: :ok
+    @spec seed_kaapi_credential(Organization.t() | nil) :: :ok | {:error, String.t()}
     def seed_kaapi_credential(organization \\ nil) do
       organization = get_organization(organization)
       Repo.put_organization_id(organization.id)
@@ -67,36 +67,63 @@ if Code.ensure_loaded?(Faker) do
         Logger.info("Skipping Kaapi credential seed: KAAPI_API_KEY not set")
         :ok
       else
-        case Repo.fetch_by(Provider, %{shortcode: "kaapi"}) do
-          {:ok, _provider} ->
-            upsert_kaapi_credential(organization.id, api_key)
-            :ok
-
-          {:error, _reason} ->
+        with {:ok, _provider} <- Repo.fetch_by(Provider, %{shortcode: "kaapi"}),
+             {:ok, _credential} <- upsert_kaapi_credential(organization.id, api_key) do
+          :ok
+        else
+          {:error, reasons} when is_list(reasons) ->
             Logger.info("Skipping Kaapi credential seed: provider kaapi not found")
             :ok
+
+          {:error, _} = logged ->
+            logged
         end
       end
     end
 
+    @spec upsert_kaapi_credential(integer(), String.t()) ::
+            {:ok, Partners.Credential.t()} | {:error, String.t()}
     defp upsert_kaapi_credential(organization_id, api_key) do
+      attrs = %{secrets: %{"api_key" => api_key}, is_active: true}
+
       case Partners.get_credential(%{organization_id: organization_id, shortcode: "kaapi"}) do
         {:ok, credential} ->
-          Partners.update_credential(credential, %{
-            secrets: %{"api_key" => api_key},
-            is_active: true
-          })
+          case Partners.update_credential(credential, attrs) do
+            {:ok, updated} ->
+              {:ok, updated}
+
+            {:error, reason} ->
+              message =
+                "Kaapi credential seed: update failed: #{inspect_credential_error(reason)}"
+
+              Glific.log_error(message)
+          end
 
         {:error, _reason} ->
-          Partners.create_credential(%{
+          create_attrs = %{
             organization_id: organization_id,
             shortcode: "kaapi",
             keys: %{},
             secrets: %{"api_key" => api_key},
             is_active: true
-          })
+          }
+
+          case Partners.create_credential(create_attrs) do
+            {:ok, created} ->
+              {:ok, created}
+
+            {:error, reason} ->
+              message =
+                "Kaapi credential seed: create failed: #{inspect_credential_error(reason)}"
+
+              Glific.log_error(message)
+          end
       end
     end
+
+    defp inspect_credential_error(%Ecto.Changeset{} = changeset), do: inspect(changeset.errors)
+
+    defp inspect_credential_error(other), do: inspect(other)
 
     @doc """
     Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.

@@ -598,7 +598,6 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-
       organization = Partners.organization(kaapi_config.organization_id)
 
       attrs =

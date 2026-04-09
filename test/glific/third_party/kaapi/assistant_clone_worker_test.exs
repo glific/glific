@@ -202,7 +202,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         refreshed = Repo.get!(Assistant, assistant.id)
         assert refreshed.clone_status == "completed"
 
-        notification = Repo.one(from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1)
+        notification =
+          Repo.one(from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1)
+
         assert notification.message =~ "cloned successfully"
       end
     end
@@ -278,11 +280,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         refreshed = Repo.get!(Assistant, assistant.id)
         assert refreshed.clone_status == "failed"
 
-        notif = Glific.Repo.one(
-          from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1
-        )
-        assert notif.message =~ "Assistant cloning failed"
+        notif =
+          Glific.Repo.one(
+            from n in Glific.Notifications.Notification, order_by: [desc: n.id], limit: 1
+          )
 
+        assert notif.message =~ "Assistant cloning failed"
       end
     end
 
