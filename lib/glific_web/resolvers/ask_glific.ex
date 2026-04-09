@@ -21,14 +21,14 @@ defmodule GlificWeb.Resolvers.AskGlific do
           Communications.publish_data(
             result,
             :ask_glific_response,
-            Integer.to_string(user.organization_id)
+            user.organization_id
           )
 
         {:error, reason} ->
           Communications.publish_data(
             %{answer: nil, conversation_id: nil, errors: [%{key: "error", message: reason}]},
             :ask_glific_response,
-            Integer.to_string(user.organization_id)
+            user.organization_id
           )
       end
     end)
