@@ -535,7 +535,7 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
 
       assert count == 1
     end
@@ -560,9 +560,9 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{phone: "+919989329297"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "919989329297"}})
 
-      {:ok, contact} = Repo.fetch_by(Contact, phone: "+919989329297")
+      {:ok, contact} = Repo.fetch_by(Contact, phone: "919989329297")
 
       current_date = NaiveDateTime.utc_now()
       assert NaiveDateTime.diff(contact.optin_time, current_date) in -5..5
@@ -1564,7 +1564,7 @@ defmodule Glific.ContactsTest do
       assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
-      count = Contacts.count_contacts(%{filter: %{phone: "+919876543210"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "919876543210"}})
       assert count == 1
     end
 
