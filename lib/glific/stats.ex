@@ -107,7 +107,15 @@ defmodule Glific.Stats do
   defp do_generate_stats(org_id_list, opts) do
     # lets shift the time by an hour if we are in charge of generating it
     # since this is when the cron job is triggered, in the next hour
-    time = Keyword.get(opts, :time, Timex.shift(DateTime.utc_now(), hours: -1))
+    time =
+      Keyword.get(
+        opts,
+        :time,
+        Timex.shift(DateTime.utc_now(), hours: -1)
+      )
+      |> DateTime.truncate(:second)
+      |> Map.put(:minute, 0)
+      |> Map.put(:second, 0)
 
     opts =
       opts
@@ -239,8 +247,8 @@ defmodule Glific.Stats do
     # check if we should emit hourly stats
     if Keyword.get(opts, :hour, true) do
       time = Keyword.get(opts, :time)
-      start = %{time | minute: 0, second: 0}
-      finish = %{time | minute: 59, second: 59}
+      start = time
+      finish = Timex.shift(start, hours: 1)
 
       stats
       |> get_periodic_stats(org_id_list, {{:hour, start}, start, finish})
@@ -257,7 +265,7 @@ defmodule Glific.Stats do
 
     if Keyword.get(opts, :day, true) && daily?(time) do
       start = Timex.beginning_of_day(time)
-      finish = Timex.end_of_day(time)
+      finish = Timex.shift(start, days: 1)
 
       stats
       |> get_periodic_stats(org_id_list, {{:day, date}, start, finish})
@@ -274,7 +282,7 @@ defmodule Glific.Stats do
 
     if Keyword.get(opts, :week, true) && weekly?(time, date) do
       start = Timex.beginning_of_week(time)
-      finish = Timex.end_of_week(time)
+      finish = Timex.shift(start, weeks: 1)
       summary = Keyword.get(opts, :summary, true)
 
       if(summary,
@@ -326,7 +334,7 @@ defmodule Glific.Stats do
 
     if Keyword.get(opts, :month, true) && monthly?(time, date) do
       start = Timex.beginning_of_month(time)
-      finish = Timex.end_of_month(time)
+      finish = Timex.shift(start, months: 1)
       summary = Keyword.get(opts, :summary, true)
 
       if(summary,
@@ -356,7 +364,7 @@ defmodule Glific.Stats do
         else:
           query
           |> where([c], c.last_message_at >= ^start)
-          |> where([c], c.last_message_at <= ^finish)
+          |> where([c], c.last_message_at < ^finish)
 
     # Get the contacts who came today irrespective of whether they are active/opted in or not
     contacts_created_query =
@@ -365,7 +373,7 @@ defmodule Glific.Stats do
         else:
           query
           |> where([c], c.inserted_at >= ^start)
-          |> where([c], c.inserted_at <= ^finish)
+          |> where([c], c.inserted_at < ^finish)
 
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
@@ -396,7 +404,7 @@ defmodule Glific.Stats do
         else:
           query
           |> where([m], m.inserted_at >= ^start)
-          |> where([m], m.inserted_at <= ^finish)
+          |> where([m], m.inserted_at < ^finish)
 
     inbound = time_query |> where([m], m.flow == :inbound)
     outbound = time_query |> where([m], m.flow == :outbound)
@@ -425,7 +433,7 @@ defmodule Glific.Stats do
         else:
           query
           |> where([c], c.inserted_at >= ^start)
-          |> where([c], c.inserted_at <= ^finish)
+          |> where([c], c.inserted_at < ^finish)
 
     stats
     |> make_result(time_query, period_date, :conversations)
@@ -444,12 +452,12 @@ defmodule Glific.Stats do
     flows_started =
       query
       |> where([fc], fc.inserted_at >= ^start)
-      |> where([fc], fc.inserted_at <= ^finish)
+      |> where([fc], fc.inserted_at < ^finish)
 
     flows_completed =
       query
       |> where([fc], fc.completed_at >= ^start)
-      |> where([fc], fc.completed_at <= ^finish)
+      |> where([fc], fc.completed_at < ^finish)
 
     stats
     |> make_result(flows_started, period_date, :flows_started)
@@ -461,7 +469,7 @@ defmodule Glific.Stats do
     query =
       User
       |> where([u], u.organization_id in ^org_id_list)
-      |> group_by([u], u.id)
+      |> group_by([u], u.organization_id)
       |> select([u], [count(u.id), u.organization_id])
 
     {period, _date} = period_date
@@ -472,7 +480,7 @@ defmodule Glific.Stats do
         else:
           query
           |> where([u], u.last_login_at >= ^start)
-          |> where([u], u.last_login_at <= ^finish)
+          |> where([u], u.last_login_at < ^finish)
 
     stats
     |> make_result(time_query, period_date, :users)
