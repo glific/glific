@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   Test suite for GraphQL resolvers related to Assistants.
   """
   use GlificWeb.ConnCase
+  use Oban.Pro.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 
   import Ecto.Query
@@ -12,6 +13,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
 
   load_gql(
     :create_knowledge_base,
@@ -138,7 +140,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       staff: user,
       organization_id: organization_id
     } do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id)
+      {:ok, {assistant, _config_version}} = create_assistant_with_config_version(organization_id)
 
       assistant_configuration_version_list =
         AssistantConfigVersion
@@ -178,7 +180,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       })
       |> Repo.insert()
 
-    {:ok, _config_version1} =
+    {:ok, _config_version2} =
       %AssistantConfigVersion{}
       |> AssistantConfigVersion.changeset(%{
         assistant_id: assistant.id,
@@ -204,6 +206,31 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       })
       |> Repo.insert()
 
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{name: "Legacy KB", organization_id: organization_id})
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: organization_id,
+        status: :completed,
+        llm_service_id: "vs_legacy_123",
+        size: 100,
+        files: %{}
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: kb_version.id,
+        organization_id: organization_id,
+        inserted_at: now,
+        updated_at: now
+      }
+    ])
+
     {:ok, assistant} =
       assistant
       |> Assistant.set_active_config_version_changeset(%{
@@ -211,7 +238,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       })
       |> Repo.update()
 
-    {:ok, assistant}
+    {:ok, {assistant, config_version}}
   end
 
   load_gql(
@@ -223,11 +250,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   describe "clone_assistant/3" do
     setup :enable_kaapi
 
-    test "initiates clone for an existing assistant", %{
+    test "initiates clone for a legacy assistant", %{
       staff: user,
       organization_id: organization_id
     } do
-      {:ok, assistant} = create_assistant_with_config_version(organization_id, "kaapi_clone_test")
+      {:ok, {assistant, _config_version}} =
+        create_assistant_with_config_version(organization_id, "kaapi_clone_test")
 
       {:ok, query_data} =
         auth_query_gql_by(:clone_assistant, user, variables: %{"id" => assistant.id})
@@ -235,6 +263,157 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       result = query_data.data["cloneAssistant"]
       assert result["message"] == "Assistant clone initiated"
       assert result["errors"] == nil
+    end
+
+    test "initiates clone for a non-legacy assistant with version_id", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Non-Legacy Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_non_legacy_test"
+        })
+        |> Repo.insert()
+
+      {:ok, nl_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Non-Legacy KB",
+          organization_id: organization_id
+        })
+
+      {:ok, nl_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: nl_kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"name" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "kaapi_kb_id_789",
+          kaapi_job_id: "kaapi_job_123",
+          size: 500
+        })
+
+      {:ok, nl_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a non-legacy assistant",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: nl_config_version.id,
+          knowledge_base_version_id: nl_kbv.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: nl_config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "returns error when a clone is already in progress", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Conflict Test Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_conflict_test"
+        })
+        |> Repo.insert()
+
+      {:ok, nl_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Conflict Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, nl_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: nl_kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "kaapi_kb_conflict",
+          kaapi_job_id: "kaapi_job_conflict",
+          size: 100
+        })
+
+      {:ok, nl_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Conflict test prompt",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: nl_config_version.id,
+          knowledge_base_version_id: nl_kbv.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: nl_config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, first_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      assert first_result.data["cloneAssistant"]["message"] == "Assistant clone initiated"
+
+      {:ok, second_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      _result = second_result.data["cloneAssistant"]
+
+      assert length(all_enqueued(worker: AssistantCloneWorker, prefix: "global")) == 1
     end
 
     test "returns error when assistant not found", %{staff: user} do

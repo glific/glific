@@ -13,6 +13,7 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Flags
   alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
@@ -234,7 +235,8 @@ defmodule Glific.Assistants do
       clone_status: assistant.clone_status,
       vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
-      updated_at: assistant.updated_at
+      updated_at: assistant.updated_at,
+      active_config_version_id: assistant.active_config_version_id
     }
   end
 
@@ -382,20 +384,77 @@ defmodule Glific.Assistants do
   into a new assistant record.
   """
   @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def clone_assistant(id) do
+  @spec clone_assistant(non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  def clone_assistant(id, version_id \\ nil) do
     with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
-         {:ok, _job} <-
-           AssistantCloneWorker.new(%{
-             assistant_id: assistant.id,
-             organization_id: assistant.organization_id
-           })
-           |> Oban.insert(),
-         {:ok, _assistant} <-
-           assistant
-           |> Ecto.Changeset.change(%{clone_status: "in_progress"})
-           |> Repo.update() do
+         assistant <-
+           Repo.preload(assistant, active_config_version: :knowledge_base_versions) do
+      if legacy_assistant?(assistant) do
+        enqueue_legacy_clone(assistant)
+      else
+        enqueue_non_legacy_clone(assistant, version_id)
+      end
+    end
+  end
+
+  @spec legacy_assistant?(Assistant.t()) :: boolean()
+  defp legacy_assistant?(assistant) do
+    case assistant.active_config_version.knowledge_base_versions do
+      [%KnowledgeBaseVersion{kaapi_job_id: nil} | _] -> true
+      _ -> false
+    end
+  end
+
+  @spec enqueue_legacy_clone(Assistant.t()) :: {:ok, map()} | {:error, any()}
+  defp enqueue_legacy_clone(assistant) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: assistant.active_config_version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: true
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
       {:ok, %{message: "Assistant clone initiated"}}
     end
+  end
+
+  @spec enqueue_non_legacy_clone(Assistant.t(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  defp enqueue_non_legacy_clone(_assistant, nil),
+    do: {:error, "version_id is required to clone a non-legacy assistant"}
+
+  defp enqueue_non_legacy_clone(assistant, version_id) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: false
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
+      {:ok, %{message: "Assistant clone initiated"}}
+    end
+  end
+
+  @spec check_job_conflict(Oban.Job.t()) :: :ok | {:error, String.t()}
+  defp check_job_conflict(%{conflict?: true}),
+    do:
+      {:error,
+       "A clone is already in progress for this assistant. Please try again in a few minutes"}
+
+  defp check_job_conflict(_job), do: :ok
+
+  @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
+  defp mark_clone_in_progress(assistant) do
+    assistant
+    |> Ecto.Changeset.change(%{clone_status: "in_progress"})
+    |> Repo.update()
   end
 
   @doc """
@@ -539,10 +598,16 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-      Assistant.changeset(assistant, %{
-        name: kaapi_config.name,
-        active_config_version_id: config_version.id
-      })
+      organization = Partners.organization(kaapi_config.organization_id)
+
+      attrs =
+        if Flags.get_assistant_config_versions_enabled(organization) do
+          %{name: kaapi_config.name}
+        else
+          %{name: kaapi_config.name, active_config_version_id: config_version.id}
+        end
+
+      Assistant.changeset(assistant, attrs)
     end)
     |> Repo.transaction()
     |> handle_update_transaction_result()
@@ -1085,70 +1150,84 @@ defmodule Glific.Assistants do
       organization_id: assistant.organization_id
     }
 
-    if is_nil(assistant.kaapi_uuid) do
-      case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
-        {:ok, kaapi_response} ->
-          kaapi_version_number = kaapi_response.data.version.version
+    if is_nil(assistant.kaapi_uuid),
+      do: deferred_create_new_assistant(assistant, config_version, kaapi_config),
+      else: deferred_create_new_version(assistant, config_version, kaapi_config)
+  end
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :ready,
-            kaapi_version_number: kaapi_version_number
-          })
-          |> Repo.update()
+  @spec deferred_create_new_assistant(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_assistant(assistant, config_version, kaapi_config) do
+    case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version.version
 
-          assistant
-          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-          |> Repo.update()
+        assistant
+        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
+        |> Repo.update()
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
 
-          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
-      end
-    else
-      case Kaapi.create_config_version(
-             assistant.kaapi_uuid,
-             kaapi_config,
-             assistant.organization_id
-           ) do
-        {:ok, kaapi_response} ->
-          kaapi_version_number = kaapi_response.data.version
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
 
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+    end
+  end
+
+  @spec deferred_create_new_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_version(assistant, config_version, kaapi_config) do
+    case Kaapi.create_config_version(
+           assistant.kaapi_uuid,
+           kaapi_config,
+           assistant.organization_id
+         ) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        organization = Partners.organization(assistant.organization_id)
+
+        unless Flags.get_assistant_config_versions_enabled(organization) do
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()
+        end
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :ready,
-            kaapi_version_number: kaapi_version_number
-          })
-          |> Repo.update()
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
 
-          {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
-      end
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
     end
   end
 
