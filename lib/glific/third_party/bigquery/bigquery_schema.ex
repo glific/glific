@@ -3172,4 +3172,361 @@ defmodule Glific.BigQuery.Schema do
       }
     ]
   end
+
+  @doc """
+  Schema for assistants table
+  """
+  @spec assistant_schema :: list()
+  def assistant_schema do
+    [
+      %{
+        description: "Unique ID for the assistant",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the assistant",
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Description of the assistant",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Kaapi UUID for the assistant",
+        name: "kaapi_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Display ID for the assistant (OpenAI-style)",
+        name: "assistant_display_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Active config version ID",
+        name: "active_config_version_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Clone status of the assistant",
+        name: "clone_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for assistant_config_versions table
+  """
+  @spec assistant_config_version_schema :: list()
+  def assistant_config_version_schema do
+    [
+      %{
+        description: "Unique ID for the config version",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Assistant ID",
+        name: "assistant_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Version number",
+        name: "version_number",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Kaapi version number",
+        name: "kaapi_version_number",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Description of the config version",
+        name: "description",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "System prompt for the assistant",
+        name: "prompt",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "LLM provider",
+        name: "provider",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Model name",
+        name: "model",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Configuration settings (JSON)",
+        name: "settings",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of the config version",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Failure reason if status is failed",
+        name: "failure_reason",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Soft delete timestamp",
+        name: "deleted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for assistant_config_version_knowledge_base_versions join table
+  """
+  @spec assistant_config_version_knowledge_base_version_schema :: list()
+  def assistant_config_version_knowledge_base_version_schema do
+    [
+      %{
+        description: "Unique ID for the join record",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Assistant config version ID",
+        name: "assistant_config_version_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Knowledge base version ID",
+        name: "knowledge_base_version_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for knowledge_bases table
+  """
+  @spec knowledge_base_schema :: list()
+  def knowledge_base_schema do
+    [
+      %{
+        description: "Unique ID for the knowledge base",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the knowledge base",
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for knowledge_base_versions table
+  """
+  @spec knowledge_base_version_schema :: list()
+  def knowledge_base_version_schema do
+    [
+      %{
+        description: "Unique ID for the knowledge base version",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Knowledge base ID",
+        name: "knowledge_base_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Version number",
+        name: "version_number",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Files metadata (JSON)",
+        name: "files",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Total size of files in bytes",
+        name: "size",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of the knowledge base version",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Kaapi job ID",
+        name: "kaapi_job_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "LLM service ID",
+        name: "llm_service_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
 end
