@@ -551,7 +551,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == [non_legacy_knowledge_base_version.id]
 
       refreshed = Repo.get!(Assistant, assistant.id)
-      assert refreshed.clone_status == ""
+      assert refreshed.clone_status == "completed"
     end
 
     test "auto-generates unique name with counter when clone name already exists", %{
@@ -670,7 +670,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == []
 
       refreshed = Repo.get!(Assistant, assistant_without_kb.id)
-      assert refreshed.clone_status == ""
+      assert refreshed.clone_status == "completed"
     end
 
     test "returns error when Kaapi config creation fails", %{
