@@ -373,6 +373,10 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @spec text_to_speech(non_neg_integer(), binary(), binary(), map()) :: %{
+          :success => any(),
+          optional(any()) => any()
+        }
   @doc """
   Initiates async Text-to-Speech via Kaapi unified LLM API.
 

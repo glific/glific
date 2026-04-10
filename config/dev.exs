@@ -49,7 +49,7 @@ config :phoenix, :plug_init_mode, :runtime
 
 config :appsignal, :config,
   otp_app: :glific,
-  active: false,
+  active: true,
   env: :dev
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Local
