@@ -1,0 +1,127 @@
+query chatbotDiagnose($input: ChatbotDiagnoseInput!) {
+  chatbotDiagnose(input: $input) {
+    contactInfo {
+      id
+      name
+      phone
+      status
+      bspStatus
+      optinStatus
+      lastMessageAt
+    }
+    contactHistory {
+      id
+      eventType
+      eventLabel
+      eventMeta
+      insertedAt
+    }
+    messages {
+      id
+      body
+      type
+      flow
+      status
+      insertedAt
+    }
+    flowInfo {
+      id
+      name
+      uuid
+      keywords
+      isActive
+    }
+    flowRevisions {
+      id
+      flowId
+      status
+      version
+      insertedAt
+    }
+    flowContexts {
+      id
+      flowId
+      flowName
+      contactId
+      contactName
+      status
+      isKilled
+      completedAt
+      insertedAt
+    }
+    flowResults {
+      id
+      flowId
+      flowName
+      contactId
+      results
+      insertedAt
+    }
+    notifications {
+      id
+      category
+      message
+      severity
+      insertedAt
+    }
+    triggers {
+      id
+      name
+      flowId
+      flowName
+      isActive
+      insertedAt
+    }
+    obanJobs {
+      id
+      state
+      queue
+      worker
+      attempt
+      insertedAt
+    }
+    groups {
+      id
+      label
+      description
+    }
+    contactGroups {
+      groupId
+      groupLabel
+    }
+    tags {
+      id
+      label
+    }
+    templates {
+      id
+      label
+      body
+      status
+      isHsm
+    }
+    waMessages {
+      id
+      body
+      type
+      status
+      insertedAt
+    }
+    tickets {
+      id
+      body
+      topic
+      status
+      insertedAt
+    }
+    diagnostics {
+      contactOptedIn
+      contactSessionActive
+      contactInActiveFlow
+      flowIsPublished
+      flowIsActive
+      recentErrorCount
+      pendingObanJobs
+    }
+  }
+}

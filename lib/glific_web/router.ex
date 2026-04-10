@@ -73,7 +73,6 @@ defmodule GlificWeb.Router do
     post("/onboard/setup", OnboardController, :setup)
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
-    post "/askme", AskmeController, :ask
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
@@ -124,6 +123,18 @@ defmodule GlificWeb.Router do
     post("/stripe", StripeController, :stripe_webhook)
     post("/flow_resume", Flows.FlowResumeController, :flow_resume_with_results)
     get("/exotel/optin", ExotelController, :optin)
+  end
+
+  pipeline :dify_authenticated do
+    plug(:accepts, ["json"])
+    plug(GlificWeb.DifyAuthPlug)
+  end
+
+  # Dify callback endpoints — authenticated via x-dify-api-key header
+  scope "/dify", GlificWeb do
+    pipe_through(:dify_authenticated)
+
+    post("/chatbot-diagnose", DifyController, :chatbot_diagnose)
   end
 
   # Special routes for Kaapi Callbacks. All callbacks from Kaapi should be handled here.
