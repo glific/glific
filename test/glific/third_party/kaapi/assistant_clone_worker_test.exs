@@ -441,7 +441,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
             if String.contains?(url, "collections/jobs/job_failed_123") do
               %Tesla.Env{
                 status: 200,
-                body: %{data: %{status: "FAILED", collection: nil}}
+                body: %{data: %{status: "FAILED", error_message: "Failed to create collection"}}
               }
             end
         end)
