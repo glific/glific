@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :ask_glific_result do
@@ -41,6 +42,14 @@ defmodule GlificWeb.Schema.AskGlificTypes do
       arg(:input, non_null(:ask_glific_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskGlific.ask/3)
+    end
+  end
+
+  object :ask_glific_subscriptions do
+    field :ask_glific_response, :ask_glific_result do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
     end
   end
 end
