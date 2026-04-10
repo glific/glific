@@ -1,0 +1,13 @@
+query askme_bot_conversations($limit: Int, $lastId: String) {
+    askmeBotConversations(limit: $limit, lastId: $lastId) {
+        conversations {
+            id
+            name
+            status
+            createdAt
+            updatedAt
+        }
+        hasMore
+        limit
+    }
+}

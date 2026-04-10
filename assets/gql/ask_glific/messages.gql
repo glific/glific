@@ -1,0 +1,14 @@
+query askme_bot_messages($conversationId: String!, $limit: Int, $firstId: String) {
+    askGlificMessages(conversationId: $conversationId, limit: $limit, firstId: $firstId) {
+        messages {
+            id
+            conversationId
+            query
+            answer
+            createdAt
+            feedback
+        }
+        hasMore
+        limit
+    }
+}
