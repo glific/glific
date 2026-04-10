@@ -11,13 +11,7 @@ defmodule GlificWeb.Resolvers.AskGlific do
   @spec ask(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
   def ask(_, %{input: params}, %{context: %{current_user: user}}) do
-    case AskGlific.ask(params, user) do
-      {:ok, result} ->
-        {:ok, result}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    AskGlific.ask(params, user)
   end
 
   @doc """
