@@ -21,6 +21,8 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.WAGroup.WaPoll
 
   require Logger
+  @tracer Appsignal.Tracer
+  @span Appsignal.Span
 
   @doc """
   Create a webhook with different signatures along with header, so we can easily implement
@@ -143,30 +145,43 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text", fields, _headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
-    {callback_url, request_metadata} =
-      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+    span_data =
+      base_trace_data(organization_id, flow_id, contact_id, fields["webhook_log_id"], "stt")
 
-    request_metadata = Map.put(request_metadata, :call_type, "stt")
+    with_appsignal_span("Kaapi STT Common Webhook", "kaapi.webhook.stt", span_data, fn ->
+      {callback_url, request_metadata} =
+        with_appsignal_span("Kaapi STT Metadata", "db.query", span_data, fn ->
+          build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+        end)
 
-    contact = Contacts.preload_contact_language(contact_id)
-    contact_language = contact.language.label |> String.downcase()
+      request_metadata = Map.put(request_metadata, :call_type, "stt")
 
-    stt_opts = %{
-      provider: fields["provider"],
-      model: fields["model"],
-      language: fields["language"],
-      output_language: contact_language
-    }
+      contact =
+        with_appsignal_span("Kaapi STT Contact Language", "db.query", span_data, fn ->
+          Contacts.preload_contact_language(contact_id)
+        end)
 
-    Glific.Metrics.increment("Kaapi STT Call", organization_id)
+      contact_language = contact.language.label |> String.downcase()
 
-    Kaapi.speech_to_text(
-      fields["speech"],
-      callback_url,
-      request_metadata,
-      organization_id,
-      stt_opts
-    )
+      stt_opts = %{
+        provider: fields["provider"],
+        model: fields["model"],
+        language: fields["language"],
+        output_language: contact_language
+      }
+
+      Glific.Metrics.increment("Kaapi STT Call", organization_id)
+
+      with_appsignal_span("Kaapi STT API", "external.http", span_data, fn ->
+        Kaapi.speech_to_text(
+          fields["speech"],
+          callback_url,
+          request_metadata,
+          organization_id,
+          stt_opts
+        )
+      end)
+    end)
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
@@ -175,20 +190,30 @@ defmodule Glific.Clients.CommonWebhook do
     text = fields["text"]
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
-    {callback_url, request_metadata} =
-      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+    span_data =
+      base_trace_data(organization_id, flow_id, contact_id, fields["webhook_log_id"], "tts")
 
-    request_metadata = Map.put(request_metadata, :call_type, "tts")
+    with_appsignal_span("Kaapi TTS Webhook", "kaapi.webhook.tts", span_data, fn ->
+      {callback_url, request_metadata} =
+        with_appsignal_span("Kaapi TTS Metadata", "db.query", span_data, fn ->
+          build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+        end)
 
-    tts_opts = %{
-      provider: fields["provider"],
-      model: fields["model"],
-      language: fields["language"],
-      voice: fields["voice"]
-    }
+      request_metadata = Map.put(request_metadata, :call_type, "tts")
 
-    Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+      tts_opts = %{
+        provider: fields["provider"],
+        model: fields["model"],
+        language: fields["language"],
+        voice: fields["voice"]
+      }
+
+      Glific.Metrics.increment("Kaapi TTS Call", organization_id)
+
+      with_appsignal_span("Kaapi TTS API", "external.http", span_data, fn ->
+        Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+      end)
+    end)
   end
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
@@ -721,7 +746,8 @@ defmodule Glific.Clients.CommonWebhook do
       timestamp: timestamp,
       signature: signature,
       webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
+      result_name: fields["result_name"],
+      trace_context: build_trace_context()
     }
 
     {callback_url, request_metadata}
@@ -738,6 +764,53 @@ defmodule Glific.Clients.CommonWebhook do
   @spec build_conversation(String.t() | nil) :: map()
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
+
+  @spec with_appsignal_span(String.t(), String.t(), map(), (-> any())) :: any()
+  defp with_appsignal_span(name, category, sample_data, fun) do
+    start_time = :os.system_time()
+
+    span =
+      "custom"
+      |> @tracer.create_span(@tracer.current_span(), start_time: start_time)
+      |> @span.set_name(name)
+      |> @span.set_attribute("appsignal:category", category)
+      |> @span.set_sample_data("meta", sample_data)
+
+    try do
+      fun.()
+    rescue
+      error ->
+        @span.add_error(span, :error, Exception.message(error), __STACKTRACE__)
+        reraise(error, __STACKTRACE__)
+    after
+      @tracer.close_span(span, end_time: :os.system_time())
+    end
+  end
+
+  @spec base_trace_data(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          any(),
+          String.t()
+        ) :: map()
+  defp base_trace_data(organization_id, flow_id, contact_id, webhook_log_id, call_type) do
+    %{
+      organization_id: organization_id,
+      flow_id: flow_id,
+      contact_id: contact_id,
+      webhook_log_id: webhook_log_id,
+      call_type: call_type
+    }
+  end
+
+  @spec build_trace_context() :: map()
+  defp build_trace_context do
+    %{
+      trace_id: Ecto.UUID.generate(),
+      started_at: DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    }
+  end
 
   defp build_unified_llm_payload(
          fields,

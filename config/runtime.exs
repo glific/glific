@@ -85,7 +85,10 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  instrument_oban: false
+  send_params: false,
+  instrument_oban: false,
+  log_level: "debug",
+  enable_at_exit_hook: "always"
 
 config :glific, Glific.Vault,
   ciphers: [

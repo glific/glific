@@ -81,7 +81,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       Tesla.client(
         [
           {Tesla.Middleware.Logger, debug: false},
-          {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1}
+          {Tesla.Middleware.FormUrlencoded, encode: &Query.encode/1},
+          {Tesla.Middleware.Telemetry, metadata: %{provider: "gupshup_media_download"}}
         ] ++ Glific.get_tesla_retry_middleware()
       )
 
