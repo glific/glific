@@ -167,7 +167,7 @@ defmodule Glific.Application do
 
   defp attach_repo_telemetry_event do
     :telemetry.attach_many(
-      "repo-query-stop",
+      "repo-query",
       [
         [:glific, :repo, :query],
         [:glific, :repo_replica, :query]

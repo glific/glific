@@ -4,9 +4,10 @@ defmodule Glific.AppsignalTest do
 
   # Avoid `alias Glific.Appsignal` — it would shadow the Appsignal dependency used in with_mock.
 
-  describe "handle_event/4 repo query telemetry" do
-    defp ms(native), do: System.convert_time_unit(native, :native, :millisecond)
+  defp native_to_milliseconds(native),
+    do: System.convert_time_unit(native, :native, :millisecond)
 
+  describe "handle_event/4 repo query telemetry" do
     test "records distribution metrics and query count for :repo when timings are present" do
       measurement = %{
         query_time: 2_000_000,
@@ -28,13 +29,13 @@ defmodule Glific.AppsignalTest do
         Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
       end
 
-      expected_qt = ms(measurement.query_time)
-      expected_it = ms(measurement.idle_time)
-      expected_queue = ms(measurement.queue_time)
+      expected_query_time_ms = native_to_milliseconds(measurement.query_time)
+      expected_idle_time_ms = native_to_milliseconds(measurement.idle_time)
+      expected_queue_time_ms = native_to_milliseconds(measurement.queue_time)
 
-      assert_receive {:dist, "glific.repo.query_time", ^expected_qt, %{repo: :repo}}
-      assert_receive {:dist, "glific.repo.idle_time", ^expected_it, %{repo: :repo}}
-      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.idle_time", ^expected_idle_time_ms, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue_time_ms, %{repo: :repo}}
       assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo}}
     end
 
@@ -86,11 +87,11 @@ defmodule Glific.AppsignalTest do
         Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
       end
 
-      expected_it = ms(measurement.idle_time)
-      expected_queue = ms(measurement.queue_time)
+      expected_idle_time_ms = native_to_milliseconds(measurement.idle_time)
+      expected_queue_time_ms = native_to_milliseconds(measurement.queue_time)
 
-      assert_receive {:dist, "glific.repo.idle_time", ^expected_it, %{repo: :repo}}
-      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.idle_time", ^expected_idle_time_ms, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue_time_ms, %{repo: :repo}}
       refute_receive {:cnt, _, _, _}
     end
 
@@ -110,9 +111,9 @@ defmodule Glific.AppsignalTest do
         Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
       end
 
-      expected_qt = ms(measurement.query_time)
+      expected_query_time_ms = native_to_milliseconds(measurement.query_time)
 
-      assert_receive {:dist, "glific.repo.query_time", ^expected_qt, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo}}
       assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo}}
       refute_receive {:dist, _, _, _}, 0
     end
