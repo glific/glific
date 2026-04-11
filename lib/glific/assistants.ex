@@ -161,7 +161,7 @@ defmodule Glific.Assistants do
   def list_assistants(args) do
     assistants =
       args
-      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
       |> Repo.all()
       |> preload_assistant_associations()
 
@@ -174,8 +174,23 @@ defmodule Glific.Assistants do
   @spec count_assistants(map()) :: integer()
   def count_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, nil, &Repo.filter_with/2)
+    |> Repo.list_filter_query(Assistant, nil, &filter_with/2)
     |> Repo.aggregate(:count)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:name_or_assistant_id, term}, query ->
+        from(a in query,
+          where: ilike(a.name, ^"%#{term}%") or ilike(a.assistant_display_id, ^"%#{term}%")
+        )
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
@@ -598,7 +613,6 @@ defmodule Glific.Assistants do
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-
       organization = Partners.organization(kaapi_config.organization_id)
 
       attrs =
