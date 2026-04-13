@@ -89,16 +89,23 @@ defmodule Glific.ChatbotDiagnoseTest do
       }
 
       result_nil = ChatbotDiagnose.run(tables, nil, organization_id)
-      result_no_flag = ChatbotDiagnose.run(%{
-        "contacts" => %{"fields" => ["id"], "limit" => 50}
-      }, nil, organization_id)
+
+      result_no_flag =
+        ChatbotDiagnose.run(
+          %{
+            "contacts" => %{"fields" => ["id"], "limit" => 50}
+          },
+          nil,
+          organization_id
+        )
 
       # Both should return the same results since time_range is nil
       assert length(result_nil["contacts"]) == length(result_no_flag["contacts"])
     end
 
     test "filters by string value", %{organization_id: organization_id} do
-      [contact | _] = Glific.Contacts.list_contacts(%{filter: %{organization_id: organization_id}})
+      [contact | _] =
+        Glific.Contacts.list_contacts(%{filter: %{organization_id: organization_id}})
 
       tables = %{
         "contacts" => %{
@@ -158,7 +165,8 @@ defmodule Glific.ChatbotDiagnoseTest do
     end
 
     test "resolves contact_phone virtual filter", %{organization_id: organization_id} do
-      [contact | _] = Glific.Contacts.list_contacts(%{filter: %{organization_id: organization_id}})
+      [contact | _] =
+        Glific.Contacts.list_contacts(%{filter: %{organization_id: organization_id}})
 
       tables = %{
         "messages" => %{

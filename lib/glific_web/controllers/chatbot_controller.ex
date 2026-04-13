@@ -48,10 +48,6 @@ defmodule GlificWeb.ChatbotController do
 
       {:error, :missing_tables} ->
         conn |> put_status(400) |> json(%{error: "tables parameter is required"})
-
-      {:error, reason} ->
-        Logger.error("ChatbotController: unexpected error: #{inspect(reason)}")
-        conn |> put_status(500) |> json(%{error: "Internal server error"})
     end
   rescue
     e ->

@@ -80,66 +80,111 @@ defmodule Glific.ChatbotDiagnose do
 
   # Whitelisted fields per table. Only these fields can be selected/filtered.
   @allowed_fields %{
-    "assistant_config_versions" => ~w(id version_number kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
-    "assistants" => ~w(id name description kaapi_uuid assistant_display_id clone_status active_config_version_id organization_id inserted_at updated_at)a,
-    "contact_histories" => ~w(id event_type event_label event_datetime event_meta contact_id profile_id organization_id inserted_at updated_at)a,
-    "contacts" => ~w(id name phone contact_type status bsp_status is_org_read is_org_replied is_contact_replied optin_time optin_status optin_method optin_message_id optout_time optout_method first_message_number last_message_number last_message_at last_communication_at language_id active_profile_id organization_id inserted_at updated_at)a,
-    "contacts_fields" => ~w(id name shortcode value_type scope organization_id inserted_at updated_at)a,
+    "assistant_config_versions" =>
+      ~w(id version_number kaapi_version_number description prompt provider model status failure_reason assistant_id organization_id inserted_at updated_at)a,
+    "assistants" =>
+      ~w(id name description kaapi_uuid assistant_display_id clone_status active_config_version_id organization_id inserted_at updated_at)a,
+    "contact_histories" =>
+      ~w(id event_type event_label event_datetime event_meta contact_id profile_id organization_id inserted_at updated_at)a,
+    "contacts" =>
+      ~w(id name phone contact_type status bsp_status is_org_read is_org_replied is_contact_replied optin_time optin_status optin_method optin_message_id optout_time optout_method first_message_number last_message_number last_message_at last_communication_at language_id active_profile_id organization_id inserted_at updated_at)a,
+    "contacts_fields" =>
+      ~w(id name shortcode value_type scope organization_id inserted_at updated_at)a,
     "contacts_groups" => ~w(id contact_id group_id organization_id inserted_at updated_at)a,
     "contacts_tags" => ~w(id value contact_id tag_id organization_id)a,
-    "contacts_wa_groups" => ~w(id is_admin contact_id wa_group_id organization_id inserted_at updated_at)a,
-    "flow_contexts" => ~w(id node_uuid flow_uuid status wakeup_at completed_at is_background_flow is_await_result is_killed reason contact_id flow_id organization_id parent_id profile_id message_broadcast_id wa_group_id inserted_at updated_at)a,
-    "flow_counts" => ~w(id uuid flow_uuid type count destination_uuid flow_id organization_id inserted_at updated_at)a,
+    "contacts_wa_groups" =>
+      ~w(id is_admin contact_id wa_group_id organization_id inserted_at updated_at)a,
+    "flow_contexts" =>
+      ~w(id node_uuid flow_uuid status wakeup_at completed_at is_background_flow is_await_result is_killed reason contact_id flow_id organization_id parent_id profile_id message_broadcast_id wa_group_id inserted_at updated_at)a,
+    "flow_counts" =>
+      ~w(id uuid flow_uuid type count destination_uuid flow_id organization_id inserted_at updated_at)a,
     "flow_labels" => ~w(id uuid name type organization_id inserted_at updated_at)a,
-    "flow_results" => ~w(id results contact_id flow_context_id flow_id flow_uuid flow_version organization_id profile_id inserted_at updated_at)a,
-    "flow_revisions" => ~w(id version revision_number status flow_id user_id organization_id inserted_at updated_at)a,
+    "flow_results" =>
+      ~w(id results contact_id flow_context_id flow_id flow_uuid flow_version organization_id profile_id inserted_at updated_at)a,
+    "flow_revisions" =>
+      ~w(id version revision_number status flow_id user_id organization_id inserted_at updated_at)a,
     "flow_roles" => ~w(id role_id flow_id organization_id)a,
-    "flows" => ~w(id name description version_number flow_type uuid keywords ignore_keywords is_active is_background is_pinned is_template respond_other respond_no_response tag_id organization_id inserted_at updated_at)a,
+    "flows" =>
+      ~w(id name description version_number flow_type uuid keywords ignore_keywords is_active is_background is_pinned is_template respond_other respond_no_response tag_id organization_id inserted_at updated_at)a,
     "group_roles" => ~w(id role_id group_id organization_id)a,
-    "groups" => ~w(id label description is_restricted last_message_number group_type last_communication_at organization_id inserted_at updated_at)a,
+    "groups" =>
+      ~w(id label description is_restricted last_message_number group_type last_communication_at organization_id inserted_at updated_at)a,
     "intents" => ~w(id name organization_id inserted_at updated_at)a,
-    "interactive_templates" => ~w(id label type send_with_title tag_id language_id organization_id inserted_at updated_at)a,
-    "issued_certificates" => ~w(id gcs_url errors certificate_template_id contact_id organization_id inserted_at updated_at)a,
-    "knowledge_base_versions" => ~w(id knowledge_base_id version_number status kaapi_job_id llm_service_id organization_id inserted_at updated_at)a,
+    "interactive_templates" =>
+      ~w(id label type send_with_title tag_id language_id organization_id inserted_at updated_at)a,
+    "issued_certificates" =>
+      ~w(id gcs_url errors certificate_template_id contact_id organization_id inserted_at updated_at)a,
+    "knowledge_base_versions" =>
+      ~w(id knowledge_base_id version_number status kaapi_job_id llm_service_id organization_id inserted_at updated_at)a,
     "knowledge_bases" => ~w(id name organization_id inserted_at updated_at)a,
-    "message_broadcast_contacts" => ~w(id processed_at status message_broadcast_id contact_id organization_id inserted_at updated_at)a,
-    "message_broadcasts" => ~w(id started_at completed_at type group_id message_id flow_id user_id organization_id inserted_at updated_at)a,
-    "messages" => ~w(id uuid body flow_label flow type status clean_body is_hsm bsp_message_id bsp_status errors send_at sent_at message_number session_uuid sender_id receiver_id contact_id user_id group_id flow_id media_id organization_id profile_id message_broadcast_id template_id interactive_template_id inserted_at updated_at)a,
-    "messages_conversations" => ~w(id conversation_id deduction_type is_billable message_id organization_id inserted_at updated_at)a,
-    "messages_media" => ~w(id url source_url thumbnail caption gcs_url content_type flow is_template_media organization_id inserted_at updated_at)a,
+    "message_broadcast_contacts" =>
+      ~w(id processed_at status message_broadcast_id contact_id organization_id inserted_at updated_at)a,
+    "message_broadcasts" =>
+      ~w(id started_at completed_at type group_id message_id flow_id user_id organization_id inserted_at updated_at)a,
+    "messages" =>
+      ~w(id uuid body flow_label flow type status clean_body is_hsm bsp_message_id bsp_status errors send_at sent_at message_number session_uuid sender_id receiver_id contact_id user_id group_id flow_id media_id organization_id profile_id message_broadcast_id template_id interactive_template_id inserted_at updated_at)a,
+    "messages_conversations" =>
+      ~w(id conversation_id deduction_type is_billable message_id organization_id inserted_at updated_at)a,
+    "messages_media" =>
+      ~w(id url source_url thumbnail caption gcs_url content_type flow is_template_media organization_id inserted_at updated_at)a,
     "messages_tags" => ~w(id value message_id tag_id organization_id)a,
-    "notifications" => ~w(id category entity message severity is_read organization_id inserted_at updated_at)a,
+    "notifications" =>
+      ~w(id category entity message severity is_read organization_id inserted_at updated_at)a,
     "organization_data" => ~w(id key description text organization_id inserted_at updated_at)a,
-    "organizations" => ~w(id name shortcode email is_active is_approved status timezone session_limit inserted_at updated_at)a,
-    "profiles" => ~w(id name type is_active is_default language_id contact_id organization_id inserted_at updated_at)a,
-    "registrations" => ~w(id org_details platform_details billing_frequency has_submitted has_confirmed organization_id inserted_at updated_at)a,
+    "organizations" =>
+      ~w(id name shortcode email is_active is_approved status timezone session_limit inserted_at updated_at)a,
+    "profiles" =>
+      ~w(id name type is_active is_default language_id contact_id organization_id inserted_at updated_at)a,
+    "registrations" =>
+      ~w(id org_details platform_details billing_frequency has_submitted has_confirmed organization_id inserted_at updated_at)a,
     "roles" => ~w(id description is_reserved label organization_id inserted_at updated_at)a,
-    "saved_searches" => ~w(id label shortcode is_reserved organization_id inserted_at updated_at)a,
-    "session_templates" => ~w(id uuid label body type shortcode quality footer status is_hsm number_parameters category is_source is_active is_reserved has_buttons button_type bsp_id reason tag_id language_id organization_id message_media_id parent_id inserted_at updated_at)a,
-    "sheets" => ~w(id label url type is_active last_synced_at auto_sync sheet_data_count sync_status failure_reason organization_id inserted_at updated_at)a,
+    "saved_searches" =>
+      ~w(id label shortcode is_reserved organization_id inserted_at updated_at)a,
+    "session_templates" =>
+      ~w(id uuid label body type shortcode quality footer status is_hsm number_parameters category is_source is_active is_reserved has_buttons button_type bsp_id reason tag_id language_id organization_id message_media_id parent_id inserted_at updated_at)a,
+    "sheets" =>
+      ~w(id label url type is_active last_synced_at auto_sync sheet_data_count sync_status failure_reason organization_id inserted_at updated_at)a,
     "sheets_data" => ~w(id key last_synced_at sheet_id organization_id inserted_at updated_at)a,
-    "stats" => ~w(id contacts active optin optout messages inbound outbound hsm flows_started flows_completed users conversations period date hour organization_id inserted_at updated_at)a,
-    "tags" => ~w(id label shortcode description color_code is_active is_reserved is_value keywords language_id organization_id parent_id inserted_at updated_at)a,
+    "stats" =>
+      ~w(id contacts active optin optout messages inbound outbound hsm flows_started flows_completed users conversations period date hour organization_id inserted_at updated_at)a,
+    "tags" =>
+      ~w(id label shortcode description color_code is_active is_reserved is_value keywords language_id organization_id parent_id inserted_at updated_at)a,
     "templates_tags" => ~w(id value template_id tag_id organization_id)a,
-    "tickets" => ~w(id body topic status remarks message_number contact_id user_id flow_id organization_id inserted_at updated_at)a,
-    "translate_logs" => ~w(id text translated_text translation_engine source_language destination_language status error organization_id inserted_at updated_at)a,
-    "trigger_logs" => ~w(id started_at trigger_id flow_context_id organization_id inserted_at updated_at)a,
+    "tickets" =>
+      ~w(id body topic status remarks message_number contact_id user_id flow_id organization_id inserted_at updated_at)a,
+    "translate_logs" =>
+      ~w(id text translated_text translation_engine source_language destination_language status error organization_id inserted_at updated_at)a,
+    "trigger_logs" =>
+      ~w(id started_at trigger_id flow_context_id organization_id inserted_at updated_at)a,
     "trigger_roles" => ~w(id role_id trigger_id organization_id)a,
-    "triggers" => ~w(id trigger_type start_at end_date name last_trigger_at next_trigger_at frequency days hours is_active is_repeating group_type flow_id organization_id inserted_at updated_at)a,
-    "user_jobs" => ~w(id status type total_tasks tasks_done all_tasks_created organization_id inserted_at updated_at)a,
+    "triggers" =>
+      ~w(id trigger_type start_at end_date name last_trigger_at next_trigger_at frequency days hours is_active is_repeating group_type flow_id organization_id inserted_at updated_at)a,
+    "user_jobs" =>
+      ~w(id status type total_tasks tasks_done all_tasks_created organization_id inserted_at updated_at)a,
     "user_roles" => ~w(id user_id role_id organization_id)a,
-    "users" => ~w(id name email roles is_restricted last_login_at contact_id language_id organization_id inserted_at updated_at)a,
+    "users" =>
+      ~w(id name email roles is_restricted last_login_at contact_id language_id organization_id inserted_at updated_at)a,
     "users_groups" => ~w(id user_id group_id organization_id)a,
-    "wa_groups" => ~w(id label bsp_id is_org_read last_communication_at wa_managed_phone_id organization_id inserted_at updated_at)a,
-    "wa_groups_collections" => ~w(id group_id wa_group_id organization_id inserted_at updated_at)a,
-    "wa_managed_phones" => ~w(id label phone phone_id status product_id contact_id organization_id inserted_at updated_at)a,
-    "wa_messages" => ~w(id uuid type flow status body bsp_status bsp_id errors message_number send_at sent_at is_dm flow_label contact_id group_id wa_group_id media_id wa_managed_phone_id organization_id message_broadcast_id inserted_at updated_at)a,
-    "wa_polls" => ~w(id uuid label poll_content allow_multiple_answer organization_id inserted_at updated_at)a,
-    "wa_reactions" => ~w(id bsp_id reaction wa_message_id contact_id organization_id inserted_at updated_at)a,
-    "webhook_logs" => ~w(id url method request_headers request_json response_json status_code error flow_id contact_id wa_group_id flow_context_id organization_id inserted_at updated_at)a,
-    "whatsapp_form_revisions" => ~w(id revision_number whatsapp_form_id user_id organization_id inserted_at updated_at)a,
-    "whatsapp_forms" => ~w(id name description meta_flow_id status categories sheet_id revision_id organization_id inserted_at updated_at)a,
-    "whatsapp_forms_responses" => ~w(id raw_response submitted_at contact_id whatsapp_form_id organization_id inserted_at updated_at)a
+    "wa_groups" =>
+      ~w(id label bsp_id is_org_read last_communication_at wa_managed_phone_id organization_id inserted_at updated_at)a,
+    "wa_groups_collections" =>
+      ~w(id group_id wa_group_id organization_id inserted_at updated_at)a,
+    "wa_managed_phones" =>
+      ~w(id label phone phone_id status product_id contact_id organization_id inserted_at updated_at)a,
+    "wa_messages" =>
+      ~w(id uuid type flow status body bsp_status bsp_id errors message_number send_at sent_at is_dm flow_label contact_id group_id wa_group_id media_id wa_managed_phone_id organization_id message_broadcast_id inserted_at updated_at)a,
+    "wa_polls" =>
+      ~w(id uuid label poll_content allow_multiple_answer organization_id inserted_at updated_at)a,
+    "wa_reactions" =>
+      ~w(id bsp_id reaction wa_message_id contact_id organization_id inserted_at updated_at)a,
+    "webhook_logs" =>
+      ~w(id url method request_headers request_json response_json status_code error flow_id contact_id wa_group_id flow_context_id organization_id inserted_at updated_at)a,
+    "whatsapp_form_revisions" =>
+      ~w(id revision_number whatsapp_form_id user_id organization_id inserted_at updated_at)a,
+    "whatsapp_forms" =>
+      ~w(id name description meta_flow_id status categories sheet_id revision_id organization_id inserted_at updated_at)a,
+    "whatsapp_forms_responses" =>
+      ~w(id raw_response submitted_at contact_id whatsapp_form_id organization_id inserted_at updated_at)a
   }
 
   @max_limit 50
@@ -176,7 +221,15 @@ defmodule Glific.ChatbotDiagnose do
       apply_time = Map.get(table_opts, "apply_time_range", false)
 
       schema
-      |> build_query(table_name, filters, virtual_resolutions, time_threshold, apply_time, order, limit)
+      |> build_query(
+        table_name,
+        filters,
+        virtual_resolutions,
+        time_threshold,
+        apply_time,
+        order,
+        limit
+      )
       |> select_fields(fields)
       |> Repo.all()
       |> Enum.map(&schema_to_map(&1, fields))
@@ -219,7 +272,16 @@ defmodule Glific.ChatbotDiagnose do
     ArgumentError -> {:error, "invalid field name"}
   end
 
-  defp build_query(schema, table_name, filters, virtual_resolutions, time_threshold, apply_time, order, limit) do
+  defp build_query(
+         schema,
+         table_name,
+         filters,
+         virtual_resolutions,
+         time_threshold,
+         apply_time,
+         order,
+         limit
+       ) do
     query = from(q in schema)
 
     allowed = Map.get(@allowed_fields, table_name, [])
@@ -452,8 +514,8 @@ defmodule Glific.ChatbotDiagnose do
     seconds =
       case Regex.run(~r/^(\d+)(h|d)$/, range) do
         [_, num, "h"] -> String.to_integer(num) * 3600
-        [_, num, "d"] -> String.to_integer(num) * 86400
-        _ -> 86400
+        [_, num, "d"] -> String.to_integer(num) * 86_400
+        _ -> 86_400
       end
 
     DateTime.utc_now() |> DateTime.add(-seconds, :second)
