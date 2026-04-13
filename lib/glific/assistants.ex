@@ -359,7 +359,7 @@ defmodule Glific.Assistants do
   end
 
   @spec create_config_without_knowledge_base(Assistant.t(), AssistantConfigVersion.t(), map()) ::
-          {:ok, map()} | {:error, any()}
+          {:ok, map()} | {:error, String.t()}
   defp create_config_without_knowledge_base(assistant, config_version, kaapi_config) do
     case Kaapi.create_assistant_config(kaapi_config, kaapi_config.organization_id) do
       {:ok, kaapi_response} ->
@@ -382,7 +382,11 @@ defmodule Glific.Assistants do
           {:ok, %{updated_assistant: updated_assistant, config_version: updated_config_version}} ->
             {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
 
-          {:error, _failed_op, changeset, _} ->
+          {:error, failed_op, changeset, _} ->
+            Logger.error(
+              "Transaction failed in create_config_without_knowledge_base for assistant #{assistant.id}, failed_op: #{failed_op}, errors: #{inspect(changeset)}"
+            )
+
             {:error, changeset}
         end
 
@@ -1197,8 +1201,15 @@ defmodule Glific.Assistants do
         )
         |> Repo.transaction()
         |> case do
-          {:ok, %{config_version: updated_config_version}} -> {:ok, updated_config_version}
-          {:error, _failed_op, changeset, _} -> {:error, changeset}
+          {:ok, %{config_version: updated_config_version}} ->
+            {:ok, updated_config_version}
+
+          {:error, failed_op, changeset, _} ->
+            Logger.error(
+              "Transaction failed in deferred_create_new_assistant for assistant #{assistant.id}, failed_op: #{failed_op}, errors: #{inspect(changeset)}"
+            )
+
+            {:error, changeset}
         end
 
       {:error, reason} ->
