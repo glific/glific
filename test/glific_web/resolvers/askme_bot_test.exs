@@ -1,6 +1,6 @@
-defmodule GlificWeb.Resolvers.AskmeBotTest do
+defmodule GlificWeb.Resolvers.AskGlificBotTest do
   @moduledoc """
-  Test suite for AskMe Bot GraphQL resolvers.
+  Test suite for AskGlific Bot GraphQL resolvers.
   """
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
@@ -9,7 +9,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
   alias Glific.Repo
 
   load_gql(
-    :askme_bot,
+    :ask_glific_bot,
     GlificWeb.Schema,
     "assets/gql/ask_glific/ask.gql"
   )
@@ -56,7 +56,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
     |> Repo.insert!()
   end
 
-  describe "askme_bot mutation" do
+  describe "ask_glific_bot mutation" do
     test "returns answer and conversation_id on success", %{staff: user} do
       Req.Test.stub(self(), fn conn ->
         case conn.request_path do
@@ -72,7 +72,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       end)
 
       {:ok, query_data} =
-        auth_query_gql_by(:askme_bot, user,
+        auth_query_gql_by(:ask_glific_bot, user,
           variables: %{
             "input" => %{
               "query" => "What is Glific?",
@@ -96,7 +96,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       end)
 
       {:ok, query_data} =
-        auth_query_gql_by(:askme_bot, user,
+        auth_query_gql_by(:ask_glific_bot, user,
           variables: %{
             "input" => %{
               "query" => "What is Glific?"
@@ -116,7 +116,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       end)
 
       {:ok, query_data} =
-        auth_query_gql_by(:askme_bot, user,
+        auth_query_gql_by(:ask_glific_bot, user,
           variables: %{
             "input" => %{
               "query" => "Tell me more",
@@ -131,7 +131,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
     end
   end
 
-  describe "askme_bot_conversations query" do
+  describe "ask_glific_bot_conversations query" do
     test "returns conversations from Dify", %{staff: user} do
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, %{
@@ -152,7 +152,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       {:ok, query_data} =
         auth_query_gql_by(:conversations, user, variables: %{"limit" => 20})
 
-      result = get_in(query_data, [:data, "askmeBotConversations"])
+      result = get_in(query_data, [:data, "askGlificBotConversations"])
       assert length(result["conversations"]) == 1
       assert hd(result["conversations"])["id"] == "conv-gql-abc"
       assert hd(result["conversations"])["name"] == "Glific Chat"
@@ -171,7 +171,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
       {:ok, query_data} =
         auth_query_gql_by(:conversations, user, variables: %{})
 
-      result = get_in(query_data, [:data, "askmeBotConversations"])
+      result = get_in(query_data, [:data, "askGlificBotConversations"])
       assert result["conversations"] == []
     end
 
@@ -189,7 +189,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
     end
   end
 
-  describe "askme_bot_messages query" do
+  describe "ask_glific_bot_messages query" do
     test "returns messages for an owned conversation", %{staff: user} do
       insert_conversation("conv-msg-123", user)
 
@@ -261,7 +261,7 @@ defmodule GlificWeb.Resolvers.AskmeBotTest do
     end
   end
 
-  describe "askme_bot_feedback mutation" do
+  describe "ask_glific_bot_feedback mutation" do
     test "submits like feedback successfully", %{staff: user} do
       Req.Test.stub(self(), fn conn ->
         assert conn.request_path == "/v1/messages/msg-gql-001/feedbacks"
