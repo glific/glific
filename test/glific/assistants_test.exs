@@ -1093,13 +1093,26 @@ defmodule Glific.AssistantsTest do
       assert config_version.status == :in_progress
     end
 
-    test "returns error when knowledge_base_version_id is missing",
+    test "creates assistant without knowledge_base_version_id",
          %{organization_id: organization_id} do
-      assert {:error, "Knowledge base is required for assistant creation"} =
+      enable_kaapi(%{organization_id: organization_id})
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_uuid_no_kb", version: %{version: 1}}}
+          }
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
                Assistants.create_assistant(%{
                  name: "No KB Assistant",
                  organization_id: organization_id
                })
+
+      assert assistant.name == "No KB Assistant"
+      assert config_version.status == :ready
     end
 
     test "uses default values when optional params are missing",
@@ -1702,6 +1715,113 @@ defmodule Glific.AssistantsTest do
                })
 
       assert %{name: ["has already been taken"]} == errors_on(changeset)
+    end
+  end
+
+  describe "list_assistants/1" do
+    setup do
+      organization_id = 1
+
+      {:ok, assistant1} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Alpha Assistant",
+          organization_id: organization_id,
+          assistant_display_id: "asst_alpha000000000000000001"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant1.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant1} =
+        assistant1
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version1.id
+        })
+        |> Repo.update()
+
+      {:ok, assistant2} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Beta Assistant",
+          organization_id: organization_id,
+          assistant_display_id: "asst_beta0000000000000000001"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version2} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant2.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a beta assistant",
+          settings: %{"temperature" => 0.5},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant2} =
+        assistant2
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version2.id
+        })
+        |> Repo.update()
+
+      Partners.organization(organization_id)
+
+      %{assistant1: assistant1, assistant2: assistant2}
+    end
+
+    test "returns all assistants when no filter is given" do
+      results = Assistants.list_assistants(%{})
+      names = Enum.map(results, & &1.name)
+      assert "Alpha Assistant" in names
+      assert "Beta Assistant" in names
+    end
+
+    test "filters by name only" do
+      results = Assistants.list_assistants(%{filter: %{name: "Alpha"}})
+      assert length(results) == 1
+      assert hd(results).name == "Alpha Assistant"
+    end
+
+    test "filters by name_or_assistant_id matching name" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "Alpha"}})
+      assert length(results) == 1
+      assert hd(results).name == "Alpha Assistant"
+    end
+
+    test "filters by name_or_assistant_id matching assistant_display_id" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "asst_beta"}})
+      assert length(results) == 1
+      assert hd(results).name == "Beta Assistant"
+    end
+
+    test "filters by name_or_assistant_id returns all matches across both fields" do
+      results = Assistants.list_assistants(%{filter: %{name_or_assistant_id: "Assistant"}})
+      names = Enum.map(results, & &1.name)
+      assert "Alpha Assistant" in names
+      assert "Beta Assistant" in names
+    end
+
+    test "returns empty list when no assistant matches name_or_assistant_id" do
+      results =
+        Assistants.list_assistants(%{filter: %{name_or_assistant_id: "asst_nonexistent_xyz"}})
+
+      assert results == []
     end
   end
 
@@ -2574,6 +2694,172 @@ defmodule Glific.AssistantsTest do
                  name: "Should Fail",
                  organization_id: organization_id
                })
+    end
+  end
+
+  describe "assistant_config_versions_enabled flag — sync path (update_assistant_transaction)" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "does NOT auto-set active_config_version_id when flag is enabled",
+         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
+      FunWithFlags.enable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_flag_on", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Flag On Update",
+                 organization_id: organization_id
+               })
+
+      {:ok, updated} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert updated.active_config_version_id == original_cv.id
+
+      FunWithFlags.disable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "auto-sets active_config_version_id when flag is disabled",
+         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
+      FunWithFlags.disable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_flag_off", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Flag Off Update",
+                 organization_id: organization_id
+               })
+
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
+      {:ok, updated} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert updated.active_config_version_id != original_cv.id
+      assert updated.active_config_version_id == new_cv.id
+    end
+  end
+
+  describe "assistant_config_versions_enabled flag — async path (deferred_create_new_version)" do
+    setup [:enable_kaapi, :setup_assistant_with_kb]
+
+    test "does NOT auto-set active_config_version_id on callback when flag is enabled",
+         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
+      FunWithFlags.enable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Async Flag On KB",
+          organization_id: organization_id
+        })
+
+      {:ok, new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-async-flag-on",
+          size: 300,
+          kaapi_job_id: "job_async_flag_on"
+        })
+
+      assert {:ok, _} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_version_id: new_kbv.id,
+                 organization_id: organization_id
+               })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cv_flag_on", version: 2}}}
+      end)
+
+      Assistants.handle_knowledge_base_callback(%{
+        "data" => %{
+          "job_id" => "job_async_flag_on",
+          "status" => "SUCCESSFUL",
+          "collection" => %{"knowledge_base_id" => "vs_async_flag_on"},
+          "error_message" => nil
+        }
+      })
+
+      {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert post_callback.active_config_version_id == original_cv.id
+
+      FunWithFlags.disable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "auto-sets active_config_version_id on callback when flag is disabled",
+         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
+      FunWithFlags.disable(:assistant_config_versions_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      {:ok, new_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Async Flag Off KB",
+          organization_id: organization_id
+        })
+
+      {:ok, new_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: new_kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-async-flag-off",
+          size: 300,
+          kaapi_job_id: "job_async_flag_off"
+        })
+
+      assert {:ok, _} =
+               Assistants.update_assistant(assistant.id, %{
+                 knowledge_base_version_id: new_kbv.id,
+                 organization_id: organization_id
+               })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cv_flag_off", version: 2}}}
+      end)
+
+      Assistants.handle_knowledge_base_callback(%{
+        "data" => %{
+          "job_id" => "job_async_flag_off",
+          "status" => "SUCCESSFUL",
+          "collection" => %{"knowledge_base_id" => "vs_async_flag_off"},
+          "error_message" => nil
+        }
+      })
+
+      new_cv =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^original_cv.id)
+        |> Repo.one()
+
+      {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      assert post_callback.active_config_version_id != original_cv.id
+      assert post_callback.active_config_version_id == new_cv.id
     end
   end
 end

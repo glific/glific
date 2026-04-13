@@ -346,6 +346,17 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get assistant config versions feature flag for the organization.
+  When enabled, the assistant versions screen is shown and set_live_version is permitted.
+  """
+  @spec get_assistant_config_versions_enabled(map()) :: boolean
+  def get_assistant_config_versions_enabled(organization) do
+    FunWithFlags.enabled?(:assistant_config_versions_enabled,
+      for: %{organization_id: organization.id}
+    )
+  end
+
+  @doc """
   Adds given flag to the organization map
   """
   @spec set_flag_enabled(map(), atom()) :: map()

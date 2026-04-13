@@ -106,6 +106,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :live_version_number, :integer
     field :legacy, :boolean
     field :clone_status, :string
+    field :active_config_version_id, :id
 
     field :vector_store, :vector_store do
       resolve(&Resolvers.Filesearch.resolve_vector_store/3)
@@ -150,6 +151,9 @@ defmodule GlificWeb.Schema.AssistantTypes do
   input_object :assistant_filter do
     @desc "Match the name"
     field(:name, :string)
+
+    @desc "Match the name or assistant display ID"
+    field(:name_or_assistant_id, :string)
   end
 
   object :assistant_config_version_for_evals do
@@ -213,6 +217,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     @desc "Clone an existing Assistant"
     field :clone_assistant, :clone_result do
       arg(:id, non_null(:id))
+      arg(:version_id, :id)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.clone_assistant/3)
     end
