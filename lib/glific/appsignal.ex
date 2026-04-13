@@ -23,50 +23,68 @@ defmodule Glific.Appsignal do
   end
 
   def handle_event([:oban, :job, :stop], measurement, meta, _) do
-    # oban telemetry measurements are in microseconds
-    queue_time_sec = Float.ceil(measurement.queue_time / 1_000_000, 2)
+    # sampling only x% of the total jobs processed to reduce cost and noise.
+    sampling_rate =
+      Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
 
-    Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
-      queue: meta.queue,
-      worker: meta.worker
-    })
+    if :rand.uniform() < sampling_rate / 100 do
+      # oban telemetry measurements are in microseconds
+      queue_time_sec = Float.ceil(measurement.queue_time / 1_000_000, 2)
+
+      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
+        queue: meta.queue,
+        worker: meta.worker
+      })
+    end
   end
 
   def handle_event([:tesla, :request, :stop], measurement, meta, _) do
+    # sampling only x% of the total requests processed to reduce cost and noise.
+    # The percentage is set as a config value.
+    sampling_rate =
+      Application.get_env(:glific, :appsignal_sampling_rate) |> Glific.parse_maybe_integer!()
+
+    # sampling rate multiplier for the default sampling rate,
+    # For ex for openai api,  sampling_scale is 5. For a default of 10% sampling rate,
+    # 50% of openai requests will go to appsignal
+    sampling_scale = meta[:sampling_scale] || 1
+
     request_duration_milliseconds =
       System.convert_time_unit(measurement.duration, :native, :millisecond)
 
     status = meta.env.status
     url = get_template_url(meta.env)
 
-    cond do
-      # Errors like timeout from tesla etc, status will be nil
-      is_nil(status) ->
-        Appsignal.increment_counter("tesla_request_error_count", 1, %{
-          provider: meta[:provider],
-          error: meta.error,
-          url: url,
-          method: meta.env.method
-        })
-
-      status >= 400 ->
-        Appsignal.increment_counter("tesla_request_error_count", 1, %{
-          provider: meta[:provider],
-          error: status,
-          url: url,
-          method: meta.env.method
-        })
-
-      true ->
-        Appsignal.add_distribution_value(
-          "tesla_request_response",
-          request_duration_milliseconds,
-          %{
-            method: meta.env.method,
+    if :rand.uniform() < sampling_rate * sampling_scale / 100 do
+      cond do
+        # Errors like timeout from tesla etc, status will be nil
+        is_nil(status) ->
+          Appsignal.increment_counter("tesla_request_error_count", 1, %{
+            provider: meta[:provider],
+            error: meta.error,
             url: url,
-            provider: meta[:provider]
-          }
-        )
+            method: meta.env.method
+          })
+
+        status >= 400 ->
+          Appsignal.increment_counter("tesla_request_error_count", 1, %{
+            provider: meta[:provider],
+            error: status,
+            url: url,
+            method: meta.env.method
+          })
+
+        true ->
+          Appsignal.add_distribution_value(
+            "tesla_request_response",
+            request_duration_milliseconds,
+            %{
+              method: meta.env.method,
+              url: url,
+              provider: meta[:provider]
+            }
+          )
+      end
     end
   end
 

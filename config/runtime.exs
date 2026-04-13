@@ -87,7 +87,6 @@ config :appsignal, :config,
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
   send_params: false,
   instrument_oban: false,
-  log_level: "debug",
   enable_at_exit_hook: "always"
 
 config :glific, Glific.Vault,
