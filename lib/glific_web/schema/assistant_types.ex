@@ -151,6 +151,9 @@ defmodule GlificWeb.Schema.AssistantTypes do
   input_object :assistant_filter do
     @desc "Match the name"
     field(:name, :string)
+
+    @desc "Match the name or assistant display ID"
+    field(:name_or_assistant_id, :string)
   end
 
   object :assistant_config_version_for_evals do
