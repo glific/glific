@@ -486,7 +486,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, msg} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
                  })
 
         assert msg =~ "Collection creation failed for job_failed_123"
@@ -539,7 +541,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
                  })
       end
     end
@@ -617,7 +621,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert :ok =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,
-                   organization_id: @org_id
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
                  })
 
         assert Agent.get(call_counter, & &1) >= 2
