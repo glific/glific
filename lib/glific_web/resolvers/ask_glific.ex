@@ -4,7 +4,6 @@ defmodule GlificWeb.Resolvers.AskGlific do
   """
 
   alias Glific.AskGlific
-  alias Glific.Communications
 
   @doc """
   Ask the AskGlific bot a question. Triggers async Dify call and
@@ -16,19 +15,21 @@ defmodule GlificWeb.Resolvers.AskGlific do
     Task.start(fn ->
       Glific.Repo.put_process_state(user.organization_id)
 
+      topic = "#{user.organization_id}:#{user.id}"
+
       case AskGlific.ask(params, user) do
         {:ok, result} ->
-          Communications.publish_data(
+          Absinthe.Subscription.publish(
+            GlificWeb.Endpoint,
             result,
-            :ask_glific_response,
-            user.organization_id
+            [{:ask_glific_response, topic}]
           )
 
         {:error, reason} ->
-          Communications.publish_data(
+          Absinthe.Subscription.publish(
+            GlificWeb.Endpoint,
             %{answer: nil, conversation_id: nil, errors: [%{key: "error", message: reason}]},
-            :ask_glific_response,
-            user.organization_id
+            [{:ask_glific_response, topic}]
           )
       end
     end)

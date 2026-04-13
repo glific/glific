@@ -6,7 +6,6 @@ defmodule GlificWeb.Schema.AskGlificTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
-  alias GlificWeb.Schema
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :ask_glific_result do
@@ -49,7 +48,13 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field :ask_glific_response, :ask_glific_result do
       arg(:organization_id, non_null(:id))
 
-      config(&Schema.config_fun/2)
+      config(fn args, %{context: %{current_user: user}} ->
+        if args.organization_id == Integer.to_string(user.organization_id) do
+          {:ok, [topic: "#{user.organization_id}:#{user.id}"]}
+        else
+          {:error, "Auth Credentials mismatch"}
+        end
+      end)
     end
   end
 end
