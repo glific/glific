@@ -41,13 +41,13 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:feedback, :string)
   end
 
-  object :askme_bot_messages_result do
+  object :ask_glific_messages_result do
     field(:messages, list_of(:ask_glific_message))
     field(:has_more, :boolean)
     field(:limit, :integer)
   end
 
-  object :askme_bot_conversation do
+  object :ask_glific_conversation do
     field(:id, :string)
     field(:name, :string)
     field(:status, :string)
@@ -55,21 +55,21 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:updated_at, :integer)
   end
 
-  object :askme_bot_conversations_result do
-    field(:conversations, list_of(:askme_bot_conversation))
+  object :ask_glific_conversations_result do
+    field(:conversations, list_of(:ask_glific_conversation))
     field(:has_more, :boolean)
     field(:limit, :integer)
   end
 
   object :ask_glific_queries do
-    field :askme_bot_conversations, :askme_bot_conversations_result do
+    field :ask_glific_conversations, :ask_glific_conversations_result do
       arg(:limit, :integer)
       arg(:last_id, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskGlific.get_conversations/3)
     end
 
-    field :ask_glific_messages, :askme_bot_messages_result do
+    field :ask_glific_messages, :ask_glific_messages_result do
       arg(:conversation_id, non_null(:string))
       arg(:limit, :integer)
       arg(:first_id, :string)
