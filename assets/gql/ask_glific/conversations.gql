@@ -1,5 +1,5 @@
 query ask_glific_bot_conversations($limit: Int, $lastId: String) {
-  askGlificBotConversations(limit: $limit, lastId: $lastId) {
+  askGlificConversations(limit: $limit, lastId: $lastId) {
     conversations {
       id
       name
