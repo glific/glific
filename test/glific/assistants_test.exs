@@ -11,6 +11,7 @@ defmodule Glific.AssistantsTest do
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Notifications.Notification
   alias Glific.Partners
+  alias Ecto.Multi
   alias Glific.Repo
 
   defp enable_kaapi(attrs) do
@@ -1151,6 +1152,110 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "create_config_without_knowledge_base transaction" do
+    setup [:enable_kaapi]
+
+    test "atomically updates both assistant kaapi_uuid and config_version on Kaapi success",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_tx_uuid", version: %{version: 3}}}
+          }
+      end)
+
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "TX Assistant",
+                 organization_id: organization_id
+               })
+
+      assert assistant.kaapi_uuid == "kaapi_tx_uuid"
+      assert config_version.status == :ready
+      assert config_version.kaapi_version_number == 3
+
+      {:ok, db_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      {:ok, db_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert db_assistant.kaapi_uuid == "kaapi_tx_uuid"
+      assert db_cv.status == :ready
+      assert db_cv.kaapi_version_number == 3
+    end
+
+    test "marks config_version as failed and does not update assistant when Kaapi call fails",
+         %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 500, body: %{error: "Kaapi error"}}
+      end)
+
+      assert {:error, _reason} =
+               Assistants.create_assistant(%{
+                 name: "TX Fail Assistant",
+                 organization_id: organization_id
+               })
+    end
+
+    test "rolls back config_version update when assistant update fails",
+         %{organization_id: organization_id} do
+      {:ok, existing_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Taken Name",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Rollback Test Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are helpful",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      result =
+        Multi.new()
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
+            status: :ready,
+            kaapi_version_number: 1
+          })
+        )
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{name: existing_assistant.name})
+        )
+        |> Repo.transaction()
+
+      assert {:error, :updated_assistant, changeset, _} = result
+      assert %{name: ["has already been taken"]} == errors_on(changeset)
+
+      {:ok, db_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert db_cv.status == :in_progress
+      assert is_nil(db_cv.kaapi_version_number)
+    end
+  end
+
   describe "create_assistant with in-progress KB" do
     setup [:enable_kaapi]
 
@@ -1495,6 +1600,143 @@ defmodule Glific.AssistantsTest do
 
       assert updated_cv.status == :failed
       assert updated_cv.failure_reason == "Invalid documents: unsupported format"
+    end
+  end
+
+  describe "deferred_create_new_assistant transaction" do
+    setup [:enable_kaapi]
+
+    test "atomically updates both assistant kaapi_uuid and config_version on deferred Kaapi success",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Deferred TX KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "tmp-vs-deferred-tx",
+          size: 500,
+          kaapi_job_id: "job_deferred_tx_success"
+        })
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Deferred TX Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are helpful",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      link_kbv_to_acv(kbv, config_version, organization_id)
+
+      {:ok, _} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: "kaapi_deferred_tx_uuid", version: %{version: 5}}}
+          }
+      end)
+
+      Assistants.handle_knowledge_base_callback(%{
+        "data" => %{
+          "job_id" => "job_deferred_tx_success",
+          "status" => "SUCCESSFUL",
+          "collection" => %{"knowledge_base_id" => "real_vs_deferred_tx"},
+          "error_message" => nil
+        }
+      })
+
+      {:ok, db_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      {:ok, db_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert db_assistant.kaapi_uuid == "kaapi_deferred_tx_uuid"
+      assert db_cv.status == :ready
+      assert db_cv.kaapi_version_number == 5
+    end
+
+    test "rolls back assistant update when config_version update fails in transaction",
+         %{organization_id: organization_id} do
+      {:ok, existing_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Deferred Taken Name", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Deferred Rollback Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are helpful",
+          settings: %{"temperature" => 1.0},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      result =
+        Multi.new()
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{kaapi_uuid: "some-kaapi-uuid"})
+        )
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
+            status: :ready,
+            kaapi_version_number: 1
+          })
+        )
+        |> Multi.run(:force_failure, fn _repo, _changes ->
+          assistant
+          |> Assistant.changeset(%{name: existing_assistant.name})
+          |> Repo.update()
+        end)
+        |> Repo.transaction()
+
+      assert {:error, :force_failure, changeset, _} = result
+
+      {:ok, db_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      {:ok, db_cv} =
+        Repo.fetch(AssistantConfigVersion, config_version.id, skip_organization_id: true)
+
+      assert is_nil(db_assistant.kaapi_uuid)
+      assert db_cv.status == :in_progress
+      assert is_nil(db_cv.kaapi_version_number)
     end
   end
 

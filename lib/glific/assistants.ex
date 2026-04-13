@@ -344,26 +344,32 @@ defmodule Glific.Assistants do
   end
 
   @spec create_config_without_knowledge_base(Assistant.t(), AssistantConfigVersion.t(), map()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, any()}
   defp create_config_without_knowledge_base(assistant, config_version, kaapi_config) do
     case Kaapi.create_assistant_config(kaapi_config, kaapi_config.organization_id) do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version.version
 
-        {:ok, updated_config_version} =
-          config_version
-          |> AssistantConfigVersion.changeset(%{
+        Multi.new()
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
             status: :ready,
             kaapi_version_number: kaapi_version_number
           })
-          |> Repo.update()
+        )
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{kaapi_uuid: kaapi_response.data.id})
+        )
+        |> Repo.transaction()
+        |> case do
+          {:ok, %{updated_assistant: updated_assistant, config_version: updated_config_version}} ->
+            {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
 
-        {:ok, updated_assistant} =
-          assistant
-          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-          |> Repo.update()
-
-        {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
+          {:error, _failed_op, changeset, _} ->
+            {:error, changeset}
+        end
 
       {:error, error} ->
         config_version
