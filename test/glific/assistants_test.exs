@@ -1728,7 +1728,7 @@ defmodule Glific.AssistantsTest do
         end)
         |> Repo.transaction()
 
-      assert {:error, :force_failure, changeset, _} = result
+      assert {:error, :force_failure, _changeset, _} = result
 
       {:ok, db_assistant} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
 
