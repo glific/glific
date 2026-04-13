@@ -291,5 +291,24 @@ defmodule GlificWeb.ChatbotControllerTest do
       assert {:error, :invalid_page_url} =
                GlificWeb.ChatbotController.extract_shortcode("not-a-url")
     end
+
+    test "returns error for URL with empty subdomain" do
+      assert {:error, :invalid_page_url} =
+               GlificWeb.ChatbotController.extract_shortcode("https://.glific.com/path")
+    end
+  end
+
+  describe "POST /dify/chatbot-diagnose with invalid page_url" do
+    test "returns 400 for URL with unparseable host", %{conn: conn} do
+      params = %{
+        "page_url" => "https://.glific.com/path",
+        "tables" => %{"contacts" => %{"fields" => ["id"], "limit" => 5}}
+      }
+
+      conn = post(conn, "/dify/chatbot-diagnose", params)
+
+      assert json_response(conn, 400)["error"] ==
+               "Could not parse shortcode from page_url"
+    end
   end
 end
