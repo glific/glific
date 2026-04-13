@@ -4,6 +4,8 @@ defmodule Glific.AssistantsTest do
 
   import Ecto.Query
 
+  alias Ecto.Multi
+
   alias Glific.Assistants
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
@@ -11,7 +13,6 @@ defmodule Glific.AssistantsTest do
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Notifications.Notification
   alias Glific.Partners
-  alias Ecto.Multi
   alias Glific.Repo
 
   defp enable_kaapi(attrs) do
