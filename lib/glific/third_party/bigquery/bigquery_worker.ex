@@ -23,6 +23,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     priority: 1
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.AssistantConfigVersionKnowledgeBaseVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     BigQuery,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
@@ -118,7 +123,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "whatsapp_forms",
       "whatsapp_forms_responses",
       "certificate_templates",
-      "issued_certificates"
+      "issued_certificates",
+      "assistants",
+      "assistant_config_versions",
+      "knowledge_base_versions"
     ]
 
     list_of_table =
@@ -310,6 +318,179 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil} = _attrs)
        when table in ["flows", "stats", "stats_all"],
        do: :ok
+
+  defp queue_table_data("assistants", organization_id, attrs) do
+    Logger.info(
+      "fetching assistants data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("assistants", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            kaapi_uuid: row.kaapi_uuid,
+            assistant_display_id: row.assistant_display_id,
+            active_config_version_id: row.active_config_version_id,
+            clone_status: row.clone_status,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :assistants, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("assistant_config_versions", organization_id, attrs) do
+    Logger.info(
+      "fetching assistant_config_versions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("assistant_config_versions", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            assistant_id: row.assistant_id,
+            version_number: row.version_number,
+            kaapi_version_number: row.kaapi_version_number,
+            description: row.description,
+            prompt: row.prompt,
+            provider: row.provider,
+            model: row.model,
+            settings: if(row.settings, do: Jason.encode!(row.settings)),
+            status: if(row.status, do: to_string(row.status)),
+            failure_reason: row.failure_reason,
+            deleted_at: BigQuery.format_date(row.deleted_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :assistant_config_versions, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data(
+         "assistant_config_version_knowledge_base_versions",
+         organization_id,
+         attrs
+       ) do
+    Logger.info(
+      "fetching assistant_config_version_knowledge_base_versions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("assistant_config_version_knowledge_base_versions", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            assistant_config_version_id: row.assistant_config_version_id,
+            knowledge_base_version_id: row.knowledge_base_version_id,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(
+      &make_job(
+        &1,
+        :assistant_config_version_knowledge_base_versions,
+        organization_id,
+        attrs
+      )
+    )
+
+    :ok
+  end
+
+  defp queue_table_data("knowledge_bases", organization_id, attrs) do
+    Logger.info(
+      "fetching knowledge_bases data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("knowledge_bases", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :knowledge_bases, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("knowledge_base_versions", organization_id, attrs) do
+    Logger.info(
+      "fetching knowledge_base_versions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("knowledge_base_versions", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            knowledge_base_id: row.knowledge_base_id,
+            version_number: row.version_number,
+            files: if(row.files, do: Jason.encode!(row.files)),
+            size: row.size,
+            status: if(row.status, do: to_string(row.status)),
+            kaapi_job_id: row.kaapi_job_id,
+            llm_service_id: row.llm_service_id,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :knowledge_base_versions, organization_id, attrs))
+
+    :ok
+  end
 
   defp queue_table_data("messages", organization_id, attrs) do
     Logger.info(
@@ -1629,6 +1810,45 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp apply_action_clause(query, _attrs), do: query
 
   @spec get_query(String.t(), non_neg_integer, map()) :: Ecto.Queryable.t()
+  defp get_query("assistants", organization_id, attrs),
+    do:
+      Assistant
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("assistant_config_versions", organization_id, attrs),
+    do:
+      AssistantConfigVersion
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query(
+         "assistant_config_version_knowledge_base_versions",
+         organization_id,
+         attrs
+       ),
+       do:
+         AssistantConfigVersionKnowledgeBaseVersion
+         |> where([m], m.organization_id == ^organization_id)
+         |> apply_action_clause(attrs)
+         |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("knowledge_bases", organization_id, attrs),
+    do:
+      KnowledgeBase
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
+  defp get_query("knowledge_base_versions", organization_id, attrs),
+    do:
+      KnowledgeBaseVersion
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
   defp get_query("messages", organization_id, attrs),
     do:
       Message

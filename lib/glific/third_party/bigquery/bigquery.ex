@@ -9,6 +9,11 @@ defmodule Glific.BigQuery do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.AssistantConfigVersionKnowledgeBaseVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     BigQuery.BigQueryJob,
     BigQuery.Schema,
     Certificates.CertificateTemplate,
@@ -59,6 +64,10 @@ defmodule Glific.BigQuery do
   }
 
   @bigquery_tables %{
+    "assistants" => :assistant_schema,
+    "assistant_config_versions" => :assistant_config_version_schema,
+    "assistant_config_version_knowledge_base_versions" =>
+      :assistant_config_version_knowledge_base_version_schema,
     "contacts" => :contact_schema,
     "contact_histories" => :contact_history_schema,
     "contacts_fields" => :contact_fields_schema,
@@ -90,7 +99,9 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => :whatsapp_form_schema,
     "whatsapp_forms_responses" => :whatsapp_form_response_schema,
     "certificate_templates" => :certificate_templates_schema,
-    "issued_certificates" => :issued_certificates_schema
+    "issued_certificates" => :issued_certificates_schema,
+    "knowledge_bases" => :knowledge_base_schema,
+    "knowledge_base_versions" => :knowledge_base_version_schema
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -112,9 +123,11 @@ defmodule Glific.BigQuery do
   @spec ignore_updates_for_table() :: list()
   def ignore_updates_for_table do
     [
+      "assistant_config_version_knowledge_base_versions",
       "contact_histories",
       "flow_labels",
       "flows",
+      "knowledge_bases",
       "message_conversations",
       "stats",
       "stats_all",
@@ -202,6 +215,10 @@ defmodule Glific.BigQuery do
   end
 
   @table_lookup %{
+    "assistants" => Assistant,
+    "assistant_config_versions" => AssistantConfigVersion,
+    "assistant_config_version_knowledge_base_versions" =>
+      AssistantConfigVersionKnowledgeBaseVersion,
     "contact_histories" => ContactHistory,
     "contacts" => Contact,
     "contacts_fields" => ContactsField,
@@ -236,6 +253,8 @@ defmodule Glific.BigQuery do
     "whatsapp_forms_responses" => WhatsappFormResponse,
     "certificate_templates" => CertificateTemplate,
     "issued_certificates" => IssuedCertificate,
+    "knowledge_bases" => KnowledgeBase,
+    "knowledge_base_versions" => KnowledgeBaseVersion,
     "trial_users" => TrialUsers
   }
 
