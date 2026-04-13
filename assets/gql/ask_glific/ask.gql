@@ -1,0 +1,11 @@
+mutation askGlific($input: AskGlificInput!) {
+  askGlific(input: $input) {
+    answer
+    conversationId
+    conversationName
+    messageId
+    errors {
+      message
+    }
+  }
+}
