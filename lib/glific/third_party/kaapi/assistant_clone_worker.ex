@@ -188,9 +188,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
   @spec update_clone_status(Assistant.t(), String.t()) :: :ok
   defp update_clone_status(assistant, status) do
-    assistant
-    |> Ecto.Changeset.change(%{clone_status: status})
-    |> Repo.update!()
+    {1, _} =
+      from(a in Assistant, where: a.id == ^assistant.id)
+      |> Repo.update_all(set: [clone_status: status])
 
     :ok
   end
