@@ -161,9 +161,6 @@ config :glific,
   dify_api_key: env!("DIFY_API_KEY", :string!, "This is not a secret")
 
 config :glific,
-  dify_callback_api_key: env!("DIFY_CALLBACK_API_KEY", :string!, "This is not a secret")
-
-config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
 
 config :glific, Glific.Erase,

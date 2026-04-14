@@ -56,7 +56,7 @@ defmodule GlificWeb.ChatbotController do
   end
 
   defp verify_api_key(conn) do
-    configured_key = Application.get_env(:glific, :dify_callback_api_key, "")
+    configured_key = Application.get_env(:glific, :dify_api_key, "")
     request_key = get_req_header(conn, "x-dify-api-key") |> List.first()
 
     if configured_key != "" and request_key == configured_key do
