@@ -67,7 +67,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
          {:ok, %{data: %{id: kaapi_uuid, version: %{version: kaapi_config_version}}}} <-
            Kaapi.create_assistant_config(params, organization_id),
          :ok <- create_cloned_assistant(params, kb_version, kaapi_uuid, kaapi_config_version) do
-      update_clone_status(assistant, "")
+      update_clone_status(assistant, "completed")
 
       send_clone_notification(
         organization_id,
