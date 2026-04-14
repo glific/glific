@@ -77,7 +77,7 @@ defmodule GlificWeb.Schema.ExportTest do
         roles: ["glific_admin"],
         organization_id: user.organization_id
       })
-    
+
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -7, :day)
 
