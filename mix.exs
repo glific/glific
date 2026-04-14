@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "8.3.0",
+      version: "8.4.4",
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -168,7 +168,8 @@ defmodule Glific.MixProject do
       {:passgen, "~> 0.1.1"},
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
-      {:ex_audit, "~> 0.10"}
+      {:ex_audit, "~> 0.10"},
+      {:req, "~> 0.5.0"}
     ]
   end
 

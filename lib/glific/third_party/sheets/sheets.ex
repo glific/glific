@@ -15,7 +15,6 @@ defmodule Glific.Sheets do
     Messages,
     Notifications,
     Repo,
-    Sheets.ApiClient,
     Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
@@ -62,21 +61,17 @@ defmodule Glific.Sheets do
     end
   end
 
-  defp validate_sheet(%{type: "READ", url: url} = _attrs) when not is_nil(url) do
-    client =
-      Tesla.client([
-        {Tesla.Middleware.FollowRedirects, max_redirects: 5}
-      ])
+  defp validate_sheet(%{type: "READ", url: url} = attrs) when not is_nil(url) do
+    case GoogleSheets.fetch_credentials(attrs.organization_id) do
+      {:ok, _} ->
+        spreadsheet_id = extract_spreadsheet_id(url)
+        check_read_access(attrs.organization_id, spreadsheet_id)
 
-    Tesla.get(client, url)
-    |> case do
-      # Accept both 200s and 300s
-      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
-        {:ok, true}
+      {:error, "Google API is not active"} ->
+        check_public_access(url)
 
-      _ ->
-        {:error,
-         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -104,6 +99,46 @@ defmodule Glific.Sheets do
 
       {:error, reason} ->
         {:error, "Failed to verify edit access: #{inspect(reason)}"}
+    end
+  end
+
+  @spec check_read_access(non_neg_integer(), String.t()) :: {:ok, true} | {:error, String.t()}
+  defp check_read_access(org_id, spreadsheet_id) do
+    case GoogleSheets.get_headers(org_id, spreadsheet_id) do
+      {:ok, _headers} ->
+        {:ok, true}
+
+      {:error, %Tesla.Env{status: 403}} ->
+        {:error,
+         "No read access to the Google Sheet. Please ensure the service account has viewer permissions."}
+
+      {:error, %Tesla.Env{status: 404}} ->
+        {:error,
+         "Google Sheet not found. Please ensure the URL is correct and the service account has access."}
+
+      {:error, reason} ->
+        {:error, "Failed to verify read access: #{inspect(reason)}"}
+    end
+  end
+
+  @spec check_public_access(String.t()) :: {:ok, true} | {:error, String.t()}
+  defp check_public_access(url) do
+    client = Tesla.client([{Tesla.Middleware.FollowRedirects, max_redirects: 5}])
+
+    header_url =
+      try do
+        build_export_url(url) <> "&range=A1:ZZ1"
+      rescue
+        MatchError -> url
+      end
+
+    case Tesla.get(client, header_url) do
+      {:ok, %Tesla.Env{status: status}} when status in 200..399 ->
+        {:ok, true}
+
+      _ ->
+        {:error,
+         "Please double-check the URL and make sure the sharing access for the sheet is at least set to 'Anyone with the link' can view."}
     end
   end
 
@@ -214,14 +249,19 @@ defmodule Glific.Sheets do
 
   def sync_sheet_data(sheet) do
     Glific.Metrics.increment("Sheets Read")
-
-    last_synced_at = DateTime.utc_now()
     export_url = build_export_url(sheet.url)
 
+    last_synced_at = DateTime.truncate(DateTime.utc_now(), :second)
+
     sync_result =
-      [url: export_url]
-      |> ApiClient.get_csv_content()
-      |> run_sync_transaction(sheet, last_synced_at)
+      with {:ok, rows} <- GoogleSheets.read_sheet_data(sheet.organization_id, export_url),
+           {:ok, decoded_rows} <- decode_all_csv_rows(rows),
+           {:ok, nil} <- run_sync_transaction(sheet, last_synced_at, decoded_rows) do
+        handle_sync_result(:ok, sheet)
+      else
+        error ->
+          handle_sync_result(error, sheet)
+      end
 
     sync_status = report_sync_result(sync_result.sync_successful?, sheet)
     sheet_data_count = count_sheet_data(sheet.id)
@@ -288,115 +328,175 @@ defmodule Glific.Sheets do
     |> Repo.aggregate(:count)
   end
 
-  @spec run_sync_transaction(Enumerable.t(), Sheet.t(), DateTime.t()) :: map()
-  defp run_sync_transaction(csv_content, sheet, last_synced_at) do
-    # Convert the stream to a list once to avoid consumption issues
-    csv_content_list = Enum.to_list(csv_content)
+  @spec decode_all_csv_rows(list({:ok, map()} | {:error, term()})) ::
+          {:ok, [map()]} | {:error, String.t()}
+  defp decode_all_csv_rows(csv_content_list) do
+    result =
+      Enum.reduce_while(csv_content_list, {:ok, []}, fn
+        {:ok, row}, {:ok, acc} ->
+          {:cont, {:ok, [row | acc]}}
 
+        {:error, err}, _ ->
+          err_string = inspect(err)
+
+          # This is because we currently don't parse Tesla sheet download errors and instead let the code flow into
+          # CSV.decode() which causes errors because then the contet is html which is not csv compatible.
+          # This is a temporary fix to handle the errors gracefully. We need to parse the Tesla sheet download errors and pass them to CSV.decode
+          # so that we can handle the errors gracefully.
+          sanitized_message =
+            if String.contains?(err_string, "Escape sequence started on line") or
+                 String.contains?(err_string, "Stray escape character on line") do
+              "Sheet is not accessible or not found."
+            else
+              err_string
+            end
+
+          {:halt, {:error, sanitized_message}}
+      end)
+
+    case result do
+      {:ok, acc} -> {:ok, Enum.reverse(acc)}
+      {:error, _} = err -> err
+    end
+  end
+
+  @spec run_sync_transaction(Sheet.t(), DateTime.t(), [map()]) ::
+          {:ok, nil} | {:error, String.t()}
+  defp run_sync_transaction(sheet, last_synced_at, decoded_rows) do
     delete_query = from(sd in SheetData, where: sd.sheet_id == ^sheet.id)
 
     Multi.new()
     |> Multi.delete_all(:delete_sheet_data, delete_query)
-    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(csv_content_list, sheet) end)
+    |> Multi.run(:validate_headers, fn _, _ -> validate_headers(decoded_rows) end)
     |> Multi.run(:process_sheet_data, fn _, _ ->
-      process_sheet_data(csv_content_list, sheet, last_synced_at)
+      process_sheet_data(decoded_rows, sheet, last_synced_at)
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{process_sheet_data: result}} -> result
-      {:error, _, result, _} -> result
+      {:ok, _} ->
+        {:ok, nil}
+
+      {:error, :delete_sheet_data, reason, _changes} ->
+        {:error, error_reason_to_string(reason)}
+
+      {:error, :validate_headers, message, _} when is_binary(message) ->
+        {:error, message}
+
+      {:error, :process_sheet_data, message, _} when is_binary(message) ->
+        {:error, message}
+
+      {:error, _, other, _} ->
+        {:error, error_reason_to_string(other)}
     end
   end
 
-  defp validate_headers(csv_content, sheet) do
-    case Enum.take(csv_content, 1) do
-      [{:ok, row}] ->
-        row
-        |> Map.values()
-        |> Enum.all?(&(!is_list(&1)))
-        |> case do
-          true ->
-            {:ok, true}
+  @spec error_reason_to_string(term()) :: String.t()
+  defp error_reason_to_string(msg) when is_binary(msg), do: msg
+  defp error_reason_to_string(%Ecto.Changeset{} = cs), do: generate_error_message(cs)
+  defp error_reason_to_string(other), do: inspect(other)
 
-          false ->
-            {:error, handle_sync_failure(sheet, "Repeated or missing headers")}
-        end
+  @spec validate_headers([map()]) :: {:ok, true} | {:error, String.t()}
+  defp validate_headers([]), do: {:error, "Unknown error or empty content"}
 
-      [{:error, err}] ->
-        {:error, handle_sync_failure(sheet, inspect(err))}
-
-      _ ->
-        {:error, handle_sync_failure(sheet, "Unknown error or empty content")}
+  defp validate_headers([first_row | _]) do
+    if Enum.all?(Map.values(first_row), &(!is_list(&1))) do
+      {:ok, true}
+    else
+      {:error, "Repeated or missing headers"}
     end
   end
 
-  defp process_sheet_data(csv_content, sheet, last_synced_at) do
-    initial_acc = %{sync_successful?: true, error_message: nil}
+  @spec process_sheet_data([map()], Sheet.t(), DateTime.t()) ::
+          {:ok, nil} | {:error, String.t()}
+  defp process_sheet_data(decoded_rows, sheet, last_synced_at) do
+    chunk_size = Application.get_env(:glific, :sheets_chunk_size)
 
-    csv_content
-    |> Enum.reduce_while(initial_acc, fn
-      {:ok, row}, acc ->
-        process_row(row, acc, sheet, last_synced_at)
+    decoded_rows
+    |> Enum.chunk_every(chunk_size)
+    |> Enum.reduce_while({:ok, nil}, fn chunk, _ ->
+      with {:ok, rows_to_insert} <- build_chunk_rows(chunk, sheet, last_synced_at),
+           {:ok, _} <- insert_sheet_data_rows(rows_to_insert) do
+        {:cont, {:ok, nil}}
+      else
+        {:error, message} -> {:halt, {:error, message}}
+      end
+    end)
+  end
 
-      {:error, err}, acc ->
-        handle_row_error(err, acc, sheet)
+  @spec build_chunk_rows([map()], Sheet.t(), DateTime.t()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp build_chunk_rows(chunk, sheet, last_synced_at) do
+    chunk
+    |> Enum.reduce_while({:ok, []}, fn row, {:ok, acc} ->
+      row_values = clean_row_keys_and_values(row)
+
+      case prepare_sheet_data_attrs(row_values, sheet, last_synced_at) do
+        {:error, changeset} ->
+          {:halt, {:error, generate_error_message(changeset)}}
+
+        valid_attrs ->
+          {:cont, {:ok, [valid_attrs | acc]}}
+      end
     end)
     |> case do
-      %{sync_successful?: true} = result -> {:ok, result}
-      result -> {:error, result}
+      {:ok, results} -> {:ok, Enum.reverse(results)}
+      {:error, _} = error -> error
     end
   end
 
-  @spec process_row(map(), map(), Sheet.t(), DateTime.t()) :: {:cont, map()}
-  defp process_row(row, acc, sheet, last_synced_at) do
-    %{values: row_values} = parse_row_values(row)
+  @spec insert_sheet_data_rows(list(map())) :: {:ok, integer()} | {:error, String.t()}
+  defp insert_sheet_data_rows([]), do: {:ok, 0}
 
-    row_values
-    |> prepare_sheet_data_attrs(sheet, last_synced_at)
-    |> create_sheet_data()
-    |> case do
-      {:ok, _} ->
-        {:cont, acc}
+  defp insert_sheet_data_rows(rows_to_insert) do
+    case Repo.insert_all(SheetData, rows_to_insert, on_conflict: :nothing) do
+      {count, _} when count == length(rows_to_insert) ->
+        {:ok, count}
 
-      {:error, changeset} ->
-        {:halt, %{sync_successful?: false, error_message: generate_error_message(changeset)}}
+      {count, _} ->
+        {:error,
+         "Failed to insert all rows likely due to duplicate keys: expected #{length(rows_to_insert)}, got #{count}"}
     end
   end
 
-  @spec handle_row_error(any(), map(), Sheet.t()) :: {:halt, map()}
-  defp handle_row_error(err, _acc, sheet) do
-    # If we get any error, we stop executing the current sheet further, log it.
-    {:halt, handle_sync_failure(sheet, inspect(err))}
+  @spec handle_sync_result(:ok | {:error, term()}, Sheet.t()) :: %{
+          sync_successful?: boolean(),
+          error_message: String.t() | nil
+        }
+  defp handle_sync_result(:ok, sheet) do
+    Logger.info("Sheet sync successful. org id: #{sheet.organization_id}, sheet_id: #{sheet.id}")
+
+    %{sync_successful?: true, error_message: nil}
   end
 
-  defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
-    %{
-      key: values["key"],
-      row_data: values,
-      sheet_id: sheet.id,
-      organization_id: sheet.organization_id,
-      last_synced_at: last_synced_at
-    }
-  end
-
-  defp handle_sync_failure(sheet, reason) do
-    reason =
-      if String.contains?(reason, "Stray escape character on line"),
-        do: "Sheet not found or inaccessible",
-        else: reason
+  defp handle_sync_result({:error, reason}, sheet) do
+    reason = normalize_sync_error_reason(reason)
 
     Logger.error(
-      "Sheet sync failed. \n Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
+      "Sheet sync failed. Reason: #{reason}, org id: #{sheet.organization_id}, sheet_id: #{sheet.id}"
     )
 
     %{sync_successful?: false, error_message: reason}
   end
 
-  @spec parse_row_values(map()) :: map()
-  defp parse_row_values(row) do
-    clean_row_values = clean_row_keys_and_values(row)
+  @spec normalize_sync_error_reason(term()) :: String.t()
+  defp normalize_sync_error_reason(reason) do
+    reason = if is_binary(reason), do: reason, else: inspect(reason)
 
-    %{values: clean_row_values}
+    if String.contains?(reason, "Stray escape character on line"),
+      do: "Sheet not found or inaccessible",
+      else: reason
+  end
+
+  @spec prepare_sheet_data_attrs(map(), Sheet.t(), DateTime.t()) ::
+          map() | {:error, Ecto.Changeset.t()}
+  defp prepare_sheet_data_attrs(values, sheet, last_synced_at) do
+    SheetData.prepare_insert_all_attrs(%{
+      key: values["key"],
+      row_data: values,
+      sheet_id: sheet.id,
+      organization_id: sheet.organization_id,
+      last_synced_at: last_synced_at
+    })
   end
 
   @spec clean_row_keys_and_values(map()) :: map()

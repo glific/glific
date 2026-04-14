@@ -7,6 +7,7 @@ defmodule Glific.Assistants.AssistantTest do
   alias Glific.{
     Assistants,
     Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Partners,
     Repo
   }
@@ -103,11 +104,16 @@ defmodule Glific.Assistants.AssistantTest do
     end
 
     test "unique assistant_display_id has to be unique", %{valid_attrs: valid_attrs} do
-      assert {:ok, _assistant} =
+      assert {:ok, assistant} =
                Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
 
+      duplicate_attrs =
+        valid_attrs
+        |> Map.put(:name, "Different Name")
+        |> Map.put(:assistant_display_id, assistant.assistant_display_id)
+
       assert {:error, changeset} =
-               Assistant.changeset(%Assistant{}, valid_attrs) |> Glific.Repo.insert()
+               Assistant.changeset(%Assistant{}, duplicate_attrs) |> Glific.Repo.insert()
 
       assert %{assistant_display_id: ["has already been taken"]} = errors_on(changeset)
     end
@@ -249,6 +255,35 @@ defmodule Glific.Assistants.AssistantTest do
   end
 
   describe "upload_file/2" do
+    test "validates assistant-supported file extensions", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "This is not a secret/api/v1/documents/"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                fname: "uploaded",
+                id: "d33539f6-2196-477c-a127-0f17f04ef133",
+                inserted_at: "2026-01-30T10:51:16.872363"
+              },
+              error: nil,
+              metadata: nil
+            }
+          }
+      end)
+
+      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"] do
+        upload = build_upload_for_extension(extension)
+        assert {:ok, _} = Assistants.upload_file(%{media: upload}, organization_id)
+      end
+
+      unsupported_upload = build_upload_for_extension("png")
+
+      assert {:error, "Files with extension '.png' not supported in Assistants"} =
+               Assistants.upload_file(%{media: unsupported_upload}, organization_id)
+    end
+
     test "uploads the file successfully to Kaapi", %{
       organization_id: organization_id,
       upload: upload
@@ -355,6 +390,77 @@ defmodule Glific.Assistants.AssistantTest do
       assert is_binary(error_message)
       assert error_message =~ "status 500"
     end
+  end
+
+  describe "mark_clone_in_progress/1" do
+    test "does not update updated_at when setting clone_status to in_progress", %{
+      organization_id: organization_id,
+      knowledge_base_version: knowledge_base_version
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Clone Status Test Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          prompt: "Test prompt",
+          model: "gpt-4o-mini",
+          provider: "openai",
+          status: :ready,
+          settings: %{"temperature" => 0.2},
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now()
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: config_version.id,
+          knowledge_base_version_id: knowledge_base_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      original_updated_at = assistant.updated_at
+
+      {:ok, %{message: "Assistant clone initiated"}} = Assistants.clone_assistant(assistant.id)
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "in_progress"
+      assert refreshed.updated_at == original_updated_at
+    end
+  end
+
+  defp build_upload_for_extension(extension) do
+    tmp_path =
+      Path.join(
+        System.tmp_dir!(),
+        "assistant_upload_#{extension}_#{System.unique_integer([:positive])}.#{extension}"
+      )
+
+    File.write!(tmp_path, "fake content for #{extension}")
+
+    %Plug.Upload{
+      path: tmp_path,
+      content_type: "application/octet-stream",
+      filename: "sample.#{extension}"
+    }
   end
 
   defp enable_kaapi(attrs) do

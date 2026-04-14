@@ -117,6 +117,9 @@ config :glific,
   open_ai: env!("OPEN_AI_KEY", :string!, "This is not a secret")
 
 config :glific,
+  gemini_api_key: env!("GEMINI_API_KEY", :string!, "This is not a secret")
+
+config :glific,
   google_translate: env!("GOOGLE_TRANSLATE_KEY", :string!, "This is not a secret")
 
 config :glific,
@@ -144,6 +147,9 @@ config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,
+  sheets_chunk_size: env!("SHEETS_CHUNK_SIZE", :integer, 1000)
+
+config :glific,
   ERP_API_KEY: env!("ERP_API_KEY", :string!, "This is not the ERP API key"),
   ERP_SECRET: env!("ERP_SECRET", :string!, "This is not the ERP secret"),
   ERP_ENDPOINT: env!("ERP_ENDPOINT", :string, "This is not a secret")
@@ -160,14 +166,26 @@ config :glific, Glific.Erase,
 
 # Percent of total job metrics to be sent to appsignal
 config :glific,
-  appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 10)
+  appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 100)
+
+upload_adapter =
+  if config_env() == :test,
+    do: nil,
+    else:
+      {Tesla.Adapter.Hackney,
+       [recv_timeout: 60_000, connect_timeout: 15_000, pool: :kaapi_upload_pool]}
 
 config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_endpoint: env!("KAAPI_ENDPOINT", :string, "This is not a secret"),
-  kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret")
+  kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret"),
+  upload_adapter: upload_adapter
 
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
   gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
+
+config :glific,
+  base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
+  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil)
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)

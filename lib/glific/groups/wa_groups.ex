@@ -322,7 +322,7 @@ defmodule Glific.Groups.WAGroups do
   @spec set_webhook_endpoint(map()) :: :ok | {:error, String.t()}
   def set_webhook_endpoint(org_details) do
     payload = %{
-      "webhook" => "https://api.#{org_details.shortcode}.glific.com/maytapi"
+      "webhook" => Glific.api_callback_base(org_details.shortcode) <> "/maytapi"
     }
 
     case ApiClient.set_webhook(org_details.id, payload) do

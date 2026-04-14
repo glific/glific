@@ -13,11 +13,13 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Flags
   alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
   alias Glific.Repo
   alias Glific.ThirdParty.Kaapi
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
 
   defmodule Error do
     @moduledoc """
@@ -36,11 +38,11 @@ defmodule Glific.Assistants do
     "csv",
     "doc",
     "docx",
+    "htm",
     "html",
-    "java",
     "md",
+    "markdown",
     "pdf",
-    "pptx",
     "txt"
   ]
 
@@ -50,11 +52,106 @@ defmodule Glific.Assistants do
     "PROCESSING" => :in_progress
   }
 
-  @assistant_config_version_status_mapping %{
-    "SUCCESSFUL" => :ready,
-    "FAILED" => :failed,
-    "PROCESSING" => :in_progress
-  }
+  @doc """
+  Lists all assistant config versions.
+  """
+  @spec list_assistant_config_versions() :: list(map())
+  def list_assistant_config_versions do
+    AssistantConfigVersion
+    |> where([v], is_nil(v.deleted_at))
+    |> where([v], v.status == :ready)
+    |> Repo.all()
+    |> Repo.preload(:assistant)
+    |> Enum.map(fn version ->
+      version
+      |> Map.put(:kaapi_uuid, version.assistant.kaapi_uuid)
+      |> Map.put(:assistant_name, version.assistant.name)
+    end)
+    |> Enum.sort_by(& &1.assistant_name)
+  end
+
+  @doc """
+  Lists all config versions for a given assistant, ordered by version_number descending.
+  Each version includes an `is_live` boolean indicating whether it is the active version.
+
+  ## Examples
+
+      iex> Glific.Assistants.list_assistant_config_versions(1)
+      [%{id: 2, version_number: 2, is_live: true, ...}, %{id: 1, version_number: 1, is_live: false, ...}]
+  """
+  @spec list_assistant_config_versions(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_assistant_config_versions(assistant_id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}) do
+      versions =
+        from(v in AssistantConfigVersion,
+          where: v.assistant_id == ^assistant_id,
+          order_by: [desc: v.version_number]
+        )
+        |> Repo.all()
+
+      {:ok,
+       Enum.map(versions, fn version ->
+         %{
+           id: version.id,
+           version_number: version.version_number,
+           model: version.model,
+           prompt: version.prompt,
+           settings: version.settings,
+           status: version.status,
+           is_live: version.id == assistant.active_config_version_id,
+           description: version.description,
+           inserted_at: version.inserted_at,
+           updated_at: version.updated_at
+         }
+       end)}
+    end
+  end
+
+  @doc """
+  Sets a specific config version as the live (active) version for an assistant.
+  Only versions with status `:ready` can be set as live.
+
+  Returns the updated assistant or an error if the version is not found, does not
+  belong to the assistant, or is not in `:ready` status.
+
+  ## Examples
+
+      iex> Glific.Assistants.set_live_version(1, 2)
+      {:ok, %{id: 1, active_config_version_id: 2, live_version_number: 2}}
+
+      iex> Glific.Assistants.set_live_version(1, 99)
+      {:error, ["Glific.Assistants.AssistantConfigVersion", "Resource not found"]}
+  """
+  @spec set_live_version(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def set_live_version(assistant_id, version_id) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: assistant_id}),
+         {:ok, version} <-
+           Repo.fetch_by(AssistantConfigVersion, %{
+             id: version_id,
+             assistant_id: assistant_id
+           }),
+         :ok <- validate_version_ready(version),
+         {:ok, updated_assistant} <-
+           assistant
+           |> Assistant.set_active_config_version_changeset(%{
+             active_config_version_id: version_id
+           })
+           |> Repo.update() do
+      {:ok,
+       %{
+         id: updated_assistant.id,
+         active_config_version_id: updated_assistant.active_config_version_id,
+         live_version_number: version.version_number
+       }}
+    end
+  end
+
+  @spec validate_version_ready(AssistantConfigVersion.t()) :: :ok | {:error, String.t()}
+  defp validate_version_ready(%AssistantConfigVersion{status: :ready}), do: :ok
+
+  defp validate_version_ready(_version),
+    do: {:error, "Version must be in ready status to be set as live"}
 
   @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
@@ -64,11 +161,36 @@ defmodule Glific.Assistants do
   def list_assistants(args) do
     assistants =
       args
-      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
       |> Repo.all()
       |> preload_assistant_associations()
 
     Enum.map(assistants, &transform_to_legacy_shape/1)
+  end
+
+  @doc """
+  Counts assistants filtered by the given args.
+  """
+  @spec count_assistants(map()) :: integer()
+  def count_assistants(args) do
+    args
+    |> Repo.list_filter_query(Assistant, nil, &filter_with/2)
+    |> Repo.aggregate(:count)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:name_or_assistant_id, term}, query ->
+        from(a in query,
+          where: ilike(a.name, ^"%#{term}%") or ilike(a.assistant_display_id, ^"%#{term}%")
+        )
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
@@ -109,11 +231,9 @@ defmodule Glific.Assistants do
 
     active_config_version = assistant.active_config_version
 
-    new_version_in_progress =
-      Enum.any?(assistant.config_versions, fn config_version ->
-        config_version.id != assistant.active_config_version_id and
-          config_version.status == :in_progress
-      end)
+    new_version_in_progress = assistant.config_versions != []
+
+    vector_store_data = build_vector_store_data(active_config_version)
 
     %{
       id: assistant.id,
@@ -125,9 +245,13 @@ defmodule Glific.Assistants do
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
-      vector_store_data: build_vector_store_data(active_config_version),
+      live_version_number: active_config_version.version_number,
+      legacy: if(vector_store_data, do: vector_store_data.legacy, else: false),
+      clone_status: assistant.clone_status,
+      vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
-      updated_at: assistant.updated_at
+      updated_at: assistant.updated_at,
+      active_config_version_id: assistant.active_config_version_id
     }
   end
 
@@ -215,14 +339,139 @@ defmodule Glific.Assistants do
   """
   @spec create_assistant(map()) :: {:ok, map()} | {:error, any()}
   def create_assistant(user_params) do
-    with :ok <- validate_knowledge_base_presence(user_params),
-         {:ok, knowledge_base_version} <-
-           KnowledgeBaseVersion.get_by_version_id(user_params[:knowledge_base_version_id]),
+    with {:ok, knowledge_base_version} <-
+           resolve_optional_knowledge_base(user_params),
          {:ok, kaapi_config} <- build_kaapi_config(user_params, knowledge_base_version),
-         {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version) do
+         {:ok, result} <- create_assistant_transaction(kaapi_config, knowledge_base_version),
+         {:ok, _config_version} <- maybe_register_with_kaapi(result, knowledge_base_version) do
       Metrics.increment("Assistant Created", user_params[:organization_id])
-      {:ok, result}
+
+      if is_nil(knowledge_base_version) do
+        create_config_without_knowledge_base(
+          result.assistant,
+          result.config_version,
+          kaapi_config
+        )
+      else
+        {:ok, result}
+      end
     end
+  end
+
+  @spec create_config_without_knowledge_base(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp create_config_without_knowledge_base(assistant, config_version, kaapi_config) do
+    case Kaapi.create_assistant_config(kaapi_config, kaapi_config.organization_id) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version.version
+
+        {:ok, updated_config_version} =
+          config_version
+          |> AssistantConfigVersion.changeset(%{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
+          |> Repo.update()
+
+        {:ok, updated_assistant} =
+          assistant
+          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
+          |> Repo.update()
+
+        {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
+
+      {:error, error} ->
+        config_version
+        |> AssistantConfigVersion.changeset(%{status: :failed})
+        |> Repo.update()
+
+        Glific.log_exception(%Error{
+          message: "Kaapi config creation failed for assistant. Reason: #{inspect(error)}",
+          reason: inspect(error)
+        })
+
+        {:error, "Kaapi config creation failed for assistant, Reason: #{inspect(error)}"}
+    end
+  end
+
+  @doc """
+  Clones an existing assistant by copying its config (prompt, model, temperature)
+  into a new assistant record.
+  """
+  @spec clone_assistant(non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  @spec clone_assistant(non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  def clone_assistant(id, version_id \\ nil) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         assistant <-
+           Repo.preload(assistant, active_config_version: :knowledge_base_versions) do
+      if legacy_assistant?(assistant) do
+        enqueue_legacy_clone(assistant)
+      else
+        enqueue_non_legacy_clone(assistant, version_id)
+      end
+    end
+  end
+
+  @spec legacy_assistant?(Assistant.t()) :: boolean()
+  defp legacy_assistant?(assistant) do
+    case assistant.active_config_version.knowledge_base_versions do
+      [%KnowledgeBaseVersion{kaapi_job_id: nil} | _] -> true
+      _ -> false
+    end
+  end
+
+  @spec enqueue_legacy_clone(Assistant.t()) :: {:ok, map()} | {:error, any()}
+  defp enqueue_legacy_clone(assistant) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: assistant.active_config_version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: true
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
+      {:ok, %{message: "Assistant clone initiated"}}
+    end
+  end
+
+  @spec enqueue_non_legacy_clone(Assistant.t(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, any()}
+  defp enqueue_non_legacy_clone(_assistant, nil),
+    do: {:error, "version_id is required to clone a non-legacy assistant"}
+
+  defp enqueue_non_legacy_clone(assistant, version_id) do
+    job_args = %{
+      assistant_id: assistant.id,
+      version_id: version_id,
+      organization_id: assistant.organization_id,
+      is_legacy: false
+    }
+
+    with {:ok, job} <- AssistantCloneWorker.new(job_args) |> Oban.insert(),
+         :ok <- check_job_conflict(job),
+         {:ok, _assistant} <- mark_clone_in_progress(assistant) do
+      {:ok, %{message: "Assistant clone initiated"}}
+    end
+  end
+
+  @spec check_job_conflict(Oban.Job.t()) :: :ok | {:error, String.t()}
+  defp check_job_conflict(%{conflict?: true}),
+    do:
+      {:error,
+       "A clone is already in progress for this assistant. Please try again in a few minutes"}
+
+  defp check_job_conflict(_job), do: :ok
+
+  @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
+  defp mark_clone_in_progress(assistant) do
+    {1, _} =
+      from(a in Assistant, where: a.id == ^assistant.id)
+      |> Repo.update_all(set: [clone_status: "in_progress"])
+
+    {:ok, %{assistant | clone_status: "in_progress"}}
   end
 
   @doc """
@@ -233,37 +482,61 @@ defmodule Glific.Assistants do
     with {:ok, assistant} <-
            Repo.fetch_by(Assistant, %{id: id}),
          assistant <-
-           Repo.preload(assistant, active_config_version: :knowledge_base_versions),
+           Repo.preload(assistant, [
+             :config_versions,
+             active_config_version: :knowledge_base_versions
+           ]),
          {:ok, knowledge_base_version} <- resolve_knowledge_base_version(assistant, user_params) do
       user_params = Map.put(user_params, :organization_id, assistant.organization_id)
 
-      if no_changes?(user_params, assistant, knowledge_base_version) do
-        get_assistant(assistant.id)
-      else
-        current_knowledge_base_version =
-          List.first(assistant.active_config_version.knowledge_base_versions)
+      has_in_progress =
+        Enum.any?(assistant.config_versions, fn cv -> cv.status == :in_progress end)
 
-        knowledge_base_changed =
-          knowledge_base_version.id != current_knowledge_base_version.id
+      cond do
+        has_in_progress ->
+          {:error, "Assistant setup is still in progress"}
 
-        {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
+        no_changes?(user_params, assistant, knowledge_base_version) ->
+          get_assistant(assistant.id)
 
-        with true <-
-               knowledge_base_changed and knowledge_base_version.status != :completed,
-             {:ok, _config_version} <-
-               deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-          format_assistant_result(assistant)
-        else
-          false ->
-            with {:ok, updated_assistant} <-
-                   update_assistant_transaction(assistant, config_params, knowledge_base_version),
-                 {:ok, _} <- create_kaapi_config_version(updated_assistant, config_params) do
-              format_assistant_result(updated_assistant)
-            end
+        true ->
+          previous_knowledge_base_version =
+            List.first(assistant.active_config_version.knowledge_base_versions)
 
-          {:error, reason} ->
-            {:error, reason}
-        end
+          needs_active_config_link =
+            is_nil(previous_knowledge_base_version) and
+              not is_nil(user_params[:knowledge_base_version_id])
+
+          previous_kb_id = kb_id(previous_knowledge_base_version)
+          new_kb_id = kb_id(knowledge_base_version)
+
+          knowledge_base_changed =
+            previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
+
+          {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
+
+          with true <-
+                 knowledge_base_changed and knowledge_base_version.status != :completed,
+               {:ok, _config_version} <-
+                 deferred_update_transaction(assistant, config_params, knowledge_base_version) do
+            format_assistant_result(assistant)
+          else
+            false ->
+              with {:ok, updated_assistant, config_version} <-
+                     update_assistant_transaction(
+                       assistant,
+                       config_params,
+                       knowledge_base_version,
+                       needs_active_config_link
+                     ),
+                   {:ok, _} <-
+                     create_kaapi_config_version(updated_assistant, config_version, config_params) do
+                format_assistant_result(updated_assistant)
+              end
+
+            {:error, reason} ->
+              {:error, reason}
+          end
       end
     end
   end
@@ -279,7 +552,7 @@ defmodule Glific.Assistants do
   defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
       [knowledge_base_version | _] -> {:ok, knowledge_base_version}
-      [] -> {:error, "No knowledge base linked to this assistant"}
+      [] -> {:ok, nil}
     end
   end
 
@@ -294,42 +567,64 @@ defmodule Glific.Assistants do
     {:ok, assistant_result}
   end
 
-  @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t()) :: boolean()
+  @spec no_changes?(map(), Assistant.t(), KnowledgeBaseVersion.t() | nil) :: boolean()
   defp no_changes?(user_params, assistant, knowledge_base_version) do
     active_config = assistant.active_config_version
     current_kb_version = List.first(active_config.knowledge_base_versions)
+
+    current_kb_id = kb_id(current_kb_version)
+    new_kb_id = kb_id(knowledge_base_version)
+    kb_unchanged = current_kb_id == new_kb_id
 
     user_params[:name] == assistant.name and
       user_params[:instructions] == active_config.prompt and
       user_params[:model] == active_config.model and
       user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
-      knowledge_base_version.id == current_kb_version.id
+      kb_unchanged
   end
 
-  @spec update_assistant_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
-          {:ok, map()} | {:error, any()}
-  defp update_assistant_transaction(assistant, kaapi_config, knowledge_base_version) do
+  @spec kb_id(KnowledgeBaseVersion.t() | nil) :: non_neg_integer() | nil
+  defp kb_id(nil), do: nil
+  defp kb_id(kb_version), do: kb_version.id
+
+  @spec update_assistant_transaction(
+          Assistant.t(),
+          map(),
+          KnowledgeBaseVersion.t() | nil,
+          boolean()
+        ) ::
+          {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
+  defp update_assistant_transaction(
+         assistant,
+         kaapi_config,
+         knowledge_base_version,
+         needs_active_config_link
+       ) do
     Multi.new()
+    |> maybe_link_active_config(
+      assistant,
+      knowledge_base_version,
+      kaapi_config.organization_id,
+      needs_active_config_link
+    )
     |> Multi.insert(
       :config_version,
       build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
     )
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Multi.update(:updated_assistant, fn %{
                                              config_version: config_version
                                            } ->
-      Assistant.changeset(assistant, %{
-        name: kaapi_config.name,
-        active_config_version_id: config_version.id
-      })
+      organization = Partners.organization(kaapi_config.organization_id)
+
+      attrs =
+        if Flags.get_assistant_config_versions_enabled(organization) do
+          %{name: kaapi_config.name}
+        else
+          %{name: kaapi_config.name, active_config_version_id: config_version.id}
+        end
+
+      Assistant.changeset(assistant, attrs)
     end)
     |> Repo.transaction()
     |> handle_update_transaction_result()
@@ -343,15 +638,7 @@ defmodule Glific.Assistants do
       :config_version,
       build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
     )
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Multi.update(:updated_assistant, fn _changes ->
       Assistant.changeset(assistant, %{name: kaapi_config.name})
     end)
@@ -362,31 +649,51 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec create_kaapi_config_version(Assistant.t(), map()) ::
-          {:ok, String.t()} | {:error, any()}
-  defp create_kaapi_config_version(%{kaapi_uuid: nil}, _kaapi_config),
+  @spec create_kaapi_config_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp create_kaapi_config_version(%{kaapi_uuid: nil}, _config_version, _kaapi_config),
     do: {:error, "Assistant setup is still in progress"}
 
-  defp create_kaapi_config_version(assistant, kaapi_config) do
+  defp create_kaapi_config_version(assistant, config_version, kaapi_config) do
     case Kaapi.create_config_version(
            assistant.kaapi_uuid,
            kaapi_config,
            kaapi_config.organization_id
          ) do
       {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
+
         {:ok, kaapi_response.data.id}
 
       {:error, reason} ->
+        Logger.error(
+          "Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
+
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Kaapi config version creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
+
         {:error, reason}
     end
   end
 
   @spec handle_update_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
-          {:ok, map()} | {:error, any()}
+          {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
   defp handle_update_transaction_result(result) do
     case result do
-      {:ok, %{updated_assistant: assistant}} ->
-        {:ok, assistant}
+      {:ok, %{updated_assistant: assistant, config_version: config_version}} ->
+        {:ok, assistant, config_version}
 
       {:error, _failed, %Ecto.Changeset{} = changeset, _} ->
         {:error, changeset}
@@ -397,19 +704,22 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec validate_knowledge_base_presence(map()) :: :ok | {:error, String.t()}
-  defp validate_knowledge_base_presence(user_params) do
-    if is_nil(user_params[:knowledge_base_version_id]) do
-      {:error, "Knowledge base is required for assistant creation"}
-    else
-      :ok
-    end
-  end
+  @spec resolve_optional_knowledge_base(map()) :: {:ok, KnowledgeBaseVersion.t() | nil}
+  defp resolve_optional_knowledge_base(%{knowledge_base_version_id: kb_id})
+       when not is_nil(kb_id),
+       do: KnowledgeBaseVersion.get_by_version_id(kb_id)
 
-  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t()) :: {:ok, map()}
+  defp resolve_optional_knowledge_base(_user_params), do: {:ok, nil}
+
+  @spec build_kaapi_config(map(), KnowledgeBaseVersion.t() | nil) :: {:ok, map()}
   defp build_kaapi_config(user_params, knowledge_base_version) do
     prompt = user_params[:instructions] || "You are a helpful assistant"
     description = user_params[:description] || "Assistant configuration"
+
+    knowledge_base_ids =
+      if knowledge_base_version,
+        do: [knowledge_base_version.llm_service_id],
+        else: []
 
     config = %{
       temperature: user_params[:temperature] || 1,
@@ -417,14 +727,26 @@ defmodule Glific.Assistants do
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
       description: description,
-      knowledge_base_ids: [knowledge_base_version.llm_service_id],
+      knowledge_base_ids: knowledge_base_ids,
       prompt: prompt
     }
 
     {:ok, config}
   end
 
-  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t()) ::
+  # If the KB is already completed (callback arrived before assistant creation),
+  # register the config with Kaapi immediately since the deferred flow won't trigger.
+  @spec maybe_register_with_kaapi(map(), KnowledgeBaseVersion.t() | nil) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp maybe_register_with_kaapi(result, %{status: :completed} = knowledge_base_version) do
+    config_version = Repo.preload(result.config_version, :assistant)
+    create_deferred_kaapi_config(config_version, knowledge_base_version)
+  end
+
+  defp maybe_register_with_kaapi(result, _knowledge_base_version),
+    do: {:ok, result.config_version}
+
+  @spec create_assistant_transaction(map(), KnowledgeBaseVersion.t() | nil) ::
           {:ok, map()} | {:error, any()}
   defp create_assistant_transaction(kaapi_config, knowledge_base_version) do
     Multi.new()
@@ -441,15 +763,7 @@ defmodule Glific.Assistants do
         active_config_version_id: config_version.id
       })
     end)
-    |> Multi.insert_all(
-      :link_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      &build_knowledge_base_link(
-        &1.config_version,
-        knowledge_base_version,
-        kaapi_config.organization_id
-      )
-    )
+    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
     |> Repo.transaction()
     |> case do
       {:ok, %{assistant_with_active_config: assistant, config_version: config_version}} ->
@@ -458,6 +772,23 @@ defmodule Glific.Assistants do
       {:error, _failed, changeset, _changes} ->
         {:error, changeset}
     end
+  end
+
+  @spec maybe_link_knowledge_base(Multi.t(), KnowledgeBaseVersion.t() | nil, non_neg_integer()) ::
+          Multi.t()
+  defp maybe_link_knowledge_base(multi, nil, _organization_id), do: multi
+
+  defp maybe_link_knowledge_base(multi, knowledge_base_version, organization_id) do
+    Multi.insert_all(
+      multi,
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      &build_knowledge_base_link(
+        &1.config_version,
+        knowledge_base_version,
+        organization_id
+      )
+    )
   end
 
   @spec build_knowledge_base_link(
@@ -477,6 +808,31 @@ defmodule Glific.Assistants do
     ]
   end
 
+  # Links the KB to the existing active config version within the same Multi transaction.
+  # Needed when the active config had no KB link and a kb_version_id is provided,
+  # so the GET response shows the KB on the current active config.
+  @spec maybe_link_active_config(
+          Multi.t(),
+          Assistant.t(),
+          KnowledgeBaseVersion.t(),
+          non_neg_integer(),
+          boolean()
+        ) :: Multi.t()
+  defp maybe_link_active_config(multi, _assistant, _kb_version, _org_id, false), do: multi
+
+  defp maybe_link_active_config(multi, assistant, knowledge_base_version, organization_id, true) do
+    Multi.insert_all(
+      multi,
+      :link_active_config_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      build_knowledge_base_link(
+        assistant.active_config_version,
+        knowledge_base_version,
+        organization_id
+      )
+    )
+  end
+
   @spec build_assistant_changeset(map()) :: Ecto.Changeset.t()
   defp build_assistant_changeset(kaapi_config) do
     Assistant.changeset(%Assistant{}, %{
@@ -485,12 +841,28 @@ defmodule Glific.Assistants do
     })
   end
 
-  @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
+  @spec build_config_version_changeset(Assistant.t(), map(), KnowledgeBaseVersion.t() | nil) ::
           Ecto.Changeset.t()
+  defp build_config_version_changeset(assistant, kaapi_config, nil) do
+    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+      assistant_id: assistant.id,
+      description: kaapi_config.description,
+      prompt: kaapi_config.prompt,
+      model: kaapi_config.model,
+      provider: "openai",
+      settings: %{temperature: kaapi_config.temperature},
+      status: :in_progress,
+      organization_id: kaapi_config.organization_id
+    })
+  end
+
   defp build_config_version_changeset(assistant, kaapi_config, knowledge_base_version) do
+    # Config version starts as :in_progress when KB is completed because Kaapi
+    # registration hasn't happened yet. The Kaapi call (create_deferred_kaapi_config
+    # or create_kaapi_config_version) sets :ready on success, :failed on failure.
     status =
       if knowledge_base_version.status == :completed,
-        do: :ready,
+        do: :in_progress,
         else: knowledge_base_version.status
 
     AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
@@ -698,16 +1070,16 @@ defmodule Glific.Assistants do
           %{status: data["status"], llm_service_id: llm_service_id}
       end
 
-    assistant_version_params = %{status: data["status"], failure_reason: data["error_message"]}
-
     with {:ok, knowledge_base_version} <-
            Repo.fetch_by(KnowledgeBaseVersion, %{kaapi_job_id: job_id}),
          {:ok, knowledge_base_version} <-
            apply_callback_updates(knowledge_base_version, knowledge_base_version_params),
          :ok <-
-           update_linked_assistant_versions(knowledge_base_version, assistant_version_params),
-         :ok <-
-           maybe_create_deferred_kaapi_configs(knowledge_base_version, data["status"]) do
+           update_linked_config_version(
+             knowledge_base_version,
+             data["status"],
+             data["error_message"]
+           ) do
       knowledge_base_version
     else
       {:error, [_, "Resource not found"]} ->
@@ -724,27 +1096,37 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec maybe_create_deferred_kaapi_configs(KnowledgeBaseVersion.t(), String.t()) :: :ok
-  defp maybe_create_deferred_kaapi_configs(knowledge_base_version, status)
+  @spec update_linked_config_version(KnowledgeBaseVersion.t(), String.t(), String.t() | nil) ::
+          :ok
+  defp update_linked_config_version(knowledge_base_version, status, error_message)
        when status != "SUCCESSFUL" do
-    Logger.info(
-      "Skipping deferred Kaapi config creation for KB version #{knowledge_base_version.id}, status: #{status}"
-    )
-
     knowledge_base_version =
-      knowledge_base_version |> Repo.preload([{:assistant_config_versions, :assistant}])
+      Repo.preload(knowledge_base_version, [
+        :knowledge_base,
+        assistant_config_versions: :assistant
+      ])
 
-    Enum.filter(knowledge_base_version.assistant_config_versions, fn cv ->
-      is_nil(cv.assistant.kaapi_uuid) or cv.id != cv.assistant.active_config_version_id
-    end)
-    |> case do
-      [assistant_version] ->
-        assistant_version
+    failure_reason = error_message || "Knowledge base creation failed with status #{status}"
+
+    case knowledge_base_version.assistant_config_versions do
+      [config_version] ->
+        config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Deferred Kaapi config creation failed"
+          failure_reason: failure_reason
         })
         |> Repo.update()
+
+        send_kb_notification(
+          knowledge_base_version,
+          "Knowledge Base creation failed for assistant \"#{config_version.assistant.name}\". " <>
+            "Reason: #{failure_reason}. Please try again.",
+          %{
+            assistant_name: config_version.assistant.name,
+            config_version_id: config_version.id,
+            failure_reason: failure_reason
+          }
+        )
 
       _ ->
         nil
@@ -753,36 +1135,25 @@ defmodule Glific.Assistants do
     :ok
   end
 
-  # Finds config versions that were deferred while the knowledge base was still processing
-  # and couldn't be synced to Kaapi yet. The filter catches two cases:
-  #
-  # 1. is_nil(cv.assistant.kaapi_uuid) — The assistant was created while the knowledge base
-  #    was still processing, so it never got registered with Kaapi at all.
-  # 2. cv.id != cv.assistant.active_config_version_id — The assistant was updated with a new
-  #    config version while the knowledge base was processing. The new config version exists
-  #    locally but hasn't been pushed to Kaapi yet, so it's not the active one.
-  #
-  # In both cases, now that the knowledge base is ready, the deferred config can finally
-  # be sent to Kaapi via create_deferred_kaapi_config.
-  defp maybe_create_deferred_kaapi_configs(knowledge_base_version, "SUCCESSFUL") do
+  # When the knowledge base is ready, register the linked config version with Kaapi
+  # and update its status based on the Kaapi response.
+  defp update_linked_config_version(knowledge_base_version, "SUCCESSFUL", _error_message) do
     knowledge_base_version =
       Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
 
-    deferred =
-      Enum.filter(knowledge_base_version.assistant_config_versions, fn cv ->
-        is_nil(cv.assistant.kaapi_uuid) or cv.id != cv.assistant.active_config_version_id
-      end)
-
-    case deferred do
+    case knowledge_base_version.assistant_config_versions do
       [config_version] ->
         create_deferred_kaapi_config(config_version, knowledge_base_version)
 
       _ ->
-        :ok
+        nil
     end
+
+    :ok
   end
 
-  @spec create_deferred_kaapi_config(AssistantConfigVersion.t(), KnowledgeBaseVersion.t()) :: :ok
+  @spec create_deferred_kaapi_config(AssistantConfigVersion.t(), KnowledgeBaseVersion.t()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
   defp create_deferred_kaapi_config(config_version, knowledge_base_version) do
     assistant = config_version.assistant
 
@@ -796,55 +1167,85 @@ defmodule Glific.Assistants do
       organization_id: assistant.organization_id
     }
 
-    if is_nil(assistant.kaapi_uuid) do
-      case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
-        {:ok, kaapi_response} ->
-          assistant
-          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-          |> Repo.update()
+    if is_nil(assistant.kaapi_uuid),
+      do: deferred_create_new_assistant(assistant, config_version, kaapi_config),
+      else: deferred_create_new_version(assistant, config_version, kaapi_config)
+  end
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+  @spec deferred_create_new_assistant(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_assistant(assistant, config_version, kaapi_config) do
+    case Kaapi.create_assistant_config(kaapi_config, assistant.organization_id) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version.version
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
-      end
-    else
-      case Kaapi.create_config_version(
-             assistant.kaapi_uuid,
-             kaapi_config,
-             assistant.organization_id
-           ) do
-        {:ok, _kaapi_response} ->
+        assistant
+        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
+        |> Repo.update()
+
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
+
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
+
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
+
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+    end
+  end
+
+  @spec deferred_create_new_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp deferred_create_new_version(assistant, config_version, kaapi_config) do
+    case Kaapi.create_config_version(
+           assistant.kaapi_uuid,
+           kaapi_config,
+           assistant.organization_id
+         ) do
+      {:ok, kaapi_response} ->
+        kaapi_version_number = kaapi_response.data.version
+
+        organization = Partners.organization(assistant.organization_id)
+
+        unless Flags.get_assistant_config_versions_enabled(organization) do
           assistant
           |> Assistant.changeset(%{active_config_version_id: config_version.id})
           |> Repo.update()
+        end
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{status: :ready})
-          |> Repo.update()
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :ready,
+          kaapi_version_number: kaapi_version_number
+        })
+        |> Repo.update()
 
-        {:error, reason} ->
-          Logger.error(
-            "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
-          )
+      {:error, reason} ->
+        Logger.error(
+          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+        )
 
-          config_version
-          |> AssistantConfigVersion.changeset(%{
-            status: :failed,
-            failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
-          })
-          |> Repo.update()
-      end
+        config_version
+        |> AssistantConfigVersion.changeset(%{
+          status: :failed,
+          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+        })
+        |> Repo.update()
+
+        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
     end
-
-    :ok
   end
 
   # Private
@@ -912,7 +1313,7 @@ defmodule Glific.Assistants do
     organization = Partners.organization(params[:organization_id])
 
     callback_url =
-      "https://api.#{organization.shortcode}.glific.com" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/kaapi/knowledge_base_version"
 
     %{
@@ -928,34 +1329,6 @@ defmodule Glific.Assistants do
   defp apply_callback_updates(knowledge_base_version, %{status: status} = params) do
     params = Map.put(params, :status, @knowledge_base_version_status_mapping[status])
     update_knowledge_base_version(knowledge_base_version, params)
-  end
-
-  @spec update_linked_assistant_versions(KnowledgeBaseVersion.t(), map()) :: :ok
-  defp update_linked_assistant_versions(knowledge_base_version, %{status: status} = params) do
-    knowledge_base_version =
-      Repo.preload(knowledge_base_version, assistant_config_versions: :assistant)
-
-    params = Map.put(params, :status, @assistant_config_version_status_mapping[status])
-
-    Enum.each(knowledge_base_version.assistant_config_versions, fn config_version ->
-      case update_assistant_version(config_version, params) do
-        {:ok, _} ->
-          :ok
-
-        {:error, changeset} ->
-          Logger.error(
-            "Failed to update assistant version #{config_version.id}: #{inspect(changeset)}"
-          )
-      end
-    end)
-  end
-
-  @spec update_assistant_version(AssistantConfigVersion.t(), map()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, Ecto.Changeset.t()}
-  defp update_assistant_version(assistant_version, params) do
-    assistant_version
-    |> AssistantConfigVersion.changeset(params)
-    |> Repo.update()
   end
 
   @doc """
@@ -1038,19 +1411,34 @@ defmodule Glific.Assistants do
       |> Enum.map(& &1.name)
       |> Enum.uniq()
 
-    Notifications.create_notification(%{
-      category: "Assistant",
-      message: "Knowledge Base creation timeout",
-      severity: Notifications.types().warning,
-      organization_id: knowledge_base_version.organization_id,
-      entity: %{
-        knowledge_base_version_id: knowledge_base_version.id,
-        knowledge_base_id: knowledge_base_version.knowledge_base_id,
-        knowledge_base_name: knowledge_base_version.knowledge_base.name,
-        version_number: knowledge_base_version.version_number,
+    send_kb_notification(
+      knowledge_base_version,
+      "Knowledge Base creation timeout",
+      %{
         affected_config_version_ids: affected_config_version_ids,
         affected_assistant_names: affected_assistant_names
       }
+    )
+  end
+
+  defp send_kb_notification(knowledge_base_version, message, entity) do
+    entity =
+      Map.merge(
+        %{
+          knowledge_base_version_id: knowledge_base_version.id,
+          knowledge_base_id: knowledge_base_version.knowledge_base_id,
+          knowledge_base_name: knowledge_base_version.knowledge_base.name,
+          version_number: knowledge_base_version.version_number
+        },
+        entity
+      )
+
+    Notifications.create_notification(%{
+      category: "Assistant",
+      message: message,
+      severity: Notifications.types().warning,
+      organization_id: knowledge_base_version.organization_id,
+      entity: entity
     })
   end
 

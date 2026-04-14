@@ -47,7 +47,8 @@ oban_queues = [
   ],
   gpt_webhook_queue: 20,
   contact_import: 10,
-  gupshup_high_tps: 10
+  gupshup_high_tps: 10,
+  clone_assistant: 5
 ]
 
 oban_crontab = [
@@ -175,6 +176,7 @@ config :ex_audit,
   ecto_repos: [Glific.Repo],
   version_schema: Glific.Version,
   tracked_schemas: [
+    Glific.Contacts.Contact,
     Glific.Flows.Flow,
     Glific.Partners.Credential,
     Glific.Triggers.Trigger,
