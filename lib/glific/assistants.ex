@@ -42,7 +42,6 @@ defmodule Glific.Assistants do
     "java",
     "md",
     "pdf",
-    "pptx",
     "txt"
   ]
 
