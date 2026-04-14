@@ -91,4 +91,18 @@ defmodule GlificWeb.Schema.AskGlificTypes do
       resolve(&Resolvers.AskGlific.submit_feedback/3)
     end
   end
+
+  object :ask_glific_subscriptions do
+    field :ask_glific_response, :ask_glific_result do
+      arg(:organization_id, non_null(:id))
+
+      config(fn args, %{context: %{current_user: user}} ->
+        if args.organization_id == Integer.to_string(user.organization_id) do
+          {:ok, [topic: "#{user.organization_id}:#{user.id}"]}
+        else
+          {:error, "Auth Credentials mismatch"}
+        end
+      end)
+    end
+  end
 end
