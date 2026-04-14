@@ -33,7 +33,8 @@ defmodule Glific.Appsignal do
 
       Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
         queue: meta.queue,
-        worker: meta.worker
+        worker: meta.worker,
+        organization_id: organization_id_tag(meta.args)
       })
     end
   end
@@ -100,14 +101,24 @@ defmodule Glific.Appsignal do
 
   def handle_event(_, _, _, _), do: nil
 
+  @spec organization_id_tag(map() | nil) :: String.t()
+  defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(_), do: "unknown"
+
   @doc """
   Sends oban queue size metric to Appsignal
   """
   @spec send_oban_queue_size :: any()
   def send_oban_queue_size do
     get_oban_queue_data()
-    |> Enum.each(fn [queue, state, length] ->
-      Appsignal.set_gauge("oban_queue_size", length, %{queue: queue, state: state})
+    |> Enum.each(fn [queue, state, organization_id, length] ->
+      Appsignal.set_gauge("oban_queue_size", length, %{
+        queue: queue,
+        state: state,
+        organization_id: organization_id || "unknown"
+      })
     end)
   end
 
@@ -158,10 +169,10 @@ defmodule Glific.Appsignal do
   defp get_oban_queue_data do
     {:ok, %{rows: rows}} =
       """
-      SELECT queue, state, count(id)
+      SELECT queue, state, args->>'organization_id' AS organization_id, count(id)
       from global.oban_jobs
       where state in ('executing', 'available', 'scheduled', 'retryable')
-      group by queue, state
+      group by queue, state, args->>'organization_id'
       """
       |> Repo.query([], skip_organization_id: true)
 
