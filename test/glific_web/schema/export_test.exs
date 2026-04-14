@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.ExportTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Seeds.SeedsDev
   }
 
@@ -77,6 +78,8 @@ defmodule GlificWeb.Schema.ExportTest do
         roles: ["glific_admin"],
         organization_id: user.organization_id
       })
+
+    Fixtures.flow_fixture()
 
     end_time = DateTime.utc_now()
     start_time = DateTime.add(end_time, -7, :day)

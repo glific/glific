@@ -38,9 +38,10 @@ defmodule Glific.Assistants do
     "csv",
     "doc",
     "docx",
+    "htm",
     "html",
-    "java",
     "md",
+    "markdown",
     "pdf",
     "txt"
   ]
@@ -466,9 +467,11 @@ defmodule Glific.Assistants do
 
   @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
   defp mark_clone_in_progress(assistant) do
-    assistant
-    |> Ecto.Changeset.change(%{clone_status: "in_progress"})
-    |> Repo.update()
+    {1, _} =
+      from(a in Assistant, where: a.id == ^assistant.id)
+      |> Repo.update_all(set: [clone_status: "in_progress"])
+
+    {:ok, %{assistant | clone_status: "in_progress"}}
   end
 
   @doc """
