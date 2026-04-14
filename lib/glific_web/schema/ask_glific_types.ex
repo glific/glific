@@ -11,7 +11,19 @@ defmodule GlificWeb.Schema.AskGlificTypes do
   object :ask_glific_result do
     field(:answer, :string)
     field(:conversation_id, :string)
+    field(:conversation_name, :string)
+    field(:message_id, :string)
     field(:errors, list_of(:input_error))
+  end
+
+  object :ask_glific_feedback_result do
+    field(:success, :boolean)
+  end
+
+  input_object :ask_glific_feedback_input do
+    field(:message_id, non_null(:string))
+    field(:rating, non_null(:string))
+    field(:content, :string)
   end
 
   input_object :ask_glific_input do
@@ -26,11 +38,41 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:query, :string)
     field(:answer, :string)
     field(:created_at, :integer)
+    field(:feedback, :string)
+  end
+
+  object :ask_glific_messages_result do
+    field(:messages, list_of(:ask_glific_message))
+    field(:has_more, :boolean)
+    field(:limit, :integer)
+  end
+
+  object :ask_glific_conversation do
+    field(:id, :string)
+    field(:name, :string)
+    field(:status, :string)
+    field(:created_at, :integer)
+    field(:updated_at, :integer)
+  end
+
+  object :ask_glific_conversations_result do
+    field(:conversations, list_of(:ask_glific_conversation))
+    field(:has_more, :boolean)
+    field(:limit, :integer)
   end
 
   object :ask_glific_queries do
-    field :ask_glific_messages, list_of(:ask_glific_message) do
+    field :ask_glific_conversations, :ask_glific_conversations_result do
+      arg(:limit, :integer)
+      arg(:last_id, :string)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AskGlific.get_conversations/3)
+    end
+
+    field :ask_glific_messages, :ask_glific_messages_result do
       arg(:conversation_id, non_null(:string))
+      arg(:limit, :integer)
+      arg(:first_id, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskGlific.messages/3)
     end
@@ -41,6 +83,12 @@ defmodule GlificWeb.Schema.AskGlificTypes do
       arg(:input, non_null(:ask_glific_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.AskGlific.ask/3)
+    end
+
+    field :ask_glific_feedback, :ask_glific_feedback_result do
+      arg(:input, non_null(:ask_glific_feedback_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AskGlific.submit_feedback/3)
     end
   end
 
