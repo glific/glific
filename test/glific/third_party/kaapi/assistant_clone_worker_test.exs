@@ -631,6 +631,67 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
+  describe "update_clone_status/2" do
+    test "does not update updated_at when setting clone_status to completed", %{
+      assistant: assistant,
+      config_version: config_version
+    } do
+      original_updated_at = assistant.updated_at
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: config_version.id,
+                 organization_id: @org_id,
+                 is_legacy: false
+               })
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "completed"
+      assert refreshed.updated_at == original_updated_at
+    end
+
+    test "does not update updated_at when setting clone_status to failed", %{
+      assistant: assistant,
+      config_version: config_version
+    } do
+      original_updated_at = assistant.updated_at
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{status: 500, body: %{error: "Config creation failed"}}
+          end
+      end)
+
+      assert {:error, _} =
+               perform_job(
+                 AssistantCloneWorker,
+                 %{
+                   assistant_id: assistant.id,
+                   version_id: config_version.id,
+                   organization_id: @org_id,
+                   is_legacy: false
+                 },
+                 attempt: 2
+               )
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "failed"
+      assert refreshed.updated_at == original_updated_at
+    end
+  end
+
   describe "clone_assistant/1 enqueues job" do
     test "returns success message for valid assistant", %{assistant: assistant} do
       assert {:ok, %{message: "Assistant clone initiated"}} =
