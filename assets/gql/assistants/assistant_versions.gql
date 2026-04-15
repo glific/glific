@@ -16,6 +16,11 @@ query AssistantVersions($assistant_id: ID!) {
       status
       legacy
       size
+      files {
+        id
+        name
+        uploaded_at
+      }
     }
     inserted_at
     updated_at
