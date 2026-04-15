@@ -8,6 +8,15 @@ query AssistantVersions($assistant_id: ID!) {
     status
     is_live
     description
+    vector_store {
+      id
+      knowledge_base_version_id
+      vector_store_id
+      name
+      status
+      legacy
+      size
+    }
     inserted_at
     updated_at
   }

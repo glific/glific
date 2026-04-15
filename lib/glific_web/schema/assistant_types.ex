@@ -78,6 +78,11 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :status, :string
     field :is_live, :boolean
     field :description, :string
+
+    field :vector_store, :vector_store do
+      resolve(&Resolvers.Filesearch.resolve_vector_store/3)
+    end
+
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
