@@ -456,6 +456,12 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      {:ok, updated_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      updated_assistant = Repo.preload(updated_assistant, :active_config_version)
+      assert updated_assistant.active_config_version.kaapi_version_number == 2
     end
 
     test "creates a new config version when temperature changes",
