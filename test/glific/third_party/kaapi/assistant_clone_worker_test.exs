@@ -436,6 +436,260 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                  })
       end
     end
+
+    test "returns error immediately when collection status is FAILED", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_failed_123"}}}
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs/job_failed_123") do
+              %Tesla.Env{
+                status: 200,
+                body: %{data: %{status: "FAILED", error_message: "Failed to create collection"}}
+              }
+            end
+        end)
+
+        assert {:error, msg} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
+                 })
+
+        assert msg =~ "Collection creation failed for job_failed_123"
+      end
+    end
+
+    test "returns error when get_collection_status API call fails", %{assistant: assistant} do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_err_123"}}}
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs/job_failed_123") do
+              %Tesla.Env{status: 503, body: %{error: "Service unavailable"}}
+            end
+        end)
+
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
+                 })
+      end
+    end
+
+    test "retries polling when status is PROCESSING before becoming SUCCESSFUL", %{
+      assistant: assistant
+    } do
+      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
+      File.mkdir_p!(clone_dir)
+      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
+
+      {:ok, call_counter} = Agent.start_link(fn -> 0 end)
+
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "text", "text" => "content"}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "doc.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post, url: url} ->
+            cond do
+              String.contains?(url, "documents") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{id: "doc_001", fname: "doc.pdf", inserted_at: "2026-03-23T12:00:00Z"}
+                  }
+                }
+
+              String.contains?(url, "collections") ->
+                %Tesla.Env{status: 200, body: %{data: %{job_id: "job_retry_123"}}}
+
+              String.contains?(url, "configs") ->
+                %Tesla.Env{
+                  status: 200,
+                  body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+                }
+            end
+
+          %{method: :get, url: url} ->
+            if String.contains?(url, "collections/jobs") do
+              count = Agent.get_and_update(call_counter, fn n -> {n, n + 1} end)
+
+              if count == 0 do
+                %Tesla.Env{
+                  status: 200,
+                  body: %{data: %{status: "PROCESSING", collection: nil}}
+                }
+              else
+                %Tesla.Env{
+                  status: 200,
+                  body: %{
+                    data: %{
+                      status: "SUCCESSFUL",
+                      collection: %{knowledge_base_id: "cloned_kb_retry"}
+                    }
+                  }
+                }
+              end
+            end
+        end)
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   organization_id: @org_id,
+                   version_id: 1,
+                   is_legacy: true
+                 })
+
+        assert Agent.get(call_counter, & &1) >= 2
+      end
+    end
+  end
+
+  describe "update_clone_status/2" do
+    test "does not update updated_at when setting clone_status to completed", %{
+      assistant: assistant,
+      config_version: config_version
+    } do
+      original_updated_at = assistant.updated_at
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+            }
+          end
+      end)
+
+      assert :ok =
+               perform_job(AssistantCloneWorker, %{
+                 assistant_id: assistant.id,
+                 version_id: config_version.id,
+                 organization_id: @org_id,
+                 is_legacy: false
+               })
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "completed"
+      assert refreshed.updated_at == original_updated_at
+    end
+
+    test "does not update updated_at when setting clone_status to failed", %{
+      assistant: assistant,
+      config_version: config_version
+    } do
+      original_updated_at = assistant.updated_at
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          if String.contains?(url, "configs") do
+            %Tesla.Env{status: 500, body: %{error: "Config creation failed"}}
+          end
+      end)
+
+      assert {:error, _} =
+               perform_job(
+                 AssistantCloneWorker,
+                 %{
+                   assistant_id: assistant.id,
+                   version_id: config_version.id,
+                   organization_id: @org_id,
+                   is_legacy: false
+                 },
+                 attempt: 2
+               )
+
+      refreshed = Repo.get!(Assistant, assistant.id)
+      assert refreshed.clone_status == "failed"
+      assert refreshed.updated_at == original_updated_at
+    end
   end
 
   describe "clone_assistant/1 enqueues job" do
@@ -551,7 +805,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == [non_legacy_knowledge_base_version.id]
 
       refreshed = Repo.get!(Assistant, assistant.id)
-      assert refreshed.clone_status == ""
+      assert refreshed.clone_status == "completed"
     end
 
     test "auto-generates unique name with counter when clone name already exists", %{
@@ -670,7 +924,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
       assert linked_kb_version_ids == []
 
       refreshed = Repo.get!(Assistant, assistant_without_kb.id)
-      assert refreshed.clone_status == ""
+      assert refreshed.clone_status == "completed"
     end
 
     test "returns error when Kaapi config creation fails", %{

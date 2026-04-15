@@ -38,11 +38,11 @@ defmodule Glific.Assistants do
     "csv",
     "doc",
     "docx",
+    "htm",
     "html",
-    "java",
     "md",
+    "markdown",
     "pdf",
-    "pptx",
     "txt"
   ]
 
@@ -163,7 +163,7 @@ defmodule Glific.Assistants do
   def list_assistants(args) do
     assistants =
       args
-      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+      |> Repo.list_filter_query(Assistant, &Repo.opts_with_inserted_at/2, &filter_with/2)
       |> Repo.all()
       |> preload_assistant_associations()
 
@@ -176,8 +176,23 @@ defmodule Glific.Assistants do
   @spec count_assistants(map()) :: integer()
   def count_assistants(args) do
     args
-    |> Repo.list_filter_query(Assistant, nil, &Repo.filter_with/2)
+    |> Repo.list_filter_query(Assistant, nil, &filter_with/2)
     |> Repo.aggregate(:count)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:name_or_assistant_id, term}, query ->
+        from(a in query,
+          where: ilike(a.name, ^"%#{term}%") or ilike(a.assistant_display_id, ^"%#{term}%")
+        )
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
@@ -454,9 +469,11 @@ defmodule Glific.Assistants do
 
   @spec mark_clone_in_progress(Assistant.t()) :: {:ok, Assistant.t()} | {:error, any()}
   defp mark_clone_in_progress(assistant) do
-    assistant
-    |> Ecto.Changeset.change(%{clone_status: "in_progress"})
-    |> Repo.update()
+    {1, _} =
+      from(a in Assistant, where: a.id == ^assistant.id)
+      |> Repo.update_all(set: [clone_status: "in_progress"])
+
+    {:ok, %{assistant | clone_status: "in_progress"}}
   end
 
   @doc """
