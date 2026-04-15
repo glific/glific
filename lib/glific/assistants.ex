@@ -489,57 +489,113 @@ defmodule Glific.Assistants do
              active_config_version: :knowledge_base_versions
            ]),
          {:ok, knowledge_base_version} <- resolve_knowledge_base_version(assistant, user_params) do
-      user_params = Map.put(user_params, :organization_id, assistant.organization_id)
-
-      has_in_progress =
-        Enum.any?(assistant.config_versions, fn cv -> cv.status == :in_progress end)
-
       cond do
-        has_in_progress ->
+        assistant_setup_in_progress?(assistant) ->
           {:error, "Assistant setup is still in progress"}
+
+        name_only_update?(user_params) ->
+          update_assistant_name(assistant, user_params[:name])
 
         no_changes?(user_params, assistant, knowledge_base_version) ->
           get_assistant(assistant.id)
 
         true ->
-          previous_knowledge_base_version =
-            List.first(assistant.active_config_version.knowledge_base_versions)
-
-          needs_active_config_link =
-            is_nil(previous_knowledge_base_version) and
-              not is_nil(user_params[:knowledge_base_version_id])
-
-          previous_kb_id = kb_id(previous_knowledge_base_version)
-          new_kb_id = kb_id(knowledge_base_version)
-
-          knowledge_base_changed =
-            previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
-
-          {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
-
-          with true <-
-                 knowledge_base_changed and knowledge_base_version.status != :completed,
-               {:ok, _config_version} <-
-                 deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-            format_assistant_result(assistant)
-          else
-            false ->
-              with {:ok, updated_assistant, config_version} <-
-                     update_assistant_transaction(
-                       assistant,
-                       config_params,
-                       knowledge_base_version,
-                       needs_active_config_link
-                     ),
-                   {:ok, _} <-
-                     create_kaapi_config_version(updated_assistant, config_version, config_params) do
-                format_assistant_result(updated_assistant)
-              end
-
-            {:error, reason} ->
-              {:error, reason}
-          end
+          update_assistant_with_version(assistant, user_params, knowledge_base_version)
       end
+    end
+  end
+
+  @spec assistant_setup_in_progress?(Assistant.t()) :: boolean()
+  defp assistant_setup_in_progress?(assistant) do
+    Enum.any?(assistant.config_versions, fn cv -> cv.status == :in_progress end)
+  end
+
+  @spec name_only_update?(map()) :: boolean()
+  defp name_only_update?(user_params) do
+    Map.has_key?(user_params, :name) and
+      Map.delete(user_params, :organization_id)
+      |> Map.keys()
+      |> Enum.all?(&(&1 == :name))
+  end
+
+  @spec update_assistant_name(Assistant.t(), String.t() | nil) :: {:ok, map()} | {:error, any()}
+  defp update_assistant_name(assistant, name) do
+    assistant
+    |> Assistant.changeset(%{name: name})
+    |> Repo.update()
+    |> case do
+      {:ok, updated_assistant} -> format_assistant_result(updated_assistant)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @spec update_assistant_with_version(Assistant.t(), map(), KnowledgeBaseVersion.t() | nil) ::
+          {:ok, map()} | {:error, any()}
+  defp update_assistant_with_version(assistant, user_params, knowledge_base_version) do
+    previous_knowledge_base_version =
+      List.first(assistant.active_config_version.knowledge_base_versions)
+
+    needs_active_config_link =
+      is_nil(previous_knowledge_base_version) and
+        not is_nil(user_params[:knowledge_base_version_id])
+
+    knowledge_base_changed =
+      knowledge_base_changed?(previous_knowledge_base_version, knowledge_base_version)
+
+    {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
+
+    maybe_create_deferred_or_immediate_update(
+      assistant,
+      config_params,
+      knowledge_base_version,
+      needs_active_config_link,
+      knowledge_base_changed
+    )
+  end
+
+  @spec knowledge_base_changed?(KnowledgeBaseVersion.t() | nil, KnowledgeBaseVersion.t() | nil) ::
+          boolean()
+  defp knowledge_base_changed?(previous_knowledge_base_version, knowledge_base_version) do
+    previous_kb_id = kb_id(previous_knowledge_base_version)
+    new_kb_id = kb_id(knowledge_base_version)
+
+    previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
+  end
+
+  @spec maybe_create_deferred_or_immediate_update(
+          Assistant.t(),
+          map(),
+          KnowledgeBaseVersion.t() | nil,
+          boolean(),
+          boolean()
+        ) :: {:ok, map()} | {:error, any()}
+  defp maybe_create_deferred_or_immediate_update(
+         assistant,
+         config_params,
+         knowledge_base_version,
+         needs_active_config_link,
+         knowledge_base_changed
+       ) do
+    with true <- knowledge_base_changed and knowledge_base_version.status != :completed,
+         {:ok, _config_version} <-
+           deferred_update_transaction(assistant, config_params, knowledge_base_version) do
+      format_assistant_result(assistant)
+    else
+      false ->
+        with {:ok, updated_assistant, config_version} <-
+               update_assistant_transaction(
+                 assistant,
+                 config_params,
+                 knowledge_base_version,
+                 needs_active_config_link
+               ),
+             {:ok, _} <-
+               create_kaapi_config_version(updated_assistant, config_version, config_params) do
+          format_assistant_result(updated_assistant)
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -565,7 +621,6 @@ defmodule Glific.Assistants do
       |> preload_assistant_associations()
       |> transform_to_legacy_shape()
 
-    Metrics.increment("Assistant Updated", assistant.organization_id)
     {:ok, assistant_result}
   end
 

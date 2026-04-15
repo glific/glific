@@ -407,7 +407,35 @@ defmodule Glific.AssistantsTest do
       assert initial_config_count == final_config_count
     end
 
-    test "creates a new config version and updates the assistant when name changes",
+    test "updates assistant name without creating a new config version when only name changes",
+         %{assistant: assistant} do
+      initial_config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert {:ok, result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: "Updated Name"
+               })
+
+      assert result.name == "Updated Name"
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == initial_config_count
+
+      {:ok, updated_assistant} =
+        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+
+      updated_assistant = Repo.preload(updated_assistant, :active_config_version)
+      assert updated_assistant.active_config_version_id == assistant.active_config_version_id
+    end
+
+    test "creates a new config version when name changes with config fields",
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -416,11 +444,13 @@ defmodule Glific.AssistantsTest do
 
       assert {:ok, result} =
                Assistants.update_assistant(assistant.id, %{
-                 name: "Updated Name",
+                 name: "Updated Name With Prompt",
+                 instructions: "Updated prompt",
                  organization_id: organization_id
                })
 
-      assert result.name == "Updated Name"
+      assert result.name == "Updated Name With Prompt"
+      assert result.instructions == "Updated prompt"
 
       config_count =
         AssistantConfigVersion
@@ -675,6 +705,7 @@ defmodule Glific.AssistantsTest do
       assert {:error, _} =
                Assistants.update_assistant(assistant.id, %{
                  name: "Updated Name",
+                 instructions: "You are a helpful assistant",
                  organization_id: organization_id
                })
     end
@@ -2739,6 +2770,7 @@ defmodule Glific.AssistantsTest do
       assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  name: "Flag Off Update",
+                 instructions: "You are a helpful assistant",
                  organization_id: organization_id
                })
 
