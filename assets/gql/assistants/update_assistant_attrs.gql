@@ -1,0 +1,15 @@
+mutation UpdateAssistantAttrs($id: ID!, $input: AssistantAttrsInput!) {
+  updateAssistantAttrs(id: $id, input: $input) {
+    assistant {
+      id
+      name
+      description
+      inserted_at
+      updated_at
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -39,6 +39,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     "assets/gql/assistants/set_live_version.gql"
   )
 
+  load_gql(
+    :update_assistant_attrs,
+    GlificWeb.Schema,
+    "assets/gql/assistants/update_assistant_attrs.gql"
+  )
+
   describe "create_knowledge_base/3" do
     setup :enable_kaapi
 
@@ -563,6 +569,47 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       versions = query_data.data["assistantVersions"]
       # Absinthe returns a list with nil entries or an empty list when the resolver errors
       assert versions == [] or Enum.all?(versions, &is_nil(&1["id"]))
+    end
+  end
+
+  describe "update_assistant_attrs/3" do
+    test "updates name and description without creating a new config version", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Original Name", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:update_assistant_attrs, user,
+          variables: %{
+            "id" => assistant.id,
+            "input" => %{"name" => "Updated Name", "description" => "A description"}
+          }
+        )
+
+      result = query_data.data["updateAssistantAttrs"]["assistant"]
+      assert result["name"] == "Updated Name"
+      assert result["description"] == "A description"
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 0
+    end
+
+    test "returns error for non-existent assistant", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:update_assistant_attrs, user,
+          variables: %{"id" => 0, "input" => %{"name" => "New Name"}}
+        )
+
+      errors = query_data.data["updateAssistantAttrs"]["errors"]
+      assert errors != nil and errors != []
     end
   end
 

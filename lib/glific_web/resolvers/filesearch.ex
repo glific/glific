@@ -5,8 +5,10 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   alias Glific.{
     Assistants,
+    Assistants.Assistant,
     Filesearch,
-    Filesearch.VectorStore
+    Filesearch.VectorStore,
+    Repo
   }
 
   @doc """
@@ -59,6 +61,18 @@ defmodule GlificWeb.Resolvers.Filesearch do
   def update_assistant(_, %{id: id, input: attrs}, _) do
     with {:ok, assistant} <- Assistants.update_assistant(id, attrs) do
       {:ok, %{assistant: assistant}}
+    end
+  end
+
+  @doc """
+  Update assistant-level attributes (name, description) without creating a new config version.
+  """
+  @spec update_assistant_attrs(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any()} | {:error, any()}
+  def update_assistant_attrs(_, %{id: id, input: attrs}, _) do
+    with {:ok, assistant} <- Repo.fetch_by(Assistant, %{id: id}),
+         {:ok, updated} <- Assistants.update_assistant_attrs(assistant, attrs) do
+      {:ok, %{assistant: updated}}
     end
   end
 

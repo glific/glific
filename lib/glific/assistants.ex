@@ -955,6 +955,23 @@ defmodule Glific.Assistants do
     end
   end
 
+  @doc """
+  Simple CRUD update for assistant-level fields (name, description).
+  Does not create a new config version.
+
+  ## Examples
+
+      iex> Glific.Assistants.update_assistant_attrs(%Assistant{}, %{name: "New Name"})
+      {:ok, %Assistant{name: "New Name"}}
+  """
+  @spec update_assistant_attrs(Assistant.t(), map()) ::
+          {:ok, Assistant.t()} | {:error, Ecto.Changeset.t()}
+  def update_assistant_attrs(%Assistant{} = assistant, attrs) do
+    assistant
+    |> Assistant.changeset(attrs)
+    |> Repo.update()
+  end
+
   @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   defp validate_file_format(filename) do
     extension = String.split(filename, ".") |> List.last()

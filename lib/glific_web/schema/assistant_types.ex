@@ -139,6 +139,11 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :knowledge_base_version_id, :string
   end
 
+  input_object :assistant_attrs_input do
+    field :name, :string
+    field :description, :string
+  end
+
   input_object :file_info_input do
     field :file_id, :string
     field :filename, :string
@@ -217,6 +222,14 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Filesearch.update_assistant/3)
+    end
+
+    @desc "Update assistant-level attributes (name, description) without creating a new config version"
+    field :update_assistant_attrs, :kaapi_assistant_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:assistant_attrs_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Filesearch.update_assistant_attrs/3)
     end
 
     @desc "Clone an existing Assistant"
