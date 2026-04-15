@@ -501,6 +501,15 @@ defmodule Glific.Assistants do
         no_changes?(user_params, assistant, knowledge_base_version) ->
           get_assistant(assistant.id)
 
+        name_only_change?(user_params, assistant, knowledge_base_version) ->
+          assistant
+          |> Assistant.changeset(%{name: user_params[:name]})
+          |> Repo.update()
+          |> case do
+            {:ok, _} -> get_assistant(assistant.id)
+            error -> error
+          end
+
         true ->
           previous_knowledge_base_version =
             List.first(assistant.active_config_version.knowledge_base_versions)
@@ -583,6 +592,20 @@ defmodule Glific.Assistants do
       user_params[:model] == active_config.model and
       user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
       kb_unchanged
+  end
+
+  @spec name_only_change?(map(), Assistant.t(), KnowledgeBaseVersion.t() | nil) :: boolean()
+  defp name_only_change?(user_params, assistant, knowledge_base_version) do
+    current_kb_id = assistant.active_config_version.knowledge_base_versions |> List.first() |> kb_id()
+    new_kb_id = kb_id(knowledge_base_version)
+
+    not is_nil(user_params[:name]) and
+      user_params[:name] != assistant.name and
+      is_nil(user_params[:instructions]) and
+      is_nil(user_params[:model]) and
+      is_nil(user_params[:temperature]) and
+      is_nil(user_params[:knowledge_base_version_id]) and
+      current_kb_id == new_kb_id
   end
 
   @spec kb_id(KnowledgeBaseVersion.t() | nil) :: non_neg_integer() | nil
