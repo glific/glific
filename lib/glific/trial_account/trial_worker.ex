@@ -231,7 +231,8 @@ defmodule Glific.TrialAccount.TrialWorker do
       on: u.phone == t.phone,
       where: u.organization_id == ^organization_id,
       where: "admin" in u.roles,
-      order_by: [asc: u.id],
+      where: u.name != "SAAS Admin",
+      where: t.otp_entered == true,
       limit: 1,
       select: t
     )

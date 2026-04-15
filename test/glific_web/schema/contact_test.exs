@@ -338,9 +338,11 @@ defmodule GlificWeb.Schema.ContactTest do
     assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
              Oban.drain_queue(queue: :contact_import, with_scheduled: true)
 
-    contact = assert Contacts.get_contact_by_phone!(test_phone)
+    # Phone is stored in normalized format without + prefix
+    normalized_phone = "919917443992"
+    contact = assert Contacts.get_contact_by_phone!(normalized_phone)
     assert contact.optin_method == "Import"
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    count = Contacts.count_contacts(%{filter: %{phone: normalized_phone}})
     assert count == 1
 
     # Test success for updating a contact, the contact won't get uploaded due to
