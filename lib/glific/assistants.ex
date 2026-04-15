@@ -511,44 +511,50 @@ defmodule Glific.Assistants do
           end
 
         true ->
-          previous_knowledge_base_version =
-            List.first(assistant.active_config_version.knowledge_base_versions)
-
-          needs_active_config_link =
-            is_nil(previous_knowledge_base_version) and
-              not is_nil(user_params[:knowledge_base_version_id])
-
-          previous_kb_id = kb_id(previous_knowledge_base_version)
-          new_kb_id = kb_id(knowledge_base_version)
-
-          knowledge_base_changed =
-            previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
-
-          {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
-
-          with true <-
-                 knowledge_base_changed and knowledge_base_version.status != :completed,
-               {:ok, _config_version} <-
-                 deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-            format_assistant_result(assistant)
-          else
-            false ->
-              with {:ok, updated_assistant, config_version} <-
-                     update_assistant_transaction(
-                       assistant,
-                       config_params,
-                       knowledge_base_version,
-                       needs_active_config_link
-                     ),
-                   {:ok, _} <-
-                     create_kaapi_config_version(updated_assistant, config_version, config_params) do
-                format_assistant_result(updated_assistant)
-              end
-
-            {:error, reason} ->
-              {:error, reason}
-          end
+          do_update_assistant_config(assistant, user_params, knowledge_base_version)
       end
+    end
+  end
+
+  @spec do_update_assistant_config(Assistant.t(), map(), KnowledgeBaseVersion.t() | nil) ::
+          {:ok, map()} | {:error, any()}
+  defp do_update_assistant_config(assistant, user_params, knowledge_base_version) do
+    previous_knowledge_base_version =
+      List.first(assistant.active_config_version.knowledge_base_versions)
+
+    needs_active_config_link =
+      is_nil(previous_knowledge_base_version) and
+        not is_nil(user_params[:knowledge_base_version_id])
+
+    previous_kb_id = kb_id(previous_knowledge_base_version)
+    new_kb_id = kb_id(knowledge_base_version)
+
+    knowledge_base_changed =
+      previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
+
+    {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
+
+    with true <-
+           knowledge_base_changed and knowledge_base_version.status != :completed,
+         {:ok, _config_version} <-
+           deferred_update_transaction(assistant, config_params, knowledge_base_version) do
+      format_assistant_result(assistant)
+    else
+      false ->
+        with {:ok, updated_assistant, config_version} <-
+               update_assistant_transaction(
+                 assistant,
+                 config_params,
+                 knowledge_base_version,
+                 needs_active_config_link
+               ),
+             {:ok, _} <-
+               create_kaapi_config_version(updated_assistant, config_version, config_params) do
+          format_assistant_result(updated_assistant)
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
