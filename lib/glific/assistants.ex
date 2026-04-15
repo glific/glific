@@ -88,6 +88,7 @@ defmodule Glific.Assistants do
           order_by: [desc: v.version_number]
         )
         |> Repo.all()
+        |> Repo.preload(knowledge_base_versions: :knowledge_base)
 
       {:ok,
        Enum.map(versions, fn version ->
@@ -100,6 +101,7 @@ defmodule Glific.Assistants do
            status: version.status,
            is_live: version.id == assistant.active_config_version_id,
            description: version.description,
+           vector_store_data: build_vector_store_data(version),
            inserted_at: version.inserted_at,
            updated_at: version.updated_at
          }
