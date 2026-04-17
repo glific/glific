@@ -10,31 +10,25 @@ defmodule Glific.ThirdParty.GeminiTest do
       mock(fn
         %{method: :get, url: "gs://bucket-name/audio-file.ogg"} ->
           %Tesla.Env{status: 200, body: "<<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10>>"}
+      end)
 
-        %{method: :post, url: url} ->
-          assert String.contains?(url, "/gemini-2.5-pro:generateContent")
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        assert String.contains?(conn.request_path, "/gemini-2.5-pro:generateContent")
 
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [
-                %{
-                  content: %{
-                    parts: [
-                      %{
-                        text: "\"Hello, this is a test message\""
-                      }
-                    ]
-                  }
-                }
-              ],
-              usageMetadata: %{
-                promptTokenCount: 100,
-                candidatesTokenCount: 50,
-                totalTokenCount: 150
+        Req.Test.json(conn, %{
+          "candidates" => [
+            %{
+              "content" => %{
+                "parts" => [%{"text" => "\"Hello, this is a test message\""}]
               }
             }
+          ],
+          "usageMetadata" => %{
+            "promptTokenCount" => 100,
+            "candidatesTokenCount" => 50,
+            "totalTokenCount" => 150
           }
+        })
       end)
 
       audio_url = "gs://bucket-name/audio-file.ogg"
@@ -47,11 +41,11 @@ defmodule Glific.ThirdParty.GeminiTest do
     test "handles Gemini errors", %{organization_id: organization_id} do
       mock(fn
         %{method: :get, url: "gs://bucket-name/audio-file.ogg"} ->
-          # Return binary audio content for download
           %Tesla.Env{status: 200, body: "<<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10>>"}
+      end)
 
-        %{method: :post} ->
-          %Tesla.Env{status: 400, body: %{error: "Bad request"}}
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        Plug.Conn.send_resp(conn, 400, Jason.encode!(%{"error" => "Bad request"}))
       end)
 
       audio_url = "gs://bucket-name/audio-file.ogg"
@@ -85,36 +79,31 @@ defmodule Glific.ThirdParty.GeminiTest do
     test "successfully converts text to speech with GCS enabled", %{
       organization_id: organization_id
     } do
-      # Base64 encoded sample PCM audio data
       sample_audio_data = Base.encode64("fake_pcm_audio_data")
 
-      mock(fn
-        %{method: :post, url: url} ->
-          assert String.contains?(url, "/gemini-2.5-pro-preview-tts:generateContent")
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        assert String.contains?(conn.request_path, "/gemini-2.5-pro-preview-tts:generateContent")
 
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [
-                %{
-                  content: %{
-                    parts: [
-                      %{
-                        inlineData: %{
-                          data: sample_audio_data
-                        }
-                      }
-                    ]
+        Req.Test.json(conn, %{
+          "candidates" => [
+            %{
+              "content" => %{
+                "parts" => [
+                  %{
+                    "inlineData" => %{
+                      "data" => sample_audio_data
+                    }
                   }
-                }
-              ],
-              usageMetadata: %{
-                promptTokenCount: 50,
-                candidatesTokenCount: 100,
-                totalTokenCount: 150
+                ]
               }
             }
+          ],
+          "usageMetadata" => %{
+            "promptTokenCount" => 50,
+            "candidatesTokenCount" => 100,
+            "totalTokenCount" => 150
           }
+        })
       end)
 
       with_mock Glific.GCS.GcsWorker,
@@ -136,11 +125,8 @@ defmodule Glific.ThirdParty.GeminiTest do
     end
 
     test "handles API error with status code", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 400,
-          body: %{error: "Invalid request"}
-        }
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        Plug.Conn.send_resp(conn, 400, Jason.encode!(%{"error" => "Invalid request"}))
       end)
 
       result = Gemini.do_text_to_speech(organization_id, "Hello World")
@@ -150,9 +136,9 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello World"
     end
 
-    test "handles Tesla error with body", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        {:error, %Tesla.Env{body: "Service unavailable"}}
+    test "handles network error", %{organization_id: organization_id} do
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn _conn ->
+        raise Req.TransportError, reason: :timeout
       end)
 
       result = Gemini.do_text_to_speech(organization_id, "Hello World")
@@ -160,61 +146,6 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.success == false
       refute result.media_url
       assert result.translated_text == "Hello World"
-    end
-
-    test "handles Tesla timeout error", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        {:error, :timeout}
-      end)
-
-      result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
-    end
-
-    @tag :skip
-    test "handles GCS upload failure", %{organization_id: organization_id} do
-      sample_audio_data = Base.encode64("fake_pcm_audio_data")
-
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                content: %{
-                  parts: [
-                    %{
-                      inlineData: %{
-                        data: sample_audio_data,
-                        mimeType: "audio/pcm"
-                      }
-                    }
-                  ]
-                }
-              }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 50,
-              candidatesTokenCount: 100,
-              totalTokenCount: 150
-            }
-          }
-        }
-      end)
-
-      with_mock Glific.GCS.GcsWorker,
-        upload_media: fn _file, _remote_name, _org_id ->
-          {:error, "Upload failed"}
-        end do
-        result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-        assert result.success == false
-        refute result.media_url
-        assert result.translated_text == "Hello World"
-      end
     end
   end
 
@@ -237,32 +168,31 @@ defmodule Glific.ThirdParty.GeminiTest do
               }
             }
           }
-        else
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [
-                %{
-                  content: %{
-                    parts: [
-                      %{
-                        inlineData: %{
-                          data: sample_audio_data,
-                          mimeType: "audio/pcm"
-                        }
-                      }
-                    ]
+        end
+      end)
+
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        Req.Test.json(conn, %{
+          "candidates" => [
+            %{
+              "content" => %{
+                "parts" => [
+                  %{
+                    "inlineData" => %{
+                      "data" => sample_audio_data,
+                      "mimeType" => "audio/pcm"
+                    }
                   }
-                }
-              ],
-              usageMetadata: %{
-                promptTokenCount: 50,
-                candidatesTokenCount: 100,
-                totalTokenCount: 150
+                ]
               }
             }
+          ],
+          "usageMetadata" => %{
+            "promptTokenCount" => 50,
+            "candidatesTokenCount" => 100,
+            "totalTokenCount" => 150
           }
-        end
+        })
       end)
 
       with_mock Glific.GCS.GcsWorker,
@@ -374,32 +304,31 @@ defmodule Glific.ThirdParty.GeminiTest do
               }
             }
           }
-        else
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [
-                %{
-                  content: %{
-                    parts: [
-                      %{
-                        inlineData: %{
-                          data: sample_audio_data,
-                          mimeType: "audio/pcm"
-                        }
-                      }
-                    ]
+        end
+      end)
+
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        Req.Test.json(conn, %{
+          "candidates" => [
+            %{
+              "content" => %{
+                "parts" => [
+                  %{
+                    "inlineData" => %{
+                      "data" => sample_audio_data,
+                      "mimeType" => "audio/pcm"
+                    }
                   }
-                }
-              ],
-              usageMetadata: %{
-                promptTokenCount: 50,
-                candidatesTokenCount: 100,
-                totalTokenCount: 150
+                ]
               }
             }
+          ],
+          "usageMetadata" => %{
+            "promptTokenCount" => 50,
+            "candidatesTokenCount" => 100,
+            "totalTokenCount" => 150
           }
-        end
+        })
       end)
 
       with_mock Glific.GCS.GcsWorker,
@@ -436,12 +365,11 @@ defmodule Glific.ThirdParty.GeminiTest do
               }
             }
           }
-        else
-          %Tesla.Env{
-            status: 400,
-            body: %{error: "Invalid request"}
-          }
         end
+      end)
+
+      Req.Test.stub(Glific.ThirdParty.Gemini.ApiClient, fn conn ->
+        Plug.Conn.send_resp(conn, 400, Jason.encode!(%{"error" => "Invalid request"}))
       end)
 
       result =

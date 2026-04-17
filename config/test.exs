@@ -71,3 +71,7 @@ config :glific,
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test
 
 config :glific, open_ai: "sk-test_api_key"
+
+config :glific, Glific.ThirdParty.Gemini.ApiClient,
+  gemini_api_key: "test-api-key",
+  plug: {Req.Test, Glific.ThirdParty.Gemini.ApiClient}

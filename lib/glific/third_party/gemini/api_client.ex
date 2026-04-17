@@ -21,32 +21,26 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @spec speech_to_text(String.t(), non_neg_integer()) :: map()
   def speech_to_text(encoded_audio, organization_id) do
     body = stt_request_body(encoded_audio)
-    opts = [adapter: [recv_timeout: 300_000]]
 
     client()
-    |> Tesla.post("/gemini-2.5-pro:generateContent", body, opts: opts)
+    |> Req.post(url: "/gemini-2.5-pro:generateContent", json: body)
     |> case do
-      {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
+      {:ok, %Req.Response{status: 200, body: %{"candidates" => candidates, "usageMetadata" => metadata}}} ->
         text =
           candidates
-          |> get_in([Access.at(0), :content, :parts, Access.at(0), :text])
+          |> get_in([Access.at(0), "content", "parts", Access.at(0), "text"])
           |> Jason.decode!()
 
         stt_gemini_usage_stats(metadata, organization_id)
-
         %{success: true, asr_response_text: text}
 
-      {:ok, %Tesla.Env{status: status_code, body: body}} ->
+      {:ok, %Req.Response{status: status_code, body: body}} ->
         Glific.log_exception(%Error{
           message: "Gemini STT Failure: #{inspect(body)}",
           status_code: status_code
         })
 
         %{success: false, asr_response_text: status_code}
-
-      {:error, %Tesla.Env{body: error_reason}} ->
-        Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(error_reason)}"})
-        %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
         Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(reason)}"})
@@ -60,31 +54,25 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, nil}
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
-    path = "/gemini-2.5-pro-preview-tts:generateContent"
-    opts = [adapter: [recv_timeout: 300_000]]
 
     client()
-    |> Tesla.post(path, body, opts: opts)
+    |> Req.post(url: "/gemini-2.5-pro-preview-tts:generateContent", json: body)
     |> case do
-      {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
+      {:ok, %Req.Response{status: 200, body: %{"candidates" => candidates, "usageMetadata" => metadata}}} ->
         decoded_audio =
           candidates
-          |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
+          |> get_in([Access.at(0), "content", "parts", Access.at(0), "inlineData", "data"])
           |> Base.decode64!()
 
         tts_gemini_usage_stats(metadata, organization_id)
         {:ok, decoded_audio}
 
-      {:ok, %Tesla.Env{status: status, body: body}} ->
+      {:ok, %Req.Response{status: status, body: body}} ->
         Glific.log_exception(%Error{
           message: "Gemini TTS Failure: #{inspect(body)}",
           status_code: status
         })
 
-        {:error, nil}
-
-      {:error, %Tesla.Env{body: error_reason}} ->
-        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(error_reason)}"})
         {:error, nil}
 
       {:error, reason} ->
@@ -100,25 +88,24 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @spec gemini_config(atom()) :: String.t()
   defp gemini_config(key), do: gemini_config()[key]
 
-  # client with runtime config (API key / base URL).
-  @spec client() :: Tesla.Client.t()
+  @spec client() :: Req.Request.t()
   defp client do
-    Tesla.client(
-      [
-        {Tesla.Middleware.BaseUrl, @gemini_url},
-        {Tesla.Middleware.Headers, headers()},
-        {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
-        {Tesla.Middleware.Telemetry, metadata: %{provider: "Gemini", sampling_scale: 10}}
-      ] ++ Glific.get_tesla_retry_middleware(%{max_retries: 1})
-    )
-  end
-
-  @spec headers() :: list()
-  defp headers do
-    [
-      {"x-goog-api-key", gemini_config(:gemini_api_key)},
-      {"Content-Type", "application/json"}
+    opts = [
+      base_url: @gemini_url,
+      headers: [{"x-goog-api-key", gemini_config(:gemini_api_key)}],
+      receive_timeout: 300_000,
+      retry: :transient,
+      max_retries: 1,
+      retry_delay: fn _ -> 500 end
     ]
+
+    opts =
+      case Application.get_env(:glific, __MODULE__, [])[:plug] do
+        nil -> opts
+        plug -> Keyword.put(opts, :plug, plug)
+      end
+
+    Req.new(opts)
   end
 
   @spec stt_request_body(String.t()) :: map()
@@ -180,11 +167,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
 
   @spec stt_gemini_usage_stats(map(), non_neg_integer()) :: :ok
   defp stt_gemini_usage_stats(metadata, organization_id) do
-    Metrics.increment("Gemini STT Usage", organization_id, metadata[:totalTokenCount])
+    Metrics.increment("Gemini STT Usage", organization_id, metadata["totalTokenCount"])
   end
 
   @spec tts_gemini_usage_stats(map(), non_neg_integer()) :: :ok
   defp tts_gemini_usage_stats(metadata, organization_id) do
-    Metrics.increment("Gemini TTS Usage", organization_id, metadata[:totalTokenCount])
+    Metrics.increment("Gemini TTS Usage", organization_id, metadata["totalTokenCount"])
   end
 end
