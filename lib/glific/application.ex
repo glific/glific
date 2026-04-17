@@ -56,6 +56,12 @@ defmodule Glific.Application do
       ## Add Generic task supervisor
       {Task.Supervisor, name: Glific.TaskSupervisor},
 
+      # Default hackney pool — size configurable via HACKNEY_POOL_SIZE env var
+      :hackney_pool.child_spec(:default,
+        timeout: 60_000,
+        max_connections: Application.get_env(:glific, :hackney_pool, [])[:max_connections] || 75
+      ),
+
       # Dedicated hackney pool for Kaapi document uploads
       :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
     ]
