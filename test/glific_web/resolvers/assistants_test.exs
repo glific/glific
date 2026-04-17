@@ -482,6 +482,78 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       # is_live reflects active_config_version_id
       live_version = Enum.find(versions, & &1["is_live"])
       assert live_version["id"] == to_string(v1.id)
+
+      # versions without a linked knowledge base have no vector_store
+      assert Enum.all?(versions, fn v -> is_nil(v["vector_store"]) end)
+    end
+
+    test "returns vector_store linked to each version", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "VS Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, v1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v1",
+          settings: %{},
+          status: :ready,
+          version_number: 1
+        })
+        |> Repo.insert()
+
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{name: "Test KB", organization_id: organization_id})
+
+      {:ok, kb_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          status: :completed,
+          llm_service_id: "vs_test_abc",
+          size: 50,
+          files: %{}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: v1.id,
+          knowledge_base_version_id: kb_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
+        |> Repo.update()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
+
+      versions = query_data.data["assistantVersions"]
+      assert length(versions) == 1
+
+      vs = hd(versions)["vector_store"]
+      assert vs != nil
+      assert vs["id"] == to_string(kb.id)
+      assert vs["knowledge_base_version_id"] == to_string(kb_version.id)
+      assert vs["vector_store_id"] == "vs_test_abc"
+      assert vs["name"] == "Test KB"
+      assert vs["status"] == "completed"
+      assert vs["size"] == "50 B"
     end
 
     test "returns empty versions for a non-existent assistant", %{staff: user} do
