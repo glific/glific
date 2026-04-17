@@ -58,6 +58,13 @@ defmodule Glific.Appsignal do
     if :rand.uniform() < sampling_rate * sampling_scale / 100 do
       cond do
         # Errors like timeout from tesla etc, status will be nil
+        is_nil(status) && meta[:error] == :checkout_timeout ->
+          Appsignal.increment_counter("hackney_pool_checkout_error", 1, %{
+            provider: meta[:provider],
+            url: url,
+            method: meta.env.method
+          })
+
         is_nil(status) ->
           Appsignal.increment_counter("tesla_request_error_count", 1, %{
             provider: meta[:provider],
