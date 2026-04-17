@@ -25,7 +25,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     client()
     |> Req.post(url: "/gemini-2.5-pro:generateContent", json: body)
     |> case do
-      {:ok, %Req.Response{status: 200, body: %{"candidates" => candidates, "usageMetadata" => metadata}}} ->
+      {:ok,
+       %Req.Response{
+         status: 200,
+         body: %{"candidates" => candidates, "usageMetadata" => metadata}
+       }} ->
         text =
           candidates
           |> get_in([Access.at(0), "content", "parts", Access.at(0), "text"])
@@ -58,7 +62,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     client()
     |> Req.post(url: "/gemini-2.5-pro-preview-tts:generateContent", json: body)
     |> case do
-      {:ok, %Req.Response{status: 200, body: %{"candidates" => candidates, "usageMetadata" => metadata}}} ->
+      {:ok,
+       %Req.Response{
+         status: 200,
+         body: %{"candidates" => candidates, "usageMetadata" => metadata}
+       }} ->
         decoded_audio =
           candidates
           |> get_in([Access.at(0), "content", "parts", Access.at(0), "inlineData", "data"])
