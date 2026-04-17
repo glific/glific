@@ -103,7 +103,8 @@ config :tesla,
   adapter:
     {Tesla.Adapter.Hackney,
      ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
-     pool: :glific_default_pool}
+     pool: :glific_default_pool,
+     connect_timeout: 5_000}
 
 config :glific, :max_rate_limit_request, 60
 
