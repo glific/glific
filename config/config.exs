@@ -101,7 +101,9 @@ config :glific, Oban,
 # We will revisit it once we build a better understanding
 config :tesla,
   adapter:
-    {Tesla.Adapter.Hackney, ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}]}
+    {Tesla.Adapter.Hackney,
+     ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
+     pool: :glific_default_pool}
 
 config :glific, :max_rate_limit_request, 60
 
