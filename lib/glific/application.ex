@@ -58,8 +58,7 @@ defmodule Glific.Application do
 
       # Default hackney pool — size configurable via HACKNEY_POOL_SIZE env var
       :hackney_pool.child_spec(:glific_default_pool,
-        recv_timeout: 60_000,
-        connect_timeout: 5_000,
+        timeout: 60_000,
         max_connections: Application.get_env(:glific, :hackney_pool, [])[:max_connections] || 50
       ),
 
