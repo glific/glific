@@ -37,7 +37,14 @@ oban_queues = [
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
-  webhook: 20,
+  webhook: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 3,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ],
   broadcast: 5,
   wa_group: 5,
   purge: 1,
@@ -45,7 +52,14 @@ oban_queues = [
     limit: 10,
     rate_limit: [allowed: 60, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
-  gpt_webhook_queue: 20,
+  gpt_webhook_queue: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 3,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ],
   contact_import: 10,
   gupshup_high_tps: 10,
   clone_assistant: 5
