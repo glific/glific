@@ -57,7 +57,7 @@ config :glific, Glific.RepoReplica,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
 config :glific, :hackney_pool,
-  max_connections: env!("HACKNEY_POOL_SIZE", :integer, 75)
+  max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
 
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
