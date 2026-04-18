@@ -367,20 +367,30 @@ defmodule Glific.Assistants do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version.version
 
-        {:ok, updated_config_version} =
-          config_version
-          |> AssistantConfigVersion.changeset(%{
+        Multi.new()
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
             status: :ready,
             kaapi_version_number: kaapi_version_number
           })
-          |> Repo.update()
+        )
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{kaapi_uuid: kaapi_response.data.id})
+        )
+        |> Repo.transaction()
+        |> case do
+          {:ok, %{updated_assistant: updated_assistant, config_version: updated_config_version}} ->
+            {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
 
-        {:ok, updated_assistant} =
-          assistant
-          |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-          |> Repo.update()
+          {:error, failed_op, changeset, _} ->
+            Logger.error(
+              "Transaction failed in create_config_without_knowledge_base for assistant #{assistant.id}, failed_op: #{failed_op}, errors: #{inspect(changeset)}"
+            )
 
-        {:ok, %{assistant: updated_assistant, config_version: updated_config_version}}
+            {:error, changeset}
+        end
 
       {:error, error} ->
         config_version
@@ -1202,16 +1212,30 @@ defmodule Glific.Assistants do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version.version
 
-        assistant
-        |> Assistant.changeset(%{kaapi_uuid: kaapi_response.data.id})
-        |> Repo.update()
+        Multi.new()
+        |> Multi.update(
+          :updated_assistant,
+          Assistant.changeset(assistant, %{kaapi_uuid: kaapi_response.data.id})
+        )
+        |> Multi.update(
+          :config_version,
+          AssistantConfigVersion.changeset(config_version, %{
+            status: :ready,
+            kaapi_version_number: kaapi_version_number
+          })
+        )
+        |> Repo.transaction()
+        |> case do
+          {:ok, %{config_version: updated_config_version}} ->
+            {:ok, updated_config_version}
 
-        config_version
-        |> AssistantConfigVersion.changeset(%{
-          status: :ready,
-          kaapi_version_number: kaapi_version_number
-        })
-        |> Repo.update()
+          {:error, failed_op, changeset, _} ->
+            Logger.error(
+              "Transaction failed in deferred_create_new_assistant for assistant #{assistant.id}, failed_op: #{failed_op}, errors: #{inspect(changeset)}"
+            )
+
+            {:error, changeset}
+        end
 
       {:error, reason} ->
         Logger.error(
