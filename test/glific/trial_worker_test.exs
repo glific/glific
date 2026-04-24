@@ -402,6 +402,79 @@ defmodule Glific.TrialWorkerTest do
       assert length(mail_logs) == 1
     end
 
+    test "sends email to actual trial user, not SAAS Admin" do
+      trial_org_attrs = %{
+        name: "SAAS Admin Test Org",
+        shortcode: "saastest",
+        email: "saastest@example.com",
+        bsp_id: 1,
+        is_active: true,
+        is_trial_org: true,
+        timezone: "Asia/Kolkata"
+      }
+
+      trial_org = Fixtures.organization_fixture(trial_org_attrs)
+
+      {:ok, trial_org} =
+        trial_org
+        |> Organization.changeset(%{
+          trial_expiration_date: DateTime.add(DateTime.utc_now(), 11 * 24 + 12, :hour)
+        })
+        |> Repo.update()
+
+      Repo.put_process_state(trial_org.id)
+
+      # Create SAAS Admin user (added for support, should be excluded)
+      {:ok, _saas_trial_entry} =
+        TrialUsers.create_trial_user(%{
+          username: "saas_admin",
+          email: "saas@glific.org",
+          phone: "918657048981",
+          organization_name: "Glific",
+          otp_entered: false
+        })
+
+      _saas_admin =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: "918657048981",
+          name: "SAAS Admin",
+          roles: ["admin"]
+        })
+
+      # Create actual trial user (should receive the email)
+      {:ok, actual_trial_user} =
+        TrialUsers.create_trial_user(%{
+          username: "actual_user",
+          email: "actual@example.com",
+          phone: "919111222333",
+          organization_name: trial_org.name,
+          otp_entered: true
+        })
+
+      _actual_user =
+        Fixtures.user_fixture(%{
+          organization_id: trial_org.id,
+          phone: actual_trial_user.phone,
+          roles: ["admin"]
+        })
+
+      assert :ok = TrialWorker.send_day_3_followup_emails()
+
+      mail_logs =
+        MailLog
+        |> where([m], m.organization_id == ^trial_org.id)
+        |> where([m], m.category == "trial_day_3_followup")
+        |> Repo.all(skip_organization_id: true)
+
+      assert length(mail_logs) == 1
+
+      # Verify the email content contains the actual trial user's email, not SAAS Admin
+      [log] = mail_logs
+      assert log.content["data"] =~ "actual@example.com"
+      refute log.content["data"] =~ "saas@glific.org"
+    end
+
     test "skips orgs without trial users" do
       trial_org_attrs = %{
         name: "No User Trial Org",
