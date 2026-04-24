@@ -5,7 +5,7 @@ defmodule GlificWeb.ChatbotControllerTest do
 
   setup %{conn: conn, organization_id: organization_id} do
     # Set the API key for tests
-    Application.put_env(:glific, :dify_callback_api_key, @api_key)
+    Application.put_env(:glific, :dify_api_key, @api_key)
 
     # Get the org shortcode
     org = Glific.Partners.get_organization!(organization_id)
@@ -16,7 +16,7 @@ defmodule GlificWeb.ChatbotControllerTest do
       |> put_req_header("x-dify-api-key", @api_key)
 
     on_exit(fn ->
-      Application.put_env(:glific, :dify_callback_api_key, "This is not a secret")
+      Application.put_env(:glific, :dify_api_key, "This is not a secret")
     end)
 
     %{conn: conn, org: org, organization_id: organization_id}
