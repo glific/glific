@@ -763,8 +763,12 @@ defmodule Glific.Clients.CommonWebhook do
     }
   end
 
-  @spec lookup_kaapi_config(String.t(), non_neg_integer()) ::
+  @spec lookup_kaapi_config(String.t() | nil, non_neg_integer()) ::
           {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+  defp lookup_kaapi_config(assistant_display_id, _organization_id)
+       when is_nil(assistant_display_id),
+       do: {:error, "assistant_id is required"}
+
   defp lookup_kaapi_config(assistant_display_id, organization_id) do
     with {:ok, assistant} <-
            Repo.fetch_by(Assistant, %{

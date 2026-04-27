@@ -137,11 +137,15 @@ defmodule GlificWeb.Resolvers.Filesearch do
   end
 
   @doc """
-  Resolves the vector_store field on an assistant.
+  Resolves the vector_store field on an assistant or assistant config version.
   """
   @spec resolve_vector_store(map(), map(), map()) :: {:ok, map() | nil}
   def resolve_vector_store(%{vector_store_data: vs_data}, _args, _context) do
     {:ok, vs_data}
+  end
+
+  def resolve_vector_store(_parent, _args, _context) do
+    {:ok, nil}
   end
 
   @doc """
