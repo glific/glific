@@ -105,16 +105,17 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
-  def handle_event([:glific, repo, :query], measurement, _meta, _)
+  def handle_event([:glific, repo, :query], measurement, meta, _)
       when repo in [:repo, :repo_replica] do
     tags = %{repo: repo}
+    query_tags = Map.put(tags, :command_type, get_command_type(meta))
 
-    maybe_add_distribution_metric(measurement, :query_time, "glific.repo.query_time", tags)
+    maybe_add_distribution_metric(measurement, :query_time, "glific.repo.query_time", query_tags)
     maybe_add_distribution_metric(measurement, :idle_time, "glific.repo.idle_time", tags)
     maybe_add_distribution_metric(measurement, :queue_time, "glific.repo.queue_time", tags)
 
     if measurement |> Map.has_key?(:query_time) do
-      Appsignal.increment_counter("glific.repo.query_count", 1, tags)
+      Appsignal.increment_counter("glific.repo.query_count", 1, query_tags)
     end
   end
 
@@ -222,6 +223,20 @@ defmodule Glific.Appsignal do
 
       :error ->
         :ok
+    end
+  end
+
+  @spec get_command_type(map()) :: String.t()
+  defp get_command_type(meta) do
+    meta
+    |> Map.get(:query, "")
+    |> String.trim_leading()
+    |> String.split(~r/\s+/, parts: 2)
+    |> List.first()
+    |> case do
+      nil -> "unknown"
+      "" -> "unknown"
+      command -> String.upcase(command)
     end
   end
 end

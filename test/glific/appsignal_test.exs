@@ -7,6 +7,8 @@ defmodule Glific.AppsignalTest do
   defp native_to_milliseconds(native),
     do: System.convert_time_unit(native, :native, :millisecond)
 
+  defp repo_tags(repo, command_type), do: %{repo: repo, command_type: command_type}
+
   describe "handle_event/4 repo query telemetry" do
     test "records distribution metrics and query count for :repo when timings are present" do
       measurement = %{
@@ -17,6 +19,8 @@ defmodule Glific.AppsignalTest do
 
       parent = self()
 
+      query = "SELECT * FROM contacts WHERE id = $1"
+
       with_mock Appsignal, [],
         add_distribution_value: fn name, value, tags ->
           send(parent, {:dist, name, value, tags})
@@ -26,17 +30,17 @@ defmodule Glific.AppsignalTest do
           send(parent, {:cnt, name, amount, tags})
           :ok
         end do
-        Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
+        Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{query: query}, nil)
       end
 
       expected_query_time_ms = native_to_milliseconds(measurement.query_time)
       expected_idle_time_ms = native_to_milliseconds(measurement.idle_time)
       expected_queue_time_ms = native_to_milliseconds(measurement.queue_time)
 
-      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo, command_type: "SELECT"}}
       assert_receive {:dist, "glific.repo.idle_time", ^expected_idle_time_ms, %{repo: :repo}}
       assert_receive {:dist, "glific.repo.queue_time", ^expected_queue_time_ms, %{repo: :repo}}
-      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo}}
+      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo, command_type: "SELECT"}}
     end
 
     test "tags metrics with :repo_replica for replica repo events" do
@@ -48,6 +52,8 @@ defmodule Glific.AppsignalTest do
 
       parent = self()
 
+      query = "update contacts set name = $1 where id = $2"
+
       with_mock Appsignal, [],
         add_distribution_value: fn name, value, tags ->
           send(parent, {:dist, name, value, tags})
@@ -57,18 +63,24 @@ defmodule Glific.AppsignalTest do
           send(parent, {:cnt, name, amount, tags})
           :ok
         end do
-        Glific.Appsignal.handle_event([:glific, :repo_replica, :query], measurement, %{}, nil)
+        Glific.Appsignal.handle_event(
+          [:glific, :repo_replica, :query],
+          measurement,
+          %{query: query},
+          nil
+        )
       end
 
+      query_tags = repo_tags(:repo_replica, "UPDATE")
       tags = %{repo: :repo_replica}
 
-      assert_receive {:dist, "glific.repo.query_time", _, ^tags}
+      assert_receive {:dist, "glific.repo.query_time", _, ^query_tags}
       assert_receive {:dist, "glific.repo.idle_time", _, ^tags}
       assert_receive {:dist, "glific.repo.queue_time", _, ^tags}
-      assert_receive {:cnt, "glific.repo.query_count", 1, ^tags}
+      assert_receive {:cnt, "glific.repo.query_count", 1, ^query_tags}
     end
 
-    test "does not increment query count when query_time is absent" do
+    test "uses unknown command type and does not increment query count when query_time is absent" do
       measurement = %{
         idle_time: 1_000_000,
         queue_time: 500_000
@@ -95,7 +107,7 @@ defmodule Glific.AppsignalTest do
       refute_receive {:cnt, _, _, _}
     end
 
-    test "records only metrics for timings that are present" do
+    test "records only query metrics for timings that are present with unknown command type" do
       measurement = %{query_time: 3_000_000}
       parent = self()
 
@@ -113,8 +125,8 @@ defmodule Glific.AppsignalTest do
 
       expected_query_time_ms = native_to_milliseconds(measurement.query_time)
 
-      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo}}
-      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo}}
+      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo, command_type: "unknown"}}
+      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo, command_type: "unknown"}}
       refute_receive {:dist, _, _, _}, 0
     end
 
