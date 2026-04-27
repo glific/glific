@@ -105,6 +105,12 @@ defmodule Glific.Appsignal do
   defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
     do: to_string(org_id)
 
+  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: to_string(org_id)
+
   defp organization_id_tag(_), do: "unknown"
 
   @doc """
@@ -169,10 +175,13 @@ defmodule Glific.Appsignal do
   defp get_oban_queue_data do
     {:ok, %{rows: rows}} =
       """
-      SELECT queue, state, args->>'organization_id' AS organization_id, count(id)
+      SELECT queue, state,
+        COALESCE(args->>'organization_id', args->'message'->>'organization_id', args->'media'->>'organization_id') AS organization_id,
+        count(id)
       from global.oban_jobs
       where state in ('executing', 'available', 'scheduled', 'retryable')
-      group by queue, state, args->>'organization_id'
+      group by queue, state,
+        COALESCE(args->>'organization_id', args->'message'->>'organization_id', args->'media'->>'organization_id')
       """
       |> Repo.query([], skip_organization_id: true)
 
