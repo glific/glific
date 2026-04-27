@@ -1165,6 +1165,23 @@ defmodule Glific.Flows.CommonWebhookTest do
       :ok
     end
 
+    test "returns error when assistant_id is nil" do
+      fields = %{
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] == "assistant_id is required"
+    end
+
     test "returns error when assistant not found" do
       fields = %{
         "assistant_id" => "nonexistent_id",

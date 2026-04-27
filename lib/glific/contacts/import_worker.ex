@@ -52,10 +52,10 @@ defmodule Glific.Contacts.ImportWorker do
     {validation_errors, valid_contacts} =
       Enum.reduce(contacts, {%{}, []}, fn contact, {acc, valid_contacts} ->
         case validate_contact(contact) do
-          errors when errors == %{} ->
-            {acc, [contact | valid_contacts]}
+          {:ok, clean_phone} ->
+            {acc, [Map.put(contact, "phone", clean_phone) | valid_contacts]}
 
-          errors ->
+          {:error, errors} ->
             {Map.update(acc, :errors, errors, &Map.merge(&1, errors)), valid_contacts}
         end
       end)
@@ -90,29 +90,29 @@ defmodule Glific.Contacts.ImportWorker do
     :ok
   end
 
-  @spec validate_contact(map()) :: map()
+  @spec validate_contact(map()) :: {:ok, String.t()} | {:error, map()}
   defp validate_contact(%{"phone" => phone}) when phone in [nil, ""] do
-    %{"phone" => "Phone number is missing."}
+    {:error, %{"phone" => "Phone number is missing."}}
   end
 
   defp validate_contact(%{"phone" => phone, "name" => name}) do
     case Contacts.parse_phone_number(phone) do
-      {:ok, phone} ->
-        validate_name(name, phone)
+      {:ok, clean_phone} ->
+        validate_name(name, clean_phone)
 
       {:error, message} ->
-        %{phone => message}
+        {:error, %{phone => message}}
     end
   end
 
-  defp validate_contact(_), do: %{"error" => "Failed to parse some rows"}
+  defp validate_contact(_), do: {:error, %{"error" => "Failed to parse some rows"}}
 
-  @spec validate_name(String.t(), String.t()) :: map()
+  @spec validate_name(String.t(), String.t()) :: {:ok, String.t()} | {:error, map()}
   defp validate_name(name, phone) when name in [nil, ""] do
-    %{phone => "Contact name is empty"}
+    {:error, %{phone => "Contact name is empty"}}
   end
 
-  defp validate_name(_name, _phone), do: %{}
+  defp validate_name(_name, phone), do: {:ok, phone}
 
   @spec process_contact(map(), map()) :: {:ok, map()} | {:error, map()}
   defp process_contact(contact, params) do
