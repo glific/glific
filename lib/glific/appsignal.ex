@@ -112,8 +112,9 @@ defmodule Glific.Appsignal do
   defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
     do: to_string(org_id)
 
-  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}}) when not is_nil(org_id),
-    do: to_string(org_id)
+  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}})
+       when not is_nil(org_id),
+       do: to_string(org_id)
 
   defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
     do: to_string(org_id)

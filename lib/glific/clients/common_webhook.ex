@@ -158,8 +158,6 @@ defmodule Glific.Clients.CommonWebhook do
       output_language: contact_language
     }
 
-    IO.inspect(stt_opts, label: "opts")
-
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
 
     Kaapi.speech_to_text(
@@ -169,7 +167,6 @@ defmodule Glific.Clients.CommonWebhook do
       organization_id,
       stt_opts
     )
-    |> IO.inspect()
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
