@@ -231,7 +231,7 @@ defmodule Glific.AIEvaluationsTest do
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{status: "failed", failure_reason: "Model inference error"}}
+          body: %{data: %{status: "failed", error_message: "Model inference error"}}
         }
       end)
 

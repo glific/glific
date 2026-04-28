@@ -86,38 +86,55 @@ defmodule Glific.AIEvaluations do
 
   @spec poll_evaluation(AIEvaluation.t(), non_neg_integer()) :: :ok
   defp poll_evaluation(%AIEvaluation{} = evaluation, org_id) do
-    case Kaapi.get_evaluation(evaluation.kaapi_evaluation_id, org_id) do
-      {:ok, %{data: %{status: "completed"}}} ->
-        results =
-          case Kaapi.get_evaluation_scores(evaluation.kaapi_evaluation_id, org_id) do
-            {:ok, %{data: data}} ->
-              Map.get(data, :score, %{})
+    evaluation.kaapi_evaluation_id
+    |> Kaapi.get_evaluation(org_id)
+    |> handle_evaluation_status(evaluation, org_id)
+  end
 
-            {:error, reason} ->
-              Logger.error(
-                "Failed to fetch scores for AI evaluation #{evaluation.id}: #{inspect(reason)}"
-              )
+  @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
+  defp handle_evaluation_status({:ok, %{data: %{status: "completed"}}}, evaluation, org_id) do
+    case fetch_evaluation_scores(evaluation, org_id) do
+      {:ok, scores} ->
+        update_ai_evaluation(evaluation, %{status: :completed, results: scores})
 
-              %{}
-          end
-
-        update_ai_evaluation(evaluation, %{status: :completed, results: results})
-
-      {:ok, %{data: %{status: "failed"} = data}} ->
+      {:error, reason} ->
         update_ai_evaluation(evaluation, %{
           status: :failed,
-          failure_reason: Map.get(data, :failure_reason, "Evaluation failed")
+          failure_reason: "Failed to fetch scores: #{inspect(reason)}"
         })
+    end
+  end
 
-      {:ok, _} ->
-        :ok
+  defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, _org_id) do
+    failure_reason = Map.get(data, :error_message, "Evaluation failed")
+    update_ai_evaluation(evaluation, %{status: :failed, failure_reason: failure_reason})
+  end
+
+  # Kaapi returned a successful response but the status was neither "completed" nor "failed"  meaning it's still "processing" or "pending". We
+  # don't need to do anything, just return :ok and wait for the next poll cycle (runs every 60 seconds via cron).
+  defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
+
+  defp handle_evaluation_status({:error, reason}, evaluation, org_id) do
+    Logger.error(
+      "Failed to poll AI evaluation #{evaluation.id} for org #{org_id}: #{inspect(reason)}"
+    )
+
+    :ok
+  end
+
+  @spec fetch_evaluation_scores(AIEvaluation.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  defp fetch_evaluation_scores(%AIEvaluation{} = evaluation, org_id) do
+    case Kaapi.get_evaluation_scores(evaluation.kaapi_evaluation_id, org_id) do
+      {:ok, %{data: data}} ->
+        {:ok, Map.get(data, :score, %{})}
 
       {:error, reason} ->
         Logger.error(
-          "Failed to poll AI evaluation #{evaluation.id} for org #{org_id}: #{inspect(reason)}"
+          "Failed to fetch scores for AI evaluation #{evaluation.id}: #{inspect(reason)}"
         )
 
-        :ok
+        {:error, reason}
     end
   end
 
