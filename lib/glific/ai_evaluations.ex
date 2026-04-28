@@ -8,6 +8,8 @@ defmodule Glific.AIEvaluations do
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
+    Metrics,
+    Notifications,
     Repo,
     ThirdParty.Kaapi
   }
@@ -72,6 +74,16 @@ defmodule Glific.AIEvaluations do
     |> Repo.all()
     |> Enum.each(fn evaluation ->
       Logger.warning("Timing out AI evaluation #{evaluation.id} for org #{org_id}")
+      Metrics.increment("AI Evaluation Timed Out", org_id)
+
+      Notifications.create_notification(%{
+        category: "AI Evaluation",
+        message: "AI evaluation #{evaluation.name} timed out after #{@timeout_hours} hour(s).",
+        severity: Notifications.types().warning,
+        organization_id: org_id,
+        entity: %{evaluation_id: evaluation.id}
+      })
+
       do_update(evaluation, %{status: :failed, failure_reason: "Evaluation timed out"})
     end)
 
@@ -79,7 +91,10 @@ defmodule Glific.AIEvaluations do
     |> where([e], e.status == :processing)
     |> where([e], e.inserted_at >= ^timeout_threshold)
     |> Repo.all()
-    |> Enum.each(&poll_evaluation(&1, org_id))
+    |> Enum.each(fn evaluation ->
+      poll_evaluation(evaluation, org_id)
+      Process.sleep(100)
+    end)
 
     :ok
   end
@@ -87,23 +102,38 @@ defmodule Glific.AIEvaluations do
   @spec poll_evaluation(AIEvaluation.t(), non_neg_integer()) :: :ok
   defp poll_evaluation(%AIEvaluation{} = evaluation, org_id) do
     evaluation.kaapi_evaluation_id
-    |> Kaapi.get_evaluation(org_id)
+    |> Kaapi.get_evaluation_scores(org_id)
     |> handle_evaluation_status(evaluation, org_id)
   end
 
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
-  defp handle_evaluation_status({:ok, %{data: %{status: "completed"}}}, evaluation, org_id) do
-    attrs =
-      case fetch_evaluation_scores(evaluation, org_id) do
-        {:ok, scores} -> %{status: :completed, results: scores}
-        {:error, reason} -> %{status: :failed, failure_reason: "Failed to fetch scores: #{inspect(reason)}"}
-      end
+  defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
+    summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
+    Metrics.increment("AI Evaluation Completed", org_id)
 
-    do_update(evaluation, attrs)
+    Notifications.create_notification(%{
+      category: "AI Evaluation",
+      message: "AI evaluation #{evaluation.name} completed successfully.",
+      severity: Notifications.types().info,
+      organization_id: org_id,
+      entity: %{evaluation_id: evaluation.id}
+    })
+
+    do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}})
   end
 
-  defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, _org_id) do
+  defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
+    Metrics.increment("AI Evaluation Failed", org_id)
+
+    Notifications.create_notification(%{
+      category: "AI Evaluation",
+      message: "AI evaluation #{evaluation.name} failed: #{failure_reason}",
+      severity: Notifications.types().warning,
+      organization_id: org_id,
+      entity: %{evaluation_id: evaluation.id}
+    })
+
     do_update(evaluation, %{status: :failed, failure_reason: failure_reason})
   end
 
@@ -127,22 +157,6 @@ defmodule Glific.AIEvaluations do
         Logger.error(
           "Failed to update AI evaluation #{evaluation.id}: #{inspect(changeset.errors)}"
         )
-    end
-  end
-
-  @spec fetch_evaluation_scores(AIEvaluation.t(), non_neg_integer()) ::
-          {:ok, map()} | {:error, any()}
-  defp fetch_evaluation_scores(%AIEvaluation{} = evaluation, org_id) do
-    case Kaapi.get_evaluation_scores(evaluation.kaapi_evaluation_id, org_id) do
-      {:ok, %{data: data}} ->
-        {:ok, Map.get(data, :score, %{})}
-
-      {:error, reason} ->
-        Logger.error(
-          "Failed to fetch scores for AI evaluation #{evaluation.id}: #{inspect(reason)}"
-        )
-
-        {:error, reason}
     end
   end
 

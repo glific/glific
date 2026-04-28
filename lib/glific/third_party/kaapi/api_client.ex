@@ -270,19 +270,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
-  Get the current status of an evaluation from Kaapi (lightweight, used for polling).
-  """
-  @spec get_evaluation(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
-  def get_evaluation(evaluation_id, org_api_key) do
-    org_api_key
-    |> client()
-    |> Tesla.get("/api/v1/evaluations/:evaluation_id",
-      opts: [path_params: [evaluation_id: evaluation_id]]
-    )
-    |> parse_kaapi_response()
-  end
-
-  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
   @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}

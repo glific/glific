@@ -9,6 +9,8 @@ defmodule Glific.AIEvaluationsTest do
     AIEvaluations.AIEvaluation,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Repo
   }
@@ -84,40 +86,20 @@ defmodule Glific.AIEvaluationsTest do
   end
 
   describe "update_ai_evaluation/2" do
-    setup %{organization_id: organization_id} do
+    test "updates evaluation fields via changeset", %{organization_id: organization_id} do
       config_version = create_config_version(organization_id)
       evaluation = create_evaluation(organization_id, config_version.id)
-      %{evaluation: evaluation}
-    end
-
-    test "updates status to completed with results", %{evaluation: evaluation} do
       score = %{"score" => 0.92, "total" => 100}
 
       assert {:ok, updated} =
                AIEvaluations.update_ai_evaluation(evaluation, %{
                  status: :completed,
-                 results: score
+                 results: score,
+                 kaapi_evaluation_id: 999
                })
 
       assert updated.status == :completed
       assert updated.results == score
-    end
-
-    test "updates status to failed with failure_reason", %{evaluation: evaluation} do
-      assert {:ok, updated} =
-               AIEvaluations.update_ai_evaluation(evaluation, %{
-                 status: :failed,
-                 failure_reason: "Evaluation timed out"
-               })
-
-      assert updated.status == :failed
-      assert updated.failure_reason == "Evaluation timed out"
-    end
-
-    test "updates kaapi_evaluation_id", %{evaluation: evaluation} do
-      assert {:ok, updated} =
-               AIEvaluations.update_ai_evaluation(evaluation, %{kaapi_evaluation_id: 999})
-
       assert updated.kaapi_evaluation_id == 999
     end
   end
@@ -136,11 +118,20 @@ defmodule Glific.AIEvaluationsTest do
         create_evaluation(organization_id, config_version.id, %{status: :processing})
         |> age_evaluation(2)
 
+      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
       AIEvaluations.poll_and_update(organization_id)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :failed
       assert updated.failure_reason == "Evaluation timed out"
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count + 1
+
+      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      assert notification.severity == Notifications.types().warning
+      assert notification.message =~ "timed out"
     end
 
     test "does not timeout completed or failed evaluations", %{
@@ -193,23 +184,34 @@ defmodule Glific.AIEvaluationsTest do
       organization_id: organization_id,
       evaluation: evaluation
     } do
-      results = %{"accuracy" => 0.95}
+      summary_scores = [%{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}]
 
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{status: "completed", score: results}}
+          body: %{data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}}
         }
       end)
+
+      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       AIEvaluations.poll_and_update(organization_id)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
-      assert updated.results == results
+      assert length(updated.results["summary_scores"]) == 1
+      assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
+      assert hd(updated.results["summary_scores"])["avg"] == 0.74
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count + 1
+
+      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      assert notification.severity == Notifications.types().info
+      assert notification.message =~ "completed successfully"
     end
 
-    test "sets empty results map when Kaapi completed response has no results", %{
+    test "sets empty summary_scores when Kaapi completed response has no score", %{
       organization_id: organization_id,
       evaluation: evaluation
     } do
@@ -221,7 +223,7 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
-      assert updated.results == %{}
+      assert updated.results == %{"summary_scores" => []}
     end
 
     test "updates evaluation to failed when Kaapi returns failed with reason", %{
@@ -235,11 +237,20 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
+      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
       AIEvaluations.poll_and_update(organization_id)
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :failed
       assert updated.failure_reason == "Model inference error"
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count + 1
+
+      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      assert notification.severity == Notifications.types().warning
+      assert notification.message =~ "Model inference error"
     end
 
     test "uses default failure reason when Kaapi failed response has no reason", %{
@@ -269,26 +280,6 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
-    end
-
-    test "marks evaluation as failed when score fetch returns error after completed status", %{
-      organization_id: organization_id,
-      evaluation: evaluation
-    } do
-      Tesla.Mock.mock(fn
-        %{method: :get, url: url} ->
-          if String.contains?(url, "get_trace_info") do
-            %Tesla.Env{status: 500, body: %{error: "Score service unavailable"}}
-          else
-            %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
-          end
-      end)
-
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert updated.status == :failed
-      assert updated.failure_reason =~ "Failed to fetch scores"
     end
 
     test "logs error and leaves evaluation unchanged when Kaapi returns 500", %{
