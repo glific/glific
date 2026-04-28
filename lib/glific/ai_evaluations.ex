@@ -72,7 +72,7 @@ defmodule Glific.AIEvaluations do
     |> Repo.all()
     |> Enum.each(fn evaluation ->
       Logger.warning("Timing out AI evaluation #{evaluation.id} for org #{org_id}")
-      update_ai_evaluation(evaluation, %{status: :failed, failure_reason: "Evaluation timed out"})
+      do_update(evaluation, %{status: :failed, failure_reason: "Evaluation timed out"})
     end)
 
     AIEvaluation
@@ -93,21 +93,18 @@ defmodule Glific.AIEvaluations do
 
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"}}}, evaluation, org_id) do
-    case fetch_evaluation_scores(evaluation, org_id) do
-      {:ok, scores} ->
-        update_ai_evaluation(evaluation, %{status: :completed, results: scores})
+    attrs =
+      case fetch_evaluation_scores(evaluation, org_id) do
+        {:ok, scores} -> %{status: :completed, results: scores}
+        {:error, reason} -> %{status: :failed, failure_reason: "Failed to fetch scores: #{inspect(reason)}"}
+      end
 
-      {:error, reason} ->
-        update_ai_evaluation(evaluation, %{
-          status: :failed,
-          failure_reason: "Failed to fetch scores: #{inspect(reason)}"
-        })
-    end
+    do_update(evaluation, attrs)
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, _org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
-    update_ai_evaluation(evaluation, %{status: :failed, failure_reason: failure_reason})
+    do_update(evaluation, %{status: :failed, failure_reason: failure_reason})
   end
 
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
@@ -118,6 +115,19 @@ defmodule Glific.AIEvaluations do
     )
 
     :ok
+  end
+
+  @spec do_update(AIEvaluation.t(), map()) :: :ok
+  defp do_update(evaluation, attrs) do
+    case update_ai_evaluation(evaluation, attrs) do
+      {:ok, _} ->
+        :ok
+
+      {:error, changeset} ->
+        Logger.error(
+          "Failed to update AI evaluation #{evaluation.id}: #{inspect(changeset.errors)}"
+        )
+    end
   end
 
   @spec fetch_evaluation_scores(AIEvaluation.t(), non_neg_integer()) ::
