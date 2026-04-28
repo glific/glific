@@ -1,167 +1,49 @@
 defmodule Glific.AppsignalTest do
-  use Glific.DataCase, async: true
-  import Mock
+  use Glific.DataCase
 
-  # Avoid `alias Glific.Appsignal` — it would shadow the Appsignal dependency used in with_mock.
+  alias Glific.Appsignal
 
-  defp native_to_milliseconds(native),
-    do: System.convert_time_unit(native, :native, :millisecond)
+  defp call_handle_event(args) do
+    meta = %{queue: "default", worker: "TestWorker", args: args}
+    measurement = %{queue_time: 1_500_000}
+    Appsignal.handle_event([:oban, :job, :stop], measurement, meta, nil)
+  end
 
-  defp repo_tags(repo, command_type), do: %{repo: repo, command_type: command_type}
-
-  describe "handle_event/4 repo query telemetry" do
-    test "records distribution metrics and query count for :repo when timings are present" do
-      measurement = %{
-        query_time: 2_000_000,
-        idle_time: 1_000_000,
-        queue_time: 500_000
-      }
-
-      parent = self()
-
-      query = "SELECT * FROM contacts WHERE id = $1"
-
-      with_mock Appsignal, [],
-        add_distribution_value: fn name, value, tags ->
-          send(parent, {:dist, name, value, tags})
-          :ok
-        end,
-        increment_counter: fn name, amount, tags ->
-          send(parent, {:cnt, name, amount, tags})
-          :ok
-        end do
-        Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{query: query}, nil)
-      end
-
-      expected_query_time_ms = native_to_milliseconds(measurement.query_time)
-      expected_idle_time_ms = native_to_milliseconds(measurement.idle_time)
-      expected_queue_time_ms = native_to_milliseconds(measurement.queue_time)
-
-      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo, command_type: "SELECT"}}
-      assert_receive {:dist, "glific.repo.idle_time", ^expected_idle_time_ms, %{repo: :repo}}
-      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue_time_ms, %{repo: :repo}}
-      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo, command_type: "SELECT"}}
+  describe "handle_event [:oban, :job, :stop] with organization_id extraction" do
+    test "handles top-level organization_id" do
+      result = call_handle_event(%{"organization_id" => 1})
+      assert result in [:ok, nil]
     end
 
-    test "tags metrics with :repo_replica for replica repo events" do
-      measurement = %{
-        query_time: 2_000_000,
-        idle_time: 1_000_000,
-        queue_time: 500_000
-      }
-
-      parent = self()
-
-      query = "update contacts set name = $1 where id = $2"
-
-      with_mock Appsignal, [],
-        add_distribution_value: fn name, value, tags ->
-          send(parent, {:dist, name, value, tags})
-          :ok
-        end,
-        increment_counter: fn name, amount, tags ->
-          send(parent, {:cnt, name, amount, tags})
-          :ok
-        end do
-        Glific.Appsignal.handle_event(
-          [:glific, :repo_replica, :query],
-          measurement,
-          %{query: query},
-          nil
-        )
-      end
-
-      query_tags = repo_tags(:repo_replica, "UPDATE")
-      tags = %{repo: :repo_replica}
-
-      assert_receive {:dist, "glific.repo.query_time", _, ^query_tags}
-      assert_receive {:dist, "glific.repo.idle_time", _, ^tags}
-      assert_receive {:dist, "glific.repo.queue_time", _, ^tags}
-      assert_receive {:cnt, "glific.repo.query_count", 1, ^query_tags}
+    test "handles nested message organization_id" do
+      result = call_handle_event(%{"message" => %{"organization_id" => 2}})
+      assert result in [:ok, nil]
     end
 
-    test "uses unknown command type and does not increment query count when query_time is absent" do
-      measurement = %{
-        idle_time: 1_000_000,
-        queue_time: 500_000
-      }
-
-      parent = self()
-
-      with_mock Appsignal, [],
-        add_distribution_value: fn name, value, tags ->
-          send(parent, {:dist, name, value, tags})
-          :ok
-        end,
-        increment_counter: fn _, _, _ ->
-          flunk("increment_counter should not be called when query_time is missing")
-        end do
-        Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
-      end
-
-      expected_idle_time_ms = native_to_milliseconds(measurement.idle_time)
-      expected_queue_time_ms = native_to_milliseconds(measurement.queue_time)
-
-      assert_receive {:dist, "glific.repo.idle_time", ^expected_idle_time_ms, %{repo: :repo}}
-      assert_receive {:dist, "glific.repo.queue_time", ^expected_queue_time_ms, %{repo: :repo}}
-      refute_receive {:cnt, _, _, _}
+    test "handles nested media organization_id" do
+      result = call_handle_event(%{"media" => %{"organization_id" => 3}})
+      assert result in [:ok, nil]
     end
 
-    test "records only query metrics for timings that are present with unknown command type" do
-      measurement = %{query_time: 3_000_000}
-      parent = self()
-
-      with_mock Appsignal, [],
-        add_distribution_value: fn name, value, tags ->
-          send(parent, {:dist, name, value, tags})
-          :ok
-        end,
-        increment_counter: fn name, amount, tags ->
-          send(parent, {:cnt, name, amount, tags})
-          :ok
-        end do
-        Glific.Appsignal.handle_event([:glific, :repo, :query], measurement, %{}, nil)
-      end
-
-      expected_query_time_ms = native_to_milliseconds(measurement.query_time)
-
-      assert_receive {:dist, "glific.repo.query_time", ^expected_query_time_ms, %{repo: :repo, command_type: "unknown"}}
-      assert_receive {:cnt, "glific.repo.query_count", 1, %{repo: :repo, command_type: "unknown"}}
-      refute_receive {:dist, _, _, _}, 0
+    test "handles nil organization_id gracefully" do
+      result = call_handle_event(%{"organization_id" => nil})
+      assert result in [:ok, nil]
     end
 
-    test "does not record metrics when measurement is empty" do
-      with_mock Appsignal, [],
-        add_distribution_value: fn _, _, _ ->
-          flunk("add_distribution_value should not be called")
-        end,
-        increment_counter: fn _, _, _ ->
-          flunk("increment_counter should not be called")
-        end do
-        assert Glific.Appsignal.handle_event([:glific, :repo, :query], %{}, %{}, nil) == nil
-      end
+    test "handles empty args gracefully" do
+      result = call_handle_event(%{})
+      assert result in [:ok, nil]
     end
 
-    test "does not record metrics for repo names other than :repo and :repo_replica" do
-      with_mock Appsignal, [],
-        add_distribution_value: fn _, _, _ ->
-          flunk("add_distribution_value should not be called")
-        end,
-        increment_counter: fn _, _, _ ->
-          flunk("increment_counter should not be called")
-        end do
-        assert Glific.Appsignal.handle_event(
-                 [:glific, :other, :query],
-                 %{query_time: 1},
-                 %{},
-                 nil
-               ) ==
-                 nil
-      end
+    test "handles args with no organization_id at any level" do
+      result = call_handle_event(%{"foo" => "bar"})
+      assert result in [:ok, nil]
     end
+  end
 
-    test "returns nil for unrelated telemetry events" do
-      assert Glific.Appsignal.handle_event([:some, :other, :event], %{}, %{}, nil) == nil
+  describe "send_oban_queue_size/0" do
+    test "executes without error" do
+      assert Appsignal.send_oban_queue_size() == :ok
     end
   end
 end

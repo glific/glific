@@ -603,7 +603,10 @@ defmodule Glific.Assistants do
   @spec name_only_change?(map()) :: boolean()
   defp name_only_change?(user_params) do
     not is_nil(user_params[:name]) and
-      not Enum.any?([:instructions, :model, :temperature, :knowledge_base_version_id], &Map.has_key?(user_params, &1))
+      not Enum.any?(
+        [:instructions, :model, :temperature, :knowledge_base_version_id],
+        &Map.has_key?(user_params, &1)
+      )
   end
 
   @spec kb_id(KnowledgeBaseVersion.t() | nil) :: non_neg_integer() | nil
