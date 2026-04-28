@@ -464,5 +464,4 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
     end
   end
-
 end

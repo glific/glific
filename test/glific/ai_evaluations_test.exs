@@ -1,8 +1,8 @@
 defmodule Glific.AIEvaluationsTest do
   @moduledoc false
-  use Glific.DataCase, async: false
+  use Glific.DataCase, async: true
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     AIEvaluations,
@@ -116,9 +116,10 @@ defmodule Glific.AIEvaluationsTest do
     } do
       evaluation =
         create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> age_evaluation(2)
+        |> backdate_evaluation(2)
 
-      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -129,7 +130,9 @@ defmodule Glific.AIEvaluationsTest do
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
 
-      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+
       assert notification.severity == Notifications.types().warning
       assert notification.message =~ "timed out"
     end
@@ -140,11 +143,11 @@ defmodule Glific.AIEvaluationsTest do
     } do
       completed =
         create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> age_evaluation(2)
+        |> backdate_evaluation(2)
 
       failed =
         create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> age_evaluation(2)
+        |> backdate_evaluation(2)
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -184,16 +187,21 @@ defmodule Glific.AIEvaluationsTest do
       organization_id: organization_id,
       evaluation: evaluation
     } do
-      summary_scores = [%{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}]
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
 
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{
           status: 200,
-          body: %{data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}}
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
         }
       end)
 
-      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -206,7 +214,9 @@ defmodule Glific.AIEvaluationsTest do
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
 
-      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+
       assert notification.severity == Notifications.types().info
       assert notification.message =~ "completed successfully"
     end
@@ -237,7 +247,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
-      notification_count = Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -248,7 +259,9 @@ defmodule Glific.AIEvaluationsTest do
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
 
-      {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
+
       assert notification.severity == Notifications.types().warning
       assert notification.message =~ "Model inference error"
     end
@@ -337,7 +350,7 @@ defmodule Glific.AIEvaluationsTest do
     evaluation
   end
 
-  defp age_evaluation(evaluation, hours_ago) do
+  defp backdate_evaluation(evaluation, hours_ago) do
     old_time = DateTime.utc_now() |> DateTime.add(-hours_ago, :hour) |> DateTime.truncate(:second)
 
     from(e in AIEvaluation, where: e.id == ^evaluation.id)

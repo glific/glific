@@ -69,7 +69,7 @@ defmodule Glific.AIEvaluations do
     timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours, :hour)
 
     AIEvaluation
-    |> where([e], e.status in [:processing])
+    |> where([e], e.status == :processing)
     |> where([e], e.inserted_at < ^timeout_threshold)
     |> Repo.all()
     |> Enum.each(fn evaluation ->
