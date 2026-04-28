@@ -57,20 +57,12 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
   end
 
   describe "ask_glific mutation" do
-    test "returns answer and conversation_id on success", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        case conn.request_path do
-          "/v1/chat-messages" ->
-            Req.Test.json(conn, %{
-              "answer" => "Glific is great!",
-              "conversation_id" => "conv-gql-123"
-            })
+    # The mutation is fire-and-forget: it returns a placeholder synchronously
+    # and publishes the real Dify result over the `askGlificResponse`
+    # Absinthe subscription. End-to-end coverage of the Dify call lives in
+    # test/glific/ask_glific_test.exs.
 
-          "/v1/conversations/conv-gql-123/name" ->
-            Req.Test.json(conn, %{"name" => "About Glific"})
-        end
-      end)
-
+    test "accepts input and returns placeholder synchronously", %{staff: user} do
       {:ok, query_data} =
         auth_query_gql_by(:ask_glific, user,
           variables: %{
@@ -82,39 +74,12 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
         )
 
       result = get_in(query_data, [:data, "askGlific"])
-      assert result["answer"] == "Glific is great!"
-      assert result["conversationId"] == "conv-gql-123"
-      assert result["conversationName"] == "About Glific"
-      assert result["errors"] == nil
+      assert result["answer"] == nil
+      assert result["conversationId"] == nil
+      assert Map.get(query_data, :errors) == nil
     end
 
-    test "returns error on API failure", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        conn
-        |> Plug.Conn.put_status(400)
-        |> Req.Test.json(%{"code" => "invalid", "message" => "Bad request"})
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:ask_glific, user,
-          variables: %{
-            "input" => %{
-              "query" => "What is Glific?"
-            }
-          }
-        )
-
-      assert query_data.errors != nil
-    end
-
-    test "does not return conversation_name for follow-up messages", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{
-          "answer" => "More details here.",
-          "conversation_id" => "conv-gql-123"
-        })
-      end)
-
+    test "accepts follow-up messages with an existing conversation_id", %{staff: user} do
       {:ok, query_data} =
         auth_query_gql_by(:ask_glific, user,
           variables: %{
@@ -126,8 +91,9 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
         )
 
       result = get_in(query_data, [:data, "askGlific"])
-      assert result["answer"] == "More details here."
-      assert result["conversationName"] == nil
+      assert result["answer"] == nil
+      assert result["conversationId"] == nil
+      assert Map.get(query_data, :errors) == nil
     end
   end
 
