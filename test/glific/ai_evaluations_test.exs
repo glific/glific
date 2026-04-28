@@ -271,6 +271,26 @@ defmodule Glific.AIEvaluationsTest do
       assert unchanged.status == :processing
     end
 
+    test "marks evaluation as failed when score fetch returns error after completed status", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: url} ->
+          if String.contains?(url, "get_trace_info") do
+            %Tesla.Env{status: 500, body: %{error: "Score service unavailable"}}
+          else
+            %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
+          end
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason =~ "Failed to fetch scores"
+    end
+
     test "logs error and leaves evaluation unchanged when Kaapi returns 500", %{
       organization_id: organization_id,
       evaluation: evaluation

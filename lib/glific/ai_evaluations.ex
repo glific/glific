@@ -110,8 +110,6 @@ defmodule Glific.AIEvaluations do
     update_ai_evaluation(evaluation, %{status: :failed, failure_reason: failure_reason})
   end
 
-  # Kaapi returned a successful response but the status was neither "completed" nor "failed"  meaning it's still "processing" or "pending". We
-  # don't need to do anything, just return :ok and wait for the next poll cycle (runs every 60 seconds via cron).
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
 
   defp handle_evaluation_status({:error, reason}, evaluation, org_id) do
