@@ -1,8 +1,17 @@
 defmodule Glific.AIEvaluationsTest do
   @moduledoc false
-  use Glific.DataCase, async: true
+  use Glific.DataCase, async: false
 
-  alias Glific.AIEvaluations.AIEvaluation
+  import Ecto.Query, warn: false
+
+  alias Glific.{
+    AIEvaluations,
+    AIEvaluations.AIEvaluation,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Partners,
+    Repo
+  }
 
   @valid_attrs %{
     name: "test_experiment",
@@ -72,5 +81,268 @@ defmodule Glific.AIEvaluationsTest do
       assert changeset.changes.failure_reason == "Something went wrong"
       assert changeset.changes.results == %{"score" => 0.95}
     end
+  end
+
+  describe "update_ai_evaluation/2" do
+    setup %{organization_id: organization_id} do
+      config_version = create_config_version(organization_id)
+      evaluation = create_evaluation(organization_id, config_version.id)
+      %{evaluation: evaluation}
+    end
+
+    test "updates status to completed with results", %{evaluation: evaluation} do
+      score = %{"score" => 0.92, "total" => 100}
+
+      assert {:ok, updated} =
+               AIEvaluations.update_ai_evaluation(evaluation, %{
+                 status: :completed,
+                 results: score
+               })
+
+      assert updated.status == :completed
+      assert updated.results == score
+    end
+
+    test "updates status to failed with failure_reason", %{evaluation: evaluation} do
+      assert {:ok, updated} =
+               AIEvaluations.update_ai_evaluation(evaluation, %{
+                 status: :failed,
+                 failure_reason: "Evaluation timed out"
+               })
+
+      assert updated.status == :failed
+      assert updated.failure_reason == "Evaluation timed out"
+    end
+
+    test "updates kaapi_evaluation_id", %{evaluation: evaluation} do
+      assert {:ok, updated} =
+               AIEvaluations.update_ai_evaluation(evaluation, %{kaapi_evaluation_id: 999})
+
+      assert updated.kaapi_evaluation_id == 999
+    end
+  end
+
+  describe "poll_and_update/1 - timeout logic" do
+    setup %{organization_id: organization_id} do
+      config_version = create_config_version(organization_id)
+      %{config_version: config_version}
+    end
+
+    test "marks processing evaluation older than 1 hour as failed", %{
+      organization_id: organization_id,
+      config_version: config_version
+    } do
+      evaluation =
+        create_evaluation(organization_id, config_version.id, %{status: :processing})
+        |> age_evaluation(2)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason == "Evaluation timed out"
+    end
+
+    test "does not timeout completed or failed evaluations", %{
+      organization_id: organization_id,
+      config_version: config_version
+    } do
+      completed =
+        create_evaluation(organization_id, config_version.id, %{status: :completed})
+        |> age_evaluation(2)
+
+      failed =
+        create_evaluation(organization_id, config_version.id, %{status: :failed})
+        |> age_evaluation(2)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_completed} = Repo.fetch_by(AIEvaluation, %{id: completed.id})
+      {:ok, unchanged_failed} = Repo.fetch_by(AIEvaluation, %{id: failed.id})
+      assert unchanged_completed.status == :completed
+      assert unchanged_failed.status == :failed
+    end
+
+    test "does not timeout recent processing evaluation", %{
+      organization_id: organization_id,
+      config_version: config_version
+    } do
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
+      end)
+
+      enable_kaapi(organization_id)
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+  end
+
+  describe "poll_and_update/1 - polling logic" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+      %{evaluation: evaluation, config_version: config_version}
+    end
+
+    test "updates evaluation to completed when Kaapi returns completed", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      results = %{"accuracy" => 0.95}
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "completed", score: results}}
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+      assert updated.results == results
+    end
+
+    test "sets empty results map when Kaapi completed response has no results", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+      assert updated.results == %{}
+    end
+
+    test "updates evaluation to failed when Kaapi returns failed with reason", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", failure_reason: "Model inference error"}}
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason == "Model inference error"
+    end
+
+    test "uses default failure reason when Kaapi failed response has no reason", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "failed"}}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason == "Evaluation failed"
+    end
+
+    test "leaves evaluation unchanged when Kaapi returns still processing", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+
+    test "logs error and leaves evaluation unchanged when Kaapi returns 500", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+  end
+
+  defp create_config_version(organization_id) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant.",
+        provider: "openai",
+        model: "gpt-4o",
+        settings: %{"temperature" => 1.0},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    config_version
+  end
+
+  defp create_evaluation(organization_id, config_version_id, attrs \\ %{}) do
+    base = %{
+      name: "test_eval",
+      status: :processing,
+      dataset_id: 1,
+      kaapi_evaluation_id: 404,
+      assistant_config_version_id: config_version_id,
+      organization_id: organization_id
+    }
+
+    {:ok, evaluation} =
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(Map.merge(base, attrs))
+      |> Repo.insert()
+
+    evaluation
+  end
+
+  defp age_evaluation(evaluation, hours_ago) do
+    old_time = DateTime.utc_now() |> DateTime.add(-hours_ago, :hour) |> DateTime.truncate(:second)
+
+    from(e in AIEvaluation, where: e.id == ^evaluation.id)
+    |> Repo.update_all(set: [inserted_at: old_time])
+
+    {:ok, updated_eval} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+    updated_eval
+  end
+
+  defp enable_kaapi(organization_id) do
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "kaapi",
+      keys: %{},
+      secrets: %{"api_key" => "sk_test_key"},
+      is_active: true
+    })
   end
 end

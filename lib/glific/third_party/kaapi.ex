@@ -554,6 +554,35 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Get the current status of an evaluation from Kaapi (lightweight, used for polling).
+  """
+  @spec get_evaluation(non_neg_integer(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def get_evaluation(evaluation_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.get_evaluation(evaluation_id, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  """
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
   """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::
