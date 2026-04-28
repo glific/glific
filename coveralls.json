@@ -1,5 +1,4 @@
 {
-  "filter_regex": "Logger\\.",
   "skip_files": [
     "lib/glific.ex",
     "lib/glific/application.ex",
