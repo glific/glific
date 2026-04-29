@@ -409,8 +409,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
   describe "get_evaluation_scores/2" do
     test "returns all evaluator scores including LLM-as-a-Judge on 200" do
-      mock(fn %Tesla.Env{method: :get, url: url} ->
-        assert String.contains?(url, "get_trace_info=true")
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
 
         %Tesla.Env{
           status: 200,
