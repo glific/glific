@@ -181,7 +181,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:ok, %{errors: [%{message: msg}]}}
 
       {:error, _} ->
-        {:ok, %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
+        {:ok,
+         %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 

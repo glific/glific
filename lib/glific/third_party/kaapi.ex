@@ -575,7 +575,8 @@ defmodule Glific.ThirdParty.Kaapi do
           {:ok, map()} | {:error, any()}
   def get_dataset(dataset_id, organization_id, include_signed_url \\ false) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, %{success: true, data: data}} <- ApiClient.get_dataset(dataset_id, secrets["api_key"], include_signed_url) do
+         {:ok, %{success: true, data: data}} <-
+           ApiClient.get_dataset(dataset_id, secrets["api_key"], include_signed_url) do
       Logger.info("Dataset retrieved for org: #{organization_id}, dataset: #{dataset_id}")
 
       if include_signed_url && !Map.has_key?(data, :signed_url) do

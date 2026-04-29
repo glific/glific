@@ -531,7 +531,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       {:ok, golden_qa} =
         Glific.AIEvaluations.create_golden_qa(%{
           name: "test_dataset_no_kaapi",
-          dataset_id: 99999,
+          dataset_id: 99_999,
           duplication_factor: 1,
           organization_id: org.id
         })
@@ -754,7 +754,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     {:ok, golden_qa} =
       Glific.AIEvaluations.create_golden_qa(%{
         name: "test_dataset",
-        dataset_id: 12345,
+        dataset_id: 12_345,
         duplication_factor: 1,
         organization_id: organization_id
       })
