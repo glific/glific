@@ -276,7 +276,8 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   def get_evaluation_scores(evaluation_id, org_api_key) do
     org_api_key
     |> client()
-    |> Tesla.get("/api/v1/evaluations/:evaluation_id?get_trace_info=true",
+    |> Tesla.get("/api/v1/evaluations/:evaluation_id",
+      query: [get_trace_info: "true"],
       opts: [path_params: [evaluation_id: evaluation_id]]
     )
     |> parse_kaapi_response()

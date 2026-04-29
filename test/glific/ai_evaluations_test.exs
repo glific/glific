@@ -368,5 +368,7 @@ defmodule Glific.AIEvaluationsTest do
       secrets: %{"api_key" => "sk_test_key"},
       is_active: true
     })
+
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
   end
 end
