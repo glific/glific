@@ -238,10 +238,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "user" => %{"phone" => receiver.phone, "registration" => "true", "token" => "some_token"}
       }
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
-      assert json = json_response(conn, 200)
-      assert get_in(json, ["data", "phone"]) == receiver.phone
+      updated_contact = Repo.get_by!(Contact, %{phone: receiver.phone})
+      assert updated_contact.bsp_status in [:hsm, :session_and_hsm]
+      assert updated_contact.optin_status == true
     end
 
     test "send otp from Glific when NGO's wallet balance is less than 0", %{conn: conn} do
