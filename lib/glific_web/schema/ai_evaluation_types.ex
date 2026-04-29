@@ -19,7 +19,21 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :updated_at, :datetime
   end
 
+  object :golden_qa_item do
+    field :id, :id
+    field :name, :string
+    field :dataset_id, :integer
+    field :duplication_factor, :integer
+    field :file_name, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   input_object :ai_evaluation_filter do
+    field :name, :string
+  end
+
+  input_object :golden_qa_filter do
     field :name, :string
   end
 
@@ -71,6 +85,23 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
+    end
+
+    @desc "List Golden QAs"
+    field :golden_qas, list_of(:golden_qa_item) do
+      arg(:filter, :golden_qa_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_golden_qas/3)
+    end
+
+    @desc "Count Golden QAs"
+    field :count_golden_qas, :integer do
+      arg(:filter, :golden_qa_filter)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.count_golden_qas/3)
     end
   end
 

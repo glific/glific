@@ -30,6 +30,24 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   end
 
   @doc """
+  List golden QAs from the database.
+  """
+  @spec list_golden_qas(map(), map(), map()) :: {:ok, list()}
+  def list_golden_qas(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.list_golden_qas(args)}
+  end
+
+  @doc """
+  Count golden QAs from the database.
+  """
+  @spec count_golden_qas(map(), map(), map()) :: {:ok, non_neg_integer()}
+  def count_golden_qas(_, args, %{context: %{current_user: user}}) do
+    args = Map.put(args, :organization_id, user.organization_id)
+    {:ok, AIEvaluations.count_golden_qas(args)}
+  end
+
+  @doc """
   Create a Golden QA configuration after validating the input.
   """
   @spec create_golden_qa(map(), map(), map()) :: {:ok, map()}
@@ -45,7 +63,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
-         {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+         {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id),
+         {:ok, _golden_qa} <-
+           AIEvaluations.create_golden_qa(%{
+             name: name,
+             dataset_id: res.dataset_id,
+             duplication_factor: factor,
+             file_name: file.filename,
+             organization_id: user.organization_id
+           }) do
       {:ok, %{golden_qa: res}}
     else
       {:error, :timeout} ->
@@ -53,6 +79,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, %{status: _, body: %{:error => error}}} ->
         {:ok, %{errors: [%{message: error}]}}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        errors = format_changeset_errors(changeset)
+        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
+        {:ok, %{errors: errors}}
 
       {:error, msg} when is_binary(msg) ->
         {:ok, %{errors: [%{message: msg}]}}
@@ -70,6 +101,18 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
         {:ok, data}
     end
+  end
+
+  @spec format_changeset_errors(Ecto.Changeset.t()) :: list(map())
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+    |> Enum.map(fn {field, messages} ->
+      %{message: "#{field}: #{Enum.join(messages, "; ")}"}
+    end)
   end
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}

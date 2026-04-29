@@ -8,6 +8,7 @@ defmodule Glific.AIEvaluations do
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
     Metrics,
     Notifications,
     Repo,
@@ -160,11 +161,60 @@ defmodule Glific.AIEvaluations do
     end
   end
 
+  @doc """
+  Returns the list of golden QAs for an organization.
+
+  ## Examples
+
+      iex> list_golden_qas(%{organization_id: 1})
+      [%GoldenQA{}, ...]
+
+  """
+  @spec list_golden_qas(map()) :: [GoldenQA.t()]
+  def list_golden_qas(args) do
+    args
+    |> Repo.list_filter_query(GoldenQA, &Repo.opts_with_inserted_at/2, &filter_golden_qas/2)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the count of golden QAs for an organization.
+  """
+  @spec count_golden_qas(map()) :: non_neg_integer()
+  def count_golden_qas(args),
+    do: Repo.count_filter(args, GoldenQA, &filter_golden_qas/2)
+
+  @doc """
+  Creates a golden QA record in the database.
+  """
+  @spec create_golden_qa(map()) :: {:ok, GoldenQA.t()} | {:error, Ecto.Changeset.t()}
+  def create_golden_qa(attrs) do
+    %GoldenQA{}
+    |> GoldenQA.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Retrieves a single golden QA by id.
+  """
+  @spec get_golden_qa!(non_neg_integer()) :: GoldenQA.t()
+  def get_golden_qa!(id) do
+    Repo.get!(GoldenQA, id)
+  end
+
   @spec filter_with(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
         where(query, [e], ilike(e.name, ^"%#{name}%"))
+    end)
+  end
+
+  @spec filter_golden_qas(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp filter_golden_qas(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        where(query, [g], ilike(g.name, ^"%#{name}%"))
     end)
   end
 end
