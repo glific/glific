@@ -56,6 +56,12 @@ defmodule Glific.Application do
       ## Add Generic task supervisor
       {Task.Supervisor, name: Glific.TaskSupervisor},
 
+      # Default hackney pool — size configurable via HACKNEY_POOL_SIZE env var
+      :hackney_pool.child_spec(:glific_default_pool,
+        timeout: 60_000,
+        max_connections: Application.get_env(:glific, :hackney_pool, [])[:max_connections] || 50
+      ),
+
       # Dedicated hackney pool for Kaapi document uploads
       :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
     ]
@@ -68,6 +74,9 @@ defmodule Glific.Application do
 
     # Add this :telemetry.attach/4 for Tesla success/failure call:
     attach_tesla_telemetry_event()
+
+    # Add this :telemetry.attach/4 for Ecto query timing:
+    attach_repo_telemetry_event()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -159,6 +168,18 @@ defmodule Glific.Application do
       ],
       &Mailer.handle_event/4,
       nil
+    )
+  end
+
+  defp attach_repo_telemetry_event do
+    :telemetry.attach_many(
+      "repo-query",
+      [
+        [:glific, :repo, :query],
+        [:glific, :repo_replica, :query]
+      ],
+      &Glific.Appsignal.handle_event/4,
+      []
     )
   end
 end
