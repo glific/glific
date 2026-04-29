@@ -406,4 +406,62 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                ApiClient.delete_assistant("invalid_id", @org_kaapi_api_key)
     end
   end
+
+  describe "get_evaluation_scores/2" do
+    test "returns all evaluator scores including LLM-as-a-Judge on 200" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 42,
+              status: "completed",
+              summary_scores: [
+                %{
+                  avg: 0.56,
+                  std: 0.12,
+                  name: "cosine_similarity",
+                  data_type: "NUMERIC",
+                  total_pairs: 25
+                },
+                %{
+                  avg: 0.69,
+                  std: 0.28,
+                  name: "Correctness(LLM-as-a-Judge)",
+                  data_type: "NUMERIC",
+                  total_pairs: 25
+                }
+              ]
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
+      assert resp.data.status == "completed"
+      assert length(resp.data.summary_scores) == 2
+      llm_score = Enum.find(resp.data.summary_scores, &(&1.name == "Correctness(LLM-as-a-Judge)"))
+      assert llm_score.avg == 0.69
+    end
+
+    test "returns error when evaluation is not found" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 404, body: %{error: "Evaluation not found"}}
+      end)
+
+      assert {:error, %{status: 404, body: %{error: "Evaluation not found"}}} =
+               ApiClient.get_evaluation_scores(999, @org_kaapi_api_key)
+    end
+
+    test "returns error on 500 from Kaapi" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      assert {:error, %{status: 500, body: %{error: "Internal server error"}}} =
+               ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
+    end
+  end
 end
