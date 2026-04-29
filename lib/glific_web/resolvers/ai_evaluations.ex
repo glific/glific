@@ -64,7 +64,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id),
-         {:ok, _golden_qa} <-
+         {:ok, golden_qa} <-
            AIEvaluations.create_golden_qa(%{
              name: name,
              dataset_id: res.dataset_id,
@@ -72,7 +72,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              file_name: file.filename,
              organization_id: user.organization_id
            }) do
-      {:ok, %{golden_qa: res}}
+      {:ok, %{golden_qa: golden_qa}}
     else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
@@ -145,6 +145,74 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         )
 
         {:error, "Unable to read uploaded file for size validation"}
+    end
+  end
+
+  @doc """
+  Get Golden QA dataset details with optional signed URL.
+  Only fetches from Kaapi if include_signed_url is true to minimize network hops.
+  """
+  @spec get_golden_qa(map(), map(), map()) :: {:ok, map()}
+  def get_golden_qa(_, %{id: golden_qa_id, include_signed_url: include_signed_url}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, golden_qa} <- Repo.fetch(Glific.AIEvaluations.GoldenQA, golden_qa_id),
+         {:ok, kaapi_data} <- fetch_kaapi_dataset(golden_qa, user, include_signed_url) do
+      golden_qa_map =
+        %{
+          id: golden_qa.id,
+          name: golden_qa.name,
+          duplication_factor: golden_qa.duplication_factor,
+          file_name: golden_qa.file_name,
+          inserted_at: golden_qa.inserted_at,
+          updated_at: golden_qa.updated_at
+        }
+        |> maybe_put_signed_url(kaapi_data)
+
+      {:ok, %{golden_qa: golden_qa_map}}
+    else
+      {:error, [_, "Resource not found"]} ->
+        {:ok, %{errors: [%{message: "Golden QA not found."}]}}
+
+      {:error, error} when is_binary(error) ->
+        {:ok, %{errors: [%{message: error}]}}
+
+      {:error, %{message: msg}} ->
+        {:ok, %{errors: [%{message: msg}]}}
+
+      {:error, _} ->
+        {:ok, %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
+    end
+  end
+
+  defp maybe_put_signed_url(golden_qa_map, %{} = kaapi_data) do
+    case Map.get(kaapi_data, :signed_url) do
+      nil -> golden_qa_map
+      signed_url -> Map.put(golden_qa_map, :signed_url, signed_url)
+    end
+  end
+
+  defp fetch_kaapi_dataset(_golden_qa, _user, false), do: {:ok, %{}}
+
+  defp fetch_kaapi_dataset(golden_qa, user, true) do
+    case Kaapi.get_dataset(golden_qa.dataset_id, user.organization_id, true) do
+      {:ok, %{signed_url: signed_url}} ->
+        {:ok, %{signed_url: signed_url}}
+
+      {:ok, _} ->
+        {:ok, %{}}
+
+      {:error, :timeout} ->
+        {:error, "Timeout occurred, please try again."}
+
+      {:error, %{status: _, body: %{error: error}}} ->
+        {:error, error}
+
+      {:error, msg} when is_binary(msg) ->
+        {:error, msg}
+
+      {:error, _} ->
+        {:error, "An unknown error occurred, please contact Glific support."}
     end
   end
 

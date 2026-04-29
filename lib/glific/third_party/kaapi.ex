@@ -569,6 +569,45 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Get dataset details from Kaapi with optional signed URL.
+  """
+  @spec get_dataset(non_neg_integer(), non_neg_integer(), boolean()) ::
+          {:ok, map()} | {:error, any()}
+  def get_dataset(dataset_id, organization_id, include_signed_url \\ false) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{success: true, data: data}} <- ApiClient.get_dataset(dataset_id, secrets["api_key"], include_signed_url) do
+      Logger.info("Dataset retrieved for org: #{organization_id}, dataset: #{dataset_id}")
+
+      if include_signed_url && !Map.has_key?(data, :signed_url) do
+        Appsignal.send_error(
+          %Error{
+            message: "Kaapi dataset response missing signed_url",
+            organization_id: organization_id,
+            reason: inspect(data)
+          },
+          []
+        )
+
+        {:error, "Dataset download URL not available"}
+      else
+        {:ok, data}
+      end
+    else
+      {:error, reason} ->
+        Appsignal.send_error(
+          %Error{
+            message: "Failed to get dataset from Kaapi",
+            organization_id: organization_id,
+            reason: inspect(reason)
+          },
+          []
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
   """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::

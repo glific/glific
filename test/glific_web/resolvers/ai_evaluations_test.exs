@@ -368,6 +368,192 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
+  describe "get_golden_qa/3" do
+    setup [:enable_kaapi, :create_golden_qa_fixture]
+
+    test "returns dataset without signed_url by default (no Kaapi call)", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      # No Tesla.Mock setup - we should NOT call Kaapi when include_signed_url is false
+      args = %{id: golden_qa.id, include_signed_url: false}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: dataset}} = AIEvaluations.get_golden_qa(nil, args, resolution)
+      assert dataset.id == golden_qa.id
+      assert dataset.name == golden_qa.name
+      assert dataset.inserted_at == golden_qa.inserted_at
+      assert dataset.updated_at == golden_qa.updated_at
+      refute Map.has_key?(dataset, :signed_url)
+    end
+
+    test "returns dataset with signed_url when requested", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get, query: query} ->
+          if Enum.any?(query, fn {k, v} -> k == :include_signed_url and v == "true" end) do
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                success: true,
+                data: %{
+                  id: golden_qa.dataset_id,
+                  name: golden_qa.name,
+                  signed_url: "https://storage.example.com/signed-url-token-12345",
+                  created_at: "2024-01-01T00:00:00Z",
+                  updated_at: "2024-01-02T00:00:00Z"
+                }
+              }
+            }
+          else
+            %Tesla.Env{status: 400, body: %{error: "include_signed_url required"}}
+          end
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: dataset}} = AIEvaluations.get_golden_qa(nil, args, resolution)
+      assert dataset.id == golden_qa.id
+      assert dataset.name == golden_qa.name
+      assert dataset.signed_url == "https://storage.example.com/signed-url-token-12345"
+    end
+
+    test "returns error when golden_qa does not exist", %{staff: user} do
+      # No Kaapi call needed when include_signed_url is false
+      args = %{id: 999_999, include_signed_url: false}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Golden QA not found."
+    end
+
+    test "returns error when Kaapi returns missing signed_url when requested", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: golden_qa.dataset_id,
+                name: golden_qa.name,
+                created_at: "2024-01-01T00:00:00Z",
+                updated_at: "2024-01-02T00:00:00Z"
+              }
+            }
+          }
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Dataset download URL not available"
+    end
+
+    test "returns error when Kaapi returns 404 (only when include_signed_url: true)", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 404,
+            body: %{error: "Dataset not found"}
+          }
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Dataset not found"
+    end
+
+    test "returns error when Kaapi returns 500 (only when include_signed_url: true)", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Internal server error"}
+          }
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Internal server error"
+    end
+
+    test "returns error when Kaapi API call times out (only when include_signed_url: true)", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          {:error, :timeout}
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Timeout occurred, please try again."
+    end
+
+    test "returns error when Kaapi is not configured (only when include_signed_url: true)", %{
+      organization_id: _organization_id
+    } do
+      org = Glific.Fixtures.organization_fixture()
+      Repo.put_organization_id(org.id)
+      user_no_kaapi = Glific.Fixtures.user_fixture(%{organization_id: org.id})
+
+      {:ok, golden_qa} =
+        Glific.AIEvaluations.create_golden_qa(%{
+          name: "test_dataset_no_kaapi",
+          dataset_id: 99999,
+          duplication_factor: 1,
+          organization_id: org.id
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: 1, name: "test"}}
+          }
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user_no_kaapi}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "Kaapi is not active"
+    end
+  end
+
   describe "create_evaluation/3" do
     setup [:enable_kaapi, :create_config_version]
 
@@ -562,5 +748,17 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     after
       File.close(io)
     end
+  end
+
+  defp create_golden_qa_fixture(%{organization_id: organization_id}) do
+    {:ok, golden_qa} =
+      Glific.AIEvaluations.create_golden_qa(%{
+        name: "test_dataset",
+        dataset_id: 12345,
+        duplication_factor: 1,
+        organization_id: organization_id
+      })
+
+    %{golden_qa: golden_qa}
   end
 end

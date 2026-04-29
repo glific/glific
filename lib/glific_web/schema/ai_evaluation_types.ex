@@ -7,6 +7,10 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
 
+  object :result_error do
+    field :message, non_null(:string)
+  end
+
   object :ai_evaluation do
     field :id, :id
     field :name, :string
@@ -44,8 +48,19 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   end
 
   object :golden_qa do
+    field :id, :id
     field :name, :string
-    field :dataset_id, :id
+    field :duplication_factor, :integer
+    field :dataset_id, :integer
+    field :file_name, :string
+    field :signed_url, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  object :golden_qa_result do
+    field :golden_qa, :golden_qa
+    field :errors, list_of(:result_error)
   end
 
   object :evaluation_result do
@@ -62,11 +77,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :experiment_name, non_null(:string)
     field :config_id, non_null(:id)
     field :config_version, non_null(:id)
-  end
-
-  object :golden_qa_result do
-    field :golden_qa, :golden_qa
-    field :errors, list_of(:input_error)
   end
 
   object :ai_evaluation_queries do
@@ -102,6 +112,15 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_golden_qas/3)
+    end
+
+    @desc "Get Golden QA"
+    field :golden_qa, :golden_qa_result do
+      arg(:id, non_null(:id))
+      arg(:include_signed_url, :boolean, default_value: false)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.get_golden_qa/3)
     end
   end
 
