@@ -444,6 +444,9 @@ defmodule Glific.Flows.Webhook do
           }
         } = _job
       ) do
+    # TODO: REMOVE — temporary delay for local partition testing
+    if url == "nmt_tts_with_bhasini", do: Process.sleep(5_000)
+
     Repo.put_process_state(organization_id)
 
     headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
