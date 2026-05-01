@@ -20,9 +20,9 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
 
+  alias Glific.Tracing
+
   require Logger
-  @tracer Appsignal.Tracer
-  @span Appsignal.Span
 
   @doc """
   Create a webhook with different signatures along with header, so we can easily implement
@@ -145,22 +145,15 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text", fields, _headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
-    span_data =
-      base_trace_data(organization_id, flow_id, contact_id, fields["webhook_log_id"], "stt")
+    span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
 
-    with_appsignal_span("Kaapi STT Common Webhook", "kaapi.webhook.stt", span_data, fn ->
+    Tracing.with_span("webhook.speech_to_text", span_attrs, fn ->
       {callback_url, request_metadata} =
-        with_appsignal_span("Kaapi STT Metadata", "db.query", span_data, fn ->
-          build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
-        end)
+        build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
       request_metadata = Map.put(request_metadata, :call_type, "stt")
 
-      contact =
-        with_appsignal_span("Kaapi STT Contact Language", "db.query", span_data, fn ->
-          Contacts.preload_contact_language(contact_id)
-        end)
-
+      contact = Contacts.preload_contact_language(contact_id)
       contact_language = contact.language.label |> String.downcase()
 
       stt_opts = %{
@@ -172,15 +165,13 @@ defmodule Glific.Clients.CommonWebhook do
 
       Glific.Metrics.increment("Kaapi STT Call", organization_id)
 
-      with_appsignal_span("Kaapi STT API", "external.http", span_data, fn ->
-        Kaapi.speech_to_text(
-          fields["speech"],
-          callback_url,
-          request_metadata,
-          organization_id,
-          stt_opts
-        )
-      end)
+      Kaapi.speech_to_text(
+        fields["speech"],
+        callback_url,
+        request_metadata,
+        organization_id,
+        stt_opts
+      )
     end)
   end
 
@@ -190,14 +181,11 @@ defmodule Glific.Clients.CommonWebhook do
     text = fields["text"]
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
-    span_data =
-      base_trace_data(organization_id, flow_id, contact_id, fields["webhook_log_id"], "tts")
+    span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
 
-    with_appsignal_span("Kaapi TTS Webhook", "kaapi.webhook.tts", span_data, fn ->
+    Tracing.with_span("webhook.text_to_speech", span_attrs, fn ->
       {callback_url, request_metadata} =
-        with_appsignal_span("Kaapi TTS Metadata", "db.query", span_data, fn ->
-          build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
-        end)
+        build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
       request_metadata = Map.put(request_metadata, :call_type, "tts")
 
@@ -209,10 +197,7 @@ defmodule Glific.Clients.CommonWebhook do
       }
 
       Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-
-      with_appsignal_span("Kaapi TTS API", "external.http", span_data, fn ->
-        Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
-      end)
+      Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
     end)
   end
 
@@ -765,51 +750,22 @@ defmodule Glific.Clients.CommonWebhook do
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
 
-  @spec with_appsignal_span(String.t(), String.t(), map(), (-> any())) :: any()
-  defp with_appsignal_span(name, category, sample_data, fun) do
-    start_time = :os.system_time()
-
-    span =
-      "custom"
-      |> @tracer.create_span(@tracer.current_span(), start_time: start_time)
-      |> @span.set_name(name)
-      |> @span.set_attribute("appsignal:category", category)
-      |> @span.set_sample_data("meta", sample_data)
-
-    try do
-      fun.()
-    rescue
-      error ->
-        @span.add_error(span, :error, Exception.message(error), __STACKTRACE__)
-        reraise(error, __STACKTRACE__)
-    after
-      @tracer.close_span(span, end_time: :os.system_time())
-    end
-  end
-
-  @spec base_trace_data(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          any(),
-          String.t()
-        ) :: map()
-  defp base_trace_data(organization_id, flow_id, contact_id, webhook_log_id, call_type) do
+  @spec base_span_attrs(non_neg_integer(), non_neg_integer(), non_neg_integer(), any()) :: map()
+  defp base_span_attrs(organization_id, flow_id, contact_id, webhook_log_id) do
     %{
-      organization_id: organization_id,
-      flow_id: flow_id,
-      contact_id: contact_id,
-      webhook_log_id: webhook_log_id,
-      call_type: call_type
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "webhook_log_id" => webhook_log_id
     }
   end
 
   @spec build_trace_context() :: map()
   defp build_trace_context do
-    %{
-      trace_id: Ecto.UUID.generate(),
-      started_at: DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-    }
+    case Tracing.current_traceparent() do
+      nil -> %{}
+      traceparent -> %{traceparent: traceparent}
+    end
   end
 
   defp build_unified_llm_payload(

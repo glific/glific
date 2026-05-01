@@ -15,7 +15,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
     GCS.GcsWorker,
     Messages,
     Partners,
-    Repo
+    Repo,
+    Tracing
   }
 
   @doc """
@@ -26,17 +27,15 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    with_callback_trace("Kaapi Flow Resume Callback", result, fn ->
+    with_callback_trace("flow_resume.callback", result, fn ->
+      parsed = parse_callback_response(result)
+
       response =
-        Appsignal.instrument("Kaapi Callback Parse", "kaapi.callback.parse", fn ->
-          result |> parse_callback_response() |> maybe_upload_tts_audio()
+        Tracing.with_span("flow_resume.callback.upload_tts_audio", %{}, fn ->
+          maybe_upload_tts_audio(parsed)
         end)
 
-      organization =
-        Appsignal.instrument("Kaapi Callback Load Organization", "db.query", fn ->
-          Partners.organization(organization_id)
-        end)
-
+      organization = Partners.organization(organization_id)
       Repo.put_process_state(organization.id)
 
       log_message = %{
@@ -48,7 +47,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
       if response["webhook_log_id"] do
-        Appsignal.instrument("Kaapi Callback Update WebhookLog", "db.query", fn ->
+        Tracing.with_span("flow_resume.callback.update_webhook_log", %{}, fn ->
           Webhook.update_log(response["webhook_log_id"], log_message)
         end)
       end
@@ -76,20 +75,16 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
       with true <- validate_request(organization_id, response),
            {:ok, contact} <-
-             Appsignal.instrument("Kaapi Callback Fetch Contact", "db.query", fn ->
-               Repo.fetch_by(Contact, %{
-                 id: response["contact_id"],
-                 organization_id: organization.id
-               })
-             end) do
-        Appsignal.instrument("Kaapi Callback Resume Flow", "kaapi.callback.resume_flow", fn ->
-          FlowContext.resume_contact_flow(
-            contact,
-            response["flow_id"],
-            %{response_key => response},
-            message
-          )
-        end)
+             Repo.fetch_by(Contact, %{
+               id: response["contact_id"],
+               organization_id: organization.id
+             }) do
+        FlowContext.resume_contact_flow(
+          contact,
+          response["flow_id"],
+          %{response_key => response},
+          message
+        )
       end
     end)
 
@@ -109,12 +104,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
     Task.start(fn ->
       Repo.put_process_state(organization_id)
 
-      with_callback_trace("Kaapi Voice Callback", result, fn ->
-        response =
-          Appsignal.instrument("Kaapi Voice Callback Parse", "kaapi.callback.parse", fn ->
-            parse_callback_response(result)
-          end)
-
+      with_callback_trace("flow_resume.callback.voice_flow_resume", result, fn ->
+        response = parse_callback_response(result)
         do_voice_flow_resume(organization_id, result, response)
       end)
     end)
@@ -124,11 +115,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
   defp do_voice_flow_resume(organization_id, result, response) do
-    organization =
-      Appsignal.instrument("Kaapi Voice Load Organization", "db.query", fn ->
-        Partners.organization(organization_id)
-      end)
-
+    organization = Partners.organization(organization_id)
     response_key = response["result_name"] || "response"
 
     message =
@@ -138,37 +125,29 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
-           Appsignal.instrument("Kaapi Voice Fetch Contact", "db.query", fn ->
-             Repo.fetch_by(Contact, %{
-               id: response["contact_id"],
-               organization_id: organization.id
-             })
-           end) do
+           Repo.fetch_by(Contact, %{
+             id: response["contact_id"],
+             organization_id: organization.id
+           }) do
       voice_response =
-        Appsignal.instrument(
-          "Kaapi Voice Post Process",
-          "kaapi.callback.voice_post_process",
-          fn ->
-            CommonWebhook.voice_post_process(organization_id, result["success"], response)
-          end
-        )
+        Tracing.with_span("flow_resume.callback.voice_post_process", %{}, fn ->
+          CommonWebhook.voice_post_process(organization_id, result["success"], response)
+        end)
 
-      if response["webhook_log_id"],
-        do:
-          Appsignal.instrument("Kaapi Voice Update WebhookLog", "db.query", fn ->
-            Webhook.update_log(response["webhook_log_id"], voice_response)
-          end)
+      if response["webhook_log_id"] do
+        Tracing.with_span("flow_resume.callback.update_webhook_log", %{}, fn ->
+          Webhook.update_log(response["webhook_log_id"], voice_response)
+        end)
+      end
 
       track_kaapi_latency(response)
 
-      Appsignal.instrument("Kaapi Voice Resume Flow", "kaapi.callback.resume_flow", fn ->
-        FlowContext.resume_contact_flow(
-          contact,
-          response["flow_id"],
-          %{response_key => voice_response},
-          message
-        )
-      end)
+      FlowContext.resume_contact_flow(
+        contact,
+        response["flow_id"],
+        %{response_key => voice_response},
+        message
+      )
     else
       false ->
         Logger.warning("Voice flow resume validation failed for org #{organization_id}")
@@ -260,39 +239,32 @@ defmodule GlificWeb.Flows.FlowResumeController do
   defp track_kaapi_latency(_response), do: :ok
 
   @spec with_callback_trace(String.t(), map(), (-> any())) :: any()
-  defp with_callback_trace(name, result, fun) do
-    trace_ctx = extract_trace_context(result)
-    sample_data = Map.merge(trace_data(result), trace_ctx)
-
-    Appsignal.instrument(name, "kaapi.callback", fn span ->
-      Appsignal.Span.set_sample_data(span, "meta", sample_data)
-      fun.()
-    end)
+  defp with_callback_trace(span_name, result, fun) do
+    traceparent = extract_traceparent(result)
+    attrs = callback_span_attrs(result)
+    Tracing.with_parent(traceparent, span_name, attrs, fun)
   end
 
-  @spec trace_data(map()) :: map()
-  defp trace_data(%{"metadata" => metadata}) do
+  @spec extract_traceparent(map()) :: String.t() | nil
+  defp extract_traceparent(result) do
+    case get_in(result, ["metadata", "trace_context", "traceparent"]) do
+      tp when is_binary(tp) -> tp
+      _ -> nil
+    end
+  end
+
+  @spec callback_span_attrs(map()) :: map()
+  defp callback_span_attrs(%{"metadata" => metadata}) when is_map(metadata) do
     %{
-      organization_id: metadata["organization_id"],
-      flow_id: metadata["flow_id"],
-      contact_id: metadata["contact_id"],
-      webhook_log_id: metadata["webhook_log_id"],
-      call_type: metadata["call_type"]
+      "organization_id" => metadata["organization_id"],
+      "flow_id" => metadata["flow_id"],
+      "contact_id" => metadata["contact_id"],
+      "webhook_log_id" => metadata["webhook_log_id"],
+      "call_type" => metadata["call_type"]
     }
   end
 
-  defp trace_data(_), do: %{}
-
-  @spec extract_trace_context(map()) :: map()
-  defp extract_trace_context(result) do
-    metadata_trace = get_in(result, ["metadata", "trace_context"]) || result["trace_context"]
-
-    case metadata_trace do
-      %{"correlation_id" => correlation_id} -> %{correlation_id: correlation_id}
-      %{correlation_id: correlation_id} -> %{correlation_id: correlation_id}
-      _ -> %{}
-    end
-  end
+  defp callback_span_attrs(_), do: %{}
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do

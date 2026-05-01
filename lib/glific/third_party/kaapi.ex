@@ -8,6 +8,7 @@ defmodule Glific.ThirdParty.Kaapi do
   alias Glific.Partners.Credential
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Kaapi.ApiClient
+  alias Glific.Tracing
 
   # Update all Error struct data in this format
   defmodule Error do
@@ -359,10 +360,18 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
   def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
-    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+    download_result =
+      Tracing.with_span("webhook.speech_to_text.download_audio", %{"organization_id" => organization_id}, fn ->
+        GupshupClient.download_media_content(audio_url, organization_id)
+      end)
+
+    with {:ok, encoded_audio} <- download_result,
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
-         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+         {:ok, body} <-
+           Tracing.with_span("webhook.speech_to_text.api_call", %{"organization_id" => organization_id}, fn ->
+             ApiClient.call_llm(payload, secrets["api_key"])
+           end) do
       Map.merge(%{success: true}, body)
     else
       {:error, :download_failed} ->
@@ -389,7 +398,10 @@ defmodule Glific.ThirdParty.Kaapi do
   def text_to_speech(organization_id, text, callback_url, request_metadata, opts \\ %{}) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = tts_payload(text, callback_url, request_metadata, opts),
-         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+         {:ok, body} <-
+           Tracing.with_span("webhook.text_to_speech.api_call", %{"organization_id" => organization_id}, fn ->
+             ApiClient.call_llm(payload, secrets["api_key"])
+           end) do
       Map.merge(%{success: true}, body)
     else
       error ->
