@@ -186,7 +186,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
 
-    e2e_token = Tracing.begin_e2e_span("kaapi.tts_e2e", span_attrs)
+    e2e_token = Tracing.begin_e2e_span("text_to_speech", span_attrs)
 
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
@@ -196,17 +196,15 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put(:call_type, "tts")
       |> Map.put(:e2e_span_token, e2e_token)
 
-    Tracing.with_span("webhook.text_to_speech", span_attrs, fn ->
-      tts_opts = %{
-        provider: fields["provider"],
-        model: fields["model"],
-        language: fields["language"],
-        voice: fields["voice"]
-      }
+    tts_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"],
+      voice: fields["voice"]
+    }
 
-      Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-      Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
-    end)
+    Glific.Metrics.increment("Kaapi TTS Call", organization_id)
+    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
   end
 
   def webhook(function, fields, _headers), do: webhook(function, fields)

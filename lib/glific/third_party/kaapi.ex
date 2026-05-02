@@ -399,7 +399,7 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = tts_payload(text, callback_url, request_metadata, opts),
          {:ok, body} <-
-           Tracing.with_span("webhook.text_to_speech.api_call", %{"organization_id" => organization_id}, fn ->
+           Tracing.with_span("text_to_speech.api_call", %{"organization_id" => organization_id}, fn ->
              ApiClient.call_llm(payload, secrets["api_key"])
            end) do
       Map.merge(%{success: true}, body)
