@@ -477,7 +477,7 @@ defmodule Glific.ThirdParty.Kaapi do
         }
       },
       callback_url: callback_url,
-      request_metadata: request_metadata
+      request_metadata: request_metadata |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
     }
   end
 
@@ -500,7 +500,7 @@ defmodule Glific.ThirdParty.Kaapi do
         }
       },
       callback_url: callback_url,
-      request_metadata: request_metadata
+      request_metadata: request_metadata |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
     }
   end
 

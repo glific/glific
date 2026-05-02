@@ -64,6 +64,33 @@ defmodule Glific.Tracing do
     end
   end
 
+  @doc """
+  Records a synthetic span whose start time is `start_time_us` (microseconds
+  since Unix epoch) and whose end time is now.  The span is ended immediately
+  without blocking; its duration reflects elapsed wall-clock time since the
+  given timestamp.
+
+  The span is parented under whatever span is active in the current context.
+  """
+  @spec record_elapsed_span(String.t(), non_neg_integer(), map()) :: :ok
+  def record_elapsed_span(name, start_time_us, attrs \\ %{}) when is_integer(start_time_us) do
+    # OTel stores start_time as Erlang native monotonic time, not Unix nanoseconds.
+    # timestamp_to_nano(T) = convert_time_unit(T + time_offset(), native, nanosecond),
+    # so we invert: T = convert_time_unit(unix_ns, nanosecond, native) - time_offset().
+    start_time_otel =
+      :erlang.convert_time_unit(start_time_us * 1_000, :nanosecond, :native) -
+        :erlang.time_offset()
+
+    span =
+      OpenTelemetry.Tracer.start_span(name, %{
+        start_time: start_time_otel,
+        attributes: otel_attrs(attrs)
+      })
+
+    OpenTelemetry.Span.end_span(span)
+    :ok
+  end
+
   @spec otel_attrs(map()) :: [{String.t(), any()}]
   defp otel_attrs(attrs) do
     Enum.map(attrs, fn
