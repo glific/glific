@@ -147,32 +147,35 @@ defmodule Glific.Clients.CommonWebhook do
 
     span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
 
-    Tracing.with_span("webhook.speech_to_text", span_attrs, fn ->
-      {callback_url, request_metadata} =
-        build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+    e2e_token = Tracing.begin_e2e_span("speech_to_text", span_attrs)
 
-      request_metadata = Map.put(request_metadata, :call_type, "stt")
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-      contact = Contacts.preload_contact_language(contact_id)
-      contact_language = contact.language.label |> String.downcase()
+    request_metadata =
+      request_metadata
+      |> Map.put(:call_type, "stt")
+      |> Map.put(:e2e_span_token, e2e_token)
 
-      stt_opts = %{
-        provider: fields["provider"],
-        model: fields["model"],
-        language: fields["language"],
-        output_language: contact_language
-      }
+    contact = Contacts.preload_contact_language(contact_id)
+    contact_language = contact.language.label |> String.downcase()
 
-      Glific.Metrics.increment("Kaapi STT Call", organization_id)
+    stt_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"],
+      output_language: contact_language
+    }
 
-      Kaapi.speech_to_text(
-        fields["speech"],
-        callback_url,
-        request_metadata,
-        organization_id,
-        stt_opts
-      )
-    end)
+    Glific.Metrics.increment("Kaapi STT Call", organization_id)
+
+    Kaapi.speech_to_text(
+      fields["speech"],
+      callback_url,
+      request_metadata,
+      organization_id,
+      stt_opts
+    )
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
@@ -183,12 +186,17 @@ defmodule Glific.Clients.CommonWebhook do
 
     span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
 
+    e2e_token = Tracing.begin_e2e_span("kaapi.tts_e2e", span_attrs)
+
+    {callback_url, request_metadata} =
+      build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    request_metadata =
+      request_metadata
+      |> Map.put(:call_type, "tts")
+      |> Map.put(:e2e_span_token, e2e_token)
+
     Tracing.with_span("webhook.text_to_speech", span_attrs, fn ->
-      {callback_url, request_metadata} =
-        build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
-
-      request_metadata = Map.put(request_metadata, :call_type, "tts")
-
       tts_opts = %{
         provider: fields["provider"],
         model: fields["model"],

@@ -65,6 +65,52 @@ defmodule Glific.Tracing do
   end
 
   @doc """
+  Starts a long-lived span without ending it and sets it as the active span for the
+  current process so that any spans created afterwards become its children.
+
+  Serialises the span context to an opaque Base64 token that can be embedded in the
+  outbound request metadata.  Kaapi echoes the metadata back in the async callback,
+  so the token travels round-trip without any server-side storage.
+
+  Call `finish_e2e_span/1` from the callback handler once all downstream processing
+  is complete.  Returns the token string, or `nil` if the span is not sampled.
+  """
+  @spec begin_e2e_span(String.t(), map()) :: String.t() | nil
+  def begin_e2e_span(name, attrs \\ %{}) do
+    span_ctx = OpenTelemetry.Tracer.start_span(name, %{attributes: otel_attrs(attrs)})
+    OpenTelemetry.Tracer.set_current_span(span_ctx)
+
+    if OpenTelemetry.Span.is_recording(span_ctx) do
+      span_ctx |> :erlang.term_to_binary() |> Base.encode64()
+    end
+  end
+
+  @doc """
+  Ends the span previously started with `begin_e2e_span/2`.
+
+  Decodes the opaque token, restores the span context (including the SDK processor
+  closure), and ends the span with the current timestamp.  Safe to call from any
+  process on the same Erlang node within the same VM session.
+
+  No-ops silently if the token is `nil`, already consumed, or cannot be decoded.
+  """
+  @spec finish_e2e_span(String.t() | nil) :: :ok
+  def finish_e2e_span(nil), do: :ok
+
+  def finish_e2e_span(token) when is_binary(token) do
+    try do
+      token
+      |> Base.decode64!()
+      |> :erlang.binary_to_term()
+      |> OpenTelemetry.Span.end_span()
+    rescue
+      _ -> :ok
+    end
+
+    :ok
+  end
+
+  @doc """
   Records a synthetic span whose start time is `start_time_us` (microseconds
   since Unix epoch) and whose end time is now.  The span is ended immediately
   without blocking; its duration reflects elapsed wall-clock time since the

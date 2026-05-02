@@ -79,19 +79,24 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
       track_kaapi_latency(response)
 
-      with true <- validate_request(organization_id, response),
-           {:ok, contact} <-
-             Repo.fetch_by(Contact, %{
-               id: response["contact_id"],
-               organization_id: organization.id
-             }) do
-        FlowContext.resume_contact_flow(
-          contact,
-          response["flow_id"],
-          %{response_key => response},
-          message
-        )
-      end
+      flow_result =
+        with true <- validate_request(organization_id, response),
+             {:ok, contact} <-
+               Repo.fetch_by(Contact, %{
+                 id: response["contact_id"],
+                 organization_id: organization.id
+               }) do
+          FlowContext.resume_contact_flow(
+            contact,
+            response["flow_id"],
+            %{response_key => response},
+            message
+          )
+        end
+
+      Tracing.finish_e2e_span(parsed["e2e_span_token"])
+
+      flow_result
     end)
 
     json(conn, "")

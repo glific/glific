@@ -361,7 +361,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
   def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
     download_result =
-      Tracing.with_span("webhook.speech_to_text.download_audio", %{"organization_id" => organization_id}, fn ->
+      Tracing.with_span("speech_to_text.download_audio", %{"organization_id" => organization_id}, fn ->
         GupshupClient.download_media_content(audio_url, organization_id)
       end)
 
@@ -369,7 +369,7 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
          {:ok, body} <-
-           Tracing.with_span("webhook.speech_to_text.api_call", %{"organization_id" => organization_id}, fn ->
+           Tracing.with_span("speech_to_text.api_call", %{"organization_id" => organization_id}, fn ->
              ApiClient.call_llm(payload, secrets["api_key"])
            end) do
       Map.merge(%{success: true}, body)
