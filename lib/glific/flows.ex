@@ -23,7 +23,6 @@ defmodule Glific.Flows do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
-    ThirdParty.Kaapi,
     Users.User
   }
 
@@ -1035,7 +1034,7 @@ defmodule Glific.Flows do
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
-           {cleaned_definition, warnings} <-
+           {cleaned_definition, assistant_node_uuids} <-
              clean_flow_definition(
                flow_revision["definition"],
                interactive_template_list,
@@ -1051,29 +1050,26 @@ defmodule Glific.Flows do
         import_contact_field(import_flow, organization_id)
         import_groups(import_flow, organization_id)
 
-        status =
-          if Enum.empty?(warnings) do
-            "Successfully imported"
-          else
-            "Successfully imported with warnings: " <> Enum.join(warnings, "; ")
-          end
-
-        %{flow_name: flow.name, status: status}
+        %{
+          flow_name: flow.name,
+          status: "Successfully imported",
+          assistant_node_uuids: assistant_node_uuids
+        }
       else
         {:error, error} ->
           flow_name = Map.get(error.changes, :name)
           errors = hd(error.errors)
 
-          message =
+          error_message =
             case errors do
-              {:keywords, {message, _}} -> message
-              {:name, {message, _}} -> message
+              {:keywords, {msg, _}} -> msg
+              {:name, {msg, _}} -> msg
               _ -> "Something went wrong"
             end
 
-          Logger.error("Failed to import flow #{flow_name}: #{message}, #{inspect(errors)}")
+          Logger.error("Failed to import flow #{flow_name}: #{error_message}, #{inspect(errors)}")
 
-          %{flow_name: flow_name, status: message}
+          %{flow_name: flow_name, status: error_message, assistant_node_uuids: []}
       end
     end)
   end
@@ -1085,20 +1081,20 @@ defmodule Glific.Flows do
       flow_name: definition["name"]
     }
 
-    {nodes, warnings} =
+    {nodes, assistant_node_uuids} =
       definition
       |> Map.get("nodes", [])
       |> Enum.reduce(
         {[], []},
-        fn node, {nodes_acc, warnings_acc} ->
-          {processed_nodes, node_warnings} =
+        fn node, {nodes_acc, uuids_acc} ->
+          {processed_nodes, node_uuids} =
             process_node_actions(node, interactive_template_list, flow_info, organization_id)
 
-          {nodes_acc ++ processed_nodes, warnings_acc ++ node_warnings}
+          {nodes_acc ++ processed_nodes, uuids_acc ++ node_uuids}
         end
       )
 
-    {put_in(definition, ["nodes"], nodes), warnings}
+    {put_in(definition, ["nodes"], nodes), assistant_node_uuids}
   end
 
   @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list()}
@@ -1117,19 +1113,20 @@ defmodule Glific.Flows do
          flow_info,
          org_id
        ) do
-    {updated_actions, warnings} =
-      Enum.reduce(actions, {[], []}, fn action, {actions_acc, warnings_acc} ->
+    {updated_actions, has_assistant?} =
+      Enum.reduce(actions, {[], false}, fn action, {actions_acc, has_assistant_acc} ->
         case process_action(action, node, interactive_template_list, flow_info, org_id) do
           {:ok, updated_action} ->
-            {actions_acc ++ [updated_action], warnings_acc}
+            {actions_acc ++ [updated_action], has_assistant_acc}
 
-          {:ok, updated_action, warning} ->
-            {actions_acc ++ [updated_action], warnings_acc ++ [warning]}
+          {:ok, updated_action, :assistant} ->
+            {actions_acc ++ [updated_action], true}
         end
       end)
 
     updated_node = Map.put(node, "actions", updated_actions)
-    {[updated_node], warnings}
+    node_uuids = if has_assistant?, do: [node["uuid"]], else: []
+    {[updated_node], node_uuids}
   end
 
   defp process_action(
@@ -1184,22 +1181,12 @@ defmodule Glific.Flows do
          %{"type" => "call_webhook"} = action,
          _node,
          _interactive_template_list,
-         flow_info,
-         org_id
+         _flow_info,
+         _org_id
        ) do
-    case handle_assistant_import(action, org_id, flow_info) do
-      :ok ->
-        {:ok, action}
-
-      {:error, assistant_id} ->
-        warning =
-          "Failed to import assistant\n\n" <>
-            "Assistant ID: #{assistant_id}"
-
-        {:ok, action, warning}
-
-      nil ->
-        {:ok, action}
+    case clear_assistant_id(action) do
+      {:ok, updated_action} -> {:ok, updated_action, :assistant}
+      :no_assistant -> {:ok, action}
     end
   end
 
@@ -1217,16 +1204,20 @@ defmodule Glific.Flows do
   defp process_action(action, _node, _interactive_template_list, _flow_info, _org_id),
     do: {:ok, action}
 
-  @spec handle_assistant_import(map(), non_neg_integer(), map()) ::
-          :ok | {:error, String.t()} | nil
-  defp handle_assistant_import(action, org_id, _flow_info) do
+  @spec clear_assistant_id(map()) :: {:ok, map()} | :no_assistant
+  defp clear_assistant_id(action) do
     with body when is_binary(body) <- action["body"],
          {:ok, decoded} <- Jason.decode(body),
-         assistant_id when not is_nil(assistant_id) <- decoded["assistant_id"] do
-      case Kaapi.ingest_ai_assistant(org_id, assistant_id) do
-        {:ok, _result} -> :ok
-        {:error, _} -> {:error, assistant_id}
-      end
+         assistant_id when is_binary(assistant_id) and assistant_id != "" <-
+           decoded["assistant_id"] do
+      updated_body =
+        Regex.replace(~r/"assistant_id"(\s*:\s*)"[^"]*"/, body, fn _full, spacing ->
+          ~s("assistant_id"#{spacing}"")
+        end)
+
+      {:ok, Map.put(action, "body", updated_body)}
+    else
+      _ -> :no_assistant
     end
   end
 
