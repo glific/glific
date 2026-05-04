@@ -444,7 +444,6 @@ defmodule Glific.Flows.Webhook do
           }
         } = _job
       ) do
-
     Repo.put_process_state(organization_id)
 
     headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
