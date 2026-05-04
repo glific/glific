@@ -361,17 +361,25 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
   def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
     download_result =
-      Tracing.with_span("speech_to_text.download_audio", %{"organization_id" => organization_id}, fn ->
-        GupshupClient.download_media_content(audio_url, organization_id)
-      end)
+      Tracing.with_span(
+        "speech_to_text.download_audio",
+        %{"organization_id" => organization_id},
+        fn ->
+          GupshupClient.download_media_content(audio_url, organization_id)
+        end
+      )
 
     with {:ok, encoded_audio} <- download_result,
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
          {:ok, body} <-
-           Tracing.with_span("speech_to_text.api_call", %{"organization_id" => organization_id}, fn ->
-             ApiClient.call_llm(payload, secrets["api_key"])
-           end) do
+           Tracing.with_span(
+             "speech_to_text.api_call",
+             %{"organization_id" => organization_id},
+             fn ->
+               ApiClient.call_llm(payload, secrets["api_key"])
+             end
+           ) do
       Map.merge(%{success: true}, body)
     else
       {:error, :download_failed} ->
@@ -399,9 +407,13 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = tts_payload(text, callback_url, request_metadata, opts),
          {:ok, body} <-
-           Tracing.with_span("text_to_speech.api_call", %{"organization_id" => organization_id}, fn ->
-             ApiClient.call_llm(payload, secrets["api_key"])
-           end) do
+           Tracing.with_span(
+             "text_to_speech.api_call",
+             %{"organization_id" => organization_id},
+             fn ->
+               ApiClient.call_llm(payload, secrets["api_key"])
+             end
+           ) do
       Map.merge(%{success: true}, body)
     else
       error ->
@@ -477,7 +489,9 @@ defmodule Glific.ThirdParty.Kaapi do
         }
       },
       callback_url: callback_url,
-      request_metadata: request_metadata |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
+      request_metadata:
+        request_metadata
+        |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
     }
   end
 
@@ -500,7 +514,9 @@ defmodule Glific.ThirdParty.Kaapi do
         }
       },
       callback_url: callback_url,
-      request_metadata: request_metadata |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
+      request_metadata:
+        request_metadata
+        |> Map.put("trace_timestamp", DateTime.utc_now() |> DateTime.to_unix(:microsecond))
     }
   end
 

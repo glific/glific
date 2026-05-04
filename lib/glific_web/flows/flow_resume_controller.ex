@@ -30,10 +30,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
     with_callback_trace("flow_resume.callback", result, fn ->
       parsed = parse_callback_response(result)
 
-      IO.inspect(parsed, label: "parsed")
-
       if is_integer(parsed["trace_timestamp"]) do
-        Tracing.record_elapsed_span("flow_resume.callback.kaapi_e2e_latency", parsed["trace_timestamp"])
+        Tracing.record_elapsed_span(
+          "flow_resume.callback.kaapi_e2e_latency",
+          parsed["trace_timestamp"]
+        )
       end
 
       response =

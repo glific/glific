@@ -76,7 +76,13 @@ config :glific,
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
 # AppSignal configs
-endpoint = env!("OTEL_EXPORTER_OTLP_ENDPOINT", :string, "https://bdw42te3.eu-central.appsignal-collector.net")
+endpoint =
+  env!(
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    :string,
+    "https://bdw42te3.eu-central.appsignal-collector.net"
+  )
+
 otlp_auth_header = env!("OTEL_EXPORTER_OTLP_AUTH_HEADER", :string, "")
 appsignal_name = env!("APPSIGNAL_NAME", :string, "Glific")
 appsignal_push_api_key = env!("APPSIGNAL_PUSH_API_KEY", :string!)
