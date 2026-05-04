@@ -50,6 +50,56 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
+  describe "list_golden_qas/3" do
+    setup [:create_golden_qa_fixture]
+
+    test "returns list of golden QAs for the organization", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, golden_qas} = AIEvaluations.list_golden_qas(nil, %{}, resolution)
+      assert length(golden_qas) >= 1
+      assert Enum.any?(golden_qas, fn g -> g.id == golden_qa.id end)
+    end
+
+    test "filters by name", %{staff: user, golden_qa: golden_qa} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{name: "test_data"}}
+
+      assert {:ok, golden_qas} = AIEvaluations.list_golden_qas(nil, args, resolution)
+      assert Enum.any?(golden_qas, fn g -> g.id == golden_qa.id end)
+    end
+  end
+
+  describe "count_golden_qas/3" do
+    setup [:create_golden_qa_fixture]
+
+    test "returns count of golden QAs for the organization", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, count} = AIEvaluations.count_golden_qas(nil, %{}, resolution)
+      assert count >= 1
+    end
+
+    test "returns count matching name filter", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      args = %{filter: %{name: "test_dataset"}}
+
+      assert {:ok, count} = AIEvaluations.count_golden_qas(nil, args, resolution)
+      assert count >= 1
+    end
+
+    test "returns zero when name filter matches nothing", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      unique = "no_such_golden_qa_#{System.unique_integer([:positive])}"
+      args = %{filter: %{name: unique}}
+
+      assert {:ok, 0} = AIEvaluations.count_golden_qas(nil, args, resolution)
+    end
+  end
+
   describe "create_golden_qa/3" do
     setup [:enable_kaapi, :create_upload_file]
 

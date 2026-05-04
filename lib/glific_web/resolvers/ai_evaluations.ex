@@ -4,7 +4,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   require Logger
 
-  alias Glific.{AIEvaluations, Assistants.AssistantConfigVersion, Metrics, Repo, ThirdParty.Kaapi}
+  alias Glific.{
+    AIEvaluations,
+    AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
+    Assistants.AssistantConfigVersion,
+    Metrics,
+    Repo,
+    ThirdParty.Kaapi
+  }
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
