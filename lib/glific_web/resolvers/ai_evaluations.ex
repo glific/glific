@@ -72,9 +72,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
-         {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id),
-         result <- create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
-      result
+         {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+      create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
@@ -219,15 +218,13 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, error} when is_binary(error) ->
         {:ok, %{errors: [%{message: error}]}}
 
-      {:error, %{message: msg}} ->
-        {:ok, %{errors: [%{message: msg}]}}
-
       {:error, _} ->
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 
+  @spec maybe_put_signed_url(map(), map()) :: map()
   defp maybe_put_signed_url(golden_qa_map, %{} = kaapi_data) do
     case Map.get(kaapi_data, :signed_url) do
       nil -> golden_qa_map
@@ -235,6 +232,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @spec fetch_kaapi_dataset(map(), map(), boolean()) ::
+          {:ok, map()} | {:error, String.t()}
   defp fetch_kaapi_dataset(_golden_qa, _user, false), do: {:ok, %{}}
 
   defp fetch_kaapi_dataset(golden_qa, user, true) do
