@@ -846,88 +846,10 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, %{data: _}} = result
   end
 
-  test "import flow with assistant should also import the assistant in kaapi", %{manager: user} do
-    organization_id = user.organization_id
-
-    # activate kaapi
-    enable_kaapi(%{organization_id: organization_id})
-
-    FunWithFlags.enable(:is_kaapi_enabled,
-      for_actor: %{organization_id: organization_id}
-    )
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            error: nil,
-            data: %{
-              id: 164,
-              name: "test_asst",
-              instructions: "you are a helpful assistant",
-              assistant_id: "asst_gzxxq",
-              model: "gpt-4o",
-              temperature: 0.0,
-              project_id: 86,
-              vector_store_ids: []
-            },
-            success: true,
-            metadata: nil
-          }
-        }
-    end)
-
-    [flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
-    flow_id = flow.id
-
-    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: organization_id})
-
-    result =
-      auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
-
-    assert {:ok, query_data} = result
-
-    export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
-    data = Jason.decode!(export_data)
-
-    # Delete the flow before importing
-    Flows.list_flows(%{filter: %{id: flow.id}})
-    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
-
-    import_flow = Jason.encode!(data)
-    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
-    assert {:ok, query_data} = result
-
-    import_status =
-      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
-
-    assert import_status["flowName"] == "call_and_wait"
-    assert import_status["status"] == "Successfully imported"
-  end
-
-  test "import flow with failed assistant should add he warning in pop-up", %{
-    manager: user
-  } do
-    organization_id = user.organization_id
-
-    # activate kaapi
-    enable_kaapi(%{organization_id: organization_id})
-
-    FunWithFlags.enable(:is_kaapi_enabled,
-      for_actor: %{organization_id: organization_id}
-    )
-
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 404,
-          body: %{
-            error: "Assistant not found",
-            data: nil,
-            success: false
-          }
-        }
+  test "import flow with assistant returns the node uuids and message, without calling kaapi",
+       %{manager: user} do
+    Tesla.Mock.mock(fn _ ->
+      flunk("no HTTP calls should be made when importing a flow with an assistant")
     end)
 
     [flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
@@ -937,44 +859,58 @@ defmodule GlificWeb.Schema.FlowTest do
     export_data = get_in(query_data, [:data, "exportFlow", "export_data"])
     data = Jason.decode!(export_data)
 
+    expected_node_uuids =
+      data["flows"]
+      |> hd()
+      |> get_in(["definition", "nodes"])
+      |> Enum.filter(fn node ->
+        Enum.any?(node["actions"] || [], fn action ->
+          action["type"] == "call_webhook" and
+            is_binary(action["body"]) and
+            String.contains?(action["body"], "assistant_id")
+        end)
+      end)
+      |> Enum.map(& &1["uuid"])
+
+    assert expected_node_uuids != []
+
     # Delete the flow before importing
     Flows.list_flows(%{filter: %{id: flow.id}})
     |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
 
     import_flow = Jason.encode!(data)
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
-
     assert {:ok, query_data} = result
 
-    import_status =
-      get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
 
-    assert import_status["status"] ==
-             "Successfully imported with warnings: Failed to import assistant\n\nAssistant ID: asst_pJMbE1OALvgWtZfGfDicrgAD"
-  end
+    assert import_status["flowName"] == "call_and_wait"
+    assert import_status["status"] == "Successfully imported"
+    assert Enum.sort(import_status["assistantNodeUuids"]) == Enum.sort(expected_node_uuids)
 
-  defp enable_kaapi(attrs) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: attrs.organization_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{
-          "api_key" => "sk_test_key"
-        }
+    [imported_flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
+
+    {:ok, revision} =
+      Repo.fetch_by(FlowRevision, %{
+        flow_id: imported_flow.id,
+        organization_id: user.organization_id
       })
 
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_test_key"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
+    imported_assistant_ids =
+      revision.definition
+      |> Map.get("nodes", [])
+      |> Enum.flat_map(fn node -> node["actions"] || [] end)
+      |> Enum.filter(fn action -> action["type"] == "call_webhook" end)
+      |> Enum.map(fn action ->
+        case Jason.decode(action["body"] || "") do
+          {:ok, decoded} -> decoded["assistant_id"]
+          _ -> nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
 
-    Partners.update_credential(credential, valid_update_attrs)
+    assert imported_assistant_ids != []
+    assert Enum.all?(imported_assistant_ids, &(&1 == ""))
   end
 
   test "terminate inactive flows", attrs do
