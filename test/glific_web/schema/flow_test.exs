@@ -870,7 +870,7 @@ defmodule GlificWeb.Schema.FlowTest do
             String.contains?(action["body"], "assistant_id")
         end)
       end)
-      |> Enum.map(& &1["uuid"])
+      |> Enum.map(fn node -> String.slice(node["uuid"], -4..-1//1) end)
 
     assert expected_node_uuids != []
 
@@ -890,11 +890,12 @@ defmodule GlificWeb.Schema.FlowTest do
 
     [imported_flow | _] = Flows.list_flows(%{filter: %{name: "call_and_wait"}})
 
-    {:ok, revision} =
-      Repo.fetch_by(FlowRevision, %{
-        flow_id: imported_flow.id,
-        organization_id: user.organization_id
-      })
+    revision =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^imported_flow.id)
+      |> order_by([fr], desc: fr.inserted_at)
+      |> limit(1)
+      |> Repo.one!()
 
     imported_assistant_ids =
       revision.definition

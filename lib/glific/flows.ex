@@ -1125,9 +1125,14 @@ defmodule Glific.Flows do
       end)
 
     updated_node = Map.put(node, "actions", updated_actions)
-    node_uuids = if has_assistant?, do: [node["uuid"]], else: []
+    node_uuids = if has_assistant?, do: [node_label(node["uuid"])], else: []
     {[updated_node], node_uuids}
   end
+
+  # The flow editor labels each node with the last 4 chars of its UUID
+  @spec node_label(String.t() | nil) :: String.t()
+  defp node_label(uuid) when is_binary(uuid), do: String.slice(uuid, -4..-1//1)
+  defp node_label(_), do: ""
 
   defp process_action(
          %{"type" => "send_msg"} = action,
