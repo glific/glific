@@ -6,7 +6,10 @@ defmodule Glific.AIEvaluations.GoldenQA do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Partners.Organization
+  alias Glific.{
+    AIEvaluations.GoldenQA,
+    Partners.Organization
+  }
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -37,7 +40,7 @@ defmodule Glific.AIEvaluations.GoldenQA do
   @doc """
   Standard changeset for creating and updating golden QAs.
   """
-  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(GoldenQA.t(), map()) :: Ecto.Changeset.t()
   def changeset(golden_qa, attrs) do
     golden_qa
     |> cast(attrs, @required_fields ++ @optional_fields)

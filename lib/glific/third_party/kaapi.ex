@@ -261,14 +261,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -288,14 +285,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to create Kaapi Knowledge Base creation job",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Failed to create Kaapi Knowledge Base creation job",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -580,14 +574,11 @@ defmodule Glific.ThirdParty.Kaapi do
       Logger.info("Dataset retrieved for org: #{organization_id}, dataset: #{dataset_id}")
 
       if include_signed_url && !Map.has_key?(data, :signed_url) do
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi dataset response missing signed_url",
-            organization_id: organization_id,
-            reason: inspect(data)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi dataset response missing signed_url",
+          organization_id: organization_id,
+          reason: inspect(data)
+        })
 
         {:error, "Dataset download URL not available"}
       else
@@ -595,14 +586,11 @@ defmodule Glific.ThirdParty.Kaapi do
       end
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to get dataset from Kaapi",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Failed to get dataset from Kaapi",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end

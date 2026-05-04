@@ -14,7 +14,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @doc """
   List AI evaluations from the database.
   """
-  @spec list_ai_evaluations(map(), map(), map()) :: {:ok, list()}
+  @spec list_ai_evaluations(map(), map(), map()) :: {:ok, [AIEvaluation.t()]}
   def list_ai_evaluations(_, args, %{context: %{current_user: user}}) do
     args = Map.put(args, :organization_id, user.organization_id)
     {:ok, AIEvaluations.list_ai_evaluations(args)}
@@ -32,7 +32,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @doc """
   List golden QAs from the database.
   """
-  @spec list_golden_qas(map(), map(), map()) :: {:ok, list()}
+  @spec list_golden_qas(map(), map(), map()) :: {:ok, [GoldenQA.t()]}
   def list_golden_qas(_, args, %{context: %{current_user: user}}) do
     args = Map.put(args, :organization_id, user.organization_id)
     {:ok, AIEvaluations.list_golden_qas(args)}
@@ -50,7 +50,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @doc """
   Create a Golden QA configuration after validating the input.
   """
-  @spec create_golden_qa(map(), map(), map()) :: {:ok, map()}
+  @spec create_golden_qa(map(), map(), map()) ::
+          {:ok, %{golden_qa: GoldenQA.t()} | %{errors: [%{message: String.t()}]}}
   def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
         context: %{current_user: user}
       }) do
@@ -103,7 +104,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec format_changeset_errors(Ecto.Changeset.t()) :: list(map())
+  @spec format_changeset_errors(Ecto.Changeset.t()) :: [%{message: String.t()}]
   defp format_changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Enum.reduce(opts, msg, fn {key, value}, acc ->
@@ -152,7 +153,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   Get Golden QA dataset details with optional signed URL.
   Only fetches from Kaapi if include_signed_url is true to minimize network hops.
   """
-  @spec get_golden_qa(map(), map(), map()) :: {:ok, map()}
+  @spec get_golden_qa(map(), map(), map()) ::
+          {:ok, %{golden_qa: map()} | %{errors: [%{message: String.t()}]}}
   def get_golden_qa(_, %{id: golden_qa_id, include_signed_url: include_signed_url}, %{
         context: %{current_user: user}
       }) do

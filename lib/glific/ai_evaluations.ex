@@ -194,14 +194,6 @@ defmodule Glific.AIEvaluations do
     |> Repo.insert()
   end
 
-  @doc """
-  Retrieves a single golden QA by id.
-  """
-  @spec get_golden_qa!(non_neg_integer()) :: GoldenQA.t()
-  def get_golden_qa!(id) do
-    Repo.get!(GoldenQA, id)
-  end
-
   @spec filter_with(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
