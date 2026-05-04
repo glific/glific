@@ -304,6 +304,20 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Delete an evaluation dataset in Kaapi.
+  """
+  @spec delete_evaluation_dataset(non_neg_integer() | String.t(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  def delete_evaluation_dataset(dataset_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/evaluations/datasets/:dataset_id",
+      opts: [path_params: [dataset_id: dataset_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [

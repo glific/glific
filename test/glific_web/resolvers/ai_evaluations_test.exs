@@ -145,6 +145,142 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       end
     end
 
+    test "returns formatted errors when DB insert fails after Kaapi succeeds (duplicate name)", %{
+      staff: user,
+      upload: upload
+    } do
+      name = "dup_name_#{System.unique_integer([:positive])}"
+
+      assert {:ok, _} =
+               Glific.AIEvaluations.create_golden_qa(%{
+                 name: name,
+                 dataset_id: 42_001,
+                 duplication_factor: 1,
+                 file_name: "existing.csv",
+                 organization_id: user.organization_id
+               })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                dataset_name: name,
+                dataset_id: "54321"
+              }
+            }
+          }
+
+        %{method: :delete, opts: opts} ->
+          dataset_id =
+            opts
+            |> Keyword.get(:path_params, [])
+            |> Keyword.get(:dataset_id)
+
+          send(self(), {:kaapi_dataset_deleted, dataset_id})
+
+          %Tesla.Env{
+            status: 200,
+            body: %{success: true}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: name,
+          file: upload,
+          duplication_factor: 2
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: errors}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
+
+        assert_receive {:kaapi_dataset_deleted, "54321"}
+
+        # unique_constraint on [:organization_id, :name]; Ecto may report on either field
+        assert Enum.any?(errors, fn %{message: msg} -> msg =~ "already been taken" end)
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
+                 )
+               )
+      end
+    end
+
+    test "logs exception when Kaapi dataset cleanup fails after DB insert failure", %{
+      staff: user,
+      upload: upload
+    } do
+      name = "dup_cleanup_fail_#{System.unique_integer([:positive])}"
+
+      assert {:ok, _} =
+               Glific.AIEvaluations.create_golden_qa(%{
+                 name: name,
+                 dataset_id: 42_001,
+                 duplication_factor: 1,
+                 file_name: "existing.csv",
+                 organization_id: user.organization_id
+               })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                dataset_name: name,
+                dataset_id: "54322"
+              }
+            }
+          }
+
+        %{method: :delete} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "delete failed"}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: name,
+          file: upload,
+          duplication_factor: 2
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific,
+                [:passthrough],
+                log_exception: fn _ ->
+                  send(self(), :glific_log_exception_called)
+                  :ok
+                end do
+        with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+          assert {:ok, %{errors: errors}} =
+                   AIEvaluations.create_golden_qa(nil, args, resolution)
+
+          assert Enum.any?(errors, fn %{message: msg} -> msg =~ "already been taken" end)
+          assert_receive :glific_log_exception_called
+
+          assert called(
+                   Glific.Metrics.increment(
+                     @create_golden_qa_failure_metric,
+                     user.organization_id
+                   )
+                 )
+        end
+      end
+    end
+
     test "returns errors when name contains spaces", %{staff: user, upload: upload} do
       args = %{
         input: %{
@@ -569,6 +705,25 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.get_golden_qa(nil, args, resolution)
 
       assert msg == "Timeout occurred, please try again."
+    end
+
+    test "returns generic support error when Kaapi dataset request fails with an unexpected error",
+         %{
+           staff: user,
+           golden_qa: golden_qa
+         } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          {:error, :econnrefused}
+      end)
+
+      args = %{id: golden_qa.id, include_signed_url: true}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_golden_qa(nil, args, resolution)
+
+      assert msg == "An unknown error occurred, please contact Glific support."
     end
 
     test "returns error when Kaapi is not configured (only when include_signed_url: true)", %{

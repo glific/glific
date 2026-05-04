@@ -597,6 +597,31 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Delete an evaluation dataset from Kaapi.
+  """
+  @spec delete_evaluation_dataset(non_neg_integer() | String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def delete_evaluation_dataset(dataset_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.delete_evaluation_dataset(dataset_id, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi evaluation dataset delete successful for org: #{organization_id}, dataset: #{dataset_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Failed to delete evaluation dataset from Kaapi",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Upload an evaluation dataset to Kaapi, send error to Appsignal if failed.
   """
   @spec upload_evaluation_dataset(map(), non_neg_integer()) ::

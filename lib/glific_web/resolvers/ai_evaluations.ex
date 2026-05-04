@@ -72,16 +72,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
-         {:ok, res} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id),
-         {:ok, golden_qa} <-
-           AIEvaluations.create_golden_qa(%{
-             name: name,
-             dataset_id: res.dataset_id,
-             duplication_factor: factor,
-             file_name: file.filename,
-             organization_id: user.organization_id
-           }) do
-      {:ok, %{golden_qa: golden_qa}}
+         {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id),
+         result <- create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
+      result
     else
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
@@ -109,6 +102,45 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:ok, data} ->
         Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
         {:ok, data}
+    end
+  end
+
+  @spec create_golden_qa_record(map(), String.t(), Plug.Upload.t(), integer(), map()) ::
+          {:ok, %{golden_qa: GoldenQA.t()}} | {:ok, %{errors: [%{message: String.t()}]}}
+  defp create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
+    case AIEvaluations.create_golden_qa(%{
+           name: name,
+           dataset_id: kaapi_dataset.dataset_id,
+           duplication_factor: factor,
+           file_name: file.filename,
+           organization_id: user.organization_id
+         }) do
+      {:ok, golden_qa} ->
+        {:ok, %{golden_qa: golden_qa}}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        cleanup_orphaned_kaapi_dataset(kaapi_dataset.dataset_id, user.organization_id)
+        errors = format_changeset_errors(changeset)
+        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
+        {:ok, %{errors: errors}}
+    end
+  end
+
+  @spec cleanup_orphaned_kaapi_dataset(non_neg_integer() | String.t(), non_neg_integer()) :: :ok
+  defp cleanup_orphaned_kaapi_dataset(dataset_id, organization_id) do
+    case Kaapi.delete_evaluation_dataset(dataset_id, organization_id) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_exception(%Kaapi.Error{
+          message: "Failed to delete orphaned Kaapi dataset",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
+
+        # Returning ok as we don't want to block the main flow
+        :ok
     end
   end
 
@@ -209,9 +241,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     case Kaapi.get_dataset(golden_qa.dataset_id, user.organization_id, true) do
       {:ok, %{signed_url: signed_url}} ->
         {:ok, %{signed_url: signed_url}}
-
-      {:ok, _} ->
-        {:ok, %{}}
 
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
