@@ -269,6 +269,20 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  """
+  @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/evaluations/:evaluation_id",
+      query: [get_trace_info: "true"],
+      opts: [path_params: [evaluation_id: evaluation_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [

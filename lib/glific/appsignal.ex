@@ -33,7 +33,8 @@ defmodule Glific.Appsignal do
 
       Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
         queue: meta.queue,
-        worker: meta.worker
+        worker: meta.worker,
+        organization_id: organization_id_tag(meta.args)
       })
     end
   end
@@ -105,7 +106,34 @@ defmodule Glific.Appsignal do
     @tracer.close_span(span, end_time: time)
   end
 
+  def handle_event([:glific, repo, :query], measurement, meta, _)
+      when repo in [:repo, :repo_replica] do
+    tags = %{repo: repo}
+    query_tags = Map.put(tags, :command_type, get_command_type(meta))
+
+    maybe_add_distribution_metric(measurement, :query_time, "glific.repo.query_time", query_tags)
+    maybe_add_distribution_metric(measurement, :idle_time, "glific.repo.idle_time", tags)
+    maybe_add_distribution_metric(measurement, :queue_time, "glific.repo.queue_time", tags)
+
+    if measurement |> Map.has_key?(:query_time) do
+      Appsignal.increment_counter("glific.repo.query_count", 1, query_tags)
+    end
+  end
+
   def handle_event(_, _, _, _), do: nil
+
+  @spec organization_id_tag(map() | nil) :: String.t()
+  defp organization_id_tag(%{"organization_id" => org_id}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(%{"message" => %{"organization_id" => org_id}})
+       when not is_nil(org_id),
+       do: to_string(org_id)
+
+  defp organization_id_tag(%{"media" => %{"organization_id" => org_id}}) when not is_nil(org_id),
+    do: to_string(org_id)
+
+  defp organization_id_tag(_), do: "unknown"
 
   @doc """
   Sends oban queue size metric to Appsignal
@@ -113,8 +141,12 @@ defmodule Glific.Appsignal do
   @spec send_oban_queue_size :: any()
   def send_oban_queue_size do
     get_oban_queue_data()
-    |> Enum.each(fn [queue, state, length] ->
-      Appsignal.set_gauge("oban_queue_size", length, %{queue: queue, state: state})
+    |> Enum.each(fn [queue, state, organization_id, length] ->
+      Appsignal.set_gauge("oban_queue_size", length, %{
+        queue: queue,
+        state: state,
+        organization_id: organization_id || "unknown"
+      })
     end)
   end
 
@@ -165,10 +197,13 @@ defmodule Glific.Appsignal do
   defp get_oban_queue_data do
     {:ok, %{rows: rows}} =
       """
-      SELECT queue, state, count(id)
+      SELECT queue, state,
+        COALESCE(args->>'organization_id', args->'message'->>'organization_id', args->'media'->>'organization_id') AS organization_id,
+        count(id)
       from global.oban_jobs
       where state in ('executing', 'available', 'scheduled', 'retryable')
-      group by queue, state
+      group by queue, state,
+        COALESCE(args->>'organization_id', args->'message'->>'organization_id', args->'media'->>'organization_id')
       """
       |> Repo.query([], skip_organization_id: true)
 
@@ -198,5 +233,31 @@ defmodule Glific.Appsignal do
     )
     |> @span.set_name("Tesla #{metadata.method} #{host}")
     |> @span.set_attribute("appsignal:category", "tesla.request")
+  end
+
+  @spec maybe_add_distribution_metric(map(), atom(), String.t(), map()) :: :ok
+  defp maybe_add_distribution_metric(measurement, key, metric_name, tags) do
+    case Map.fetch(measurement, key) do
+      {:ok, value} ->
+        value_in_milliseconds = System.convert_time_unit(value, :native, :millisecond)
+        Appsignal.add_distribution_value(metric_name, value_in_milliseconds, tags)
+
+      :error ->
+        :ok
+    end
+  end
+
+  @spec get_command_type(map()) :: String.t()
+  defp get_command_type(meta) do
+    meta
+    |> Map.get(:query, "")
+    |> String.trim_leading()
+    |> String.split(~r/\s+/, parts: 2)
+    |> List.first()
+    |> case do
+      nil -> "unknown"
+      "" -> "unknown"
+      command -> String.upcase(command)
+    end
   end
 end

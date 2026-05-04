@@ -66,7 +66,7 @@ glific/
 1. `use` statements
 2. `alias __MODULE__` (self-reference)
 3. `require` statements (e.g., `require Logger`)
-4. `import` statements (e.g., `import Ecto.Query, warn: false`)
+4. `import` statements (e.g., `import Ecto.Query`)
 5. Other aliases (grouped alphabetically: `alias Glific.{Contacts.Contact, Repo, ...}`)
 6. Module attributes (`@required_fields`, `@optional_fields`)
 7. Type definitions (`@type t()`)
