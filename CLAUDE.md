@@ -140,6 +140,7 @@ glific/
   end
   ```
 - **Bang functions** (`!`) raise exceptions; non-bang return `{:ok, data}` / `{:error, reason}`
+- **Exception logging standard**: always use `Glific.log_exception/1` for exceptions and avoid direct `AppSignal.error` calls
 - **`Glific.log_error/2`** - Central error logging that logs to Logger + sends to AppSignal
 - **Rescue clauses** in resolvers for unexpected errors
 - **`Repo.fetch/2` / `Repo.fetch_by/2`** - Custom wrappers returning `{:ok, entity}` / `{:error, ["Resource not found"]}`
