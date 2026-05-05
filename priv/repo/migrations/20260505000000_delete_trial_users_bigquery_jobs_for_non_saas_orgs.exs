@@ -1,7 +1,7 @@
 defmodule Glific.Repo.Migrations.DeleteTrialUsersBigqueryJobsForNonSaasOrgs do
   use Ecto.Migration
 
-  def up do
+  def change do
     execute("""
     DELETE FROM bigquery_jobs
     WHERE "table" = 'trial_users'
@@ -10,6 +10,4 @@ defmodule Glific.Repo.Migrations.DeleteTrialUsersBigqueryJobsForNonSaasOrgs do
       )
     """)
   end
-
-  def down, do: :ok
 end
