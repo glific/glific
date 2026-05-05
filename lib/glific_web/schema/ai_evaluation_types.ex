@@ -79,6 +79,11 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :config_version, non_null(:id)
   end
 
+  object :evaluation_scores_result do
+    field :scores, :json
+    field :errors, list_of(:result_error)
+  end
+
   object :ai_evaluation_queries do
     @desc "List AI Evaluations"
     field :ai_evaluations, list_of(:ai_evaluation) do
@@ -112,6 +117,13 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_golden_qas/3)
+    end
+
+    @desc "Get Evaluation Scores"
+    field :evaluation_scores, :evaluation_scores_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
     end
 
     @desc "Get Golden QA"
