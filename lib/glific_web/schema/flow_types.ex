@@ -46,6 +46,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   object :import_flow_status do
     field :flow_name, non_null(:string)
     field :status, non_null(:string)
+    field :assistant_node_uuids, list_of(:string)
   end
 
   object :flow do
