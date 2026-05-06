@@ -34,29 +34,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
 
   @doc """
-  Fetch app details by org id, will link the app if not linked
-  """
-  @spec fetch_app_details(non_neg_integer()) :: map() | String.t()
-  def fetch_app_details(org_id) do
-    link_gupshup_app(org_id)
-    |> case do
-      {:ok, res} ->
-        res["partnerApps"]
-
-      {:error, error} ->
-        error = "#{inspect(error)}"
-
-        if String.contains?(error, "Re-linking") do
-          fetch_gupshup_app_details(org_id)
-        else
-          Glific.log_exception(%Error{message: "Linking App to partner failed due to #{error}"})
-
-          "Linking App to partner failed, please double-check and enter correct App name and API key"
-        end
-    end
-  end
-
-  @doc """
   Fetches Partner token and App Access token to get tier information
   for an organization with input app id
   """
@@ -104,24 +81,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  @doc """
-    App Link Using API key (works to get app ID the first time while creating)
-  """
-  @spec link_gupshup_app(non_neg_integer()) :: tuple()
-  def link_gupshup_app(org_id) do
-    organization = Partners.organization(org_id)
-    gupshup_secrets = organization.services["bsp"].secrets
-
-    post_request(
-      @partner_url <> "/api/appLink",
-      %{
-        apiKey: gupshup_secrets["api_key"],
-        appName: gupshup_secrets["app_name"]
-      },
-      token_type: :partner_token
-    )
-  end
-
   @wallet_name "4000202160_wallet"
   @doc """
     Transfer balance from ISV partner to app
@@ -140,19 +99,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Fetch Gupshup app details by orgId or Gupshup app name
+  Fetch Gupshup app details by orgId, Gupshup app name or Gupshup app ID
   """
-  @spec fetch_gupshup_app_details(non_neg_integer() | String.t()) :: map() | String.t()
+  @spec fetch_gupshup_app_details(non_neg_integer() | Keyword.t()) :: map() | String.t()
   def fetch_gupshup_app_details(org_id) when is_number(org_id) do
     organization = Partners.organization(org_id)
     gupshup_secrets = organization.services["bsp"].secrets
     gupshup_app_name = gupshup_secrets["app_name"]
-    do_fetch_app_details(gupshup_app_name)
+    fetch_app_details_by_app_name(gupshup_app_name)
   end
 
-  def fetch_gupshup_app_details(app_name) when is_binary(app_name) do
-    do_fetch_app_details(app_name)
-  end
+  def fetch_gupshup_app_details(app_name: app_name), do: fetch_app_details_by_app_name(app_name)
+  def fetch_gupshup_app_details(app_id: app_id), do: fetch_app_details_by_app_id(app_id)
 
   @doc """
   Enable template messaging for an app.
@@ -551,7 +509,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # case we can pass in the function
     callback_url =
       if is_nil(callback_url) do
-        "https://api.#{organization.shortcode}.glific.com/gupshup"
+        Glific.api_callback_base(organization.shortcode) <> "/gupshup"
       else
         callback_url
       end
@@ -611,8 +569,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     "template-asset-#{media_name}.#{file_format}"
   end
 
-  @spec do_fetch_app_details(String.t()) :: map() | String.t()
-  defp do_fetch_app_details(app_name) do
+  @spec fetch_app_details_by_app_name(String.t()) :: map() | String.t()
+  defp fetch_app_details_by_app_name(app_name) do
     with {:ok, %{"partnerAppsList" => list}} <-
            get_request(@partner_url <> "/api/partnerApps", token_type: :partner_token),
          [app | _] <- Enum.filter(list, fn app -> app["name"] == app_name end) do
@@ -627,6 +585,25 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       _ ->
         "Invalid Gupshup App"
+    end
+  end
+
+  @spec fetch_app_details_by_app_id(String.t()) :: map() | String.t()
+  defp fetch_app_details_by_app_id(app_id) do
+    url = @app_url <> app_id <> "/details"
+
+    url
+    |> get_request(token_type: :partner_token)
+    |> case do
+      {:ok, %{"appDetails" => app_details}} ->
+        app_details
+
+      {:error, error} ->
+        Glific.log_exception(%Error{
+          message: "Fetching app details for app #{app_id} failed due to #{error}"
+        })
+
+        "Fetching app details failed, please double check App name, App ID and API key are correct"
     end
   end
 end

@@ -46,7 +46,10 @@ defmodule Glific.Partners.Organization do
     :optin_flow_id,
     :is_suspended,
     :suspended_until,
-    :parent_org
+    :parent_org,
+    :is_trial_org,
+    :trial_expiration_date,
+    :deleted_at
   ]
 
   @type t() :: %__MODULE__{
@@ -86,7 +89,10 @@ defmodule Glific.Partners.Organization do
           is_suspended: boolean() | false,
           suspended_until: DateTime.t() | nil,
           parent_org: String.t() | nil,
-          setting: Setting.t() | nil
+          setting: Setting.t() | nil,
+          is_trial_org: boolean() | false,
+          trial_expiration_date: :utc_datetime | nil,
+          deleted_at: :utc_datetime | nil
         }
 
   schema "organizations" do
@@ -147,9 +153,16 @@ defmodule Glific.Partners.Organization do
     field(:fields, :map, default: %{})
     field(:team_emails, :map, default: %{})
 
+    # trial account support
+    field(:is_trial_org, :boolean, default: false)
+    field(:trial_expiration_date, :utc_datetime)
+
     # lets add support for suspending orgs briefly
     field(:is_suspended, :boolean, default: false)
     field(:suspended_until, :utc_datetime)
+
+    # soft delete timestamp
+    field(:deleted_at, :utc_datetime)
 
     # 2085
     # Lets create a virtual field for now to conditionally enable
@@ -184,6 +197,8 @@ defmodule Glific.Partners.Organization do
     field(:is_whatsapp_forms_enabled, :boolean, default: false, virtual: true)
 
     field(:high_trigger_tps_enabled, :boolean, default: false, virtual: true)
+
+    field(:unified_api_enabled, :boolean, default: false, virtual: true)
 
     timestamps(type: :utc_datetime)
   end

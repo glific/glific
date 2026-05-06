@@ -1,0 +1,5 @@
+mutation createEvaluation($input: EvaluationInput!) {
+  createEvaluation(input: $input) {
+    status
+  }
+}

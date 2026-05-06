@@ -186,4 +186,14 @@ defmodule Glific.FlagsTest do
              for: %{organization_id: organization.id}
            ) == false
   end
+
+  test "get_flag_enabled/2 correctly reflects unified_api_enabled flag state" do
+    organization = Fixtures.organization_fixture()
+
+    FunWithFlags.enable(:unified_api_enabled, for_actor: %{organization_id: organization.id})
+    assert Flags.get_flag_enabled(:unified_api_enabled, organization) == true
+
+    FunWithFlags.disable(:unified_api_enabled, for_actor: %{organization_id: organization.id})
+    assert Flags.get_flag_enabled(:unified_api_enabled, organization) == false
+  end
 end

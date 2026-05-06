@@ -12,6 +12,8 @@ defmodule Glific.Jobs.MinuteWorker do
   require Logger
 
   alias Glific.{
+    AIEvaluations,
+    Assistants,
     BigQuery.BigQueryWorker,
     Contacts,
     Erase,
@@ -28,6 +30,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Stats,
     Templates,
     Trackers,
+    TrialAccount.TrialWorker,
     Triggers
   }
 
@@ -54,12 +57,16 @@ defmodule Glific.Jobs.MinuteWorker do
               "gcs",
               "triggers_and_broadcast",
               "check_user_job_status",
+              "poll_ai_evaluations",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
         Partners.perform_all(&Contacts.update_contact_status/2, args, [])
+
+      "poll_ai_evaluations" ->
+        Partners.perform_all(&AIEvaluations.poll_and_update/1, nil, [])
 
       "wakeup_flows" ->
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
@@ -130,6 +137,12 @@ defmodule Glific.Jobs.MinuteWorker do
           only_recent: true
         )
 
+        TrialWorker.cleanup_expired_trials()
+        TrialWorker.send_day_3_followup_emails()
+        TrialWorker.send_day_6_followup_emails()
+        TrialWorker.send_day_12_followup_emails()
+        TrialWorker.send_day_14_followup_emails()
+
         Erase.perform_daily()
 
       "tracker_tasks" ->
@@ -149,6 +162,8 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
         Partners.perform_all(&WAWorker.perform_periodic/1, nil, [], only_recent: true)
+
+        Partners.perform_all(&Assistants.process_timeouts/1, nil, [])
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])

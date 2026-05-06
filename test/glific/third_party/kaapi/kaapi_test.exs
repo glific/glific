@@ -10,7 +10,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     project_name: "Glific"
   }
 
-  @org_kaapi_api_key "sk_3fa22108-f464-41e5-81d9-d8a298854430"
+  @org_kaapi_api_key "sk_test_key"
 
   test "onboard_to_kaapi/1 returns {:ok, %{api_key: key}} on 200 with api_key" do
     mock(fn
@@ -218,6 +218,170 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "create_collection/2" do
+    test "successfully creates a collection in kaapi" do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              job_id: "2b55b30c-f2c8-4772-a0fd-4a0e7d0e0803",
+              status: "PROCESSING",
+              action_type: "CREATE",
+              collection: nil,
+              error_message: nil
+            },
+            error: nil,
+            metadata: nil
+          }
+        }
+      end)
+
+      params = %{callback_url: "https://example.com/callback", file_ids: ["file_1", "file_2"]}
+
+      assert {:ok, resp} = ApiClient.create_collection(params, @org_kaapi_api_key)
+      assert resp.data.job_id == "2b55b30c-f2c8-4772-a0fd-4a0e7d0e0803"
+      assert resp.data.status == "PROCESSING"
+      assert resp.data.action_type == "CREATE"
+      assert resp.data.collection == nil
+      assert resp.data.error_message == nil
+    end
+
+    test "returns error when kaapi returns error status" do
+      response_body = %{error: "Invalid parameters", data: %{}, success: false}
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: response_body}
+      end)
+
+      params = %{name: "Test Collection"}
+
+      assert {:error, %{status: 422, body: ^response_body}} =
+               ApiClient.create_collection(params, @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :post} ->
+        {:error, :timeout}
+      end)
+
+      params = %{callback_url: "http://example.com/callback", file_ids: ["file_1"]}
+
+      assert {:error, :timeout} = ApiClient.create_collection(params, @org_kaapi_api_key)
+    end
+  end
+
+  describe "get_collection_status/2" do
+    test "successfully gets collection status" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              status: "SUCCESSFUL"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{data: %{status: "SUCCESSFUL"}, success: true}} =
+               ApiClient.get_collection_status("job_3fa85f64", @org_kaapi_api_key)
+    end
+
+    test "returns error for failures" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            success: false,
+            error: %{
+              message: "Invalid request"
+            }
+          }
+        }
+      end)
+
+      assert {:error,
+              %{status: 400, body: %{success: false, error: %{message: "Invalid request"}}}} =
+               ApiClient.get_collection_status("job_3fa85f64", @org_kaapi_api_key)
+    end
+  end
+
+  describe "create_config_version/3" do
+    test "successfully creates config version in kaapi" do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              config_blob: %{
+                completion: %{
+                  model: "gpt-4o-mini",
+                  instructions: "You are a helpful assistant",
+                  temperature: 1.0,
+                  knowledge_base_ids: ["vs_3fa85f64"]
+                }
+              },
+              id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+              config_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+              version: 1,
+              inserted_at: "2026-02-25T10:55:11.678Z",
+              updated_at: "2026-02-25T10:55:11.678Z"
+            },
+            metadata: %{}
+          }
+        }
+      end)
+
+      config_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+      body =
+        %{
+          completion: %{
+            model: "gpt-4o-mini",
+            instructions: "You are a helpful assistant",
+            temperature: 1.0,
+            knowledge_base_ids: ["vs_3fa85f64"]
+          }
+        }
+
+      assert {:ok, resp} =
+               ApiClient.create_config_version(config_id, body, @org_kaapi_api_key)
+
+      assert resp.data.config_id == "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      assert resp.data.version == 1
+    end
+
+    test "returns error when kaapi returns error status" do
+      response_body = %{error: "Invalid parameters", data: %{}, success: false}
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: response_body}
+      end)
+
+      config_id = "config_123"
+      body = %{name: "Test Config Version"}
+
+      assert {:error, %{status: 422, body: ^response_body}} =
+               ApiClient.create_config_version(config_id, body, @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :post} ->
+        {:error, :timeout}
+      end)
+
+      config_id = "config_123"
+      body = %{name: "Test Config Version"}
+
+      assert {:error, :timeout} =
+               ApiClient.create_config_version(config_id, body, @org_kaapi_api_key)
+    end
+  end
+
   describe "delete_assistant/1" do
     test "successfully updates assistant in kaapi" do
       mock(fn %Tesla.Env{method: :delete} ->
@@ -240,6 +404,64 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, %{status: 404, body: %{error: "Not Found", data: %{}}}} =
                ApiClient.delete_assistant("invalid_id", @org_kaapi_api_key)
+    end
+  end
+
+  describe "get_evaluation_scores/2" do
+    test "returns all evaluator scores including LLM-as-a-Judge on 200" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 42,
+              status: "completed",
+              summary_scores: [
+                %{
+                  avg: 0.56,
+                  std: 0.12,
+                  name: "cosine_similarity",
+                  data_type: "NUMERIC",
+                  total_pairs: 25
+                },
+                %{
+                  avg: 0.69,
+                  std: 0.28,
+                  name: "Correctness(LLM-as-a-Judge)",
+                  data_type: "NUMERIC",
+                  total_pairs: 25
+                }
+              ]
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
+      assert resp.data.status == "completed"
+      assert length(resp.data.summary_scores) == 2
+      llm_score = Enum.find(resp.data.summary_scores, &(&1.name == "Correctness(LLM-as-a-Judge)"))
+      assert llm_score.avg == 0.69
+    end
+
+    test "returns error when evaluation is not found" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 404, body: %{error: "Evaluation not found"}}
+      end)
+
+      assert {:error, %{status: 404, body: %{error: "Evaluation not found"}}} =
+               ApiClient.get_evaluation_scores(999, @org_kaapi_api_key)
+    end
+
+    test "returns error on 500 from Kaapi" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      assert {:error, %{status: 500, body: %{error: "Internal server error"}}} =
+               ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
     end
   end
 end

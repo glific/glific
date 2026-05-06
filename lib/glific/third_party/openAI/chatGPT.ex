@@ -169,7 +169,7 @@ defmodule Glific.OpenAI.ChatGPT do
         uuid = Ecto.UUID.generate()
         path = write_audio_file_locally(body, uuid)
 
-        remote_name = "Bhasini/outbound/#{uuid}.mp3"
+        remote_name = "Gemini/outbound/#{uuid}.mp3"
 
         {:ok, media_meta} =
           GcsWorker.upload_media(

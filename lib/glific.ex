@@ -31,6 +31,32 @@ defmodule Glific do
   def session_window_time, do: @session_window_time
 
   @doc """
+  Returns the base domain for this Glific deployment, configured via the
+  GLIFIC_BASE_DOMAIN environment variable (defaults to "glific.com").
+  Used to build frontend URLs like https://{shortcode}.glific.com
+  """
+  @spec base_domain() :: String.t()
+  def base_domain, do: Application.get_env(:glific, :base_domain, "glific.com")
+
+  @doc """
+  Returns the API callback base URL for a given organization shortcode.
+
+  In production this builds `https://api.{shortcode}.{base_domain}`.
+  When GLIFIC_API_HOST_OVERRIDE is set (e.g., for local dev or staging),
+  that value is used as-is, bypassing the subdomain pattern entirely.
+  """
+  @spec api_callback_base(String.t()) :: String.t()
+  def api_callback_base(shortcode) do
+    case Application.get_env(:glific, :api_host_override) do
+      override when is_binary(override) and override != "" ->
+        override
+
+      _ ->
+        "https://api.#{shortcode}.#{base_domain()}"
+    end
+  end
+
+  @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
   """
   @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
@@ -457,6 +483,14 @@ defmodule Glific do
   @spec get_open_ai_project :: String.t()
   def get_open_ai_project do
     Application.get_env(:glific, :open_ai_project)
+  end
+
+  @doc """
+  Get default Google Gemini API key (used for Kaapi TTS/STT and other Google services)
+  """
+  @spec get_google_api_key() :: String.t() | nil
+  def get_google_api_key do
+    Application.fetch_env!(:glific, :gemini_api_key)
   end
 
   @doc """

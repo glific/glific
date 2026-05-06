@@ -1,14 +1,18 @@
-
 fragment AssistantFields on AssistantResult {
   assistant {
     id
     name
     assistant_id
     temperature
+    status
+    new_version_in_progress
     vector_store {
       id
-      vector_store_id
+      knowledge_base_version_id
       name
+      status
+      legacy
+      size
       files {
         id
         name

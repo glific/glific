@@ -47,55 +47,46 @@ defmodule Glific.ERPTest do
   test "return is_valid true if the entry is updated in db" do
     # Mock the GET request for checking the address existence
     Tesla.Mock.mock(fn
-      %Tesla.Env{
-        method: :get,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/org1-Billing"
-      } ->
-        %Tesla.Env{
-          # Simulate address not found
-          status: 404,
-          body: %{"message" => "Address not found"}
-        }
+      # Mock GET requests for checking address existence
+      %{method: :get, url: url} when is_binary(url) ->
+        if String.contains?(url, "/Address/") do
+          %Tesla.Env{
+            status: 404,
+            body: %{"message" => "Address not found"}
+          }
+        else
+          %Tesla.Env{status: 404, body: %{}}
+        end
 
-      %Tesla.Env{
-        method: :get,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/org1-Permanent/Registered"
-      } ->
-        %Tesla.Env{
-          # Simulate address not found
-          status: 404,
-          body: %{"message" => "Address not found"}
-        }
+      # Mock PUT request for updating the organization
+      %{method: :put, url: url} when is_binary(url) ->
+        if String.contains?(url, "/Customer/") do
+          %Tesla.Env{
+            status: 200,
+            body: %{"is_valid" => true}
+          }
+        else
+          %Tesla.Env{status: 404, body: %{}}
+        end
 
-      # Mock the PUT request for updating the organization
-      %Tesla.Env{
-        method: :put,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Customer/org1"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: %{"is_valid" => true}
-        }
+      # Mock POST requests for creating address and contact
+      %{method: :post, url: url} when is_binary(url) ->
+        cond do
+          String.contains?(url, "/Address") ->
+            %Tesla.Env{
+              status: 200,
+              body: %{"message" => "Address created"}
+            }
 
-      # Mock the POST request for creating the address
-      %Tesla.Env{
-        method: :post,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: %{"message" => "Address created"}
-        }
+          String.contains?(url, "/Contact") ->
+            %Tesla.Env{
+              status: 200,
+              body: %{"message" => "Contact created"}
+            }
 
-      # Mock the POST request for creating a contact
-      %Tesla.Env{
-        method: :post,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Contact"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body: %{"message" => "Contact created"}
-        }
+          true ->
+            %Tesla.Env{status: 404, body: %{}}
+        end
     end)
 
     registration = %{
@@ -103,6 +94,7 @@ defmodule Glific.ERPTest do
         "name" => "org1",
         "current_address" => %{
           "address_line1" => "123 Main St",
+          "address_line2" => "Suite 100",
           "city" => "City",
           "state" => "State",
           "country" => "Country",
@@ -110,6 +102,7 @@ defmodule Glific.ERPTest do
         },
         "registered_address" => %{
           "address_line1" => "456 Main St",
+          "address_line2" => "Suite 200",
           "city" => "City",
           "state" => "State",
           "country" => "Country",

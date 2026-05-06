@@ -8,7 +8,6 @@ defmodule Glific.OnboardTest do
   alias Faker.Phone
 
   alias Glific.{
-    Contacts,
     Fixtures,
     Mails.NewPartnerOnboardedMail,
     Partners,
@@ -35,49 +34,73 @@ defmodule Glific.OnboardTest do
     SeedsDev.seed_users()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
-    Tesla.Mock.mock_global(fn
-      %{method: :get, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{data: %{customer_name: "First"}}}}
+    Tesla.Mock.mock_global(fn env ->
+      case env do
+        %{method: :get, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{data: %{customer_name: "First"}}}}
 
-      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Customer/First"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{method: :put, url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Billing"} ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{
-        method: :post,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
-      } ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{
+          method: :post,
+          url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{
-        method: :put,
-        url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
-      } ->
-        {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+        %{
+          method: :put,
+          url: "https://t4d-erp.frappe.cloud/api/resource/Address/First-Permanent/Registered"
+        } ->
+          {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "partnerAppsList" => [%{"name" => "fake app name"}]
-            })
-        }
+        # Handle dynamic ERP endpoints
+        %{method: :put, url: url} when is_binary(url) ->
+          cond do
+            String.contains?(url, "/Customer/") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
 
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
-              "token" => "ks_test_token",
-              "status" => "success",
-              "templates" => [],
-              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
-            })
-        }
+            String.contains?(url, "/Address/") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Update successful"}}}
+
+            true ->
+              {:ok, %Tesla.Env{status: 404, body: %{error: "Not found"}}}
+          end
+
+        %{method: :post, url: url} when is_binary(url) ->
+          cond do
+            String.contains?(url, "/Contact") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Contact created"}}}
+
+            String.contains?(url, "/Address") ->
+              {:ok, %Tesla.Env{status: 200, body: %{message: "Address created"}}}
+
+            true ->
+              %Tesla.Env{
+                status: 200,
+                body:
+                  Jason.encode!(%{
+                    "partnerApps" => %{"name" => "fake app name", "id" => "fake_app_id"},
+                    "token" => "ks_test_token",
+                    "status" => "success",
+                    "templates" => [],
+                    "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+                  })
+              }
+          end
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "partnerAppsList" => [%{"name" => "fake app name"}]
+              })
+          }
+      end
     end)
 
     :ok
@@ -724,7 +747,7 @@ defmodule Glific.OnboardTest do
     assert %{is_valid: false} = Onboard.setup(attrs)
   end
 
-  test "Seeding works even if we are creating a new org with an already present shortcode in seed migration" do
+  test "Shortcode cannot be reused after org is soft-deleted" do
     attrs =
       @valid_attrs
       |> Map.put("name", " First")
@@ -736,30 +759,14 @@ defmodule Glific.OnboardTest do
     assert result.organization.name == "First"
     assert result.organization.shortcode == "newglific"
 
-    simulator_contacts =
-      Contacts.list_contacts(%{
-        filter: %{term: "Glific"},
-        organization_id: result.organization.id
-      })
-
-    assert length(simulator_contacts) > 0
-
     {:ok, _} =
       Partners.get_organization!(result.organization.id) |> Partners.delete_organization()
 
+    # Shortcode is permanently reserved — reuse must be rejected
     result = Onboard.setup(attrs)
 
-    assert result.organization.name == "First"
-    assert result.organization.shortcode == "newglific"
-
-    # if we don't delete the existing migration, length of simulator_contacts here will be 0
-    simulator_contacts =
-      Contacts.list_contacts(%{
-        filter: %{term: "Glific"},
-        organization_id: result.organization.id
-      })
-
-    assert length(simulator_contacts) > 0
+    assert result.is_valid == false
+    assert Map.has_key?(result.messages, :shortcode)
   end
 
   test "We don't delete the existing migrations if shortcode doesnt exist" do
@@ -970,5 +977,66 @@ defmodule Glific.OnboardTest do
     end)
 
     assert %{is_valid: false} = Onboard.setup_v2(attrs)
+  end
+
+  test "onboard setup v2, valid params for trial account" do
+    saas_org_id = Saas.organization_id()
+
+    {:ok, _saas_gcs_cred} =
+      Partners.create_credential(%{
+        organization_id: saas_org_id,
+        shortcode: "google_cloud_storage",
+        keys: %{},
+        secrets: %{
+          "bucket" => "test-bucket",
+          "service_account" => "{\"type\": \"service_account\", \"project_id\": \"test-project\"}"
+        },
+        is_active: true
+      })
+
+    attrs = %{
+      "name" => "trial account",
+      "email" => "foo@gmail.com",
+      "is_trial" => true
+    }
+
+    Tesla.Mock.mock(fn
+      %{method: :post, url: _} ->
+        {:ok,
+         %Tesla.Env{
+           status: 201,
+           body: %{
+             error: nil,
+             data: %{
+               user_id: 1,
+               api_key: "ApiKey abc",
+               organization_id: 1,
+               organization_name: "trial orgname acme",
+               project_name: "trial",
+               project_id: 91,
+               user_email: "abc@kaapi.org"
+             },
+             metadata: nil,
+             success: true
+           }
+         }}
+    end)
+
+    assert %{
+             is_valid: true,
+             messages: %{},
+             organization: organization,
+             contact: contact,
+             credential: credential
+           } =
+             Onboard.setup_v2(attrs)
+
+    user = Repo.preload(contact, [:user])
+    assert user.phone == @dummy_phone_number
+    assert %{"api_key" => "NA", "app_id" => "NA", "app_name" => "NA"} = credential.secrets
+    assert organization.is_active
+
+    assert organization.is_trial_org == true
+    assert organization.trial_expiration_date == nil
   end
 end

@@ -6,8 +6,6 @@ defmodule Glific.ERP do
   require Logger
   use Tesla
 
-  @erp_base_url "https://t4d-erp.frappe.cloud/api/resource"
-
   @client Tesla.client([
             {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
             Tesla.Middleware.FollowRedirects
@@ -30,13 +28,18 @@ defmodule Glific.ERP do
     "#{api_key}:#{secret}"
   end
 
+  @spec get_base_url() :: String.t()
+  defp get_base_url do
+    Application.get_env(:glific, :ERP_ENDPOINT)
+  end
+
   @doc """
   Fetches the erp_page_id of existing organization from ERP.
   """
   @spec fetch_organization_detail(String.t()) :: {:ok, map()} | {:error, String.t()}
   def fetch_organization_detail(org_name) do
     encoded_org_name = URI.encode(org_name)
-    erp_url = "#{@erp_base_url}/Customer/#{encoded_org_name}"
+    erp_url = "#{get_base_url()}/Customer/#{encoded_org_name}"
 
     case Tesla.get(@client, erp_url, headers: headers()) do
       {:ok, %Tesla.Env{status: 200, body: organization}} ->
@@ -67,7 +70,7 @@ defmodule Glific.ERP do
   def update_organization(registration) do
     customer_name = registration.org_details["name"]
     encoded_customer_name = URI.encode(customer_name)
-    erp_url = "#{@erp_base_url}/Customer/#{encoded_customer_name}"
+    erp_url = "#{get_base_url()}/Customer/#{encoded_customer_name}"
     gstin = registration.org_details["gstin"]
 
     payload = %{
@@ -144,7 +147,7 @@ defmodule Glific.ERP do
   @spec address_exists?(String.t(), String.t()) :: boolean()
   defp address_exists?(customer_name, address_type) do
     encoded_customer_name = URI.encode(customer_name)
-    erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
+    erp_url = "#{get_base_url()}/Address/#{encoded_customer_name}-#{address_type}"
 
     case Tesla.get(@client, erp_url, headers: headers()) do
       {:ok, %Tesla.Env{status: 200}} ->
@@ -161,7 +164,7 @@ defmodule Glific.ERP do
 
   @spec create_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp create_address(address, address_type, customer_name) do
-    erp_url = "#{@erp_base_url}/Address"
+    erp_url = "#{get_base_url()}/Address"
     payload = build_payload(address, address_type, customer_name)
     do_create_address(erp_url, payload)
   end
@@ -169,14 +172,14 @@ defmodule Glific.ERP do
   @spec update_address(map(), String.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp update_address(address, address_type, customer_name) do
     encoded_customer_name = URI.encode(customer_name)
-    erp_url = "#{@erp_base_url}/Address/#{encoded_customer_name}-#{address_type}"
+    erp_url = "#{get_base_url()}/Address/#{encoded_customer_name}-#{address_type}"
     payload = build_payload(address, address_type, customer_name)
     do_update_address(erp_url, payload)
   end
 
   @spec create_contact(map(), String.t()) :: {:ok, map()} | {:error, String.t()}
   defp create_contact(registration, customer_name) do
-    erp_url = "#{@erp_base_url}/Contact"
+    erp_url = "#{get_base_url()}/Contact"
 
     payload = %{
       "custom_product" => [%{"product_type" => "Glific"}],

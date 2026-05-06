@@ -48,6 +48,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.MessageConversation,
     Messages.MessageMedia,
     Partners,
+    Partners.Saas,
     Profiles.Profile,
     Repo,
     RepoReplica,
@@ -58,6 +59,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
+    TrialUsers,
     Users.User,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
@@ -92,33 +94,42 @@ defmodule Glific.BigQuery.BigQueryWorker do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
 
+    list_of_table = [
+      "contacts",
+      "contacts_fields",
+      "contacts_groups",
+      "contacts_wa_groups",
+      "flow_counts",
+      "flow_contexts",
+      "flow_labels",
+      "flow_results",
+      "groups",
+      "interactive_templates",
+      "messages_media",
+      "message_broadcasts",
+      "message_broadcast_contacts",
+      "messages",
+      "profiles",
+      "tickets",
+      "wa_groups",
+      "wa_groups_collections",
+      "wa_messages",
+      "wa_reactions",
+      "whatsapp_forms",
+      "whatsapp_forms_responses",
+      "certificate_templates",
+      "issued_certificates"
+    ]
+
+    list_of_table =
+      if(organization_id == Saas.organization_id()) do
+        list_of_table ++ ["trial_users"]
+      else
+        list_of_table
+      end
+
     if credential do
-      [
-        "contacts",
-        "contacts_fields",
-        "contacts_groups",
-        "contacts_wa_groups",
-        "flow_counts",
-        "flow_contexts",
-        "flow_labels",
-        "flow_results",
-        "groups",
-        "interactive_templates",
-        "messages_media",
-        "message_broadcasts",
-        "message_broadcast_contacts",
-        "messages",
-        "profiles",
-        "tickets",
-        "wa_groups",
-        "wa_groups_collections",
-        "wa_messages",
-        "wa_reactions",
-        "whatsapp_forms",
-        "whatsapp_forms_responses",
-        "certificate_templates",
-        "issued_certificates"
-      ]
+      list_of_table
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
 
@@ -286,6 +297,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
     do: query
 
   defp add_organization_id(query, "trackers_all", _organization_id),
+    do: query
+
+  defp add_organization_id(query, "trial_users", _organization_id),
     do: query
 
   defp add_organization_id(query, _table, organization_id),
@@ -468,6 +482,38 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :tags, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("trial_users", organization_id, attrs) do
+    Logger.info(
+      "fetching trial users data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("trial_users", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            username: row.username,
+            email: row.email,
+            phone: row.phone,
+            organization_name: row.organization_name,
+            otp_entered: row.otp_entered,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :trial_users, organization_id, attrs))
 
     :ok
   end
@@ -1902,6 +1948,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :certificate_template
       ])
 
+  defp get_query("trial_users", _organization_id, attrs),
+    do:
+      TrialUsers
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+
   @spec format_value(map() | list() | struct() | any()) :: String.t()
   defp format_value(value) when is_map(value) or is_list(value) do
     Jason.encode!(value)
@@ -1940,7 +1992,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp fetch_data(table, organization_id, attrs) do
     query = get_query(table, organization_id, attrs)
 
-    if table in ["stats", "stats_all", "trackers", "trackers_all"] do
+    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users"] do
       RepoReplica.all(query, skip_organization_id: true)
     else
       RepoReplica.all(query)

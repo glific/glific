@@ -43,6 +43,7 @@ defmodule Glific.BigQuery do
     Templates.SessionTemplate,
     Tickets.Ticket,
     Trackers.Tracker,
+    TrialUsers,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
     WhatsappForms.WhatsappForm,
@@ -97,7 +98,8 @@ defmodule Glific.BigQuery do
     if organization_id == Saas.organization_id() do
       Map.merge(@bigquery_tables, %{
         "stats_all" => :stats_all_schema,
-        "trackers_all" => :trackers_all_schema
+        "trackers_all" => :trackers_all_schema,
+        "trial_users" => :trial_user_schema
       })
     else
       @bigquery_tables
@@ -233,7 +235,8 @@ defmodule Glific.BigQuery do
     "whatsapp_forms" => WhatsappForm,
     "whatsapp_forms_responses" => WhatsappFormResponse,
     "certificate_templates" => CertificateTemplate,
-    "issued_certificates" => IssuedCertificate
+    "issued_certificates" => IssuedCertificate,
+    "trial_users" => TrialUsers
   }
 
   @doc false

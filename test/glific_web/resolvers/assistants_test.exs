@@ -1,0 +1,673 @@
+defmodule GlificWeb.Resolvers.AssistantsTest do
+  @moduledoc """
+  Test suite for GraphQL resolvers related to Assistants.
+  """
+  use GlificWeb.ConnCase
+  use Oban.Pro.Testing, repo: Glific.Repo
+  use Wormwood.GQLCase
+
+  import Ecto.Query
+
+  alias Glific.Assistants
+  alias Glific.Assistants.Assistant
+  alias Glific.Assistants.AssistantConfigVersion
+  alias Glific.Partners
+  alias Glific.Repo
+  alias Glific.ThirdParty.Kaapi.AssistantCloneWorker
+
+  load_gql(
+    :create_knowledge_base,
+    GlificWeb.Schema,
+    "assets/gql/assistants/create_knowledge_base.gql"
+  )
+
+  load_gql(
+    :list_assistant_config_versions,
+    GlificWeb.Schema,
+    "assets/gql/assistants/list_assistant_config_versions.gql"
+  )
+
+  load_gql(
+    :assistant_versions,
+    GlificWeb.Schema,
+    "assets/gql/assistants/assistant_versions.gql"
+  )
+
+  load_gql(
+    :set_live_version,
+    GlificWeb.Schema,
+    "assets/gql/assistants/set_live_version.gql"
+  )
+
+  describe "create_knowledge_base/3" do
+    setup :enable_kaapi
+
+    test "creates and returns knowledge base on success", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{job_id: "job_abc123"}
+            }
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{
+            "media_info" => [
+              %{"file_id" => "file_abc", "filename" => "doc.pdf"},
+              %{"file_id" => "file_xyz", "filename" => "notes.txt"}
+            ]
+          }
+        )
+
+      knowledge_base = query_data.data["create_knowledge_base"]["knowledge_base"]
+      assert knowledge_base["id"] != nil
+      assert knowledge_base["name"] != nil
+      assert knowledge_base["knowledge_base_version_id"] != nil
+      assert knowledge_base["status"] == "in_progress"
+    end
+
+    test "returns knowledge base without creating one", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Test Knowledge Base",
+          organization_id: organization_id
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{job_id: "job_abc123"}
+            }
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{
+            "id" => knowledge_base.id,
+            "media_info" => [
+              %{"file_id" => "file_abc", "filename" => "doc.pdf"},
+              %{"file_id" => "file_xyz", "filename" => "notes.txt"}
+            ]
+          }
+        )
+
+      response = query_data.data["create_knowledge_base"]["knowledge_base"]
+
+      assert response["id"] == to_string(knowledge_base.id)
+      assert response["name"] == knowledge_base.name
+      assert response["knowledge_base_version_id"] != nil
+      assert response["status"] == "in_progress"
+    end
+
+    test "returns error when kaapi api fails", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 500,
+            body: %{error: "Internal server error"}
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{
+            "media_info" => [
+              %{"file_id" => "file_abc", "filename" => "doc.pdf"}
+            ]
+          }
+        )
+
+      assert query_data.data["create_knowledge_base"] == nil
+      assert [error | _] = query_data.errors
+      assert error[:message] == "Failed to create knowledge base"
+    end
+  end
+
+  describe "list_assistant_config_versions/3" do
+    setup :enable_kaapi
+
+    test "returns all config versions for the organization", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, {assistant, _config_version}} = create_assistant_with_config_version(organization_id)
+
+      assistant_configuration_version_list =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.all()
+
+      assert length(assistant_configuration_version_list) == 3
+
+      {:ok, query_data} = auth_query_gql_by(:list_assistant_config_versions, user)
+
+      versions = query_data.data["assistantConfigVersions"]
+      assert length(versions) == 1
+      assert hd(versions)["status"] == "ready"
+    end
+  end
+
+  defp create_assistant_with_config_version(organization_id, kaapi_uuid \\ nil) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{
+        name: "Test Assistant #{System.unique_integer()}",
+        organization_id: organization_id,
+        kaapi_uuid: kaapi_uuid
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version1} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :failed,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, _config_version2} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :in_progress,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant",
+        model: "gpt-4o",
+        provider: "openai",
+        settings: %{},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, kb} =
+      Assistants.create_knowledge_base(%{name: "Legacy KB", organization_id: organization_id})
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: organization_id,
+        status: :completed,
+        llm_service_id: "vs_legacy_123",
+        size: 100,
+        files: %{}
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+      %{
+        assistant_config_version_id: config_version.id,
+        knowledge_base_version_id: kb_version.id,
+        organization_id: organization_id,
+        inserted_at: now,
+        updated_at: now
+      }
+    ])
+
+    {:ok, assistant} =
+      assistant
+      |> Assistant.set_active_config_version_changeset(%{
+        active_config_version_id: config_version.id
+      })
+      |> Repo.update()
+
+    {:ok, {assistant, config_version}}
+  end
+
+  load_gql(
+    :clone_assistant,
+    GlificWeb.Schema,
+    "assets/gql/assistants/clone_assistant.gql"
+  )
+
+  describe "clone_assistant/3" do
+    setup :enable_kaapi
+
+    test "initiates clone for a legacy assistant", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, {assistant, _config_version}} =
+        create_assistant_with_config_version(organization_id, "kaapi_clone_test")
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => assistant.id})
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "initiates clone for a non-legacy assistant with version_id", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Non-Legacy Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_non_legacy_test"
+        })
+        |> Repo.insert()
+
+      {:ok, nl_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Non-Legacy KB",
+          organization_id: organization_id
+        })
+
+      {:ok, nl_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: nl_kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"name" => "doc.pdf"}},
+          status: :completed,
+          llm_service_id: "kaapi_kb_id_789",
+          kaapi_job_id: "kaapi_job_123",
+          size: 500
+        })
+
+      {:ok, nl_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a non-legacy assistant",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: nl_config_version.id,
+          knowledge_base_version_id: nl_kbv.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: nl_config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == "Assistant clone initiated"
+      assert result["errors"] == nil
+    end
+
+    test "returns error when a clone is already in progress", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Conflict Test Assistant",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_conflict_test"
+        })
+        |> Repo.insert()
+
+      {:ok, nl_kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Conflict Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, nl_kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: nl_kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :completed,
+          llm_service_id: "kaapi_kb_conflict",
+          kaapi_job_id: "kaapi_job_conflict",
+          size: 100
+        })
+
+      {:ok, nl_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Conflict test prompt",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: nl_config_version.id,
+          knowledge_base_version_id: nl_kbv.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: nl_config_version.id
+        })
+        |> Repo.update()
+
+      {:ok, first_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      assert first_result.data["cloneAssistant"]["message"] == "Assistant clone initiated"
+
+      {:ok, second_result} =
+        auth_query_gql_by(:clone_assistant, user,
+          variables: %{"id" => assistant.id, "version_id" => nl_config_version.id}
+        )
+
+      _result = second_result.data["cloneAssistant"]
+
+      assert length(all_enqueued(worker: AssistantCloneWorker, prefix: "global")) == 1
+    end
+
+    test "returns error when assistant not found", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})
+
+      result = query_data.data["cloneAssistant"]
+      assert result["message"] == nil
+      assert [%{"key" => _, "message" => "Resource not found"}] = result["errors"]
+    end
+  end
+
+  describe "assistant_versions/3" do
+    test "returns all versions for an assistant ordered by version_number desc", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Test Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, v1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v1",
+          settings: %{},
+          status: :ready,
+          version_number: 1
+        })
+        |> Repo.insert()
+
+      {:ok, _v2} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v2",
+          settings: %{},
+          status: :in_progress,
+          version_number: 2
+        })
+        |> Repo.insert()
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
+        |> Repo.update()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
+
+      versions = query_data.data["assistantVersions"]
+      assert length(versions) == 2
+
+      # Ordered newest first
+      assert hd(versions)["version_number"] == 2
+      assert List.last(versions)["version_number"] == 1
+
+      # is_live reflects active_config_version_id
+      live_version = Enum.find(versions, & &1["is_live"])
+      assert live_version["id"] == to_string(v1.id)
+
+      # versions without a linked knowledge base have no vector_store
+      assert Enum.all?(versions, fn v -> is_nil(v["vector_store"]) end)
+    end
+
+    test "returns vector_store linked to each version", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "VS Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, v1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v1",
+          settings: %{},
+          status: :ready,
+          version_number: 1
+        })
+        |> Repo.insert()
+
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{name: "Test KB", organization_id: organization_id})
+
+      {:ok, kb_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          status: :completed,
+          llm_service_id: "vs_test_abc",
+          size: 50,
+          files: %{}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: v1.id,
+          knowledge_base_version_id: kb_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
+        |> Repo.update()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => assistant.id})
+
+      versions = query_data.data["assistantVersions"]
+      assert length(versions) == 1
+
+      vs = hd(versions)["vector_store"]
+      assert vs != nil
+      assert vs["id"] == to_string(kb.id)
+      assert vs["knowledge_base_version_id"] == to_string(kb_version.id)
+      assert vs["vector_store_id"] == "vs_test_abc"
+      assert vs["name"] == "Test KB"
+      assert vs["status"] == "completed"
+      assert vs["size"] == "50 B"
+    end
+
+    test "returns empty versions for a non-existent assistant", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => 0})
+
+      versions = query_data.data["assistantVersions"]
+      # Absinthe returns a list with nil entries or an empty list when the resolver errors
+      assert versions == [] or Enum.all?(versions, &is_nil(&1["id"]))
+    end
+  end
+
+  describe "set_live_version/3" do
+    test "updates active_config_version_id when version is ready", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Live Version Test", organization_id: organization_id})
+        |> Repo.insert()
+
+      {:ok, v1} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v1",
+          settings: %{},
+          status: :ready,
+          version_number: 1
+        })
+        |> Repo.insert()
+
+      {:ok, _assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: v1.id})
+        |> Repo.update()
+
+      {:ok, v2} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Prompt v2",
+          settings: %{},
+          status: :ready,
+          version_number: 2
+        })
+        |> Repo.insert()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:set_live_version, user,
+          variables: %{"assistantId" => assistant.id, "versionId" => v2.id}
+        )
+
+      result = query_data.data["setLiveVersion"]["assistant"]
+      assert result["activeConfigVersionId"] == to_string(v2.id)
+      assert result["liveVersionNumber"] == 2
+    end
+
+    test "returns error when version is not in ready status", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Live Version Error Test",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, in_progress_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "Draft prompt",
+          settings: %{},
+          status: :in_progress
+        })
+        |> Repo.insert()
+
+      {:ok, query_data} =
+        auth_query_gql_by(:set_live_version, user,
+          variables: %{
+            "assistantId" => assistant.id,
+            "versionId" => in_progress_version.id
+          }
+        )
+
+      assert query_data.data["setLiveVersion"] == nil
+      assert query_data.errors != nil
+    end
+  end
+
+  defp enable_kaapi(%{organization_id: organization_id}) do
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "kaapi",
+      keys: %{},
+      secrets: %{
+        "api_key" => "sk_test_key"
+      },
+      is_active: true
+    })
+
+    :ok
+  end
+end

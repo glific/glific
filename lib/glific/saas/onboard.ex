@@ -12,11 +12,13 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
+    Erase,
     ERP,
     Mails.NewPartnerOnboardedMail,
     Notion,
     Partners,
     Partners.Billing,
+    Partners.Credential,
     Partners.Organization,
     Partners.Saas,
     Registrations,
@@ -55,6 +57,7 @@ defmodule Glific.Saas.Onboard do
   V2 of setup/1, where email and name are the only mandatory values we need to provide
 
   example argument %{"email" => "foo@bar.com", "name" => "test"}
+  for trial org %{"email" => "foo@bar.com", "name" => "trial_org", "is_trial" => true}
 
   Optionally we can provide "shortcode" too, incase system generated shortcode
   has any validation issue.
@@ -66,7 +69,8 @@ defmodule Glific.Saas.Onboard do
         "phone" => @dummy_phone_number,
         "api_key" => nil,
         "app_name" => nil,
-        "app_id" => nil
+        "app_id" => nil,
+        "is_trial" => Map.get(params, "is_trial", false)
       })
 
     result = %{is_valid: true, messages: %{}}
@@ -78,10 +82,15 @@ defmodule Glific.Saas.Onboard do
            Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
       Repo.put_process_state(result.organization.id)
       Queries.seed_data(result)
+      setup_kaapi_for_organization(result.organization)
       SeedsMigration.migrate_data(:template_flows, result.organization)
       org = status(result.organization.id, :active)
       notify_saas_team(result.organization)
-      setup_kaapi_for_organization(result.organization)
+
+      if params["is_trial"] do
+        setup_gcs(result.organization)
+      end
+
       Map.put(result, :organization, org)
     end
   end
@@ -232,8 +241,8 @@ defmodule Glific.Saas.Onboard do
   defp update_organization_billing(organization), do: organization
 
   @doc """
-  Delete an organization from the DB, ensure that the confirmed flag is set
-  since this is a super destructive operation
+  Soft delete an organization: deletes all related data and sets deleted_at timestamp.
+  Ensure that the confirmed flag is set since this is a destructive operation.
   """
   @spec delete(non_neg_integer, boolean) ::
           {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
@@ -241,11 +250,16 @@ defmodule Glific.Saas.Onboard do
     organization = Partners.get_organization!(delete_organization_id)
 
     # ensure that the organization is not active, our last check before we
-    # blow it away
+    # delete its data
     if organization.is_active do
       {:error, "Organization is still active"}
     else
-      Partners.delete_organization(organization)
+      # Soft-delete first so the org is immediately marked deleted even if data
+      # erasure fails — this prevents any new data being written to the org.
+      with {:ok, organization} <- Partners.delete_organization(organization),
+           :ok <- Erase.delete_all_organization_data(organization.id) do
+        {:ok, organization}
+      end
     end
   end
 
@@ -274,19 +288,21 @@ defmodule Glific.Saas.Onboard do
 
   @spec notify_saas_team(Organization.t()) :: map()
   defp notify_saas_team(org) do
-    NewPartnerOnboardedMail.new_mail(org)
-    |> Mailer.send(%{
-      category: "new_partner_onboarded",
-      organization_id: org.id
-    })
-    |> case do
-      {:ok, _} ->
-        org
+    if !org.is_trial_org do
+      NewPartnerOnboardedMail.new_mail(org)
+      |> Mailer.send(%{
+        category: "new_partner_onboarded",
+        organization_id: org.id
+      })
+      |> case do
+        {:ok, _} ->
+          org
 
-      error ->
-        Glific.log_error(
-          "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(org.id)}"
-        )
+        error ->
+          Glific.log_error(
+            "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(org.id)}"
+          )
+      end
     end
   end
 
@@ -454,14 +470,39 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp setup_kaapi_for_organization(organization) do
-    open_ai_key = Glific.get_open_ai_key()
-
     %{
       organization_id: organization.id,
       organization_name: organization.parent_org || organization.name,
       project_name: organization.shortcode,
-      openai_api_key: open_ai_key
+      openai_api_key: Glific.get_open_ai_key(),
+      google_api_key: Glific.get_google_api_key()
     }
     |> Kaapi.onboard()
+  end
+
+  @spec setup_gcs(Organization.t()) ::
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  defp setup_gcs(trial_org) do
+    org_id = Saas.organization_id()
+
+    task =
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+
+        Partners.get_credential(%{
+          organization_id: org_id,
+          shortcode: "google_cloud_storage"
+        })
+      end)
+
+    {:ok, cred} = Task.await(task)
+
+    Partners.create_credential(%{
+      organization_id: trial_org.id,
+      shortcode: "google_cloud_storage",
+      keys: %{},
+      secrets: cred.secrets,
+      is_active: true
+    })
   end
 end

@@ -3,7 +3,11 @@ defmodule Glific.Sheets.GoogleSheets do
   Glific Google sheet API layer
   """
 
+  require Logger
+
   alias Glific.Partners
+  alias Glific.Sheets
+  alias Glific.Sheets.ApiClient
 
   alias GoogleApi.Sheets.V4.{
     Api.Spreadsheets,
@@ -17,6 +21,28 @@ defmodule Glific.Sheets.GoogleSheets do
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/spreadsheets.readonly"
   ]
+
+  @doc """
+  Get headers (first row) from the spreadsheet.
+  """
+  @spec get_headers(non_neg_integer(), String.t()) :: {:ok, list(String.t())} | {:error, any()}
+  def get_headers(org_id, spreadsheet_id) do
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id) do
+      case Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, "1:1") do
+        {:ok, %{values: [headers | _]}} when is_list(headers) ->
+          {:ok, headers}
+
+        {:ok, %{values: nil}} ->
+          {:error, "No headers found in the spreadsheet"}
+
+        {:ok, _} ->
+          {:error, "Invalid header format in the spreadsheet"}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
+  end
 
   @doc """
   Insert new row to the spreadsheet.
@@ -65,6 +91,98 @@ defmodule Glific.Sheets.GoogleSheets do
 
       {:error, _error} ->
         {:error, "Invalid Service Account JSON"}
+    end
+  end
+
+  @doc """
+  Read all rows from the spreadsheet.
+  Tries authenticated access first; falls back to public CSV export if credentials
+  are unavailable or the API call fails.
+  Returns a list of `{:ok, map()}` rows where each map has header names as keys.
+  """
+  @spec read_sheet_data(non_neg_integer(), String.t()) ::
+          {:ok, list({:ok, map()})} | {:error, any()}
+  def read_sheet_data(org_id, sheet_url) do
+    spreadsheet_id = Sheets.extract_spreadsheet_id(sheet_url)
+    gid = extract_gid(sheet_url)
+
+    with {:ok, %{conn: conn}} <- fetch_credentials(org_id),
+         {:ok, sheet_name} <- find_sheet_name(conn, spreadsheet_id, gid),
+         range = "'#{sheet_name}'!A:ZZ",
+         {:ok, %{values: values}} when not is_nil(values) <-
+           Spreadsheets.sheets_spreadsheets_values_get(conn, spreadsheet_id, range),
+         {:ok, rows} <- convert_rows_to_csv_format(values) do
+      {:ok, rows}
+    else
+      {:error, "Google API is not active"} ->
+        {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
+
+      {:ok, %{values: nil}} ->
+        {:ok, []}
+
+      {:error, reason} ->
+        Logger.warning("Google Sheets API read failed for #{sheet_url}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @spec extract_gid(String.t()) :: non_neg_integer()
+  defp extract_gid(sheet_url) do
+    case Regex.run(~r/[#?&]gid=(\d+)/, sheet_url) do
+      [_, gid] -> String.to_integer(gid)
+      _ -> 0
+    end
+  end
+
+  @spec find_sheet_name(Tesla.Client.t(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp find_sheet_name(conn, spreadsheet_id, gid) do
+    case Spreadsheets.sheets_spreadsheets_get(conn, spreadsheet_id) do
+      {:ok, %{sheets: sheets}} when is_list(sheets) ->
+        case Enum.find(sheets, fn s -> s.properties.sheetId == gid end) do
+          nil -> {:error, "Sheet with gid #{gid} not found"}
+          sheet -> {:ok, sheet.properties.title}
+        end
+
+      _ ->
+        {:error, "Failed to fetch spreadsheet metadata"}
+    end
+  end
+
+  @doc """
+  Converts the Google Sheets API response (list of lists) into the
+  `{:ok, map}` format expected by `run_sync_transaction/3`.
+  The first list is treated as headers; subsequent lists are data rows.
+
+  ## Examples
+
+      iex> convert_rows_to_csv_format([["key", "age"], ["1", "22"]])
+      {:ok, [{:ok, %{"key" => "1", "age" => "22"}}]}
+
+  """
+  @spec convert_rows_to_csv_format(list(list(String.t()))) ::
+          {:ok, list({:ok, map()})} | {:error, String.t()}
+  def convert_rows_to_csv_format([]), do: {:ok, []}
+
+  def convert_rows_to_csv_format([headers | rows]) do
+    trimmed_headers = Enum.map(headers, &String.trim/1)
+
+    if Enum.any?(trimmed_headers, &(&1 == "")) or
+         length(trimmed_headers) != length(Enum.uniq(trimmed_headers)) do
+      {:error, "Repeated or missing headers"}
+    else
+      rows =
+        Enum.map(rows, fn row ->
+          padded_row =
+            row
+            |> Enum.map(&String.trim/1)
+            |> then(&(&1 ++ List.duplicate("", max(0, length(trimmed_headers) - length(&1)))))
+
+          row_map = trimmed_headers |> Enum.zip(padded_row) |> Map.new()
+          {:ok, row_map}
+        end)
+
+      {:ok, rows}
     end
   end
 end

@@ -272,6 +272,25 @@ defmodule Glific.Flags do
   end
 
   @doc """
+  Get Unified STT/TTS value for organization flag
+  """
+  @spec get_unified_stt_tts_enabled?(non_neg_integer()) :: boolean
+  def get_unified_stt_tts_enabled?(organization_id) do
+    app_env = Application.get_env(:glific, :environment)
+
+    cond do
+      FunWithFlags.enabled?(:unified_stt_tts, for: %{organization_id: organization_id}) ->
+        true
+
+      Glific.trusted_env?(app_env, organization_id) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @doc """
   Get OpenAI auto translation value for organization flag
   """
   @spec get_open_ai_auto_translation_enabled(map()) :: boolean
@@ -324,6 +343,17 @@ defmodule Glific.Flags do
   @spec get_flag_enabled(atom(), map()) :: boolean
   def get_flag_enabled(flag, organization) do
     FunWithFlags.enabled?(flag, for: %{organization_id: organization.id})
+  end
+
+  @doc """
+  Get assistant config versions feature flag for the organization.
+  When enabled, the assistant versions screen is shown and set_live_version is permitted.
+  """
+  @spec get_assistant_config_versions_enabled(map()) :: boolean
+  def get_assistant_config_versions_enabled(organization) do
+    FunWithFlags.enabled?(:assistant_config_versions_enabled,
+      for: %{organization_id: organization.id}
+    )
   end
 
   @doc """
@@ -530,7 +560,9 @@ defmodule Glific.Flags do
       :is_interactive_re_response_enabled,
       :is_ask_me_bot_enabled,
       :is_whatsapp_forms_enabled,
-      :high_trigger_tps_enabled
+      :high_trigger_tps_enabled,
+      :unified_api_enabled,
+      :ai_evaluations
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

@@ -10,6 +10,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     Flows,
     Flows.Flow,
     Flows.FlowContext,
+    Messages,
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
@@ -238,10 +239,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     latest_message =
       Repo.one(
-        from m in Message,
+        from(m in Message,
           where: m.sender_id == ^sender.id,
           order_by: [desc: m.inserted_at],
           limit: 1
+        )
       )
 
     assert latest_message.body == "hey"
@@ -525,7 +527,8 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
   test "handles whatsapp form response correctly and includes and whatsapp response in the results map",
        %{
-         conn: conn
+         conn: conn,
+         user: user
        } = attrs do
     Tesla.Mock.mock(fn
       %{method: :post, url: url} ->
@@ -544,7 +547,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
         end
     end)
 
-    {:ok, _temp} =
+    {:ok, temp} =
       Templates.create_session_template(%{
         label: "Whatsapp Form Template",
         type: :text,
@@ -563,17 +566,30 @@ defmodule Glific.Processor.ConsumerFlowTest do
         ]
       })
 
-    {:ok, _wa_form} =
-      WhatsappForms.create_whatsapp_form(%{
-        name: "Customer Feedback Form",
-        meta_flow_id: "1787478395302778",
-        form_json: %{
-          "screens" => []
-        },
-        categories: ["other"],
-        description: "A form to collect customer feedback",
-        organization_id: conn.assigns[:organization_id]
+    {:ok, _message} =
+      Messages.create_message(%{
+        body: "Hello| [Open] ",
+        flow: :outbound,
+        type: :text,
+        sender_id: 1,
+        receiver_id: 2,
+        contact_id: 1,
+        organization_id: conn.assigns[:organization_id],
+        bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+        template_id: temp.id
       })
+
+    {:ok, _wa_form} =
+      WhatsappForms.create_whatsapp_form(
+        %{
+          name: "Customer Feedback Form",
+          meta_flow_id: "1787478395302778",
+          categories: ["other"],
+          description: "A form to collect customer feedback",
+          organization_id: conn.assigns[:organization_id]
+        },
+        user
+      )
 
     payload = %{
       "entry" => [
@@ -617,8 +633,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
           ],
           "id" => "122037724131744"
         }
-      ],
-      "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+      ]
     }
 
     conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
@@ -631,8 +646,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
     # Fetch the created WhatsAppFormResponse from DB using contact.id
     form_response =
       Repo.one(
-        from wfr in WhatsappFormResponse,
+        from(wfr in WhatsappFormResponse,
           where: wfr.contact_id == ^contact.id
+        )
       )
 
     assert form_response != nil
@@ -641,10 +657,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     message =
       Repo.one(
-        from m in Message,
+        from(m in Message,
           where:
             m.bsp_message_id == "wamid.HBgMOTE5NDI1MDEwNDQ5FQIAEhgUM0E3MzZCRDU0NTNCRTIxQUFFMzkA",
           preload: [:whatsapp_form_response]
+        )
       )
 
     assert message != nil

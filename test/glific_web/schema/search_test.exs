@@ -13,6 +13,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Messages,
     Messages.Message,
     Repo,
+    RepoReplica,
     Searches,
     Searches.SavedSearch,
     Searches.Search,
@@ -25,6 +26,7 @@ defmodule GlificWeb.Schema.SearchTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
     Fixtures.wa_managed_phone_fixture(%{organization_id: org.id})
+    Application.put_env(:glific, Glific.Searches, %{repo_module: RepoReplica})
     :ok
   end
 

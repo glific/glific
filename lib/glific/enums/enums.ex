@@ -120,6 +120,15 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.WhatsappFormCategory.__enum_map__()
   Glific.Enums.whatsapp_form_category_const()
+
+  iex> Glific.Enums.AssistantConfigVersionStatus.__enum_map__()
+  Glific.Enums.assistant_config_version_status_const()
+
+  iex> Glific.Enums.KnowledgeBaseStatus.__enum_map__()
+  Glific.Enums.knowledge_base_status_const()
+
+  iex> Glific.Enums.AIEvaluationStatus.__enum_map__()
+  Glific.Enums.ai_evaluation_status_const()
   """
 
   defmacro api_status_const,
@@ -190,4 +199,13 @@ defmodule Glific.Enums do
 
   defmacro whatsapp_form_category_const,
     do: Macro.expand(@whatsapp_form_category_const, __CALLER__)
+
+  defmacro assistant_config_version_status_const,
+    do: Macro.expand(@assistant_config_version_status_const, __CALLER__)
+
+  defmacro knowledge_base_status_const,
+    do: Macro.expand(@knowledge_base_status_const, __CALLER__)
+
+  defmacro ai_evaluation_status_const,
+    do: Macro.expand(@ai_evaluation_status_const, __CALLER__)
 end

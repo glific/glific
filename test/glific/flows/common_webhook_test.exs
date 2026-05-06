@@ -3,12 +3,15 @@ defmodule Glific.Flows.CommonWebhookTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Fixtures,
     Messages,
     Partners,
     Partners.Provider,
+    Repo,
     Seeds.SeedsDev,
     ThirdParty.GoogleSlide.Slide
   }
@@ -1015,5 +1018,548 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     assert %{error: "Certificate template not found" <> _} =
              CommonWebhook.webhook("create_certificate", invalid_fields)
+  end
+
+  describe "speech_to_text webhook" do
+    setup do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, _} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "test_api_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      %{fields: stt_fields(contact.id)}
+    end
+
+    test "returns success when Kaapi acknowledges the STT request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
+      end)
+
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == true
+    end
+
+    test "sends correct payload structure to Kaapi for STT", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["query", "input", "type"]) == "audio"
+          assert get_in(decoded, ["query", "input", "content", "format"]) == "base64"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "stt"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-2.5-pro"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) ==
+                   "auto"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
+      end)
+
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == true
+    end
+  end
+
+  describe "text_to_speech webhook" do
+    setup do
+      contact = Fixtures.contact_fixture()
+
+      {:ok, _} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "test_api_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      %{fields: tts_fields(contact.id)}
+    end
+
+    test "returns success when Kaapi acknowledges the TTS request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
+      end)
+
+      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      assert result.success == true
+    end
+
+    test "sends correct payload structure to Kaapi for TTS", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["query", "input"]) == "Hello world"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "tts"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-2.5-pro-preview-tts"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
+                   "hindi"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
+      end)
+
+      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      assert result.success == true
+    end
+  end
+
+  defp stt_fields(contact_id) do
+    %{
+      "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
+
+  describe "unified-llm-call lookup_kaapi_config" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      :ok
+    end
+
+    test "returns error when assistant_id is nil" do
+      fields = %{
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] == "assistant_id is required"
+    end
+
+    test "returns error when assistant not found" do
+      fields = %{
+        "assistant_id" => "nonexistent_id",
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Assistant not found"
+    end
+
+    test "returns error when kaapi_version_number is nil" do
+      alias Glific.Assistants.{Assistant, AssistantConfigVersion}
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Version Nil Test",
+          organization_id: 1,
+          kaapi_uuid: "kaapi_uuid_test"
+        })
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready,
+          kaapi_version_number: nil
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config.id
+        })
+        |> Repo.update()
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Kaapi version number not found"
+    end
+
+    test "returns error when kaapi_uuid is nil" do
+      alias Glific.Assistants.{Assistant, AssistantConfigVersion}
+
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "No UUID Test",
+          organization_id: 1
+        })
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config.id
+        })
+        |> Repo.update()
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      headers = [{"X-API-KEY", "sk_test_key"}]
+      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+
+      assert result[:success] == false
+      assert result[:reason] =~ "Assistant is still being set up"
+    end
+  end
+
+  defp tts_fields(contact_id) do
+    %{
+      "text" => "Hello world",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
+
+  defp create_assistant_with_config(organization_id, opts) do
+    assistant_display_id = Keyword.get(opts, :assistant_display_id, "asst_test_123")
+    kaapi_uuid = Keyword.get(opts, :kaapi_uuid, "kaapi-uuid-test-456")
+
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{
+        name: "Test Assistant",
+        organization_id: organization_id,
+        kaapi_uuid: kaapi_uuid,
+        assistant_display_id: assistant_display_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        version_number: 1,
+        kaapi_version_number: 1,
+        prompt: "You are a helpful assistant.",
+        provider: "openai",
+        model: "gpt-4o",
+        settings: %{},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    assistant
+    |> Assistant.set_active_config_version_changeset(%{
+      active_config_version_id: config_version.id
+    })
+    |> Repo.update()
+
+    {assistant, config_version}
+  end
+
+  defp unified_llm_headers do
+    [{"X-API-KEY", "test-api-key"}]
+  end
+
+  describe "unified-voice-llm-call webhook" do
+    test "does STT then calls unified LLM with voice callback path" do
+      organization_id = 1
+      assistant_display_id = "asst_voice_test"
+      create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
+
+      contact = Fixtures.contact_fixture()
+
+      fields =
+        %{
+          "organization_id" => organization_id,
+          "flow_id" => 1,
+          "contact_id" => contact.id,
+          "contact" => %{"id" => contact.id},
+          "assistant_id" => assistant_display_id,
+          "speech" => "https://example.com/audio.ogg",
+          "source_language" => "english",
+          "target_language" => "hindi",
+          "webhook_log_id" => 1,
+          "result_name" => "result"
+        }
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :get, url: "https://example.com/audio.ogg"} ->
+          send(test_pid, :audio_downloaded)
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %Tesla.Env{method: :post, url: url, body: body} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              send(test_pid, {:stt_called, body})
+
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [
+                    %{content: %{parts: [%{text: Jason.encode!("Hello world")}]}}
+                  ],
+                  usageMetadata: %{
+                    promptTokenCount: 10,
+                    candidatesTokenCount: 5,
+                    totalTokenCount: 15
+                  }
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              send(test_pid, {:llm_called, body})
+
+              %Tesla.Env{
+                status: 200,
+                body: %{data: %{message: "LLM call started", success: true}}
+              }
+
+            true ->
+              %Tesla.Env{status: 200, body: %{}}
+          end
+      end)
+
+      result =
+        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+      assert result.success == true
+
+      # Verify STT pipeline: audio was downloaded and sent to Gemini for transcription
+      assert_received :audio_downloaded
+      assert_received {:stt_called, stt_body}
+      stt_body = if is_binary(stt_body), do: Jason.decode!(stt_body), else: stt_body
+
+      inline_data =
+        get_in(stt_body, ["contents", Access.at(0), "parts", Access.at(0), "inline_data"])
+
+      assert inline_data["mime_type"] == "audio/mp3"
+      assert inline_data["data"] == Base.encode64("fake-audio-bytes")
+
+      # Verify the unified LLM call receives the correct payload
+      assert_received {:llm_called, llm_body}
+      llm_body = if is_binary(llm_body), do: Jason.decode!(llm_body), else: llm_body
+
+      # Query contains the transcribed text from STT
+      assert get_in(llm_body, ["query", "input"]) == "Hello world"
+      assert get_in(llm_body, ["query", "conversation", "auto_create"]) == true
+
+      # Config contains the assistant's Kaapi UUID and version
+      assert is_binary(get_in(llm_body, ["config", "id"]))
+      assert is_integer(get_in(llm_body, ["config", "version"]))
+
+      # Callback URL points to voice_flow_resume (not regular flow_resume)
+      assert String.contains?(llm_body["callback_url"], "/kaapi/voice_flow_resume")
+
+      # Request metadata includes flow context and voice post-processing fields
+      metadata = llm_body["request_metadata"]
+      assert metadata["organization_id"] == organization_id
+      assert metadata["flow_id"] == 1
+      assert metadata["contact_id"] == contact.id
+      assert metadata["webhook_log_id"] == 1
+      assert metadata["result_name"] == "result"
+      assert metadata["voice_post_process"]["source_language"] == "english"
+      assert metadata["voice_post_process"]["target_language"] == "hindi"
+    end
+
+    test "returns failure when STT fails" do
+      organization_id = 1
+
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "contact" => %{"id" => contact.id},
+        "assistant_id" => "asst_voice_stt_fail",
+        "speech" => "https://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 500, body: "download failed"}
+
+        %Tesla.Env{method: :post} ->
+          %Tesla.Env{status: 500, body: Jason.encode!(%{"error" => "STT failed"})}
+      end)
+
+      result =
+        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+      assert result == %{success: false, reason: "File download failed"}
+    end
+
+    test "uses /kaapi/voice_flow_resume callback path and includes voice metadata" do
+      organization_id = 1
+      assistant_display_id = "asst_voice_meta"
+      create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
+
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "contact" => %{"id" => contact.id},
+        "assistant_id" => assistant_display_id,
+        "speech" => "https://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "speech_engine" => "bhashini",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :get, url: "https://example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %Tesla.Env{method: :post, url: url, body: body} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [
+                    %{content: %{parts: [%{text: Jason.encode!("Transcribed audio")}]}}
+                  ],
+                  usageMetadata: %{
+                    promptTokenCount: 10,
+                    candidatesTokenCount: 5,
+                    totalTokenCount: 15
+                  }
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              decoded = if is_binary(body), do: Jason.decode!(body, keys: :atoms), else: body
+              send(test_pid, {:llm_call, decoded})
+
+              %Tesla.Env{
+                status: 200,
+                body: %{data: %{message: "ok", success: true}}
+              }
+
+            true ->
+              %Tesla.Env{status: 200, body: %{}}
+          end
+      end)
+
+      result =
+        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+      assert result.success == true
+
+      assert_receive {:llm_call, payload}
+      assert payload.callback_url =~ "/kaapi/voice_flow_resume"
+
+      assert payload.request_metadata.voice_post_process == %{
+               source_language: "english",
+               target_language: "hindi",
+               speech_engine: "bhashini"
+             }
+
+      assert payload.query.input == "Transcribed audio"
+    end
   end
 end

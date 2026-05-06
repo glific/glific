@@ -74,6 +74,8 @@ defmodule GlificWeb.Router do
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post "/askme", AskmeController, :ask
+    post("/trial/allocate-account", TrialAccountController, :trial)
+    post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
 
   # Enables LiveDashboard only for development
@@ -122,6 +124,12 @@ defmodule GlificWeb.Router do
     post("/stripe", StripeController, :stripe_webhook)
     post("/flow_resume", Flows.FlowResumeController, :flow_resume_with_results)
     get("/exotel/optin", ExotelController, :optin)
+  end
+
+  # Special routes for Kaapi Callbacks. All callbacks from Kaapi should be handled here.
+  scope "/kaapi", GlificWeb do
+    post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
+    post("/voice_flow_resume", Flows.FlowResumeController, :voice_flow_resume)
   end
 
   # """

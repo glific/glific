@@ -1,0 +1,28 @@
+query AssistantVersions($assistant_id: ID!) {
+  assistantVersions(assistantId: $assistant_id) {
+    id
+    version_number
+    model
+    prompt
+    settings
+    status
+    is_live
+    description
+    vector_store {
+      id
+      knowledge_base_version_id
+      vector_store_id
+      name
+      status
+      legacy
+      size
+      files {
+        id
+        name
+        uploaded_at
+      }
+    }
+    inserted_at
+    updated_at
+  }
+}

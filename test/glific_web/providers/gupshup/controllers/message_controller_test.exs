@@ -4,6 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   alias Glific.{
     Contacts,
     Contacts.Location,
+    Messages,
     Messages.Message,
     Repo,
     Seeds.SeedsDev,
@@ -498,7 +499,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
   describe "whatsapp_form_response" do
     test "Incoming WhatsApp form response should be stored in the database with whatsapp_response_id",
-         %{conn: conn} do
+         %{conn: conn, user: user} do
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
           cond do
@@ -516,7 +517,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
           end
       end)
 
-      {:ok, _temp} =
+      {:ok, temp} =
         Templates.create_session_template(%{
           label: "Whatsapp Form Template",
           type: :text,
@@ -535,17 +536,33 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
           ]
         })
 
-      {:ok, _wa_form} =
-        WhatsappForms.create_whatsapp_form(%{
-          name: "Customer Feedback Form",
-          meta_flow_id: "1787478395302778",
-          form_json: %{
-            "screens" => []
-          },
-          categories: ["other"],
-          description: "A form to collect customer feedback",
-          organization_id: conn.assigns[:organization_id]
+      {:ok, _message} =
+        Messages.create_message(%{
+          body: "Hello| [Open] ",
+          flow: :outbound,
+          type: :text,
+          sender_id: 1,
+          receiver_id: 2,
+          contact_id: 1,
+          organization_id: conn.assigns[:organization_id],
+          bsp_message_id: "0e74fb92-eb8a-415a-bccd-42ee768665e0",
+          template_id: temp.id
         })
+
+      {:ok, _wa_form} =
+        WhatsappForms.create_whatsapp_form(
+          %{
+            name: "Customer Feedback Form",
+            meta_flow_id: "1787478395302778",
+            form_json: %{
+              "screens" => []
+            },
+            categories: ["other"],
+            description: "A form to collect customer feedback",
+            organization_id: conn.assigns[:organization_id]
+          },
+          user
+        )
 
       payload = %{
         "entry" => [
@@ -589,8 +606,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
             ],
             "id" => "122037724131744"
           }
-        ],
-        "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+        ]
       }
 
       conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)
@@ -610,6 +626,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.whatsapp_form_response_id != nil
       assert message.flow == :inbound
       assert message.sender.phone == "919917443994"
+      assert message.context_id == "0e74fb92-eb8a-415a-bccd-42ee768665e0"
 
       {:ok, form_response} =
         Repo.fetch_by(WhatsappFormResponse, %{id: message.whatsapp_form_response_id})
@@ -679,8 +696,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
             ],
             "id" => "122037724131744"
           }
-        ],
-        "gsMetadata" => %{"X-GS-T-ID" => "3982792f-a178-442d-be4b-3eadbb804726"}
+        ]
       }
 
       conn2 = post(conn, "/gupshup/message/whatsapp_form_response", payload)

@@ -24,7 +24,7 @@ defmodule Glific.Metrics.WorkerTracker do
     {:ok, %{organization_id: organization_id, counts: %{}}}
   end
 
-  defp bump(counts, event), do: Map.update(counts, event, 1, fn v -> v + 1 end)
+  defp bump(counts, event, count), do: Map.update(counts, event, count, fn v -> v + count end)
 
   @doc false
   defp schedule_upsert do
@@ -40,8 +40,8 @@ defmodule Glific.Metrics.WorkerTracker do
 
   @doc false
   @impl true
-  def handle_info({:bump, event}, %{organization_id: organization_id, counts: counts}) do
-    {:noreply, %{organization_id: organization_id, counts: bump(counts, event)}}
+  def handle_info({:bump, event, count}, %{organization_id: organization_id, counts: counts}) do
+    {:noreply, %{organization_id: organization_id, counts: bump(counts, event, count)}}
   end
 
   @impl true

@@ -1,0 +1,9 @@
+mutation cloneAssistant($id: ID!, $version_id: ID) {
+  cloneAssistant(id: $id, versionId: $version_id) {
+    message
+    errors {
+      key
+      message
+    }
+  }
+}
