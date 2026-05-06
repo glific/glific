@@ -261,14 +261,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -288,14 +285,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to create Kaapi Knowledge Base creation job",
-            organization_id: organization_id,
-            reason: inspect(reason)
-          },
-          []
-        )
+        Glific.log_exception(%Error{
+          message: "Failed to create Kaapi Knowledge Base creation job",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
 
         {:error, reason}
     end
@@ -564,6 +558,65 @@ defmodule Glific.ThirdParty.Kaapi do
       {:ok, result}
     else
       {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Get dataset details from Kaapi with optional signed URL.
+  """
+  @spec get_dataset(non_neg_integer(), non_neg_integer(), boolean()) ::
+          {:ok, map()} | {:error, any()}
+  def get_dataset(dataset_id, organization_id, include_signed_url \\ false) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{success: true, data: data}} <-
+           ApiClient.get_dataset(dataset_id, secrets["api_key"], include_signed_url) do
+      Logger.info("Dataset retrieved for org: #{organization_id}, dataset: #{dataset_id}")
+
+      if include_signed_url && !Map.has_key?(data, :signed_url) do
+        Glific.log_exception(%Error{
+          message: "Kaapi dataset response missing signed_url",
+          organization_id: organization_id,
+          reason: inspect(data)
+        })
+
+        {:error, "Dataset download URL not available"}
+      else
+        {:ok, data}
+      end
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Failed to get dataset from Kaapi",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Delete an evaluation dataset from Kaapi.
+  """
+  @spec delete_evaluation_dataset(non_neg_integer() | String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()}
+  def delete_evaluation_dataset(dataset_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.delete_evaluation_dataset(dataset_id, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi evaluation dataset delete successful for org: #{organization_id}, dataset: #{dataset_id}"
+      )
+
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Failed to delete evaluation dataset from Kaapi",
+          organization_id: organization_id,
+          reason: inspect(reason)
+        })
+
         {:error, reason}
     end
   end

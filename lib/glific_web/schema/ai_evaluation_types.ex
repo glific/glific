@@ -7,6 +7,10 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
 
+  object :result_error do
+    field :message, non_null(:string)
+  end
+
   object :ai_evaluation do
     field :id, :id
     field :name, :string
@@ -19,7 +23,21 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :updated_at, :datetime
   end
 
+  object :golden_qa_item do
+    field :id, :id
+    field :name, :string
+    field :dataset_id, :integer
+    field :duplication_factor, :integer
+    field :file_name, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   input_object :ai_evaluation_filter do
+    field :name, :string
+  end
+
+  input_object :golden_qa_filter do
     field :name, :string
   end
 
@@ -30,8 +48,19 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   end
 
   object :golden_qa do
+    field :id, :id
     field :name, :string
-    field :dataset_id, :id
+    field :duplication_factor, :integer
+    field :dataset_id, :integer
+    field :file_name, :string
+    field :signed_url, :string
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
+  object :golden_qa_result do
+    field :golden_qa, :golden_qa
+    field :errors, list_of(:result_error)
   end
 
   object :evaluation_result do
@@ -50,11 +79,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :config_version, non_null(:id)
   end
 
-  object :golden_qa_result do
-    field :golden_qa, :golden_qa
-    field :errors, list_of(:input_error)
-  end
-
   object :ai_evaluation_queries do
     @desc "List AI Evaluations"
     field :ai_evaluations, list_of(:ai_evaluation) do
@@ -71,6 +95,32 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.count_ai_evaluations/3)
+    end
+
+    @desc "List Golden QAs"
+    field :golden_qas, list_of(:golden_qa_item) do
+      arg(:filter, :golden_qa_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_golden_qas/3)
+    end
+
+    @desc "Count Golden QAs"
+    field :count_golden_qas, :integer do
+      arg(:filter, :golden_qa_filter)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.count_golden_qas/3)
+    end
+
+    @desc "Get Golden QA"
+    field :golden_qa, :golden_qa_result do
+      arg(:id, non_null(:id))
+      arg(:include_signed_url, :boolean, default_value: false)
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.get_golden_qa/3)
     end
   end
 
