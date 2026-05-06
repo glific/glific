@@ -15,6 +15,7 @@ defmodule Glific.Sheets do
     Messages,
     Notifications,
     Repo,
+    SafeLog,
     Sheets.GoogleSheets,
     Sheets.Sheet,
     Sheets.SheetData,
@@ -98,7 +99,7 @@ defmodule Glific.Sheets do
          "Google Sheet not found. Please ensure the URL is correct and the service account has access."}
 
       {:error, reason} ->
-        {:error, "Failed to verify edit access: #{inspect(reason)}"}
+        {:error, "Failed to verify edit access: #{SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -117,7 +118,7 @@ defmodule Glific.Sheets do
          "Google Sheet not found. Please ensure the URL is correct and the service account has access."}
 
       {:error, reason} ->
-        {:error, "Failed to verify read access: #{inspect(reason)}"}
+        {:error, "Failed to verify read access: #{SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -480,7 +481,7 @@ defmodule Glific.Sheets do
 
   @spec normalize_sync_error_reason(term()) :: String.t()
   defp normalize_sync_error_reason(reason) do
-    reason = if is_binary(reason), do: reason, else: inspect(reason)
+    reason = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
 
     if String.contains?(reason, "Stray escape character on line"),
       do: "Sheet not found or inaccessible",
@@ -624,7 +625,7 @@ defmodule Glific.Sheets do
       rescue
         err ->
           Logger.error(
-            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{inspect(err)}"
+            "Error while syncing google sheet, org id: #{sheet.organization_id}, sheet_id: #{sheet.id} due to #{SafeLog.safe_inspect(err)}"
           )
 
           create_sync_fail_notification(sheet)
@@ -672,7 +673,7 @@ defmodule Glific.Sheets do
 
       true ->
         Logger.error(
-          "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(env)}"
+          "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{SafeLog.safe_inspect(env)}"
         )
 
         "Unknown error occurred, please reach out to support"
@@ -681,7 +682,7 @@ defmodule Glific.Sheets do
 
   defp format_notification_message(spreadsheet_id, error) do
     Logger.error(
-      "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{inspect(error)}"
+      "Error while inserting row to the spreadsheet, spreadsheet id: #{spreadsheet_id}, error: #{SafeLog.safe_inspect(error)}"
     )
 
     "Unknown error occurred, please reach out to support"
