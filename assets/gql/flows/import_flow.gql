@@ -3,6 +3,7 @@ mutation importFlow($flow: Json!) {
     status {
       flowName
       status
+      assistantNodeUuids
     }
   }
 }
