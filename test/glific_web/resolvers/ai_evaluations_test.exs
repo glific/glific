@@ -841,21 +841,25 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
   end
 
   describe "create_evaluation/3" do
-    setup [:enable_kaapi, :create_config_version]
+    setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
 
     test "returns evaluation with status and persists record in the database", %{
       staff: user,
-      assistant_config_version: assistant_config_version
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
     } do
       Tesla.Mock.mock(fn
-        %{method: :post} ->
+        %{method: :post, body: body} ->
+          assert body =~ "dataset_id"
+          assert body =~ to_string(golden_qa.dataset_id)
+
           %Tesla.Env{
             status: 200,
             body: %{
               data: %{
                 id: 404,
                 status: "processing",
-                dataset_id: 427
+                dataset_id: golden_qa.dataset_id
               }
             }
           }
@@ -865,7 +869,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       args = %{
         input: %{
-          dataset_id: "427",
+          golden_qa_id: golden_qa.id,
           experiment_name: "test_experiment",
           config_id: "2",
           config_version: assistant_config_version.id
@@ -879,16 +883,110 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert evaluation.status == :processing
       assert evaluation.kaapi_evaluation_id == 404
-      assert evaluation.dataset_id == 427
+      assert evaluation.golden_qa_id == golden_qa.id
       assert evaluation.name == "test_experiment"
       assert evaluation.assistant_config_version_id == assistant_config_version.id
       assert Repo.aggregate(AIEvaluation, :count, :id) == count_before + 1
     end
 
-    test "returns error when config version does not exist", %{staff: user} do
+    test "dataset_id sent to Kaapi is sourced from golden_qa, not the Kaapi response", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      captured_body = :ets.new(:captured_body, [:set, :public])
+
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          :ets.insert(captured_body, {:body, body})
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: 1, status: "processing", dataset_id: 99_999}}
+          }
+      end)
+
       args = %{
         input: %{
-          dataset_id: "1",
+          golden_qa_id: golden_qa.id,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      [{:body, body}] = :ets.lookup(captured_body, :body)
+      assert body =~ to_string(golden_qa.dataset_id)
+      assert evaluation.golden_qa_id == golden_qa.id
+    end
+
+    test "returns error when golden_qa_id does not exist", %{
+      staff: user,
+      assistant_config_version: assistant_config_version
+    } do
+      args = %{
+        input: %{
+          golden_qa_id: 999_999,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert reason ==
+               "The specified Golden QA dataset does not exist or does not belong to your organization."
+    end
+
+    test "returns error when golden_qa_id belongs to a different organization", %{
+      staff: user,
+      assistant_config_version: assistant_config_version
+    } do
+      other_org = Glific.Fixtures.organization_fixture()
+
+      {:ok, other_golden_qa} =
+        Glific.AIEvaluations.create_golden_qa(%{
+          name: "other_org_dataset",
+          dataset_id: 77_777,
+          duplication_factor: 1,
+          organization_id: other_org.id
+        })
+
+      # Restore main org context so the resolver can find the config version
+      Repo.put_organization_id(user.organization_id)
+
+      args = %{
+        input: %{
+          golden_qa_id: other_golden_qa.id,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert reason ==
+               "The specified Golden QA dataset does not exist or does not belong to your organization."
+    end
+
+    test "returns error when config version does not exist", %{
+      staff: user,
+      golden_qa: golden_qa
+    } do
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
           experiment_name: "test_experiment",
           config_id: "2",
           config_version: 999_999
@@ -901,9 +999,53 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "The specified config version does not exist."
     end
 
-    test "returns error on timeout", %{
+    test "returns error when config version belongs to a different organization", %{
       staff: user,
-      assistant_config_version: assistant_config_version
+      golden_qa: golden_qa
+    } do
+      other_org = Glific.Fixtures.organization_fixture()
+      other_user = Glific.Fixtures.user_fixture(%{organization_id: other_org.id})
+
+      {:ok, other_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Other Assistant", organization_id: other_org.id})
+        |> Repo.insert()
+
+      {:ok, other_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: other_assistant.id,
+          prompt: "You are a helpful assistant.",
+          provider: "openai",
+          model: "gpt-4o",
+          settings: %{"temperature" => 1.0},
+          status: :ready,
+          organization_id: other_org.id
+        })
+        |> Repo.insert()
+
+      Repo.put_organization_id(user.organization_id)
+      _ = other_user
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: other_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "The specified config version does not exist."
+    end
+
+    test "returns error on Kaapi timeout", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
     } do
       Tesla.Mock.mock(fn
         %{method: :post} -> {:error, :timeout}
@@ -911,7 +1053,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       args = %{
         input: %{
-          dataset_id: "1",
+          golden_qa_id: golden_qa.id,
           experiment_name: "test_experiment",
           config_id: "2",
           config_version: assistant_config_version.id
@@ -922,6 +1064,79 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:error, "Timeout occurred, please try again."} =
                AIEvaluations.create_evaluation(nil, args, resolution)
+    end
+
+    test "returns error when Kaapi returns error body", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 422, body: %{error: "Invalid dataset format"}}
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "Invalid dataset format"
+    end
+
+    test "returns error when Kaapi is not configured" do
+      other_org = Glific.Fixtures.organization_fixture()
+      Repo.put_organization_id(other_org.id)
+      user_no_kaapi = Glific.Fixtures.user_fixture(%{organization_id: other_org.id})
+
+      {:ok, other_assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Other Assistant", organization_id: other_org.id})
+        |> Repo.insert()
+
+      {:ok, other_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: other_assistant.id,
+          prompt: "You are a helpful assistant.",
+          provider: "openai",
+          model: "gpt-4o",
+          settings: %{"temperature" => 1.0},
+          status: :ready,
+          organization_id: other_org.id
+        })
+        |> Repo.insert()
+
+      {:ok, other_config_version} = Repo.fetch(AssistantConfigVersion, other_config_version.id)
+
+      {:ok, other_golden_qa} =
+        Glific.AIEvaluations.create_golden_qa(%{
+          name: "no_kaapi_dataset",
+          dataset_id: 55_555,
+          duplication_factor: 1,
+          organization_id: other_org.id
+        })
+
+      args = %{
+        input: %{
+          golden_qa_id: other_golden_qa.id,
+          experiment_name: "test_experiment",
+          config_id: "2",
+          config_version: other_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user_no_kaapi}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "Kaapi is not active"
     end
   end
 
@@ -968,13 +1183,20 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       })
       |> Repo.insert()
 
+    {:ok, golden_qa} =
+      Glific.AIEvaluations.create_golden_qa(%{
+        name: "fixture_dataset",
+        dataset_id: 1,
+        duplication_factor: 1,
+        organization_id: organization_id
+      })
+
     {:ok, evaluation} =
       %AIEvaluation{}
       |> AIEvaluation.changeset(%{
         name: "test_evaluation",
         status: :completed,
-        dataset_id: 1,
-        kaapi_evaluation_id: 42,
+        golden_qa_id: golden_qa.id,
         assistant_config_version_id: config_version.id,
         organization_id: organization_id
       })

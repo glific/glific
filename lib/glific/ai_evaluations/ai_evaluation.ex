@@ -8,6 +8,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
     Enums.AIEvaluationStatus,
     Partners.Organization
@@ -21,7 +22,8 @@ defmodule Glific.AIEvaluations.AIEvaluation do
           failure_reason: String.t() | nil,
           results: map(),
           kaapi_evaluation_id: non_neg_integer() | nil,
-          dataset_id: non_neg_integer() | nil,
+          golden_qa_id: non_neg_integer() | nil,
+          golden_qa: GoldenQA.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer() | nil,
           assistant_config_version_id: non_neg_integer() | nil,
           assistant_config_version:
@@ -35,7 +37,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     :name,
     :status,
     :organization_id,
-    :dataset_id,
+    :golden_qa_id,
     :assistant_config_version_id
   ]
 
@@ -51,7 +53,7 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     field(:failure_reason, :string)
     field(:results, :map, default: %{})
     field(:kaapi_evaluation_id, :integer)
-    field(:dataset_id, :integer)
+    belongs_to(:golden_qa, GoldenQA)
     belongs_to(:assistant_config_version, AssistantConfigVersion)
     belongs_to(:organization, Organization)
 
@@ -67,5 +69,6 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> assoc_constraint(:organization)
+    |> assoc_constraint(:golden_qa)
   end
 end

@@ -287,19 +287,33 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
     with {:ok, config_version} <-
            Repo.fetch_by(AssistantConfigVersion, %{id: input.config_version}),
-         kaapi_input = Map.put(input, :config_version, config_version.kaapi_version_number),
+         {:golden_qa, {:ok, golden_qa}} <-
+           {:golden_qa,
+            Repo.fetch_by(GoldenQA, %{
+              id: input.golden_qa_id,
+              organization_id: user.organization_id
+            })},
+         kaapi_input =
+           input
+           |> Map.put(:config_version, config_version.kaapi_version_number)
+           |> Map.put(:dataset_id, golden_qa.dataset_id)
+           |> Map.delete(:golden_qa_id),
          {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
              name: input.experiment_name,
              status: String.to_existing_atom(data.status),
              kaapi_evaluation_id: data.id,
-             dataset_id: data.dataset_id,
+             golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_version,
              organization_id: user.organization_id
            }) do
       {:ok, %{evaluation: evaluation}}
     else
+      {:golden_qa, {:error, _}} ->
+        {:error,
+         "The specified Golden QA dataset does not exist or does not belong to your organization."}
+
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
 

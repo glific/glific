@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :ai_evaluation_status_enum
     field :failure_reason, :string
     field :results, :json
-    field :dataset_id, :integer
+    field :golden_qa_id, :id
     field :assistant_config_version_id, :id
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -73,7 +73,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   end
 
   input_object :evaluation_input do
-    field :dataset_id, non_null(:id)
+    field :golden_qa_id, non_null(:id)
     field :experiment_name, non_null(:string)
     field :config_id, non_null(:id)
     field :config_version, non_null(:id)
