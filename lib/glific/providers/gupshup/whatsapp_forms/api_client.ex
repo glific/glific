@@ -18,6 +18,8 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         {Tesla.Middleware.BaseUrl, Keyword.fetch!(opts, :url)},
         {Tesla.Middleware.Headers, Keyword.fetch!(opts, :headers)},
         {Tesla.Middleware.JSON, engine_opts: [keys: :atoms]},
+        Tesla.Middleware.KeepRequest,
+        Tesla.Middleware.PathParams,
         {Tesla.Middleware.Telemetry,
          metadata: %{provider: "gupshup_whatsapp_forms", sampling_scale: 10}}
       ] ++ Glific.get_tesla_retry_middleware()
@@ -67,7 +69,7 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
 
     response =
       client(url: url, headers: headers)
-      |> Tesla.get("/flows/#{flow_id}/assets")
+      |> Tesla.get("/flows/:flow_id/assets", opts: [path_params: [flow_id: flow_id]])
       |> parse_response("get_whatsapp_form_assets")
 
     case response do
@@ -104,10 +106,10 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         categories: Enum.map(params.categories, &String.upcase/1)
       }
 
-    opts = [adapter: [recv_timeout: 60_000]]
+    opts = [adapter: [recv_timeout: 60_000], path_params: [flow_id: meta_flow_id]]
 
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{meta_flow_id}", payload, opts: opts)
+    |> Tesla.put("/flows/:flow_id", payload, opts: opts)
     |> parse_response("update_whatsapp_form")
   end
 
@@ -128,10 +130,10 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
         headers: [{"content-type", "application/json"}]
       )
 
-    opts = [adapter: [recv_timeout: 60_000]]
+    opts = [adapter: [recv_timeout: 60_000], path_params: [flow_id: form.meta_flow_id]]
 
     client(url: url, headers: headers)
-    |> Tesla.put("/flows/#{form.meta_flow_id}/assets", multipart, opts: opts)
+    |> Tesla.put("/flows/:flow_id/assets", multipart, opts: opts)
     |> parse_response("update_whatsapp_form_json")
   end
 
@@ -144,7 +146,9 @@ defmodule Glific.Providers.Gupshup.WhatsappForms.ApiClient do
     url = PartnerAPI.app_url!(organization_id)
     headers = PartnerAPI.headers(:app_token, org_id: organization_id)
 
-    Tesla.post(client(url: url, headers: headers), "/flows/#{flow_id}/publish", %{})
+    Tesla.post(client(url: url, headers: headers), "/flows/:flow_id/publish", %{},
+      opts: [path_params: [flow_id: flow_id]]
+    )
     |> parse_response("publish_whatsapp_form")
   end
 
