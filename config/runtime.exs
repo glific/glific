@@ -183,7 +183,9 @@ config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   upload_adapter: upload_adapter
 
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
-  gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
+  gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret"),
+  stt_model: env!("GEMINI_STT_MODEL", :string, "gemini-2.5-pro"),
+  tts_model: env!("GEMINI_TTS_MODEL", :string, "gemini-2.5-pro-preview-tts")
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
