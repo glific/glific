@@ -97,8 +97,8 @@ defmodule Glific.AskGlific do
   end
 
   @doc """
-  Fetches conversations from Dify for the given user.
-  Dify scopes results by the user identifier, so no additional filtering is needed.
+  Fetches conversations from Dify for the given user, restricted to those
+  also tracked in our database for this user.
   """
   @spec get_conversations(map(), map()) ::
           {:ok, map()} | {:error, String.t()}
@@ -108,9 +108,13 @@ defmodule Glific.AskGlific do
 
     case ApiClient.conversations(dify_user(user), limit, last_id) do
       {:ok, response} ->
+        dify_conversations = Map.get(response, "data", [])
+        dify_ids = Enum.map(dify_conversations, &Map.get(&1, "id", ""))
+        tracked_ids = tracked_conversation_ids(user.id, dify_ids)
+
         conversations =
-          response
-          |> Map.get("data", [])
+          dify_conversations
+          |> Enum.filter(fn conv -> MapSet.member?(tracked_ids, Map.get(conv, "id", "")) end)
           |> Enum.map(&parse_conversation/1)
 
         {:ok,
@@ -123,6 +127,17 @@ defmodule Glific.AskGlific do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @spec tracked_conversation_ids(non_neg_integer(), [String.t()]) :: MapSet.t()
+  defp tracked_conversation_ids(_user_id, []), do: MapSet.new()
+
+  defp tracked_conversation_ids(user_id, conversation_ids) do
+    Conversation
+    |> where([c], c.user_id == ^user_id and c.conversation_id in ^conversation_ids)
+    |> select([c], c.conversation_id)
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   @doc """
