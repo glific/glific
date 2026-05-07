@@ -28,7 +28,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:whatsapp_group_enabled, :boolean)
     field(:certificate_enabled, :boolean)
     field(:kaapi_enabled, :boolean)
-    field(:ask_me_bot_enabled, :boolean)
+    field(:ask_glific_enabled, :boolean)
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
     field(:unified_api_enabled, :boolean)

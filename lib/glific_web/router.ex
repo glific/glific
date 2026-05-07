@@ -73,7 +73,6 @@ defmodule GlificWeb.Router do
     post("/onboard/setup", OnboardController, :setup)
     post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
-    post "/askme", AskmeController, :ask
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
@@ -130,6 +129,11 @@ defmodule GlificWeb.Router do
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
     post("/voice_flow_resume", Flows.FlowResumeController, :voice_flow_resume)
+  end
+
+  # Dify chatbot callback routes.
+  scope "/dify", GlificWeb do
+    post("/chatbot-diagnose", ChatbotController, :diagnose)
   end
 
   # """
