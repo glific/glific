@@ -256,6 +256,30 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   end
 
   @doc """
+  Fetch evaluation scores for a given AI evaluation from Kaapi.
+  """
+  @spec get_evaluation_scores(map(), map(), map()) ::
+          {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
+  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+      {:ok, %{data: data}} ->
+        {:ok, %{scores: data}}
+
+      {:error, :timeout} ->
+        {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
+
+      {:error, [_, "Resource not found"]} ->
+        {:ok, %{errors: [%{message: "Evaluation not found."}]}}
+
+      {:error, msg} when is_binary(msg) ->
+        {:ok, %{errors: [%{message: msg}]}}
+
+      {:error, _} ->
+        {:ok, %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
+    end
+  end
+
+  @doc """
   Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
   and returning the evaluation.
   """
