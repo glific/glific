@@ -123,6 +123,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :evaluation_scores, :evaluation_scores_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
     end
 
