@@ -6,7 +6,7 @@ defmodule Glific.Sheets.GoogleSheets do
   require Logger
 
   alias Glific.Partners
-  alias Glific.SafeLog
+  import Glific.SafeLog
   alias Glific.Sheets
   alias Glific.Sheets.ApiClient
 
@@ -123,7 +123,7 @@ defmodule Glific.Sheets.GoogleSheets do
 
       {:error, reason} ->
         Logger.warning(
-          "Google Sheets API read failed for #{sheet_url}: #{SafeLog.safe_inspect(reason)}"
+          "Google Sheets API read failed for #{sheet_url}: #{safe_inspect(reason)}"
         )
 
         {:error, reason}
