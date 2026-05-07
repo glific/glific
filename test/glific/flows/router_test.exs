@@ -395,6 +395,62 @@ defmodule Glific.Flows.RouterTest do
     assert {:ok, _, _} = Router.execute(router, context, [])
   end
 
+  test "router with whatsapp_form_response stores list values as comma-separated strings" do
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "operand" => "@input.text",
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "form_result",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => []
+    }
+
+    {router, uuid_map} = Router.process(json, uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    raw_response = %{
+      "flow_token" => "unused",
+      "multiple_choice" => ["Option_1", "Option_2"],
+      "single_choice" => "Option_1"
+    }
+
+    message =
+      Messages.create_temp_message(
+        Fixtures.get_org_id(),
+        "form submitted",
+        type: :whatsapp_form_response,
+        whatsapp_form_response: %{raw_response: raw_response}
+      )
+
+    {:ok, _, _} = Router.execute(router, context, [message])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+
+    # the multi-select list should be joined into a comma-separated string
+    assert updated_context.results["form_result"]["multiple_choice"] == "Option_1, Option_2"
+    # non-list values should be left untouched
+    assert updated_context.results["form_result"]["single_choice"] == "Option_1"
+  end
+
   test "router with split by groups" do
     flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
