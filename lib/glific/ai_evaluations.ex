@@ -26,11 +26,39 @@ defmodule Glific.AIEvaluations do
       [%AIEvaluation{}, ...]
 
   """
-  @spec list_ai_evaluations(map()) :: [AIEvaluation.t()]
+  @spec list_ai_evaluations(map()) :: [map()]
   def list_ai_evaluations(args) do
     args
     |> Repo.list_filter_query(AIEvaluation, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Repo.all()
+    |> Repo.preload([:golden_qa, assistant_config_version: :assistant])
+    |> Enum.map(&attach_display_fields/1)
+  end
+
+  @spec attach_display_fields(AIEvaluation.t()) :: map()
+  defp attach_display_fields(%AIEvaluation{} = evaluation) do
+    golden_qa_name = evaluation.golden_qa && evaluation.golden_qa.name
+    golden_qa_dup = evaluation.golden_qa && evaluation.golden_qa.duplication_factor
+
+    config_name =
+      evaluation.assistant_config_version &&
+        evaluation.assistant_config_version.assistant &&
+        evaluation.assistant_config_version.assistant.name
+
+    config_version =
+      evaluation.assistant_config_version &&
+        evaluation.assistant_config_version.version_number
+
+    assistant_id =
+      evaluation.assistant_config_version &&
+        evaluation.assistant_config_version.assistant_id
+
+    evaluation
+    |> Map.put(:golden_qa_name, golden_qa_name)
+    |> Map.put(:golden_qa_duplication_factor, golden_qa_dup)
+    |> Map.put(:assistant_config_name, config_name)
+    |> Map.put(:assistant_config_version_number, config_version)
+    |> Map.put(:assistant_id, assistant_id)
   end
 
   @doc """

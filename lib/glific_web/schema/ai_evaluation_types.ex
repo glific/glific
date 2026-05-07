@@ -19,6 +19,11 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :results, :json
     field :golden_qa_id, :id
     field :assistant_config_version_id, :id
+    field :golden_qa_name, :string
+    field :golden_qa_duplication_factor, :integer
+    field :assistant_config_name, :string
+    field :assistant_config_version_number, :integer
+    field :assistant_id, :id
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
