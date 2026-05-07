@@ -155,6 +155,49 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
         %{model: "custom-stt-model", language: "tamil"}
       )
     end
+
+    test "omits output_language from payload when not specified" do
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          params = get_in(decoded, ["config", "blob", "completion", "params"])
+          refute Map.has_key?(params, "output_language")
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-789"}}
+      end)
+
+      Kaapi.speech_to_text(
+        "https://example.com/audio.wav",
+        @callback_url,
+        @request_metadata,
+        @org_id
+      )
+    end
+
+    test "includes output_language in payload when specified" do
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          params = get_in(decoded, ["config", "blob", "completion", "params"])
+          assert params["output_language"] == "hindi"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-999"}}
+      end)
+
+      Kaapi.speech_to_text(
+        "https://example.com/audio.wav",
+        @callback_url,
+        @request_metadata,
+        @org_id,
+        %{output_language: "hindi"}
+      )
+    end
   end
 
   describe "text_to_speech/5" do
