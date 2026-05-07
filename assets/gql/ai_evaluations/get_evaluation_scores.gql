@@ -1,0 +1,8 @@
+query EvaluationScores($id: ID!) {
+  evaluationScores(id: $id) {
+    scores
+    errors {
+      message
+    }
+  }
+}
