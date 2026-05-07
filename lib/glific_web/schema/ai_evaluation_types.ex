@@ -79,9 +79,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   input_object :evaluation_input do
     field :golden_qa_id, non_null(:id)
-    field :experiment_name, non_null(:string)
+    field :evaluation_name, non_null(:string)
     field :config_id, non_null(:id)
-    field :config_version, non_null(:id)
   end
 
   object :evaluation_scores_result do

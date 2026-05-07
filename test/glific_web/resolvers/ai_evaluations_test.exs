@@ -870,9 +870,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -909,9 +908,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -932,9 +930,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: 999_999,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -966,9 +963,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: other_golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -987,9 +983,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: 999_999
+          evaluation_name: "test_experiment",
+          config_id: 999_999
         }
       }
 
@@ -1030,9 +1025,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: other_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: other_config_version.id
         }
       }
 
@@ -1054,9 +1048,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -1079,9 +1072,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: assistant_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
         }
       }
 
@@ -1127,9 +1119,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       args = %{
         input: %{
           golden_qa_id: other_golden_qa.id,
-          experiment_name: "test_experiment",
-          config_id: "2",
-          config_version: other_config_version.id
+          evaluation_name: "test_experiment",
+          config_id: other_config_version.id
         }
       }
 
