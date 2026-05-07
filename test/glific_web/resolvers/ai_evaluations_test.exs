@@ -759,6 +759,87 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
+  describe "get_evaluation_scores/3" do
+    setup [:enable_kaapi, :create_ai_evaluation_fixtures]
+
+    test "returns scores when Kaapi returns completed evaluation data", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      summary_scores = [
+        %{name: "cosine_similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "completed", summary_scores: summary_scores}}
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      assert scores.status == "completed"
+    end
+
+    test "returns timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        {:error, :timeout}
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      assert msg == "Timeout occurred, please try again."
+    end
+
+    test "returns not found error when evaluation does not exist", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: 999_999}, resolution)
+
+      assert msg == "Evaluation not found."
+    end
+
+    test "returns binary error message when Kaapi returns one", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 403, body: %{error: "Unauthorized access"}}
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      assert is_binary(msg)
+    end
+
+    test "returns generic support error for unexpected failures", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        {:error, :econnrefused}
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      assert msg == "An unknown error occurred, please contact Glific support."
+    end
+  end
+
   describe "create_evaluation/3" do
     setup [:enable_kaapi, :create_config_version]
 
@@ -893,6 +974,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         name: "test_evaluation",
         status: :completed,
         dataset_id: 1,
+        kaapi_evaluation_id: 42,
         assistant_config_version_id: config_version.id,
         organization_id: organization_id
       })
