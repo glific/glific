@@ -198,6 +198,28 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
         %{output_language: "hindi"}
       )
     end
+
+    test "treats blank output_language as absent" do
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{status: 200, body: "audio"}
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          params = get_in(decoded, ["config", "blob", "completion", "params"])
+          refute Map.has_key?(params, "output_language")
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-blank"}}
+      end)
+
+      Kaapi.speech_to_text(
+        "https://example.com/audio.wav",
+        @callback_url,
+        @request_metadata,
+        @org_id,
+        %{output_language: "   "}
+      )
+    end
   end
 
   describe "text_to_speech/5" do
