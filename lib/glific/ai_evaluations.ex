@@ -194,6 +194,18 @@ defmodule Glific.AIEvaluations do
     |> Repo.insert()
   end
 
+  @doc """
+  Fetches evaluation scores for a given AI evaluation from Kaapi.
+  """
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, org_id) do
+    with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id}} <-
+           Repo.fetch(AIEvaluation, evaluation_id) do
+      Kaapi.get_evaluation_scores(kaapi_id, org_id)
+    end
+  end
+
   @spec filter_with(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
