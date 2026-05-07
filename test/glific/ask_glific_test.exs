@@ -218,7 +218,10 @@ defmodule Glific.AskGlificTest do
   end
 
   describe "get_conversations/2" do
-    test "returns conversations from Dify", %{user: user} do
+    test "returns conversations tracked in DB for the user", %{user: user} do
+      insert_conversation("conv-abc-123", user)
+      insert_conversation("conv-def-456", user)
+
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, @dify_conversations_response)
       end)
@@ -230,6 +233,9 @@ defmodule Glific.AskGlificTest do
     end
 
     test "returns parsed conversation fields", %{user: user} do
+      insert_conversation("conv-abc-123", user)
+      insert_conversation("conv-def-456", user)
+
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, @dify_conversations_response)
       end)

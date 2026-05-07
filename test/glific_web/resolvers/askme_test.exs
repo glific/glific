@@ -98,7 +98,9 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
   end
 
   describe "ask_glific_conversations query" do
-    test "returns conversations from Dify", %{staff: user} do
+    test "returns conversations tracked in DB for the user", %{staff: user} do
+      insert_conversation("conv-gql-abc", user)
+
       Req.Test.stub(self(), fn conn ->
         Req.Test.json(conn, %{
           "data" => [
