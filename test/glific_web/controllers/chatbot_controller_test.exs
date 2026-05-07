@@ -132,9 +132,21 @@ defmodule GlificWeb.ChatbotControllerTest do
     end
 
     test "organization scoping works - can't see other org's data",
-         %{conn: conn, organization_id: organization_id} do
+         %{conn: conn, org: org, organization_id: organization_id} do
+      other_org =
+        Glific.Fixtures.organization_fixture(%{
+          shortcode: "other_org_#{System.unique_integer([:positive])}"
+        })
+
+      foreign_contact =
+        Glific.Fixtures.contact_fixture(%{
+          name: "Foreign Org Contact #{System.unique_integer([:positive])}",
+          phone: "+1#{System.unique_integer([:positive])}",
+          organization_id: other_org.id
+        })
+
       params = %{
-        "page_url" => "https://glific.glific.com/path",
+        "page_url" => "https://#{org.shortcode}.glific.com/path",
         "tables" => %{
           "contacts" => %{
             "fields" => ["id", "name", "phone", "organization_id"],
@@ -146,10 +158,17 @@ defmodule GlificWeb.ChatbotControllerTest do
       conn = post(conn, "/dify/chatbot-diagnose", params)
       response = json_response(conn, 200)
 
-      # All returned contacts should belong to org 1
-      Enum.each(response["data"]["contacts"], fn contact ->
+      contacts = response["data"]["contacts"]
+
+      Enum.each(contacts, fn contact ->
         assert contact["organization_id"] == organization_id
       end)
+
+      foreign_ids = Enum.map(contacts, & &1["id"])
+      refute foreign_contact.id in foreign_ids
+
+      foreign_names = Enum.map(contacts, & &1["name"])
+      refute foreign_contact.name in foreign_names
     end
 
     test "virtual filter flow_uuid resolves correctly", %{conn: conn, org: org} do

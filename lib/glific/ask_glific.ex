@@ -18,30 +18,41 @@ defmodule Glific.AskGlific do
   def ask(params, user) do
     Glific.Metrics.increment("AskGlific Requests")
 
-    query = Map.get(params, :query)
+    query = params |> Map.get(:query) |> to_string() |> String.trim()
     conversation_id = Map.get(params, :conversation_id, "")
     page_url = Map.get(params, :page_url, "")
 
-    body = %{
-      "inputs" => %{"page_url" => page_url},
-      "query" => query,
-      "response_mode" => "blocking",
-      "conversation_id" => conversation_id,
-      "user" => dify_user(user)
-    }
+    if query == "" do
+      {:error, "Query is required"}
+    else
+      body = %{
+        "inputs" => %{"page_url" => page_url},
+        "query" => query,
+        "response_mode" => "blocking",
+        "conversation_id" => conversation_id,
+        "user" => dify_user(user)
+      }
 
-    is_new_conversation = conversation_id == ""
+      is_new_conversation = conversation_id == ""
 
+      do_ask(body, is_new_conversation, user)
+    end
+  end
+
+  @spec do_ask(map(), boolean(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp do_ask(body, is_new_conversation, user) do
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
         message_id = Map.get(response, "message_id", "")
 
-        create_conversation(resp_conversation_id, user)
+        if resp_conversation_id != "" do
+          create_conversation(resp_conversation_id, user)
+        end
 
         conversation_name =
-          if is_new_conversation do
+          if is_new_conversation and resp_conversation_id != "" do
             generate_conversation_name(resp_conversation_id, user)
           else
             nil

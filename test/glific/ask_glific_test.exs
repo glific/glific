@@ -188,6 +188,7 @@ defmodule Glific.AskGlificTest do
 
     test "handles missing conversation_id in response", %{user: user} do
       Req.Test.stub(self(), fn conn ->
+        assert conn.request_path == "/v1/chat-messages"
         Req.Test.json(conn, %{"answer" => "Hello"})
       end)
 
@@ -195,6 +196,9 @@ defmodule Glific.AskGlificTest do
 
       assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_id == ""
+      assert result.conversation_name == nil
+
+      assert Repo.get_by(Conversation, conversation_id: "") == nil
     end
 
     test "returns nil conversation_name when name generation fails", %{user: user} do
@@ -214,6 +218,16 @@ defmodule Glific.AskGlificTest do
 
       assert {:ok, result} = AskGlific.ask(params, user)
       assert result.conversation_name == nil
+    end
+
+    test "returns error when query is missing", %{user: user} do
+      assert {:error, "Query is required"} = AskGlific.ask(%{}, user)
+    end
+
+    test "returns error when query is empty or whitespace", %{user: user} do
+      assert {:error, "Query is required"} = AskGlific.ask(%{query: ""}, user)
+      assert {:error, "Query is required"} = AskGlific.ask(%{query: "   "}, user)
+      assert {:error, "Query is required"} = AskGlific.ask(%{query: nil}, user)
     end
   end
 
