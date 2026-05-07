@@ -442,12 +442,10 @@ defmodule Glific.ThirdParty.Kaapi do
     output_language = opts[:output_language]
 
     params =
-      cond do
-        is_binary(output_language) and String.trim(output_language) != "" ->
-          Map.put(base_params, :output_language, output_language)
-
-        true ->
-          base_params
+      if is_binary(output_language) and String.trim(output_language) != "" do
+        Map.put(base_params, :output_language, output_language)
+      else
+        base_params
       end
 
     %{
