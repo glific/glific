@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   object :golden_qa_item do
     field :id, :id
     field :name, :string
-    field :dataset_id, :integer
+    field :golden_qa_id, :id
     field :duplication_factor, :integer
     field :file_name, :string
     field :inserted_at, :datetime
