@@ -139,7 +139,8 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # Generic Kaapi STT webhook (async — result delivered via flow_resume callback).
-  # Optional fields from flow node: provider, model, language (input language for transcription)
+  # Optional fields from flow node: provider, model, language (input language for transcription),
+  # output_language (if omitted, Kaapi transcribes in the input language without translation)
   def webhook("speech_to_text", fields, _headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
@@ -148,14 +149,11 @@ defmodule Glific.Clients.CommonWebhook do
 
     request_metadata = Map.put(request_metadata, :call_type, "stt")
 
-    contact = Contacts.preload_contact_language(contact_id)
-    contact_language = contact.language.label |> String.downcase()
-
     stt_opts = %{
       provider: fields["provider"],
       model: fields["model"],
       language: fields["language"],
-      output_language: contact_language
+      output_language: fields["output_language"]
     }
 
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
