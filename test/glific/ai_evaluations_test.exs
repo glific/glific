@@ -347,7 +347,8 @@ defmodule Glific.AIEvaluationsTest do
   end
 
   defp create_evaluation(organization_id, config_version_id, attrs \\ %{}) do
-    golden_qa_id = Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
+    golden_qa_id =
+      Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
 
     base = %{
       name: "test_eval",
