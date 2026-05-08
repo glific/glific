@@ -7,6 +7,7 @@ defmodule Glific.AIEvaluationsTest do
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Notifications,
@@ -18,7 +19,7 @@ defmodule Glific.AIEvaluationsTest do
   @valid_attrs %{
     name: "test_experiment",
     status: :create_in_progress,
-    dataset_id: 123,
+    golden_qa_id: 123,
     kaapi_evaluation_id: 123,
     assistant_config_version_id: 1
   }
@@ -26,7 +27,7 @@ defmodule Glific.AIEvaluationsTest do
   @invalid_attrs %{
     name: nil,
     status: nil,
-    dataset_id: nil,
+    golden_qa_id: nil,
     assistant_config_version_id: nil,
     kaapi_evaluation_id: nil
   }
@@ -45,7 +46,7 @@ defmodule Glific.AIEvaluationsTest do
 
       assert %{
                name: ["can't be blank"],
-               dataset_id: ["can't be blank"],
+               golden_qa_id: ["can't be blank"],
                assistant_config_version_id: ["can't be blank"],
                status: ["can't be blank"]
              } = errors_on(changeset)
@@ -332,11 +333,26 @@ defmodule Glific.AIEvaluationsTest do
     config_version
   end
 
+  defp create_golden_qa(organization_id) do
+    {:ok, golden_qa} =
+      %GoldenQA{}
+      |> GoldenQA.changeset(%{
+        name: "test_golden_qa_#{System.unique_integer([:positive])}",
+        dataset_id: 1,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    golden_qa
+  end
+
   defp create_evaluation(organization_id, config_version_id, attrs \\ %{}) do
+    golden_qa_id = Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
+
     base = %{
       name: "test_eval",
       status: :processing,
-      dataset_id: 1,
+      golden_qa_id: golden_qa_id,
       kaapi_evaluation_id: 404,
       assistant_config_version_id: config_version_id,
       organization_id: organization_id

@@ -11,19 +11,31 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :message, non_null(:string)
   end
 
+  object :ai_eval_golden_qa do
+    field :id, :id
+    field :name, :string
+    field :duplication_factor, :integer
+  end
+
+  object :ai_eval_assistant do
+    field :id, :id
+    field :name, :string
+  end
+
+  object :ai_eval_config_version do
+    field :id, :id
+    field :version_number, :integer
+    field :assistant, :ai_eval_assistant
+  end
+
   object :ai_evaluation do
     field :id, :id
     field :name, :string
     field :status, :ai_evaluation_status_enum
     field :failure_reason, :string
     field :results, :json
-    field :golden_qa_id, :id
-    field :assistant_config_version_id, :id
-    field :golden_qa_name, :string
-    field :golden_qa_duplication_factor, :integer
-    field :assistant_config_name, :string
-    field :assistant_config_version_number, :integer
-    field :assistant_id, :id
+    field :golden_qa, :ai_eval_golden_qa
+    field :assistant_config_version, :ai_eval_config_version
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
