@@ -122,9 +122,7 @@ defmodule Glific.Sheets.GoogleSheets do
         {:ok, []}
 
       {:error, reason} ->
-        Logger.warning(
-          "Google Sheets API read failed for #{sheet_url}: #{safe_inspect(reason)}"
-        )
+        Logger.warning("Google Sheets API read failed for #{sheet_url}: #{safe_inspect(reason)}")
 
         {:error, reason}
     end

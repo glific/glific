@@ -26,11 +26,12 @@ defmodule Glific.AIEvaluations do
       [%AIEvaluation{}, ...]
 
   """
-  @spec list_ai_evaluations(map()) :: [AIEvaluation.t()]
+  @spec list_ai_evaluations(map()) :: [map()]
   def list_ai_evaluations(args) do
     args
     |> Repo.list_filter_query(AIEvaluation, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Repo.all()
+    |> Repo.preload([:golden_qa, assistant_config_version: :assistant])
   end
 
   @doc """

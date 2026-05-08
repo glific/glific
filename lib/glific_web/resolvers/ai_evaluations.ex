@@ -286,21 +286,41 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    with {:ok, config_version} <-
-           Repo.fetch_by(AssistantConfigVersion, %{id: input.config_version}),
-         kaapi_input = Map.put(input, :config_version, config_version.kaapi_version_number),
+    with {:assistant_config_version, {:ok, config_version}} <-
+           {:assistant_config_version,
+            Repo.fetch_by(AssistantConfigVersion, %{id: input.config_id})},
+         config_version = Repo.preload(config_version, :assistant),
+         {:golden_qa, {:ok, golden_qa}} <-
+           {:golden_qa,
+            Repo.fetch_by(GoldenQA, %{
+              id: input.golden_qa_id,
+              organization_id: user.organization_id
+            })},
+         kaapi_input = %{
+           experiment_name: input.evaluation_name,
+           config_id: config_version.assistant.kaapi_uuid,
+           config_version: config_version.kaapi_version_number,
+           dataset_id: golden_qa.dataset_id
+         },
          {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
-             name: input.experiment_name,
+             name: input.evaluation_name,
              status: String.to_existing_atom(data.status),
              kaapi_evaluation_id: data.id,
-             dataset_id: data.dataset_id,
-             assistant_config_version_id: input.config_version,
+             golden_qa_id: input.golden_qa_id,
+             assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
            }) do
       {:ok, %{evaluation: evaluation}}
     else
+      {:assistant_config_version, {:error, _}} ->
+        {:error, "The specified config version does not exist."}
+
+      {:golden_qa, {:error, _}} ->
+        {:error,
+         "The specified Golden QA dataset does not exist or does not belong to your organization."}
+
       {:error, :timeout} ->
         {:error, "Timeout occurred, please try again."}
 
@@ -309,9 +329,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, msg} when is_binary(msg) ->
         {:error, msg}
-
-      {:error, [_, "Resource not found"]} ->
-        {:error, "The specified config version does not exist."}
 
       {:error, _} ->
         {:error, "An unknown error occurred, please contact Glific support."}

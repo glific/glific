@@ -290,7 +290,9 @@ defmodule Glific.OpenAI.ChatGPT do
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: thread_id]])
+    |> Tesla.get(url,
+      opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: thread_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
         {:ok, thread_id}
@@ -490,7 +492,10 @@ defmodule Glific.OpenAI.ChatGPT do
     |> get_tesla_middlewares()
     |> Tesla.client()
     |> Tesla.post(url, "",
-      opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: thread_id, run_id: run_id]]
+      opts: [
+        adapter: [recv_timeout: 120_000],
+        path_params: [thread_id: thread_id, run_id: run_id]
+      ]
     )
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
