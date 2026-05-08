@@ -434,6 +434,20 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec stt_payload(String.t(), String.t(), map(), map()) :: map()
   defp stt_payload(encoded_audio, callback_url, request_metadata, opts) do
+    base_params = %{
+      model: opts[:model] || "gemini-2.5-pro",
+      input_language: opts[:language] || "auto"
+    }
+
+    output_language = opts[:output_language]
+
+    params =
+      if is_binary(output_language) and String.trim(output_language) != "" do
+        Map.put(base_params, :output_language, output_language)
+      else
+        base_params
+      end
+
     %{
       query: %{
         input: %{
@@ -446,11 +460,7 @@ defmodule Glific.ThirdParty.Kaapi do
           completion: %{
             provider: opts[:provider] || "google",
             type: "stt",
-            params: %{
-              model: opts[:model] || "gemini-2.5-pro",
-              input_language: opts[:language] || "auto",
-              output_language: opts[:output_language] || "english"
-            }
+            params: params
           }
         }
       },

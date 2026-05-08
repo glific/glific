@@ -1,0 +1,15 @@
+{
+  "output": ["stdio", "file"],
+  "version": "1.1",
+  "project": {
+    "name": "Glific",
+    "type": "beam",
+    "apps": [
+      {
+        "name": "glific",
+        "additional_includes": []
+      }
+    ],
+    "paths": ["/_build/test/lib"]
+  }
+}
