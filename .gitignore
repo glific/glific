@@ -58,3 +58,6 @@ npm-debug.log
 /Mnesia*
 
 template-asset*
+
+# Claude worktrees
+.claude/worktrees/

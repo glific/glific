@@ -37,7 +37,14 @@ oban_queues = [
   dialogflow: 5,
   gcs: 10,
   gupshup: 10,
-  webhook: 20,
+  webhook: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 3,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ],
   broadcast: 5,
   wa_group: 5,
   purge: 1,
@@ -45,7 +52,14 @@ oban_queues = [
     limit: 10,
     rate_limit: [allowed: 60, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
-  gpt_webhook_queue: 20,
+  gpt_webhook_queue: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 3,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ],
   contact_import: 10,
   gupshup_high_tps: 10,
   clone_assistant: 5
@@ -58,6 +72,7 @@ oban_crontab = [
   {"*/2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :triggers_and_broadcast}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :check_user_job_status}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :poll_ai_evaluations}},
   {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
@@ -101,7 +116,10 @@ config :glific, Oban,
 # We will revisit it once we build a better understanding
 config :tesla,
   adapter:
-    {Tesla.Adapter.Hackney, ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}]}
+    {Tesla.Adapter.Hackney,
+     ssl_options: [{:middlebox_comp_mode, false}, {:verify, :verify_none}],
+     pool: :glific_default_pool,
+     connect_timeout: 5_000}
 
 config :glific, :max_rate_limit_request, 60
 

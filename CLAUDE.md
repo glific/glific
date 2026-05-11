@@ -66,7 +66,7 @@ glific/
 1. `use` statements
 2. `alias __MODULE__` (self-reference)
 3. `require` statements (e.g., `require Logger`)
-4. `import` statements (e.g., `import Ecto.Query, warn: false`)
+4. `import` statements (e.g., `import Ecto.Query`)
 5. Other aliases (grouped alphabetically: `alias Glific.{Contacts.Contact, Repo, ...}`)
 6. Module attributes (`@required_fields`, `@optional_fields`)
 7. Type definitions (`@type t()`)
@@ -140,6 +140,7 @@ glific/
   end
   ```
 - **Bang functions** (`!`) raise exceptions; non-bang return `{:ok, data}` / `{:error, reason}`
+- **Exception logging standard**: always use `Glific.log_exception/1` for exceptions and avoid direct `AppSignal.error` calls
 - **`Glific.log_error/2`** - Central error logging that logs to Logger + sends to AppSignal
 - **Rescue clauses** in resolvers for unexpected errors
 - **`Repo.fetch/2` / `Repo.fetch_by/2`** - Custom wrappers returning `{:ok, entity}` / `{:error, ["Resource not found"]}`

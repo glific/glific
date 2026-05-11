@@ -12,7 +12,7 @@ query organizationServices {
     whatsapp_group_enabled
     certificate_enabled
     kaapi_enabled
-    ask_me_bot_enabled
+    ask_glific_enabled
     whatsapp_forms_enabled
     unified_api_enabled
     ai_evaluations_enabled

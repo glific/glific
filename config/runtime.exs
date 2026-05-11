@@ -56,6 +56,8 @@ config :glific, Glific.RepoReplica,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
+config :glific, :hackney_pool, max_connections: env!("HACKNEY_POOL_SIZE", :integer, 50)
+
 check_origin = [env!("REQUEST_ORIGIN", :string!), env!("REQUEST_ORIGIN_WILDCARD", :string!)]
 
 # Glific endpoint configs
@@ -158,6 +160,9 @@ config :glific,
   open_ai_project: env!("OPEN_AI_PROJECT", :string!, "This is not a secret")
 
 config :glific,
+  dify_api_key: env!("DIFY_API_KEY", :string!, "This is not a secret")
+
+config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
 
 config :glific, Glific.Erase,
@@ -181,7 +186,9 @@ config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   upload_adapter: upload_adapter
 
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
-  gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret")
+  gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret"),
+  stt_model: env!("GEMINI_STT_MODEL", :string, "gemini-2.5-pro"),
+  tts_model: env!("GEMINI_TTS_MODEL", :string, "gemini-2.5-pro-preview-tts")
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),

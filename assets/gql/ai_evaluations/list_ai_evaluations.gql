@@ -5,8 +5,19 @@ query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
     status
     failureReason
     results
-    datasetId
-    assistantConfigVersionId
+    goldenQa {
+      id
+      name
+      duplicationFactor
+    }
+    assistantConfigVersion {
+      id
+      versionNumber
+      assistant {
+        id
+        name
+      }
+    }
     insertedAt
     updatedAt
   }

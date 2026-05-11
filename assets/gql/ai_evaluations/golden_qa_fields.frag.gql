@@ -1,6 +1,0 @@
-fragment ErrorFields on GoldenQaResult {
-    errors {
-        key
-        message
-    }
-}

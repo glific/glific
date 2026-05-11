@@ -269,6 +269,55 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
+  @doc """
+  Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
+  """
+  @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/evaluations/:evaluation_id",
+      query: [get_trace_info: "true"],
+      opts: [path_params: [evaluation_id: evaluation_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Get dataset details from Kaapi with optional signed URL.
+  """
+  @spec get_dataset(non_neg_integer(), String.t(), boolean()) :: {:ok, map()} | {:error, any()}
+  def get_dataset(dataset_id, org_api_key, include_signed_url \\ false) do
+    query_params =
+      if include_signed_url do
+        [include_signed_url: "true"]
+      else
+        []
+      end
+
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/evaluations/datasets/:dataset_id",
+      query: query_params,
+      opts: [path_params: [dataset_id: dataset_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Delete an evaluation dataset in Kaapi.
+  """
+  @spec delete_evaluation_dataset(non_neg_integer() | String.t(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  def delete_evaluation_dataset(dataset_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.delete("/api/v1/evaluations/datasets/:dataset_id",
+      opts: [path_params: [dataset_id: dataset_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [

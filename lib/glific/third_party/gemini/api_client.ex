@@ -24,7 +24,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     opts = [adapter: [recv_timeout: 300_000]]
 
     client()
-    |> Tesla.post("/gemini-2.5-pro:generateContent", body, opts: opts)
+    |> Tesla.post("/#{gemini_config(:stt_model)}:generateContent", body, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
         text =
@@ -60,7 +60,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, nil}
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
-    path = "/gemini-2.5-pro-preview-tts:generateContent"
+    path = "/#{gemini_config(:tts_model)}:generateContent"
     opts = [adapter: [recv_timeout: 300_000]]
 
     client()
@@ -174,7 +174,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
           }
         }
       },
-      "model" => "gemini-2.5-pro-preview-tts"
+      "model" => gemini_config(:tts_model)
     }
   end
 

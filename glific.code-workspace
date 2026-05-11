@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "glific (backend)",
+      "path": "."
+    },
+    {
+      "name": "glific-frontend",
+      "path": "../glific-frontend"
+    }
+  ],
+  "settings": {}
+}

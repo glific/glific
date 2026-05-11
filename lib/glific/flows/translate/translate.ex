@@ -61,7 +61,7 @@ defmodule Glific.Flows.Translate.Translate do
   def check_large_strings(strings, opts \\ []) do
     strings
     |> Enum.reduce([], fn string, acc ->
-      # we ca use the gptTokenizer to count the token
+      # we can use the gptTokenizer to count the token
       string_size = Gpt3Tokenizer.token_count(string)
       token_chunk_size = Keyword.get(opts, :token_chunk_size, @token_chunk_size)
 

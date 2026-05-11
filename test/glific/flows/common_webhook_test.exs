@@ -1066,6 +1066,9 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) ==
                    "auto"
 
+          params = get_in(decoded, ["config", "blob", "completion", "params"])
+          refute Map.has_key?(params, "output_language")
+
           metadata = decoded["request_metadata"]
           assert metadata["organization_id"] == 1
           assert metadata["flow_id"] == 1
@@ -1077,6 +1080,26 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == true
+    end
+
+    test "passes output_language to Kaapi when specified in fields", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "output_language"]) ==
+                   "english"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-456"}}
+      end)
+
+      result =
+        CommonWebhook.webhook("speech_to_text", Map.put(fields, "output_language", "english"), [])
+
       assert result.success == true
     end
   end

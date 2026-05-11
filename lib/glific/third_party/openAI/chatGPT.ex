@@ -285,12 +285,14 @@ defmodule Glific.OpenAI.ChatGPT do
   def fetch_thread(%{thread_id: nil}), do: {:error, "No thread found with nil id."}
 
   def fetch_thread(%{thread_id: thread_id}) do
-    url = @endpoint <> "/threads/#{thread_id}"
+    url = @endpoint <> "/threads/:thread_id"
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.get(url,
+      opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: thread_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: _body}} ->
         {:ok, thread_id}
@@ -309,7 +311,7 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec add_message_to_thread(map()) :: tuple()
   def add_message_to_thread(params) do
-    url = @endpoint <> "/threads/#{params.thread_id}/messages"
+    url = @endpoint <> "/threads/:thread_id/messages"
 
     payload =
       %{
@@ -321,7 +323,9 @@ defmodule Glific.OpenAI.ChatGPT do
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, payload,
+      opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: params.thread_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -336,12 +340,14 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec list_thread_messages(map()) :: map()
   def list_thread_messages(params) do
-    url = @endpoint <> "/threads/#{params.thread_id}/messages"
+    url = @endpoint <> "/threads/:thread_id/messages"
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.get(url,
+      opts: [adapter: [recv_timeout: 120_000], path_params: [thread_id: params.thread_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -376,14 +382,16 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec run_thread(map()) :: {:ok, String.t()} | {:error, String.t()}
   def run_thread(params) do
     re_run = Map.get(params, :re_run, false)
-    url = @endpoint <> "/threads/#{params.thread_id}/runs"
+    url = @endpoint <> "/threads/:thread_id/runs"
 
     payload = Jason.encode!(%{"assistant_id" => params.assistant_id})
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.post(url, payload, opts: [adapter: [recv_timeout: 20_000]])
+    |> Tesla.post(url, payload,
+      opts: [adapter: [recv_timeout: 20_000], path_params: [thread_id: params.thread_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         run = Jason.decode!(body)
@@ -478,12 +486,17 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec cancel_run(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def cancel_run(thread_id, run_id) do
-    url = @endpoint <> "/threads/#{thread_id}/runs/#{run_id}/cancel"
+    url = @endpoint <> "/threads/:thread_id/runs/:run_id/cancel"
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.post(url, "", opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.post(url, "",
+      opts: [
+        adapter: [recv_timeout: 120_000],
+        path_params: [thread_id: thread_id, run_id: run_id]
+      ]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
         {:ok, "run cancelled"}
@@ -498,12 +511,17 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec retrieve_run(map()) :: {:ok, map()} | {:error, String.t()}
   def retrieve_run(params) do
-    url = @endpoint <> "/threads/#{params.thread_id}/runs/#{params.run_id}"
+    url = @endpoint <> "/threads/:thread_id/runs/:run_id"
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.get(url,
+      opts: [
+        adapter: [recv_timeout: 120_000],
+        path_params: [thread_id: params.thread_id, run_id: params.run_id]
+      ]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, Jason.decode!(body)}
@@ -576,12 +594,14 @@ defmodule Glific.OpenAI.ChatGPT do
   """
   @spec retrieve_assistant(map()) :: {:ok, String.t()} | {:error, String.t()}
   def retrieve_assistant(assistant_id) do
-    url = @endpoint <> "/assistants/#{assistant_id}"
+    url = @endpoint <> "/assistants/:assistant_id"
 
     headers()
     |> get_tesla_middlewares()
     |> Tesla.client()
-    |> Tesla.get(url, opts: [adapter: [recv_timeout: 120_000]])
+    |> Tesla.get(url,
+      opts: [adapter: [recv_timeout: 120_000], path_params: [assistant_id: assistant_id]]
+    )
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         response = Jason.decode!(body)
@@ -631,6 +651,8 @@ defmodule Glific.OpenAI.ChatGPT do
   @spec get_tesla_telemetry_middlewares :: list()
   defp get_tesla_telemetry_middlewares do
     [
+      Tesla.Middleware.KeepRequest,
+      Tesla.Middleware.PathParams,
       {Tesla.Middleware.Telemetry, metadata: %{provider: "openai", sampling_scale: 8}}
     ] ++ Glific.get_tesla_retry_middleware()
   end
