@@ -266,18 +266,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec optin_contact(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, []}
   defp optin_contact(organization_id, phone) do
-    case Repo.fetch_by(Contact, %{phone: phone}) do
-      {:ok, contact} ->
-        {:ok, contact}
-
-      {:error, _} ->
-        %{
-          phone: phone,
-          organization_id: organization_id,
-          method: "registration"
-        }
-        |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
-    end
+    %{
+      phone: phone,
+      organization_id: organization_id,
+      method: "registration"
+    }
+    |> Contacts.contact_opted_in(organization_id, DateTime.utc_now(), method: "registration")
   end
 
   # If the org's gupshup account has 0 balance or gupshup is inactive
