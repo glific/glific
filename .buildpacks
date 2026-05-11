@@ -1,4 +1,5 @@
 https://github.com/heroku/heroku-buildpack-apt
+https://github.com/heroku/heroku-buildpack-activestorage-preview
 https://github.com/gigalixir/gigalixir-buildpack-elixir
 https://github.com/gigalixir/gigalixir-buildpack-phoenix-static
 https://github.com/gigalixir/gigalixir-buildpack-releases
