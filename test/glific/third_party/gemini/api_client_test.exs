@@ -153,7 +153,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, "Received non 200 response from Gemini TTS API"} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
 
     test "handles Tesla error with body", %{organization_id: organization_id} do
@@ -161,7 +162,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, %Tesla.Env{body: "Service unavailable"}}
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, "Received failed response from Gemini TTS API"} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
 
     test "handles Tesla timeout error", %{organization_id: organization_id} do
@@ -169,7 +171,65 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, :timeout}
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, "Received failed response from Gemini TTS API"} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
+    end
+
+    test "handles successful response without audio data", %{organization_id: organization_id} do
+      mock(fn %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            candidates: [
+              %{
+                index: 0,
+                finishReason: "OTHER"
+              }
+            ],
+            usageMetadata: %{
+              promptTokenCount: 50,
+              candidatesTokenCount: 0,
+              totalTokenCount: 50
+            }
+          }
+        }
+      end)
+
+      assert {:error, "missing audio data in Gemini response"} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
+    end
+
+    test "handles successful response with invalid base64 audio data", %{
+      organization_id: organization_id
+    } do
+      mock(fn %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            candidates: [
+              %{
+                content: %{
+                  parts: [
+                    %{
+                      inlineData: %{
+                        data: "not-valid-base64"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            usageMetadata: %{
+              promptTokenCount: 50,
+              candidatesTokenCount: 100,
+              totalTokenCount: 150
+            }
+          }
+        }
+      end)
+
+      assert {:error, "invalid base64 audio data in Gemini response"} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
   end
 end
