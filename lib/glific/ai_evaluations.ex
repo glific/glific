@@ -245,7 +245,6 @@ defmodule Glific.AIEvaluations do
     end
   end
 
-
   @doc """
   Returns the eval access request for an organization, or nil if none exists.
   """
