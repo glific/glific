@@ -46,4 +46,56 @@ defmodule Glific.AppsignalTest do
       assert Appsignal.send_oban_queue_size() == :ok
     end
   end
+
+  describe "handle_event [:glific, :repo, :query] DBConnection error tracking" do
+    defp query_event(result) do
+      Appsignal.handle_event(
+        [:glific, :repo, :query],
+        %{queue_time: 1_000_000},
+        %{result: result, query: "SELECT 1"},
+        nil
+      )
+    end
+
+    test "tracks queue_timeout DBConnection.ConnectionError in result" do
+      error = %DBConnection.ConnectionError{message: "queue timeout after 2999ms"}
+      assert query_event({:error, error}) == :ok
+    end
+
+    test "tracks checkout_timeout DBConnection.ConnectionError in result" do
+      error = %DBConnection.ConnectionError{message: "checkout timeout after 1000ms"}
+      assert query_event({:error, error}) == :ok
+    end
+
+    test "tracks connection_not_available DBConnection.ConnectionError in result" do
+      error = %DBConnection.ConnectionError{message: "connection not available and request was dropped"}
+      assert query_event({:error, error}) == :ok
+    end
+
+    test "tracks other DBConnection.ConnectionError in result" do
+      error = %DBConnection.ConnectionError{message: "some unexpected connection error"}
+      assert query_event({:error, error}) == :ok
+    end
+
+    test "does not track non-connection errors" do
+      assert query_event({:error, %Postgrex.Error{message: "syntax error"}}) == :ok
+    end
+
+    test "does not track successful results" do
+      assert query_event({:ok, %{rows: []}}) == :ok
+    end
+
+    test "handles missing result key gracefully" do
+      result =
+        Appsignal.handle_event(
+          [:glific, :repo, :query],
+          %{queue_time: 1_000_000},
+          %{query: "SELECT 1"},
+          nil
+        )
+
+      assert result == :ok
+    end
+  end
+
 end
