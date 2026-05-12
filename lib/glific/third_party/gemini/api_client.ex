@@ -69,10 +69,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     |> case do
       {:ok,
        %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata} = body}} ->
-        with {:ok, decoded_audio} <- decode_tts_audio(candidates) do
-          tts_gemini_usage_stats(metadata, organization_id)
-          {:ok, decoded_audio}
-        else
+        case decode_tts_audio(candidates) do
+          {:ok, decoded_audio} ->
+            tts_gemini_usage_stats(metadata, organization_id)
+            {:ok, decoded_audio}
+
           {:error, reason} ->
             Glific.log_exception(%Error{
               message: "Gemini TTS Failure: #{reason}: #{inspect(body)}",

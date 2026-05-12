@@ -36,29 +36,45 @@ defmodule Glific.Scripts.TtsStressTest do
   @short_text "Hello, this is a test message."
 
   @languages [
-    {"hindi",
-     "नमस्ते, यह एक परीक्षण संदेश है। हम यह सुनिश्चित करना चाहते हैं कि यह सही ढंग से काम कर रहा है।"},
-    {"tamil",
-     "வணக்கம், இது ஒரு சோதனை செய்தி. இது சரியாக செயல்படுகிறதா என்று சரிபார்க்கிறோம்."},
-    {"telugu",
-     "నమస్కారం, ఇది ఒక పరీక్ష సందేశం. ఇది సరిగ్గా పనిచేస్తుందో లేదో తనిఖీ చేస్తున్నాం."},
-    {"marathi",
-     "नमस्कार, हा एक चाचणी संदेश आहे. हे योग्यरित्या काम करत आहे का ते आम्ही तपासत आहोत."},
-    {"bengali",
-     "নমস্কার, এটি একটি পরীক্ষামূলক বার্তা। এটি সঠিকভাবে কাজ করছে কিনা তা আমরা যাচাই করছি।"},
+    {"hindi", "नमस्ते, यह एक परीक्षण संदेश है। हम यह सुनिश्चित करना चाहते हैं कि यह सही ढंग से काम कर रहा है।"},
+    {"tamil", "வணக்கம், இது ஒரு சோதனை செய்தி. இது சரியாக செயல்படுகிறதா என்று சரிபார்க்கிறோம்."},
+    {"telugu", "నమస్కారం, ఇది ఒక పరీక్ష సందేశం. ఇది సరిగ్గా పనిచేస్తుందో లేదో తనిఖీ చేస్తున్నాం."},
+    {"marathi", "नमस्कार, हा एक चाचणी संदेश आहे. हे योग्यरित्या काम करत आहे का ते आम्ही तपासत आहोत."},
+    {"bengali", "নমস্কার, এটি একটি পরীক্ষামূলক বার্তা। এটি সঠিকভাবে কাজ করছে কিনা তা আমরা যাচাই করছি।"},
     {"english",
      "Hello, this is a test message. We are verifying that text-to-speech conversion works correctly across all supported languages."}
   ]
 
   @unicode_text "🎉 Congratulations! Your application is approved ✅. Please visit our office 🏢 at 10:00 AM tomorrow. For queries, call us: +91-98765-43210. \"Thank you\" – The Team 🙏"
 
+  @doc """
+  Runs all predefined TTS stress test scenarios for the given organization.
+
+  The scenarios are executed sequentially and print timing, success, and cleanup
+  information to stdout. This is useful when validating the overall Gemini TTS
+  and ffmpeg pipeline from a remote IEx session.
+
+  ## Examples
+
+      iex> Glific.Scripts.TtsStressTest.run_all(1)
+      :ok
+
+  """
   @spec run_all(non_neg_integer()) :: :ok
   def run_all(org_id) do
     IO.puts("\n#{String.duplicate("=", 60)}")
     IO.puts("TTS / ffmpeg Stress Test  org_id=#{org_id}")
     IO.puts("#{String.duplicate("=", 60)}\n")
 
-    for scenario <- [:large, :languages, :parallel, :medium_burst, :short_burst, :unicode, :temp_cleanup] do
+    for scenario <- [
+          :large,
+          :languages,
+          :parallel,
+          :medium_burst,
+          :short_burst,
+          :unicode,
+          :temp_cleanup
+        ] do
       run(org_id, scenario)
       IO.puts("")
     end
@@ -66,6 +82,25 @@ defmodule Glific.Scripts.TtsStressTest do
     IO.puts("All scenarios complete.")
   end
 
+  @doc """
+  Runs a single TTS stress test scenario for the given organization.
+
+  Supported scenarios are:
+
+  - `:large` - validates large input near the WhatsApp character limit
+  - `:languages` - checks multilingual synthesis across sample languages
+  - `:parallel` - runs concurrent requests to observe throughput and memory use
+  - `:medium_burst` - sends a burst of medium-sized sequential requests
+  - `:short_burst` - sends a burst of short sequential requests
+  - `:unicode` - verifies emoji and special-character handling
+  - `:temp_cleanup` - checks whether temporary audio files are cleaned up
+
+  ## Examples
+
+      iex> Glific.Scripts.TtsStressTest.run(1, :parallel)
+      :ok
+
+  """
   @spec run(non_neg_integer(), atom()) :: :ok | list()
   def run(org_id, :large) do
     label = "Scenario 1 – Large text (#{String.length(@large_text)} chars)"
