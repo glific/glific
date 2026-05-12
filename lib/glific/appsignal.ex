@@ -245,11 +245,12 @@ defmodule Glific.Appsignal do
 
   @spec classify_db_connection_error(DBConnection.ConnectionError.t()) :: String.t()
   defp classify_db_connection_error(%DBConnection.ConnectionError{reason: reason})
-       when is_atom(reason),
+       when is_atom(reason) and not is_nil(reason),
        do: Atom.to_string(reason)
 
-  defp classify_db_connection_error(%DBConnection.ConnectionError{reason: reason}),
-    do: to_string(reason)
+  defp classify_db_connection_error(%DBConnection.ConnectionError{reason: reason})
+       when not is_nil(reason),
+       do: to_string(reason)
 
   # Fallback clause if reason is not present in struct (legacy/older DBConnection)
   defp classify_db_connection_error(%DBConnection.ConnectionError{message: msg}) do
