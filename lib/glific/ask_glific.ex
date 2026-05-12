@@ -305,50 +305,6 @@ defmodule Glific.AskGlific do
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
 
   @doc """
-  List recorded AskGlific question/answer interactions for the current org.
-
-  Supported filters (all optional):
-    * `:user_id` — scope to a single user
-    * `:status` — `"success"` or `"error"`
-    * `:rating` — `"like"` or `"dislike"`
-    * `:from` / `:to` — DateTime bounds on `inserted_at`
-    * `:limit` (default 50) / `:offset` (default 0)
-  """
-  @spec list_messages(map()) :: [Message.t()]
-  def list_messages(filters \\ %{}) do
-    Message
-    |> apply_filters(filters)
-    |> order_by([m], desc: m.inserted_at)
-    |> limit(^Map.get(filters, :limit, 50))
-    |> offset(^Map.get(filters, :offset, 0))
-    |> Repo.all()
-  end
-
-  @doc """
-  Aggregate metrics for the current org over the matched message set.
-
-  Returns a map with: `total`, `errors`, `avg_latency_ms`, `likes`,
-  `dislikes`, `unrated`. Honors the same filters as `list_messages/1`
-  except `:limit` / `:offset`.
-  """
-  @spec metrics_summary(map()) :: map()
-  def metrics_summary(filters \\ %{}) do
-    query =
-      Message
-      |> apply_filters(filters)
-      |> select([m], %{
-        total: count(m.id),
-        errors: filter(count(m.id), m.status == "error"),
-        avg_latency_ms: avg(m.latency_ms),
-        likes: filter(count(m.id), m.rating == "like"),
-        dislikes: filter(count(m.id), m.rating == "dislike"),
-        unrated: filter(count(m.id), is_nil(m.rating))
-      })
-
-    Repo.one(query) || %{}
-  end
-
-  @doc """
   Question count grouped by user for the current org. Useful for the
   "questions per user" view.
   """

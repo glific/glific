@@ -2,7 +2,7 @@ defmodule Glific.AskGlificTest do
   use Glific.DataCase
 
   alias Glific.AskGlific
-  alias Glific.AskGlific.Conversation
+  alias Glific.AskGlific.{Conversation, Message}
   alias Glific.Repo
 
   @dify_success_response %{
@@ -83,6 +83,22 @@ defmodule Glific.AskGlificTest do
       user_id: user.id,
       organization_id: user.organization_id
     })
+    |> Repo.insert!()
+  end
+
+  defp insert_message(user, attrs) do
+    %Message{}
+    |> Message.changeset(
+      Map.merge(
+        %{
+          question: "Q?",
+          status: "success",
+          user_id: user.id,
+          organization_id: user.organization_id
+        },
+        attrs
+      )
+    )
     |> Repo.insert!()
   end
 
@@ -228,6 +244,54 @@ defmodule Glific.AskGlificTest do
       assert {:error, "Query is required"} = AskGlific.ask(%{query: ""}, user)
       assert {:error, "Query is required"} = AskGlific.ask(%{query: "   "}, user)
       assert {:error, "Query is required"} = AskGlific.ask(%{query: nil}, user)
+    end
+
+    test "persists Q&A row on success", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        Req.Test.json(
+          conn,
+          Map.put(@dify_success_response, "message_id", "msg-success-1")
+        )
+      end)
+
+      params = %{query: "What is Glific?"}
+
+      assert {:ok, _result} = AskGlific.ask(params, user)
+
+      message = Repo.get_by(Message, dify_message_id: "msg-success-1")
+      assert message != nil
+      assert message.question == "What is Glific?"
+      assert message.answer == "Glific is a two-way communication platform."
+      assert message.conversation_id == "conv-abc-123"
+      assert message.status == "success"
+      assert message.user_id == user.id
+      assert message.organization_id == user.organization_id
+      assert is_integer(message.latency_ms)
+      assert message.latency_ms >= 0
+      assert is_nil(message.error_reason)
+      assert is_nil(message.rating)
+    end
+
+    test "persists error row when Dify call fails", %{user: user} do
+      Req.Test.stub(self(), fn conn ->
+        conn
+        |> Plug.Conn.put_status(500)
+        |> Req.Test.json(%{"error" => "boom"})
+      end)
+
+      params = %{query: "Why does it fail?"}
+
+      assert {:error, _reason} = AskGlific.ask(params, user)
+
+      [message] =
+        Message
+        |> where([m], m.user_id == ^user.id and m.status == "error")
+        |> Repo.all()
+
+      assert message.question == "Why does it fail?"
+      assert message.error_reason =~ "Dify API error"
+      assert is_nil(message.answer)
+      assert is_integer(message.latency_ms)
     end
   end
 
@@ -494,6 +558,19 @@ defmodule Glific.AskGlificTest do
       params = %{message_id: "msg-001", rating: "like", content: "Great answer!"}
 
       assert {:ok, _result} = AskGlific.submit_feedback(params, user)
+    end
+
+    test "updates local message rating when a matching row exists", %{user: user} do
+      message = insert_message(user, %{dify_message_id: "msg-rated-1"})
+
+      Req.Test.stub(self(), fn conn ->
+        Req.Test.json(conn, %{"result" => "success"})
+      end)
+
+      assert {:ok, _} =
+               AskGlific.submit_feedback(%{message_id: "msg-rated-1", rating: "like"}, user)
+
+      assert Repo.get!(Message, message.id).rating == "like"
     end
   end
 end
