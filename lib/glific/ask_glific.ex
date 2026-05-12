@@ -5,7 +5,7 @@ defmodule Glific.AskGlific do
 
   import Ecto.Query, warn: false
 
-  alias Glific.AskGlific.Conversation
+  alias Glific.AskGlific.{Conversation, Message}
   alias Glific.Dify.ApiClient
   alias Glific.Repo
 
@@ -35,14 +35,17 @@ defmodule Glific.AskGlific do
 
       is_new_conversation = conversation_id == ""
 
-      do_ask(body, is_new_conversation, user)
+      do_ask(body, is_new_conversation, user, query)
     end
   end
 
-  @spec do_ask(map(), boolean(), map()) :: {:ok, map()} | {:error, String.t()}
-  defp do_ask(body, is_new_conversation, user) do
+  @spec do_ask(map(), boolean(), map(), String.t()) :: {:ok, map()} | {:error, String.t()}
+  defp do_ask(body, is_new_conversation, user, query) do
+    start_time = System.monotonic_time(:millisecond)
+
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
+        latency_ms = System.monotonic_time(:millisecond) - start_time
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
         message_id = Map.get(response, "message_id", "")
@@ -50,6 +53,15 @@ defmodule Glific.AskGlific do
         if resp_conversation_id != "" do
           create_conversation(resp_conversation_id, user)
         end
+
+        log_message(user, %{
+          dify_message_id: message_id,
+          conversation_id: resp_conversation_id,
+          question: query,
+          answer: answer,
+          latency_ms: latency_ms,
+          status: "success"
+        })
 
         conversation_name =
           if is_new_conversation and resp_conversation_id != "" do
@@ -67,8 +79,28 @@ defmodule Glific.AskGlific do
          }}
 
       {:error, reason} ->
+        latency_ms = System.monotonic_time(:millisecond) - start_time
+
+        log_message(user, %{
+          conversation_id: Map.get(body, "conversation_id", ""),
+          question: query,
+          latency_ms: latency_ms,
+          status: "error",
+          error_reason: to_string(reason)
+        })
+
         {:error, reason}
     end
+  end
+
+  @spec log_message(map(), map()) :: :ok
+  defp log_message(user, attrs) do
+    attrs
+    |> Map.merge(%{user_id: user.id, organization_id: user.organization_id})
+    |> then(&Message.changeset(%Message{}, &1))
+    |> Repo.insert()
+
+    :ok
   end
 
   @doc """
@@ -88,10 +120,33 @@ defmodule Glific.AskGlific do
 
     case ApiClient.message_feedback(message_id, body) do
       {:ok, _response} ->
+        update_local_rating(message_id, rating, user)
         {:ok, %{success: true}}
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  @spec update_local_rating(String.t(), String.t() | nil, map()) :: :ok
+  defp update_local_rating(message_id, rating, user) do
+    Message
+    |> where(
+      [m],
+      m.dify_message_id == ^message_id and m.user_id == ^user.id and
+        m.organization_id == ^user.organization_id
+    )
+    |> Repo.one()
+    |> case do
+      nil ->
+        :ok
+
+      message ->
+        message
+        |> Message.feedback_changeset(%{rating: rating})
+        |> Repo.update()
+
+        :ok
     end
   end
 
@@ -231,4 +286,74 @@ defmodule Glific.AskGlific do
 
   @spec dify_user(map()) :: String.t()
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
+
+  @doc """
+  List recorded AskGlific question/answer interactions for the current org.
+
+  Supported filters (all optional):
+    * `:user_id` — scope to a single user
+    * `:status` — `"success"` or `"error"`
+    * `:rating` — `"like"` or `"dislike"`
+    * `:from` / `:to` — DateTime bounds on `inserted_at`
+    * `:limit` (default 50) / `:offset` (default 0)
+  """
+  @spec list_messages(map()) :: [Message.t()]
+  def list_messages(filters \\ %{}) do
+    Message
+    |> apply_filters(filters)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^Map.get(filters, :limit, 50))
+    |> offset(^Map.get(filters, :offset, 0))
+    |> Repo.all()
+  end
+
+  @doc """
+  Aggregate metrics for the current org over the matched message set.
+
+  Returns a map with: `total`, `errors`, `avg_latency_ms`, `likes`,
+  `dislikes`, `unrated`. Honors the same filters as `list_messages/1`
+  except `:limit` / `:offset`.
+  """
+  @spec metrics_summary(map()) :: map()
+  def metrics_summary(filters \\ %{}) do
+    query =
+      Message
+      |> apply_filters(filters)
+      |> select([m], %{
+        total: count(m.id),
+        errors: filter(count(m.id), m.status == "error"),
+        avg_latency_ms: avg(m.latency_ms),
+        likes: filter(count(m.id), m.rating == "like"),
+        dislikes: filter(count(m.id), m.rating == "dislike"),
+        unrated: filter(count(m.id), is_nil(m.rating))
+      })
+
+    Repo.one(query) || %{}
+  end
+
+  @doc """
+  Question count grouped by user for the current org. Useful for the
+  "questions per user" view.
+  """
+  @spec count_by_user(map()) :: [%{user_id: non_neg_integer(), count: non_neg_integer()}]
+  def count_by_user(filters \\ %{}) do
+    Message
+    |> apply_filters(filters)
+    |> group_by([m], m.user_id)
+    |> select([m], %{user_id: m.user_id, count: count(m.id)})
+    |> order_by([m], desc: count(m.id))
+    |> Repo.all()
+  end
+
+  @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp apply_filters(query, filters) do
+    Enum.reduce(filters, query, fn
+      {:user_id, user_id}, q -> where(q, [m], m.user_id == ^user_id)
+      {:status, status}, q -> where(q, [m], m.status == ^status)
+      {:rating, rating}, q -> where(q, [m], m.rating == ^rating)
+      {:from, from}, q -> where(q, [m], m.inserted_at >= ^from)
+      {:to, to}, q -> where(q, [m], m.inserted_at <= ^to)
+      _, q -> q
+    end)
+  end
 end
