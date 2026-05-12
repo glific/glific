@@ -174,69 +174,6 @@ defmodule Glific.ThirdParty.GeminiTest do
       assert result.translated_text == "Hello World"
     end
 
-    test "handles successful response without audio data", %{organization_id: organization_id} do
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                index: 0,
-                finishReason: "OTHER"
-              }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 50,
-              candidatesTokenCount: 0,
-              totalTokenCount: 50
-            }
-          }
-        }
-      end)
-
-      result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
-    end
-
-    test "handles successful response with invalid base64 audio data", %{
-      organization_id: organization_id
-    } do
-      mock(fn %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            candidates: [
-              %{
-                content: %{
-                  parts: [
-                    %{
-                      inlineData: %{
-                        data: "not-valid-base64"
-                      }
-                    }
-                  ]
-                }
-              }
-            ],
-            usageMetadata: %{
-              promptTokenCount: 50,
-              candidatesTokenCount: 100,
-              totalTokenCount: 150
-            }
-          }
-        }
-      end)
-
-      result = Gemini.do_text_to_speech(organization_id, "Hello World")
-
-      assert result.success == false
-      refute result.media_url
-      assert result.translated_text == "Hello World"
-    end
-
     @tag :skip
     test "handles GCS upload failure", %{organization_id: organization_id} do
       sample_audio_data = Base.encode64("fake_pcm_audio_data")

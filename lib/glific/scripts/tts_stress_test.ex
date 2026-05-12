@@ -45,7 +45,7 @@ defmodule Glific.Scripts.TtsStressTest do
      "Hello, this is a test message. We are verifying that text-to-speech conversion works correctly across all supported languages."}
   ]
 
-  @unicode_text "🎉 Congratulations! Your application is approved ✅. Please visit our office 🏢 at 10:00 AM tomorrow. For queries, call us: +91-98765-43210. \"Thank you\" – The Team 🙏"
+  @unicode_text "✨ Example message with Unicode! Visit our location 🏢 at 10:00 AM. \"Thank you\" – The Team 🙌"
 
   @doc """
   Runs all predefined TTS stress test scenarios for the given organization.

@@ -4,7 +4,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   """
   require Logger
   alias Glific.Metrics
-  alias Glific.SafeLog
 
   defmodule Error do
     @moduledoc """
@@ -58,7 +57,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @doc """
   Convert text to speech using Gemini API.
   """
-  @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}
+  @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, nil}
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
     path = "/#{gemini_config(:tts_model)}:generateContent"
@@ -67,36 +66,30 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     client()
     |> Tesla.post(path, body, opts: opts)
     |> case do
-      {:ok,
-       %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata} = body}} ->
-        case decode_tts_audio(candidates) do
-          {:ok, decoded_audio} ->
-            tts_gemini_usage_stats(metadata, organization_id)
-            {:ok, decoded_audio}
+      {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
+        decoded_audio =
+          candidates
+          |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
+          |> Base.decode64!()
 
-          {:error, reason} ->
-            Glific.log_exception(%Error{
-              message: "Gemini TTS Failure: #{reason}: #{inspect(body)}",
-              status_code: 200
-            })
-
-            {:error, reason}
-        end
+        tts_gemini_usage_stats(metadata, organization_id)
+        {:ok, decoded_audio}
 
       {:ok, %Tesla.Env{status: status, body: body}} ->
         Glific.log_exception(%Error{
-          message: "Gemini TTS Failure: #{SafeLog.safe_inspect(body)}",
+          message: "Gemini TTS Failure: #{inspect(body)}",
           status_code: status
         })
 
-        {:error, "Received non 200 response from Gemini TTS API"}
+        {:error, nil}
+
+      {:error, %Tesla.Env{body: error_reason}} ->
+        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(error_reason)}"})
+        {:error, nil}
 
       {:error, reason} ->
-        Glific.log_exception(%Error{
-          message: "Gemini TTS Failure: #{SafeLog.safe_inspect(reason)}"
-        })
-
-        {:error, "Received failed response from Gemini TTS API"}
+        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(reason)}"})
+        {:error, nil}
     end
   end
 
@@ -183,22 +176,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
       },
       "model" => gemini_config(:tts_model)
     }
-  end
-
-  @spec decode_tts_audio(list()) :: {:ok, binary()} | {:error, String.t()}
-  defp decode_tts_audio(candidates) do
-    candidates
-    |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
-    |> case do
-      encoded_audio when is_binary(encoded_audio) ->
-        case Base.decode64(encoded_audio) do
-          {:ok, decoded_audio} -> {:ok, decoded_audio}
-          :error -> {:error, "invalid base64 audio data in Gemini response"}
-        end
-
-      _ ->
-        {:error, "missing audio data in Gemini response"}
-    end
   end
 
   @spec stt_gemini_usage_stats(map(), non_neg_integer()) :: :ok
