@@ -303,30 +303,4 @@ defmodule Glific.AskGlific do
 
   @spec dify_user(map()) :: String.t()
   defp dify_user(user), do: "org-#{user.organization_id}-user-#{user.id}"
-
-  @doc """
-  Question count grouped by user for the current org. Useful for the
-  "questions per user" view.
-  """
-  @spec count_by_user(map()) :: [%{user_id: non_neg_integer(), count: non_neg_integer()}]
-  def count_by_user(filters \\ %{}) do
-    Message
-    |> apply_filters(filters)
-    |> group_by([m], m.user_id)
-    |> select([m], %{user_id: m.user_id, count: count(m.id)})
-    |> order_by([m], desc: count(m.id))
-    |> Repo.all()
-  end
-
-  @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp apply_filters(query, filters) do
-    Enum.reduce(filters, query, fn
-      {:user_id, user_id}, q -> where(q, [m], m.user_id == ^user_id)
-      {:status, status}, q -> where(q, [m], m.status == ^status)
-      {:rating, rating}, q -> where(q, [m], m.rating == ^rating)
-      {:from, from}, q -> where(q, [m], m.inserted_at >= ^from)
-      {:to, to}, q -> where(q, [m], m.inserted_at <= ^to)
-      _, q -> q
-    end)
-  end
 end
