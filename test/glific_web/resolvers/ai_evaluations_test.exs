@@ -1083,6 +1083,39 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "Invalid dataset format"
     end
 
+    test "returns error when evaluation name already exists for the organization", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      name = "duplicate_eval_name"
+
+      {:ok, _} =
+        Glific.AIEvaluations.create_ai_evaluation(%{
+          name: name,
+          status: :processing,
+          kaapi_evaluation_id: 1,
+          golden_qa_id: golden_qa.id,
+          assistant_config_version_id: assistant_config_version.id,
+          organization_id: user.organization_id
+        })
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: name,
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert reason ==
+               "An evaluation with this name already exists. Please choose a different name."
+    end
+
     test "returns error when Kaapi is not configured" do
       other_org = Glific.Fixtures.organization_fixture()
       Repo.put_organization_id(other_org.id)
@@ -1260,5 +1293,39 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       })
 
     %{golden_qa: golden_qa}
+  end
+
+  describe "request_ai_evaluation_access/3" do
+    test "creates an eval access request and returns status requested", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+    end
+
+    test "returns existing request status if one already exists", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+    end
+  end
+
+  describe "get_org_eval_access_request/3" do
+    test "returns nil when no request exists", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, nil} =
+               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
+    end
+
+    test "returns status after a request has been made", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
+    end
   end
 end
