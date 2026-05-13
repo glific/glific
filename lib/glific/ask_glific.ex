@@ -5,7 +5,7 @@ defmodule Glific.AskGlific do
 
   import Ecto.Query, warn: false
 
-  alias Glific.AskGlific.{Conversation, Message}
+  alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
 
@@ -44,17 +44,16 @@ defmodule Glific.AskGlific do
 
       is_new_conversation = conversation_id == ""
 
-      do_ask(body, is_new_conversation, user, query)
+      do_ask(body, is_new_conversation, user)
     end
   end
 
-  @spec do_ask(map(), boolean(), map(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  defp do_ask(body, is_new_conversation, user, query) do
+  @spec do_ask(map(), boolean(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp do_ask(body, is_new_conversation, user) do
     start_time = System.monotonic_time(:millisecond)
 
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
-        latency_ms = System.monotonic_time(:millisecond) - start_time
         answer = Map.get(response, "answer", "")
         resp_conversation_id = Map.get(response, "conversation_id", "")
         message_id = Map.get(response, "message_id", "")
@@ -62,15 +61,6 @@ defmodule Glific.AskGlific do
         if resp_conversation_id != "" do
           create_conversation(resp_conversation_id, user)
         end
-
-        log_message(user, %{
-          dify_message_id: message_id,
-          conversation_id: resp_conversation_id,
-          question: query,
-          answer: answer,
-          latency_ms: latency_ms,
-          status: "success"
-        })
 
         conversation_name =
           if is_new_conversation and resp_conversation_id != "" do
@@ -90,14 +80,6 @@ defmodule Glific.AskGlific do
       {:error, reason} ->
         latency_ms = System.monotonic_time(:millisecond) - start_time
 
-        log_message(user, %{
-          conversation_id: Map.get(body, "conversation_id", ""),
-          question: query,
-          latency_ms: latency_ms,
-          status: "error",
-          error_reason: to_string(reason)
-        })
-
         Glific.log_exception(%Error{
           message:
             "AskGlific Failure: no response after #{latency_ms}ms (org_id: #{user.organization_id}, user_id: #{user.id}, reason: #{inspect(reason)})",
@@ -108,16 +90,6 @@ defmodule Glific.AskGlific do
 
         {:error, reason}
     end
-  end
-
-  @spec log_message(map(), map()) :: :ok
-  defp log_message(user, attrs) do
-    attrs
-    |> Map.merge(%{user_id: user.id, organization_id: user.organization_id})
-    |> then(&Message.changeset(%Message{}, &1))
-    |> Repo.insert()
-
-    :ok
   end
 
   @doc """
@@ -137,33 +109,10 @@ defmodule Glific.AskGlific do
 
     case ApiClient.message_feedback(message_id, body) do
       {:ok, _response} ->
-        update_local_rating(message_id, rating, user)
         {:ok, %{success: true}}
 
       {:error, reason} ->
         {:error, reason}
-    end
-  end
-
-  @spec update_local_rating(String.t(), String.t() | nil, map()) :: :ok
-  defp update_local_rating(message_id, rating, user) do
-    Message
-    |> where(
-      [m],
-      m.dify_message_id == ^message_id and m.user_id == ^user.id and
-        m.organization_id == ^user.organization_id
-    )
-    |> Repo.one()
-    |> case do
-      nil ->
-        :ok
-
-      message ->
-        message
-        |> Message.feedback_changeset(%{rating: rating})
-        |> Repo.update()
-
-        :ok
     end
   end
 
