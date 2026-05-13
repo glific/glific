@@ -355,7 +355,7 @@ defmodule Glific.AIEvaluationsTest do
       Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
 
     base = %{
-      name: "test_eval",
+      name: "test_eval_#{System.unique_integer([:positive])}",
       status: :processing,
       golden_qa_id: golden_qa_id,
       kaapi_evaluation_id: 404,
