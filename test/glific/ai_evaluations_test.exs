@@ -115,13 +115,13 @@ defmodule Glific.AIEvaluationsTest do
       %{config_version: config_version}
     end
 
-    test "marks processing evaluation older than 1 hour as failed", %{
+    test "marks processing evaluation older than 6 hours as failed", %{
       organization_id: organization_id,
       config_version: config_version
     } do
       evaluation =
         create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       notification_count =
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
@@ -148,11 +148,11 @@ defmodule Glific.AIEvaluationsTest do
     } do
       completed =
         create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       failed =
         create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -355,7 +355,7 @@ defmodule Glific.AIEvaluationsTest do
       Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
 
     base = %{
-      name: "test_eval",
+      name: "test_eval_#{System.unique_integer([:positive])}",
       status: :processing,
       golden_qa_id: golden_qa_id,
       kaapi_evaluation_id: 404,
