@@ -312,7 +312,13 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    with {:assistant_config_version, {:ok, config_version}} <-
+    with {:name, {:error, _}} <-
+           {:name,
+            Repo.fetch_by(AIEvaluation, %{
+              name: input.evaluation_name,
+              organization_id: user.organization_id
+            })},
+         {:assistant_config_version, {:ok, config_version}} <-
            {:assistant_config_version,
             Repo.fetch_by(AssistantConfigVersion, %{id: input.config_id})},
          config_version = Repo.preload(config_version, :assistant),
@@ -340,6 +346,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            }) do
       {:ok, %{evaluation: evaluation}}
     else
+      {:name, {:ok, _}} ->
+        {:error, "An evaluation with this name already exists. Please choose a different name."}
+
       {:assistant_config_version, {:error, _}} ->
         {:error, "The specified config version does not exist."}
 
