@@ -1261,4 +1261,38 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
     %{golden_qa: golden_qa}
   end
+
+  describe "request_ai_evaluation_access/3" do
+    test "creates an eval access request and returns status requested", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+    end
+
+    test "returns existing request status if one already exists", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+    end
+  end
+
+  describe "get_org_eval_access_request/3" do
+    test "returns nil when no request exists", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, nil} =
+               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
+    end
+
+    test "returns status after a request has been made", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      AIEvaluations.request_ai_evaluation_access(nil, %{}, resolution)
+
+      assert {:ok, %{status: "requested"}} =
+               AIEvaluations.get_org_eval_access_request(nil, %{}, resolution)
+    end
+  end
 end

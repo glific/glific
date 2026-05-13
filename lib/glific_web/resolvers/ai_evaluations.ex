@@ -14,6 +14,32 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     ThirdParty.Kaapi
   }
 
+  @doc """
+  Request access to the AI Evaluations feature for the current user's organization.
+  Idempotent: repeated calls return success regardless of existing request state.
+  """
+  @spec request_ai_evaluation_access(map(), map(), map()) ::
+          {:ok, %{status: String.t()}} | {:error, Ecto.Changeset.t()}
+  def request_ai_evaluation_access(_, _, %{context: %{current_user: user}}) do
+    case AIEvaluations.request_eval_access(user.organization_id) do
+      {:ok, _request} -> {:ok, %{status: "requested"}}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Returns the organization's eval access request status, or nil if no request has been made.
+  Used by the frontend to disable the "Request Access" button when a request already exists.
+  """
+  @spec get_org_eval_access_request(map(), map(), map()) ::
+          {:ok, %{status: String.t()} | nil}
+  def get_org_eval_access_request(_, _, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_eval_access_request(user.organization_id) do
+      {:ok, request} -> {:ok, %{status: request.status}}
+      {:error, _} -> {:ok, nil}
+    end
+  end
+
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
   @create_golden_qa_success_metric "Golden QA Create Success"
