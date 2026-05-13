@@ -229,7 +229,6 @@ defmodule Glific.AskGlificTest do
       assert {:error, "Query is required"} = AskGlific.ask(%{query: "   "}, user)
       assert {:error, "Query is required"} = AskGlific.ask(%{query: nil}, user)
     end
-
   end
 
   describe "get_conversations/2" do
@@ -496,6 +495,5 @@ defmodule Glific.AskGlificTest do
 
       assert {:ok, _result} = AskGlific.submit_feedback(params, user)
     end
-
   end
 end
