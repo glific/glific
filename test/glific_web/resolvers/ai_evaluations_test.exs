@@ -1083,6 +1083,39 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "Invalid dataset format"
     end
 
+    test "returns error when evaluation name already exists for the organization", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      name = "duplicate_eval_name"
+
+      {:ok, _} =
+        Glific.AIEvaluations.create_ai_evaluation(%{
+          name: name,
+          status: :processing,
+          kaapi_evaluation_id: 1,
+          golden_qa_id: golden_qa.id,
+          assistant_config_version_id: assistant_config_version.id,
+          organization_id: user.organization_id
+        })
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: name,
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert reason ==
+               "An evaluation with this name already exists. Please choose a different name."
+    end
+
     test "returns error when Kaapi is not configured" do
       other_org = Glific.Fixtures.organization_fixture()
       Repo.put_organization_id(other_org.id)

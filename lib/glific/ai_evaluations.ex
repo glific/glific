@@ -18,7 +18,7 @@ defmodule Glific.AIEvaluations do
     ThirdParty.Kaapi
   }
 
-  @timeout_hours 1
+  @timeout_hours 6
 
   @doc """
   Returns the list of AI evaluations for an organization.
