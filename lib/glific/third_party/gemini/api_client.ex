@@ -33,8 +33,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         report_gemini_failure("gemini_stt", status_code, organization_id)
         %{success: false, asr_response_text: status_code}
 
-      {:error, %Tesla.Env{body: error_reason}} ->
-        report_gemini_failure("gemini_stt", nil, organization_id)
+      {:error, %Tesla.Env{status: status, body: error_reason}} ->
+        report_gemini_failure("gemini_stt", status, organization_id)
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
@@ -68,8 +68,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         report_gemini_failure("gemini_tts", status, organization_id)
         {:error, nil}
 
-      {:error, %Tesla.Env{}} ->
-        report_gemini_failure("gemini_tts", nil, organization_id)
+      {:error, %Tesla.Env{status: status}} ->
+        report_gemini_failure("gemini_tts", status, organization_id)
         {:error, nil}
 
       {:error, _reason} ->
