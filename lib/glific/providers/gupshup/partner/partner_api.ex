@@ -12,6 +12,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   }
 
   use Tesla
+  use Publicist
   require Logger
 
   alias Plug.Conn.Query
@@ -21,7 +22,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     @moduledoc """
     Custom Error module for Gupshup partner api failures
     """
-    defexception [:message]
+    defexception [:message, :reason]
+
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%Error{} = error) do
+      "#{error.message} reason: #{error.reason}"
+    end
   end
 
   plug(Tesla.Middleware.FormUrlencoded,
@@ -288,7 +294,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     rescue
       error ->
         Glific.log_exception(%Error{
-          message: "Error occurred while applying gupshup settings due to #{inspect(error)}"
+          message: "Error occurred while applying gupshup settings",
+          reason: error
         })
 
         :ok
@@ -324,23 +331,36 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp fetch_partner_token do
     url = @partner_url <> "/login"
     credentials = Saas.isv_credentials()
+    client_secret = Application.get_env(:glific, :gupshup_partner_client_secret)
 
-    request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
+    case client_secret do
+      secret when secret in [nil, ""] ->
+        Glific.log_exception(%Error{
+          message: "Partner token fetch failed",
+          reason: "Gupshup partner client secret is missing"
+        })
 
-    post(url, request_params, headers: [])
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        res = Jason.decode!(body)
+        {:error, "Could not fetch the partner token"}
 
-        {:ok, token} =
-          Caches.set(@global_organization_id, "partner_token", res["token"],
-            ttl: :timer.hours(22)
-          )
+      _ ->
+        request_params = %{"email" => credentials["email"], "password" => client_secret}
 
-        {:ok, %{partner_token: token}}
+        post(url, request_params, headers: [])
+        |> case do
+          {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+            res = Jason.decode!(body)
 
-      {_status, response} ->
-        {:error, "Could not fetch the partner token #{inspect(response)}"}
+            {:ok, token} =
+              Caches.set(@global_organization_id, "partner_token", res["token"],
+                ttl: :timer.hours(22)
+              )
+
+            {:ok, %{partner_token: token}}
+
+          {_status, response} ->
+            Glific.log_exception(%Error{message: "Partner token fetch failed", reason: response})
+            {:error, "Could not fetch the partner token"}
+        end
     end
   end
 
@@ -578,7 +598,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     else
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Fetching app details for app #{app_name} failed due to #{error}"
+          message: "Fetching app details for app #{app_name} failed",
+          reason: error
         })
 
         "Fetching app details failed, please double check App name and API key are correct"
@@ -600,7 +621,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Fetching app details for app #{app_id} failed due to #{error}"
+          message: "Fetching app details for app #{app_id} failed",
+          reason: error
         })
 
         "Fetching app details failed, please double check App name, App ID and API key are correct"
