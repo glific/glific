@@ -39,6 +39,42 @@ defmodule Glific.Flows.Webhook do
     defexception [:message, :reason, :organization_id]
   end
 
+  defmodule ConfigError do
+    @moduledoc """
+    Webhook failure attributable to org configuration: 4xx HTTP responses,
+    malformed URL, missing credentials. Keep the `:message` field
+    low-cardinality so AppSignal groups identical failures into one incident;
+    per-occurrence detail (org, flow, status) goes in the struct fields.
+    """
+    defexception [
+      :message,
+      :organization_id,
+      :flow_id,
+      :webhook_name,
+      :url,
+      :http_status,
+      :webhook_log_id
+    ]
+  end
+
+  defmodule SystemError do
+    @moduledoc """
+    Webhook failure attributable to downstream/system issues: 5xx HTTP
+    responses, transport errors (DNS, connection refused, timeout),
+    unexpected response shapes. Keep the `:message` field low-cardinality
+    so AppSignal groups identical failures into one incident.
+    """
+    defexception [
+      :message,
+      :organization_id,
+      :flow_id,
+      :webhook_name,
+      :url,
+      :http_status,
+      :webhook_log_id
+    ]
+  end
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
