@@ -200,11 +200,23 @@ defmodule Glific.Clients.CommonWebhook do
 
         try do
           result = Gemini.speech_to_text(fields["speech"], contact.organization_id)
-          maybe_report_webhook_failure(result, "speech_to_text_with_bhasini", contact.organization_id)
+
+          maybe_report_webhook_failure(
+            result,
+            "speech_to_text_with_bhasini",
+            contact.organization_id
+          )
+
           result
         rescue
           exception ->
-            report_webhook_failure("speech_to_text_with_bhasini", contact.organization_id, nil)
+            report_webhook_failure(
+              "speech_to_text_with_bhasini",
+              contact.organization_id,
+              nil,
+              Exception.message(exception)
+            )
+
             reraise exception, __STACKTRACE__
         end
 
@@ -244,7 +256,13 @@ defmodule Glific.Clients.CommonWebhook do
       result
     rescue
       exception ->
-        report_webhook_failure("text_to_speech_with_bhasini", org_id, nil)
+        report_webhook_failure(
+          "text_to_speech_with_bhasini",
+          org_id,
+          nil,
+          Exception.message(exception)
+        )
+
         reraise exception, __STACKTRACE__
     end
   end
@@ -878,19 +896,33 @@ defmodule Glific.Clients.CommonWebhook do
   # entry points (STT, TTS) call the same reporting code.
   @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
-    status =
-      case result do
-        %{asr_response_text: s} when is_integer(s) -> s
-        _ -> nil
-      end
-
-    report_webhook_failure(webhook_name, org_id, status)
+    {status, reason} = extract_status_and_reason(result)
+    report_webhook_failure(webhook_name, org_id, status, reason)
   end
 
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
 
-  @spec report_webhook_failure(String.t(), non_neg_integer() | nil, integer() | nil) :: :ok
-  defp report_webhook_failure(webhook_name, org_id, http_status) do
+  # Picks an HTTP status (when present) and a human-readable reason out of the
+  # webhook result map. STT failures historically stuff either an integer
+  # status code or an error string into `asr_response_text`; other shapes carry
+  # a `:reason` field.
+  @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
+  defp extract_status_and_reason(result) do
+    case result do
+      %{asr_response_text: s} when is_integer(s) -> {s, nil}
+      %{asr_response_text: s} when is_binary(s) -> {nil, s}
+      %{reason: s} when is_binary(s) -> {nil, s}
+      _ -> {nil, nil}
+    end
+  end
+
+  @spec report_webhook_failure(
+          String.t(),
+          non_neg_integer() | nil,
+          integer() | nil,
+          String.t() | nil
+        ) :: :ok
+  defp report_webhook_failure(webhook_name, org_id, http_status, reason) do
     exception = %SystemError{
       message: "Webhook system_error from #{webhook_name}",
       webhook_name: webhook_name,
@@ -900,14 +932,15 @@ defmodule Glific.Clients.CommonWebhook do
 
     Logger.error(Exception.message(exception))
 
-    # Use the 3-arg send_error with a span configurator so the per-occurrence
+    # Use the 3-arg send_error with a span configurator so per-occurrence
     # detail lands on the AppSignal sample as filterable tags (the 2-arg form
     # records only class + message and drops struct fields).
     Appsignal.send_error(exception, [], fn span ->
       Appsignal.Span.set_sample_data(span, "tags", %{
         organization_id: org_id,
         webhook_name: webhook_name,
-        http_status: http_status
+        http_status: http_status,
+        reason: reason
       })
     end)
 
