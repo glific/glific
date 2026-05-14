@@ -88,7 +88,7 @@ defmodule Glific.Sheets.GoogleSheets do
 
         if is_nil(token),
           do: {:error, "Error fetching token with Service Account JSON"},
-          else: {:ok, %{conn: Connection.new(token.token)}}
+          else: {:ok, %{conn: build_conn(token.token)}}
 
       {:error, _error} ->
         {:error, "Invalid Service Account JSON"}
@@ -149,6 +149,17 @@ defmodule Glific.Sheets.GoogleSheets do
       _ ->
         {:error, "Failed to fetch spreadsheet metadata"}
     end
+  end
+
+  @spec build_conn(String.t()) :: Tesla.Client.t()
+  defp build_conn(token) do
+    extra = [
+      {Tesla.Middleware.Opts, [recv_timeout: 10_000]},
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "google_sheets_api"}}
+      | Glific.get_tesla_retry_middleware()
+    ]
+
+    Tesla.client(extra ++ Tesla.Client.middleware(Connection.new(token)))
   end
 
   @doc """
