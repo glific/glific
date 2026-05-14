@@ -891,11 +891,26 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec report_webhook_failure(String.t(), non_neg_integer() | nil, integer() | nil) :: :ok
   defp report_webhook_failure(webhook_name, org_id, http_status) do
-    Glific.log_exception(%SystemError{
+    exception = %SystemError{
       message: "Webhook system_error from #{webhook_name}",
       webhook_name: webhook_name,
       organization_id: org_id,
       http_status: http_status
-    })
+    }
+
+    Logger.error(Exception.message(exception))
+
+    # Use the 3-arg send_error with a span configurator so the per-occurrence
+    # detail lands on the AppSignal sample as filterable tags (the 2-arg form
+    # records only class + message and drops struct fields).
+    Appsignal.send_error(exception, [], fn span ->
+      Appsignal.Span.set_sample_data(span, "tags", %{
+        organization_id: org_id,
+        webhook_name: webhook_name,
+        http_status: http_status
+      })
+    end)
+
+    :ok
   end
 end
