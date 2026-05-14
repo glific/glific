@@ -900,15 +900,26 @@ defmodule Glific.Clients.CommonWebhook do
     report_webhook_failure(webhook_name, org_id, status, reason)
   end
 
+  defp maybe_report_webhook_failure({:error, status}, webhook_name, org_id)
+       when is_integer(status) do
+    report_webhook_failure(webhook_name, org_id, status, nil)
+  end
+
+  defp maybe_report_webhook_failure({:error, reason}, webhook_name, org_id)
+       when is_binary(reason) do
+    report_webhook_failure(webhook_name, org_id, nil, reason)
+  end
+
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
 
   # Picks an HTTP status (when present) and a human-readable reason out of the
-  # webhook result map. STT failures historically stuff either an integer
-  # status code or an error string into `asr_response_text`; other shapes carry
-  # a `:reason` field.
+  # webhook result map. STT failures stuff either an integer status code or an
+  # error string into `asr_response_text`. TTS surfaces the status as
+  # `:http_status`. Other shapes carry a `:reason` field.
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
     case result do
+      %{http_status: s} when is_integer(s) -> {s, nil}
       %{asr_response_text: s} when is_integer(s) -> {s, nil}
       %{asr_response_text: s} when is_binary(s) -> {nil, s}
       %{reason: s} when is_binary(s) -> {nil, s}

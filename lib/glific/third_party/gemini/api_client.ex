@@ -60,11 +60,11 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         tts_gemini_usage_stats(metadata, organization_id)
         {:ok, decoded_audio}
 
-      {:ok, %Tesla.Env{}} ->
-        {:error, nil}
+      {:ok, %Tesla.Env{status: status}} ->
+        {:error, status}
 
-      {:error, %Tesla.Env{}} ->
-        {:error, nil}
+      {:error, %Tesla.Env{status: status}} ->
+        {:error, status}
 
       {:error, _reason} ->
         {:error, nil}
