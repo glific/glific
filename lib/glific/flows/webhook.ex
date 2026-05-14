@@ -47,15 +47,7 @@ defmodule Glific.Flows.Webhook do
     into one incident; per-occurrence detail (org, status) goes in struct
     fields and is recorded as tags.
     """
-    defexception [
-      :message,
-      :organization_id,
-      :flow_id,
-      :webhook_name,
-      :url,
-      :http_status,
-      :webhook_log_id
-    ]
+    defexception [:message, :organization_id, :webhook_name, :http_status]
   end
 
   @non_unique_urls [

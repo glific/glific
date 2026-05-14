@@ -13,6 +13,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Partners
   alias Glific.Providers.Maytapi
   alias Glific.Repo
+  alias Glific.Flows.Webhook.SystemError
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi
@@ -196,7 +197,16 @@ defmodule Glific.Clients.CommonWebhook do
     case Bhasini.validate_params(fields) do
       {:ok, contact} ->
         Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-        Gemini.speech_to_text(fields["speech"], contact.organization_id)
+
+        try do
+          result = Gemini.speech_to_text(fields["speech"], contact.organization_id)
+          maybe_report_webhook_failure(result, "speech_to_text_with_bhasini", contact.organization_id)
+          result
+        rescue
+          exception ->
+            report_webhook_failure("speech_to_text_with_bhasini", contact.organization_id, nil)
+            reraise exception, __STACKTRACE__
+        end
 
       {:error, error} ->
         error
@@ -212,20 +222,30 @@ defmodule Glific.Clients.CommonWebhook do
     source_language = contact.language.label |> String.downcase()
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    cond do
-      speech_engine == "open_ai" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+    try do
+      result =
+        cond do
+          speech_engine == "open_ai" ->
+            ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-      speech_engine == "bhashini" ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
+          speech_engine == "bhashini" ->
+            Glific.Metrics.increment("Gemini TTS Call", org_id)
+            Gemini.text_to_speech(org_id, text)
 
-      source_language == "english" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+          source_language == "english" ->
+            ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-      true ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
+          true ->
+            Glific.Metrics.increment("Gemini TTS Call", org_id)
+            Gemini.text_to_speech(org_id, text)
+        end
+
+      maybe_report_webhook_failure(result, "text_to_speech_with_bhasini", org_id)
+      result
+    rescue
+      exception ->
+        report_webhook_failure("text_to_speech_with_bhasini", org_id, nil)
+        reraise exception, __STACKTRACE__
     end
   end
 
@@ -851,5 +871,31 @@ defmodule Glific.Clients.CommonWebhook do
       {:error, reason} ->
         %{success: false, reason: reason}
     end
+  end
+
+  # Inspects a webhook result map and emits a SystemError when the call
+  # reported failure but did not raise. Pulled out as a helper so the two
+  # entry points (STT, TTS) call the same reporting code.
+  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
+  defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
+    status =
+      case result do
+        %{asr_response_text: s} when is_integer(s) -> s
+        _ -> nil
+      end
+
+    report_webhook_failure(webhook_name, org_id, status)
+  end
+
+  defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
+
+  @spec report_webhook_failure(String.t(), non_neg_integer() | nil, integer() | nil) :: :ok
+  defp report_webhook_failure(webhook_name, org_id, http_status) do
+    Glific.log_exception(%SystemError{
+      message: "Webhook system_error from #{webhook_name}",
+      webhook_name: webhook_name,
+      organization_id: org_id,
+      http_status: http_status
+    })
   end
 end

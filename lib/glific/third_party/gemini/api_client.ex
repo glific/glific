@@ -3,7 +3,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   Client for interacting with Gemini via APIs.
   """
   require Logger
-  alias Glific.Flows.Webhook.SystemError
   alias Glific.Metrics
 
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
@@ -30,15 +29,12 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         %{success: true, asr_response_text: text}
 
       {:ok, %Tesla.Env{status: status_code}} ->
-        report_gemini_failure("gemini_stt", status_code, organization_id)
         %{success: false, asr_response_text: status_code}
 
-      {:error, %Tesla.Env{status: status, body: error_reason}} ->
-        report_gemini_failure("gemini_stt", status, organization_id)
+      {:error, %Tesla.Env{body: error_reason}} ->
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
-        report_gemini_failure("gemini_stt", nil, organization_id)
         %{success: false, asr_response_text: reason}
     end
   end
@@ -64,36 +60,18 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         tts_gemini_usage_stats(metadata, organization_id)
         {:ok, decoded_audio}
 
-      {:ok, %Tesla.Env{status: status}} ->
-        report_gemini_failure("gemini_tts", status, organization_id)
+      {:ok, %Tesla.Env{}} ->
         {:error, nil}
 
-      {:error, %Tesla.Env{status: status}} ->
-        report_gemini_failure("gemini_tts", status, organization_id)
+      {:error, %Tesla.Env{}} ->
         {:error, nil}
 
       {:error, _reason} ->
-        report_gemini_failure("gemini_tts", nil, organization_id)
         {:error, nil}
     end
   end
 
   # Private
-
-  # Reports a Gemini API failure to AppSignal via a structured exception.
-  # The `:message` field is kept low-cardinality so AppSignal groups identical
-  # failures into one incident; per-occurrence detail (org, status) goes in
-  # struct fields and is recorded as tags.
-  @spec report_gemini_failure(String.t(), integer() | nil, non_neg_integer()) :: :ok
-  defp report_gemini_failure(webhook_name, status, organization_id) do
-    Glific.log_exception(%SystemError{
-      message: "Webhook system_error from #{webhook_name}",
-      webhook_name: webhook_name,
-      organization_id: organization_id,
-      http_status: status
-    })
-  end
-
   @spec gemini_config() :: map()
   defp gemini_config, do: Application.fetch_env!(:glific, __MODULE__)
 
