@@ -1770,6 +1770,65 @@ defmodule Glific.PartnersTest do
     end
   end
 
+  describe "fetch_partner_token" do
+    setup do
+      Glific.Caches.remove(0, ["partner_token"])
+      :ok
+    end
+
+    test "successfully fetches and caches the partner token" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => "test_partner_token_123"})
+          }
+      end)
+
+      assert {:ok, %{partner_token: "test_partner_token_123"}} = PartnerAPI.fetch_partner_token()
+
+      assert {:ok, "test_partner_token_123"} =
+               Glific.Caches.get(0, "partner_token", refresh_cache: false)
+    end
+
+    test "returns error when client_secret is nil" do
+      original = Application.get_env(:glific, :gupshup_partner_client_secret)
+      on_exit(fn -> Application.put_env(:glific, :gupshup_partner_client_secret, original) end)
+      Application.put_env(:glific, :gupshup_partner_client_secret, nil)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error when client_secret is empty string" do
+      original = Application.get_env(:glific, :gupshup_partner_client_secret)
+      on_exit(fn -> Application.put_env(:glific, :gupshup_partner_client_secret, original) end)
+      Application.put_env(:glific, :gupshup_partner_client_secret, "")
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error on non-200 HTTP response" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 401,
+            body: Jason.encode!(%{"message" => "Unauthorized"})
+          }
+      end)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error on HTTP network failure" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:error, :econnrefused}
+      end)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+  end
+
   describe "Partner.set_subscription/4" do
     setup do
       error = %{

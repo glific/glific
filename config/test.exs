@@ -71,3 +71,5 @@ config :glific,
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test
 
 config :glific, open_ai: "sk-test_api_key"
+
+config :glific, gupshup_partner_client_secret: "test_client_secret"
