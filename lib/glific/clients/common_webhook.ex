@@ -923,12 +923,7 @@ defmodule Glific.Clients.CommonWebhook do
           String.t() | nil
         ) :: :ok
   defp report_webhook_failure(webhook_name, org_id, http_status, reason) do
-    exception = %SystemError{
-      message: "Webhook system_error from #{webhook_name}",
-      webhook_name: webhook_name,
-      organization_id: org_id,
-      http_status: http_status
-    }
+    exception = %SystemError{message: "Webhook system_error from #{webhook_name}"}
 
     Logger.error(Exception.message(exception))
 

@@ -44,10 +44,11 @@ defmodule Glific.Flows.Webhook do
     Webhook failure: 4xx/5xx HTTP responses, transport errors (DNS,
     connection refused, timeout), unexpected response shapes. Keep the
     `:message` field low-cardinality so AppSignal groups identical failures
-    into one incident; per-occurrence detail (org, status) goes in struct
-    fields and is recorded as tags.
+    into one incident; per-occurrence detail (org, status, reason) is
+    attached as AppSignal tags via `Span.set_sample_data` at the report
+    site, not on the struct.
     """
-    defexception [:message, :organization_id, :webhook_name, :http_status]
+    defexception [:message]
   end
 
   @non_unique_urls [
