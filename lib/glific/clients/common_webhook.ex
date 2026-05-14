@@ -20,6 +20,8 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
 
+  alias Glific.Tracing
+
   require Logger
 
   @doc """
@@ -144,10 +146,17 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("speech_to_text", fields, _headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
+    span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
+
+    e2e_token = Tracing.begin_e2e_span("speech_to_text", span_attrs)
+
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "stt")
+    request_metadata =
+      request_metadata
+      |> Map.put(:call_type, "stt")
+      |> Map.put(:e2e_span_token, e2e_token)
 
     stt_opts = %{
       provider: fields["provider"],
@@ -173,10 +182,17 @@ defmodule Glific.Clients.CommonWebhook do
     text = fields["text"]
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
+    span_attrs = base_span_attrs(organization_id, flow_id, contact_id, fields["webhook_log_id"])
+
+    e2e_token = Tracing.begin_e2e_span("text_to_speech", span_attrs)
+
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "tts")
+    request_metadata =
+      request_metadata
+      |> Map.put(:call_type, "tts")
+      |> Map.put(:e2e_span_token, e2e_token)
 
     tts_opts = %{
       provider: fields["provider"],
@@ -719,7 +735,8 @@ defmodule Glific.Clients.CommonWebhook do
       timestamp: timestamp,
       signature: signature,
       webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
+      result_name: fields["result_name"],
+      trace_context: build_trace_context()
     }
 
     {callback_url, request_metadata}
@@ -736,6 +753,24 @@ defmodule Glific.Clients.CommonWebhook do
   @spec build_conversation(String.t() | nil) :: map()
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
+
+  @spec base_span_attrs(non_neg_integer(), non_neg_integer(), non_neg_integer(), any()) :: map()
+  defp base_span_attrs(organization_id, flow_id, contact_id, webhook_log_id) do
+    %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "webhook_log_id" => webhook_log_id
+    }
+  end
+
+  @spec build_trace_context() :: map()
+  defp build_trace_context do
+    case Tracing.current_traceparent() do
+      nil -> %{}
+      traceparent -> %{traceparent: traceparent}
+    end
+  end
 
   defp build_unified_llm_payload(
          fields,

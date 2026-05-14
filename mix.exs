@@ -169,7 +169,10 @@ defmodule Glific.MixProject do
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
       {:ex_audit, "~> 0.10"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.5.0"},
+      {:opentelemetry_api, "~> 1.4"},
+      {:opentelemetry, "~> 1.4"},
+      {:opentelemetry_exporter, "~> 1.7"}
     ]
   end
 

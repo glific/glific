@@ -6,7 +6,6 @@ defmodule GlificWeb.Router do
 
   import GlificWeb.UserAuth
   @dialyzer {:nowarn_function, __checks__: 0}
-  use Appsignal.Plug
 
   use GlificWeb.InjectOban
 

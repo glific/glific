@@ -15,7 +15,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
     GCS.GcsWorker,
     Messages,
     Partners,
-    Repo
+    Repo,
+    Tracing
   }
 
   @doc """
@@ -26,13 +27,25 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = result |> parse_callback_response() |> maybe_upload_tts_audio()
+    with_callback_trace("flow_resume.callback", result, fn ->
+      parsed = parse_callback_response(result)
 
-    organization = Partners.organization(organization_id)
-    Repo.put_process_state(organization.id)
+      if is_integer(parsed["trace_timestamp"]) do
+        Tracing.record_elapsed_span(
+          "flow_resume.callback.kaapi_e2e_latency",
+          parsed["trace_timestamp"]
+        )
+      end
 
-    message =
-      %{
+      response =
+        Tracing.with_span("flow_resume.callback.upload_tts_audio", %{}, fn ->
+          maybe_upload_tts_audio(parsed)
+        end)
+
+      organization = Partners.organization(organization_id)
+      Repo.put_process_state(organization.id)
+
+      log_message = %{
         success: result["success"],
         message: response["message"] || result["error"],
         error_type: result["error_type"],
@@ -40,43 +53,53 @@ defmodule GlificWeb.Flows.FlowResumeController do
         thread_id: response["thread_id"]
       }
 
-    if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
-    response_key = response["result_name"] || "response"
-
-    message =
-      case {result["success"], response["webhook_log_id"]} do
-        {true, nil} ->
-          Messages.create_temp_message(organization_id, "No Response")
-
-        {true, _} ->
-          Messages.create_temp_message(organization_id, "Success")
-
-        {false, _} ->
-          Messages.create_temp_message(organization_id, "Failure")
-
-        _ ->
-          # Sending nil so that it remains compatible with other webhook responses
-          # (besides Kaapi) and falls back to the default behavior.
-          nil
+      if response["webhook_log_id"] do
+        Tracing.with_span("flow_resume.callback.update_webhook_log", %{}, fn ->
+          Webhook.update_log(response["webhook_log_id"], log_message)
+        end)
       end
 
-    track_kaapi_latency(response)
+      response_key = response["result_name"] || "response"
 
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }) do
-      FlowContext.resume_contact_flow(
-        contact,
-        response["flow_id"],
-        %{response_key => response},
-        message
-      )
-    end
+      message =
+        case {result["success"], response["webhook_log_id"]} do
+          {true, nil} ->
+            Messages.create_temp_message(organization_id, "No Response")
 
-    # always return 200 and an empty response
+          {true, _} ->
+            Messages.create_temp_message(organization_id, "Success")
+
+          {false, _} ->
+            Messages.create_temp_message(organization_id, "Failure")
+
+          _ ->
+            # Sending nil so that it remains compatible with other webhook responses
+            # (besides Kaapi) and falls back to the default behavior.
+            nil
+        end
+
+      track_kaapi_latency(response)
+
+      flow_result =
+        with true <- validate_request(organization_id, response),
+             {:ok, contact} <-
+               Repo.fetch_by(Contact, %{
+                 id: response["contact_id"],
+                 organization_id: organization.id
+               }) do
+          FlowContext.resume_contact_flow(
+            contact,
+            response["flow_id"],
+            %{response_key => response},
+            message
+          )
+        end
+
+      Tracing.finish_e2e_span(parsed["e2e_span_token"])
+
+      flow_result
+    end)
+
     json(conn, "")
   end
 
@@ -90,11 +113,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    response = parse_callback_response(result)
-
     Task.start(fn ->
       Repo.put_process_state(organization_id)
-      do_voice_flow_resume(organization_id, result, response)
+
+      with_callback_trace("flow_resume.callback.voice_flow_resume", result, fn ->
+        response = parse_callback_response(result)
+        do_voice_flow_resume(organization_id, result, response)
+      end)
     end)
 
     json(conn, "")
@@ -117,10 +142,15 @@ defmodule GlificWeb.Flows.FlowResumeController do
              organization_id: organization.id
            }) do
       voice_response =
-        CommonWebhook.voice_post_process(organization_id, result["success"], response)
+        Tracing.with_span("flow_resume.callback.voice_post_process", %{}, fn ->
+          CommonWebhook.voice_post_process(organization_id, result["success"], response)
+        end)
 
-      if response["webhook_log_id"],
-        do: Webhook.update_log(response["webhook_log_id"], voice_response)
+      if response["webhook_log_id"] do
+        Tracing.with_span("flow_resume.callback.update_webhook_log", %{}, fn ->
+          Webhook.update_log(response["webhook_log_id"], voice_response)
+        end)
+      end
 
       track_kaapi_latency(response)
 
@@ -219,6 +249,34 @@ defmodule GlificWeb.Flows.FlowResumeController do
   end
 
   defp track_kaapi_latency(_response), do: :ok
+
+  @spec with_callback_trace(String.t(), map(), (-> any())) :: any()
+  defp with_callback_trace(span_name, result, fun) do
+    traceparent = extract_traceparent(result)
+    attrs = callback_span_attrs(result)
+    Tracing.with_parent(traceparent, span_name, attrs, fun)
+  end
+
+  @spec extract_traceparent(map()) :: String.t() | nil
+  defp extract_traceparent(result) do
+    case get_in(result, ["metadata", "trace_context", "traceparent"]) do
+      tp when is_binary(tp) -> tp
+      _ -> nil
+    end
+  end
+
+  @spec callback_span_attrs(map()) :: map()
+  defp callback_span_attrs(%{"metadata" => metadata}) when is_map(metadata) do
+    %{
+      "organization_id" => metadata["organization_id"],
+      "flow_id" => metadata["flow_id"],
+      "contact_id" => metadata["contact_id"],
+      "webhook_log_id" => metadata["webhook_log_id"],
+      "call_type" => metadata["call_type"]
+    }
+  end
+
+  defp callback_span_attrs(_), do: %{}
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do

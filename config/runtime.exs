@@ -78,6 +78,39 @@ config :glific,
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
 # AppSignal configs
+endpoint =
+  env!(
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    :string,
+    "https://bdw42te3.eu-central.appsignal-collector.net"
+  )
+
+otlp_auth_header = env!("OTEL_EXPORTER_OTLP_AUTH_HEADER", :string, "")
+appsignal_name = env!("APPSIGNAL_NAME", :string, "Glific")
+appsignal_push_api_key = env!("APPSIGNAL_PUSH_API_KEY", :string!)
+appsignal_revision = Application.spec(:glific, :vsn) |> to_string()
+environment = to_string(config_env())
+app_path = File.cwd!()
+{:ok, hostname} = :inet.gethostname()
+
+config :opentelemetry,
+  span_processor: :batch,
+  traces_exporter: :otlp,
+  resource: [
+    {"appsignal.config.name", appsignal_name},
+    {"appsignal.config.environment", environment},
+    {"appsignal.config.push_api_key", appsignal_push_api_key},
+    {"appsignal.config.revision", appsignal_revision},
+    {"appsignal.config.language_integration", "elixir"},
+    {"appsignal.config.app_path", app_path},
+    {"host.name", hostname},
+    {"service.name", "glific"}
+  ]
+
+config :opentelemetry_exporter,
+  otlp_protocol: :http_protobuf,
+  otlp_endpoint: endpoint
+
 config :appsignal, :config,
   otp_app: :glific,
   name: "Glific",
@@ -87,7 +120,9 @@ config :appsignal, :config,
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
   ecto_repos: [],
   ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks", "flow_editor_controller"],
-  instrument_oban: false
+  send_params: false,
+  instrument_oban: false,
+  enable_at_exit_hook: "always"
 
 config :glific, Glific.Vault,
   ciphers: [
