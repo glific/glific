@@ -1,7 +1,20 @@
 defmodule Glific.ChatbotDiagnoseTest do
   use Glific.DataCase
 
+  import Ecto.Query, warn: false
+
   alias Glific.ChatbotDiagnose
+  alias Glific.Contacts.Contact
+  alias Glific.Repo
+
+  defp backdate_contact(contact, seconds_ago) do
+    backdated = DateTime.utc_now() |> DateTime.add(-seconds_ago, :second) |> DateTime.truncate(:second)
+
+    from(c in Contact, where: c.id == ^contact.id)
+    |> Repo.update_all(set: [inserted_at: backdated])
+
+    backdated
+  end
 
   describe "run/3" do
     test "returns empty results for unknown tables", %{organization_id: organization_id} do
@@ -552,6 +565,80 @@ defmodule Glific.ChatbotDiagnoseTest do
 
       result = ChatbotDiagnose.run(tables, nil, organization_id)
       assert is_list(result["flows"])
+    end
+  end
+
+  describe "maybe_apply_time_range/4 (via run/3)" do
+    test "filters out rows older than the threshold when apply_time_range is true",
+         %{organization_id: organization_id} do
+      recent = Glific.Fixtures.contact_fixture(%{phone: "+19999000001"})
+      old = Glific.Fixtures.contact_fixture(%{phone: "+19999000002"})
+      backdate_contact(old, 7_200)
+
+      tables = %{
+        "contacts" => %{
+          "fields" => ["id"],
+          "limit" => 50,
+          "apply_time_range" => true
+        }
+      }
+
+      result = ChatbotDiagnose.run(tables, "1h", organization_id)
+      ids = Enum.map(result["contacts"], & &1.id)
+
+      assert recent.id in ids
+      refute old.id in ids
+    end
+
+    test "ignores time range when apply_time_range is false even if a threshold is given",
+         %{organization_id: organization_id} do
+      old = Glific.Fixtures.contact_fixture(%{phone: "+19999000003"})
+      backdate_contact(old, 7_200)
+
+      tables = %{
+        "contacts" => %{
+          "fields" => ["id"],
+          "limit" => 50,
+          "apply_time_range" => false
+        }
+      }
+
+      result = ChatbotDiagnose.run(tables, "1h", organization_id)
+      ids = Enum.map(result["contacts"], & &1.id)
+
+      assert old.id in ids
+    end
+
+    test "ignores time threshold when time_range is nil", %{organization_id: organization_id} do
+      old = Glific.Fixtures.contact_fixture(%{phone: "+19999000004"})
+      backdate_contact(old, 7_200)
+
+      tables = %{
+        "contacts" => %{
+          "fields" => ["id"],
+          "limit" => 50,
+          "apply_time_range" => true
+        }
+      }
+
+      result = ChatbotDiagnose.run(tables, nil, organization_id)
+      ids = Enum.map(result["contacts"], & &1.id)
+
+      assert old.id in ids
+    end
+
+    test "skips time filter on tables whose allowed fields don't include inserted_at",
+         %{organization_id: organization_id} do
+      tables = %{
+        "users_groups" => %{
+          "fields" => ["id"],
+          "limit" => 5,
+          "apply_time_range" => true
+        }
+      }
+
+      result = ChatbotDiagnose.run(tables, "1h", organization_id)
+      assert is_list(result["users_groups"])
     end
   end
 end
