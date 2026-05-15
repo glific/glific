@@ -198,27 +198,9 @@ defmodule Glific.Clients.CommonWebhook do
       {:ok, contact} ->
         Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
 
-        try do
-          result = Gemini.speech_to_text(fields["speech"], contact.organization_id)
-
-          maybe_report_webhook_failure(
-            result,
-            "speech_to_text_with_bhasini",
-            contact.organization_id
-          )
-
-          result
-        rescue
-          exception ->
-            report_webhook_failure(
-              "speech_to_text_with_bhasini",
-              contact.organization_id,
-              nil,
-              Exception.message(exception)
-            )
-
-            reraise exception, __STACKTRACE__
-        end
+        with_failure_reporting("speech_to_text_with_bhasini", contact.organization_id, fn ->
+          Gemini.speech_to_text(fields["speech"], contact.organization_id)
+        end)
 
       {:error, error} ->
         error
@@ -234,37 +216,23 @@ defmodule Glific.Clients.CommonWebhook do
     source_language = contact.language.label |> String.downcase()
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    try do
-      result =
-        cond do
-          speech_engine == "open_ai" ->
-            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+    with_failure_reporting("text_to_speech_with_bhasini", org_id, fn ->
+      cond do
+        speech_engine == "open_ai" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-          speech_engine == "bhashini" ->
-            Glific.Metrics.increment("Gemini TTS Call", org_id)
-            Gemini.text_to_speech(org_id, text)
+        speech_engine == "bhashini" ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
 
-          source_language == "english" ->
-            ChatGPT.text_to_speech_with_open_ai(org_id, text)
+        source_language == "english" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-          true ->
-            Glific.Metrics.increment("Gemini TTS Call", org_id)
-            Gemini.text_to_speech(org_id, text)
-        end
-
-      maybe_report_webhook_failure(result, "text_to_speech_with_bhasini", org_id)
-      result
-    rescue
-      exception ->
-        report_webhook_failure(
-          "text_to_speech_with_bhasini",
-          org_id,
-          nil,
-          Exception.message(exception)
-        )
-
-        reraise exception, __STACKTRACE__
-    end
+        true ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
+      end
+    end)
   end
 
   @doc """
@@ -351,13 +319,15 @@ defmodule Glific.Clients.CommonWebhook do
     target_language = normalize_language(fields["target_language"])
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    if source_language == target_language do
-      handle_tts_only(source_language, org_id, text, speech_engine)
-    else
-      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
-        speech_engine: speech_engine
-      )
-    end
+    with_failure_reporting("nmt_tts_with_bhasini", org_id, fn ->
+      if source_language == target_language do
+        handle_tts_only(source_language, org_id, text, speech_engine)
+      else
+        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+          speech_engine: speech_engine
+        )
+      end
+    end)
   end
 
   def webhook("detect_language", fields) do
@@ -891,9 +861,24 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Wraps a webhook entry point body so any failure — predictable
+  # (%{success: false} return) or unexpected (raised exception) — is
+  # reported to AppSignal before propagating. The function passed in runs
+  # exactly the work the entry point would have done inline; the helper
+  # is observability only and does not change behaviour for the caller.
+  @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
+  defp with_failure_reporting(webhook_name, org_id, fun) do
+    result = fun.()
+    maybe_report_webhook_failure(result, webhook_name, org_id)
+    result
+  rescue
+    exception ->
+      report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
+      reraise exception, __STACKTRACE__
+  end
+
   # Inspects a webhook result map and emits a SystemError when the call
-  # reported failure but did not raise. Pulled out as a helper so the two
-  # entry points (STT, TTS) call the same reporting code.
+  # reported failure but did not raise.
   @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
