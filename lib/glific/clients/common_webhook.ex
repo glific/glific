@@ -8,12 +8,12 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Contacts
+  alias Glific.Flows.Webhook.SystemError
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.Providers.Maytapi
   alias Glific.Repo
-  alias Glific.Flows.Webhook.SystemError
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi
@@ -898,16 +898,6 @@ defmodule Glific.Clients.CommonWebhook do
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
-  end
-
-  defp maybe_report_webhook_failure({:error, status}, webhook_name, org_id)
-       when is_integer(status) do
-    report_webhook_failure(webhook_name, org_id, status, nil)
-  end
-
-  defp maybe_report_webhook_failure({:error, reason}, webhook_name, org_id)
-       when is_binary(reason) do
-    report_webhook_failure(webhook_name, org_id, nil, reason)
   end
 
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok

@@ -8,6 +8,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Fixtures,
+    Flows.Webhook.SystemError,
     Messages,
     Partners,
     Partners.Provider,
@@ -1160,6 +1161,234 @@ defmodule Glific.Flows.CommonWebhookTest do
       result = CommonWebhook.webhook("text_to_speech", fields, [])
       assert result.success == true
     end
+  end
+
+  describe "speech_to_text_with_bhasini failure reporting" do
+    setup do
+      contact = Fixtures.contact_fixture()
+      %{contact: contact, fields: bhasini_stt_fields(contact.id)}
+    end
+
+    test "emits SystemError with http_status tag on Gemini 4xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+
+      assert Exception.message(exception) ==
+               "Webhook system_error from speech_to_text_with_bhasini"
+
+      assert tags.webhook_name == "speech_to_text_with_bhasini"
+      assert tags.organization_id == 1
+      assert tags.http_status == 401
+      assert is_nil(tags.reason)
+    end
+
+    test "emits SystemError with http_status tag on Gemini 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.http_status == 503
+      assert tags.webhook_name == "speech_to_text_with_bhasini"
+    end
+
+    test "emits SystemError with reason tag when audio download fails", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 404, body: ""}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+          assert result.success == false
+          assert result.asr_response_text == "File download failed"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.reason == "File download failed"
+      assert is_nil(tags.http_status)
+    end
+
+    test "does not call AppSignal on successful Gemini response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [%{content: %{parts: [%{text: ~s("transcribed text")}]}}],
+              usageMetadata: %{totalTokenCount: 10}
+            }
+          }
+      end)
+
+      test_pid = self()
+
+      with_mocks([
+        {Appsignal, [:passthrough],
+         [
+           send_error: fn _ex, _stack, _fn ->
+             send(test_pid, :appsignal_called)
+             :ok
+           end
+         ]}
+      ]) do
+        result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+        assert result.success == true
+      end
+
+      refute_received :appsignal_called
+    end
+
+    test "rescue path reports SystemError and reraises on unexpected exception", %{
+      fields: fields
+    } do
+      # Gemini returns 200 with a `text` field that isn't valid JSON.
+      # ApiClient's success branch does Jason.decode!(text), which raises.
+      # The try/rescue in CommonWebhook must catch, report, and reraise.
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              candidates: [%{content: %{parts: [%{text: "not valid json {{{"}]}}],
+              usageMetadata: %{totalTokenCount: 1}
+            }
+          }
+      end)
+
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise Jason.DecodeError, fn ->
+            CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
+          end
+        end)
+
+      assert %SystemError{} = exception
+    end
+  end
+
+  describe "text_to_speech_with_bhasini failure reporting" do
+    setup do
+      contact = Fixtures.contact_fixture()
+      %{contact: contact, fields: bhasini_tts_fields(contact.id)}
+    end
+
+    test "emits SystemError with http_status tag on Gemini 4xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+
+      assert Exception.message(exception) ==
+               "Webhook system_error from text_to_speech_with_bhasini"
+
+      assert tags.webhook_name == "text_to_speech_with_bhasini"
+      assert tags.organization_id == 1
+      assert tags.http_status == 401
+    end
+
+    test "emits SystemError with http_status tag on Gemini 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {_exception, tags} =
+        capture_appsignal(fn ->
+          CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
+        end)
+
+      assert tags.http_status == 503
+      assert tags.webhook_name == "text_to_speech_with_bhasini"
+    end
+  end
+
+  # Runs `fun` with Appsignal.send_error and Appsignal.Span.set_sample_data
+  # mocked. Returns {exception, tags} captured from the production code's
+  # reporting call.
+  defp capture_appsignal(fun) do
+    test_pid = self()
+
+    with_mocks([
+      {Appsignal, [:passthrough],
+       [
+         send_error: fn ex, _stack, configurator ->
+           send(test_pid, {:appsignal_exception, ex})
+           configurator.(:fake_span)
+           :ok
+         end
+       ]},
+      {Appsignal.Span, [:passthrough],
+       [
+         set_sample_data: fn _span, key, value ->
+           send(test_pid, {:appsignal_tag, key, value})
+           :fake_span
+         end
+       ]}
+    ]) do
+      fun.()
+    end
+
+    exception =
+      receive do
+        {:appsignal_exception, ex} -> ex
+      after
+        100 -> flunk("Appsignal.send_error was not called")
+      end
+
+    tags =
+      receive do
+        {:appsignal_tag, "tags", t} -> t
+      after
+        100 -> %{}
+      end
+
+    {exception, tags}
+  end
+
+  defp bhasini_stt_fields(contact_id) do
+    %{
+      "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
+      "organization_id" => 1,
+      "contact" => %{"id" => to_string(contact_id)}
+    }
+  end
+
+  defp bhasini_tts_fields(contact_id) do
+    %{
+      "text" => "Hello world",
+      "organization_id" => "1",
+      "contact" => %{"id" => to_string(contact_id)},
+      "speech_engine" => "bhashini"
+    }
   end
 
   defp stt_fields(contact_id) do
