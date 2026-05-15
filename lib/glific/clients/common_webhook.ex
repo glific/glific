@@ -862,10 +862,6 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # Wraps a webhook entry point body so any failure — predictable
-  # (%{success: false} return) or unexpected (raised exception) — is
-  # reported to AppSignal before propagating. The function passed in runs
-  # exactly the work the entry point would have done inline; the helper
-  # is observability only and does not change behaviour for the caller.
   @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
   defp with_failure_reporting(webhook_name, org_id, fun) do
     result = fun.()
@@ -877,8 +873,6 @@ defmodule Glific.Clients.CommonWebhook do
       reraise exception, __STACKTRACE__
   end
 
-  # Inspects a webhook result map and emits a SystemError when the call
-  # reported failure but did not raise.
   @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
@@ -887,10 +881,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
 
-  # Picks an HTTP status (when present) and a human-readable reason out of the
-  # webhook result map. STT failures stuff either an integer status code or an
-  # error string into `asr_response_text`. TTS surfaces the status as
-  # `:http_status`. Other shapes carry a `:reason` field.
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
     case result do
