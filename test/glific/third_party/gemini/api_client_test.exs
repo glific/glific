@@ -169,7 +169,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, :timeout}
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, :timeout} == ApiClient.text_to_speech("Hello World", organization_id)
     end
   end
 end

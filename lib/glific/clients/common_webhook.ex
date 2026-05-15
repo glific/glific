@@ -898,7 +898,7 @@ defmodule Glific.Clients.CommonWebhook do
       %{asr_response_text: s} when is_integer(s) -> {s, nil}
       %{asr_response_text: s} when is_binary(s) -> {nil, s}
       %{reason: s} when is_binary(s) -> {nil, s}
-      _ -> {nil, nil}
+      other -> {nil, inspect(other)}
     end
   end
 
@@ -917,7 +917,9 @@ defmodule Glific.Clients.CommonWebhook do
     # detail lands on the AppSignal sample as filterable tags (the 2-arg form
     # records only class + message and drops struct fields).
     Appsignal.send_error(exception, [], fn span ->
-      Appsignal.Span.set_sample_data(span, "tags", %{
+      span
+      |> Appsignal.Span.set_namespace("flow_webhooks")
+      |> Appsignal.Span.set_sample_data("tags", %{
         organization_id: org_id,
         webhook_name: webhook_name,
         http_status: http_status,

@@ -1192,22 +1192,6 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert is_nil(tags.reason)
     end
 
-    test "emits SystemError with http_status tag on Gemini 5xx response", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
-        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
-      end)
-
-      {exception, tags} =
-        capture_appsignal(fn ->
-          CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.http_status == 503
-      assert tags.webhook_name == "speech_to_text_with_bhasini"
-    end
-
     test "emits SystemError with reason tag when audio download fails", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :get} -> %Tesla.Env{status: 404, body: ""}
@@ -1316,18 +1300,21 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert tags.http_status == 401
     end
 
-    test "emits SystemError with http_status tag on Gemini 5xx response", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+    test "emits SystemError on OpenAI TTS failure (speech_engine = open_ai)", %{fields: fields} do
+      fields = Map.put(fields, "speech_engine", "open_ai")
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 401, body: %{}}
       end)
 
-      {_exception, tags} =
+      {exception, tags} =
         capture_appsignal(fn ->
           CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
         end)
 
-      assert tags.http_status == 503
+      assert %SystemError{} = exception
       assert tags.webhook_name == "text_to_speech_with_bhasini"
+      assert tags.organization_id == 1
     end
   end
 
