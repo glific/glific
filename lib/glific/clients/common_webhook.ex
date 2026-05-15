@@ -8,6 +8,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Contacts
+  alias Glific.Flows.Webhook.SystemError
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
@@ -196,7 +197,10 @@ defmodule Glific.Clients.CommonWebhook do
     case Bhasini.validate_params(fields) do
       {:ok, contact} ->
         Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-        Gemini.speech_to_text(fields["speech"], contact.organization_id)
+
+        with_failure_reporting("speech_to_text_with_bhasini", contact.organization_id, fn ->
+          Gemini.speech_to_text(fields["speech"], contact.organization_id)
+        end)
 
       {:error, error} ->
         error
@@ -212,21 +216,23 @@ defmodule Glific.Clients.CommonWebhook do
     source_language = contact.language.label |> String.downcase()
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    cond do
-      speech_engine == "open_ai" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+    with_failure_reporting("text_to_speech_with_bhasini", org_id, fn ->
+      cond do
+        speech_engine == "open_ai" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-      speech_engine == "bhashini" ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
+        speech_engine == "bhashini" ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
 
-      source_language == "english" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
+        source_language == "english" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
 
-      true ->
-        Glific.Metrics.increment("Gemini TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
-    end
+        true ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
+      end
+    end)
   end
 
   @doc """
@@ -313,13 +319,15 @@ defmodule Glific.Clients.CommonWebhook do
     target_language = normalize_language(fields["target_language"])
     speech_engine = Map.get(fields, "speech_engine", "")
 
-    if source_language == target_language do
-      handle_tts_only(source_language, org_id, text, speech_engine)
-    else
-      do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
-        speech_engine: speech_engine
-      )
-    end
+    with_failure_reporting("nmt_tts_with_bhasini", org_id, fn ->
+      if source_language == target_language do
+        handle_tts_only(source_language, org_id, text, speech_engine)
+      else
+        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+          speech_engine: speech_engine
+        )
+      end
+    end)
   end
 
   def webhook("detect_language", fields) do
@@ -851,5 +859,64 @@ defmodule Glific.Clients.CommonWebhook do
       {:error, reason} ->
         %{success: false, reason: reason}
     end
+  end
+
+  # Wraps a webhook entry point body so any failure — predictable
+  @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
+  defp with_failure_reporting(webhook_name, org_id, fun) do
+    result = fun.()
+    maybe_report_webhook_failure(result, webhook_name, org_id)
+    result
+  rescue
+    exception ->
+      report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
+      reraise exception, __STACKTRACE__
+  end
+
+  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
+  defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
+    {status, reason} = extract_status_and_reason(result)
+    report_webhook_failure(webhook_name, org_id, status, reason)
+  end
+
+  defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
+
+  @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
+  defp extract_status_and_reason(result) do
+    case result do
+      %{http_status: s} when is_integer(s) -> {s, nil}
+      %{asr_response_text: s} when is_integer(s) -> {s, nil}
+      %{asr_response_text: s} when is_binary(s) -> {nil, s}
+      %{reason: s} when is_binary(s) -> {nil, s}
+      other -> {nil, inspect(other)}
+    end
+  end
+
+  @spec report_webhook_failure(
+          String.t(),
+          non_neg_integer() | nil,
+          integer() | nil,
+          String.t() | nil
+        ) :: :ok
+  defp report_webhook_failure(webhook_name, org_id, http_status, reason) do
+    exception = %SystemError{message: "Webhook system_error from #{webhook_name}"}
+
+    Logger.error(Exception.message(exception))
+
+    # Use the 3-arg send_error with a span configurator so per-occurrence
+    # detail lands on the AppSignal sample as filterable tags (the 2-arg form
+    # records only class + message and drops struct fields).
+    Appsignal.send_error(exception, [], fn span ->
+      span
+      |> Appsignal.Span.set_namespace("flow_webhooks")
+      |> Appsignal.Span.set_sample_data("tags", %{
+        organization_id: org_id,
+        webhook_name: webhook_name,
+        http_status: http_status,
+        reason: reason
+      })
+    end)
+
+    :ok
   end
 end

@@ -161,6 +161,16 @@ defmodule Glific.ThirdParty.Gemini do
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, text)
     else
+      {:error, status} when is_integer(status) ->
+        Metrics.increment("Gemini TTS Failure", organization_id)
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          http_status: status
+        }
+
       {:error, _} ->
         Metrics.increment("Gemini TTS Failure", organization_id)
         %{success: false, media_url: nil, translated_text: text}

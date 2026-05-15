@@ -39,6 +39,18 @@ defmodule Glific.Flows.Webhook do
     defexception [:message, :reason, :organization_id]
   end
 
+  defmodule SystemError do
+    @moduledoc """
+    Webhook failure: 4xx/5xx HTTP responses, transport errors (DNS,
+    connection refused, timeout), unexpected response shapes. Keep the
+    `:message` field low-cardinality so AppSignal groups identical failures
+    into one incident; per-occurrence detail (org, status, reason) is
+    attached as AppSignal tags via `Span.set_sample_data` at the report
+    site, not on the struct.
+    """
+    defexception [:message]
+  end
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
