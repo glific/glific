@@ -153,7 +153,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, 400} == ApiClient.text_to_speech("Hello World", organization_id)
     end
 
     test "handles Tesla error with body", %{organization_id: organization_id} do
