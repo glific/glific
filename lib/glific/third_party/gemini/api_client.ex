@@ -53,13 +53,17 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     |> Tesla.post(path, body, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
-        decoded_audio =
-          candidates
-          |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
-          |> Base.decode64!()
+        audio_data =
+          get_in(candidates, [Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
+
+        if is_nil(audio_data) do
+          raise RuntimeError,
+            message:
+              "Gemini TTS returned 200 but contained no audio data (inlineData.data was nil)"
+        end
 
         tts_gemini_usage_stats(metadata, organization_id)
-        {:ok, decoded_audio}
+        {:ok, Base.decode64!(audio_data)}
 
       {:ok, %Tesla.Env{status: status}} ->
         {:error, status}

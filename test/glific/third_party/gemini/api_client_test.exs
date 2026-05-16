@@ -171,5 +171,33 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
 
       assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
     end
+
+    test "raises RuntimeError when 200 response has no audio data", %{
+      organization_id: organization_id
+    } do
+      mock(fn %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            candidates: [
+              %{
+                content: %{
+                  parts: [%{text: "some text but no inlineData"}]
+                }
+              }
+            ],
+            usageMetadata: %{
+              promptTokenCount: 50,
+              candidatesTokenCount: 0,
+              totalTokenCount: 50
+            }
+          }
+        }
+      end)
+
+      assert_raise RuntimeError, ~r/no audio data/, fn ->
+        ApiClient.text_to_speech("Hello World", organization_id)
+      end
+    end
   end
 end

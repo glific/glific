@@ -246,6 +246,11 @@ defmodule Glific.Bhasini do
     encoded_audio =
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
+    if is_nil(encoded_audio) do
+      raise RuntimeError,
+        message: "Bhasini TTS response contained no audio content (audioContent was nil)"
+    end
+
     decoded_audio = Base.decode64!(encoded_audio)
     wav_file = System.tmp_dir!() <> "#{uuid}.wav"
 

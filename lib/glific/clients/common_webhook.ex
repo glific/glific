@@ -193,6 +193,7 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook(function, fields, _headers), do: webhook(function, fields)
 
   # Uses Gemini for STT via Bhasini flow nodes
+  @spec webhook(any(), any()) :: any()
   def webhook("speech_to_text_with_bhasini", fields) do
     case Bhasini.validate_params(fields) do
       {:ok, contact} ->

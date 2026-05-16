@@ -27,6 +27,33 @@ defmodule Glific.Bhasini.BhasiniTest do
              end)
   end
 
+  test "download_encoded_file/2 raises RuntimeError when audioContent is nil" do
+    uuid = Ecto.UUID.generate()
+
+    response = %{
+      "pipelineResponse" => [
+        %{
+          "audio" => [%{"audioContent" => nil, "audioUri" => nil}],
+          "taskType" => "tts"
+        }
+      ]
+    }
+
+    assert_raise RuntimeError, ~r/no audio content/, fn ->
+      Bhasini.download_encoded_file(response, uuid)
+    end
+  end
+
+  test "download_encoded_file/2 raises RuntimeError when pipelineResponse has no tts entry" do
+    uuid = Ecto.UUID.generate()
+
+    response = %{"pipelineResponse" => [%{"taskType" => "asr"}]}
+
+    assert_raise RuntimeError, ~r/no audio content/, fn ->
+      Bhasini.download_encoded_file(response, uuid)
+    end
+  end
+
   @tag :skip
   test "download_encoded_file/2 should download encoded file, convert it to mp3 and return ok tuple" do
     uuid = Ecto.UUID.generate()
