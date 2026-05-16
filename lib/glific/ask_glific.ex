@@ -9,6 +9,15 @@ defmodule Glific.AskGlific do
   alias Glific.Dify.ApiClient
   alias Glific.Repo
 
+  defmodule Error do
+    @moduledoc """
+    Exception raised when the AskGlific bot fails to respond.
+    Reporting these to AppSignal lets us alert on bot downtime
+    (e.g., Dify timeouts past the 60s receive_timeout).
+    """
+    defexception [:message, :organization_id, :user_id, :latency_ms]
+  end
+
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskGlific bot.
   Supports conversation history via conversation_id.
@@ -41,6 +50,8 @@ defmodule Glific.AskGlific do
 
   @spec do_ask(map(), boolean(), map()) :: {:ok, map()} | {:error, String.t()}
   defp do_ask(body, is_new_conversation, user) do
+    start_time = System.monotonic_time(:millisecond)
+
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
         answer = Map.get(response, "answer", "")
@@ -67,6 +78,16 @@ defmodule Glific.AskGlific do
          }}
 
       {:error, reason} ->
+        latency_ms = System.monotonic_time(:millisecond) - start_time
+
+        Glific.log_exception(%Error{
+          message:
+            "AskGlific Failure: no response after #{latency_ms}ms (org_id: #{user.organization_id}, user_id: #{user.id}, reason: #{inspect(reason)})",
+          organization_id: user.organization_id,
+          user_id: user.id,
+          latency_ms: latency_ms
+        })
+
         {:error, reason}
     end
   end
