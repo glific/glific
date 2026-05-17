@@ -30,7 +30,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, changeset} ->
         Logger.error(
           "AI Evaluation access request failed: user_id=#{user.id}, " <>
-            "org_id=#{user.organization_id}, errors=#{safe_inspect(changeset)}"
+            "org_id=#{user.organization_id}, errors=#{safe_inspect(changeset.errors)}"
         )
 
         {:error, changeset}
@@ -480,7 +480,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       )
 
       Metrics.increment("AI Evaluation Created", user.organization_id)
-      Metrics.increment("AI Evaluation Created: assistant=#{kaapi_input.config_id}", user.organization_id)
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
