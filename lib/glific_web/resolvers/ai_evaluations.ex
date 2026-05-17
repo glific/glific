@@ -44,6 +44,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @spec get_org_eval_access_request(map(), map(), map()) ::
           {:ok, %{status: String.t()} | nil}
   def get_org_eval_access_request(_, _, %{context: %{current_user: user}}) do
+    Metrics.increment("AI Evaluations Page Visited", user.organization_id)
+
     case AIEvaluations.get_eval_access_request(user.organization_id) do
       {:ok, request} -> {:ok, %{status: request.status}}
       {:error, _} -> {:ok, nil}
@@ -293,6 +295,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       )
 
       Metrics.increment("Golden QA Fetch Success", user.organization_id)
+      if include_signed_url, do: Metrics.increment("Golden QA Downloaded", user.organization_id)
       {:ok, %{golden_qa: golden_qa_map}}
     else
       {:error, [_, "Resource not found"]} ->
@@ -477,6 +480,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       )
 
       Metrics.increment("AI Evaluation Created", user.organization_id)
+      Metrics.increment("AI Evaluation Created: assistant=#{kaapi_input.config_id}", user.organization_id)
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
