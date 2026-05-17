@@ -97,13 +97,7 @@ defmodule Glific.AIEvaluations do
     |> where([e], e.inserted_at < ^timeout_threshold)
     |> Repo.all()
     |> Enum.each(fn evaluation ->
-      duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at, :second)
-
-      Logger.warning(
-        "Timing out AI evaluation: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-          "org_id=#{org_id}, duration_seconds=#{duration_seconds}"
-      )
-
+      Logger.warning("Timing out AI evaluation #{evaluation.id} for org #{org_id}")
       Metrics.increment("AI Evaluation Timed Out", org_id)
 
       Notifications.create_notification(%{
@@ -139,12 +133,10 @@ defmodule Glific.AIEvaluations do
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
-    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at, :second)
 
     Logger.info(
       "AI Evaluation completed: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-        "org_id=#{org_id}, duration_seconds=#{duration_seconds}, " <>
-        "summary_scores_count=#{length(summary_scores)}, " <>
+        "org_id=#{org_id}, summary_scores_count=#{length(summary_scores)}, " <>
         "summary_scores=#{safe_inspect(summary_scores)}"
     )
 
@@ -163,11 +155,10 @@ defmodule Glific.AIEvaluations do
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
-    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at, :second)
 
     Logger.error(
       "AI Evaluation failed on Kaapi: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-        "org_id=#{org_id}, duration_seconds=#{duration_seconds}, failure_reason=#{failure_reason}"
+        "org_id=#{org_id}, failure_reason=#{failure_reason}"
     )
 
     Metrics.increment("AI Evaluation Failed", org_id)
