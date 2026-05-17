@@ -2,6 +2,8 @@ defmodule Glific.ThirdParty.Kaapi do
   @moduledoc """
   Kaapi is our own internal services that handles all AI related features.
   """
+  import Glific.SafeLog
+
   require Logger
 
   alias Glific.Partners
@@ -61,10 +63,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, error} ->
         Glific.log_exception(%Error{
           message:
-            "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{inspect(error)}"
+            "Kaapi onboarding failed for org_id=#{params.organization_id}, reason=#{safe_inspect(error)}"
         })
 
-        {:error, "KAAPI onboarding failed for org #{params.organization_id}: #{inspect(error)}"}
+        {:error,
+         "KAAPI onboarding failed for org #{params.organization_id}: #{safe_inspect(error)}"}
     end
   end
 
@@ -107,11 +110,11 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, error} ->
         Glific.log_exception(%Error{
           message:
-            "KAAPI #{provider} credential update failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+            "KAAPI #{provider} credential update failed for org_id=#{organization_id}, reason=#{safe_inspect(error)}"
         })
 
         {:error,
-         "KAAPI #{provider} credential update failed for org #{organization_id}: #{inspect(error)}"}
+         "KAAPI #{provider} credential update failed for org #{organization_id}: #{safe_inspect(error)}"}
     end
   end
 
@@ -132,7 +135,7 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{inspect(reason)}"
+            "Assistant import failed in kaapi: organization_id=#{organization_id}, assistant_id=#{assistant_id}, reason=#{safe_inspect(reason)}"
         })
 
         {:error, reason}
@@ -166,7 +169,7 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message: "Kaapi Config creation failed for name #{params.name}",
             organization_id: organization_id,
-            reason: inspect(reason)
+            reason: safe_inspect(reason)
           },
           []
         )
@@ -201,7 +204,7 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message: "Kaapi Config Version creation failed for Config ID #{config_id}",
             organization_id: organization_id,
-            reason: inspect(reason)
+            reason: safe_inspect(reason)
           },
           []
         )
@@ -239,7 +242,7 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message: "Kaapi AI Assistant update failed for assistant_id=#{assistant_id}",
             organization_id: organization_id,
-            reason: inspect(reason)
+            reason: safe_inspect(reason)
           },
           []
         )
@@ -264,7 +267,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Glific.log_exception(%Error{
           message: "Kaapi AI Assistant delete failed for assistant_id=#{assistant_id}",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         {:error, reason}
@@ -288,7 +291,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Glific.log_exception(%Error{
           message: "Failed to create Kaapi Knowledge Base creation job",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         {:error, reason}
@@ -311,7 +314,7 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message: "Failed to get Kaapi collection status",
             organization_id: organization_id,
-            reason: inspect(reason)
+            reason: safe_inspect(reason)
           },
           []
         )
@@ -414,17 +417,18 @@ defmodule Glific.ThirdParty.Kaapi do
 
   defp handle_kaapi_error({:error, reason}, organization_id, label, fallback_type) do
     Glific.log_exception(%Error{
-      message: "Kaapi #{label} failed for org_id=#{organization_id}, reason=#{inspect(reason)}"
+      message:
+        "Kaapi #{label} failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
     })
 
-    %{success: false, error_type: fallback_type, reason: inspect(reason)}
+    %{success: false, error_type: fallback_type, reason: safe_inspect(reason)}
   end
 
   @spec extract_error_message(map() | any()) :: String.t()
   defp extract_error_message(body) when is_map(body),
-    do: body["error"] || body["message"] || inspect(body)
+    do: body["error"] || body["message"] || safe_inspect(body)
 
-  defp extract_error_message(body), do: inspect(body)
+  defp extract_error_message(body), do: safe_inspect(body)
 
   @spec classify_error(map() | any()) :: String.t()
   defp classify_error(body) do
@@ -508,7 +512,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message: "Kaapi document upload failed for, filename=#{params.filename}",
-            reason: inspect(reason),
+            reason: safe_inspect(reason),
             organization_id: organization_id
           },
           []
@@ -534,7 +538,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Appsignal.send_error(
           %Error{
             message:
-              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{inspect(reason)}"
+              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{safe_inspect(reason)}"
           },
           []
         )
@@ -550,9 +554,22 @@ defmodule Glific.ThirdParty.Kaapi do
   def create_evaluation(params, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi evaluation creation successful: experiment_name=#{params[:experiment_name]}, " <>
+          "org_id=#{organization_id}, kaapi_response=#{safe_inspect(result)}"
+      )
+
       {:ok, result}
     else
       {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi evaluation creation failed: experiment_name=#{params[:experiment_name]}, " <>
+              "org_id=#{organization_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
         {:error, reason}
     end
   end
@@ -565,9 +582,30 @@ defmodule Glific.ThirdParty.Kaapi do
   def get_evaluation_scores(evaluation_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"]) do
+      Logger.info(
+        "Kaapi evaluation scores retrieved: evaluation_id=#{evaluation_id}, " <>
+          "org_id=#{organization_id}, status=#{get_in(result, [:data, :status])}"
+      )
+
       {:ok, result}
     else
+      {:error, :timeout} ->
+        Logger.error(
+          "Kaapi timeout fetching evaluation scores: evaluation_id=#{evaluation_id}, " <>
+            "org_id=#{organization_id}"
+        )
+
+        {:error, :timeout}
+
       {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi evaluation scores fetch failed: evaluation_id=#{evaluation_id}, " <>
+              "org_id=#{organization_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
         {:error, reason}
     end
   end
@@ -587,7 +625,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Glific.log_exception(%Error{
           message: "Kaapi dataset response missing signed_url",
           organization_id: organization_id,
-          reason: inspect(data)
+          reason: safe_inspect(data)
         })
 
         {:error, "Dataset download URL not available"}
@@ -599,7 +637,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Glific.log_exception(%Error{
           message: "Failed to get dataset from Kaapi",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         {:error, reason}
@@ -624,7 +662,7 @@ defmodule Glific.ThirdParty.Kaapi do
         Glific.log_exception(%Error{
           message: "Failed to delete evaluation dataset from Kaapi",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         {:error, reason}
@@ -642,7 +680,7 @@ defmodule Glific.ThirdParty.Kaapi do
       case result do
         %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
           Logger.info(
-            "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{inspect(result)}"
+            "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{safe_inspect(result)}"
           )
 
           {:ok, %{name: dataset_name, dataset_id: dataset_id}}
@@ -652,7 +690,7 @@ defmodule Glific.ThirdParty.Kaapi do
             %Error{
               message: "Got unexpected response from Kaapi while uploading evaluation dataset",
               organization_id: organization_id,
-              reason: inspect(error)
+              reason: safe_inspect(error)
             },
             []
           )
@@ -665,7 +703,7 @@ defmodule Glific.ThirdParty.Kaapi do
           %Error{
             message: "Failed to upload evaluation dataset to Kaapi",
             organization_id: organization_id,
-            reason: inspect(reason)
+            reason: safe_inspect(reason)
           },
           []
         )

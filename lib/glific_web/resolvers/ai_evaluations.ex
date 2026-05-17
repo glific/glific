@@ -2,6 +2,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @moduledoc """
   Resolvers for AI Evaluations
   """
+  import Glific.SafeLog
+
   require Logger
 
   alias Glific.{
@@ -22,8 +24,16 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           {:ok, %{status: String.t()}} | {:error, Ecto.Changeset.t()}
   def request_ai_evaluation_access(_, _, %{context: %{current_user: user}}) do
     case AIEvaluations.request_eval_access(user.organization_id) do
-      {:ok, _request} -> {:ok, %{status: "requested"}}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, _request} ->
+        {:ok, %{status: "requested"}}
+
+      {:error, changeset} ->
+        Logger.error(
+          "AI Evaluation access request failed: user_id=#{user.id}, " <>
+            "org_id=#{user.organization_id}, errors=#{safe_inspect(changeset)}"
+        )
+
+        {:error, changeset}
     end
   end
 
@@ -89,6 +99,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def create_golden_qa(_, %{input: %{name: name, file: file, duplication_factor: factor}}, %{
         context: %{current_user: user}
       }) do
+    Logger.info(
+      "Create Golden QA initiated: name=#{name}, file_name=#{file.filename}, " <>
+        "duplication_factor=#{factor}, user_id=#{user.id}, org_id=#{user.organization_id}"
+    )
+
     dataset = %{
       dataset_name: name,
       file: file,
@@ -98,24 +113,51 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
+         _ =
+           Logger.info(
+             "Uploading Golden QA dataset to Kaapi: name=#{name}, " <>
+               "file_name=#{file.filename}, duplication_factor=#{factor}, " <>
+               "org_id=#{user.organization_id}"
+           ),
          {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
       {:error, :timeout} ->
+        Logger.error(
+          "Kaapi timeout uploading Golden QA dataset: name=#{name}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
-      {:error, %{status: _, body: %{:error => error}}} ->
+      {:error, %{status: status, body: %{:error => error}}} ->
+        Logger.error(
+          "Kaapi API error uploading Golden QA dataset: name=#{name}, " <>
+            "org_id=#{user.organization_id}, status=#{status}, error=#{error}"
+        )
+
         {:ok, %{errors: [%{message: error}]}}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         errors = format_changeset_errors(changeset)
-        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
+        Logger.error("Failed to save golden QA to database: #{safe_inspect(errors)}")
         {:ok, %{errors: errors}}
 
       {:error, msg} when is_binary(msg) ->
+        Logger.warning(
+          "Golden QA creation rejected: name=#{name}, org_id=#{user.organization_id}, reason=#{msg}"
+        )
+
         {:ok, %{errors: [%{message: msg}]}}
 
-      {:error, _err} ->
+      {:error, err} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Unexpected error creating Golden QA: name=#{name}, org_id=#{user.organization_id}",
+          organization_id: user.organization_id,
+          reason: safe_inspect(err)
+        })
+
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
@@ -125,6 +167,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:ok, data}
 
       {:ok, data} ->
+        Logger.info(
+          "Golden QA created successfully: name=#{name}, org_id=#{user.organization_id}"
+        )
+
         Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
         {:ok, data}
     end
@@ -146,7 +192,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, %Ecto.Changeset{} = changeset} ->
         cleanup_orphaned_kaapi_dataset(kaapi_dataset.dataset_id, user.organization_id)
         errors = format_changeset_errors(changeset)
-        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
+        Logger.error("Failed to save golden QA to database: #{safe_inspect(errors)}")
         {:ok, %{errors: errors}}
     end
   end
@@ -161,7 +207,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         Glific.log_exception(%Kaapi.Error{
           message: "Failed to delete orphaned Kaapi dataset",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         # Returning ok as we don't want to block the main flow
@@ -207,7 +253,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, reason} ->
         Logger.error(
-          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}"
+          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{safe_inspect(reason)}"
         )
 
         {:error, "Unable to read uploaded file for size validation"}
@@ -223,6 +269,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def get_golden_qa(_, %{id: golden_qa_id, include_signed_url: include_signed_url}, %{
         context: %{current_user: user}
       }) do
+    Logger.info(
+      "Fetching Golden QA: golden_qa_id=#{golden_qa_id}, " <>
+        "include_signed_url=#{include_signed_url}, org_id=#{user.organization_id}"
+    )
+
     with {:ok, golden_qa} <- Repo.fetch(Glific.AIEvaluations.GoldenQA, golden_qa_id),
          {:ok, kaapi_data} <- fetch_kaapi_dataset(golden_qa, user, include_signed_url) do
       golden_qa_map =
@@ -236,15 +287,38 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         }
         |> maybe_put_signed_url(kaapi_data)
 
+      Logger.info(
+        "Golden QA fetched successfully: id=#{golden_qa.id}, name=#{golden_qa.name}, " <>
+          "org_id=#{user.organization_id}"
+      )
+
+      Metrics.increment("Golden QA Fetch Success", user.organization_id)
       {:ok, %{golden_qa: golden_qa_map}}
     else
       {:error, [_, "Resource not found"]} ->
+        Logger.error("Golden QA not found: id=#{golden_qa_id}, org_id=#{user.organization_id}")
+
+        Metrics.increment("Golden QA Fetch Not Found", user.organization_id)
         {:ok, %{errors: [%{message: "Golden QA not found."}]}}
 
       {:error, error} when is_binary(error) ->
+        Logger.error(
+          "Golden QA fetch failed: id=#{golden_qa_id}, org_id=#{user.organization_id}, error=#{error}"
+        )
+
+        Metrics.increment("Golden QA Fetch Failure", user.organization_id)
         {:ok, %{errors: [%{message: error}]}}
 
-      {:error, _} ->
+      {:error, err} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Unexpected error fetching Golden QA: id=#{golden_qa_id}, org_id=#{user.organization_id}",
+          organization_id: user.organization_id,
+          reason: safe_inspect(err)
+        })
+
+        Metrics.increment("Golden QA Fetch Failure", user.organization_id)
+
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
@@ -287,20 +361,58 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
   def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
+    Logger.info(
+      "Get evaluation scores requested: evaluation_id=#{evaluation_id}, " <>
+        "user_id=#{user.id}, org_id=#{user.organization_id}"
+    )
+
     case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
       {:ok, %{data: data}} ->
+        Logger.info(
+          "Evaluation scores fetched successfully: evaluation_id=#{evaluation_id}, " <>
+            "org_id=#{user.organization_id}, status=#{Map.get(data, :status)}"
+        )
+
+        Metrics.increment("AI Evaluation Scores Fetched", user.organization_id)
         {:ok, %{scores: data}}
 
       {:error, :timeout} ->
+        Logger.error(
+          "Timeout fetching evaluation scores: evaluation_id=#{evaluation_id}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
+        Metrics.increment("AI Evaluation Scores Fetch Timeout", user.organization_id)
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
       {:error, [_, "Resource not found"]} ->
+        Logger.error(
+          "Evaluation not found when fetching scores: evaluation_id=#{evaluation_id}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
         {:ok, %{errors: [%{message: "Evaluation not found."}]}}
 
       {:error, msg} when is_binary(msg) ->
+        Logger.error(
+          "Error fetching evaluation scores: evaluation_id=#{evaluation_id}, " <>
+            "org_id=#{user.organization_id}, error=#{msg}"
+        )
+
+        Metrics.increment("AI Evaluation Scores Fetch Failure", user.organization_id)
         {:ok, %{errors: [%{message: msg}]}}
 
-      {:error, _} ->
+      {:error, err} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Unexpected error fetching evaluation scores: evaluation_id=#{evaluation_id}, " <>
+              "org_id=#{user.organization_id}",
+          organization_id: user.organization_id,
+          reason: safe_inspect(err)
+        })
+
+        Metrics.increment("AI Evaluation Scores Fetch Failure", user.organization_id)
+
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
@@ -312,6 +424,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
+    Logger.info(
+      "Create AI Evaluation initiated: name=#{input.evaluation_name}, " <>
+        "golden_qa_id=#{input.golden_qa_id}, config_id=#{input.config_id}, " <>
+        "user_id=#{user.id}, org_id=#{user.organization_id}"
+    )
+
     with {:name, {:error, _}} <-
            {:name,
             Repo.fetch_by(AIEvaluation, %{
@@ -334,6 +452,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
+         _ =
+           Logger.info(
+             "Sending create evaluation request to Kaapi: " <>
+               "experiment_name=#{kaapi_input.experiment_name}, " <>
+               "config_id=#{kaapi_input.config_id}, " <>
+               "config_version=#{kaapi_input.config_version}, " <>
+               "dataset_id=#{kaapi_input.dataset_id}, org_id=#{user.organization_id}"
+           ),
          {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
@@ -344,28 +470,77 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
            }) do
+      Logger.info(
+        "AI Evaluation created successfully: id=#{evaluation.id}, name=#{evaluation.name}, " <>
+          "status=#{evaluation.status}, kaapi_evaluation_id=#{evaluation.kaapi_evaluation_id}, " <>
+          "org_id=#{user.organization_id}"
+      )
+
+      Metrics.increment("AI Evaluation Created", user.organization_id)
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
+        Logger.warning(
+          "Duplicate evaluation name rejected: name=#{input.evaluation_name}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
         {:error, "An evaluation with this name already exists. Please choose a different name."}
 
       {:assistant_config_version, {:error, _}} ->
+        Logger.error(
+          "Config version not found: config_id=#{input.config_id}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
         {:error, "The specified config version does not exist."}
 
       {:golden_qa, {:error, _}} ->
+        Logger.error(
+          "Golden QA not found or access denied: golden_qa_id=#{input.golden_qa_id}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
         {:error,
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
 
       {:error, :timeout} ->
+        Logger.error(
+          "Kaapi timeout creating evaluation: name=#{input.evaluation_name}, " <>
+            "org_id=#{user.organization_id}"
+        )
+
+        Metrics.increment("AI Evaluation Create Timeout", user.organization_id)
         {:error, "Timeout occurred, please try again."}
 
       {:error, %{body: %{:error => error}}} ->
+        Logger.error(
+          "Kaapi API error creating evaluation: name=#{input.evaluation_name}, " <>
+            "org_id=#{user.organization_id}, error=#{error}"
+        )
+
+        Metrics.increment("AI Evaluation Create Failure", user.organization_id)
         {:error, error}
 
       {:error, msg} when is_binary(msg) ->
+        Logger.error(
+          "Error creating evaluation: name=#{input.evaluation_name}, " <>
+            "org_id=#{user.organization_id}, error=#{msg}"
+        )
+
+        Metrics.increment("AI Evaluation Create Failure", user.organization_id)
         {:error, msg}
 
-      {:error, _} ->
+      {:error, err} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Unexpected error creating AI Evaluation: name=#{input.evaluation_name}, " <>
+              "org_id=#{user.organization_id}",
+          organization_id: user.organization_id,
+          reason: safe_inspect(err)
+        })
+
+        Metrics.increment("AI Evaluation Create Failure", user.organization_id)
         {:error, "An unknown error occurred, please contact Glific support."}
     end
   end
