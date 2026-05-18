@@ -127,6 +127,9 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
+    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+    Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{org_id: org_id})
+
     Metrics.increment("AI Evaluation Completed", org_id)
 
     Notifications.create_notification(%{

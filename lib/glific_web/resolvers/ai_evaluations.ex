@@ -110,7 +110,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, :timeout} ->
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
-      {:error, %{status: _status, body: %{:error => error}}} ->
+      {:error, %{status: _, body: %{:error => error}}} ->
         {:ok, %{errors: [%{message: error}]}}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -118,8 +118,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:ok, %{errors: errors}}
 
       {:error, msg} when is_binary(msg) ->
-        Logger.warning("Golden QA creation rejected: name=#{name}, reason=#{msg}")
-
         {:ok, %{errors: [%{message: msg}]}}
 
       {:error, _err} ->
@@ -294,8 +292,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
   def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    Logger.info("Get evaluation scores requested: evaluation_id=#{evaluation_id}")
-
     case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
@@ -304,8 +300,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
 
       {:error, [_, "Resource not found"]} ->
-        Logger.error("Evaluation not found when fetching scores: evaluation_id=#{evaluation_id}")
-
         {:ok, %{errors: [%{message: "Evaluation not found."}]}}
 
       {:error, msg} when is_binary(msg) ->
@@ -359,18 +353,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
-        Logger.warning("Duplicate evaluation name rejected: name=#{input.evaluation_name}")
-
         {:error, "An evaluation with this name already exists. Please choose a different name."}
 
       {:assistant_config_version, {:error, _}} ->
-        Logger.error("Config version not found: config_id=#{input.config_id}")
-
         {:error, "The specified config version does not exist."}
 
       {:golden_qa, {:error, _}} ->
-        Logger.error("Golden QA not found or access denied: golden_qa_id=#{input.golden_qa_id}")
-
         {:error,
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
 
