@@ -232,6 +232,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       "organization_id" => organization_id,
       "flow_id" => flow_id,
       "contact_id" => contact_id,
+      "provider" => "kaapi",
       "timestamp" => timestamp
     }
 

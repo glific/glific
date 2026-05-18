@@ -496,10 +496,21 @@ defmodule Glific.Clients.CommonWebhook do
              request_metadata
            ),
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
-      Map.merge(%{success: true}, body)
+      case normalize_kaapi_body(body) do
+        {:ok, body} ->
+          Map.merge(%{success: true}, body)
+
+        {:failure, reason} ->
+          %{
+            success: false,
+            http_status: 200,
+            error_type: "kaapi_logical_failure",
+            reason: reason
+          }
+      end
     else
-      {:error, %{status: _status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body)}
+      {:error, %{status: status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body), http_status: status}
 
       {:error, reason} when is_binary(reason) ->
         %{success: false, reason: reason}
@@ -508,6 +519,26 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, reason: inspect(reason)}
     end
   end
+
+  # A Kaapi 2xx response whose body explicitly says success:false is a logical
+  # failure even though the HTTP status was 200. ApiClient.parse_kaapi_response/1
+  # only inspects the HTTP status, so we re-check the decoded body here. The
+  # non-map clause guards against bodies that aren't JSON objects.
+  @spec normalize_kaapi_body(any()) :: {:ok, map()} | {:failure, String.t()}
+  defp normalize_kaapi_body(body) when is_map(body) do
+    case body do
+      %{"success" => false} ->
+        {:failure, body["message"] || body["error"] || "Kaapi logical failure"}
+
+      %{success: false} ->
+        {:failure, body[:message] || body[:error] || "Kaapi logical failure"}
+
+      _ ->
+        {:ok, body}
+    end
+  end
+
+  defp normalize_kaapi_body(body), do: {:ok, body}
 
   @spec find_component(list(map()), String.t()) :: String.t()
   defp find_component(components, type) do

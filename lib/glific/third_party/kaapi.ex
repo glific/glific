@@ -389,35 +389,66 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec handle_kaapi_error(tuple(), non_neg_integer(), String.t(), String.t()) :: map()
   defp handle_kaapi_error({:error, %{status: 429}}, _org_id, _label, _fallback),
-    do: %{success: false, error_type: "rate_limited", reason: "Rate limit exceeded"}
+    do: %{
+      success: false,
+      error_type: "rate_limited",
+      reason: "Rate limit exceeded",
+      http_status: 429
+    }
 
   defp handle_kaapi_error({:error, %{status: 408}}, _org_id, _label, _fallback),
-    do: %{success: false, error_type: "timeout", reason: "Request timed out"}
+    do: %{
+      success: false,
+      error_type: "timeout",
+      reason: "Request timed out",
+      http_status: 408
+    }
 
   defp handle_kaapi_error({:error, :timeout}, _org_id, _label, _fallback),
-    do: %{success: false, error_type: "timeout", reason: "Request timed out"}
+    do: %{
+      success: false,
+      error_type: "timeout",
+      reason: "Request timed out",
+      http_status: nil
+    }
 
   defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
        when status in 400..499,
-       do: %{success: false, error_type: "invalid_request", reason: extract_error_message(body)}
+       do: %{
+         success: false,
+         error_type: "invalid_request",
+         reason: extract_error_message(body),
+         http_status: status
+       }
 
   defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback)
        when status in 500..599,
        do: %{
          success: false,
          error_type: "service_unavailable",
-         reason: extract_error_message(body)
+         reason: extract_error_message(body),
+         http_status: status
        }
 
-  defp handle_kaapi_error({:error, %{status: _status, body: body}}, _org_id, _label, _fallback),
-    do: %{success: false, error_type: classify_error(body), reason: extract_error_message(body)}
+  defp handle_kaapi_error({:error, %{status: status, body: body}}, _org_id, _label, _fallback),
+    do: %{
+      success: false,
+      error_type: classify_error(body),
+      reason: extract_error_message(body),
+      http_status: status
+    }
 
   defp handle_kaapi_error({:error, reason}, organization_id, label, fallback_type) do
     Glific.log_exception(%Error{
       message: "Kaapi #{label} failed for org_id=#{organization_id}, reason=#{inspect(reason)}"
     })
 
-    %{success: false, error_type: fallback_type, reason: inspect(reason)}
+    %{
+      success: false,
+      error_type: fallback_type,
+      reason: inspect(reason),
+      http_status: nil
+    }
   end
 
   @spec extract_error_message(map() | any()) :: String.t()
