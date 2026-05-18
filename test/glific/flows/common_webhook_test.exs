@@ -1579,6 +1579,88 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
+  describe "unified-llm-call failure reporting" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+
+      {assistant, _config} = create_assistant_with_config(1, [])
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      %{fields: fields}
+    end
+
+    test "reports SystemError with http_status on a Kaapi 4xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 400
+    end
+
+    test "reports SystemError with http_status on a Kaapi 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 503
+    end
+
+    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{"success" => false, "message" => "boom"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+          assert result.error_type == "kaapi_logical_failure"
+          assert result.reason == "boom"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 200
+    end
+  end
+
   defp tts_fields(contact_id) do
     %{
       "text" => "Hello world",
