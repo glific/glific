@@ -1028,6 +1028,161 @@ defmodule Glific.SheetsTest do
     end
   end
 
+  describe "build_conn middleware injection" do
+    test "fetch_credentials returns a conn with recv_timeout and retry middleware", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        assert {:ok, %{conn: conn}} = GoogleSheets.fetch_credentials(organization_id)
+
+        middleware = Tesla.Client.middleware(conn)
+
+        middleware_modules =
+          Enum.map(middleware, fn
+            {mod, _opts} -> mod
+            mod -> mod
+          end)
+
+        assert Tesla.Middleware.Opts in middleware_modules
+        assert Tesla.Middleware.Retry in middleware_modules
+        assert Tesla.Middleware.Telemetry in middleware_modules
+
+        {Tesla.Middleware.Opts, opts} =
+          Enum.find(middleware, fn
+            {Tesla.Middleware.Opts, _} -> true
+            _ -> false
+          end)
+
+        assert opts[:recv_timeout] == 10_000
+
+        {Tesla.Middleware.Telemetry, telemetry_opts} =
+          Enum.find(middleware, fn
+            {Tesla.Middleware.Telemetry, _} -> true
+            _ -> false
+          end)
+
+        assert telemetry_opts[:metadata][:provider] == "google_sheets_api"
+      end
+    end
+  end
+
+  describe "GoogleSheets retry behavior" do
+    test "get_headers/2 retries on 429 and eventually succeeds", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        {:ok, call_count} = Agent.start_link(fn -> 0 end)
+
+        Tesla.Mock.mock(fn %{method: :get} ->
+          count = Agent.get_and_update(call_count, fn n -> {n, n + 1} end)
+
+          if count == 0 do
+            %Tesla.Env{status: 429, body: "Rate limit exceeded"}
+          else
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  range: "Sheet1!A1:ZZ1",
+                  majorDimension: "ROWS",
+                  values: [["name", "age", "city"]]
+                })
+            }
+          end
+        end)
+
+        assert {:ok, ["name", "age", "city"]} =
+                 GoogleSheets.get_headers(organization_id, @spreadsheet_id)
+
+        assert Agent.get(call_count, & &1) == 2
+      end
+    end
+
+    test "insert_row/3 retries on :timeout and eventually succeeds", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        {:ok, call_count} = Agent.start_link(fn -> 0 end)
+
+        Tesla.Mock.mock(fn %{method: :post} ->
+          count = Agent.get_and_update(call_count, fn n -> {n, n + 1} end)
+
+          if count == 0 do
+            {:error, :timeout}
+          else
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  spreadsheetId: @spreadsheet_id,
+                  updates: %{updatedRows: 1}
+                })
+            }
+          end
+        end)
+
+        params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
+        assert {:ok, _} = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+
+        assert Agent.get(call_count, & &1) == 2
+      end
+    end
+
+    test "read_sheet_data/2 retries on 500 and eventually succeeds", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        {:ok, call_count} = Agent.start_link(fn -> 0 end)
+
+        Tesla.Mock.mock(fn %{method: :get, url: url} ->
+          count = Agent.get_and_update(call_count, fn n -> {n, n + 1} end)
+
+          cond do
+            count == 0 ->
+              %Tesla.Env{status: 500, body: "Internal Server Error"}
+
+            url == @sheets_base_url ->
+              %Tesla.Env{status: 200, body: spreadsheet_metadata_response()}
+
+            String.starts_with?(url, @sheets_base_url <> "/values/") ->
+              %Tesla.Env{
+                status: 200,
+                body: values_response([["name", "age"], ["Alice", "30"]])
+              }
+          end
+        end)
+
+        assert {:ok, rows} = GoogleSheets.read_sheet_data(organization_id, @sheet_url)
+        assert length(rows) == 1
+        assert {:ok, %{"name" => "Alice", "age" => "30"}} = Enum.at(rows, 0)
+      end
+    end
+  end
+
   describe "GoogleSheets.get_headers/2" do
     test "returns headers from first row via Google Sheets API", %{
       organization_id: organization_id
