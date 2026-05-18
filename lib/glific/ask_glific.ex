@@ -14,15 +14,8 @@ defmodule Glific.AskGlific do
     @moduledoc """
     Exception raised when the AskGlific bot fails to respond.
     Reporting these to AppSignal lets us alert on bot downtime
-    (e.g., Dify timeouts past the 60s receive_timeout).
-    Keep `message/1` low-cardinality so AppSignal groups all failures
-    into one incident; per-occurrence detail is attached as tags at the
-    report site.
     """
-    defexception []
-
-    @impl true
-    def message(%__MODULE__{}), do: "AskGlific bot failed to respond"
+    defexception [:message]
   end
 
   @doc """
@@ -91,12 +84,10 @@ defmodule Glific.AskGlific do
     end
   end
 
-  # Reports an AskGlific bot failure to AppSignal. The exception message is
-  # low-cardinality so all failures group into one incident; per-occurrence
-  # detail (org, user, latency, reason) is attached as filterable tags.
+  # Reports an AskGlific bot failure to AppSignal.
   @spec report_failure(map(), non_neg_integer(), any()) :: :ok
   defp report_failure(user, latency_ms, reason) do
-    exception = %Error{}
+    exception = %Error{message: "AskGlific bot failed to respond"}
 
     Appsignal.send_error(exception, [], fn span ->
       span
