@@ -251,12 +251,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
     organization_id = fields["organization_id"]
     timestamp = fields["timestamp"]
     signature = fields["signature"]
+    provider = fields["provider"]
 
     signature_payload = %{
       "organization_id" => organization_id,
       "flow_id" => flow_id,
       "contact_id" => contact_id,
-      "provider" => "kaapi",
+      "provider" => provider,
       "timestamp" => timestamp
     }
 
@@ -271,6 +272,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     cond do
       new_organization_id != organization_id -> false
+      provider != "kaapi" -> false
       new_signature != signature -> false
       new_timestamp > timestamp + 15 * 60 * 1_000_000 -> false
       true -> true
