@@ -50,27 +50,20 @@ defmodule Glific.AIEvaluations do
   """
   @spec create_ai_evaluation(map()) :: {:ok, AIEvaluation.t()} | {:error, Ecto.Changeset.t()}
   def create_ai_evaluation(attrs) do
-    result =
-      %AIEvaluation{}
-      |> AIEvaluation.changeset(attrs)
-      |> Repo.insert()
-
-    case result do
+    %AIEvaluation{}
+    |> AIEvaluation.changeset(attrs)
+    |> Repo.insert()
+    |> case do
       {:ok, evaluation} ->
-        Logger.info(
-          "AI Evaluation record created: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-            "status=#{evaluation.status}, kaapi_evaluation_id=#{evaluation.kaapi_evaluation_id}, " <>
-            "org_id=#{evaluation.organization_id}"
-        )
+        {:ok, evaluation}
 
-      {:error, changeset} ->
+      {:error, changeset} = result ->
         Logger.error(
-          "Failed to create AI Evaluation record: org_id=#{attrs[:organization_id]}, " <>
-            "name=#{attrs[:name]}, errors=#{safe_inspect(changeset.errors)}"
+          "Failed to create AI Evaluation record: name=#{attrs[:name]}, errors=#{safe_inspect(changeset.errors)}"
         )
-    end
 
-    result
+        result
+    end
   end
 
   @doc """
@@ -267,17 +260,8 @@ defmodule Glific.AIEvaluations do
   @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
   def get_evaluation_scores(evaluation_id, org_id) do
-    Logger.info(
-      "Fetching AI Evaluation scores from Kaapi: evaluation_id=#{evaluation_id}, org_id=#{org_id}"
-    )
-
-    with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id} = evaluation} <-
+    with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id}} <-
            Repo.fetch(AIEvaluation, evaluation_id) do
-      Logger.info(
-        "Polling Kaapi for evaluation scores: evaluation_id=#{evaluation_id}, " <>
-          "name=#{evaluation.name}, kaapi_evaluation_id=#{kaapi_id}, org_id=#{org_id}"
-      )
-
       Kaapi.get_evaluation_scores(kaapi_id, org_id)
     end
   end
@@ -297,8 +281,6 @@ defmodule Glific.AIEvaluations do
   @spec request_eval_access(non_neg_integer()) ::
           {:ok, OrganizationEvalRequest.t()} | {:error, Ecto.Changeset.t()}
   def request_eval_access(organization_id) do
-    Logger.info("AI Evaluation access request received: org_id=#{organization_id}")
-
     case Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id}) do
       {:ok, existing} ->
         Logger.info(
