@@ -8,6 +8,7 @@ defmodule Glific.AskGlific do
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
+  alias Glific.SafeLog
 
   defmodule Error do
     @moduledoc """
@@ -82,7 +83,7 @@ defmodule Glific.AskGlific do
 
         Glific.log_exception(%Error{
           message:
-            "AskGlific Failure: no response after #{latency_ms}ms (org_id: #{user.organization_id}, user_id: #{user.id}, reason: #{inspect(reason)})",
+            "AskGlific Failure: no response after #{latency_ms}ms (org_id: #{user.organization_id}, user_id: #{user.id}, reason: #{SafeLog.safe_inspect(reason)})",
           organization_id: user.organization_id,
           user_id: user.id,
           latency_ms: latency_ms
