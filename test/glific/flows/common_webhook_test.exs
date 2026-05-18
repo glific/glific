@@ -1103,6 +1103,47 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       assert result.success == true
     end
+
+    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{"success" => false, "message" => "boom"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result.success == false
+          assert result.error_type == "kaapi_logical_failure"
+          assert result.reason == "boom"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.http_status == 200
+    end
+
+    test "reports SystemError on a Kaapi 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.http_status == 503
+    end
   end
 
   describe "text_to_speech webhook" do
