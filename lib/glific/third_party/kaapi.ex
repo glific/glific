@@ -2,9 +2,9 @@ defmodule Glific.ThirdParty.Kaapi do
   @moduledoc """
   Kaapi is our own internal services that handles all AI related features.
   """
-  import Glific.SafeLog
-
   require Logger
+
+  import Glific.SafeLog
 
   alias Glific.Partners
   alias Glific.Partners.Credential
