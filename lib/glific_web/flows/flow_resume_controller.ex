@@ -41,6 +41,9 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
+
+    maybe_report_callback_failure(result, response, organization_id)
+
     response_key = response["result_name"] || "response"
 
     message =
@@ -79,6 +82,27 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # always return 200 and an empty response
     json(conn, "")
   end
+
+  # Reports a Kaapi callback whose result is a failure to AppSignal. The
+  # callback means Kaapi processed the request but the outcome was a failure.
+  # We only report it here — the flow's Failure path is handled separately.
+  @spec maybe_report_callback_failure(map(), map(), non_neg_integer()) :: :ok
+  defp maybe_report_callback_failure(%{"success" => false} = result, response, organization_id) do
+    reason =
+      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+
+    %Webhook.SystemError{message: "Webhook callback failure"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: organization_id,
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"],
+      error_type: result["error_type"],
+      reason: reason
+    })
+  end
+
+  defp maybe_report_callback_failure(_result, _response, _organization_id), do: :ok
 
   @doc """
   Callback for voice unified LLM calls.

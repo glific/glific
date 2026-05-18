@@ -51,6 +51,16 @@ defmodule Glific.Flows.Webhook do
     defexception [:message]
   end
 
+  defmodule Timeout do
+    @moduledoc """
+    Webhook timeout: an async webhook (STT/TTS/unified-llm) parked the flow
+    waiting for a Kaapi callback, but none arrived within the wait window.
+    A distinct exception module so AppSignal groups timeouts into their own
+    incident, separate from `SystemError`.
+    """
+    defexception [:message]
+  end
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
@@ -62,6 +72,28 @@ defmodule Glific.Flows.Webhook do
     "nmt_tts_with_bhasini",
     "call_and_wait"
   ]
+
+  @doc """
+  Report a flow-webhook exception (`SystemError` / `Timeout`) to AppSignal
+  under the `flow_webhooks` namespace, with `tags` attached as filterable
+  sample data. Single reporting site shared by the outbound path, the
+  timeout handler, and the callback handler.
+  """
+  @spec report_to_appsignal(Exception.t(), map()) :: :ok
+  def report_to_appsignal(exception, tags) when is_map(tags) do
+    Logger.error(Exception.message(exception))
+
+    # The 3-arg send_error with a span configurator puts per-occurrence detail
+    # on the AppSignal sample as filterable tags (the 2-arg form records only
+    # class + message and drops everything else).
+    Appsignal.send_error(exception, [], fn span ->
+      span
+      |> Appsignal.Span.set_namespace("flow_webhooks")
+      |> Appsignal.Span.set_sample_data("tags", tags)
+    end)
+
+    :ok
+  end
 
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do

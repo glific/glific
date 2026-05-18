@@ -8,6 +8,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Contacts
+  alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
@@ -936,24 +937,12 @@ defmodule Glific.Clients.CommonWebhook do
           String.t() | nil
         ) :: :ok
   defp report_webhook_failure(webhook_name, org_id, http_status, reason) do
-    exception = %SystemError{message: "Webhook system_error from #{webhook_name}"}
-
-    Logger.error(Exception.message(exception))
-
-    # Use the 3-arg send_error with a span configurator so per-occurrence
-    # detail lands on the AppSignal sample as filterable tags (the 2-arg form
-    # records only class + message and drops struct fields).
-    Appsignal.send_error(exception, [], fn span ->
-      span
-      |> Appsignal.Span.set_namespace("flow_webhooks")
-      |> Appsignal.Span.set_sample_data("tags", %{
-        organization_id: org_id,
-        webhook_name: webhook_name,
-        http_status: http_status,
-        reason: reason
-      })
-    end)
-
-    :ok
+    %SystemError{message: "Webhook system_error from #{webhook_name}"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: org_id,
+      webhook_name: webhook_name,
+      http_status: http_status,
+      reason: reason
+    })
   end
 end
