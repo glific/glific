@@ -537,8 +537,9 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Appsignal.send_error(
           %Error{
-            message:
-              "KAAPI config delete failed for org_id=#{organization_id}, config=#{uuid}, reason=#{safe_inspect(reason)}"
+            message: "KAAPI config delete failed for config=#{uuid}",
+            organization_id: organization_id,
+            reason: safe_inspect(reason)
           },
           []
         )
@@ -554,18 +555,12 @@ defmodule Glific.ThirdParty.Kaapi do
   def create_evaluation(params, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.create_evaluation(params, secrets["api_key"]) do
-      Logger.info(
-        "Kaapi evaluation creation successful: experiment_name=#{params[:experiment_name]}, " <>
-          "org_id=#{organization_id}, kaapi_response=#{safe_inspect(result)}"
-      )
-
       {:ok, result}
     else
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Kaapi evaluation creation failed: experiment_name=#{params[:experiment_name]}, " <>
-              "org_id=#{organization_id}",
+            "Kaapi evaluation creation failed: experiment_name=#{params[:experiment_name]}",
           organization_id: organization_id,
           reason: safe_inspect(reason)
         })
@@ -582,26 +577,16 @@ defmodule Glific.ThirdParty.Kaapi do
   def get_evaluation_scores(evaluation_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"]) do
-      Logger.info(
-        "Kaapi evaluation scores retrieved: evaluation_id=#{evaluation_id}, " <>
-          "org_id=#{organization_id}, status=#{get_in(result, [:data, :status])}"
-      )
-
       {:ok, result}
     else
       {:error, :timeout} ->
-        Logger.error(
-          "Kaapi timeout fetching evaluation scores: evaluation_id=#{evaluation_id}, " <>
-            "org_id=#{organization_id}"
-        )
+        Logger.error("Kaapi timeout fetching evaluation scores: evaluation_id=#{evaluation_id}")
 
         {:error, :timeout}
 
       {:error, reason} ->
         Glific.log_exception(%Error{
-          message:
-            "Kaapi evaluation scores fetch failed: evaluation_id=#{evaluation_id}, " <>
-              "org_id=#{organization_id}",
+          message: "Kaapi evaluation scores fetch failed: evaluation_id=#{evaluation_id}",
           organization_id: organization_id,
           reason: safe_inspect(reason)
         })
@@ -619,8 +604,6 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, %{success: true, data: data}} <-
            ApiClient.get_dataset(dataset_id, secrets["api_key"], include_signed_url) do
-      Logger.info("Dataset retrieved for org: #{organization_id}, dataset: #{dataset_id}")
-
       if include_signed_url && !Map.has_key?(data, :signed_url) do
         Glific.log_exception(%Error{
           message: "Kaapi dataset response missing signed_url",
@@ -652,9 +635,7 @@ defmodule Glific.ThirdParty.Kaapi do
   def delete_evaluation_dataset(dataset_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, result} <- ApiClient.delete_evaluation_dataset(dataset_id, secrets["api_key"]) do
-      Logger.info(
-        "Kaapi evaluation dataset delete successful for org: #{organization_id}, dataset: #{dataset_id}"
-      )
+      Logger.info("Kaapi evaluation dataset delete successful for dataset: #{dataset_id}")
 
       {:ok, result}
     else
@@ -679,10 +660,6 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, result} <- ApiClient.upload_evaluation_dataset(params, secrets["api_key"]) do
       case result do
         %{data: %{dataset_name: dataset_name, dataset_id: dataset_id}} ->
-          Logger.info(
-            "Kaapi evaluation dataset upload successful for org: #{organization_id}, result: #{safe_inspect(result)}"
-          )
-
           {:ok, %{name: dataset_name, dataset_id: dataset_id}}
 
         error ->
