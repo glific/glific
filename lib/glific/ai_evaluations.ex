@@ -127,12 +127,6 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
-    Logger.info(
-      "AI Evaluation completed: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-        "org_id=#{org_id}, summary_scores_count=#{length(summary_scores)}, " <>
-        "summary_scores=#{safe_inspect(summary_scores)}"
-    )
-
     Metrics.increment("AI Evaluation Completed", org_id)
 
     Notifications.create_notification(%{
@@ -148,12 +142,6 @@ defmodule Glific.AIEvaluations do
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
-
-    Logger.error(
-      "AI Evaluation failed on Kaapi: id=#{evaluation.id}, name=#{evaluation.name}, " <>
-        "org_id=#{org_id}, failure_reason=#{failure_reason}"
-    )
-
     Metrics.increment("AI Evaluation Failed", org_id)
 
     Notifications.create_notification(%{
@@ -184,21 +172,11 @@ defmodule Glific.AIEvaluations do
   @spec do_update(AIEvaluation.t(), map()) :: :ok
   defp do_update(evaluation, attrs) do
     case update_ai_evaluation(evaluation, attrs) do
-      {:ok, updated} ->
-        Logger.info(
-          "AI Evaluation status updated: id=#{updated.id}, name=#{updated.name}, " <>
-            "new_status=#{updated.status}"
-        )
-
+      {:ok, _} ->
         :ok
 
       {:error, changeset} ->
-        Glific.log_exception(%Glific.ThirdParty.Kaapi.Error{
-          message:
-            "Failed to update AI Evaluation record: id=#{evaluation.id}, name=#{evaluation.name}",
-          organization_id: evaluation.organization_id,
-          reason: safe_inspect(changeset.errors)
-        })
+        {:error, changeset}
     end
   end
 
@@ -230,28 +208,9 @@ defmodule Glific.AIEvaluations do
   """
   @spec create_golden_qa(map()) :: {:ok, GoldenQA.t()} | {:error, Ecto.Changeset.t()}
   def create_golden_qa(attrs) do
-    result =
-      %GoldenQA{}
-      |> GoldenQA.changeset(attrs)
-      |> Repo.insert()
-
-    case result do
-      {:ok, golden_qa} ->
-        Logger.info(
-          "Golden QA record created: id=#{golden_qa.id}, name=#{golden_qa.name}, " <>
-            "dataset_id=#{golden_qa.dataset_id}, " <>
-            "duplication_factor=#{golden_qa.duplication_factor}, " <>
-            "file_name=#{golden_qa.file_name}, org_id=#{golden_qa.organization_id}"
-        )
-
-      {:error, changeset} ->
-        Logger.error(
-          "Failed to create Golden QA record: org_id=#{attrs[:organization_id]}, " <>
-            "name=#{attrs[:name]}, errors=#{safe_inspect(changeset.errors)}"
-        )
-    end
-
-    result
+    %GoldenQA{}
+    |> GoldenQA.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
@@ -283,11 +242,6 @@ defmodule Glific.AIEvaluations do
   def request_eval_access(organization_id) do
     case Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id}) do
       {:ok, existing} ->
-        Logger.info(
-          "AI Evaluation access request already exists (idempotent): " <>
-            "org_id=#{organization_id}, status=#{existing.status}"
-        )
-
         {:ok, existing}
 
       {:error, _} ->
@@ -296,21 +250,10 @@ defmodule Glific.AIEvaluations do
           |> OrganizationEvalRequest.changeset(%{organization_id: organization_id})
           |> Repo.insert()
 
-        case result do
-          {:ok, _request} ->
-            Logger.info("New AI Evaluation access request created: org_id=#{organization_id}")
-
-            Metrics.increment("AI Evaluation Access Requested", organization_id)
-
-            organization_id
-            |> Partners.organization()
-            |> EvalAccessRequestMail.send_eval_access_request_mail()
-
-          {:error, changeset} ->
-            Logger.error(
-              "Failed to create AI Evaluation access request: org_id=#{organization_id}, " <>
-                "errors=#{safe_inspect(changeset.errors)}"
-            )
+        with {:ok, _} <- result do
+          organization_id
+          |> Partners.organization()
+          |> EvalAccessRequestMail.send_eval_access_request_mail()
         end
 
         result
