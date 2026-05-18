@@ -66,9 +66,9 @@ defmodule Glific.AppsignalTest do
       }
 
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         assert query_event({:error, error}) == :ok
 
         assert called(
@@ -84,9 +84,9 @@ defmodule Glific.AppsignalTest do
       error = %DBConnection.ConnectionError{reason: "custom_error", message: "custom error"}
 
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         assert query_event({:error, error}) == :ok
 
         assert called(
@@ -102,9 +102,9 @@ defmodule Glific.AppsignalTest do
       error = %DBConnection.ConnectionError{reason: nil, message: "queue timeout after 2999ms"}
 
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         assert query_event({:error, error}) == :ok
 
         assert called(
@@ -118,29 +118,35 @@ defmodule Glific.AppsignalTest do
 
     test "does not track non-connection errors" do
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         assert query_event({:error, %Postgrex.Error{message: "syntax error"}}) == :ok
-        refute called(Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_))
+
+        refute called(
+                 Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_)
+               )
       end
     end
 
     test "does not track successful results" do
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         assert query_event({:ok, %{rows: []}}) == :ok
-        refute called(Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_))
+
+        refute called(
+                 Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_)
+               )
       end
     end
 
     test "handles missing result key gracefully" do
       with_mock Elixir.Appsignal,
-        [:passthrough],
-        add_distribution_value: fn _, _, _ -> :ok end,
-        increment_counter: fn _, _, _ -> :ok end do
+                [:passthrough],
+                add_distribution_value: fn _, _, _ -> :ok end,
+                increment_counter: fn _, _, _ -> :ok end do
         result =
           Appsignal.handle_event(
             [:glific, :repo, :query],
@@ -150,9 +156,11 @@ defmodule Glific.AppsignalTest do
           )
 
         assert result == :ok
-        refute called(Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_))
+
+        refute called(
+                 Elixir.Appsignal.increment_counter("glific.repo.db_connection_error", 1, :_)
+               )
       end
     end
   end
-
 end
