@@ -15,8 +15,14 @@ defmodule Glific.AskGlific do
     Exception raised when the AskGlific bot fails to respond.
     Reporting these to AppSignal lets us alert on bot downtime
     (e.g., Dify timeouts past the 60s receive_timeout).
+    Keep `message/1` low-cardinality so AppSignal groups all failures
+    into one incident; per-occurrence detail is attached as tags at the
+    report site.
     """
-    defexception [:message, :organization_id, :user_id, :latency_ms]
+    defexception []
+
+    @impl true
+    def message(%__MODULE__{}), do: "AskGlific bot failed to respond"
   end
 
   @doc """
@@ -80,17 +86,30 @@ defmodule Glific.AskGlific do
 
       {:error, reason} ->
         latency_ms = System.monotonic_time(:millisecond) - start_time
-
-        Glific.log_exception(%Error{
-          message:
-            "AskGlific Failure: no response after #{latency_ms}ms (org_id: #{user.organization_id}, user_id: #{user.id}, reason: #{SafeLog.safe_inspect(reason)})",
-          organization_id: user.organization_id,
-          user_id: user.id,
-          latency_ms: latency_ms
-        })
-
+        report_failure(user, latency_ms, reason)
         {:error, reason}
     end
+  end
+
+  # Reports an AskGlific bot failure to AppSignal. The exception message is
+  # low-cardinality so all failures group into one incident; per-occurrence
+  # detail (org, user, latency, reason) is attached as filterable tags.
+  @spec report_failure(map(), non_neg_integer(), any()) :: :ok
+  defp report_failure(user, latency_ms, reason) do
+    exception = %Error{}
+
+    Appsignal.send_error(exception, [], fn span ->
+      span
+      |> Appsignal.Span.set_namespace("ask_glific")
+      |> Appsignal.Span.set_sample_data("tags", %{
+        organization_id: user.organization_id,
+        user_id: user.id,
+        latency_ms: latency_ms,
+        reason: SafeLog.safe_inspect(reason)
+      })
+    end)
+
+    :ok
   end
 
   @doc """
