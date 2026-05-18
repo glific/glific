@@ -4,12 +4,16 @@ defmodule Glific.AIEvaluationsTest do
 
   import Ecto.Query
 
+  import Swoosh.TestAssertions
+
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
+    AIEvaluations.OrganizationEvalRequest,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Communications.Mailer,
     Notifications,
     Notifications.Notification,
     Partners,
@@ -111,13 +115,13 @@ defmodule Glific.AIEvaluationsTest do
       %{config_version: config_version}
     end
 
-    test "marks processing evaluation older than 1 hour as failed", %{
+    test "marks processing evaluation older than 6 hours as failed", %{
       organization_id: organization_id,
       config_version: config_version
     } do
       evaluation =
         create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       notification_count =
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
@@ -144,11 +148,11 @@ defmodule Glific.AIEvaluationsTest do
     } do
       completed =
         create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       failed =
         create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> backdate_evaluation(2)
+        |> backdate_evaluation(7)
 
       AIEvaluations.poll_and_update(organization_id)
 
@@ -351,7 +355,7 @@ defmodule Glific.AIEvaluationsTest do
       Map.get_lazy(attrs, :golden_qa_id, fn -> create_golden_qa(organization_id).id end)
 
     base = %{
-      name: "test_eval",
+      name: "test_eval_#{System.unique_integer([:positive])}",
       status: :processing,
       golden_qa_id: golden_qa_id,
       kaapi_evaluation_id: 404,
@@ -375,6 +379,49 @@ defmodule Glific.AIEvaluationsTest do
 
     {:ok, updated_eval} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
     updated_eval
+  end
+
+  describe "request_eval_access/1" do
+    test "creates a new request with status requested", %{organization_id: organization_id} do
+      assert {:ok, %OrganizationEvalRequest{status: "requested"}} =
+               AIEvaluations.request_eval_access(organization_id)
+    end
+
+    test "sends email to glific support on new request", %{organization_id: organization_id} do
+      AIEvaluations.request_eval_access(organization_id)
+
+      assert_email_sent(fn email ->
+        email.subject =~ "AI Evaluations Access Request" and
+          email.to == [Mailer.glific_support()]
+      end)
+    end
+
+    test "returns existing request and does not send email when request already exists", %{
+      organization_id: organization_id
+    } do
+      {:ok, first} = AIEvaluations.request_eval_access(organization_id)
+      {:ok, second} = AIEvaluations.request_eval_access(organization_id)
+
+      assert first.id == second.id
+      assert_email_sent(subject: ~r/AI Evaluations Access Request/)
+      refute_email_sent(subject: ~r/AI Evaluations Access Request/)
+    end
+  end
+
+  describe "get_eval_access_request/1" do
+    test "returns error tuple when no request exists", %{organization_id: organization_id} do
+      assert {:error, _} = AIEvaluations.get_eval_access_request(organization_id)
+    end
+
+    test "returns the request when it exists", %{organization_id: organization_id} do
+      {:ok, created} = AIEvaluations.request_eval_access(organization_id)
+
+      assert {:ok, %OrganizationEvalRequest{} = fetched} =
+               AIEvaluations.get_eval_access_request(organization_id)
+
+      assert fetched.id == created.id
+      assert fetched.status == "requested"
+    end
   end
 
   defp enable_kaapi(organization_id) do

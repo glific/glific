@@ -114,10 +114,8 @@ defmodule Glific.Appsignal do
     maybe_add_distribution_metric(measurement, :query_time, "glific.repo.query_time", query_tags)
     maybe_add_distribution_metric(measurement, :idle_time, "glific.repo.idle_time", tags)
     maybe_add_distribution_metric(measurement, :queue_time, "glific.repo.queue_time", tags)
-
-    if measurement |> Map.has_key?(:query_time) do
-      Appsignal.increment_counter("glific.repo.query_count", 1, query_tags)
-    end
+    maybe_track_repo_query_count(measurement, query_tags)
+    maybe_track_db_connection_error(repo, meta[:result])
   end
 
   def handle_event(_, _, _, _), do: nil
@@ -234,6 +232,42 @@ defmodule Glific.Appsignal do
     |> @span.set_name("Tesla #{metadata.method} #{host}")
     |> @span.set_attribute("appsignal:category", "tesla.request")
   end
+
+  @spec maybe_track_db_connection_error(atom(), term()) :: :ok
+  defp maybe_track_db_connection_error(repo, {:error, %DBConnection.ConnectionError{} = err}) do
+    Appsignal.increment_counter("glific.repo.db_connection_error", 1, %{
+      repo: repo,
+      reason: classify_db_connection_error(err)
+    })
+  end
+
+  defp maybe_track_db_connection_error(_repo, _result), do: :ok
+
+  @spec classify_db_connection_error(DBConnection.ConnectionError.t()) :: String.t()
+  defp classify_db_connection_error(%DBConnection.ConnectionError{reason: reason})
+       when is_atom(reason) and not is_nil(reason),
+       do: Atom.to_string(reason)
+
+  defp classify_db_connection_error(%DBConnection.ConnectionError{reason: reason})
+       when not is_nil(reason),
+       do: to_string(reason)
+
+  # Fallback clause if reason is not present in struct (legacy/older DBConnection)
+  defp classify_db_connection_error(%DBConnection.ConnectionError{message: msg}) do
+    cond do
+      String.contains?(msg, "queue timeout") -> "queue_timeout"
+      String.contains?(msg, "checkout timeout") -> "checkout_timeout"
+      String.contains?(msg, "connection not available") -> "connection_not_available"
+      true -> "other"
+    end
+  end
+
+  @spec maybe_track_repo_query_count(map(), map()) :: :ok
+  defp maybe_track_repo_query_count(%{query_time: _} = _measurement, tags) do
+    Appsignal.increment_counter("glific.repo.query_count", 1, tags)
+  end
+
+  defp maybe_track_repo_query_count(_measurement, _tags), do: :ok
 
   @spec maybe_add_distribution_metric(map(), atom(), String.t(), map()) :: :ok
   defp maybe_add_distribution_metric(measurement, key, metric_name, tags) do
