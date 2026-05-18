@@ -357,7 +357,7 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
-      Map.merge(%{success: true}, body)
+      normalize_kaapi_body(body)
     else
       {:error, :download_failed} ->
         %{success: false, error_type: "download_failed", reason: "Audio file download failed"}
@@ -380,11 +380,35 @@ defmodule Glific.ThirdParty.Kaapi do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = tts_payload(text, callback_url, request_metadata, opts),
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
-      Map.merge(%{success: true}, body)
+      normalize_kaapi_body(body)
     else
       error ->
         handle_kaapi_error(error, organization_id, "TTS", "service_unavailable")
     end
+  end
+
+  @doc """
+  Converts a Kaapi 2xx async-dispatch body into the standard webhook result
+  """
+  @spec normalize_kaapi_body(any()) :: map()
+  def normalize_kaapi_body(body) when is_map(body) do
+    case body do
+      %{"success" => false} -> logical_failure(body["message"] || body["error"])
+      %{success: false} -> logical_failure(body[:message] || body[:error])
+      _ -> Map.merge(%{success: true}, body)
+    end
+  end
+
+  def normalize_kaapi_body(_body), do: %{success: true}
+
+  @spec logical_failure(String.t() | nil) :: map()
+  defp logical_failure(reason) do
+    %{
+      success: false,
+      http_status: 200,
+      error_type: "kaapi_logical_failure",
+      reason: reason || "Kaapi logical failure"
+    }
   end
 
   @spec handle_kaapi_error(tuple(), non_neg_integer(), String.t(), String.t()) :: map()
