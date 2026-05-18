@@ -5,14 +5,6 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   require Logger
   alias Glific.Metrics
 
-  defmodule Error do
-    @moduledoc """
-    Custom error module for Gemini API failures.
-    Reporting these failures to AppSignal lets us detect and fix issues.
-    """
-    defexception [:message, :status_code]
-  end
-
   @gemini_url "https://generativelanguage.googleapis.com/v1beta/models"
 
   @doc """
@@ -36,20 +28,13 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
 
         %{success: true, asr_response_text: text}
 
-      {:ok, %Tesla.Env{status: status_code, body: body}} ->
-        Glific.log_exception(%Error{
-          message: "Gemini STT Failure: #{inspect(body)}",
-          status_code: status_code
-        })
-
+      {:ok, %Tesla.Env{status: status_code}} ->
         %{success: false, asr_response_text: status_code}
 
       {:error, %Tesla.Env{body: error_reason}} ->
-        Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(error_reason)}"})
         %{success: false, asr_response_text: error_reason}
 
       {:error, reason} ->
-        Glific.log_exception(%Error{message: "Gemini STT Failure: #{inspect(reason)}"})
         %{success: false, asr_response_text: reason}
     end
   end
@@ -57,7 +42,8 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
   @doc """
   Convert text to speech using Gemini API.
   """
-  @spec text_to_speech(String.t(), non_neg_integer()) :: {:ok, binary()} | {:error, nil}
+  @spec text_to_speech(String.t(), non_neg_integer()) ::
+          {:ok, binary()} | {:error, integer() | atom() | nil}
   def text_to_speech(text, organization_id) do
     body = tts_request_body(text)
     path = "/#{gemini_config(:tts_model)}:generateContent"
@@ -75,21 +61,14 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
         tts_gemini_usage_stats(metadata, organization_id)
         {:ok, decoded_audio}
 
-      {:ok, %Tesla.Env{status: status, body: body}} ->
-        Glific.log_exception(%Error{
-          message: "Gemini TTS Failure: #{inspect(body)}",
-          status_code: status
-        })
+      {:ok, %Tesla.Env{status: status}} ->
+        {:error, status}
 
-        {:error, nil}
-
-      {:error, %Tesla.Env{body: error_reason}} ->
-        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(error_reason)}"})
-        {:error, nil}
+      {:error, %Tesla.Env{status: status}} ->
+        {:error, status}
 
       {:error, reason} ->
-        Glific.log_exception(%Error{message: "Gemini TTS Failure: #{inspect(reason)}"})
-        {:error, nil}
+        {:error, reason}
     end
   end
 
