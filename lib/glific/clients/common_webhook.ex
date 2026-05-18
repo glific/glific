@@ -92,7 +92,10 @@ defmodule Glific.Clients.CommonWebhook do
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
     request_metadata = Map.put(request_metadata, :call_type, "llm")
-    do_unified_llm_call(fields, headers, callback_url, request_metadata)
+
+    with_failure_reporting("unified-llm-call", organization_id, fn ->
+      do_unified_llm_call(fields, headers, callback_url, request_metadata)
+    end)
   end
 
   # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
@@ -159,13 +162,15 @@ defmodule Glific.Clients.CommonWebhook do
 
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
 
-    Kaapi.speech_to_text(
-      fields["speech"],
-      callback_url,
-      request_metadata,
-      organization_id,
-      stt_opts
-    )
+    with_failure_reporting("speech_to_text", organization_id, fn ->
+      Kaapi.speech_to_text(
+        fields["speech"],
+        callback_url,
+        request_metadata,
+        organization_id,
+        stt_opts
+      )
+    end)
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
@@ -187,7 +192,10 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+
+    with_failure_reporting("text_to_speech", organization_id, fn ->
+      Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+    end)
   end
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
@@ -521,9 +529,7 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # A Kaapi 2xx response whose body explicitly says success:false is a logical
-  # failure even though the HTTP status was 200. ApiClient.parse_kaapi_response/1
-  # only inspects the HTTP status, so we re-check the decoded body here. The
-  # non-map clause guards against bodies that aren't JSON objects.
+  # failure even though the HTTP status was 200.
   @spec normalize_kaapi_body(any()) :: {:ok, map()} | {:failure, String.t()}
   defp normalize_kaapi_body(body) when is_map(body) do
     case body do
