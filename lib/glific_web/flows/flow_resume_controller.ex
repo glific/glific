@@ -12,11 +12,16 @@ defmodule GlificWeb.Flows.FlowResumeController do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.Webhook,
+    Flows.WebhookLog,
     GCS.GcsWorker,
     Messages,
     Partners,
     Repo
   }
+
+  # Async webhook wait window. A failure callback arriving more than this many
+  # seconds after the request was logged means the flow had already timed out.
+  @async_webhook_timeout 60
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -42,7 +47,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
 
-    maybe_report_callback_failure(result, response, organization_id)
+    maybe_report_late_callback_failure(result, response, organization_id)
 
     response_key = response["result_name"] || "response"
 
@@ -83,26 +88,43 @@ defmodule GlificWeb.Flows.FlowResumeController do
     json(conn, "")
   end
 
-  # Reports a Kaapi callback whose result is a failure to AppSignal. The
-  # callback means Kaapi processed the request but the outcome was a failure.
-  # We only report it here — the flow's Failure path is handled separately.
-  @spec maybe_report_callback_failure(map(), map(), non_neg_integer()) :: :ok
-  defp maybe_report_callback_failure(%{"success" => false} = result, response, organization_id) do
-    reason =
-      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+  # Reports a Kaapi callback that is a failure AND arrived after the flow's
+  # wait window had already elapsed (the flow had timed out and moved on).
+  # On-time failures are handled by the flow's normal Failure path; only the
+  # post-timeout ones need ops visibility, so only those are reported here.
+  @spec maybe_report_late_callback_failure(map(), map(), non_neg_integer()) :: :ok
+  defp maybe_report_late_callback_failure(
+         %{"success" => false} = result,
+         response,
+         organization_id
+       ) do
+    with webhook_log_id when not is_nil(webhook_log_id) <- response["webhook_log_id"],
+         %WebhookLog{} = webhook_log <- Repo.get(WebhookLog, webhook_log_id),
+         true <- after_timeout?(webhook_log) do
+      reason =
+        result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
-    %Webhook.SystemError{message: "Webhook callback failure"}
-    |> Webhook.report_to_appsignal(%{
-      organization_id: organization_id,
-      flow_id: response["flow_id"],
-      contact_id: response["contact_id"],
-      webhook_log_id: response["webhook_log_id"],
-      error_type: result["error_type"],
-      reason: reason
-    })
+      %Webhook.SystemError{message: "Webhook callback failure after timeout"}
+      |> Webhook.report_to_appsignal(%{
+        organization_id: organization_id,
+        flow_id: response["flow_id"],
+        contact_id: response["contact_id"],
+        webhook_log_id: webhook_log_id,
+        error_type: result["error_type"],
+        reason: reason
+      })
+    else
+      _ -> :ok
+    end
   end
 
-  defp maybe_report_callback_failure(_result, _response, _organization_id), do: :ok
+  defp maybe_report_late_callback_failure(_result, _response, _organization_id), do: :ok
+
+  # True when the callback arrived after the async wait window had elapsed.
+  @spec after_timeout?(WebhookLog.t()) :: boolean()
+  defp after_timeout?(%WebhookLog{inserted_at: inserted_at}) do
+    DateTime.diff(DateTime.utc_now(), inserted_at) > @async_webhook_timeout
+  end
 
   @doc """
   Callback for voice unified LLM calls.
