@@ -1227,7 +1227,7 @@ defmodule Glific.Flows.FlowContext do
         :ok
 
       webhook_url ->
-        %Webhook.Timeout{message: "Webhook timeout from #{webhook_url}"}
+        %Webhook.TimeoutError{message: "Webhook timeout from #{webhook_url}"}
         |> Webhook.report_to_appsignal(%{
           organization_id: context.organization_id,
           webhook_name: webhook_url,

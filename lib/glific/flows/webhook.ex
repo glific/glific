@@ -51,7 +51,7 @@ defmodule Glific.Flows.Webhook do
     defexception [:message]
   end
 
-  defmodule Timeout do
+  defmodule TimeoutError do
     @moduledoc """
     Webhook timeout: an async webhook (STT/TTS/unified-llm) parked the flow
     waiting for a Kaapi callback, but none arrived within the wait window.
