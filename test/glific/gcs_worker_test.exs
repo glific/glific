@@ -69,6 +69,23 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  test "upload_media/3 returns an error tuple (no crash) when the GCS upload raises", attrs do
+    with_mock(
+      Waffle.Storage.Google.CloudStorage,
+      [],
+      put: fn _, _, _ -> raise "GCS connection failed" end
+    ) do
+      assert {:error, reason} =
+               GcsWorker.upload_media(
+                 "/tmp/nonexistent.mp3",
+                 "remote.mp3",
+                 attrs.organization_id
+               )
+
+      assert reason =~ "GCSWORKER: upload failed"
+    end
+  end
+
   test "perform_periodic/2, queuing only media_ids not older than a month", attrs do
     with_mock(
       Goth.Token,
