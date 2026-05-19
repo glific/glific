@@ -98,6 +98,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -125,6 +126,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
           "message" => @kaapi_response,
           "organization_id" => organization_id,
           "response_id" => "resp_68826b142198819881bce999ccd87a750d0635d313bf2c6f",
+          "provider" => "kaapi",
           "signature" => signature,
           "status" => "success",
           "timestamp" => timestamp,
@@ -625,6 +627,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -640,6 +643,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
           "contact_id" => contact.id,
           "flow_id" => flow.id,
           "organization_id" => organization_id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -768,6 +772,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       "organization_id" => organization_id,
       "flow_id" => flow.id,
       "contact_id" => contact.id,
+      "provider" => "kaapi",
       "timestamp" => timestamp
     }
 
@@ -786,6 +791,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
         "contact_id" => contact.id,
         "flow_id" => flow.id,
         "organization_id" => organization_id,
+        "provider" => "kaapi",
         "signature" => signature,
         "timestamp" => timestamp,
         "webhook_log_id" => webhook_log.id,

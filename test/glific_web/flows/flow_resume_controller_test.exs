@@ -41,6 +41,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -68,6 +69,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "message" => @ai_response,
           "organization_id" => organization_id,
           "response_id" => "resp_68826b142198819881bce999ccd87a750d0635d313bf2c6f",
+          "provider" => "kaapi",
           "signature" => signature,
           "status" => "success",
           "timestamp" => timestamp,
@@ -130,6 +132,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -148,6 +151,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
           "flow_id" => flow.id,
           "organization_id" => organization_id,
+          "provider" => "kaapi",
           "signature" => signature,
           "status" => "failure",
           "timestamp" => timestamp,
@@ -210,6 +214,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -245,6 +250,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -297,6 +303,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -321,6 +328,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -359,6 +367,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -386,6 +395,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -429,6 +439,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -445,6 +456,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -523,6 +535,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -544,6 +557,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "result_name" => "response"
@@ -581,6 +595,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -602,6 +617,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
@@ -699,6 +715,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -750,6 +767,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "organization_id" => organization_id,
         "flow_id" => flow.id,
         "contact_id" => contact.id,
+        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -774,6 +792,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "organization_id" => organization_id,
           "flow_id" => flow.id,
           "contact_id" => contact.id,
+          "provider" => "kaapi",
           "signature" => signature,
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
