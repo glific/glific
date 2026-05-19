@@ -347,6 +347,15 @@ defmodule Glific.GCS.GcsWorker do
         error = handle_gcs_error(organization_id, error)
         {:error, error}
     end
+  rescue
+    # The upload can raise (e.g. GoogleApi.Storage.V1.Connection.new/1 when GCS
+    # auth fails) — catch it so callers always get a tagged tuple, never a crash.
+    exception ->
+      Logger.error(
+        "GCSWORKER: upload crashed for org_id=#{organization_id}: #{inspect(exception)}"
+      )
+
+      {:error, "GCSWORKER: upload failed — #{Exception.message(exception)}"}
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
