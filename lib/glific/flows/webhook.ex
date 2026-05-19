@@ -206,10 +206,10 @@ defmodule Glific.Flows.Webhook do
          api_key when is_binary(api_key) <- Map.get(kaapi_secrets, "api_key") do
       updated_headers = Map.put(action.headers, "X-API-KEY", api_key)
       updated_action = %{action | headers: updated_headers}
-      webhook_and_wait(updated_action, context, true)
+      webhook_and_wait(updated_action, context)
     else
-      {:error, _error} ->
-        webhook_and_wait(action, context, false)
+      _ ->
+        kaapi_not_active_error(action, context)
     end
   end
 
@@ -619,13 +619,14 @@ defmodule Glific.Flows.Webhook do
     webhook_log = create_log(action, %{}, action.headers, context)
     update_log(webhook_log.id, "Kaapi is not active")
 
-    Appsignal.send_error(
-      %Error{
-        message: "Kaapi is not active",
-        organization_id: context.organization_id
-      },
-      []
-    )
+    %SystemError{message: "Webhook system_error: Kaapi is not active"}
+    |> report_to_appsignal(%{
+      organization_id: context.organization_id,
+      flow_id: context.flow_id,
+      contact_id: context.contact_id,
+      webhook_log_id: webhook_log.id,
+      reason: "Kaapi is not active"
+    })
 
     {:ok, context, [failure_message]}
   end
@@ -712,9 +713,9 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function updates the flow_context and waits for Kaapi to send a response.
   """
-  @spec webhook_and_wait(map(), FlowContext.t(), boolean()) ::
+  @spec webhook_and_wait(map(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def webhook_and_wait(action, context, is_active?) do
+  def webhook_and_wait(action, context) do
     parsed_attrs = parse_header_and_url(action, context)
     failure_message = Messages.create_temp_message(context.organization_id, "Failure")
 
@@ -736,28 +737,13 @@ defmodule Glific.Flows.Webhook do
           headers: parsed_attrs.header
         }
 
-        do_webhook_and_wait(params, is_active?, failure_message)
+        do_webhook_and_wait(params, failure_message)
     end
   end
 
-  @spec do_webhook_and_wait(map(), boolean(), Message.t()) ::
+  @spec do_webhook_and_wait(map(), Message.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_webhook_and_wait(
-         %{webhook_log: webhook_log, context: context} = _params,
-         false,
-         failure_message
-       ) do
-    update_log(webhook_log.id, "Kaapi is not active")
-
-    Appsignal.send_error(
-      %Error{message: "Kaapi is not active (org_id=#{context.organization_id})"},
-      []
-    )
-
-    {:ok, context, [failure_message]}
-  end
-
-  defp do_webhook_and_wait(params, true, failure_message) do
+  defp do_webhook_and_wait(params, failure_message) do
     webhook_log_id = params.webhook_log.id
 
     fields =
