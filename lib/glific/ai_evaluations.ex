@@ -196,7 +196,7 @@ defmodule Glific.AIEvaluations do
   @spec list_golden_qas(map()) :: [GoldenQA.t()]
   def list_golden_qas(args) do
     args
-    |> Repo.list_filter_query(GoldenQA, &Repo.opts_with_name/2, &filter_golden_qas/2)
+    |> Repo.list_filter_query(GoldenQA, &Repo.opts_with_inserted_at/2, &filter_golden_qas/2)
     |> Repo.all()
   end
 

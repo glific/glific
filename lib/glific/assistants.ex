@@ -67,7 +67,7 @@ defmodule Glific.Assistants do
       |> Map.put(:kaapi_uuid, version.assistant.kaapi_uuid)
       |> Map.put(:assistant_name, version.assistant.name)
     end)
-    |> Enum.sort_by(&{String.downcase(&1.assistant_name), &1.version_number})
+    |> Enum.sort_by(& &1.assistant_name)
   end
 
   @doc """
