@@ -9,6 +9,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
     Filesearch.VectorStore
   }
 
+  require Logger
+
   @doc """
   Uploads a file to Kaapi
 
@@ -57,8 +59,15 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec update_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_assistant(_, %{id: id, input: attrs}, _) do
-    with {:ok, assistant} <- Assistants.update_assistant(id, attrs) do
-      {:ok, %{assistant: assistant}}
+    id
+    |> Assistants.update_assistant(attrs)
+    |> case do
+      {:ok, assistant} ->
+        {:ok, %{assistant: assistant}}
+
+      error ->
+        Logger.error("update_assistant failed: id=#{id}, error=#{inspect(error)}")
+        error
     end
   end
 
