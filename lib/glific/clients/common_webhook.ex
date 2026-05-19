@@ -897,11 +897,23 @@ defmodule Glific.Clients.CommonWebhook do
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
     case result do
-      %{http_status: s} when is_integer(s) -> {s, nil}
-      %{asr_response_text: s} when is_integer(s) -> {s, nil}
-      %{asr_response_text: s} when is_binary(s) -> {nil, s}
-      %{reason: s} when is_binary(s) -> {nil, s}
-      other -> {nil, inspect(other)}
+      %{http_status: status, reason: reason} when is_integer(status) and is_binary(reason) ->
+        {status, reason}
+
+      %{http_status: status} when is_integer(status) ->
+        {status, nil}
+
+      %{asr_response_text: status} when is_integer(status) ->
+        {status, nil}
+
+      %{asr_response_text: status} when is_binary(status) ->
+        {nil, status}
+
+      %{reason: status} when is_binary(status) ->
+        {nil, status}
+
+      other ->
+        {nil, inspect(other)}
     end
   end
 

@@ -79,7 +79,7 @@ defmodule Glific.Flows.Webhook do
   """
   @spec report_to_appsignal(Exception.t(), map()) :: :ok
   def report_to_appsignal(exception, tags) when is_map(tags) do
-    Logger.error(Exception.message(exception))s
+    Logger.error(Exception.message(exception))
 
     Appsignal.send_error(exception, [], fn span ->
       span
