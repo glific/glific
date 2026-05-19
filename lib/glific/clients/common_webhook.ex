@@ -43,7 +43,6 @@ defmodule Glific.Clients.CommonWebhook do
         "organization_id" => organization_id,
         "flow_id" => flow_id,
         "contact_id" => contact_id,
-        "provider" => "kaapi",
         "timestamp" => timestamp
       }
 
@@ -716,7 +715,6 @@ defmodule Glific.Clients.CommonWebhook do
       "organization_id" => organization_id,
       "flow_id" => flow_id,
       "contact_id" => contact_id,
-      "provider" => "kaapi",
       "timestamp" => timestamp
     }
 
@@ -735,7 +733,6 @@ defmodule Glific.Clients.CommonWebhook do
       organization_id: organization_id,
       flow_id: flow_id,
       contact_id: contact_id,
-      provider: "kaapi",
       timestamp: timestamp,
       signature: signature,
       webhook_log_id: fields["webhook_log_id"],
@@ -826,7 +823,6 @@ defmodule Glific.Clients.CommonWebhook do
       "organization_id" => organization_id,
       "flow_id" => flow_id,
       "contact_id" => contact_id,
-      "provider" => "kaapi",
       "timestamp" => timestamp
     }
 

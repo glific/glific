@@ -12,16 +12,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.Webhook,
-    Flows.WebhookLog,
     GCS.GcsWorker,
     Messages,
     Partners,
     Repo
   }
-
-  # Async webhook wait window. A failure callback arriving more than this many
-  # seconds after the request was logged means the flow had already timed out.
-  @async_webhook_timeout 60
 
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
@@ -47,8 +42,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
 
-    maybe_report_late_callback_failure(result, response, organization_id)
-
     response_key = response["result_name"] || "response"
 
     message =
@@ -69,6 +62,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       end
 
     track_kaapi_latency(response)
+    maybe_report_callback_failure(result, response)
 
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
@@ -88,43 +82,28 @@ defmodule GlificWeb.Flows.FlowResumeController do
     json(conn, "")
   end
 
-  # Reports a Kaapi callback that is a failure AND arrived after the flow's
-  # wait window had already elapsed (the flow had timed out and moved on).
-  # On-time failures are handled by the flow's normal Failure path; only the
-  # post-timeout ones need ops visibility, so only those are reported here.
-  @spec maybe_report_late_callback_failure(map(), map(), non_neg_integer()) :: :ok
-  defp maybe_report_late_callback_failure(
-         %{"success" => false} = result,
-         response,
-         organization_id
-       ) do
-    with webhook_log_id when not is_nil(webhook_log_id) <- response["webhook_log_id"],
-         %WebhookLog{} = webhook_log <- Repo.get(WebhookLog, webhook_log_id),
-         true <- after_timeout?(webhook_log) do
-      reason =
-        result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+  # Reports a Kaapi callback whose result is a failure to AppSignal, so failed
+  # callbacks get ops visibility. The "no callback at all" timeout case is
+  # reported separately by FlowContext.handle_nil_message; this reports the
+  # callbacks that did arrive but came back as a failure.
+  @spec maybe_report_callback_failure(map(), map()) :: :ok
+  defp maybe_report_callback_failure(%{"success" => success} = result, response)
+       when success != true do
+    reason =
+      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
-      %Webhook.SystemError{message: "Webhook callback failure after timeout"}
-      |> Webhook.report_to_appsignal(%{
-        organization_id: organization_id,
-        flow_id: response["flow_id"],
-        contact_id: response["contact_id"],
-        webhook_log_id: webhook_log_id,
-        error_type: result["error_type"],
-        reason: reason
-      })
-    else
-      _ -> :ok
-    end
+    %Webhook.SystemError{message: "Webhook callback failure"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: response["organization_id"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"],
+      error_type: result["error_type"],
+      reason: reason
+    })
   end
 
-  defp maybe_report_late_callback_failure(_result, _response, _organization_id), do: :ok
-
-  # True when the callback arrived after the async wait window had elapsed.
-  @spec after_timeout?(WebhookLog.t()) :: boolean()
-  defp after_timeout?(%WebhookLog{inserted_at: inserted_at}) do
-    DateTime.diff(DateTime.utc_now(), inserted_at) > @async_webhook_timeout
-  end
+  defp maybe_report_callback_failure(_result, _response), do: :ok
 
   @doc """
   Callback for voice unified LLM calls.
@@ -273,13 +252,11 @@ defmodule GlificWeb.Flows.FlowResumeController do
     organization_id = fields["organization_id"]
     timestamp = fields["timestamp"]
     signature = fields["signature"]
-    provider = fields["provider"]
 
     signature_payload = %{
       "organization_id" => organization_id,
       "flow_id" => flow_id,
       "contact_id" => contact_id,
-      "provider" => provider,
       "timestamp" => timestamp
     }
 
@@ -294,7 +271,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     cond do
       new_organization_id != organization_id -> false
-      provider != "kaapi" -> false
       new_signature != signature -> false
       new_timestamp > timestamp + 15 * 60 * 1_000_000 -> false
       true -> true
