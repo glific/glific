@@ -53,13 +53,19 @@ defmodule Glific.ThirdParty.Gemini.ApiClient do
     |> Tesla.post(path, body, opts: opts)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{candidates: candidates, usageMetadata: metadata}}} ->
-        decoded_audio =
-          candidates
-          |> get_in([Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
-          |> Base.decode64!()
+        encoded_audio =
+          get_in(candidates, [Access.at(0), :content, :parts, Access.at(0), :inlineData, :data])
 
-        tts_gemini_usage_stats(metadata, organization_id)
-        {:ok, decoded_audio}
+        # Gemini intermittently returns a 200 with no audio payload — guard the
+        # nil/non-binary/invalid-base64 cases so we return an error instead of
+        # raising in Base.decode64!/1.
+        with audio when is_binary(audio) <- encoded_audio,
+             {:ok, decoded_audio} <- Base.decode64(audio) do
+          tts_gemini_usage_stats(metadata, organization_id)
+          {:ok, decoded_audio}
+        else
+          _ -> {:error, :missing_audio_data}
+        end
 
       {:ok, %Tesla.Env{status: status}} ->
         {:error, status}
