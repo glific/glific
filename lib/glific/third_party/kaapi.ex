@@ -401,7 +401,7 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  def normalize_kaapi_body(_body), do: %{success: true}
+  def normalize_kaapi_body(_body), do: %{success: false, error_type: "kaapi_logical_failure", reason: "Unexpected response"}
 
   @spec logical_failure(String.t() | nil) :: map()
   defp logical_failure(reason) do
