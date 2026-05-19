@@ -163,6 +163,10 @@ defmodule Glific.Bhasini do
       %{success: true}
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, translated_text)
+    else
+      error ->
+        Logger.error("Bhasini TTS media processing failed: #{inspect(error)}")
+        %{success: false, media_url: nil, translated_text: translated_text}
     end
   end
 
@@ -222,6 +226,10 @@ defmodule Glific.Bhasini do
           %{success: true}
           |> Map.put(:media_url, media_meta.url)
           |> Map.put(:translated_text, text)
+        else
+          error ->
+            Logger.error("Bhasini TTS media processing failed: #{inspect(error)}")
+            %{success: false, media_url: nil, translated_text: text}
         end
 
       {:ok, %Tesla.Env{body: body}} ->
@@ -240,26 +248,36 @@ defmodule Glific.Bhasini do
   @spec download_encoded_file(map(), String.t()) :: {:ok, String.t()} | String.t()
   def download_encoded_file(response, uuid) do
     pipeline_response =
-      get_in(response, ["pipelineResponse"])
-      |> Enum.filter(fn response -> response["taskType"] == "tts" end)
+      response
+      |> get_in(["pipelineResponse"])
+      |> List.wrap()
+      |> Enum.filter(fn item -> is_map(item) and item["taskType"] == "tts" end)
 
     encoded_audio =
       get_in(pipeline_response, [Access.at(0), "audio", Access.at(0), "audioContent"])
 
-    decoded_audio = Base.decode64!(encoded_audio)
-    wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+    # Bhasini intermittently returns a 200 with no audio content — guard the
+    # nil/non-binary/invalid-base64 cases so we return an error instead of
+    # raising in Base.decode64!/1.
+    with audio when is_binary(audio) <- encoded_audio,
+         {:ok, decoded_audio} <- Base.decode64(audio) do
+      wav_file = System.tmp_dir!() <> "#{uuid}.wav"
+      mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
+      File.write!(wav_file, decoded_audio)
 
-    mp3_file = System.tmp_dir!() <> "#{uuid}.mp3"
-    File.write!(wav_file, decoded_audio)
-
-    try do
-      System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true)
-      File.rm(wav_file)
-      {:ok, mp3_file}
-    catch
-      error, reason ->
-        Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
-        "Error while converting file"
+      try do
+        System.cmd("ffmpeg", ["-i", wav_file, mp3_file], stderr_to_stdout: true)
+        File.rm(wav_file)
+        {:ok, mp3_file}
+      catch
+        error, reason ->
+          Logger.info("Bhasini Downloaded with error: #{error} and reason: #{reason}")
+          "Error while converting file"
+      end
+    else
+      _ ->
+        Logger.info("Bhasini TTS response had no usable audio content")
+        "No audio content in Bhasini response"
     end
   end
 
