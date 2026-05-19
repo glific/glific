@@ -8,6 +8,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Contacts
+  alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
@@ -92,7 +93,10 @@ defmodule Glific.Clients.CommonWebhook do
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
     request_metadata = Map.put(request_metadata, :call_type, "llm")
-    do_unified_llm_call(fields, headers, callback_url, request_metadata)
+
+    with_failure_reporting("unified-llm-call", organization_id, fn ->
+      do_unified_llm_call(fields, headers, callback_url, request_metadata)
+    end)
   end
 
   # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
@@ -159,13 +163,15 @@ defmodule Glific.Clients.CommonWebhook do
 
     Glific.Metrics.increment("Kaapi STT Call", organization_id)
 
-    Kaapi.speech_to_text(
-      fields["speech"],
-      callback_url,
-      request_metadata,
-      organization_id,
-      stt_opts
-    )
+    with_failure_reporting("speech_to_text", organization_id, fn ->
+      Kaapi.speech_to_text(
+        fields["speech"],
+        callback_url,
+        request_metadata,
+        organization_id,
+        stt_opts
+      )
+    end)
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
@@ -187,7 +193,10 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+
+    with_failure_reporting("text_to_speech", organization_id, fn ->
+      Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+    end)
   end
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
@@ -496,10 +505,10 @@ defmodule Glific.Clients.CommonWebhook do
              request_metadata
            ),
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
-      Map.merge(%{success: true}, body)
+      Kaapi.normalize_kaapi_body(body)
     else
-      {:error, %{status: _status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body)}
+      {:error, %{status: status, body: body}} ->
+        %{success: false, reason: Jason.encode!(body), http_status: status}
 
       {:error, reason} when is_binary(reason) ->
         %{success: false, reason: reason}
@@ -884,11 +893,23 @@ defmodule Glific.Clients.CommonWebhook do
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
     case result do
-      %{http_status: s} when is_integer(s) -> {s, nil}
-      %{asr_response_text: s} when is_integer(s) -> {s, nil}
-      %{asr_response_text: s} when is_binary(s) -> {nil, s}
-      %{reason: s} when is_binary(s) -> {nil, s}
-      other -> {nil, inspect(other)}
+      %{http_status: status, reason: reason} when is_integer(status) and is_binary(reason) ->
+        {status, reason}
+
+      %{http_status: status} when is_integer(status) ->
+        {status, nil}
+
+      %{asr_response_text: status} when is_integer(status) ->
+        {status, nil}
+
+      %{asr_response_text: status} when is_binary(status) ->
+        {nil, status}
+
+      %{reason: status} when is_binary(status) ->
+        {nil, status}
+
+      other ->
+        {nil, inspect(other)}
     end
   end
 
@@ -899,24 +920,12 @@ defmodule Glific.Clients.CommonWebhook do
           String.t() | nil
         ) :: :ok
   defp report_webhook_failure(webhook_name, org_id, http_status, reason) do
-    exception = %SystemError{message: "Webhook system_error from #{webhook_name}"}
-
-    Logger.error(Exception.message(exception))
-
-    # Use the 3-arg send_error with a span configurator so per-occurrence
-    # detail lands on the AppSignal sample as filterable tags (the 2-arg form
-    # records only class + message and drops struct fields).
-    Appsignal.send_error(exception, [], fn span ->
-      span
-      |> Appsignal.Span.set_namespace("flow_webhooks")
-      |> Appsignal.Span.set_sample_data("tags", %{
-        organization_id: org_id,
-        webhook_name: webhook_name,
-        http_status: http_status,
-        reason: reason
-      })
-    end)
-
-    :ok
+    %SystemError{message: "Webhook system_error from #{webhook_name}"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: org_id,
+      webhook_name: webhook_name,
+      http_status: http_status,
+      reason: reason
+    })
   end
 end
