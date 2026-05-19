@@ -393,7 +393,6 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec normalize_kaapi_body(any()) :: map()
   def normalize_kaapi_body(body) when is_map(body) do
     case body do
-      %{"success" => false} -> logical_failure(body["message"] || body["error"])
       %{success: false} -> logical_failure(body[:message] || body[:error])
       _ -> Map.merge(%{success: true}, body)
     end

@@ -473,15 +473,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                http_status: 200,
                error_type: "kaapi_logical_failure",
                reason: "boom"
-             } = Kaapi.normalize_kaapi_body(%{"success" => false, "message" => "boom"})
+             } = Kaapi.normalize_kaapi_body(%{success: false, message: "boom"})
     end
 
     test "falls back to the error key, then to a default reason" do
       assert %{reason: "bad"} =
-               Kaapi.normalize_kaapi_body(%{"success" => false, "error" => "bad"})
+               Kaapi.normalize_kaapi_body(%{success: false, error: "bad"})
 
       assert %{reason: "Kaapi logical failure"} =
-               Kaapi.normalize_kaapi_body(%{"success" => false})
+               Kaapi.normalize_kaapi_body(%{success: false})
     end
   end
 end

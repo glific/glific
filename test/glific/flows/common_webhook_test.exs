@@ -1112,7 +1112,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: "fake_audio_bytes"}
 
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{"success" => false, "message" => "boom"}}
+          %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
       {exception, tags} =
@@ -1644,7 +1644,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     } do
       Tesla.Mock.mock(fn
         %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{"success" => false, "message" => "boom"}}
+          %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
       {exception, tags} =
