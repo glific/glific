@@ -2,6 +2,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @moduledoc """
   Resolvers for AI Evaluations
   """
+  import Glific.SafeLog
+
   require Logger
 
   alias Glific.{
@@ -22,8 +24,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           {:ok, %{status: String.t()}} | {:error, Ecto.Changeset.t()}
   def request_ai_evaluation_access(_, _, %{context: %{current_user: user}}) do
     case AIEvaluations.request_eval_access(user.organization_id) do
-      {:ok, _request} -> {:ok, %{status: "requested"}}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, _request} ->
+        {:ok, %{status: "requested"}}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 
@@ -44,6 +49,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @max_golden_qa_file_size 1 * 1024 * 1024
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
+  @ai_evaluation_create_success_metric "AI Evaluation Created"
+  @ai_evaluation_create_failure_metric "AI Evaluation Create Failure"
 
   @doc """
   List AI evaluations from the database.
@@ -109,7 +116,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         errors = format_changeset_errors(changeset)
-        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
         {:ok, %{errors: errors}}
 
       {:error, msg} when is_binary(msg) ->
@@ -146,7 +152,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, %Ecto.Changeset{} = changeset} ->
         cleanup_orphaned_kaapi_dataset(kaapi_dataset.dataset_id, user.organization_id)
         errors = format_changeset_errors(changeset)
-        Logger.error("Failed to save golden QA to database: #{inspect(errors)}")
         {:ok, %{errors: errors}}
     end
   end
@@ -161,7 +166,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         Glific.log_exception(%Kaapi.Error{
           message: "Failed to delete orphaned Kaapi dataset",
           organization_id: organization_id,
-          reason: inspect(reason)
+          reason: safe_inspect(reason)
         })
 
         # Returning ok as we don't want to block the main flow
@@ -207,7 +212,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, reason} ->
         Logger.error(
-          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{inspect(reason)}"
+          "Create Golden QA: User ID: #{id}: Org ID: #{organization_id}: Unable to read uploaded file for size validation due to #{safe_inspect(reason)}"
         )
 
         {:error, "Unable to read uploaded file for size validation"}
@@ -236,6 +241,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         }
         |> maybe_put_signed_url(kaapi_data)
 
+      if include_signed_url, do: Metrics.increment("Golden QA Downloaded", user.organization_id)
       {:ok, %{golden_qa: golden_qa_map}}
     else
       {:error, [_, "Resource not found"]} ->
@@ -344,6 +350,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
            }) do
+      Metrics.increment(@ai_evaluation_create_success_metric, user.organization_id)
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
@@ -357,15 +364,19 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
 
       {:error, :timeout} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "Timeout occurred, please try again."}
 
       {:error, %{body: %{:error => error}}} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, error}
 
       {:error, msg} when is_binary(msg) ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, msg}
 
       {:error, _} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "An unknown error occurred, please contact Glific support."}
     end
   end
