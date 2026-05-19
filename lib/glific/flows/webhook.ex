@@ -75,17 +75,12 @@ defmodule Glific.Flows.Webhook do
 
   @doc """
   Report a flow-webhook exception (`SystemError` / `Timeout`) to AppSignal
-  under the `flow_webhooks` namespace, with `tags` attached as filterable
-  sample data. Single reporting site shared by the outbound path, the
-  timeout handler, and the callback handler.
+  under the `flow_webhooks` namespace.
   """
   @spec report_to_appsignal(Exception.t(), map()) :: :ok
   def report_to_appsignal(exception, tags) when is_map(tags) do
-    Logger.error(Exception.message(exception))
+    Logger.error(Exception.message(exception))s
 
-    # The 3-arg send_error with a span configurator puts per-occurrence detail
-    # on the AppSignal sample as filterable tags (the 2-arg form records only
-    # class + message and drops everything else).
     Appsignal.send_error(exception, [], fn span ->
       span
       |> Appsignal.Span.set_namespace("flow_webhooks")
