@@ -10,8 +10,8 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.Metrics
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
-  alias Glific.SafeLog
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini.ApiClient
 
   @supported_languages %{
