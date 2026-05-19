@@ -49,6 +49,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @max_golden_qa_file_size 1 * 1024 * 1024
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
+  @ai_evaluation_create_success_metric "AI Evaluation Created"
   @ai_evaluation_create_failure_metric "AI Evaluation Create Failure"
 
   @doc """
@@ -349,7 +350,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
            }) do
-      Metrics.increment("AI Evaluation Created", user.organization_id)
+      Metrics.increment(@ai_evaluation_create_success_metric, user.organization_id)
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->

@@ -560,7 +560,7 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Kaapi evaluation creation failed: experiment_name=#{params[:experiment_name]}",
+            "Kaapi evaluation creation failed: evaluation_name=#{params[:experiment_name]}",
           organization_id: organization_id,
           reason: safe_inspect(reason)
         })
