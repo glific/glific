@@ -401,7 +401,8 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  def normalize_kaapi_body(_body), do: %{success: false, error_type: "kaapi_logical_failure", reason: "Unexpected response"}
+  def normalize_kaapi_body(_body),
+    do: %{success: false, error_type: "kaapi_logical_failure", reason: "Unexpected response"}
 
   @spec logical_failure(String.t() | nil) :: map()
   defp logical_failure(reason) do
@@ -433,8 +434,8 @@ defmodule Glific.ThirdParty.Kaapi do
   defp handle_kaapi_error({:error, :timeout}, _org_id, _label, _fallback),
     do: %{
       success: false,
-      error_type: "timeout",
-      reason: "Request timed out",
+      error_type: "request_timeout",
+      reason: "Request timed out (recv_timeout exceeded)",
       http_status: nil
     }
 
