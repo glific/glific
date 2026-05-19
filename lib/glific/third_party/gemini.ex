@@ -10,6 +10,7 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.Metrics
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.SafeLog
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.ThirdParty.Gemini.ApiClient
 
@@ -171,14 +172,25 @@ defmodule Glific.ThirdParty.Gemini do
           http_status: status
         }
 
-      {:error, _} ->
+      {:error, reason} ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        %{success: false, media_url: nil, translated_text: text}
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          reason: "Gemini TTS failed: #{SafeLog.safe_inspect(reason)}"
+        }
 
       error ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        Logger.error("Gemini TTS Failure: Reason: #{inspect(error)}")
-        %{success: false, media_url: nil, translated_text: text}
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          reason: "Gemini TTS failed: #{SafeLog.safe_inspect(error)}"
+        }
     end
   end
 
