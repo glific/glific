@@ -300,7 +300,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsTest do
         Kaapi.text_to_speech(@org_id, "Hello", @callback_url, @request_metadata)
 
       assert result.success == false
-      assert result.error_type == "timeout"
+      assert result.error_type == "request_timeout"
     end
   end
 end
