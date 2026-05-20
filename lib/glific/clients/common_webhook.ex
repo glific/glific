@@ -149,6 +149,7 @@ defmodule Glific.Clients.CommonWebhook do
   # Optional fields from flow node: provider, model, language (input language for transcription),
   # output_language (if omitted, Kaapi transcribes in the input language without translation)
   def webhook("speech_to_text", fields, _headers) do
+    speech = fields["speech"]
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
     {callback_url, request_metadata} =
@@ -163,16 +164,15 @@ defmodule Glific.Clients.CommonWebhook do
       output_language: fields["output_language"]
     }
 
-    Glific.Metrics.increment("Kaapi STT Call", organization_id)
-
     with_failure_reporting("speech_to_text", organization_id, fn ->
-      Kaapi.speech_to_text(
-        fields["speech"],
-        callback_url,
-        request_metadata,
-        organization_id,
-        stt_opts
-      )
+      case validate_media(speech) do
+        :ok ->
+          Glific.Metrics.increment("Kaapi STT Call", organization_id)
+          Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+
+        {:error, reason} ->
+          %{success: false, reason: reason}
+      end
     end)
   end
 
@@ -693,6 +693,15 @@ defmodule Glific.Clients.CommonWebhook do
       _ -> raise ArgumentError, "Invalid flow metadata for Kaapi webhook: #{inspect(fields)}"
     end
   end
+
+  @spec validate_media(any()) :: :ok | {:error, String.t()}
+  defp validate_media(url) when is_binary(url) do
+    if String.starts_with?(url, "https"),
+      do: :ok,
+      else: {:error, "Media URL is invalid"}
+  end
+
+  defp validate_media(_), do: {:error, "Media URL is needed"}
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls
   # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
