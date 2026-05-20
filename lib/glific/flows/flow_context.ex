@@ -1182,7 +1182,10 @@ defmodule Glific.Flows.FlowContext do
         |> limit(1)
         |> Repo.one()
 
-      Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      if webhook_log do
+        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      end
+
       Messages.create_temp_message(context.organization_id, "Failure")
     else
       _ ->
