@@ -70,5 +70,6 @@ defmodule Glific.AIEvaluations.AIEvaluation do
     |> validate_required(@required_fields)
     |> assoc_constraint(:organization)
     |> assoc_constraint(:golden_qa)
+    |> unique_constraint(:name, name: :ai_evaluations_name_organization_id_index)
   end
 end

@@ -153,7 +153,7 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         }
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, 400} == ApiClient.text_to_speech("Hello World", organization_id)
     end
 
     test "handles Tesla error with body", %{organization_id: organization_id} do
@@ -169,7 +169,24 @@ defmodule Glific.ThirdParty.Gemini.ApiClientTest do
         {:error, :timeout}
       end)
 
-      assert {:error, nil} == ApiClient.text_to_speech("Hello World", organization_id)
+      assert {:error, :timeout} == ApiClient.text_to_speech("Hello World", organization_id)
+    end
+
+    test "returns an error (no raise) when the 200 response has no audio payload",
+         %{organization_id: organization_id} do
+      # Gemini intermittently returns 200 with no inlineData.data
+      mock(fn %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            candidates: [%{content: %{parts: [%{}]}}],
+            usageMetadata: %{totalTokenCount: 0}
+          }
+        }
+      end)
+
+      assert {:error, :missing_audio_data} ==
+               ApiClient.text_to_speech("Hello World", organization_id)
     end
   end
 end

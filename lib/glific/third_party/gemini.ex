@@ -11,6 +11,7 @@ defmodule Glific.ThirdParty.Gemini do
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini.ApiClient
 
   @supported_languages %{
@@ -45,7 +46,7 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, error: "Failed to fetch audio"}
 
   """
-  @spec speech_to_text(String.t(), non_neg_integer()) :: map()
+  @spec speech_to_text(String.t(), non_neg_integer()) :: map() | String.t()
   def speech_to_text(audio_url, organization_id) do
     with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
          %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
@@ -161,14 +162,35 @@ defmodule Glific.ThirdParty.Gemini do
       |> Map.put(:media_url, media_meta.url)
       |> Map.put(:translated_text, text)
     else
-      {:error, _} ->
+      {:error, status} when is_integer(status) ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        %{success: false, media_url: nil, translated_text: text}
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          http_status: status
+        }
+
+      {:error, reason} ->
+        Metrics.increment("Gemini TTS Failure", organization_id)
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          reason: "Gemini TTS failed: #{SafeLog.safe_inspect(reason)}"
+        }
 
       error ->
         Metrics.increment("Gemini TTS Failure", organization_id)
-        Logger.error("Gemini TTS Failure: Reason: #{inspect(error)}")
-        %{success: false, media_url: nil, translated_text: text}
+
+        %{
+          success: false,
+          media_url: nil,
+          translated_text: text,
+          reason: "Gemini TTS failed: #{SafeLog.safe_inspect(error)}"
+        }
     end
   end
 

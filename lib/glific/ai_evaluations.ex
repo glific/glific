@@ -3,19 +3,23 @@ defmodule Glific.AIEvaluations do
   Context module for AI Evaluations stored in the database.
   """
   import Ecto.Query
+  import Glific.SafeLog
 
   require Logger
 
   alias Glific.{
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
+    AIEvaluations.OrganizationEvalRequest,
+    Mails.EvalAccessRequestMail,
     Metrics,
     Notifications,
+    Partners,
     Repo,
     ThirdParty.Kaapi
   }
 
-  @timeout_hours 1
+  @timeout_hours 6
 
   @doc """
   Returns the list of AI evaluations for an organization.
@@ -49,6 +53,17 @@ defmodule Glific.AIEvaluations do
     %AIEvaluation{}
     |> AIEvaluation.changeset(attrs)
     |> Repo.insert()
+    |> case do
+      {:ok, evaluation} ->
+        {:ok, evaluation}
+
+      {:error, changeset} = result ->
+        Logger.error(
+          "Failed to create AI Evaluation record: name=#{attrs[:name]}, errors=#{safe_inspect(changeset.errors)}"
+        )
+
+        result
+    end
   end
 
   @doc """
@@ -111,6 +126,11 @@ defmodule Glific.AIEvaluations do
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
+
+    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+
+    Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{org_id: org_id})
+
     Metrics.increment("AI Evaluation Completed", org_id)
 
     Notifications.create_notification(%{
@@ -142,9 +162,13 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
 
   defp handle_evaluation_status({:error, reason}, evaluation, org_id) do
-    Logger.error(
-      "Failed to poll AI evaluation #{evaluation.id} for org #{org_id}: #{inspect(reason)}"
-    )
+    Glific.log_exception(%Glific.ThirdParty.Kaapi.Error{
+      message:
+        "Failed to poll AI Evaluation: id=#{evaluation.id}, name=#{evaluation.name}, " <>
+          "org_id=#{org_id}",
+      organization_id: org_id,
+      reason: safe_inspect(reason)
+    })
 
     :ok
   end
@@ -156,9 +180,7 @@ defmodule Glific.AIEvaluations do
         :ok
 
       {:error, changeset} ->
-        Logger.error(
-          "Failed to update AI evaluation #{evaluation.id}: #{inspect(changeset.errors)}"
-        )
+        {:error, changeset}
     end
   end
 
@@ -214,6 +236,41 @@ defmodule Glific.AIEvaluations do
         where(query, [e], ilike(e.name, ^"%#{name}%"))
     end)
   end
+
+  @doc """
+  Requests access to the AI Evaluations feature for an organization.
+  Idempotent: if a request already exists for the org, returns the existing one.
+  """
+  @spec request_eval_access(non_neg_integer()) ::
+          {:ok, OrganizationEvalRequest.t()} | {:error, Ecto.Changeset.t()}
+  def request_eval_access(organization_id) do
+    case Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id}) do
+      {:ok, existing} ->
+        {:ok, existing}
+
+      {:error, _} ->
+        result =
+          %OrganizationEvalRequest{}
+          |> OrganizationEvalRequest.changeset(%{organization_id: organization_id})
+          |> Repo.insert()
+
+        with {:ok, _} <- result do
+          organization_id
+          |> Partners.organization()
+          |> EvalAccessRequestMail.send_eval_access_request_mail()
+        end
+
+        result
+    end
+  end
+
+  @doc """
+  Returns the eval access request for an organization, or nil if none exists.
+  """
+  @spec get_eval_access_request(non_neg_integer()) ::
+          {:ok, OrganizationEvalRequest.t()} | {:error, any()}
+  def get_eval_access_request(organization_id),
+    do: Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id})
 
   @spec filter_golden_qas(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_golden_qas(query, filter) do

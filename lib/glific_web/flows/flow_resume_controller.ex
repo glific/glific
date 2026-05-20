@@ -41,6 +41,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
+
     response_key = response["result_name"] || "response"
 
     message =
@@ -61,6 +62,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       end
 
     track_kaapi_latency(response)
+    maybe_report_callback_failure(result, response)
 
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
@@ -79,6 +81,30 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # always return 200 and an empty response
     json(conn, "")
   end
+
+  # Reports a Kaapi callback whose result is a failure to AppSignal, so failed
+  # callbacks get ops visibility. The "no callback at all" timeout case is
+  # reported separately by FlowContext.handle_nil_message; this reports the
+  # callbacks that did arrive but came back as a failure.
+  @spec maybe_report_callback_failure(map(), map()) :: :ok
+  defp maybe_report_callback_failure(%{"success" => success} = result, response)
+       when success != true do
+    reason =
+      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+
+    %Webhook.SystemError{message: "Webhook callback failure"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"],
+      error_type: result["error_type"],
+      reason: reason
+    })
+  end
+
+  defp maybe_report_callback_failure(_result, _response), do: :ok
 
   @doc """
   Callback for voice unified LLM calls.
@@ -123,6 +149,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
       track_kaapi_latency(response)
+      maybe_report_callback_failure(result, response)
 
       FlowContext.resume_contact_flow(
         contact,

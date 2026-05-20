@@ -8,6 +8,15 @@ defmodule Glific.AskGlific do
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
+  alias Glific.SafeLog
+
+  defmodule Error do
+    @moduledoc """
+    Exception raised when the AskGlific bot fails to respond.
+    Reporting these to AppSignal lets us alert on bot downtime
+    """
+    defexception [:message]
+  end
 
   @doc """
   Calls the Dify chat-messages API and fetches the answer for AskGlific bot.
@@ -41,6 +50,8 @@ defmodule Glific.AskGlific do
 
   @spec do_ask(map(), boolean(), map()) :: {:ok, map()} | {:error, String.t()}
   defp do_ask(body, is_new_conversation, user) do
+    start_time = System.monotonic_time(:millisecond)
+
     case ApiClient.chat_messages(body) do
       {:ok, response} ->
         answer = Map.get(response, "answer", "")
@@ -67,8 +78,29 @@ defmodule Glific.AskGlific do
          }}
 
       {:error, reason} ->
+        latency_ms = System.monotonic_time(:millisecond) - start_time
+        report_failure(user, latency_ms, reason)
         {:error, reason}
     end
+  end
+
+  # Reports an AskGlific bot failure to AppSignal.
+  @spec report_failure(map(), non_neg_integer(), any()) :: :ok
+  defp report_failure(user, latency_ms, reason) do
+    exception = %Error{message: "AskGlific bot failed to respond"}
+
+    Appsignal.send_error(exception, [], fn span ->
+      span
+      |> Appsignal.Span.set_namespace("ask_glific")
+      |> Appsignal.Span.set_sample_data("tags", %{
+        organization_id: user.organization_id,
+        user_id: user.id,
+        latency_ms: latency_ms,
+        reason: SafeLog.safe_inspect(reason)
+      })
+    end)
+
+    :ok
   end
 
   @doc """

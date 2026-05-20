@@ -1,6 +1,7 @@
 defmodule GlificWeb.Providers.Kaapi.ActionTest do
   use GlificWeb.ConnCase
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     Assistants.Assistant,
@@ -503,6 +504,72 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
       # since the node in the failure category has the failure message as its body.
       assert message.body == "Failure"
       assert flow_context.id == context.id
+
+      FunWithFlags.disable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
+
+    test "reports SystemError and fails the flow when Kaapi is not active",
+         %{conn: conn} do
+      organization_id = conn.assigns.organization_id
+
+      FunWithFlags.enable(:is_kaapi_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      contact = Fixtures.contact_fixture()
+
+      flow =
+        Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      [node | _tail] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:flow, :contact])
+
+      action = %Action{
+        type: "call_webhook",
+        uuid: "UUID 1",
+        url: "filesearch-gpt",
+        body:
+          "{\n\"question\": \"tell me a fact\",\n  \"flow_id\": \"@flow.id\",\n  \"contact_id\": \"@contact.id\",\n  \"assistant_id\": \"asst_pJxxD\"\n}",
+        method: "FUNCTION",
+        headers: %{
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        result_name: "filesearch",
+        node_uuid: "Test UUID"
+      }
+
+      test_pid = self()
+
+      with_mock Appsignal, [:passthrough],
+        send_error: fn exception, _stack, _configurator ->
+          send(test_pid, {:appsignal_error, exception})
+          :ok
+        end do
+        Action.execute(action, context, [])
+      end
+
+      # fail + log: the webhook log records "Kaapi is not active"
+      webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
+      assert webhook_log.error == "Kaapi is not active"
+      assert webhook_log.status_code == 400
+
+      # report: a SystemError is sent to AppSignal
+      assert_received {:appsignal_error, %Glific.Flows.Webhook.SystemError{} = exception}
+      assert Exception.message(exception) == "Webhook system_error: Kaapi is not active"
 
       FunWithFlags.disable(:is_kaapi_enabled,
         for_actor: %{organization_id: organization_id}

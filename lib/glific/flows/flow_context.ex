@@ -1168,11 +1168,13 @@ defmodule Glific.Flows.FlowContext do
 
   @spec handle_nil_message(Flow.t(), FlowContext.t()) :: Message.t()
   defp handle_nil_message(flow, context) do
+    maybe_report_timeout(flow, context)
+
     with true <-
            FunWithFlags.enabled?(:is_kaapi_enabled,
              for: %{organization_id: context.organization_id}
            ),
-         true <- current_node_filesearch?(flow, context) do
+         true <- current_node_async_webhook?(flow, context) do
       webhook_log =
         WebhookLog
         |> where([w], w.flow_context_id == ^context.id)
@@ -1180,7 +1182,10 @@ defmodule Glific.Flows.FlowContext do
         |> limit(1)
         |> Repo.one()
 
-      Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      if webhook_log do
+        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      end
+
       Messages.create_temp_message(context.organization_id, "Failure")
     else
       _ ->
@@ -1188,14 +1193,48 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec current_node_filesearch?(Flow.t(), FlowContext.t()) :: boolean()
-  defp current_node_filesearch?(flow, context) do
-    case Map.fetch(flow.uuid_map, context.node_uuid) do
-      {:ok, {:node, node}} ->
-        Enum.any?(node.actions, fn action -> action.url == "filesearch-gpt" end)
+  # Async webhook URLs whose flow node parks the flow waiting for a Kaapi
+  # callback. A nil-message wakeup of such a node means the callback never
+  # arrived within the wait window.
+  @async_webhook_urls [
+    "speech_to_text",
+    "text_to_speech",
+    "filesearch-gpt",
+    "voice-filesearch-gpt"
+  ]
 
-      _ ->
-        false
+  @spec async_webhook_url(Flow.t(), FlowContext.t()) :: String.t() | nil
+  defp async_webhook_url(flow, context) do
+    with {:ok, {:node, node}} <- Map.fetch(flow.uuid_map, context.node_uuid),
+         %{url: url} <-
+           Enum.find(node.actions, fn action -> action.url in @async_webhook_urls end) do
+      url
+    else
+      _ -> nil
+    end
+  end
+
+  @spec current_node_async_webhook?(Flow.t(), FlowContext.t()) :: boolean()
+  defp current_node_async_webhook?(flow, context),
+    do: not is_nil(async_webhook_url(flow, context))
+
+  # When a flow times out (woken with no callback message), report async
+  # webhook nodes to AppSignal. Gated to async webhook nodes so plain
+  # wait_for_time node expiries — which are normal, not failures — are skipped.
+  @spec maybe_report_timeout(Flow.t(), FlowContext.t()) :: :ok
+  defp maybe_report_timeout(flow, context) do
+    case async_webhook_url(flow, context) do
+      nil ->
+        :ok
+
+      webhook_url ->
+        %Webhook.TimeoutError{message: "Webhook timeout from #{webhook_url}"}
+        |> Webhook.report_to_appsignal(%{
+          organization_id: context.organization_id,
+          webhook_name: webhook_url,
+          flow_id: context.flow_id,
+          contact_id: context.contact_id
+        })
     end
   end
 end
