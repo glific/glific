@@ -472,16 +472,30 @@ defmodule Glific.Clients.CommonWebhook do
     voice_fields = response["voice_post_process"] || %{}
 
     tts_result =
-      if success && llm_response_text != "" do
-        webhook("nmt_tts_with_bhasini", %{
-          "text" => llm_response_text,
-          "organization_id" => organization_id,
-          "source_language" => voice_fields["source_language"],
-          "target_language" => voice_fields["target_language"],
-          "speech_engine" => voice_fields["speech_engine"] || ""
-        })
-      else
-        %{success: false, translated_text: llm_response_text, media_url: nil}
+      cond do
+        success && llm_response_text != "" ->
+          webhook("nmt_tts_with_bhasini", %{
+            "text" => llm_response_text,
+            "organization_id" => organization_id,
+            "source_language" => voice_fields["source_language"],
+            "target_language" => voice_fields["target_language"],
+            "speech_engine" => voice_fields["speech_engine"] || ""
+          })
+
+        # Kaapi reported success but gave us no text to speak
+        # sending error code 200 since the call from kaapi is success
+        success ->
+          report_webhook_failure(
+            "unified-voice-llm-call",
+            organization_id,
+            200,
+            "Kaapi callback returned success=true but message was empty/nil"
+          )
+
+          %{success: false, translated_text: "", media_url: nil}
+
+        true ->
+          %{success: false, translated_text: llm_response_text, media_url: nil}
       end
 
     translated_text =
