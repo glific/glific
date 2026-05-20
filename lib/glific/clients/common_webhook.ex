@@ -133,7 +133,9 @@ defmodule Glific.Clients.CommonWebhook do
             }
           })
 
-        do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
+        with_failure_reporting("unified-voice-llm-call", organization_id, fn ->
+          do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
+        end)
 
       %{success: false} = stt_failure ->
         %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
@@ -203,17 +205,18 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Uses Gemini for STT via Bhasini flow nodes
   def webhook("speech_to_text_with_bhasini", fields) do
-    case Bhasini.validate_params(fields) do
-      {:ok, contact} ->
-        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
 
-        with_failure_reporting("speech_to_text_with_bhasini", contact.organization_id, fn ->
+    with_failure_reporting("speech_to_text_with_bhasini", org_id, fn ->
+      case Bhasini.validate_params(fields) do
+        {:ok, contact} ->
+          Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
           Gemini.speech_to_text(fields["speech"], contact.organization_id)
-        end)
 
-      {:error, error} ->
-        error
-    end
+        {:error, error} ->
+          %{success: false, asr_response_text: error}
+      end
+    end)
   end
 
   # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes
@@ -727,7 +730,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
+    callback_url = "https://9dc7-103-91-135-178.ngrok-free.app" <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
