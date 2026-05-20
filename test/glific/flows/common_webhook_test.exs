@@ -1144,6 +1144,23 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert tags.webhook_name == "speech_to_text"
       assert tags.http_status == 503
     end
+
+    test "rejects empty speech URL without calling Kaapi and reports SystemError", %{
+      fields: fields
+    } do
+      fields = Map.put(fields, "speech", "")
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result == %{success: false, reason: "Media URL is invalid"}
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.reason == "Media URL is invalid"
+      assert is_nil(tags.http_status)
+    end
   end
 
   describe "text_to_speech webhook" do
