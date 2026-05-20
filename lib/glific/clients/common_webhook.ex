@@ -92,7 +92,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "llm")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "llm", webhook_name: "unified-llm-call"})
 
     with_failure_reporting("unified-llm-call", organization_id, fn ->
       do_unified_llm_call(fields, headers, callback_url, request_metadata)
@@ -126,6 +127,7 @@ defmodule Glific.Clients.CommonWebhook do
         request_metadata =
           Map.merge(request_metadata, %{
             call_type: "voice_llm",
+            webhook_name: "unified-voice-llm-call",
             voice_post_process: %{
               source_language: fields["source_language"],
               target_language: fields["target_language"],
@@ -155,7 +157,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "stt")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "stt", webhook_name: "speech_to_text"})
 
     stt_opts = %{
       provider: fields["provider"],
@@ -185,7 +188,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "tts")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "tts", webhook_name: "text_to_speech"})
 
     tts_opts = %{
       provider: fields["provider"],

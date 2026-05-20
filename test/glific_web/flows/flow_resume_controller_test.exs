@@ -765,7 +765,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "timestamp" => timestamp,
         "webhook_log_id" => webhook_log.id,
         "result_name" => "result",
-        "message" => "Voice answer"
+        "message" => "Voice answer",
+        "webhook_name" => "unified-voice-llm-call"
       }
 
       result = %{
@@ -799,6 +800,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert %SystemError{} = exception
       assert Exception.message(exception) == "Webhook callback failure"
       assert tags.organization_id == organization_id
+      assert tags.webhook_name == "unified-voice-llm-call"
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id

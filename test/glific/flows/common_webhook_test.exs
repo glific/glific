@@ -2049,7 +2049,6 @@ defmodule Glific.Flows.CommonWebhookTest do
       capture_appsignal(fn ->
         result = CommonWebhook.voice_post_process(organization_id, true, response)
 
-        # Falls through to the empty-message branch — no TTS call, no media_url
         assert result["translated_text"] == ""
         assert is_nil(result["media_url"])
       end)
