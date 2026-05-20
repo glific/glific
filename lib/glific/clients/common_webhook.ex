@@ -92,7 +92,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "llm")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "llm", webhook_name: "unified-llm-call"})
 
     with_failure_reporting("unified-llm-call", organization_id, fn ->
       do_unified_llm_call(fields, headers, callback_url, request_metadata)
@@ -126,6 +127,7 @@ defmodule Glific.Clients.CommonWebhook do
         request_metadata =
           Map.merge(request_metadata, %{
             call_type: "voice_llm",
+            webhook_name: "unified-voice-llm-call",
             voice_post_process: %{
               source_language: fields["source_language"],
               target_language: fields["target_language"],
@@ -133,7 +135,9 @@ defmodule Glific.Clients.CommonWebhook do
             }
           })
 
-        do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
+        with_failure_reporting("unified-voice-llm-call", organization_id, fn ->
+          do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
+        end)
 
       %{success: false} = stt_failure ->
         %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
@@ -147,12 +151,14 @@ defmodule Glific.Clients.CommonWebhook do
   # Optional fields from flow node: provider, model, language (input language for transcription),
   # output_language (if omitted, Kaapi transcribes in the input language without translation)
   def webhook("speech_to_text", fields, _headers) do
+    speech = fields["speech"]
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "stt")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "stt", webhook_name: "speech_to_text"})
 
     stt_opts = %{
       provider: fields["provider"],
@@ -161,16 +167,15 @@ defmodule Glific.Clients.CommonWebhook do
       output_language: fields["output_language"]
     }
 
-    Glific.Metrics.increment("Kaapi STT Call", organization_id)
-
     with_failure_reporting("speech_to_text", organization_id, fn ->
-      Kaapi.speech_to_text(
-        fields["speech"],
-        callback_url,
-        request_metadata,
-        organization_id,
-        stt_opts
-      )
+      case validate_params(fields) do
+        :ok ->
+          Glific.Metrics.increment("Kaapi STT Call", organization_id)
+          Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+
+        {:error, reason} ->
+          %{success: false, reason: reason}
+      end
     end)
   end
 
@@ -183,7 +188,8 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata} =
       build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata = Map.put(request_metadata, :call_type, "tts")
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "tts", webhook_name: "text_to_speech"})
 
     tts_opts = %{
       provider: fields["provider"],
@@ -203,17 +209,18 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Uses Gemini for STT via Bhasini flow nodes
   def webhook("speech_to_text_with_bhasini", fields) do
-    case Bhasini.validate_params(fields) do
-      {:ok, contact} ->
-        Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
 
-        with_failure_reporting("speech_to_text_with_bhasini", contact.organization_id, fn ->
+    with_failure_reporting("speech_to_text_with_bhasini", org_id, fn ->
+      case Bhasini.validate_params(fields) do
+        {:ok, contact} ->
+          Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
           Gemini.speech_to_text(fields["speech"], contact.organization_id)
-        end)
 
-      {:error, error} ->
-        error
-    end
+        {:error, error} ->
+          %{success: false, asr_response_text: error}
+      end
+    end)
   end
 
   # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes
@@ -469,16 +476,30 @@ defmodule Glific.Clients.CommonWebhook do
     voice_fields = response["voice_post_process"] || %{}
 
     tts_result =
-      if success && llm_response_text != "" do
-        webhook("nmt_tts_with_bhasini", %{
-          "text" => llm_response_text,
-          "organization_id" => organization_id,
-          "source_language" => voice_fields["source_language"],
-          "target_language" => voice_fields["target_language"],
-          "speech_engine" => voice_fields["speech_engine"] || ""
-        })
-      else
-        %{success: false, translated_text: llm_response_text, media_url: nil}
+      cond do
+        success && llm_response_text != "" ->
+          webhook("nmt_tts_with_bhasini", %{
+            "text" => llm_response_text,
+            "organization_id" => organization_id,
+            "source_language" => voice_fields["source_language"],
+            "target_language" => voice_fields["target_language"],
+            "speech_engine" => voice_fields["speech_engine"] || ""
+          })
+
+        # Kaapi reported success but gave us no text to speak
+        # sending error code 200 since the call from kaapi is success
+        success ->
+          report_webhook_failure(
+            "unified-voice-llm-call",
+            organization_id,
+            200,
+            "Kaapi callback returned success=true but message was empty/nil"
+          )
+
+          %{success: false, translated_text: "", media_url: nil}
+
+        true ->
+          %{success: false, translated_text: llm_response_text, media_url: nil}
       end
 
     translated_text =
@@ -690,6 +711,24 @@ defmodule Glific.Clients.CommonWebhook do
       _ -> raise ArgumentError, "Invalid flow metadata for Kaapi webhook: #{inspect(fields)}"
     end
   end
+
+  # Webhook param validation hook. Single check today; convert to a
+  # short-circuiting `with` once there's more than one field to validate.
+  @spec validate_params(map()) :: :ok | {:error, String.t()}
+  defp validate_params(fields), do: validate_media(fields["speech"])
+
+  @spec validate_media(any()) :: :ok | {:error, String.t()}
+  defp validate_media(url) when is_binary(url) do
+    case URI.parse(url) do
+      %URI{scheme: "https", host: host} when is_binary(host) and host != "" ->
+        :ok
+
+      _ ->
+        {:error, "Media URL is invalid"}
+    end
+  end
+
+  defp validate_media(_), do: {:error, "Media URL is needed"}
 
   # Builds the callback URL and request_metadata map needed for all Kaapi async calls
   # (unified-llm-call, STT, TTS). Centralises signature generation and callback URL construction.
