@@ -168,7 +168,7 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     with_failure_reporting("speech_to_text", organization_id, fn ->
-      case validate_media(speech) do
+      case validate_params(fields) do
         :ok ->
           Glific.Metrics.increment("Kaapi STT Call", organization_id)
           Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
@@ -712,11 +712,20 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Webhook param validation hook. Single check today; convert to a
+  # short-circuiting `with` once there's more than one field to validate.
+  @spec validate_params(map()) :: :ok | {:error, String.t()}
+  defp validate_params(fields), do: validate_media(fields["speech"])
+
   @spec validate_media(any()) :: :ok | {:error, String.t()}
   defp validate_media(url) when is_binary(url) do
-    if String.starts_with?(url, "https"),
-      do: :ok,
-      else: {:error, "Media URL is invalid"}
+    case URI.parse(url) do
+      %URI{scheme: "https", host: host} when is_binary(host) and host != "" ->
+        :ok
+
+      _ ->
+        {:error, "Media URL is invalid"}
+    end
   end
 
   defp validate_media(_), do: {:error, "Media URL is needed"}
