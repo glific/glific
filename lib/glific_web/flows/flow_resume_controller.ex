@@ -95,6 +95,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     %Webhook.SystemError{message: "Webhook callback failure"}
     |> Webhook.report_to_appsignal(%{
       organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
       flow_id: response["flow_id"],
       contact_id: response["contact_id"],
       webhook_log_id: response["webhook_log_id"],
@@ -148,6 +149,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
       track_kaapi_latency(response)
+      maybe_report_callback_failure(result, response)
 
       FlowContext.resume_contact_flow(
         contact,

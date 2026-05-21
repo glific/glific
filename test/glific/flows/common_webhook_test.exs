@@ -1144,6 +1144,23 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert tags.webhook_name == "speech_to_text"
       assert tags.http_status == 503
     end
+
+    test "rejects empty speech URL without calling Kaapi and reports SystemError", %{
+      fields: fields
+    } do
+      fields = Map.put(fields, "speech", "")
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result == %{success: false, reason: "Media URL is invalid"}
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.reason == "Media URL is invalid"
+      assert is_nil(tags.http_status)
+    end
   end
 
   describe "text_to_speech webhook" do
@@ -1923,5 +1940,124 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       assert payload.query.input == "Transcribed audio"
     end
+
+    test "returns structured failure (no CaseClauseError) when Bhasini rejects the URL" do
+      organization_id = 1
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "assistant_id" => "asst_voice_bad_url",
+        # http (not https) → Bhasini.validate_params returns {:error, "Media URL is invalid"}
+        "speech" => "http://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+          assert result == %{success: false, reason: "Media URL is invalid"}
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text_with_bhasini"
+      assert tags.reason == "Media URL is invalid"
+      assert is_nil(tags.http_status)
+    end
+
+    test "reports SystemError under unified-voice-llm-call when LLM dispatch fails" do
+      organization_id = 1
+      assistant_display_id = "asst_voice_llm_fail"
+      create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
+
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "assistant_id" => assistant_display_id,
+        "speech" => "https://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :get, url: "https://example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %Tesla.Env{method: :post, url: url} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [
+                    %{content: %{parts: [%{text: Jason.encode!("Hello world")}]}}
+                  ],
+                  usageMetadata: %{totalTokenCount: 10}
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              %Tesla.Env{status: 503, body: %{"error" => "kaapi unavailable"}}
+
+            true ->
+              %Tesla.Env{status: 200, body: %{}}
+          end
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+          assert result.success == false
+          assert result.http_status == 503
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-voice-llm-call"
+      assert tags.http_status == 503
+    end
+  end
+
+  test "reports SystemError when Kaapi callback says success=true but message is empty" do
+    organization_id = 1
+
+    response = %{
+      "message" => "",
+      "voice_post_process" => %{
+        "source_language" => "english",
+        "target_language" => "hindi"
+      },
+      "flow_id" => 1,
+      "contact_id" => 2,
+      "webhook_log_id" => 1
+    }
+
+    {exception, tags} =
+      capture_appsignal(fn ->
+        result = CommonWebhook.voice_post_process(organization_id, true, response)
+
+        assert result["translated_text"] == ""
+        assert is_nil(result["media_url"])
+      end)
+
+    assert %SystemError{} = exception
+    assert tags.webhook_name == "unified-voice-llm-call"
+    # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
+    # HTTP layer, the body was just unusable.
+    assert tags.http_status == 200
+    assert tags.reason =~ "empty"
   end
 end
