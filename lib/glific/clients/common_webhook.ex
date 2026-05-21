@@ -257,20 +257,21 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    with {:ok, fields} <- parse_chatgpt_fields(fields),
-         {:ok, fields} <- parse_response_format(fields),
-         {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
-      %{
-        success: true,
-        parsed_msg: parse_gpt_response(text)
-      }
-    else
-      {:error, error} ->
+    org_id = parse_org_id(fields)
+
+    with_failure_reporting("parse_via_chat_gpt", org_id, fn ->
+      with {:ok, fields} <- parse_chatgpt_fields(fields),
+           {:ok, fields} <- parse_response_format(fields),
+           {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
         %{
-          success: false,
-          parsed_msg: error
+          success: true,
+          parsed_msg: parse_gpt_response(text)
         }
-    end
+      else
+        {:error, error} ->
+          error
+      end
+    end)
   end
 
   def webhook("voice-filesearch-gpt", fields) do
@@ -291,20 +292,24 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map()) :: any()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
-    # validating if the url passed is a valid image url
-    with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
-         {:ok, fields} <- parse_response_format(fields),
-         {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: parse_gpt_response(response)}
-    else
-      %{is_valid: false, message: message} ->
-        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
-        message
+    org_id = parse_org_id(fields)
 
-      {:error, error} ->
-        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{error}")
-        error
-    end
+    # Failures return a bare string (not %{success: false}) so the flow routes
+    # to the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
+    with_failure_reporting("parse_via_gpt_vision", org_id, fn ->
+      # validating if the url passed is a valid image url
+      with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+           {:ok, fields} <- parse_response_format(fields),
+           {:ok, response} <- ChatGPT.gpt_vision(fields) do
+        %{success: true, response: parse_gpt_response(response)}
+      else
+        %{is_valid: false, message: message} ->
+          message
+
+        {:error, error} ->
+          error
+      end
+    end)
   end
 
   def webhook("filesearch-gpt", fields) do
@@ -712,6 +717,16 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Best-effort org_id for failure reporting tags. Returns nil if absent/unparseable
+  # rather than raising, since it's only used for the AppSignal tag.
+  @spec parse_org_id(map()) :: non_neg_integer() | nil
+  defp parse_org_id(fields) do
+    case Glific.parse_maybe_integer(fields["organization_id"]) do
+      {:ok, id} -> id
+      _ -> nil
+    end
+  end
+
   # Webhook param validation hook. Single check today; convert to a
   # short-circuiting `with` once there's more than one field to validate.
   @spec validate_params(map()) :: :ok | {:error, String.t()}
@@ -921,10 +936,19 @@ defmodule Glific.Clients.CommonWebhook do
       reraise exception, __STACKTRACE__
   end
 
-  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
+  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer() | nil) :: :ok
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
+  end
+
+  # nil / non-map results route to the flow's Failure category (see
+  # Glific.Flows.Webhook.handle/3, which keys off is_map). Treat them as
+  # failures here too
+  defp maybe_report_webhook_failure(result, webhook_name, org_id)
+       when is_nil(result) or not is_map(result) do
+    reason = if is_binary(result), do: result, else: inspect(result)
+    report_webhook_failure(webhook_name, org_id, nil, reason)
   end
 
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
