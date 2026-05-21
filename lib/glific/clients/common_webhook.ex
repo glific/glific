@@ -299,8 +299,7 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = parse_org_id(fields)
 
     # Failures return a bare string (not %{success: false}) so the flow routes
-    # to the "Failure" category (lib/glific/flows/webhook.ex:527 keys off is_map).
-    # We keep that shape and report explicitly
+    # to the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
     with_failure_reporting("parse_via_gpt_vision", org_id, fn ->
       # validating if the url passed is a valid image url
       with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
@@ -309,14 +308,9 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: true, response: parse_gpt_response(response)}
       else
         %{is_valid: false, message: message} ->
-          Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
-          report_webhook_failure("parse_via_gpt_vision", org_id, nil, message)
           message
 
         {:error, error} ->
-          reason = if is_binary(error), do: error, else: inspect(error)
-          Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{reason}")
-          report_webhook_failure("parse_via_gpt_vision", org_id, nil, reason)
           error
       end
     end)
@@ -946,10 +940,19 @@ defmodule Glific.Clients.CommonWebhook do
       reraise exception, __STACKTRACE__
   end
 
-  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer()) :: :ok
+  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer() | nil) :: :ok
   defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
+  end
+
+  # nil / non-map results route to the flow's Failure category (see
+  # Glific.Flows.Webhook.handle/3, which keys off is_map). Treat them as
+  # failures here too
+  defp maybe_report_webhook_failure(result, webhook_name, org_id)
+       when is_nil(result) or not is_map(result) do
+    reason = if is_binary(result), do: result, else: inspect(result)
+    report_webhook_failure(webhook_name, org_id, nil, reason)
   end
 
   defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
