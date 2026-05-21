@@ -11,12 +11,14 @@ defmodule Glific.OpenAI.ChatGPT do
   @endpoint "https://api.openai.com/v1"
 
   @default_params %{
-    "model" => "gpt-4o",
     "temperature" => 0.7,
     "top_p" => 1,
     "frequency_penalty" => 0,
     "presence_penalty" => 0
   }
+
+  @spec gpt_model() :: String.t()
+  defp gpt_model, do: Application.fetch_env!(:glific, __MODULE__)[:gpt_model]
 
   @doc """
   API call to GPT for translation with text only
@@ -42,7 +44,7 @@ defmodule Glific.OpenAI.ChatGPT do
       @default_params
       |> Map.merge(%{
         "messages" => add_prompt(params),
-        "model" => params["model"],
+        "model" => params["model"] || gpt_model(),
         "temperature" => params["temperature"],
         "response_format" => params["response_format"]
       })
@@ -86,7 +88,7 @@ defmodule Glific.OpenAI.ChatGPT do
   def gpt_vision(params \\ %{}) do
     url = @endpoint <> "/chat/completions"
     api_key = Glific.get_open_ai_key()
-    model = Map.get(params, "model", "gpt-4-turbo")
+    model = Map.get(params, "model", gpt_model())
 
     data =
       %{

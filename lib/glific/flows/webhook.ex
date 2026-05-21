@@ -805,18 +805,17 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp with_failure_reporting(webhook_name, organization_id, fun) do
-    try do
-      fun.()
-    rescue
-      exception ->
-        %SystemError{message: "Webhook system_error from #{webhook_name}"}
-        |> report_to_appsignal(%{
-          organization_id: organization_id,
-          webhook_name: webhook_name,
-          reason: Exception.message(exception)
-        })
-        reraise exception, __STACKTRACE__
-    end
+    fun.()
+  rescue
+    exception ->
+      %SystemError{message: "Webhook system_error from #{webhook_name}"}
+      |> report_to_appsignal(%{
+        organization_id: organization_id,
+        webhook_name: webhook_name,
+        reason: Exception.message(exception)
+      })
+
+      reraise exception, __STACKTRACE__
   end
 
   @spec update_context_for_wait(FlowContext.t(), integer()) ::
