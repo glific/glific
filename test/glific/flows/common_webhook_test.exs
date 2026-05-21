@@ -441,7 +441,7 @@ defmodule Glific.Flows.CommonWebhookTest do
   end
 
   test "parse_via_chat_gpt, failed due to empty question_text" do
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", %{})
   end
 
@@ -450,7 +450,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "question_text" => ""
     }
 
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", fields)
   end
 
@@ -2063,13 +2063,12 @@ defmodule Glific.Flows.CommonWebhookTest do
 
   describe "parse_via_chat_gpt / parse_via_gpt_vision failure reporting" do
     test "reports SystemError when parse_via_chat_gpt fails" do
-      # empty question_text fails in parse_chatgpt_fields, before any OpenAI call
       {exception, tags} =
         capture_appsignal(fn ->
-          result = CommonWebhook.webhook("parse_via_chat_gpt", %{"organization_id" => 1})
-          # return shape unchanged — still a %{success: false} map
-          assert result.success == false
-          assert result.parsed_msg == "question_text is empty"
+          result =
+            CommonWebhook.webhook("parse_via_chat_gpt", %{"organization_id" => 1})
+
+          assert result == "question_text is empty"
         end)
 
       assert %SystemError{} = exception

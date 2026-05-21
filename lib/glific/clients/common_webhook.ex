@@ -269,11 +269,7 @@ defmodule Glific.Clients.CommonWebhook do
         }
       else
         {:error, error} ->
-          %{
-            success: false,
-            parsed_msg: error,
-            reason: if(is_binary(error), do: error, else: inspect(error))
-          }
+          error
       end
     end)
   end
