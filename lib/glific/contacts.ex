@@ -638,7 +638,7 @@ defmodule Glific.Contacts do
       contact.status != :valid ->
         {:error, dgettext("errors", "Contact status is not valid.")}
 
-      contact.bsp_status not in [:session_and_hsm, :hsm] ->
+      contact.bsp_status not in [:session_and_hsm, :hsm, :session] ->
         {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
 
       contact.optin_time == nil ->
@@ -686,7 +686,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
     if is_hsm do
-      if contact.bsp_status in [:session_and_hsm, :hsm],
+      if contact.bsp_status in [:session_and_hsm, :hsm, :session],
         do: {:ok, nil},
         else:
           {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
