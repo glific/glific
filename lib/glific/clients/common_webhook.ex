@@ -791,7 +791,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url = "https://b0e0-103-91-135-178.ngrok-free.app" <> callback_path
+    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
