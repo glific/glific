@@ -1319,10 +1319,29 @@ defmodule Glific.ContactsTest do
           )
         )
 
+      contact5 =
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              bsp_status: :session,
+              optin_time: DateTime.utc_now(),
+              optin_status: true,
+              optout_time: nil
+            }
+          )
+        )
+
       assert {:error, _} = Contacts.can_send_message_to?(contact1, true)
       assert {:ok, _} = Contacts.can_send_message_to?(contact2, true)
       assert {:error, _} = Contacts.can_send_message_to?(contact3, true)
       assert {:error, _} = Contacts.can_send_message_to?(contact4, true)
+
+      # :session bsp_status should also allow HSM messages so the BSP can deliver
+      # the template within the open session window (buttons/media preserved).
+      assert {:ok, _} = Contacts.can_send_message_to?(contact5, true)
+      assert {:ok, _} = Contacts.can_send_message_to?(contact5, true, %{is_optin_flow: true})
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message",
