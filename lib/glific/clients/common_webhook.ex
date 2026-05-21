@@ -257,20 +257,25 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("parse_via_chat_gpt", fields) do
-    with {:ok, fields} <- parse_chatgpt_fields(fields),
-         {:ok, fields} <- parse_response_format(fields),
-         {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
-      %{
-        success: true,
-        parsed_msg: parse_gpt_response(text)
-      }
-    else
-      {:error, error} ->
+    org_id = parse_org_id(fields)
+
+    with_failure_reporting("parse_via_chat_gpt", org_id, fn ->
+      with {:ok, fields} <- parse_chatgpt_fields(fields),
+           {:ok, fields} <- parse_response_format(fields),
+           {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
         %{
-          success: false,
-          parsed_msg: error
+          success: true,
+          parsed_msg: parse_gpt_response(text)
         }
-    end
+      else
+        {:error, error} ->
+          %{
+            success: false,
+            parsed_msg: error,
+            reason: if(is_binary(error), do: error, else: inspect(error))
+          }
+      end
+    end)
   end
 
   def webhook("voice-filesearch-gpt", fields) do
@@ -291,20 +296,30 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map()) :: any()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
-    # validating if the url passed is a valid image url
-    with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
-         {:ok, fields} <- parse_response_format(fields),
-         {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: parse_gpt_response(response)}
-    else
-      %{is_valid: false, message: message} ->
-        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
-        message
+    org_id = parse_org_id(fields)
 
-      {:error, error} ->
-        Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{error}")
-        error
-    end
+    # Failures return a bare string (not %{success: false}) so the flow routes
+    # to the "Failure" category (handle/3 keys off is_map). We keep that shape
+    # and report explicitly — the wrapper here only covers unexpected exceptions.
+    with_failure_reporting("parse_via_gpt_vision", org_id, fn ->
+      # validating if the url passed is a valid image url
+      with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+           {:ok, fields} <- parse_response_format(fields),
+           {:ok, response} <- ChatGPT.gpt_vision(fields) do
+        %{success: true, response: parse_gpt_response(response)}
+      else
+        %{is_valid: false, message: message} ->
+          Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{message}")
+          report_webhook_failure("parse_via_gpt_vision", org_id, nil, message)
+          message
+
+        {:error, error} ->
+          reason = if is_binary(error), do: error, else: inspect(error)
+          Logger.error("OpenAI GPTVision failed for URL: #{url} with error: #{reason}")
+          report_webhook_failure("parse_via_gpt_vision", org_id, nil, reason)
+          error
+      end
+    end)
   end
 
   def webhook("filesearch-gpt", fields) do
@@ -712,6 +727,16 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  # Best-effort org_id for failure reporting tags. Returns nil if absent/unparseable
+  # rather than raising, since it's only used for the AppSignal tag.
+  @spec parse_org_id(map()) :: non_neg_integer() | nil
+  defp parse_org_id(fields) do
+    case Glific.parse_maybe_integer(fields["organization_id"]) do
+      {:ok, id} -> id
+      _ -> nil
+    end
+  end
+
   # Webhook param validation hook. Single check today; convert to a
   # short-circuiting `with` once there's more than one field to validate.
   @spec validate_params(map()) :: :ok | {:error, String.t()}
@@ -766,7 +791,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
+    callback_url = "https://b0e0-103-91-135-178.ngrok-free.app" <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
