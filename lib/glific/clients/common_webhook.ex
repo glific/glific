@@ -299,8 +299,8 @@ defmodule Glific.Clients.CommonWebhook do
     org_id = parse_org_id(fields)
 
     # Failures return a bare string (not %{success: false}) so the flow routes
-    # to the "Failure" category (handle/3 keys off is_map). We keep that shape
-    # and report explicitly — the wrapper here only covers unexpected exceptions.
+    # to the "Failure" category (lib/glific/flows/webhook.ex:527 keys off is_map).
+    # We keep that shape and report explicitly
     with_failure_reporting("parse_via_gpt_vision", org_id, fn ->
       # validating if the url passed is a valid image url
       with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
