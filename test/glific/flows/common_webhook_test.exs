@@ -441,7 +441,7 @@ defmodule Glific.Flows.CommonWebhookTest do
   end
 
   test "parse_via_chat_gpt, failed due to empty question_text" do
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", %{})
   end
 
@@ -450,7 +450,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "question_text" => ""
     }
 
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", fields)
   end
 
@@ -2059,5 +2059,63 @@ defmodule Glific.Flows.CommonWebhookTest do
     # HTTP layer, the body was just unusable.
     assert tags.http_status == 200
     assert tags.reason =~ "empty"
+  end
+
+  describe "parse_via_chat_gpt / parse_via_gpt_vision failure reporting" do
+    test "reports SystemError when parse_via_chat_gpt fails" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("parse_via_chat_gpt", %{"organization_id" => 1})
+
+          assert result == "question_text is empty"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "parse_via_chat_gpt"
+      assert tags.organization_id == 1
+      assert tags.reason == "question_text is empty"
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
+      fields = %{
+        "organization_id" => 1,
+        "url" => "https://example.com/image.jpg",
+        "response_format" => %{"type" => "json_objectz"}
+      }
+
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            # bare-string return preserved (routes to the flow's Failure category)
+            assert result == "response_format type should be json_schema or json_object"
+          end)
+
+        assert %SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "response_format type should be json_schema or json_object"
+      end
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid media URL" do
+      fields = %{"organization_id" => 1, "url" => "not-an-image"}
+
+      with_mock(Messages,
+        validate_media: fn _, _ -> %{is_valid: false, message: "Media URL is invalid"} end
+      ) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            assert result == "Media URL is invalid"
+          end)
+
+        assert %SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "Media URL is invalid"
+      end
+    end
   end
 end

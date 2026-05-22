@@ -118,6 +118,8 @@ config :glific,
 config :glific,
   open_ai: env!("OPEN_AI_KEY", :string!, "This is not a secret")
 
+config :glific, Glific.OpenAI.ChatGPT, gpt_model: env!("OPEN_AI_MODEL", :string, "gpt-5.1")
+
 config :glific,
   gemini_api_key: env!("GEMINI_API_KEY", :string!, "This is not a secret")
 
