@@ -678,13 +678,11 @@ defmodule Glific.Flows.WebhookTest do
         end
       end
 
-      # A low-cardinality SystemError is reported so AppSignal groups these failures.
       assert_receive {:appsignal_exception,
                       %Webhook.SystemError{
                         message: "Webhook system_error from unified-voice-llm-call"
                       }}
 
-      # Per-occurrence detail is attached as AppSignal tags, not on the struct.
       assert_receive {:appsignal_tag, "tags", tags}
       assert tags.organization_id == 1
       assert tags.webhook_name == "unified-voice-llm-call"

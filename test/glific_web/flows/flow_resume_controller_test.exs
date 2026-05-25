@@ -24,10 +24,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with success response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -113,10 +109,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with failure response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -193,10 +185,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving unified API callback format", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
