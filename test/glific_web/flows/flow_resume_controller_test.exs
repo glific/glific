@@ -8,6 +8,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook.SystemError,
+    Flows.WebhookLog,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -140,6 +142,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "contact_id" => contact.id,
           "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
           "flow_id" => flow.id,
+          "message" => "Kaapi error: response generation failed",
           "organization_id" => organization_id,
           "signature" => signature,
           "status" => "failure",
@@ -180,6 +183,14 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       # Checking the latest message, should be failure because in the flow
       # the failed category's next send msg node has failure as body
       assert message.body == "failure"
+
+      updated_webhook_log = Repo.get!(WebhookLog, webhook_log.id)
+
+      assert updated_webhook_log.response_json["message"] ==
+               "Kaapi error: response generation failed"
+
+      assert updated_webhook_log.response_json["success"] == false
+      assert updated_webhook_log.response_json["thread_id"] == nil
     end
 
     test "resumes an existing flow on receiving unified API callback format", %{
