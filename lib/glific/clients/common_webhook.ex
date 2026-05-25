@@ -751,7 +751,7 @@ defmodule Glific.Clients.CommonWebhook do
 
     organization = Partners.organization(organization_id)
 
-    callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
+    callback_url = "https://5150-103-91-135-178.ngrok-free.app" <> callback_path
 
     request_metadata = %{
       organization_id: organization_id,
@@ -849,7 +849,7 @@ defmodule Glific.Clients.CommonWebhook do
   rescue
     exception ->
       report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
-      Webhook.track_webhook_count(webhook_name, org_id, "failure")
+      Webhook.track_webhook_count(webhook_name, "failure")
       reraise exception, __STACKTRACE__
   end
 
@@ -857,7 +857,7 @@ defmodule Glific.Clients.CommonWebhook do
   defp record_webhook_outcome(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
-    Webhook.track_webhook_count(webhook_name, org_id, "failure")
+    Webhook.track_webhook_count(webhook_name, "failure")
   end
 
   # nil / non-map results route to the flow's Failure category (see
@@ -867,14 +867,14 @@ defmodule Glific.Clients.CommonWebhook do
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: inspect(result)
     report_webhook_failure(webhook_name, org_id, nil, reason)
-    Webhook.track_webhook_count(webhook_name, org_id, "failure")
+    Webhook.track_webhook_count(webhook_name, "failure")
   end
 
   # Success. For async webhooks this is only the dispatch ack, so we skip it and
   # let the callback record the real outcome; sync webhooks are terminal here.
-  defp record_webhook_outcome(_result, webhook_name, org_id) do
+  defp record_webhook_outcome(_result, webhook_name, _org_id) do
     unless webhook_name in @async_webhooks,
-      do: Webhook.track_webhook_count(webhook_name, org_id, "success")
+      do: Webhook.track_webhook_count(webhook_name, "success")
 
     :ok
   end
