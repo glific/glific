@@ -6,7 +6,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
   alias Glific.{
     Assistants,
     Filesearch,
-    Filesearch.VectorStore
+    Filesearch.VectorStore,
+    PostHog
   }
 
   require Logger
@@ -124,6 +125,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
           {:ok, map()} | {:error, any()}
   def set_live_version(_, %{assistant_id: assistant_id, version_id: version_id}, _) do
     with {:ok, result} <- Assistants.set_live_version(assistant_id, version_id) do
+      PostHog.capture("assistant_version_set_live", %{assistant_id: assistant_id, version_id: version_id})
       {:ok, %{assistant: result}}
     end
   end

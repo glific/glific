@@ -12,6 +12,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
     Metrics,
+    PostHog,
     Repo,
     ThirdParty.Kaapi
   }
@@ -23,8 +24,13 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @spec request_ai_evaluation_access(map(), map(), map()) ::
           {:ok, %{status: String.t()}} | {:error, Ecto.Changeset.t()}
   def request_ai_evaluation_access(_, _, %{context: %{current_user: user}}) do
+    existing = AIEvaluations.get_eval_access_request(user.organization_id)
+
     case AIEvaluations.request_eval_access(user.organization_id) do
       {:ok, _request} ->
+        if match?({:error, _}, existing),
+          do: PostHog.capture("eval_access_requested", %{organization_id: user.organization_id})
+
         {:ok, %{status: "requested"}}
 
       {:error, changeset} ->
@@ -126,12 +132,19 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
     |> case do
+      {:ok, %{errors: [%{message: msg} | _]} = data} ->
+        Metrics.increment(@create_golden_qa_failure_metric, user.organization_id)
+        PostHog.capture("golden_qa_upload_failed", %{organization_id: user.organization_id, reason: msg})
+        {:ok, data}
+
       {:ok, %{errors: _} = data} ->
         Metrics.increment(@create_golden_qa_failure_metric, user.organization_id)
+        PostHog.capture("golden_qa_upload_failed", %{organization_id: user.organization_id})
         {:ok, data}
 
       {:ok, data} ->
         Metrics.increment(@create_golden_qa_success_metric, user.organization_id)
+        PostHog.capture("golden_qa_uploaded", %{organization_id: user.organization_id})
         {:ok, data}
     end
   end
@@ -241,7 +254,11 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         }
         |> maybe_put_signed_url(kaapi_data)
 
-      if include_signed_url, do: Metrics.increment("Golden QA Downloaded", user.organization_id)
+      if include_signed_url do
+        Metrics.increment("Golden QA Downloaded", user.organization_id)
+        PostHog.capture("golden_qa_downloaded", %{organization_id: user.organization_id, golden_qa_id: golden_qa_id})
+      end
+
       {:ok, %{golden_qa: golden_qa_map}}
     else
       {:error, [_, "Resource not found"]} ->
@@ -295,6 +312,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
     case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
       {:ok, %{data: data}} ->
+        PostHog.capture("eval_scores_downloaded", %{organization_id: user.organization_id, evaluation_id: evaluation_id})
         {:ok, %{scores: data}}
 
       {:error, :timeout} ->
@@ -351,6 +369,13 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              organization_id: user.organization_id
            }) do
       Metrics.increment(@ai_evaluation_create_success_metric, user.organization_id)
+
+      PostHog.capture("eval_created", %{
+        organization_id: user.organization_id,
+        assistant_config_version_id: input.config_id,
+        golden_qa_id: input.golden_qa_id
+      })
+
       {:ok, %{evaluation: evaluation}}
     else
       {:name, {:ok, _}} ->
@@ -365,18 +390,22 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
       {:error, :timeout} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        PostHog.capture("eval_create_failed", %{organization_id: user.organization_id, reason: "timeout"})
         {:error, "Timeout occurred, please try again."}
 
       {:error, %{body: %{:error => error}}} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        PostHog.capture("eval_create_failed", %{organization_id: user.organization_id, reason: error})
         {:error, error}
 
       {:error, msg} when is_binary(msg) ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        PostHog.capture("eval_create_failed", %{organization_id: user.organization_id, reason: msg})
         {:error, msg}
 
       {:error, _} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        PostHog.capture("eval_create_failed", %{organization_id: user.organization_id, reason: "unknown"})
         {:error, "An unknown error occurred, please contact Glific support."}
     end
   end

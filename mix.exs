@@ -169,7 +169,9 @@ defmodule Glific.MixProject do
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
       {:ex_audit, "~> 0.10"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.5.0"},
+      {:posthog, "~> 0.2"},
+      {:finch, "~> 0.18"}
     ]
   end
 
