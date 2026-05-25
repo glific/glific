@@ -28,7 +28,7 @@ defmodule Glific.Clients.CommonWebhook do
   Create a webhook with different signatures along with header, so we can easily implement
   additional functionality as needed
   """
-  @spec webhook(String.t(), map(), list()) :: map()
+  @spec webhook(String.t(), map(), list()) :: map() | String.t()
   def webhook("call_and_wait", fields, headers) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     result_name = fields["result_name"]
@@ -66,18 +66,12 @@ defmodule Glific.Clients.CommonWebhook do
       |> Map.put("result_name", result_name)
       |> maybe_put_response_id(fields)
 
-    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+    case Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end) do
+      {_, org_api_key} ->
+        call_responses_and_format(payload, org_api_key)
 
-    case ApiClient.call_responses_api(payload, org_api_key) do
-      {:ok, body} ->
-        Map.merge(%{success: true}, body)
-
-      {:error, %{status: _status, body: body}} ->
-        result = Jason.encode!(body)
-        %{success: false, reason: result}
-
-      {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
+      _ ->
+        "Missing Kaapi API key"
     end
   end
 
@@ -589,6 +583,21 @@ defmodule Glific.Clients.CommonWebhook do
       true ->
         Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
         Gemini.text_to_speech(org_id, text)
+    end
+  end
+
+  @spec call_responses_and_format(map(), String.t()) :: map()
+  defp call_responses_and_format(payload, org_api_key) do
+    case ApiClient.call_responses_api(payload, org_api_key) do
+      {:ok, body} ->
+        Map.merge(%{success: true}, body)
+
+      {:error, %{status: _status, body: body}} ->
+        result = Jason.encode!(body)
+        %{success: false, reason: result}
+
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
     end
   end
 
