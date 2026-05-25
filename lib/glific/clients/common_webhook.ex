@@ -54,7 +54,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      "https://5150-103-91-135-178.ngrok-free.app" <>
+      Glific.api_callback_base(organization.shortcode) <>
         "/webhook/flow_resume"
 
     payload =
