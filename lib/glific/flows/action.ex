@@ -674,24 +674,8 @@ defmodule Glific.Flows.Action do
 
     # Webhooks don't consume messages, so if we send a message while a webhook node is running,
     # the node won't be executed again because it only matches when the message list is empty (`[]`)
-    # unified_api_enabled takes priority over is_kaapi_enabled.
-    # unified routes to /api/v1/llm/call, kaapi routes to /api/v1/responses.
-    # If neither flag is on, fall back to the legacy direct OpenAI call.
-    cond do
-      FunWithFlags.enabled?(:unified_api_enabled,
-        for: %{organization_id: context.organization_id}
-      ) ->
-        Webhook.execute_unified_filesearch(action, context)
-
-      FunWithFlags.enabled?(:is_kaapi_enabled,
-        for: %{organization_id: context.organization_id}
-      ) ->
-        Webhook.execute_kaapi_filesearch(action, context)
-
-      true ->
-        Webhook.execute(action, context)
-        {:wait, context, []}
-    end
+    # filesearch-gpt always routes to the unified API (/api/v1/llm/call).
+    Webhook.execute_unified_filesearch(action, context)
   end
 
   def execute(%{type: "call_webhook"} = action, context, []) do

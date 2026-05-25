@@ -31,58 +31,53 @@ defmodule Glific.Clients.CommonWebhook do
   @spec webhook(String.t(), map(), list()) :: map()
   def webhook("call_and_wait", fields, headers) do
     {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    result_name = fields["result_name"]
+    webhook_log_id = fields["webhook_log_id"]
+    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
+    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    if FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization_id}) do
-      result_name = fields["result_name"]
-      webhook_log_id = fields["webhook_log_id"]
-      {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-      {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    signature_payload = %{
+      "organization_id" => organization_id,
+      "flow_id" => flow_id,
+      "contact_id" => contact_id,
+      "timestamp" => timestamp
+    }
 
-      signature_payload = %{
-        "organization_id" => organization_id,
-        "flow_id" => flow_id,
-        "contact_id" => contact_id,
-        "timestamp" => timestamp
-      }
+    signature =
+      Glific.signature(
+        organization_id,
+        Jason.encode!(signature_payload),
+        signature_payload["timestamp"]
+      )
 
-      signature =
-        Glific.signature(
-          organization_id,
-          Jason.encode!(signature_payload),
-          signature_payload["timestamp"]
-        )
+    organization = Partners.organization(organization_id)
 
-      organization = Partners.organization(organization_id)
+    callback_url =
+      Glific.api_callback_base(organization.shortcode) <>
+        "/webhook/flow_resume"
 
-      callback_url =
-        Glific.api_callback_base(organization.shortcode) <>
-          "/webhook/flow_resume"
+    payload =
+      fields
+      |> Map.merge(signature_payload)
+      |> Map.put("signature", signature)
+      |> Map.put("callback_url", callback_url)
+      |> Map.put("webhook_log_id", webhook_log_id)
+      |> Map.put("result_name", result_name)
+      |> maybe_put_response_id(fields)
 
-      payload =
-        fields
-        |> Map.merge(signature_payload)
-        |> Map.put("signature", signature)
-        |> Map.put("callback_url", callback_url)
-        |> Map.put("webhook_log_id", webhook_log_id)
-        |> Map.put("result_name", result_name)
-        |> maybe_put_response_id(fields)
+    {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
 
-      {_, org_api_key} = Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end)
+    case ApiClient.call_responses_api(payload, org_api_key) do
+      {:ok, body} ->
+        Map.merge(%{success: true}, body)
 
-      case ApiClient.call_responses_api(payload, org_api_key) do
-        {:ok, body} ->
-          Map.merge(%{success: true}, body)
+      {:error, %{status: _status, body: body}} ->
+        result = Jason.encode!(body)
+        %{success: false, reason: result}
 
-        {:error, %{status: _status, body: body}} ->
-          result = Jason.encode!(body)
-          %{success: false, reason: result}
-
-        {:error, reason} ->
-          %{success: false, reason: inspect(reason)}
-      end
-    else
-      do_call_and_wait(fields, headers)
+      {:error, reason} ->
+        %{success: false, reason: inspect(reason)}
     end
   end
 
@@ -864,65 +859,6 @@ defmodule Glific.Clients.CommonWebhook do
   @spec fetch_kaapi_uuid(map()) :: {:ok, String.t()} | {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
-
-  @spec do_call_and_wait(map(), list()) :: map()
-  defp do_call_and_wait(fields, headers) do
-    endpoint = fields["endpoint"]
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback =
-      Glific.api_callback_base(organization.shortcode) <>
-        "/webhook/flow_resume?" <>
-        "organization_id=#{organization_id}&" <>
-        "flow_id=#{flow_id}&" <>
-        "contact_id=#{contact_id}&" <>
-        "timestamp=#{timestamp}&" <>
-        "signature=#{signature}"
-
-    payload =
-      fields
-      |> Map.merge(signature_payload)
-      |> Map.put("signature", signature)
-      |> Map.put("callback", callback)
-      |> Jason.encode!()
-
-    endpoint
-    |> Tesla.post(
-      payload,
-      headers: headers,
-      opts: [adapter: [recv_timeout: 300_000]]
-    )
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        response = Jason.decode!(body)
-        Map.merge(%{success: true}, response)
-
-      {:ok, %Tesla.Env{status: _status, body: body}} ->
-        %{success: false, response: body}
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
-    end
-  end
 
   # Wraps a webhook entry point body so any failure — predictable
   @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
