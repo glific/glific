@@ -72,6 +72,7 @@ defmodule Glific.Clients.CommonWebhook do
 
       _ ->
         # returns a bare-string failure that routes the flow to the Failure category,
+        # not logging any failure to appsignal because the function is set for deprecation
         "Missing Kaapi API key"
     end
   end

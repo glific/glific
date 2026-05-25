@@ -25,7 +25,7 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
   @kaapi_response "Glific is an open-source, two-way messaging platform designed for nonprofits to scale their outreach via WhatsApp. It helps organizations automate conversations, manage contacts, and measure impact, all in one centralized tool"
 
   describe "Call a webhook for FileSearch-GPT (Kaapi credential handling)" do
-    test "wakeup_one/1 will process all the context for the contact, without a message from upstream",
+    test "wakeup_one/1 resumes a contact's waiting flow context and clears wakeup_at",
          %{organization_id: organization_id} = _attrs do
       # activate kaapi
       enable_kaapi(%{organization_id: organization_id})

@@ -669,12 +669,6 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
-
-    # Webhooks don't consume messages, so if we send a message while a webhook node is running,
-    # the node won't be executed again because it only matches when the message list is empty (`[]`)
-    # filesearch-gpt always routes to the unified API (/api/v1/llm/call).
     Webhook.execute_unified_filesearch(action, context)
   end
 
