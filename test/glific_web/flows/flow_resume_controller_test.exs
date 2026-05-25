@@ -8,6 +8,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook.SystemError,
+    Flows.WebhookLog,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -24,10 +26,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with success response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -106,10 +104,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with failure response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -141,6 +135,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "contact_id" => contact.id,
           "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
           "flow_id" => flow.id,
+          "message" => "Kaapi error: response generation failed",
           "organization_id" => organization_id,
           "signature" => signature,
           "status" => "failure",
@@ -173,15 +168,19 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       message = await_flow_message(contact.id, "failure")
       assert message.body == "failure"
+
+      updated_webhook_log = Repo.get!(WebhookLog, webhook_log.id)
+
+      assert updated_webhook_log.response_json["message"] ==
+               "Kaapi error: response generation failed"
+
+      assert updated_webhook_log.response_json["success"] == false
+      assert updated_webhook_log.response_json["thread_id"] == nil
     end
 
     test "resumes an existing flow on receiving unified API callback format", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
