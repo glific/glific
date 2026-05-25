@@ -2,7 +2,7 @@
 set -euo pipefail
 
 FFMPEG_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-04-30-13-44/ffmpeg-N-124278-gcc3ca17127-linux64-gpl.tar.xz"
-FFMPEG_SHA256="sha256:cd50a631135f90fecd0166c5134e32326825bc6bd11da4bf4ea24d5cb2f79f1f"
+FFMPEG_SHA256="cd50a631135f90fecd0166c5134e32326825bc6bd11da4bf4ea24d5cb2f79f1f"
 INSTALL_DIR="rel/overlays/vendor/ffmpeg"
 
 echo "-----> Installing ffmpeg from BtbN static build (ffmpeg.org recommended source)"
