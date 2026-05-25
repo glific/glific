@@ -853,7 +853,6 @@ defmodule Glific.Clients.CommonWebhook do
       reraise exception, __STACKTRACE__
   end
 
-  # Reports failures to AppSignal and bumps the success/failure counter.
   @spec record_webhook_outcome(any(), String.t(), non_neg_integer() | nil) :: :ok
   defp record_webhook_outcome(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)

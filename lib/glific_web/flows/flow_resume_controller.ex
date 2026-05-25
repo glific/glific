@@ -249,7 +249,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   defp track_kaapi_latency(_response), do: :ok
 
-  # Records the true success/failure of an async webhook node
   @spec track_callback_outcome(map(), map(), non_neg_integer()) :: :ok
   defp track_callback_outcome(result, response, organization_id) do
     status = if result["success"], do: "success", else: "failure"
