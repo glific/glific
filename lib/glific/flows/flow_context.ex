@@ -1170,11 +1170,7 @@ defmodule Glific.Flows.FlowContext do
   defp handle_nil_message(flow, context) do
     maybe_report_timeout(flow, context)
 
-    with true <-
-           FunWithFlags.enabled?(:is_kaapi_enabled,
-             for: %{organization_id: context.organization_id}
-           ),
-         true <- current_node_async_webhook?(flow, context) do
+    if current_node_async_webhook?(flow, context) do
       webhook_log =
         WebhookLog
         |> where([w], w.flow_context_id == ^context.id)
@@ -1188,8 +1184,7 @@ defmodule Glific.Flows.FlowContext do
 
       Messages.create_temp_message(context.organization_id, "Failure")
     else
-      _ ->
-        Messages.create_temp_message(context.organization_id, "No Response")
+      Messages.create_temp_message(context.organization_id, "No Response")
     end
   end
 
