@@ -307,13 +307,53 @@ defmodule GlificWeb.Providers.Kaapi.ActionTest do
 
       assert json_response(conn, 200) == ""
 
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
+      message = await_flow_message(contact.id, @kaapi_response)
       assert message.body == @kaapi_response
+    end
+  end
+
+  @await_flow_message_attempts 50
+  @await_flow_message_interval_ms 100
+
+  defp await_flow_message(contact_id, expected_body) do
+    await_flow_resume_tasks()
+    await_flow_message(contact_id, expected_body, @await_flow_message_attempts)
+  end
+
+  defp await_flow_resume_tasks(attempts \\ 50)
+
+  defp await_flow_resume_tasks(0) do
+    flunk("Timed out waiting for flow resume background task")
+  end
+
+  defp await_flow_resume_tasks(attempts) do
+    case Supervisor.count_children(Glific.TaskSupervisor) do
+      %{active: 0} ->
+        :ok
+
+      _ ->
+        Process.sleep(@await_flow_message_interval_ms)
+        await_flow_resume_tasks(attempts - 1)
+    end
+  end
+
+  defp await_flow_message(contact_id, expected_body, 0) do
+    flunk(
+      "Timed out waiting for message body #{inspect(expected_body)} for contact #{contact_id}"
+    )
+  end
+
+  defp await_flow_message(contact_id, expected_body, attempts) do
+    case Glific.Messages.list_messages(%{
+           filter: %{contact_id: contact_id},
+           opts: %{limit: 1, order: :desc}
+         }) do
+      [%{body: ^expected_body} = message | _] ->
+        message
+
+      _ ->
+        Process.sleep(@await_flow_message_interval_ms)
+        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 
