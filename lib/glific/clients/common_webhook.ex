@@ -54,7 +54,7 @@ defmodule Glific.Clients.CommonWebhook do
     organization = Partners.organization(organization_id)
 
     callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
+      "https://5150-103-91-135-178.ngrok-free.app" <>
         "/webhook/flow_resume"
 
     payload =
@@ -264,21 +264,6 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  def webhook("voice-filesearch-gpt", fields) do
-    with %{
-           success: true,
-           asr_response_text: asr_response_text
-         } <- webhook("speech_to_text_with_bhasini", fields),
-         %{
-           "success" => true,
-           "thread_id" => thread_id,
-           "message" => filesearch_response
-         } <- webhook("filesearch-gpt", Map.put(fields, "question", asr_response_text)) do
-      webhook("nmt_tts_with_bhasini", Map.put(fields, "text", filesearch_response))
-      |> Map.put("thread_id", thread_id)
-    end
-  end
-
   @spec webhook(String.t(), map()) :: any()
   def webhook("parse_via_gpt_vision", fields) do
     url = fields["url"]
@@ -300,27 +285,6 @@ defmodule Glific.Clients.CommonWebhook do
           error
       end
     end)
-  end
-
-  def webhook("filesearch-gpt", fields) do
-    question = fields["question"]
-    thread_id = Map.get(fields, "thread_id", nil)
-    assistant_id = Map.get(fields, "assistant_id", nil)
-    remove_citation = Map.get(fields, "remove_citation", false)
-
-    with {:ok, _assistant_name} <- ChatGPT.retrieve_assistant(assistant_id),
-         {:ok, thread_id} <- ChatGPT.validate_thread_id(thread_id) do
-      params = %{
-        thread_id: thread_id,
-        assistant_id: assistant_id,
-        question: question,
-        remove_citation: remove_citation
-      }
-
-      ChatGPT.handle_conversation(params)
-    else
-      {:error, error} -> error
-    end
   end
 
   def webhook("nmt_tts_with_bhasini", fields) do
