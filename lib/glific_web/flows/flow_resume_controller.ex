@@ -79,34 +79,28 @@ defmodule GlificWeb.Flows.FlowResumeController do
            Repo.fetch_by(Contact, %{
              id: response["contact_id"],
              organization_id: organization.id
-           }) do
-      case FlowContext.resume_contact_flow(
+           }),
+         {:ok, _context, _messages} <-
+           FlowContext.resume_contact_flow(
              contact,
              response["flow_id"],
              %{response_key => response},
              message
            ) do
-        {:ok, _context, _messages} ->
-          :ok
-
-        {:error, reason} ->
-          Logger.warning(
-            "Flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{reason}"
-          )
-      end
+      :ok
     else
       false ->
-        Logger.warning("Flow resume validation failed",
-          organization_id: organization_id,
-          flow_id: response["flow_id"],
-          contact_id: response["contact_id"],
-          webhook_log_id: response["webhook_log_id"],
-          result_name: response["result_name"],
-          timestamp: response["timestamp"]
+        Logger.warning(
+          "Flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
         )
 
-      {:error, reason} ->
+      {:error, reason = [_, "Resource not found"]} ->
         Logger.warning("Flow resume contact lookup failed: #{inspect(reason)}")
+
+      {:error, reason} ->
+        Logger.warning(
+          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{reason}"
+        )
     end
 
     :ok
@@ -228,13 +222,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
       end
     else
       false ->
-        Logger.warning("Voice flow resume validation failed",
-          organization_id: organization_id,
-          flow_id: response["flow_id"],
-          contact_id: response["contact_id"],
-          webhook_log_id: response["webhook_log_id"],
-          result_name: response["result_name"],
-          timestamp: response["timestamp"]
+        Logger.warning(
+          "Voice flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
         )
 
       {:error, reason} ->
@@ -337,7 +326,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   defp missing_callback_fields?(fields) do
     Enum.any?(
       ["organization_id", "flow_id", "contact_id", "timestamp", "signature"],
-      &(is_nil(Map.get(fields, &1)))
+      &is_nil(Map.get(fields, &1))
     )
   end
 
