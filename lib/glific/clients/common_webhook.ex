@@ -71,6 +71,7 @@ defmodule Glific.Clients.CommonWebhook do
         call_responses_and_format(payload, org_api_key)
 
       _ ->
+        # returns a bare-string failure that routes the flow to the Failure category,
         "Missing Kaapi API key"
     end
   end
