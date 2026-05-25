@@ -172,8 +172,9 @@ config :glific, Glific.Erase,
   max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
 
 config :posthog,
+  enable: true,
   api_key: env!("POSTHOG_API_KEY", :string, nil),
-  api_url: env!("POSTHOG_API_URL", :string, "https://app.posthog.com")
+  api_url: env!("POSTHOG_API_URL", :string, "https://us.i.posthog.com")
 
 # Percent of total job metrics to be sent to appsignal
 config :glific,

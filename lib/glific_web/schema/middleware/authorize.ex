@@ -17,7 +17,6 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   def call(resolution, role) do
     with %{roles: roles} <- resolution.context.current_user,
          true <- valid_role?(roles, role) do
-      Glific.PostHog.put_distinct_id(resolution.context.current_user.email)
       resolution
     else
       _ ->

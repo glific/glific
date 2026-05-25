@@ -30,6 +30,9 @@ defmodule GlificWeb.ContextPlug do
       Glific.Repo.put_current_user(current_user)
       Glific.RepoReplica.put_current_user(current_user)
 
+      # Add current user to posthog
+      Glific.PostHog.put_distinct_id(to_string(current_user.id))
+
       if current_user.language,
         do: Gettext.put_locale(current_user.language.locale)
 

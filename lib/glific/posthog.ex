@@ -21,10 +21,12 @@ defmodule Glific.PostHog do
   @spec capture(String.t(), map()) :: :ok
   def capture(event, properties \\ %{}) do
     distinct_id = Process.get(:posthog_distinct_id)
-    api_key = Application.get_env(:posthog, :api_key)
 
-    if distinct_id && api_key do
-      params = Map.put(properties, :distinct_id, distinct_id)
+    params = %{}
+    if distinct_id, do: Map.put(params, :distinct_id, distinct_id)
+
+    api_key = Application.get_env(:posthog, :api_key)
+    if api_key do
       Task.start(fn -> Posthog.capture(event, params) end)
     end
 
