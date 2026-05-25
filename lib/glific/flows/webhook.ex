@@ -90,6 +90,22 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
+  @doc """
+  Increment a counter for a flow-webhook node outcome so success/failure ratios
+  can be computed per webhook node and organization. `status` is "success" or
+  "failure".
+  """
+  @spec track_webhook_count(String.t() | nil, non_neg_integer() | nil, String.t()) :: :ok
+  def track_webhook_count(webhook_name, organization_id, status) do
+    Appsignal.increment_counter("flow_webhook_count", 1, %{
+      webhook_name: webhook_name || "unknown",
+      organization_id: organization_id,
+      status: status
+    })
+
+    :ok
+  end
+
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)

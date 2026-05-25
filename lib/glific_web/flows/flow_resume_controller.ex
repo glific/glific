@@ -63,6 +63,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     track_kaapi_latency(response)
     maybe_report_callback_failure(result, response)
+    track_callback_outcome(result, response, organization_id)
 
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
@@ -150,6 +151,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
       track_kaapi_latency(response)
       maybe_report_callback_failure(result, response)
+      track_callback_outcome(result, response, organization_id)
 
       FlowContext.resume_contact_flow(
         contact,
@@ -246,6 +248,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
   end
 
   defp track_kaapi_latency(_response), do: :ok
+
+  # Records the true success/failure of an async webhook node
+  @spec track_callback_outcome(map(), map(), non_neg_integer()) :: :ok
+  defp track_callback_outcome(result, response, organization_id) do
+    status = if result["success"], do: "success", else: "failure"
+    Webhook.track_webhook_count(response["webhook_name"], organization_id, status)
+  end
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(new_organization_id, fields) do

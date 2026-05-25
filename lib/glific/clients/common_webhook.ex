@@ -835,34 +835,50 @@ defmodule Glific.Clients.CommonWebhook do
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
+  # Webhooks whose real outcome arrives later via a flow_resume callback. Here we
+  # only see the dispatch ack, so their success is counted at the callback
+  # (GlificWeb.Flows.FlowResumeController) to avoid double counting.
+  @async_webhooks ~w(speech_to_text text_to_speech unified-llm-call unified-voice-llm-call)
+
   # Wraps a webhook entry point body so any failure — predictable
   @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
   defp with_failure_reporting(webhook_name, org_id, fun) do
     result = fun.()
-    maybe_report_webhook_failure(result, webhook_name, org_id)
+    record_webhook_outcome(result, webhook_name, org_id)
     result
   rescue
     exception ->
       report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
+      Webhook.track_webhook_count(webhook_name, org_id, "failure")
       reraise exception, __STACKTRACE__
   end
 
-  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer() | nil) :: :ok
-  defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
+  # Reports failures to AppSignal and bumps the success/failure counter.
+  @spec record_webhook_outcome(any(), String.t(), non_neg_integer() | nil) :: :ok
+  defp record_webhook_outcome(%{success: false} = result, webhook_name, org_id) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
+    Webhook.track_webhook_count(webhook_name, org_id, "failure")
   end
 
   # nil / non-map results route to the flow's Failure category (see
   # Glific.Flows.Webhook.handle/3, which keys off is_map). Treat them as
   # failures here too
-  defp maybe_report_webhook_failure(result, webhook_name, org_id)
+  defp record_webhook_outcome(result, webhook_name, org_id)
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: inspect(result)
     report_webhook_failure(webhook_name, org_id, nil, reason)
+    Webhook.track_webhook_count(webhook_name, org_id, "failure")
   end
 
-  defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
+  # Success. For async webhooks this is only the dispatch ack, so we skip it and
+  # let the callback record the real outcome; sync webhooks are terminal here.
+  defp record_webhook_outcome(_result, webhook_name, org_id) do
+    unless webhook_name in @async_webhooks,
+      do: Webhook.track_webhook_count(webhook_name, org_id, "success")
+
+    :ok
+  end
 
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
