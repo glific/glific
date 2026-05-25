@@ -842,6 +842,117 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
     end
+
+    test "flow_resume returns 200 for unexpected callback format (no data/metadata)", %{
+      conn: conn
+    } do
+      conn = post(conn, "/webhook/flow_resume", %{"unexpected" => "format"})
+      assert json_response(conn, 200) == ""
+    end
+
+    test "do_flow_resume logs warning when a required callback field is missing", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      # response is missing the required "signature" field
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => 1,
+        "timestamp" => timestamp
+      }
+
+      assert :ok =
+               FlowResumeController.do_flow_resume(
+                 organization_id,
+                 %{"success" => true},
+                 response
+               )
+    end
+
+    test "do_flow_resume logs warning when contact is not found", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      non_existent_contact_id = 999_999
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => non_existent_contact_id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => non_existent_contact_id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "result_name" => "response"
+      }
+
+      assert :ok =
+               FlowResumeController.do_flow_resume(
+                 organization_id,
+                 %{"success" => true},
+                 response
+               )
+    end
+
+    test "do_flow_resume logs warning when resume_contact_flow returns an error", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      contact = Fixtures.contact_fixture()
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "result_name" => "response"
+      }
+
+      with_mock FlowContext, [:passthrough],
+        resume_contact_flow: fn _contact, _flow_id, _results, _message ->
+          {:error, "flow context not found"}
+        end do
+        assert :ok =
+                 FlowResumeController.do_flow_resume(
+                   organization_id,
+                   %{"success" => true},
+                   response
+                 )
+
+        assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+      end
+    end
+
+    test "run_supervised_task rescues exceptions and returns :ok" do
+      assert :ok =
+               FlowResumeController.run_supervised_task(fn ->
+                 raise "test exception in supervised task"
+               end)
+    end
   end
 
   @await_flow_message_attempts 50
