@@ -558,9 +558,8 @@ defmodule Glific.Flows.Webhook do
   # in the Oban queue wait as well as the HTTP round trip.
   @spec track_sync_metrics(String.t(), String.t(), non_neg_integer(), any()) :: :ok
   defp track_sync_metrics(method, url, webhook_log_id, result) do
-    status = if is_nil(result), do: "failure", else: "success"
+    status = if is_map(result), do: "success", else: "failure"
     name = webhook_name(method, url)
-
     track_webhook_count(name, status)
 
     case Repo.get(WebhookLog, webhook_log_id) do
