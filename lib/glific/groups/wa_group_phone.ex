@@ -31,8 +31,8 @@ defmodule Glific.Groups.WAGroupPhone do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           is_primary: boolean(),
           is_active: boolean(),
-          inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   schema "wa_groups_phones" do
@@ -43,7 +43,7 @@ defmodule Glific.Groups.WAGroupPhone do
     belongs_to :wa_managed_phone, WAManagedPhone
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime_usec)
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

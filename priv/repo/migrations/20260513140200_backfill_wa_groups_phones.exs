@@ -28,7 +28,6 @@ defmodule Glific.Repo.Migrations.BackfillWAGroupsPhones do
       NOW(),
       NOW()
     FROM wa_groups
-    WHERE wa_managed_phone_id IS NOT NULL
     ON CONFLICT (wa_group_id, wa_managed_phone_id) DO NOTHING
     """)
 
@@ -42,9 +41,11 @@ defmodule Glific.Repo.Migrations.BackfillWAGroupsPhones do
   end
 
   def down do
-    # On rollback, drop the rows we inserted. wa_messages.wa_managed_phone_id
-    # cannot be safely reversed (we'd risk clearing values populated by code
-    # after Phase 1), so we leave those alone.
-    execute("DELETE FROM wa_groups_phones")
+    # No-op. Backfilled rows can't be safely separated from rows created
+    # post-migration, and wa_messages.wa_managed_phone_id may have been
+    # populated independently by subsequent code paths. A full unwind comes
+    # from rolling back the schema migration (add_wa_groups_phones), which
+    # drops the table outright.
+    :ok
   end
 end

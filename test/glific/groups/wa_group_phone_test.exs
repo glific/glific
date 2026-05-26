@@ -245,8 +245,7 @@ defmodule Glific.Groups.WAGroupPhoneTest do
         )
         SELECT id, wa_managed_phone_id, organization_id, TRUE, TRUE, NOW(), NOW()
         FROM wa_groups
-        WHERE wa_managed_phone_id IS NOT NULL
-          AND organization_id = $1
+        WHERE organization_id = $1
         ON CONFLICT (wa_group_id, wa_managed_phone_id) DO NOTHING
         """,
         [org_id]
@@ -306,8 +305,7 @@ defmodule Glific.Groups.WAGroupPhoneTest do
           )
           SELECT id, wa_managed_phone_id, organization_id, TRUE, TRUE, NOW(), NOW()
           FROM wa_groups
-          WHERE wa_managed_phone_id IS NOT NULL
-            AND organization_id = $1
+          WHERE organization_id = $1
           ON CONFLICT (wa_group_id, wa_managed_phone_id) DO NOTHING
           """,
           [org_id]

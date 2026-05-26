@@ -25,7 +25,7 @@ defmodule Glific.Repo.Migrations.AddWAGroupsPhones do
         default: true,
         comment: "False when the phone is no longer a member of the group on WhatsApp"
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:wa_groups_phones, [:wa_group_id, :wa_managed_phone_id])
