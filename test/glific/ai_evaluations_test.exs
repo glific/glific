@@ -4,8 +4,6 @@ defmodule Glific.AIEvaluationsTest do
 
   import Ecto.Query
 
-  import Swoosh.TestAssertions
-
   alias Glific.{
     AIEvaluations,
     AIEvaluations.AIEvaluation,
@@ -13,7 +11,6 @@ defmodule Glific.AIEvaluationsTest do
     AIEvaluations.OrganizationEvalRequest,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
-    Communications.Mailer,
     Notifications,
     Notifications.Notification,
     Partners,
@@ -387,24 +384,42 @@ defmodule Glific.AIEvaluationsTest do
                AIEvaluations.request_eval_access(organization_id)
     end
 
-    test "sends email to glific support on new request", %{organization_id: organization_id} do
+    test "sends Discord notification on new request", %{organization_id: organization_id} do
+      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
+      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        send(test_pid, {:discord_called, env.body})
+        %Tesla.Env{status: 200, body: ""}
+      end)
+
       AIEvaluations.request_eval_access(organization_id)
 
-      assert_email_sent(fn email ->
-        email.subject =~ "AI Evaluations Access Request" and
-          email.to == [Mailer.glific_support()]
-      end)
+      assert_received {:discord_called, body}
+      decoded = Jason.decode!(body)
+      assert decoded["content"] =~ "AI Evaluations Access Request"
     end
 
-    test "returns existing request and does not send email when request already exists", %{
-      organization_id: organization_id
-    } do
+    test "returns existing request and does not send Discord notification when request already exists",
+         %{organization_id: organization_id} do
+      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
+      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
+
+      test_pid = self()
+
+      Tesla.Mock.mock(fn %{method: :post} = env ->
+        send(test_pid, {:discord_called, env.body})
+        %Tesla.Env{status: 200, body: ""}
+      end)
+
       {:ok, first} = AIEvaluations.request_eval_access(organization_id)
       {:ok, second} = AIEvaluations.request_eval_access(organization_id)
 
       assert first.id == second.id
-      assert_email_sent(subject: ~r/AI Evaluations Access Request/)
-      refute_email_sent(subject: ~r/AI Evaluations Access Request/)
+      assert_received {:discord_called, _}
+      refute_received {:discord_called, _}
     end
   end
 

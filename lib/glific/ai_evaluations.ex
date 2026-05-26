@@ -255,7 +255,8 @@ defmodule Glific.AIEvaluations do
           |> Repo.insert()
 
         with {:ok, _} <- result,
-             %Glific.Partners.Organization{} = organization <- Partners.organization(organization_id) do
+             %Glific.Partners.Organization{} = organization <-
+               Partners.organization(organization_id) do
           message = """
           **AI Evaluations Access Request**
 
@@ -272,6 +273,14 @@ defmodule Glific.AIEvaluations do
           """
 
           Discord.post_message(message)
+        else
+          {:error, _} ->
+            :ok
+
+          other ->
+            Glific.log_error(
+              "Failed to notify Discord for AI Evaluations access request: could not load organization #{organization_id}, got #{safe_inspect(other)}"
+            )
         end
 
         result

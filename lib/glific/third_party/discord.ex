@@ -18,9 +18,7 @@ defmodule Glific.ThirdParty.Discord do
     else
       body = Jason.encode!(%{content: content})
 
-      case Tesla.post(webhook_url, body,
-             headers: [{"content-type", "application/json"}]
-           ) do
+      case Tesla.post(webhook_url, body, headers: [{"content-type", "application/json"}]) do
         {:ok, %Tesla.Env{status: status}} when status in 200..204 ->
           :ok
 
