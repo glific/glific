@@ -329,98 +329,116 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
+  # Failures return a bare string (not %{success: false}) so the flow routes to
+  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("geolocation", fields) do
     lat = fields["lat"]
     long = fields["long"]
+    org_id = parse_org_id(fields)
     api_key = Glific.get_google_maps_api_key()
 
     url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
 
-    Tesla.get(url)
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        %{"results" => results} = Jason.decode!(body)
+    with_failure_reporting("geolocation", org_id, fn ->
+      Tesla.get(url)
+      |> case do
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          %{"results" => results} = Jason.decode!(body)
 
-        Glific.Metrics.increment("Geolocation API Success")
+          Glific.Metrics.increment("Geolocation API Success")
 
-        case results do
-          [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
-            city = find_component(components, "locality")
-            state = find_component(components, "administrative_area_level_1")
-            country = find_component(components, "country")
-            postal_code = find_component(components, "postal_code")
-            district = find_component(components, "administrative_area_level_3")
+          case results do
+            [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
+              city = find_component(components, "locality")
+              state = find_component(components, "administrative_area_level_1")
+              country = find_component(components, "country")
+              postal_code = find_component(components, "postal_code")
+              district = find_component(components, "administrative_area_level_3")
 
-            %{
-              success: true,
-              city: city,
-              state: state,
-              country: country,
-              postal_code: postal_code,
-              district: district,
-              address: formatted_address
-            }
+              %{
+                success: true,
+                city: city,
+                state: state,
+                country: country,
+                postal_code: postal_code,
+                district: district,
+                address: formatted_address
+              }
 
-          _ ->
-            %{success: false, error: "No results found"}
-        end
+            _ ->
+              Glific.Metrics.increment("Geolocation API Failure")
+              "No results found"
+          end
 
-      {:ok, %Tesla.Env{status: status_code}} ->
-        Glific.Metrics.increment("Geolocation API Failure")
-        %{success: false, error: "Received status code #{status_code}"}
+        {:ok, %Tesla.Env{status: status_code}} ->
+          Glific.Metrics.increment("Geolocation API Failure")
+          "Received status code #{status_code}"
 
-      {:error, reason} ->
-        Glific.Metrics.increment("Geolocation API Failure")
-        %{success: false, error: "HTTP request failed: #{reason}"}
-    end
+        {:error, reason} ->
+          Glific.Metrics.increment("Geolocation API Failure")
+          "HTTP request failed: #{inspect(reason)}"
+      end
+    end)
   end
 
   # webhook for sending whatsapp group polls in a flow
+  # Failures return a bare string (not %{success: false}) so the flow routes to
+  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("send_wa_group_poll", fields) do
-    with {:ok, fields} <- parse_wa_poll_params(fields),
-         {:ok, wa_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{
-             id: fields.wa_group["wa_managed_phone_id"],
-             organization_id: fields.organization_id
-           }),
-         {:ok, wa_group} <-
-           Repo.fetch_by(WAGroup, %{
-             id: fields.wa_group["id"],
-             organization_id: fields.organization_id
-           }),
-         {:ok, wa_poll} <-
-           Repo.fetch_by(WaPoll, %{
-             uuid: fields.poll_uuid,
-             organization_id: fields.organization_id
-           }),
-         {:ok, wa_message} <-
-           Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
-      %{success: true, poll: wa_message.poll_content}
-    else
-      {:error, reason} when is_binary(reason) ->
-        %{success: false, error: "#{reason}"}
+    org_id = parse_org_id(fields)
 
-      {:error, reason} ->
-        %{success: false, error: "#{inspect(reason)}"}
-    end
+    with_failure_reporting("send_wa_group_poll", org_id, fn ->
+      with {:ok, fields} <- parse_wa_poll_params(fields),
+           {:ok, wa_phone} <-
+             Repo.fetch_by(WAManagedPhone, %{
+               id: fields.wa_group["wa_managed_phone_id"],
+               organization_id: fields.organization_id
+             }),
+           {:ok, wa_group} <-
+             Repo.fetch_by(WAGroup, %{
+               id: fields.wa_group["id"],
+               organization_id: fields.organization_id
+             }),
+           {:ok, wa_poll} <-
+             Repo.fetch_by(WaPoll, %{
+               uuid: fields.poll_uuid,
+               organization_id: fields.organization_id
+             }),
+           {:ok, wa_message} <-
+             Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+        %{success: true, poll: wa_message.poll_content}
+      else
+        {:error, reason} when is_binary(reason) ->
+          reason
+
+        {:error, reason} ->
+          inspect(reason)
+      end
+    end)
   end
 
+  # Failures return a bare string (not %{success: false}) so the flow routes to
+  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("create_certificate", fields) do
-    with {:ok, parsed_fields} <- parse_certificate_params(fields),
-         {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
-         {:ok, slide_details} <-
-           Slide.parse_slides_url(certificate_template.url) do
-      Certificate.generate_certificate(
-        parsed_fields,
-        parsed_fields.contact["id"],
-        slide_details.presentation_id,
-        slide_details.page_id
-      )
-    else
-      {:error, reason} ->
-        Logger.error("Error in certificate creation webhook: #{reason}")
-        %{success: false, error: reason}
-    end
+    org_id = parse_org_id(fields)
+
+    with_failure_reporting("create_certificate", org_id, fn ->
+      with {:ok, parsed_fields} <- parse_certificate_params(fields),
+           {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
+           {:ok, slide_details} <-
+             Slide.parse_slides_url(certificate_template.url) do
+        Certificate.generate_certificate(
+          parsed_fields,
+          parsed_fields.contact["id"],
+          slide_details.presentation_id,
+          slide_details.page_id
+        )
+      else
+        {:error, reason} ->
+          Logger.error("Error in certificate creation webhook: #{reason}")
+          reason
+      end
+    end)
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
