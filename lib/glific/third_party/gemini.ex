@@ -46,7 +46,7 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, error: "Failed to fetch audio"}
 
   """
-  @spec speech_to_text(String.t(), non_neg_integer()) :: map()
+  @spec speech_to_text(String.t(), non_neg_integer()) :: map() | String.t()
   def speech_to_text(audio_url, organization_id) do
     with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
          %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do

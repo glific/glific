@@ -1528,7 +1528,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
 
-  test "execute voice-filesearch-gpt action with unified_api_enabled routes to unified voice webhook",
+  test "execute voice-filesearch-gpt action routes to unified voice webhook",
        attrs do
     Partners.organization(attrs.organization_id)
 
