@@ -109,6 +109,30 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
+  @doc """
+  Records end-to-end latency for a webhook node execution as an AppSignal
+  distribution (so p50/p95/p99 can be charted). Generic across all node types
+  """
+  @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
+  def track_webhook_latency(webhook_name, status, duration_ms) do
+    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
+  @spec webhook_name(String.t(), String.t()) :: String.t()
+  defp webhook_name("function", function), do: function
+
+  defp webhook_name(_method, url) do
+    case URI.parse(url) do
+      %URI{host: host} when is_binary(host) -> host
+      _ -> "unknown"
+    end
+  end
+
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
@@ -522,7 +546,31 @@ defmodule Glific.Flows.Webhook do
           nil
       end
 
+    track_sync_metrics(method, url, webhook_log_id, result)
+
     handle(result, context, result_name)
+  end
+
+  # Emits the generic count + latency metrics for a sync webhook node. A nil
+  # result means the node did not get a usable response (non-2xx, undecodable
+  # body, or transport error) and counts as a failure. Latency is measured from
+  # node entry (webhook_log.inserted_at, set in create_log) to now, so it folds
+  # in the Oban queue wait as well as the HTTP round trip.
+  @spec track_sync_metrics(String.t(), String.t(), non_neg_integer(), any()) :: :ok
+  defp track_sync_metrics(method, url, webhook_log_id, result) do
+    status = if is_nil(result), do: "failure", else: "success"
+    name = webhook_name(method, url)
+
+    track_webhook_count(name, status)
+
+    case Repo.get(WebhookLog, webhook_log_id) do
+      %WebhookLog{inserted_at: inserted_at} ->
+        duration_ms = DateTime.diff(DateTime.utc_now(), inserted_at, :millisecond)
+        track_webhook_latency(name, status, duration_ms)
+
+      _ ->
+        :ok
+    end
   end
 
   @spec handle(String.t(), map(), String.t()) :: :ok

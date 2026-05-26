@@ -71,8 +71,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
           nil
       end
 
-    track_kaapi_latency(response)
-    maybe_report_callback_failure(result, response)
     track_callback_outcome(result, response)
 
     with true <- validate_request(organization_id, response),
@@ -202,8 +200,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
       if response["webhook_log_id"],
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
-      track_kaapi_latency(response)
-      maybe_report_callback_failure(result, response)
       track_callback_outcome(result, response)
 
       case FlowContext.resume_contact_flow(
@@ -299,24 +295,40 @@ defmodule GlificWeb.Flows.FlowResumeController do
     end
   end
 
-  @spec track_kaapi_latency(map()) :: :ok
-  defp track_kaapi_latency(%{"timestamp" => timestamp, "call_type" => call_type})
-       when is_integer(timestamp) do
-    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-    duration_ms = (now - timestamp) / 1_000
-
-    Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
-      call_type: call_type
-    })
-  end
-
-  defp track_kaapi_latency(_response), do: :ok
-
   @spec track_callback_outcome(map(), map()) :: :ok
   defp track_callback_outcome(result, response) do
     status = if result["success"], do: "success", else: "failure"
     Webhook.track_webhook_count(response["webhook_name"], status)
+    track_kaapi_latency(response, status)
+    maybe_report_callback_failure(result, response)
   end
+
+  # Records latency for an async webhook callback. Emits the kaapi-specific
+  # `kaapi_llm_latency` (by call_type) when a call_type is present, plus the
+  # generic `flow_webhook_latency` (by webhook_name + status) shared with sync
+  # nodes. `timestamp` is the (microsecond) request-initiation time threaded
+  # through the callback, so a callback that arrives after the flow already
+  # timed out still records its real, uncapped latency (tagged "failure").
+  @spec track_kaapi_latency(map(), String.t()) :: :ok
+  defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
+       when is_integer(timestamp) do
+    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    duration_ms = (now - timestamp) / 1_000
+
+    case response["call_type"] do
+      nil ->
+        :ok
+
+      call_type ->
+        Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
+          call_type: call_type
+        })
+    end
+
+    Webhook.track_webhook_latency(response["webhook_name"], status, duration_ms)
+  end
+
+  defp track_kaapi_latency(_response, _status), do: :ok
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(_new_organization_id, fields) when map_size(fields) == 0,
