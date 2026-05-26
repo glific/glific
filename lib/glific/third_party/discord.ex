@@ -3,7 +3,7 @@ defmodule Glific.ThirdParty.Discord do
   Sends notifications to a Discord channel via an incoming webhook URL.
   """
 
-  require Logger
+  import Glific.SafeLog
 
   @doc """
   Posts a plain-text message to the configured Discord webhook channel.
@@ -13,7 +13,7 @@ defmodule Glific.ThirdParty.Discord do
     webhook_url = Application.get_env(:glific, :discord_webhook_url)
 
     if is_nil(webhook_url) or webhook_url == "" do
-      Logger.warning("Discord webhook URL not configured; skipping Discord notification")
+      Glific.log_error("Discord webhook URL not configured; skipping Discord notification", false)
       :ok
     else
       body = Jason.encode!(%{content: content})
@@ -23,11 +23,11 @@ defmodule Glific.ThirdParty.Discord do
           :ok
 
         {:ok, %Tesla.Env{status: status, body: resp_body}} ->
-          Logger.error("Discord webhook failed: status=#{status}, body=#{inspect(resp_body)}")
+          Glific.log_error("Discord webhook failed: status=#{status}, body=#{safe_inspect(resp_body)}")
           {:error, "Discord webhook returned #{status}"}
 
         {:error, reason} ->
-          Logger.error("Discord webhook request error: #{inspect(reason)}")
+          Glific.log_error("Discord webhook request error: #{safe_inspect(reason)}")
           {:error, "Discord webhook request failed"}
       end
     end
