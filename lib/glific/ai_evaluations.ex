@@ -11,11 +11,11 @@ defmodule Glific.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
-    Mails.EvalAccessRequestMail,
     Metrics,
     Notifications,
     Partners,
     Repo,
+    ThirdParty.Discord,
     ThirdParty.Kaapi
   }
 
@@ -254,10 +254,24 @@ defmodule Glific.AIEvaluations do
           |> OrganizationEvalRequest.changeset(%{organization_id: organization_id})
           |> Repo.insert()
 
-        with {:ok, _} <- result do
-          organization_id
-          |> Partners.organization()
-          |> EvalAccessRequestMail.send_eval_access_request_mail()
+        with {:ok, _} <- result,
+             %Glific.Partners.Organization{} = organization <- Partners.organization(organization_id) do
+          message = """
+          **AI Evaluations Access Request**
+
+          An organization has requested access to the AI Evaluations feature.
+
+          **Name:** #{organization.name}
+          **Shortcode:** #{organization.shortcode}
+          **Email:** #{organization.email}
+          **Login URL:** https://#{organization.shortcode}.#{Glific.base_domain()}
+
+          Please review and enable the AI Evaluations feature flag for this organization.
+
+          @Glific Developers
+          """
+
+          Discord.post_message(message)
         end
 
         result
