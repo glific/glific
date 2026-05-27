@@ -14,12 +14,17 @@ defmodule Glific.BigQueryTest do
     Seeds.SeedsDev
   }
 
+  alias GoogleApi.BigQuery.V2.Connection
+
   setup_with_mocks([
     {
       Goth.Token,
       [:passthrough],
       [
         for_scope: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end,
+        fetch: fn _source ->
           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
         end
       ]
@@ -47,6 +52,7 @@ defmodule Glific.BigQueryTest do
       organization_id: organization.id
     }
 
+    Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
     {:ok, _credential} = Partners.create_credential(valid_attrs)
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_messages()
@@ -461,6 +467,133 @@ defmodule Glific.BigQueryTest do
         |> Repo.one()
 
       assert job_after.table_id != initial_table_id
+    end
+  end
+
+  describe "validate_bigquery_permissions/2" do
+    setup do
+      conn = Connection.new("0xFAKETOKEN_Q=")
+      {:ok, conn: conn}
+    end
+
+    test "returns {:ok, :valid} when all validation steps succeed", %{conn: conn} do
+      Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
+
+      assert {:ok, :valid} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+    end
+
+    test "returns error when create dataset is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :post && String.contains?(url, "/datasets") ->
+            %Tesla.Env{
+              status: 403,
+              body: ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          # cleanup delete dataset call
+          method == :delete ->
+            %Tesla.Env{status: 200, body: "{}"}
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.datasets.create"
+    end
+
+    test "returns error when create table is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :post && String.contains?(url, "/tables") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          method == :delete ->
+            %Tesla.Env{status: 200, body: "{}"}
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.tables.create"
+    end
+
+    test "returns error when insert rows is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :post && String.contains?(url, "/insertAll") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          method == :delete ->
+            %Tesla.Env{status: 200, body: "{}"}
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.tables.updateData"
+    end
+
+    test "returns error when update table schema is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :put && String.contains?(url, "/tables/") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          method == :delete ->
+            %Tesla.Env{status: 200, body: "{}"}
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.tables.update"
+    end
+
+    test "cleans up temp dataset even when a step fails", %{conn: conn} do
+      delete_calls = :counters.new(1, [])
+
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :delete ->
+            :counters.add(delete_calls, 1, 1)
+            %Tesla.Env{status: 200, body: "{}"}
+
+          method == :post && String.contains?(url, "/insertAll") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, _} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      # cleanup_validation_dataset should have been called
+      assert :counters.get(delete_calls, 1) >= 1
     end
   end
 end

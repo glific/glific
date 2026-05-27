@@ -11,6 +11,8 @@ defmodule Glific.Partners do
 
   alias __MODULE__
 
+  alias GoogleApi.BigQuery.V2.Connection, as: BigQueryConnection
+
   alias Glific.{
     BigQuery,
     Caches,
@@ -919,9 +921,11 @@ defmodule Glific.Partners do
         remove_organization_cache(organization.id, organization.shortcode)
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
-        %Credential{}
-        |> Credential.changeset(attrs)
-        |> Repo.insert()
+        with :ok <- validate_credential_permissions(attrs[:shortcode], attrs) do
+          %Credential{}
+          |> Credential.changeset(attrs)
+          |> Repo.insert()
+        end
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
@@ -971,36 +975,55 @@ defmodule Glific.Partners do
 
     remove_organization_cache(organization.id, organization.shortcode)
 
-    {:ok, credential} =
-      credential
-      |> Credential.changeset(attrs)
-      |> Repo.update()
+    credential = Repo.preload(credential, [:provider])
 
-    credential = credential |> Repo.preload([:provider, :organization])
+    with :ok <- validate_credential_permissions(credential.provider.shortcode, attrs) do
+      {:ok, credential} =
+        credential
+        |> Credential.changeset(attrs)
+        |> Repo.update()
 
-    credential.organization
-    |> credential_update_callback(credential, credential.provider.shortcode)
-  end
+      credential = credential |> Repo.preload([:provider, :organization])
 
-  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
-          {:ok, any} | {:error, any}
-  defp credential_update_callback(organization, credential, "bigquery") do
-    Caches.remove(organization.id, [{:provider_token, "bigquery"}])
-
-    case BigQuery.sync_schema_with_bigquery(organization.id) do
-      {:ok, _callback} ->
-        {:ok, credential}
-
-      {:error, error} ->
-        Partners.disable_credential(
-          organization.id,
-          "bigquery",
-          error
-        )
-
-        {:error, error}
+      credential.organization
+      |> credential_update_callback(credential, credential.provider.shortcode)
     end
   end
+
+  # Validates permissions for a credential before saving to the DB.
+  # Only runs the dry-run check for bigquery credentials that include new secrets.
+  @spec validate_credential_permissions(String.t() | nil, map()) :: :ok | {:error, String.t()}
+  defp validate_credential_permissions("bigquery", attrs) do
+    secrets = attrs[:secrets] || attrs["secrets"] || %{}
+    service_account_json = secrets["service_account"]
+
+    if !is_binary(service_account_json) || service_account_json == "" do
+      :ok
+    else
+      case Jason.decode(service_account_json) do
+        {:ok, service_account} ->
+          project_id = service_account["project_id"]
+
+          case fetch_goth_token_from_credentials(service_account) do
+            {:ok, token} ->
+              conn = BigQueryConnection.new(token.token)
+
+              case BigQuery.validate_bigquery_permissions(conn, project_id) do
+                {:ok, :valid} -> :ok
+                {:error, reason} -> {:error, reason}
+              end
+
+            {:error, reason} ->
+              {:error, "Error fetching token from service account: #{inspect(reason)}"}
+          end
+
+        {:error, _} ->
+          {:error, "Invalid service account JSON"}
+      end
+    end
+  end
+
+  defp validate_credential_permissions(_shortcode, _attrs), do: :ok
 
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
     with true <- credential.is_active,
@@ -1180,7 +1203,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
+      fetch_goth_token_from_credentials(credentials, goth_opts)
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
@@ -1196,6 +1219,14 @@ defmodule Glific.Partners do
           {:ignore, nil}
       end
     end
+  end
+
+  # Fetches a Goth token directly from a decoded service account credential map.
+  # Shared by load_goth_token (cached path) and validate_credential_permissions (pre-save validation).
+  @spec fetch_goth_token_from_credentials(map(), Keyword.t()) ::
+          {:ok, Goth.Token.t()} | {:error, any()}
+  defp fetch_goth_token_from_credentials(credentials, opts \\ []) do
+    Goth.Token.fetch(source: {:service_account, credentials, opts})
   end
 
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil

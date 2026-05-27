@@ -443,6 +443,161 @@ defmodule Glific.BigQuery do
     end
   end
 
+  @doc """
+  Validates that the service account has all permissions required for BigQuery sync
+  by performing a dry-run sequence of real API calls against a temporary dataset,
+  then cleaning up.
+
+  Steps:
+    1. Create a temp dataset
+    2. Create a test table
+    3. Insert a test row
+    4. Update the table schema
+    5. Delete the test table
+    6. Delete the temp dataset
+
+  Returns {:ok, :valid} if all operations succeed, or {:error, message} indicating
+  which operation failed and what permission is missing.
+  """
+  @spec validate_bigquery_permissions(Tesla.Client.t(), String.t()) ::
+          {:ok, :valid} | {:error, String.t()}
+  def validate_bigquery_permissions(conn, project_id) do
+    temp_dataset_id = "glific_permission_test_#{System.system_time(:second)}"
+    temp_table_id = "glific_test_table"
+
+    with {:ok, _} <- do_validate_create_dataset(conn, project_id, temp_dataset_id),
+         {:ok, _} <- do_validate_create_table(conn, project_id, temp_dataset_id, temp_table_id),
+         {:ok, _} <-
+           do_validate_insert_rows(conn, project_id, temp_dataset_id, temp_table_id),
+         {:ok, _} <-
+           do_validate_update_table(conn, project_id, temp_dataset_id, temp_table_id),
+         {:ok, _} <-
+           do_validate_delete_table(conn, project_id, temp_dataset_id, temp_table_id),
+         {:ok, _} <- do_validate_delete_dataset(conn, project_id, temp_dataset_id) do
+      {:ok, :valid}
+    else
+      {:error, reason} ->
+        cleanup_validation_dataset(conn, project_id, temp_dataset_id)
+        {:error, reason}
+    end
+  end
+
+  @spec do_validate_create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_create_dataset(conn, project_id, dataset_id) do
+    Datasets.bigquery_datasets_insert(
+      conn,
+      project_id,
+      [body: %{datasetReference: %{datasetId: dataset_id, projectId: project_id}}],
+      []
+    )
+    |> handle_validation_response("create dataset (bigquery.datasets.create)")
+  end
+
+  @spec do_validate_create_table(Tesla.Client.t(), String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_create_table(conn, project_id, dataset_id, table_id) do
+    Tables.bigquery_tables_insert(
+      conn,
+      project_id,
+      dataset_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{fields: [%{name: "test_field", type: "STRING", mode: "NULLABLE"}]}
+        }
+      ],
+      []
+    )
+    |> handle_validation_response("create table (bigquery.tables.create)")
+  end
+
+  @spec do_validate_insert_rows(Tesla.Client.t(), String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_insert_rows(conn, project_id, dataset_id, table_id) do
+    Tabledata.bigquery_tabledata_insert_all(
+      conn,
+      project_id,
+      dataset_id,
+      table_id,
+      [body: %{rows: [%{insertId: "test_row_1", json: %{test_field: "hello"}}]}],
+      []
+    )
+    |> handle_validation_response("insert rows (bigquery.tables.updateData)")
+  end
+
+  @spec do_validate_update_table(Tesla.Client.t(), String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_update_table(conn, project_id, dataset_id, table_id) do
+    Tables.bigquery_tables_update(
+      conn,
+      project_id,
+      dataset_id,
+      table_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{
+            fields: [
+              %{name: "test_field", type: "STRING", mode: "NULLABLE"},
+              %{name: "test_field_2", type: "INTEGER", mode: "NULLABLE"}
+            ]
+          }
+        }
+      ],
+      []
+    )
+    |> handle_validation_response("update table schema (bigquery.tables.update)")
+  end
+
+  @spec do_validate_delete_table(Tesla.Client.t(), String.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_delete_table(conn, project_id, dataset_id, table_id) do
+    Tables.bigquery_tables_delete(conn, project_id, dataset_id, table_id, [])
+    |> handle_validation_response("delete table (bigquery.tables.delete)")
+  end
+
+  @spec do_validate_delete_dataset(Tesla.Client.t(), String.t(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp do_validate_delete_dataset(conn, project_id, dataset_id) do
+    Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true)
+    |> handle_validation_response("delete dataset (bigquery.datasets.delete)")
+  end
+
+  @spec handle_validation_response(tuple(), String.t()) ::
+          {:ok, any()} | {:error, String.t()}
+  defp handle_validation_response({:ok, response}, _operation), do: {:ok, response}
+
+  defp handle_validation_response({:error, response}, operation) do
+    case Jason.decode(response.body) do
+      {:ok, %{"error" => %{"status" => "PERMISSION_DENIED"}}} ->
+        {:error,
+         "Service account does not have permission to #{operation}. " <>
+           "Please ensure the service account has the BigQuery Data Editor and BigQuery Job User roles. " <>
+           "See: https://glific.github.io/docs/docs/Product%20Features/Others/Bigquery/"}
+
+      {:ok, %{"error" => %{"code" => code, "status" => status}}} ->
+        {:error, "BigQuery validation failed at #{operation} with error #{code}: #{status}"}
+
+      _ ->
+        {:error, "BigQuery validation failed at #{operation}: #{inspect(response)}"}
+    end
+  end
+
+  @spec cleanup_validation_dataset(Tesla.Client.t(), String.t(), String.t()) :: :ok
+  defp cleanup_validation_dataset(conn, project_id, dataset_id) do
+    Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true)
+    :ok
+  end
+
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_dataset(conn, project_id, dataset_id) do
