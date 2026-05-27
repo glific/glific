@@ -491,10 +491,6 @@ defmodule Glific.BigQueryTest do
               body: ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
             }
 
-          # cleanup delete dataset call
-          method == :delete ->
-            %Tesla.Env{status: 200, body: "{}"}
-
           true ->
             %Tesla.Env{status: 200, body: "{}"}
         end
@@ -568,6 +564,44 @@ defmodule Glific.BigQueryTest do
 
       assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
       assert error =~ "bigquery.tables.update"
+    end
+
+    test "returns error when delete table is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :delete && String.contains?(url, "/tables/") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.tables.delete"
+    end
+
+    test "returns error when delete dataset is denied", %{conn: conn} do
+      Tesla.Mock.mock(fn %{method: method, url: url} ->
+        cond do
+          method == :delete && !String.contains?(url, "/tables/") ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+
+          true ->
+            %Tesla.Env{status: 200, body: "{}"}
+        end
+      end)
+
+      assert {:error, error} = BigQuery.validate_bigquery_permissions(conn, "test_project")
+      assert error =~ "bigquery.datasets.delete"
     end
 
     test "cleans up temp dataset even when a step fails", %{conn: conn} do
