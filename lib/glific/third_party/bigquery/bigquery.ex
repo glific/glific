@@ -6,7 +6,8 @@ defmodule Glific.BigQuery do
   require Logger
   use Publicist
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
+  import Glific.SafeLog
 
   alias Glific.{
     BigQuery.BigQueryJob,
@@ -576,8 +577,8 @@ defmodule Glific.BigQuery do
           {:ok, any()} | {:error, String.t()}
   defp handle_validation_response({:ok, response}, _operation), do: {:ok, response}
 
-  defp handle_validation_response({:error, response}, operation) do
-    case Jason.decode(response.body) do
+  defp handle_validation_response({:error, %{body: body}}, operation) when is_binary(body) do
+    case Jason.decode(body) do
       {:ok, %{"error" => %{"status" => "PERMISSION_DENIED"}}} ->
         {:error,
          "Service account does not have permission to #{operation}. " <>
@@ -588,8 +589,12 @@ defmodule Glific.BigQuery do
         {:error, "BigQuery validation failed at #{operation} with error #{code}: #{status}"}
 
       _ ->
-        {:error, "BigQuery validation failed at #{operation}: #{inspect(response)}"}
+        {:error, "BigQuery validation failed at #{operation}: #{body}"}
     end
+  end
+
+  defp handle_validation_response({:error, reason}, operation) do
+    {:error, "BigQuery validation failed at #{operation}: #{safe_inspect(reason)}"}
   end
 
   @spec cleanup_validation_dataset(Tesla.Client.t(), String.t(), String.t()) :: :ok
