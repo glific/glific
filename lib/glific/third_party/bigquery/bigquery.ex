@@ -623,8 +623,17 @@ defmodule Glific.BigQuery do
 
   @spec cleanup_validation_dataset(Tesla.Client.t(), String.t(), String.t()) :: :ok
   defp cleanup_validation_dataset(conn, project_id, dataset_id) do
-    Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true)
-    :ok
+    case Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true) do
+      {:ok, _} ->
+        :ok
+
+      {:error, err} ->
+        Logger.warning(
+          "Failed to cleanup BQ validation dataset #{dataset_id} in project #{project_id}: #{safe_inspect(err)}"
+        )
+
+        :ok
+    end
   end
 
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
