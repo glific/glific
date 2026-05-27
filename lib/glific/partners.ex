@@ -1023,6 +1023,21 @@ defmodule Glific.Partners do
 
   defp validate_credential_permissions(_shortcode, _attrs), do: :ok
 
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
+          {:ok, any} | {:error, any}
+  defp credential_update_callback(organization, credential, "bigquery") do
+    Caches.remove(organization.id, [{:provider_token, "bigquery"}])
+
+    case BigQuery.sync_schema_with_bigquery(organization.id) do
+      {:ok, _callback} ->
+        {:ok, credential}
+
+      {:error, error} ->
+        Partners.disable_credential(organization.id, "bigquery", error)
+        {:error, error}
+    end
+  end
+
   defp credential_update_callback(organization, credential, "google_cloud_storage") do
     with true <- credential.is_active,
          {:ok, _} <- GCS.refresh_gcs_setup(organization.id),
