@@ -487,8 +487,7 @@ defmodule Glific.BigQuery do
   @spec validate_bigquery_permissions(Tesla.Client.t(), String.t()) ::
           {:ok, :valid} | {:error, String.t()}
   def validate_bigquery_permissions(conn, project_id) do
-    temp_dataset_id =
-      "glific_permission_test_#{:erlang.phash2(node())}_#{System.unique_integer([:positive, :monotonic])}"
+    temp_dataset_id = "glific_permission_test_#{System.unique_integer([:positive, :monotonic])}"
     temp_table_id = "glific_test_table"
 
     with {:ok, _} <- do_validate_create_dataset(conn, project_id, temp_dataset_id),
