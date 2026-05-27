@@ -11,7 +11,6 @@ defmodule Glific.Partners do
 
   alias __MODULE__
 
-
   alias Glific.{
     BigQuery,
     Caches,
@@ -991,26 +990,28 @@ defmodule Glific.Partners do
   # Only runs the dry-run check for bigquery credentials that include new secrets.
   @spec validate_credential_permissions(String.t() | nil, map()) :: :ok | {:error, String.t()}
   defp validate_credential_permissions("bigquery", attrs) do
-    secrets = attrs[:secrets] || attrs["secrets"] || %{}
-    service_account_json = secrets["service_account"]
+    secrets = Map.get(attrs, :secrets) || Map.get(attrs, "secrets") || %{}
+    service_account_json = Map.get(secrets, "service_account")
 
-    if !is_binary(service_account_json) || service_account_json == "" do
-      :ok
+    if is_binary(service_account_json) && service_account_json != "" do
+      do_validate_bigquery_service_account(service_account_json)
     else
-      case Jason.decode(service_account_json) do
-        {:ok, service_account} ->
-          case BigQuery.validate_bigquery_credentials(service_account) do
-            {:ok, :valid} -> :ok
-            {:error, reason} -> {:error, reason}
-          end
-
-        {:error, _} ->
-          {:error, "Invalid service account JSON"}
-      end
+      :ok
     end
   end
 
   defp validate_credential_permissions(_shortcode, _attrs), do: :ok
+
+  @spec do_validate_bigquery_service_account(String.t()) :: :ok | {:error, String.t()}
+  defp do_validate_bigquery_service_account(service_account_json) do
+    with {:ok, service_account} <- Jason.decode(service_account_json),
+         {:ok, :valid} <- BigQuery.validate_bigquery_credentials(service_account) do
+      :ok
+    else
+      {:error, %Jason.DecodeError{}} -> {:error, "Invalid service account JSON"}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
