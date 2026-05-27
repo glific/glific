@@ -1206,7 +1206,7 @@ defmodule Glific.Partners do
     if credentials == :error do
       {:ignore, nil}
     else
-      fetch_goth_token_from_credentials(credentials, goth_opts)
+      Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
@@ -1222,14 +1222,6 @@ defmodule Glific.Partners do
           {:ignore, nil}
       end
     end
-  end
-
-  # Fetches a Goth token directly from a decoded service account credential map.
-  # Shared by load_goth_token (cached path) and validate_credential_permissions (pre-save validation).
-  @spec fetch_goth_token_from_credentials(map(), Keyword.t()) ::
-          {:ok, Goth.Token.t()} | {:error, any()}
-  defp fetch_goth_token_from_credentials(credentials, opts) do
-    Goth.Token.fetch(source: {:service_account, credentials, opts})
   end
 
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
