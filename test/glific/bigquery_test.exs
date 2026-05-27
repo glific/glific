@@ -470,6 +470,31 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  describe "validate_bigquery_credentials/1" do
+    test "returns {:ok, :valid} when token fetch and all API steps succeed" do
+      Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
+
+      service_account = %{
+        "project_id" => "test_project",
+        "type" => "service_account",
+        "client_email" => "test@test.iam.gserviceaccount.com",
+        "private_key_id" => "key_id"
+      }
+
+      assert {:ok, :valid} = BigQuery.validate_bigquery_credentials(service_account)
+    end
+
+    test "returns error when token fetch fails" do
+      service_account = %{"project_id" => "test_project"}
+
+      with_mock Goth.Token, [:passthrough],
+        fetch: fn _source -> {:error, %{reason: "invalid_grant"}} end do
+        assert {:error, error} = BigQuery.validate_bigquery_credentials(service_account)
+        assert error =~ "Error fetching token from service account"
+      end
+    end
+  end
+
   describe "validate_bigquery_permissions/2" do
     setup do
       conn = Connection.new("0xFAKETOKEN_Q=")

@@ -445,6 +445,30 @@ defmodule Glific.BigQuery do
   end
 
   @doc """
+  Validates BigQuery permissions given a decoded service account credential map.
+
+  Fetches a Goth token from the service account, creates the BigQuery connection,
+  and delegates to `validate_bigquery_permissions/2`. This is the entry point
+  used by `Partners.validate_credential_permissions/2` so that the
+  `GoogleApi.BigQuery.V2.Connection` alias stays within this module.
+
+  Returns `{:ok, :valid}` or `{:error, message}`.
+  """
+  @spec validate_bigquery_credentials(map()) :: {:ok, :valid} | {:error, String.t()}
+  def validate_bigquery_credentials(service_account) do
+    project_id = service_account["project_id"]
+
+    case Goth.Token.fetch(source: {:service_account, service_account, []}) do
+      {:ok, token} ->
+        conn = Connection.new(token.token)
+        validate_bigquery_permissions(conn, project_id)
+
+      {:error, reason} ->
+        {:error, "Error fetching token from service account: #{inspect(reason)}"}
+    end
+  end
+
+  @doc """
   Validates that the service account has all permissions required for BigQuery sync
   by performing a dry-run sequence of real API calls against a temporary dataset,
   then cleaning up.

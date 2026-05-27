@@ -11,7 +11,6 @@ defmodule Glific.Partners do
 
   alias __MODULE__
 
-  alias GoogleApi.BigQuery.V2.Connection, as: BigQueryConnection
 
   alias Glific.{
     BigQuery,
@@ -1000,19 +999,9 @@ defmodule Glific.Partners do
     else
       case Jason.decode(service_account_json) do
         {:ok, service_account} ->
-          project_id = service_account["project_id"]
-
-          case fetch_goth_token_from_credentials(service_account) do
-            {:ok, token} ->
-              conn = BigQueryConnection.new(token.token)
-
-              case BigQuery.validate_bigquery_permissions(conn, project_id) do
-                {:ok, :valid} -> :ok
-                {:error, reason} -> {:error, reason}
-              end
-
-            {:error, reason} ->
-              {:error, "Error fetching token from service account: #{inspect(reason)}"}
+          case BigQuery.validate_bigquery_credentials(service_account) do
+            {:ok, :valid} -> :ok
+            {:error, reason} -> {:error, reason}
           end
 
         {:error, _} ->
@@ -1238,7 +1227,7 @@ defmodule Glific.Partners do
   # Shared by load_goth_token (cached path) and validate_credential_permissions (pre-save validation).
   @spec fetch_goth_token_from_credentials(map(), Keyword.t()) ::
           {:ok, Goth.Token.t()} | {:error, any()}
-  defp fetch_goth_token_from_credentials(credentials, opts \\ []) do
+  defp fetch_goth_token_from_credentials(credentials, opts) do
     Goth.Token.fetch(source: {:service_account, credentials, opts})
   end
 
