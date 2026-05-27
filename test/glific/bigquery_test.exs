@@ -509,15 +509,13 @@ defmodule Glific.BigQueryTest do
 
     test "returns error when create dataset is denied", %{conn: conn} do
       Tesla.Mock.mock(fn %{method: method, url: url} ->
-        cond do
-          method == :post && String.contains?(url, "/datasets") ->
-            %Tesla.Env{
-              status: 403,
-              body: ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
-            }
-
-          true ->
-            %Tesla.Env{status: 200, body: "{}"}
+        if method == :post && String.contains?(url, "/datasets") do
+          %Tesla.Env{
+            status: 403,
+            body: ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+          }
+        else
+          %Tesla.Env{status: 200, body: "{}"}
         end
       end)
 
@@ -593,16 +591,14 @@ defmodule Glific.BigQueryTest do
 
     test "returns error when delete table is denied", %{conn: conn} do
       Tesla.Mock.mock(fn %{method: method, url: url} ->
-        cond do
-          method == :delete && String.contains?(url, "/tables/") ->
-            %Tesla.Env{
-              status: 403,
-              body:
-                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
-            }
-
-          true ->
-            %Tesla.Env{status: 200, body: "{}"}
+        if method == :delete && String.contains?(url, "/tables/") do
+          %Tesla.Env{
+            status: 403,
+            body:
+              ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+          }
+        else
+          %Tesla.Env{status: 200, body: "{}"}
         end
       end)
 
@@ -612,16 +608,14 @@ defmodule Glific.BigQueryTest do
 
     test "returns error when delete dataset is denied", %{conn: conn} do
       Tesla.Mock.mock(fn %{method: method, url: url} ->
-        cond do
-          method == :delete && !String.contains?(url, "/tables/") ->
-            %Tesla.Env{
-              status: 403,
-              body:
-                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
-            }
-
-          true ->
-            %Tesla.Env{status: 200, body: "{}"}
+        if method == :delete && !String.contains?(url, "/tables/") do
+          %Tesla.Env{
+            status: 403,
+            body:
+              ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+          }
+        else
+          %Tesla.Env{status: 200, body: "{}"}
         end
       end)
 
