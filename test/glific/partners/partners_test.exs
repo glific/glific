@@ -1309,6 +1309,38 @@ defmodule Glific.PartnersTest do
       assert unchanged.secrets["service_account"] == nil
     end
 
+    test "create_credential/1 for bigquery returns error when service account is invalid JSON",
+         %{organization_id: organization_id} = _attrs do
+      valid_attrs = %{
+        shortcode: "bigquery",
+        secrets: %{"service_account" => "this is not valid json"},
+        is_active: true,
+        organization_id: organization_id
+      }
+
+      assert {:error, "Invalid service account JSON"} = Partners.create_credential(valid_attrs)
+    end
+
+    test "update_credential/2 for bigquery returns error when sync_schema_with_bigquery fails",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, credential} =
+        Partners.create_credential(%{
+          shortcode: "bigquery",
+          secrets: %{},
+          organization_id: organization_id
+        })
+
+      with_mock(Glific.BigQuery, [:passthrough],
+        sync_schema_with_bigquery: fn _org_id -> {:error, "BigQuery sync failed"} end
+      ) do
+        assert {:error, "BigQuery sync failed"} =
+                 Partners.update_credential(credential, %{
+                   secrets: %{},
+                   organization_id: organization_id
+                 })
+      end
+    end
+
     test "update_credential/2 for maytapi should update credentials" do
       org = SeedsDev.seed_organizations()
 
