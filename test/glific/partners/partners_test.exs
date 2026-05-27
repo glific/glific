@@ -1237,19 +1237,14 @@ defmodule Glific.PartnersTest do
         end
       ) do
         Tesla.Mock.mock(fn %{method: method, url: url} ->
-          cond do
-            method == :post && String.contains?(url, "/datasets") ->
-              %Tesla.Env{
-                status: 403,
-                body:
-                  ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
-              }
-
-            method == :delete ->
-              %Tesla.Env{status: 200, body: "{}"}
-
-            true ->
-              %Tesla.Env{status: 200, body: "{}"}
+          if method == :post && String.contains?(url, "/datasets") do
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+          else
+            %Tesla.Env{status: 200, body: "{}"}
           end
         end)
 
@@ -1292,19 +1287,14 @@ defmodule Glific.PartnersTest do
         end
       ) do
         Tesla.Mock.mock(fn %{method: method, url: url} ->
-          cond do
-            method == :post && String.contains?(url, "/insertAll") ->
-              %Tesla.Env{
-                status: 403,
-                body:
-                  ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
-              }
-
-            method == :delete ->
-              %Tesla.Env{status: 200, body: "{}"}
-
-            true ->
-              %Tesla.Env{status: 200, body: "{}"}
+          if method == :post && String.contains?(url, "/insertAll") do
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+          else
+            %Tesla.Env{status: 200, body: "{}"}
           end
         end)
 
