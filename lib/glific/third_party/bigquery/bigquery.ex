@@ -464,7 +464,7 @@ defmodule Glific.BigQuery do
         validate_bigquery_permissions(conn, project_id)
 
       {:error, reason} ->
-        {:error, "Error fetching token from service account: #{inspect(reason)}"}
+        {:error, "Error fetching token from service account: #{safe_inspect(reason)}"}
     end
   end
 
