@@ -18,6 +18,8 @@ defmodule Glific.Flows.WebhookTest do
     Seeds.SeedsDev
   }
 
+  alias Glific.ThirdParty.Kaapi
+
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
@@ -656,6 +658,10 @@ defmodule Glific.Flows.WebhookTest do
       context = %FlowContext{organization_id: 1}
 
       with_mocks([
+        {Kaapi, [],
+         [
+           fetch_kaapi_creds: fn _org_id -> {:ok, %{"api_key" => "sk_test_key"}} end
+         ]},
         {Appsignal, [:passthrough],
          [
            send_error: fn exception, _stack, configurator ->
@@ -678,13 +684,11 @@ defmodule Glific.Flows.WebhookTest do
         end
       end
 
-      # A low-cardinality SystemError is reported so AppSignal groups these failures.
       assert_receive {:appsignal_exception,
                       %Webhook.SystemError{
                         message: "Webhook system_error from unified-voice-llm-call"
                       }}
 
-      # Per-occurrence detail is attached as AppSignal tags, not on the struct.
       assert_receive {:appsignal_tag, "tags", tags}
       assert tags.organization_id == 1
       assert tags.webhook_name == "unified-voice-llm-call"
