@@ -1404,7 +1404,7 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     exception =
       receive do
-        {:appsignal_exception, ex} -> ex
+        {:appsignal_exception, ex} -> drain_appsignal_exceptions(ex)
       after
         100 -> flunk("Appsignal.send_error was not called")
       end
@@ -1417,6 +1417,18 @@ defmodule Glific.Flows.CommonWebhookTest do
       end
 
     {exception, tags}
+  end
+
+  # Drains any queued {:appsignal_exception, _} messages from the mailbox,
+  # returning the last one. This ensures that when multiple errors are sent
+  # (e.g. a low-level Gupshup error followed by the webhook's SystemError),
+  # the test receives the final, highest-level exception.
+  defp drain_appsignal_exceptions(last) do
+    receive do
+      {:appsignal_exception, ex} -> drain_appsignal_exceptions(ex)
+    after
+      0 -> last
+    end
   end
 
   defp bhasini_stt_fields(contact_id) do
