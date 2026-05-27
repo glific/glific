@@ -3,6 +3,16 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
+
+  defmodule CredentialError do
+    @moduledoc """
+    Raised when a credential save is blocked due to insufficient service account
+    permissions. The low-cardinality `:message` groups incidents in AppSignal;
+    `:organization_id` and `:shortcode` carry per-occurrence context.
+    """
+    defexception [:message, :organization_id, :shortcode]
+  end
+
   use Publicist
 
   import Ecto.Query, warn: false
@@ -917,10 +927,24 @@ defmodule Glific.Partners do
         remove_organization_cache(organization.id, organization.shortcode)
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
-        with :ok <- validate_credential_permissions(attrs[:shortcode], attrs) do
-          %Credential{}
-          |> Credential.changeset(attrs)
-          |> Repo.insert()
+        case validate_credential_permissions(attrs[:shortcode], attrs) do
+          :ok ->
+            %Credential{}
+            |> Credential.changeset(attrs)
+            |> Repo.insert()
+
+          {:error, reason} ->
+            Glific.log_exception(
+              %CredentialError{
+                message: "Credential save blocked",
+                organization_id: attrs[:organization_id],
+                shortcode: attrs[:shortcode]
+              },
+              namespace: "partners",
+              tags: %{reason: reason}
+            )
+
+            {:error, reason}
         end
 
       _ ->
@@ -973,16 +997,30 @@ defmodule Glific.Partners do
 
     credential = Repo.preload(credential, [:provider])
 
-    with :ok <- validate_credential_permissions(credential.provider.shortcode, attrs) do
-      {:ok, credential} =
-        credential
-        |> Credential.changeset(attrs)
-        |> Repo.update()
+    case validate_credential_permissions(credential.provider.shortcode, attrs) do
+      :ok ->
+        {:ok, credential} =
+          credential
+          |> Credential.changeset(attrs)
+          |> Repo.update()
 
-      credential = credential |> Repo.preload([:provider, :organization])
+        credential = credential |> Repo.preload([:provider, :organization])
 
-      credential.organization
-      |> credential_update_callback(credential, credential.provider.shortcode)
+        credential.organization
+        |> credential_update_callback(credential, credential.provider.shortcode)
+
+      {:error, reason} ->
+        Glific.log_exception(
+          %CredentialError{
+            message: "Credential save blocked",
+            organization_id: credential.organization_id,
+            shortcode: credential.provider.shortcode
+          },
+          namespace: "partners",
+          tags: %{reason: reason}
+        )
+
+        {:error, reason}
     end
   end
 
