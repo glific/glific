@@ -991,7 +991,7 @@ defmodule Glific.Partners do
   @spec validate_credential_permissions(String.t() | nil, map()) :: :ok | {:error, String.t()}
   defp validate_credential_permissions("bigquery", attrs) do
     secrets = attrs[:secrets] || attrs["secrets"] || %{}
-    service_account_json = secrets["service_account"]
+    service_account_json = secrets["service_account"] || secrets[:service_account]
 
     if is_binary(service_account_json) && service_account_json != "" do
       do_validate_bigquery_service_account(service_account_json)
