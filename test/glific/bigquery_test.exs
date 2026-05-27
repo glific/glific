@@ -512,7 +512,8 @@ defmodule Glific.BigQueryTest do
         if method == :post && String.contains?(url, "/datasets") do
           %Tesla.Env{
             status: 403,
-            body: ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            body:
+              ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
           }
         else
           %Tesla.Env{status: 200, body: "{}"}
