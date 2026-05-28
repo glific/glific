@@ -79,13 +79,13 @@ defmodule Glific.ThirdParty.Gemini do
       %{success: false, media_url: nil, translated_text: "Error case"}
 
   """
-  @spec text_to_speech(integer(), String.t()) :: map() | String.t()
+  @spec text_to_speech(integer(), String.t()) :: map()
   def text_to_speech(organization_id, text) do
     organization = Partners.organization(organization_id)
     services = organization.services["google_cloud_storage"]
 
     if is_nil(services) do
-      "Enable GCS to use Gemini text to speech"
+      %{success: false, reason: "GCS is disabled"}
     else
       do_text_to_speech(organization_id, text)
     end

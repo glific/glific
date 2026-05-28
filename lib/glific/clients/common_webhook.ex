@@ -411,16 +411,11 @@ defmodule Glific.Clients.CommonWebhook do
           %{success: false, translated_text: llm_response_text, media_url: nil}
       end
 
-    # do_nmt_tts_with_bhasini can return a bare string on failure (e.g. GCS
-    # disabled), so guard the map access.
-    translated_text =
-      (is_map(tts_result) && tts_result[:translated_text]) || llm_response_text
-
-    media_url = if is_map(tts_result), do: tts_result[:media_url], else: nil
+    translated_text = tts_result[:translated_text] || llm_response_text
 
     response
     |> Map.put("translated_text", translated_text)
-    |> Map.put("media_url", media_url)
+    |> Map.put("media_url", tts_result[:media_url])
   end
 
   defp do_unified_llm_call(fields, headers, callback_url, request_metadata) do
