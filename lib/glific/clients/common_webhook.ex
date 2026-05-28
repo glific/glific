@@ -198,42 +198,16 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
 
-  # Uses Gemini for STT via Bhasini flow nodes. The webhook/2 entry normalizes
-  # failures to a bare string for flow routing; do_speech_to_text_with_bhasini/1
-  # returns the raw %{success: ...} map for internal callers
-  # (unified-voice-llm-call) that pattern-match on it.
   def webhook("speech_to_text_with_bhasini", fields) do
     fields
     |> do_speech_to_text_with_bhasini()
     |> normalize_failure()
   end
 
-  # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes
+  # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes.
   def webhook("text_to_speech_with_bhasini", fields) do
-    text = fields["text"]
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.label |> String.downcase()
-    speech_engine = Map.get(fields, "speech_engine", "")
-
-    with_failure_reporting("text_to_speech_with_bhasini", org_id, fn ->
-      cond do
-        speech_engine == "open_ai" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        speech_engine == "bhashini" ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-
-        source_language == "english" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        true ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-      end
-    end)
+    fields
+    |> do_text_to_speech_with_bhasini()
     |> normalize_failure()
   end
 
@@ -283,18 +257,20 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  # The webhook/2 entry normalizes failures to a bare string for flow routing;
-  # run_nmt_tts_with_bhasini/1 returns the raw %{success: ...} map for internal
-  # callers (voice_post_process) that read media_url/translated_text from it.
   def webhook("nmt_tts_with_bhasini", fields) do
     fields
-    |> run_nmt_tts_with_bhasini()
+    |> do_nmt_tts_with_bhasini()
     |> normalize_failure()
   end
 
   def webhook("detect_language", fields) do
     speech = fields["speech"]
-    Bhasini.detect_language(speech)
+    org_id = parse_org_id(fields)
+
+    with_failure_reporting("detect_language", org_id, fn ->
+      Bhasini.detect_language(speech)
+    end)
+    |> normalize_failure()
   end
 
   def webhook("get_buttons", fields) do
@@ -315,8 +291,6 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
-  # Failures return a bare string (not %{success: false}) so the flow routes to
-  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("geolocation", fields) do
     lat = fields["lat"]
     long = fields["long"]
@@ -368,8 +342,6 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   # webhook for sending whatsapp group polls in a flow
-  # Failures return a bare string (not %{success: false}) so the flow routes to
-  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("send_wa_group_poll", fields) do
     org_id = parse_org_id(fields)
 
@@ -403,8 +375,6 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  # Failures return a bare string (not %{success: false}) so the flow routes to
-  # the "Failure" category (lib/glific/flows/webhook.ex keys off is_map).
   def webhook("create_certificate", fields) do
     org_id = parse_org_id(fields)
 
@@ -442,7 +412,7 @@ defmodule Glific.Clients.CommonWebhook do
     tts_result =
       cond do
         success && llm_response_text != "" ->
-          run_nmt_tts_with_bhasini(%{
+          do_nmt_tts_with_bhasini(%{
             "text" => llm_response_text,
             "organization_id" => organization_id,
             "source_language" => voice_fields["source_language"],
@@ -466,7 +436,7 @@ defmodule Glific.Clients.CommonWebhook do
           %{success: false, translated_text: llm_response_text, media_url: nil}
       end
 
-    # run_nmt_tts_with_bhasini can return a bare string on failure (e.g. GCS
+    # do_nmt_tts_with_bhasini can return a bare string on failure (e.g. GCS
     # disabled), so guard the map access.
     translated_text =
       (is_map(tts_result) && tts_result[:translated_text]) || llm_response_text
@@ -514,13 +484,44 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec do_nmt_tts_with_bhasini(
+  @spec gemini_nmt_tts_call(
           String.t(),
           String.t(),
           non_neg_integer(),
           String.t(),
           Keyword.t()
         ) :: map()
+  # Returns the raw %{success: ...} map. No in-tree internal callers today, but
+  # kept symmetric with the other bhasini cores: the webhook/2 clause does the
+  # flow-routing normalization, all engine selection logic lives here.
+  @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
+  defp do_text_to_speech_with_bhasini(fields) do
+    text = fields["text"]
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = Contacts.preload_contact_language(contact_id)
+    source_language = contact.language.label |> String.downcase()
+    speech_engine = Map.get(fields, "speech_engine", "")
+
+    with_failure_reporting("text_to_speech_with_bhasini", org_id, fn ->
+      cond do
+        speech_engine == "open_ai" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+        speech_engine == "bhashini" ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
+
+        source_language == "english" ->
+          ChatGPT.text_to_speech_with_open_ai(org_id, text)
+
+        true ->
+          Glific.Metrics.increment("Gemini TTS Call", org_id)
+          Gemini.text_to_speech(org_id, text)
+      end
+    end)
+  end
+
   # Returns the raw %{success: ...} map. Internal callers (unified-voice-llm-call)
   # use this directly; the webhook/2 clause normalizes failures for flow routing.
   @spec do_speech_to_text_with_bhasini(map()) :: map() | String.t()
@@ -541,8 +542,8 @@ defmodule Glific.Clients.CommonWebhook do
 
   # Returns the raw %{success: ...} map. Internal callers (voice_post_process)
   # use this directly; the webhook/2 clause normalizes failures for flow routing.
-  @spec run_nmt_tts_with_bhasini(map()) :: map() | String.t()
-  defp run_nmt_tts_with_bhasini(fields) do
+  @spec do_nmt_tts_with_bhasini(map()) :: map() | String.t()
+  defp do_nmt_tts_with_bhasini(fields) do
     text = fields["text"]
     org_id = fields["organization_id"]
     source_language = normalize_language(fields["source_language"])
@@ -553,14 +554,14 @@ defmodule Glific.Clients.CommonWebhook do
       if source_language == target_language do
         handle_tts_only(source_language, org_id, text, speech_engine)
       else
-        do_nmt_tts_with_bhasini(source_language, target_language, org_id, text,
+        gemini_nmt_tts_call(source_language, target_language, org_id, text,
           speech_engine: speech_engine
         )
       end
     end)
   end
 
-  defp do_nmt_tts_with_bhasini(source_language, target_language, org_id, text, opts) do
+  defp gemini_nmt_tts_call(source_language, target_language, org_id, text, opts) do
     organization = Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
 
@@ -904,6 +905,7 @@ defmodule Glific.Clients.CommonWebhook do
       is_binary(result[:reason]) -> result[:reason]
       is_binary(result[:error]) -> result[:error]
       is_binary(result[:asr_response_text]) -> result[:asr_response_text]
+      is_binary(result[:detected_language]) -> result[:detected_language]
       true -> "Webhook execution failed"
     end
   end
