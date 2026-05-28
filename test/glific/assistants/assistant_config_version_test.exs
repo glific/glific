@@ -160,7 +160,11 @@ defmodule Glific.Assistants.AssistantConfigVersionTest do
         |> AssistantConfigVersion.changeset(%{prompt: "You are an updated helpful assistant"})
         |> Repo.update()
 
-      history = Repo.history(updated_config_version, skip_organization_id: true)
+      history =
+        updated_config_version
+        |> Repo.history(skip_organization_id: true)
+        |> Enum.sort_by(& &1.id)
+
       assert length(history) == 2
       update_history = List.last(history)
       assert update_history.action == :updated

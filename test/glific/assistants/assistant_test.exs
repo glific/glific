@@ -246,7 +246,11 @@ defmodule Glific.Assistants.AssistantTest do
         |> Assistant.changeset(%{name: "Updated Audit Test Assistant"})
         |> Repo.update()
 
-      history = Repo.history(updated_assistant, skip_organization_id: true)
+      history =
+        updated_assistant
+        |> Repo.history(skip_organization_id: true)
+        |> Enum.sort_by(& &1.id)
+
       assert length(history) == 2
       update_history = List.last(history)
       assert update_history.action == :updated
