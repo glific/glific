@@ -32,12 +32,12 @@ defmodule Glific.Mails.SyncDisabledMailTest do
   describe "send_if_any/0" do
     test "sends email and logs it when BigQuery orgs are disabled",
          %{organization_id: organization_id} do
-      # A freshly created credential has is_active: false by default — no disable call needed.
       {:ok, _} =
         Partners.create_credential(%{
           shortcode: "bigquery",
           secrets: %{},
-          organization_id: organization_id
+          organization_id: organization_id,
+          is_active: false
         })
 
       SyncDisabledMail.send_if_any()
@@ -55,7 +55,8 @@ defmodule Glific.Mails.SyncDisabledMailTest do
         Partners.create_credential(%{
           shortcode: "google_cloud_storage",
           secrets: %{},
-          organization_id: organization_id
+          organization_id: organization_id,
+          is_active: false
         })
 
       SyncDisabledMail.send_if_any()
