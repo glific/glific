@@ -30,6 +30,10 @@ defmodule Glific.Mails.SyncDisabledMail do
     end
 
     :ok
+  rescue
+    err ->
+      Glific.log_error("Failed to send sync disabled report: #{inspect(err)}")
+      :ok
   end
 
   @doc """
