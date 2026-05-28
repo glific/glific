@@ -30,6 +30,7 @@ defmodule Glific.Fixtures do
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
@@ -1175,6 +1176,24 @@ defmodule Glific.Fixtures do
       |> WAGroups.create_wa_group()
 
     wa_group
+  end
+
+  @doc """
+  Generate a wa_group_phone membership row.
+  """
+  @spec wa_group_phone_fixture(map()) :: WAGroupPhone.t()
+  def wa_group_phone_fixture(attrs) do
+    {:ok, wa_group_phone} =
+      %WAGroupPhone{}
+      |> WAGroupPhone.changeset(
+        Enum.into(attrs, %{
+          is_primary: false,
+          is_active: true
+        })
+      )
+      |> Repo.insert()
+
+    wa_group_phone
   end
 
   @doc """

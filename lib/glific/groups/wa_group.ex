@@ -11,6 +11,7 @@ defmodule Glific.Groups.WAGroup do
   alias Glific.{
     Contacts.Contact,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Partners.Organization,
     WAGroup.WAManagedPhone
   }
@@ -24,6 +25,8 @@ defmodule Glific.Groups.WAGroup do
           bsp_id: String.t() | nil,
           wa_managed_phone_id: non_neg_integer | nil,
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
+          wa_groups_phones: [WAGroupPhone.t()] | Ecto.Association.NotLoaded.t() | nil,
+          wa_managed_phones: [WAManagedPhone.t()] | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           is_org_read: :boolean | nil,
@@ -40,6 +43,12 @@ defmodule Glific.Groups.WAGroup do
 
     belongs_to :wa_managed_phone, WAManagedPhone
     belongs_to :organization, Organization
+
+    has_many :wa_groups_phones, WAGroupPhone
+
+    many_to_many :wa_managed_phones, WAManagedPhone,
+      join_through: WAGroupPhone,
+      on_replace: :delete
 
     many_to_many :contacts, Contact, join_through: "contacts_wa_groups", on_replace: :delete
     many_to_many :groups, Group, join_through: "wa_groups_collections", on_replace: :delete
