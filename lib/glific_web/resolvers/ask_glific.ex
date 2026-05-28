@@ -12,6 +12,10 @@ defmodule GlificWeb.Resolvers.AskGlific do
   @spec ask(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
   def ask(_, %{input: params}, %{context: %{current_user: user}}) do
+    # Echoed back in the subscription publish so a tab can identify which
+    # response is its own when multiple tabs share the same user topic.
+    request_id = Map.get(params, :request_id)
+
     Task.start(fn ->
       Glific.Repo.put_process_state(user.organization_id)
 
@@ -21,14 +25,19 @@ defmodule GlificWeb.Resolvers.AskGlific do
         {:ok, result} ->
           Absinthe.Subscription.publish(
             GlificWeb.Endpoint,
-            result,
+            Map.put(result, :request_id, request_id),
             [{:ask_glific_response, topic}]
           )
 
         {:error, reason} ->
           Absinthe.Subscription.publish(
             GlificWeb.Endpoint,
-            %{answer: nil, conversation_id: nil, errors: [%{key: "error", message: reason}]},
+            %{
+              answer: nil,
+              conversation_id: nil,
+              request_id: request_id,
+              errors: [%{key: "error", message: reason}]
+            },
             [{:ask_glific_response, topic}]
           )
       end

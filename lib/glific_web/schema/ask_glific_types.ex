@@ -13,6 +13,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:conversation_id, :string)
     field(:conversation_name, :string)
     field(:message_id, :string)
+    field(:request_id, :string)
     field(:errors, list_of(:input_error))
   end
 
@@ -22,7 +23,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
 
   input_object :ask_glific_feedback_input do
     field(:message_id, non_null(:string))
-    field(:rating, non_null(:string))
+    field(:rating, :string)
     field(:content, :string)
   end
 
@@ -30,6 +31,7 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:query, non_null(:string))
     field(:conversation_id, :string)
     field(:page_url, :string)
+    field(:request_id, :string)
   end
 
   object :ask_glific_message do
