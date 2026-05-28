@@ -8,7 +8,8 @@ defmodule Glific.ChatbotDiagnoseTest do
   alias Glific.Repo
 
   defp backdate_contact(contact, seconds_ago) do
-    backdated = DateTime.utc_now() |> DateTime.add(-seconds_ago, :second) |> DateTime.truncate(:second)
+    backdated =
+      DateTime.utc_now() |> DateTime.add(-seconds_ago, :second) |> DateTime.truncate(:second)
 
     from(c in Contact, where: c.id == ^contact.id)
     |> Repo.update_all(set: [inserted_at: backdated])
