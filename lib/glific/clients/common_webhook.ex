@@ -15,6 +15,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Partners
   alias Glific.Providers.Maytapi
   alias Glific.Repo
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi
@@ -311,7 +312,7 @@ defmodule Glific.Clients.CommonWebhook do
 
         {:error, reason} ->
           Glific.Metrics.increment("Geolocation API Failure")
-          "HTTP request failed: #{inspect(reason)}"
+          "HTTP request failed: #{SafeLog.safe_inspect(reason)}"
       end
     end)
   end
@@ -345,7 +346,7 @@ defmodule Glific.Clients.CommonWebhook do
           reason
 
         {:error, reason} ->
-          inspect(reason)
+          SafeLog.safe_inspect(reason)
       end
     end)
   end
@@ -366,7 +367,6 @@ defmodule Glific.Clients.CommonWebhook do
         )
       else
         {:error, reason} ->
-          Logger.error("Error in certificate creation webhook: #{reason}")
           reason
       end
     end)
@@ -471,13 +471,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   defp parse_geolocation_results(_), do: "No results found"
 
-  @spec gemini_nmt_tts_call(
-          String.t(),
-          String.t(),
-          non_neg_integer(),
-          String.t(),
-          Keyword.t()
-        ) :: map()
   @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
   defp do_text_to_speech_with_bhasini(fields) do
     text = fields["text"]
@@ -528,7 +521,7 @@ defmodule Glific.Clients.CommonWebhook do
   @spec do_nmt_tts_with_bhasini(map()) :: map() | String.t()
   defp do_nmt_tts_with_bhasini(fields) do
     text = fields["text"]
-    org_id = fields["organization_id"]
+    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
     source_language = normalize_language(fields["source_language"])
     target_language = normalize_language(fields["target_language"])
     speech_engine = Map.get(fields, "speech_engine", "")
@@ -544,6 +537,13 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
+  @spec gemini_nmt_tts_call(
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          String.t(),
+          Keyword.t()
+        ) :: map()
   defp gemini_nmt_tts_call(source_language, target_language, org_id, text, opts) do
     organization = Partners.organization(org_id)
     services = organization.services["google_cloud_storage"]
