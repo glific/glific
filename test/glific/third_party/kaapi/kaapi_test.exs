@@ -1,6 +1,7 @@
 defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
   use GlificWeb.ConnCase
   import Tesla.Mock
+  alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
 
   @params %{
@@ -462,6 +463,25 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, %{status: 500, body: %{error: "Internal server error"}}} =
                ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
+    end
+  end
+
+  describe "normalize_kaapi_body/1" do
+    test "treats a 200 body with success:false as a logical failure" do
+      assert %{
+               success: false,
+               http_status: 200,
+               error_type: "kaapi_logical_failure",
+               reason: "boom"
+             } = Kaapi.normalize_kaapi_body(%{success: false, message: "boom"})
+    end
+
+    test "falls back to the error key, then to a default reason" do
+      assert %{reason: "bad"} =
+               Kaapi.normalize_kaapi_body(%{success: false, error: "bad"})
+
+      assert %{reason: "Kaapi logical failure"} =
+               Kaapi.normalize_kaapi_body(%{success: false})
     end
   end
 end

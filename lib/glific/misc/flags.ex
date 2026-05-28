@@ -232,25 +232,6 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get ai-platform value for organization flag
-  """
-  @spec get_is_kaapi_enabled(map()) :: boolean
-  def get_is_kaapi_enabled(organization) do
-    app_env = Application.get_env(:glific, :environment)
-
-    cond do
-      FunWithFlags.enabled?(:is_kaapi_enabled, for: %{organization_id: organization.id}) ->
-        true
-
-      Glific.trusted_env?(app_env, organization.id) ->
-        true
-
-      true ->
-        false
-    end
-  end
-
-  @doc """
   Get Interactive Message re-response value for organization flag
   """
   @spec get_interactive_re_response_enabled(map()) :: boolean
@@ -420,18 +401,6 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle for ai-platform for an organization
-  """
-  @spec set_is_kaapi_enabled(map()) :: map()
-  def set_is_kaapi_enabled(organization) do
-    Map.put(
-      organization,
-      :is_kaapi_enabled,
-      get_is_kaapi_enabled(organization)
-    )
-  end
-
-  @doc """
   Set fun_with_flag toggle for Interactive Message re-response for an organization
   """
   @spec set_interactive_re_response_enabled(map()) :: map()
@@ -556,12 +525,10 @@ defmodule Glific.Flags do
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
       :is_certificate_enabled,
-      :is_kaapi_enabled,
       :is_interactive_re_response_enabled,
       :is_ask_glific_enabled,
       :is_whatsapp_forms_enabled,
       :high_trigger_tps_enabled,
-      :unified_api_enabled,
       :ai_evaluations
     ]
     |> Enum.each(fn flag ->

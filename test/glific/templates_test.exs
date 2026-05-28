@@ -1779,6 +1779,59 @@ defmodule Glific.TemplatesTest do
       assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 10
     end
 
+    test "template_parameters_count/1 counts body and URL button params separately" do
+      # two URL buttons each with a {{1}} → one parameter per dynamic URL button,
+      # so total = 1 (body) + 2 (buttons) = 3, even though both URLs are identical
+      template_body = "Hi {{1}}, Here is the report for activity."
+
+      buttons = [
+        %{
+          "type" => "URL",
+          "text" => "Open",
+          "url" => "https://prod.glific.com/{{1}}"
+        },
+        %{
+          "type" => "URL",
+          "text" => "Open2",
+          "url" => "https://prod.glific.com/{{1}}"
+        }
+      ]
+
+      assert Templates.template_parameters_count(%{
+               body: template_body,
+               has_buttons: true,
+               buttons: buttons
+             }) == 3
+
+      # static URL buttons (no {{N}}) do not contribute parameters
+      static_buttons = [
+        %{"type" => "URL", "text" => "Visit", "url" => "https://github.com/glific"},
+        %{"type" => "PHONE_NUMBER", "text" => "Call", "phone_number" => "+917302307943"},
+        %{"type" => "QUICK_REPLY", "text" => "Yes"}
+      ]
+
+      assert Templates.template_parameters_count(%{
+               body: template_body,
+               has_buttons: true,
+               buttons: static_buttons
+             }) == 1
+
+      # mix of dynamic and static URL buttons
+      mixed_buttons = [
+        %{"type" => "URL", "text" => "Dynamic", "url" => "https://prod.glific.com/{{1}}"},
+        %{"type" => "URL", "text" => "Static", "url" => "https://github.com/glific"}
+      ]
+
+      assert Templates.template_parameters_count(%{
+               body: template_body,
+               has_buttons: true,
+               buttons: mixed_buttons
+             }) == 2
+
+      # has_buttons: true but buttons key missing → body count only
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: true}) == 1
+    end
+
     test "parse_buttons/2 should return updated body with buttons" do
       template_body = "Hi {{1}}, What is your status"
 

@@ -21,17 +21,29 @@ defmodule GlificWeb.Flows.FlowResumeController do
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
   """
-  @spec flow_resume_with_results(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def flow_resume_with_results(
+  @spec flow_resume(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def flow_resume(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
+    # uploading audio kept outside of task to avoid transferring large data between processes
+    # https://elixirmerge.com/p/the-impact-of-data-transfer-on-performance-in-elixirs-task-async
     response = result |> parse_callback_response() |> maybe_upload_tts_audio()
 
-    organization = Partners.organization(organization_id)
-    Repo.put_process_state(organization.id)
+    run_supervised(fn ->
+      do_flow_resume(organization_id, result, response)
+    end)
 
-    message =
+    json(conn, "")
+  end
+
+  @spec do_flow_resume(non_neg_integer(), map(), map()) :: :ok
+  defp do_flow_resume(organization_id, result, response) do
+    Repo.put_process_state(organization_id)
+    organization = Partners.organization(organization_id)
+    response_key = response["result_name"] || "response"
+
+    log_message =
       %{
         success: result["success"],
         message: response["message"] || result["error"],
@@ -40,8 +52,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
         thread_id: response["thread_id"]
       }
 
-    if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], message)
-    response_key = response["result_name"] || "response"
+    if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], log_message)
 
     message =
       case {result["success"], response["webhook_log_id"]} do
@@ -61,24 +72,92 @@ defmodule GlificWeb.Flows.FlowResumeController do
       end
 
     track_kaapi_latency(response)
+    maybe_report_callback_failure(result, response)
 
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
              id: response["contact_id"],
              organization_id: organization.id
-           }) do
-      FlowContext.resume_contact_flow(
-        contact,
-        response["flow_id"],
-        %{response_key => response},
-        message
-      )
+           }),
+         {:ok, _context, _messages} <-
+           FlowContext.resume_contact_flow(
+             contact,
+             response["flow_id"],
+             %{response_key => response},
+             message
+           ) do
+      :ok
+    else
+      false ->
+        Logger.warning(
+          "Flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
+        )
+
+      {:error, reason = [_, "Resource not found"]} ->
+        Logger.warning("Flow resume contact lookup failed: #{inspect(reason)}")
+
+      {:error, reason} ->
+        Logger.warning(
+          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{reason}"
+        )
     end
 
-    # always return 200 and an empty response
-    json(conn, "")
+    :ok
   end
+
+  @spec run_supervised((-> any())) :: :ok
+  defp run_supervised(fun) do
+    case Task.Supervisor.start_child(Glific.TaskSupervisor, fn ->
+           run_supervised_task(fun)
+         end) do
+      {:ok, _pid} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_exception(%RuntimeError{
+          message: "Failed to start flow_resume supervised task: #{inspect(reason)}"
+        })
+
+        :ok
+    end
+  end
+
+  @spec run_supervised_task((-> any())) :: :ok
+  defp run_supervised_task(fun) do
+    try do
+      fun.()
+    rescue
+      exception ->
+        Glific.log_exception(exception)
+    end
+
+    :ok
+  end
+
+  # Reports a Kaapi callback whose result is a failure to AppSignal, so failed
+  # callbacks get ops visibility. The "no callback at all" timeout case is
+  # reported separately by FlowContext.handle_nil_message; this reports the
+  # callbacks that did arrive but came back as a failure.
+  @spec maybe_report_callback_failure(map(), map()) :: :ok
+  defp maybe_report_callback_failure(%{"success" => success} = result, response)
+       when success != true do
+    reason =
+      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+
+    %Webhook.SystemError{message: "Webhook callback failure"}
+    |> Webhook.report_to_appsignal(%{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"],
+      error_type: result["error_type"],
+      reason: reason
+    })
+  end
+
+  defp maybe_report_callback_failure(_result, _response), do: :ok
 
   @doc """
   Callback for voice unified LLM calls.
@@ -92,8 +171,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
       ) do
     response = parse_callback_response(result)
 
-    Task.start(fn ->
-      Repo.put_process_state(organization_id)
+    run_supervised(fn ->
       do_voice_flow_resume(organization_id, result, response)
     end)
 
@@ -102,6 +180,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
   defp do_voice_flow_resume(organization_id, result, response) do
+    Repo.put_process_state(organization_id)
     organization = Partners.organization(organization_id)
     response_key = response["result_name"] || "response"
 
@@ -123,16 +202,27 @@ defmodule GlificWeb.Flows.FlowResumeController do
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
       track_kaapi_latency(response)
+      maybe_report_callback_failure(result, response)
 
-      FlowContext.resume_contact_flow(
-        contact,
-        response["flow_id"],
-        %{response_key => voice_response},
-        message
-      )
+      case FlowContext.resume_contact_flow(
+             contact,
+             response["flow_id"],
+             %{response_key => voice_response},
+             message
+           ) do
+        {:ok, _context, _messages} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "Voice flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{reason}"
+          )
+      end
     else
       false ->
-        Logger.warning("Voice flow resume validation failed for org #{organization_id}")
+        Logger.warning(
+          "Voice flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
+        )
 
       {:error, reason} ->
         Logger.warning("Voice flow resume contact lookup failed: #{inspect(reason)}")
@@ -221,13 +311,51 @@ defmodule GlificWeb.Flows.FlowResumeController do
   defp track_kaapi_latency(_response), do: :ok
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
-  defp validate_request(new_organization_id, fields) do
-    flow_id = fields["flow_id"]
-    contact_id = fields["contact_id"]
-    organization_id = fields["organization_id"]
-    timestamp = fields["timestamp"]
-    signature = fields["signature"]
+  defp validate_request(_new_organization_id, fields) when map_size(fields) == 0,
+    do: false
 
+  defp validate_request(new_organization_id, fields) do
+    if missing_callback_fields?(fields),
+      do: false,
+      else: do_validate_request(new_organization_id, fields)
+  end
+
+  @spec missing_callback_fields?(map()) :: boolean()
+  defp missing_callback_fields?(fields) do
+    Enum.any?(
+      ["organization_id", "flow_id", "contact_id", "timestamp", "signature"],
+      &is_nil(Map.get(fields, &1))
+    )
+  end
+
+  @spec do_validate_request(non_neg_integer(), map()) :: boolean()
+  defp do_validate_request(new_organization_id, fields) do
+    do_validate_signature(
+      new_organization_id,
+      fields["flow_id"],
+      fields["contact_id"],
+      fields["organization_id"],
+      fields["timestamp"],
+      fields["signature"]
+    )
+  end
+
+  @spec do_validate_signature(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          integer(),
+          String.t()
+        ) :: boolean()
+  defp do_validate_signature(
+         new_organization_id,
+         flow_id,
+         contact_id,
+         organization_id,
+         timestamp,
+         signature
+       ) do
     signature_payload = %{
       "organization_id" => organization_id,
       "flow_id" => flow_id,

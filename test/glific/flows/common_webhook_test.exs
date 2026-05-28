@@ -441,7 +441,7 @@ defmodule Glific.Flows.CommonWebhookTest do
   end
 
   test "parse_via_chat_gpt, failed due to empty question_text" do
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", %{})
   end
 
@@ -450,7 +450,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "question_text" => ""
     }
 
-    assert %{success: false, parsed_msg: "question_text is empty"} =
+    assert "question_text is empty" =
              CommonWebhook.webhook("parse_via_chat_gpt", fields)
   end
 
@@ -1103,6 +1103,64 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       assert result.success == true
     end
+
+    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result.success == false
+          assert result.error_type == "kaapi_logical_failure"
+          assert result.reason == "boom"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.http_status == 200
+    end
+
+    test "reports SystemError on a Kaapi 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.http_status == 503
+    end
+
+    test "rejects empty speech URL without calling Kaapi and reports SystemError", %{
+      fields: fields
+    } do
+      fields = Map.put(fields, "speech", "")
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("speech_to_text", fields, [])
+          assert result == %{success: false, reason: "Media URL is invalid"}
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text"
+      assert tags.reason == "Media URL is invalid"
+      assert is_nil(tags.http_status)
+    end
   end
 
   describe "text_to_speech webhook" do
@@ -1389,6 +1447,23 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
   end
 
+  describe "call_and_wait" do
+    test "returns a clean failure (no crash) when the X-API-KEY header is missing" do
+      fields = %{
+        "question" => "Tell me a joke",
+        "assistant_id" => "asst_123",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "filesearch"
+      }
+
+      assert "Missing Kaapi API key" =
+               CommonWebhook.webhook("call_and_wait", fields, [])
+    end
+  end
+
   describe "unified-llm-call lookup_kaapi_config" do
     setup do
       {:ok, _credential} =
@@ -1535,6 +1610,88 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       assert result[:success] == false
       assert result[:reason] =~ "Assistant is still being set up"
+    end
+  end
+
+  describe "unified-llm-call failure reporting" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+
+      {assistant, _config} = create_assistant_with_config(1, [])
+
+      fields = %{
+        "assistant_id" => assistant.assistant_display_id,
+        "question" => "test",
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "2",
+        "webhook_log_id" => 1,
+        "result_name" => "response"
+      }
+
+      %{fields: fields}
+    end
+
+    test "reports SystemError with http_status on a Kaapi 4xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 400
+    end
+
+    test "reports SystemError with http_status on a Kaapi 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 503
+    end
+
+    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+          assert result.success == false
+          assert result.error_type == "kaapi_logical_failure"
+          assert result.reason == "boom"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-llm-call"
+      assert tags.http_status == 200
     end
   end
 
@@ -1799,6 +1956,183 @@ defmodule Glific.Flows.CommonWebhookTest do
              }
 
       assert payload.query.input == "Transcribed audio"
+    end
+
+    test "returns structured failure (no CaseClauseError) when Bhasini rejects the URL" do
+      organization_id = 1
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "assistant_id" => "asst_voice_bad_url",
+        # http (not https) → Bhasini.validate_params returns {:error, "Media URL is invalid"}
+        "speech" => "http://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+          assert result == %{success: false, reason: "Media URL is invalid"}
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "speech_to_text_with_bhasini"
+      assert tags.reason == "Media URL is invalid"
+      assert is_nil(tags.http_status)
+    end
+
+    test "reports SystemError under unified-voice-llm-call when LLM dispatch fails" do
+      organization_id = 1
+      assistant_display_id = "asst_voice_llm_fail"
+      create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
+
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => organization_id,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "assistant_id" => assistant_display_id,
+        "speech" => "https://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :get, url: "https://example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %Tesla.Env{method: :post, url: url} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [
+                    %{content: %{parts: [%{text: Jason.encode!("Hello world")}]}}
+                  ],
+                  usageMetadata: %{totalTokenCount: 10}
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              %Tesla.Env{status: 503, body: %{"error" => "kaapi unavailable"}}
+
+            true ->
+              %Tesla.Env{status: 200, body: %{}}
+          end
+      end)
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+
+          assert result.success == false
+          assert result.http_status == 503
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "unified-voice-llm-call"
+      assert tags.http_status == 503
+    end
+  end
+
+  test "reports SystemError when Kaapi callback says success=true but message is empty" do
+    organization_id = 1
+
+    response = %{
+      "message" => "",
+      "voice_post_process" => %{
+        "source_language" => "english",
+        "target_language" => "hindi"
+      },
+      "flow_id" => 1,
+      "contact_id" => 2,
+      "webhook_log_id" => 1
+    }
+
+    {exception, tags} =
+      capture_appsignal(fn ->
+        result = CommonWebhook.voice_post_process(organization_id, true, response)
+
+        assert result["translated_text"] == ""
+        assert is_nil(result["media_url"])
+      end)
+
+    assert %SystemError{} = exception
+    assert tags.webhook_name == "unified-voice-llm-call"
+    # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
+    # HTTP layer, the body was just unusable.
+    assert tags.http_status == 200
+    assert tags.reason =~ "empty"
+  end
+
+  describe "parse_via_chat_gpt / parse_via_gpt_vision failure reporting" do
+    test "reports SystemError when parse_via_chat_gpt fails" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result =
+            CommonWebhook.webhook("parse_via_chat_gpt", %{"organization_id" => 1})
+
+          assert result == "question_text is empty"
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "parse_via_chat_gpt"
+      assert tags.organization_id == 1
+      assert tags.reason == "question_text is empty"
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
+      fields = %{
+        "organization_id" => 1,
+        "url" => "https://example.com/image.jpg",
+        "response_format" => %{"type" => "json_objectz"}
+      }
+
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            # bare-string return preserved (routes to the flow's Failure category)
+            assert result == "response_format type should be json_schema or json_object"
+          end)
+
+        assert %SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "response_format type should be json_schema or json_object"
+      end
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid media URL" do
+      fields = %{"organization_id" => 1, "url" => "not-an-image"}
+
+      with_mock(Messages,
+        validate_media: fn _, _ -> %{is_valid: false, message: "Media URL is invalid"} end
+      ) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            assert result == "Media URL is invalid"
+          end)
+
+        assert %SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "Media URL is invalid"
+      end
     end
   end
 end

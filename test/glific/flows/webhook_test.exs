@@ -2,6 +2,8 @@ defmodule Glific.Flows.WebhookTest do
   use Glific.DataCase, async: true
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Mock
+
   alias Glific.Flows.{
     Action,
     FlowContext,
@@ -12,8 +14,11 @@ defmodule Glific.Flows.WebhookTest do
 
   alias Glific.{
     Fixtures,
+    Partners,
     Seeds.SeedsDev
   }
+
+  alias Glific.ThirdParty.Kaapi
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -626,5 +631,68 @@ defmodule Glific.Flows.WebhookTest do
     [job] = all_enqueued(worker: Webhook, prefix: "global")
     assert job.queue == "gpt_webhook_queue"
     assert job.priority == 2
+  end
+
+  describe "execute_unified_voice_filesearch/2 failure reporting" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      :ok
+    end
+
+    test "catches a raised exception, reports it to AppSignal, and reraises it" do
+      test_pid = self()
+
+      # With Kaapi creds present, unified_llm_and_wait injects the API key via
+      # Map.put(action.headers, ...). A nil headers map raises BadMapError -- exactly
+      # the kind of unexpected failure with_failure_reporting must catch and report.
+      action = %Action{headers: nil, method: "FUNCTION", url: "voice-filesearch-gpt", body: "{}"}
+      context = %FlowContext{organization_id: 1}
+
+      with_mocks([
+        {Kaapi, [],
+         [
+           fetch_kaapi_creds: fn _org_id -> {:ok, %{"api_key" => "sk_test_key"}} end
+         ]},
+        {Appsignal, [:passthrough],
+         [
+           send_error: fn exception, _stack, configurator ->
+             send(test_pid, {:appsignal_exception, exception})
+             configurator.(:fake_span)
+             :ok
+           end
+         ]},
+        {Appsignal.Span, [:passthrough],
+         [
+           set_sample_data: fn _span, key, value ->
+             send(test_pid, {:appsignal_tag, key, value})
+             :fake_span
+           end
+         ]}
+      ]) do
+        # The original exception is reraised after the failure is reported.
+        assert_raise BadMapError, fn ->
+          Webhook.execute_unified_voice_filesearch(action, context)
+        end
+      end
+
+      assert_receive {:appsignal_exception,
+                      %Webhook.SystemError{
+                        message: "Webhook system_error from unified-voice-llm-call"
+                      }}
+
+      assert_receive {:appsignal_tag, "tags", tags}
+      assert tags.organization_id == 1
+      assert tags.webhook_name == "unified-voice-llm-call"
+      assert tags.reason =~ "map"
+    end
   end
 end

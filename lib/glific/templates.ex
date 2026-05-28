@@ -755,13 +755,27 @@ defmodule Glific.Templates do
   end
 
   @doc """
-  Returns the count of variables in template
+  Returns the count of variables in template.
+
+  Body variables are counted as unique `{{N}}` occurrences. URL button variables
+  are counted per-button (each dynamic URL button contributes one parameter),
+  since WhatsApp treats every URL button's `{{1}}` as its own local variable.
   """
   @spec template_parameters_count(map()) :: non_neg_integer()
   def template_parameters_count(template) do
-    template = parse_buttons(template, false, Map.get(template, :has_buttons, false))
+    body_count = count_body_parameters(Map.get(template, :body, "") || "")
 
-    template.body
+    button_count =
+      if Map.get(template, :has_buttons, false),
+        do: count_url_button_parameters(Map.get(template, :buttons, [])),
+        else: 0
+
+    body_count + button_count
+  end
+
+  @spec count_body_parameters(String.t()) :: non_neg_integer()
+  defp count_body_parameters(body) do
+    body
     |> String.split()
     |> Enum.reduce([], fn word, acc ->
       with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
@@ -774,6 +788,19 @@ defmodule Glific.Templates do
     |> Enum.uniq()
     |> Enum.count()
   end
+
+  @spec count_url_button_parameters(list() | any()) :: non_neg_integer()
+  defp count_url_button_parameters(buttons) when is_list(buttons) do
+    Enum.count(buttons, fn
+      %{"type" => "URL", "url" => url} when is_binary(url) ->
+        String.match?(url, ~r/{{([1-9]|[1-9][0-9])}}/)
+
+      _ ->
+        false
+    end)
+  end
+
+  defp count_url_button_parameters(_), do: 0
 
   @spec hsm_template_uuid_map() :: map()
   defp hsm_template_uuid_map do
