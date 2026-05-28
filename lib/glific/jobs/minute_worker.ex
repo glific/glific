@@ -23,6 +23,7 @@ defmodule Glific.Jobs.MinuteWorker do
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
     Jobs.UserJobWorker,
+    Mails.SyncDisabledMail,
     Partners,
     Partners.Billing,
     Providers.Maytapi.WAWorker,
@@ -103,6 +104,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "weekly_report" ->
         GCS.send_internal_media_sync_report()
+        SyncDisabledMail.send_if_any()
 
       "weekly_tasks" ->
         Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])

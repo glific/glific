@@ -1868,6 +1868,63 @@ defmodule Glific.PartnersTest do
     end
   end
 
+  describe "list_orgs_with_disabled_credential/1" do
+    test "returns orgs whose credential is inactive for the given shortcode",
+         %{organization_id: organization_id} = _attrs do
+      # Bypass Partners.create_credential: it validates that bigquery credentials
+      # contain a valid service_account, which is irrelevant to this test.
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      Partners.disable_credential(organization_id, "bigquery", "test: permission denied")
+
+      result = Partners.list_orgs_with_disabled_credential("bigquery")
+      org_ids = Enum.map(result, & &1.id)
+
+      assert organization_id in org_ids
+
+      entry = Enum.find(result, &(&1.id == organization_id))
+      assert %{id: _, name: _, disabled_since: _} = entry
+    end
+
+    test "does not include orgs with an active credential",
+         %{organization_id: organization_id} = _attrs do
+      # Bypass Partners.create_credential: it validates that bigquery credentials
+      # contain a valid service_account, which is irrelevant to this test.
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      Credential
+      |> where([c], c.id == ^credential.id)
+      |> Repo.update_all([set: [is_active: true]], skip_organization_id: true)
+
+      result = Partners.list_orgs_with_disabled_credential("bigquery")
+      org_ids = Enum.map(result, & &1.id)
+
+      refute organization_id in org_ids
+    end
+
+    test "returns empty list when no orgs have a disabled credential" do
+      assert [] == Partners.list_orgs_with_disabled_credential("bigquery")
+    end
+  end
+
   describe "get_resource_local_path/2" do
     test "successfull file download to local" do
       Tesla.Mock.mock(fn

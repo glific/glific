@@ -1562,6 +1562,24 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  Returns a list of organizations that have a disabled (is_active: false) credential
+  for the given provider shortcode, ordered by when it was disabled (oldest first).
+
+  Each entry is a map with: `%{id: org_id, name: org_name, disabled_since: utc_datetime}`.
+  """
+  @spec list_orgs_with_disabled_credential(String.t()) :: list(map())
+  def list_orgs_with_disabled_credential(shortcode) do
+    Credential
+    |> join(:inner, [c], p in Provider, on: c.provider_id == p.id)
+    |> join(:inner, [c, _p], o in Organization, on: c.organization_id == o.id)
+    |> where([c, p, _o], p.shortcode == ^shortcode)
+    |> where([c, _p, _o], c.is_active == false)
+    |> order_by([c, _p, _o], asc: c.updated_at)
+    |> select([c, _p, o], %{id: o.id, name: o.name, disabled_since: c.updated_at})
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  @doc """
   Cron handler for sending dashboard report mail
   """
   @spec send_dashboard_report(non_neg_integer(), map()) :: {:ok, any()} | {:error, String.t()}
