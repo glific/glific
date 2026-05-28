@@ -3,6 +3,16 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
+
+  defmodule CredentialError do
+    @moduledoc """
+    Raised when a credential save is blocked due to insufficient service account
+    permissions. The low-cardinality `:message` groups incidents in AppSignal;
+    `:organization_id` and `:shortcode` carry per-occurrence context.
+    """
+    defexception [:message, :organization_id, :shortcode]
+  end
+
   use Publicist
 
   import Ecto.Query, warn: false
@@ -917,9 +927,29 @@ defmodule Glific.Partners do
         remove_organization_cache(organization.id, organization.shortcode)
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
-        %Credential{}
-        |> Credential.changeset(attrs)
-        |> Repo.insert()
+        case validate_credential_permissions(attrs[:shortcode], attrs) do
+          :ok ->
+            %Credential{}
+            |> Credential.changeset(attrs)
+            |> Repo.insert()
+
+          {:error, reason} ->
+            Glific.log_exception(
+              %CredentialError{
+                message: "Credential save blocked",
+                organization_id: attrs[:organization_id],
+                shortcode: attrs[:shortcode]
+              },
+              namespace: "partners",
+              tags: %{
+                organization_id: attrs[:organization_id],
+                shortcode: attrs[:shortcode],
+                reason: reason
+              }
+            )
+
+            {:error, reason}
+        end
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
@@ -969,15 +999,66 @@ defmodule Glific.Partners do
 
     remove_organization_cache(organization.id, organization.shortcode)
 
-    {:ok, credential} =
-      credential
-      |> Credential.changeset(attrs)
-      |> Repo.update()
+    credential = Repo.preload(credential, [:provider])
 
-    credential = credential |> Repo.preload([:provider, :organization])
+    case validate_credential_permissions(credential.provider.shortcode, attrs) do
+      :ok ->
+        {:ok, credential} =
+          credential
+          |> Credential.changeset(attrs)
+          |> Repo.update()
 
-    credential.organization
-    |> credential_update_callback(credential, credential.provider.shortcode)
+        credential = credential |> Repo.preload([:provider, :organization])
+
+        credential.organization
+        |> credential_update_callback(credential, credential.provider.shortcode)
+
+      {:error, reason} ->
+        Glific.log_exception(
+          %CredentialError{
+            message: "Credential save blocked",
+            organization_id: credential.organization_id,
+            shortcode: credential.provider.shortcode
+          },
+          namespace: "partners",
+          tags: %{
+            organization_id: credential.organization_id,
+            shortcode: credential.provider.shortcode,
+            reason: reason
+          }
+        )
+
+        {:error, reason}
+    end
+  end
+
+  # Validates permissions for a credential before saving to the DB.
+  # Only runs the dry-run check for bigquery credentials that include new secrets.
+  @spec validate_credential_permissions(String.t() | nil, map()) :: :ok | {:error, String.t()}
+  defp validate_credential_permissions("bigquery", attrs) do
+    secrets = attrs[:secrets] || attrs["secrets"] || %{}
+    service_account_json = secrets["service_account"] || secrets[:service_account]
+    organization_id = attrs[:organization_id] || attrs["organization_id"]
+
+    if is_binary(service_account_json) && service_account_json != "" do
+      do_validate_bigquery_service_account(service_account_json, organization_id)
+    else
+      {:error, "service_account must be a non-empty JSON string"}
+    end
+  end
+
+  defp validate_credential_permissions(_shortcode, _attrs), do: :ok
+
+  @spec do_validate_bigquery_service_account(String.t(), non_neg_integer() | nil) ::
+          :ok | {:error, String.t()}
+  defp do_validate_bigquery_service_account(service_account_json, organization_id \\ nil) do
+    with {:ok, service_account} <- Jason.decode(service_account_json),
+         {:ok, :valid} <- BigQuery.validate_bigquery_credentials(service_account, organization_id) do
+      :ok
+    else
+      {:error, %Jason.DecodeError{}} -> {:error, "Invalid service account JSON"}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
@@ -990,12 +1071,7 @@ defmodule Glific.Partners do
         {:ok, credential}
 
       {:error, error} ->
-        Partners.disable_credential(
-          organization.id,
-          "bigquery",
-          error
-        )
-
+        Partners.disable_credential(organization.id, "bigquery", error)
         {:error, error}
     end
   end

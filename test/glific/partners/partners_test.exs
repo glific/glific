@@ -1195,23 +1195,188 @@ defmodule Glific.PartnersTest do
              }) == 1
     end
 
-    test "update_credential/2 for bigquery should call create bigquery dataset",
+    test "update_credential/2 for bigquery rejects non-string service_account",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.update_credential(credential, %{
+                 secrets: %{"service_account" => %{}},
+                 is_active: false,
+                 organization_id: organization_id
+               })
+    end
+
+    test "create_credential/1 for bigquery rejects empty secrets",
+         %{organization_id: organization_id} = _attrs do
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.create_credential(%{
+                 shortcode: "bigquery",
+                 secrets: %{},
+                 organization_id: organization_id
+               })
+    end
+
+    test "create_credential/1 for bigquery rejects empty string service_account",
+         %{organization_id: organization_id} = _attrs do
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.create_credential(%{
+                 shortcode: "bigquery",
+                 secrets: %{"service_account" => ""},
+                 organization_id: organization_id
+               })
+    end
+
+    test "create_credential/1 for bigquery blocks save when service account lacks permissions",
+         %{organization_id: organization_id} = _attrs do
+      service_account_json =
+        Jason.encode!(%{
+          project_id: "DEFAULT PROJECT ID",
+          private_key_id: "DEFAULT API KEY",
+          client_email: "DEFAULT CLIENT EMAIL",
+          private_key: "DEFAULT PRIVATE KEY"
+        })
+
+      valid_attrs = %{
+        shortcode: "bigquery",
+        secrets: %{"service_account" => service_account_json},
+        is_active: true,
+        organization_id: organization_id
+      }
+
+      with_mock(Goth.Token, [],
+        fetch: fn _source ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Tesla.Mock.mock(fn %{method: method, url: url} ->
+          if method == :post && String.contains?(url, "/datasets") do
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+          else
+            %Tesla.Env{status: 200, body: "{}"}
+          end
+        end)
+
+        assert {:error, error} = Partners.create_credential(valid_attrs)
+        assert error =~ "bigquery.datasets.create"
+      end
+
+      # Credential should not have been persisted
+      assert {:error, _} =
+               Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
+    end
+
+    test "update_credential/2 for bigquery blocks save when service account lacks permissions",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      service_account_json =
+        Jason.encode!(%{
+          project_id: "DEFAULT PROJECT ID",
+          private_key_id: "DEFAULT API KEY",
+          client_email: "DEFAULT CLIENT EMAIL",
+          private_key: "DEFAULT PRIVATE KEY"
+        })
+
+      update_attrs = %{
+        secrets: %{"service_account" => service_account_json},
+        is_active: true,
+        organization_id: organization_id
+      }
+
+      with_mock(Goth.Token, [],
+        fetch: fn _source ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Tesla.Mock.mock(fn %{method: method, url: url} ->
+          if method == :post && String.contains?(url, "/insertAll") do
+            %Tesla.Env{
+              status: 403,
+              body:
+                ~s({"error":{"code":403,"status":"PERMISSION_DENIED","message":"Access denied"}})
+            }
+          else
+            %Tesla.Env{status: 200, body: "{}"}
+          end
+        end)
+
+        assert {:error, error} = Partners.update_credential(credential, update_attrs)
+        assert error =~ "bigquery.tables.updateData"
+      end
+
+      # Credential should remain unchanged (still has empty secrets, not the new service_account)
+      {:ok, unchanged} =
+        Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
+
+      assert unchanged.secrets["service_account"] == nil
+    end
+
+    test "create_credential/1 for bigquery returns error when service account is invalid JSON",
          %{organization_id: organization_id} = _attrs do
       valid_attrs = %{
         shortcode: "bigquery",
-        secrets: %{},
+        secrets: %{"service_account" => "this is not valid json"},
+        is_active: true,
         organization_id: organization_id
       }
 
-      {:ok, credential} = Partners.create_credential(valid_attrs)
+      assert {:error, "Invalid service account JSON"} = Partners.create_credential(valid_attrs)
+    end
 
-      valid_update_attrs = %{
-        secrets: %{"service_account" => %{}},
-        is_active: false,
-        organization_id: organization_id
-      }
+    test "update_credential/2 for bigquery returns error when sync_schema_with_bigquery fails",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
 
-      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+      {:ok, credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      service_account_json =
+        Jason.encode!(%{
+          project_id: "DEFAULT PROJECT ID",
+          private_key_id: "DEFAULT API KEY",
+          client_email: "DEFAULT CLIENT EMAIL",
+          private_key: "DEFAULT PRIVATE KEY"
+        })
+
+      with_mock(Glific.BigQuery, [:passthrough],
+        validate_bigquery_credentials: fn _sa, _org_id -> {:ok, :valid} end,
+        sync_schema_with_bigquery: fn _org_id -> {:error, "BigQuery sync failed"} end
+      ) do
+        assert {:error, "BigQuery sync failed"} =
+                 Partners.update_credential(credential, %{
+                   secrets: %{"service_account" => service_account_json},
+                   organization_id: organization_id
+                 })
+      end
     end
 
     test "update_credential/2 for maytapi should update credentials" do
@@ -1427,7 +1592,15 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      with_mock(Goth.Token, [],
+        fetch: fn _source ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+      end
+
       updated_organization_services = Partners.get_organization_services()
 
       assert updated_organization_services[organization_id]["bigquery"] == true
@@ -1452,7 +1625,15 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      with_mock(Goth.Token, [],
+        fetch: fn _source ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+      end
+
       updated_organization_services = Partners.get_org_services_by_id(organization_id)
 
       assert updated_organization_services["bigquery"] == true
@@ -1487,6 +1668,7 @@ defmodule Glific.PartnersTest do
 
         Glific.Caches.remove(organization_id, [{:provider_token, "bigquery"}])
 
+        Tesla.Mock.mock(fn _ -> %Tesla.Env{status: 200, body: "{}"} end)
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
         token = Partners.get_goth_token(organization_id, "bigquery")
@@ -1574,7 +1756,7 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "get_token/1 on return error in goth token should disable BigQuery",
+    test "get_token/1 on return error in goth token should block BigQuery credential creation",
          %{organization_id: organization_id} = _attrs do
       with_mocks([
         {
@@ -1605,15 +1787,15 @@ defmodule Glific.PartnersTest do
 
         Glific.Caches.remove(organization_id, [{:provider_token, "bigquery"}])
 
-        {:ok, _credential} = Partners.create_credential(valid_attrs)
+        # With an invalid service account token, create_credential should be blocked
+        assert {:error, _reason} = Partners.create_credential(valid_attrs)
 
-        assert true ==
-                 is_nil(Partners.get_goth_token(organization_id, "bigquery"))
-
-        {:ok, cred} =
-          Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
-
-        assert cred.is_active == false
+        # No credential should have been created
+        assert {:error, _} =
+                 Partners.get_credential(%{
+                   organization_id: organization_id,
+                   shortcode: "bigquery"
+                 })
       end
     end
 

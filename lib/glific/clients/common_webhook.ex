@@ -865,16 +865,27 @@ defmodule Glific.Clients.CommonWebhook do
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
-  # Wraps a webhook entry point body so any failure — predictable
+  # Webhooks whose real outcome arrives later via a flow_resume callback. Here we
+  # only see the dispatch ack, so their success is counted at the callback
+  # (GlificWeb.Flows.FlowResumeController) to avoid double counting.
+  @async_webhooks ~w(speech_to_text text_to_speech unified-llm-call unified-voice-llm-call)
+
   @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
   defp with_failure_reporting(webhook_name, org_id, fun) do
-    result = fun.()
-    maybe_report_webhook_failure(result, webhook_name, org_id)
-    result
-  rescue
-    exception ->
-      report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
-      reraise exception, __STACKTRACE__
+    start = System.monotonic_time(:millisecond)
+
+    try do
+      result = fun.()
+      duration_ms = System.monotonic_time(:millisecond) - start
+      record_webhook_outcome(result, webhook_name, org_id, duration_ms)
+      result
+    rescue
+      exception ->
+        duration_ms = System.monotonic_time(:millisecond) - start
+        report_webhook_failure(webhook_name, org_id, nil, Exception.message(exception))
+        record_webhook_metrics(webhook_name, "failure", duration_ms)
+        reraise exception, __STACKTRACE__
+    end
   end
 
   # FUNCTION webhooks signal Failure to the flow by returning a non-map (see
@@ -895,22 +906,37 @@ defmodule Glific.Clients.CommonWebhook do
 
   defp normalize_failure(result), do: result
 
-  @spec maybe_report_webhook_failure(any(), String.t(), non_neg_integer() | nil) :: :ok
-  defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, org_id) do
+  @spec record_webhook_outcome(any(), String.t(), non_neg_integer() | nil, non_neg_integer()) ::
+          :ok
+  defp record_webhook_outcome(%{success: false} = result, webhook_name, org_id, duration_ms) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, org_id, status, reason)
+    record_webhook_metrics(webhook_name, "failure", duration_ms)
   end
 
   # nil / non-map results route to the flow's Failure category (see
   # Glific.Flows.Webhook.handle/3, which keys off is_map). Treat them as
   # failures here too
-  defp maybe_report_webhook_failure(result, webhook_name, org_id)
+  defp record_webhook_outcome(result, webhook_name, org_id, duration_ms)
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: inspect(result)
     report_webhook_failure(webhook_name, org_id, nil, reason)
+    record_webhook_metrics(webhook_name, "failure", duration_ms)
   end
 
-  defp maybe_report_webhook_failure(_result, _webhook_name, _org_id), do: :ok
+  defp record_webhook_outcome(_result, webhook_name, _org_id, duration_ms) do
+    unless webhook_name in @async_webhooks,
+      do: record_webhook_metrics(webhook_name, "success", duration_ms)
+
+    :ok
+  end
+
+  @spec record_webhook_metrics(String.t() | nil, String.t(), non_neg_integer()) :: :ok
+  defp record_webhook_metrics(webhook_name, status, duration_ms) do
+    Webhook.track_webhook_count(webhook_name, status)
+    Webhook.track_webhook_latency(webhook_name, status, duration_ms)
+    :ok
+  end
 
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
