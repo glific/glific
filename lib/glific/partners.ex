@@ -1034,7 +1034,7 @@ defmodule Glific.Partners do
     if is_binary(service_account_json) && service_account_json != "" do
       do_validate_bigquery_service_account(service_account_json)
     else
-      :ok
+      {:error, "service_account must be a non-empty JSON string"}
     end
   end
 

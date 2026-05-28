@@ -1195,23 +1195,45 @@ defmodule Glific.PartnersTest do
              }) == 1
     end
 
-    test "update_credential/2 for bigquery should call create bigquery dataset",
+    test "update_credential/2 for bigquery rejects non-string service_account",
          %{organization_id: organization_id} = _attrs do
-      valid_attrs = %{
-        shortcode: "bigquery",
-        secrets: %{},
-        organization_id: organization_id
-      }
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
 
-      {:ok, credential} = Partners.create_credential(valid_attrs)
+      {:ok, credential} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
 
-      valid_update_attrs = %{
-        secrets: %{"service_account" => %{}},
-        is_active: false,
-        organization_id: organization_id
-      }
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.update_credential(credential, %{
+                 secrets: %{"service_account" => %{}},
+                 is_active: false,
+                 organization_id: organization_id
+               })
+    end
 
-      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    test "create_credential/1 for bigquery rejects empty secrets",
+         %{organization_id: organization_id} = _attrs do
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.create_credential(%{
+                 shortcode: "bigquery",
+                 secrets: %{},
+                 organization_id: organization_id
+               })
+    end
+
+    test "create_credential/1 for bigquery rejects empty string service_account",
+         %{organization_id: organization_id} = _attrs do
+      assert {:error, "service_account must be a non-empty JSON string"} =
+               Partners.create_credential(%{
+                 shortcode: "bigquery",
+                 secrets: %{"service_account" => ""},
+                 organization_id: organization_id
+               })
     end
 
     test "create_credential/1 for bigquery blocks save when service account lacks permissions",
@@ -1259,13 +1281,16 @@ defmodule Glific.PartnersTest do
 
     test "update_credential/2 for bigquery blocks save when service account lacks permissions",
          %{organization_id: organization_id} = _attrs do
-      # First create a valid credential (no service_account JSON, so validation is skipped)
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
       {:ok, credential} =
-        Partners.create_credential(%{
-          shortcode: "bigquery",
+        %Credential{}
+        |> Credential.changeset(%{
           secrets: %{},
+          provider_id: provider.id,
           organization_id: organization_id
         })
+        |> Repo.insert()
 
       service_account_json =
         Jason.encode!(%{
@@ -1323,19 +1348,32 @@ defmodule Glific.PartnersTest do
 
     test "update_credential/2 for bigquery returns error when sync_schema_with_bigquery fails",
          %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
       {:ok, credential} =
-        Partners.create_credential(%{
-          shortcode: "bigquery",
+        %Credential{}
+        |> Credential.changeset(%{
           secrets: %{},
+          provider_id: provider.id,
           organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      service_account_json =
+        Jason.encode!(%{
+          project_id: "DEFAULT PROJECT ID",
+          private_key_id: "DEFAULT API KEY",
+          client_email: "DEFAULT CLIENT EMAIL",
+          private_key: "DEFAULT PRIVATE KEY"
         })
 
       with_mock(Glific.BigQuery, [:passthrough],
+        validate_bigquery_credentials: fn _sa -> {:ok, :valid} end,
         sync_schema_with_bigquery: fn _org_id -> {:error, "BigQuery sync failed"} end
       ) do
         assert {:error, "BigQuery sync failed"} =
                  Partners.update_credential(credential, %{
-                   secrets: %{},
+                   secrets: %{"service_account" => service_account_json},
                    organization_id: organization_id
                  })
       end

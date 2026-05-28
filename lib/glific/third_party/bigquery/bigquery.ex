@@ -628,8 +628,13 @@ defmodule Glific.BigQuery do
         :ok
 
       {:error, err} ->
-        Logger.warning(
-          "Failed to cleanup BQ validation dataset #{dataset_id} in project #{project_id}: #{safe_inspect(err)}"
+        Glific.log_exception(
+          %Partners.CredentialError{
+            message:
+              "Failed to cleanup BQ validation dataset #{dataset_id} in project #{project_id}: #{safe_inspect(err)}"
+          },
+          namespace: "partners",
+          tags: %{dataset_id: dataset_id, project_id: project_id}
         )
 
         :ok
