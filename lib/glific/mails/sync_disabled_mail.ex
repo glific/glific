@@ -10,7 +10,7 @@ defmodule Glific.Mails.SyncDisabledMail do
     Partners.Saas
   }
 
-  @internal_team_mail "info@glific.org"
+  @internal_team_mail "glific-ops@projecttech4dev.org"
 
   @doc """
   Fetches disabled-credential orgs for both BigQuery and GCS and sends the
