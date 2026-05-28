@@ -273,7 +273,7 @@ defmodule Glific.Bhasini do
     services = organization.services["google_cloud_storage"]
 
     if is_nil(services) do
-      "Enable GCS is use Bhashini text to speech"
+      %{success: false, reason: "GCS is disabled"}
     else
       text_to_speech(source_language, org_id, text)
     end

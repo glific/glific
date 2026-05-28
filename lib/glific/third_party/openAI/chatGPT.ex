@@ -232,7 +232,7 @@ defmodule Glific.OpenAI.ChatGPT do
       |> Map.put(:translated_text, text)
     else
       true ->
-        "Enable GCS is use Open AI text to speech"
+        %{success: false, reason: "GCS is disabled"}
 
       error ->
         error
