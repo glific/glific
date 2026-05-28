@@ -5,7 +5,10 @@ defmodule Glific.Mails.SyncDisabledMailTest do
     Mails.MailLog,
     Mails.SyncDisabledMail,
     Partners,
-    Partners.Saas
+    Partners.Credential,
+    Partners.Provider,
+    Partners.Saas,
+    Repo
   }
 
   describe "new_mail/2" do
@@ -32,13 +35,19 @@ defmodule Glific.Mails.SyncDisabledMailTest do
   describe "send_if_any/0" do
     test "sends email and logs it when BigQuery orgs are disabled",
          %{organization_id: organization_id} do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      # Bypass Partners.create_credential: it now validates that bigquery credentials
+      # contain a valid service_account JSON, which is irrelevant to this test.
       {:ok, _} =
-        Partners.create_credential(%{
-          shortcode: "bigquery",
+        %Credential{}
+        |> Credential.changeset(%{
           secrets: %{},
+          provider_id: provider.id,
           organization_id: organization_id,
           is_active: false
         })
+        |> Repo.insert()
 
       SyncDisabledMail.send_if_any()
 

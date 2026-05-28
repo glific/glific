@@ -1871,13 +1871,18 @@ defmodule Glific.PartnersTest do
   describe "list_orgs_with_disabled_credential/1" do
     test "returns orgs whose credential is inactive for the given shortcode",
          %{organization_id: organization_id} = _attrs do
-      # Create and then disable a bigquery credential for org 1
+      # Bypass Partners.create_credential: it validates that bigquery credentials
+      # contain a valid service_account, which is irrelevant to this test.
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
       {:ok, _} =
-        Partners.create_credential(%{
-          shortcode: "bigquery",
+        %Credential{}
+        |> Credential.changeset(%{
           secrets: %{},
+          provider_id: provider.id,
           organization_id: organization_id
         })
+        |> Repo.insert()
 
       Partners.disable_credential(organization_id, "bigquery", "test: permission denied")
 
@@ -1892,14 +1897,18 @@ defmodule Glific.PartnersTest do
 
     test "does not include orgs with an active credential",
          %{organization_id: organization_id} = _attrs do
-      # Create a credential and flip is_active directly — bypasses update_credential
-      # callbacks (which attempt BQ API calls in tests).
+      # Bypass Partners.create_credential: it validates that bigquery credentials
+      # contain a valid service_account, which is irrelevant to this test.
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
       {:ok, credential} =
-        Partners.create_credential(%{
-          shortcode: "bigquery",
+        %Credential{}
+        |> Credential.changeset(%{
           secrets: %{},
+          provider_id: provider.id,
           organization_id: organization_id
         })
+        |> Repo.insert()
 
       Credential
       |> where([c], c.id == ^credential.id)
