@@ -356,6 +356,77 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
+  describe "Webhook.update_log/2 failure handling" do
+    test "records %{success: false, reason: _} as status 400 with the reason as error", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{success: false, reason: "Kaapi STT failed"}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert log.error == "Kaapi STT failed"
+      assert log.response_json == result
+    end
+
+    test "falls back to :error when :reason is absent", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{success: false, error: "Bad input"}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert log.error == "Bad input"
+    end
+
+    test "falls back to :message when :reason and :error are absent", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{success: false, message: "Something went wrong"}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert log.error == "Something went wrong"
+    end
+
+    test "defaults to a generic error when no reason-like field is present", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{success: false}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert log.error == "Webhook failure"
+    end
+
+    test "leaves success maps as status 200 with no error", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{success: true, parsed_msg: "ok"}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 200
+      assert log.error == nil
+    end
+
+    test "treats a map without a success key as a 200 response(for get_buttons and check_response webhook)",
+         attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      result = %{response: "ok", extra: 1}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 200
+      assert log.error == nil
+    end
+
+    test "handles non-binary reason (e.g. a decoded JSON map) without crashing", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      # Bhasini sets %{success: false, reason: body} on a 500 with body being a
+      # decoded JSON map. to_string/1 would raise on that; the cond path uses
+      # inspect/1 instead so the log row still gets written.
+      result = %{success: false, reason: %{"error" => "upstream blew up"}}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert is_binary(log.error)
+      assert String.contains?(log.error, "upstream blew up")
+    end
+  end
+
   test "execute a webhook with a POST request, consecutive webhook calls should not work",
        attrs do
     Tesla.Mock.mock(fn
