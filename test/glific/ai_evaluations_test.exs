@@ -379,15 +379,20 @@ defmodule Glific.AIEvaluationsTest do
   end
 
   describe "request_eval_access/1" do
+    setup do
+      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
+      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
+      :ok
+    end
+
     test "creates a new request with status requested", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn %{method: :post} -> %Tesla.Env{status: 200, body: ""} end)
+
       assert {:ok, %OrganizationEvalRequest{status: "requested"}} =
                AIEvaluations.request_eval_access(organization_id)
     end
 
     test "sends Discord notification on new request", %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
       test_pid = self()
 
       Tesla.Mock.mock(fn %{method: :post} = env ->
@@ -405,9 +410,6 @@ defmodule Glific.AIEvaluationsTest do
 
     test "returns existing request and does not send Discord notification when request already exists",
          %{organization_id: organization_id} do
-      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
-      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
-
       test_pid = self()
 
       Tesla.Mock.mock(fn %{method: :post} = env ->
@@ -430,6 +432,10 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "returns the request when it exists", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn %{method: :post} -> %Tesla.Env{status: 200, body: ""} end)
+      Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
+      on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
+
       {:ok, created} = AIEvaluations.request_eval_access(organization_id)
 
       assert {:ok, %OrganizationEvalRequest{} = fetched} =
