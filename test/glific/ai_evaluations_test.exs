@@ -399,7 +399,8 @@ defmodule Glific.AIEvaluationsTest do
 
       assert_received {:discord_called, body}
       decoded = Jason.decode!(body)
-      assert decoded["content"] =~ "AI Evaluations Access Request"
+      [embed] = decoded["embeds"]
+      assert embed["title"] =~ "AI Evaluations Access Request"
     end
 
     test "returns existing request and does not send Discord notification when request already exists",
