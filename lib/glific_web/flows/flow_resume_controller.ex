@@ -303,12 +303,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     maybe_report_callback_failure(result, response)
   end
 
-  # Records latency for an async webhook callback. Emits the kaapi-specific
-  # `kaapi_llm_latency` (by call_type) when a call_type is present, plus the
-  # generic `flow_webhook_latency` (by webhook_name + status) shared with sync
-  # nodes. `timestamp` is the (microsecond) request-initiation time threaded
-  # through the callback, so a callback that arrives after the flow already
-  # timed out still records its real, uncapped latency (tagged "failure").
+  # Records latency for an async webhook callback.
   @spec track_kaapi_latency(map(), String.t()) :: :ok
   defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
        when is_integer(timestamp) do

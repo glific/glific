@@ -93,11 +93,6 @@ defmodule Glific.Flows.Webhook do
   @doc """
   Increment a counter for a flow-webhook node outcome so success/failure ratios
   can be computed per webhook node. `status` is "success" or "failure".
-
-  We deliberately do NOT tag by organization_id: AppSignal counter metrics are
-  queryable only by the exact emitted tag set (no wildcards), so a high-cardinality
-  org tag would force per-org enumeration and block aggregate charts. Per-org
-  failures remain visible via the `flow_webhooks` error reports.
   """
   @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
   def track_webhook_count(webhook_name, status) do
