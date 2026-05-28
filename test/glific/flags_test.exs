@@ -193,7 +193,10 @@ defmodule Glific.FlagsTest do
     FunWithFlags.enable(:high_trigger_tps_enabled, for_actor: %{organization_id: organization.id})
     assert Flags.get_flag_enabled(:high_trigger_tps_enabled, organization) == true
 
-    FunWithFlags.disable(:high_trigger_tps_enabled, for_actor: %{organization_id: organization.id})
+    FunWithFlags.disable(:high_trigger_tps_enabled,
+      for_actor: %{organization_id: organization.id}
+    )
+
     assert Flags.get_flag_enabled(:high_trigger_tps_enabled, organization) == false
   end
 end
