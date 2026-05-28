@@ -300,35 +300,10 @@ defmodule Glific.Clients.CommonWebhook do
     url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
 
     with_failure_reporting("geolocation", org_id, fn ->
-      Tesla.get(url)
-      |> case do
+      case Tesla.get(url) do
         {:ok, %Tesla.Env{status: 200, body: body}} ->
-          %{"results" => results} = Jason.decode!(body)
-
           Glific.Metrics.increment("Geolocation API Success")
-
-          case results do
-            [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
-              city = find_component(components, "locality")
-              state = find_component(components, "administrative_area_level_1")
-              country = find_component(components, "country")
-              postal_code = find_component(components, "postal_code")
-              district = find_component(components, "administrative_area_level_3")
-
-              %{
-                success: true,
-                city: city,
-                state: state,
-                country: country,
-                postal_code: postal_code,
-                district: district,
-                address: formatted_address
-              }
-
-            _ ->
-              Glific.Metrics.increment("Geolocation API Failure")
-              "No results found"
-          end
+          body |> Jason.decode!() |> Map.fetch!("results") |> parse_geolocation_results()
 
         {:ok, %Tesla.Env{status: status_code}} ->
           Glific.Metrics.increment("Geolocation API Failure")
@@ -484,6 +459,23 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
+  @spec parse_geolocation_results(list(map())) :: map() | String.t()
+  defp parse_geolocation_results([
+         %{"address_components" => components, "formatted_address" => formatted_address} | _
+       ]) do
+    %{
+      success: true,
+      city: find_component(components, "locality"),
+      state: find_component(components, "administrative_area_level_1"),
+      country: find_component(components, "country"),
+      postal_code: find_component(components, "postal_code"),
+      district: find_component(components, "administrative_area_level_3"),
+      address: formatted_address
+    }
+  end
+
+  defp parse_geolocation_results(_), do: "No results found"
+
   @spec gemini_nmt_tts_call(
           String.t(),
           String.t(),
@@ -491,9 +483,6 @@ defmodule Glific.Clients.CommonWebhook do
           String.t(),
           Keyword.t()
         ) :: map()
-  # Returns the raw %{success: ...} map. No in-tree internal callers today, but
-  # kept symmetric with the other bhasini cores: the webhook/2 clause does the
-  # flow-routing normalization, all engine selection logic lives here.
   @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
   defp do_text_to_speech_with_bhasini(fields) do
     text = fields["text"]
@@ -522,9 +511,10 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  # Returns the raw %{success: ...} map. Internal callers (unified-voice-llm-call)
-  # use this directly; the webhook/2 clause normalizes failures for flow routing.
-  @spec do_speech_to_text_with_bhasini(map()) :: map() | String.t()
+  # Spec includes `{:error, _}` defensively so the unified-voice-llm-call call
+  # site can keep an error-tuple match (even if Gemini.speech_to_text doesn't
+  # currently surface one) without Dialyzer flagging the clause as unreachable.
+  @spec do_speech_to_text_with_bhasini(map()) :: map() | String.t() | {:error, any()}
   defp do_speech_to_text_with_bhasini(fields) do
     {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
 
@@ -540,8 +530,6 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  # Returns the raw %{success: ...} map. Internal callers (voice_post_process)
-  # use this directly; the webhook/2 clause normalizes failures for flow routing.
   @spec do_nmt_tts_with_bhasini(map()) :: map() | String.t()
   defp do_nmt_tts_with_bhasini(fields) do
     text = fields["text"]
