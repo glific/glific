@@ -941,7 +941,11 @@ defmodule Glific.Partners do
                 shortcode: attrs[:shortcode]
               },
               namespace: "partners",
-              tags: %{reason: reason}
+              tags: %{
+                organization_id: attrs[:organization_id],
+                shortcode: attrs[:shortcode],
+                reason: reason
+              }
             )
 
             {:error, reason}
@@ -1017,7 +1021,11 @@ defmodule Glific.Partners do
             shortcode: credential.provider.shortcode
           },
           namespace: "partners",
-          tags: %{reason: reason}
+          tags: %{
+            organization_id: credential.organization_id,
+            shortcode: credential.provider.shortcode,
+            reason: reason
+          }
         )
 
         {:error, reason}
@@ -1030,9 +1038,10 @@ defmodule Glific.Partners do
   defp validate_credential_permissions("bigquery", attrs) do
     secrets = attrs[:secrets] || attrs["secrets"] || %{}
     service_account_json = secrets["service_account"] || secrets[:service_account]
+    organization_id = attrs[:organization_id] || attrs["organization_id"]
 
     if is_binary(service_account_json) && service_account_json != "" do
-      do_validate_bigquery_service_account(service_account_json)
+      do_validate_bigquery_service_account(service_account_json, organization_id)
     else
       {:error, "service_account must be a non-empty JSON string"}
     end
@@ -1040,10 +1049,11 @@ defmodule Glific.Partners do
 
   defp validate_credential_permissions(_shortcode, _attrs), do: :ok
 
-  @spec do_validate_bigquery_service_account(String.t()) :: :ok | {:error, String.t()}
-  defp do_validate_bigquery_service_account(service_account_json) do
+  @spec do_validate_bigquery_service_account(String.t(), non_neg_integer() | nil) ::
+          :ok | {:error, String.t()}
+  defp do_validate_bigquery_service_account(service_account_json, organization_id \\ nil) do
     with {:ok, service_account} <- Jason.decode(service_account_json),
-         {:ok, :valid} <- BigQuery.validate_bigquery_credentials(service_account) do
+         {:ok, :valid} <- BigQuery.validate_bigquery_credentials(service_account, organization_id) do
       :ok
     else
       {:error, %Jason.DecodeError{}} -> {:error, "Invalid service account JSON"}

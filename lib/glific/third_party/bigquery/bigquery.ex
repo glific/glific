@@ -454,14 +454,15 @@ defmodule Glific.BigQuery do
 
   Returns `{:ok, :valid}` or `{:error, message}`.
   """
-  @spec validate_bigquery_credentials(map()) :: {:ok, :valid} | {:error, String.t()}
-  def validate_bigquery_credentials(service_account) do
+  @spec validate_bigquery_credentials(map(), non_neg_integer() | nil) ::
+          {:ok, :valid} | {:error, String.t()}
+  def validate_bigquery_credentials(service_account, organization_id \\ nil) do
     project_id = service_account["project_id"]
 
     case Goth.Token.fetch(source: {:service_account, service_account, []}) do
       {:ok, token} ->
         conn = Connection.new(token.token)
-        validate_bigquery_permissions(conn, project_id)
+        validate_bigquery_permissions(conn, project_id, organization_id)
 
       {:error, reason} ->
         {:error, "Error fetching token from service account: #{safe_inspect(reason)}"}
@@ -484,9 +485,9 @@ defmodule Glific.BigQuery do
   Returns {:ok, :valid} if all operations succeed, or {:error, message} indicating
   which operation failed and what permission is missing.
   """
-  @spec validate_bigquery_permissions(Tesla.Client.t(), String.t()) ::
+  @spec validate_bigquery_permissions(Tesla.Client.t(), String.t(), non_neg_integer() | nil) ::
           {:ok, :valid} | {:error, String.t()}
-  def validate_bigquery_permissions(conn, project_id) do
+  def validate_bigquery_permissions(conn, project_id, organization_id \\ nil) do
     temp_dataset_id = "glific_permission_test_#{System.unique_integer([:positive, :monotonic])}"
     temp_table_id = "glific_test_table"
 
@@ -502,7 +503,7 @@ defmodule Glific.BigQuery do
       {:ok, :valid}
     else
       {:error, reason} ->
-        cleanup_validation_dataset(conn, project_id, temp_dataset_id)
+        cleanup_validation_dataset(conn, project_id, temp_dataset_id, organization_id)
         {:error, reason}
     end
   end
@@ -621,8 +622,13 @@ defmodule Glific.BigQuery do
     {:error, "BigQuery validation failed at #{operation}: #{safe_inspect(reason)}"}
   end
 
-  @spec cleanup_validation_dataset(Tesla.Client.t(), String.t(), String.t()) :: :ok
-  defp cleanup_validation_dataset(conn, project_id, dataset_id) do
+  @spec cleanup_validation_dataset(
+          Tesla.Client.t(),
+          String.t(),
+          String.t(),
+          non_neg_integer() | nil
+        ) :: :ok
+  defp cleanup_validation_dataset(conn, project_id, dataset_id, organization_id \\ nil) do
     case Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true) do
       {:ok, _} ->
         :ok
@@ -631,10 +637,16 @@ defmodule Glific.BigQuery do
         Glific.log_exception(
           %Partners.CredentialError{
             message:
-              "Failed to cleanup BQ validation dataset #{dataset_id} in project #{project_id}: #{safe_inspect(err)}"
+              "Failed to cleanup BQ validation dataset #{dataset_id} in project #{project_id}: #{safe_inspect(err)}",
+            organization_id: organization_id,
+            shortcode: "bigquery"
           },
           namespace: "partners",
-          tags: %{dataset_id: dataset_id, project_id: project_id}
+          tags: %{
+            organization_id: organization_id,
+            shortcode: "bigquery",
+            reason: "cleanup_failure"
+          }
         )
 
         :ok

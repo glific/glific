@@ -1368,7 +1368,7 @@ defmodule Glific.PartnersTest do
         })
 
       with_mock(Glific.BigQuery, [:passthrough],
-        validate_bigquery_credentials: fn _sa -> {:ok, :valid} end,
+        validate_bigquery_credentials: fn _sa, _org_id -> {:ok, :valid} end,
         sync_schema_with_bigquery: fn _org_id -> {:error, "BigQuery sync failed"} end
       ) do
         assert {:error, "BigQuery sync failed"} =
