@@ -90,6 +90,34 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
+  @doc """
+  Increment a counter for a flow-webhook node outcome so success/failure ratios
+  can be computed per webhook node. `status` is "success" or "failure".
+  """
+  @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
+  def track_webhook_count(webhook_name, status) do
+    Appsignal.increment_counter("flow_webhook_count", 1, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
+  @doc """
+  Records end-to-end latency for a webhook node execution as an AppSignal
+  distribution (so p50/p95/p99 can be charted). Generic across all node types
+  """
+  @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
+  def track_webhook_latency(webhook_name, status, duration_ms) do
+    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
