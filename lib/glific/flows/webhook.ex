@@ -244,11 +244,25 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  def update_log(webhook_log, result) when is_map(result) do
+  # Distinguishes a success map from an application-level failure map
+  # (%{success: false, ...}) so the WebhookLog row records the failure with a
+  # non-200 status and an error reason
+  def update_log(webhook_log, %{success: false} = result) do
+    reason =
+      Map.get(result, :reason) || Map.get(result, :error) || Map.get(result, :message)
+
     attrs = %{
       response_json: result,
-      status_code: 200
+      status_code: 400,
+      error: to_string(reason || "Webhook failure")
     }
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
+  def update_log(webhook_log, result) when is_map(result) do
+    attrs = %{response_json: result, status_code: 200}
 
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)
