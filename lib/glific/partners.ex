@@ -580,11 +580,9 @@ defmodule Glific.Partners do
       |> Flags.set_ticketing_enabled()
       |> Flags.set_certificate_enabled()
       |> Flags.set_interactive_re_response_enabled()
-      |> Flags.set_is_kaapi_enabled()
       |> Flags.set_is_ask_glific_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
-      |> Flags.set_flag_enabled(:unified_api_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
 
     Caches.set(
@@ -1367,11 +1365,9 @@ defmodule Glific.Partners do
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
-      "kaapi_enabled" => Flags.get_is_kaapi_enabled(organization),
       "ask_glific_enabled" => Flags.get_ask_glific_enabled(organization),
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
-      "unified_api_enabled" => Flags.get_flag_enabled(:unified_api_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization)

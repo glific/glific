@@ -8,6 +8,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook.SystemError,
+    Flows.WebhookLog,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -24,10 +26,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     test "resumes an existing flow on receiving webhook event with success response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -99,24 +97,13 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
 
       # once a response is received the flow moves to next node i.e. send the message which is @results.response.message
-
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
-      # Checking the latest message, should be same as the one received at the endpoint
+      message = await_flow_message(contact.id, @ai_response)
       assert message.body == @ai_response
     end
 
     test "resumes an existing flow on receiving webhook event with failure response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -148,6 +135,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           "contact_id" => contact.id,
           "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
           "flow_id" => flow.id,
+          "message" => "Kaapi error: response generation failed",
           "organization_id" => organization_id,
           "signature" => signature,
           "status" => "failure",
@@ -178,25 +166,21 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       assert json_response(conn, 200) == ""
 
-      # once a response is received the flow moves to next node i.e. send the message which is @results.response.message
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
-      # Checking the latest message, should be failure because in the flow
-      # the failed category's next send msg node has failure as body
+      message = await_flow_message(contact.id, "failure")
       assert message.body == "failure"
+
+      updated_webhook_log = Repo.get!(WebhookLog, webhook_log.id)
+
+      assert updated_webhook_log.response_json["message"] ==
+               "Kaapi error: response generation failed"
+
+      assert updated_webhook_log.response_json["success"] == false
+      assert updated_webhook_log.response_json["thread_id"] == nil
     end
 
     test "resumes an existing flow on receiving unified API callback format", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
-      FunWithFlags.enable(:is_kaapi_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
       contact = Fixtures.contact_fixture()
       webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
 
@@ -274,13 +258,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       assert json_response(conn, 200) == ""
 
-      [message | _messages] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
-      # The message should contain the AI response extracted from the nested unified format
+      message = await_flow_message(contact.id, @ai_response)
       assert message.body == @ai_response
     end
 
@@ -471,12 +449,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
-      [message | _] =
-        Glific.Messages.list_messages(%{
-          filter: %{contact_id: contact.id},
-          opts: %{limit: 1, order: :desc}
-        })
-
+      message = await_flow_message(contact.id, "failure")
       assert message.body == "failure"
     end
 
@@ -868,6 +841,162 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
+    end
+
+    test "flow_resume returns 200 for unexpected callback format (no data/metadata)", %{
+      conn: conn
+    } do
+      conn = post(conn, "/webhook/flow_resume", %{"unexpected" => "format"})
+      assert json_response(conn, 200) == ""
+    end
+
+    test "do_flow_resume logs warning when a required callback field is missing", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      # response is missing the required "signature" field
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => 1,
+        "timestamp" => timestamp
+      }
+
+      assert :ok =
+               FlowResumeController.do_flow_resume(
+                 organization_id,
+                 %{"success" => true},
+                 response
+               )
+    end
+
+    test "do_flow_resume logs warning when contact is not found", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      non_existent_contact_id = 999_999
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => non_existent_contact_id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => non_existent_contact_id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "result_name" => "response"
+      }
+
+      assert :ok =
+               FlowResumeController.do_flow_resume(
+                 organization_id,
+                 %{"success" => true},
+                 response
+               )
+    end
+
+    test "do_flow_resume logs warning when resume_contact_flow returns an error", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      contact = Fixtures.contact_fixture()
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature =
+        Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "result_name" => "response"
+      }
+
+      with_mock FlowContext, [:passthrough],
+        resume_contact_flow: fn _contact, _flow_id, _results, _message ->
+          {:error, "flow context not found"}
+        end do
+        assert :ok =
+                 FlowResumeController.do_flow_resume(
+                   organization_id,
+                   %{"success" => true},
+                   response
+                 )
+
+        assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+      end
+    end
+
+    test "run_supervised_task rescues exceptions and returns :ok" do
+      assert :ok =
+               FlowResumeController.run_supervised_task(fn ->
+                 raise "test exception in supervised task"
+               end)
+    end
+  end
+
+  @await_flow_message_attempts 50
+  @await_flow_message_interval_ms 100
+
+  defp await_flow_message(contact_id, expected_body) do
+    await_flow_resume_tasks()
+    await_flow_message(contact_id, expected_body, @await_flow_message_attempts)
+  end
+
+  defp await_flow_resume_tasks(attempts \\ 50)
+
+  defp await_flow_resume_tasks(0) do
+    flunk("Timed out waiting for flow resume background task")
+  end
+
+  defp await_flow_resume_tasks(attempts) do
+    case Supervisor.count_children(Glific.TaskSupervisor) do
+      %{active: 0} ->
+        :ok
+
+      _ ->
+        Process.sleep(@await_flow_message_interval_ms)
+        await_flow_resume_tasks(attempts - 1)
+    end
+  end
+
+  defp await_flow_message(contact_id, expected_body, 0) do
+    flunk(
+      "Timed out waiting for message body #{inspect(expected_body)} for contact #{contact_id}"
+    )
+  end
+
+  defp await_flow_message(contact_id, expected_body, attempts) do
+    case Glific.Messages.list_messages(%{
+           filter: %{contact_id: contact_id},
+           opts: %{limit: 1, order: :desc}
+         }) do
+      [%{body: ^expected_body} = message | _] ->
+        message
+
+      _ ->
+        Process.sleep(@await_flow_message_interval_ms)
+        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 
