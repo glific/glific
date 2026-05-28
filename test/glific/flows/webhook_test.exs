@@ -412,6 +412,19 @@ defmodule Glific.Flows.WebhookTest do
       assert log.status_code == 200
       assert log.error == nil
     end
+
+    test "handles non-binary reason (e.g. a decoded JSON map) without crashing", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      # Bhasini sets %{success: false, reason: body} on a 500 with body being a
+      # decoded JSON map. to_string/1 would raise on that; the cond path uses
+      # inspect/1 instead so the log row still gets written.
+      result = %{success: false, reason: %{"error" => "upstream blew up"}}
+
+      assert {:ok, log} = Webhook.update_log(webhook_log, result)
+      assert log.status_code == 400
+      assert is_binary(log.error)
+      assert String.contains?(log.error, "upstream blew up")
+    end
   end
 
   test "execute a webhook with a POST request, consecutive webhook calls should not work",

@@ -251,11 +251,17 @@ defmodule Glific.Flows.Webhook do
     reason =
       Map.get(result, :reason) || Map.get(result, :error) || Map.get(result, :message)
 
-    attrs = %{
-      response_json: result,
-      status_code: 400,
-      error: to_string(reason || "Webhook failure")
-    }
+    # reason can be a non-binary term (e.g. a decoded JSON map from a Tesla 500
+    # body — see lib/glific/third_party/bhasini/bhasini.ex). to_string/1 would
+    # raise on those; inspect/1 produces a safe string for any term.
+    error =
+      cond do
+        is_binary(reason) -> reason
+        is_nil(reason) -> "Webhook failure"
+        true -> inspect(reason)
+      end
+
+    attrs = %{response_json: result, status_code: 400, error: error}
 
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)
