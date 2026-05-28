@@ -119,10 +119,7 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     result = CommonWebhook.webhook("geolocation", fields)
 
-    # Assert that success is false and an error message is returned
-    refute result[:success]
-    refute is_nil(result[:error])
-    assert result[:error] == "Received status code 500"
+    assert result == "Received status code 500"
   end
 
   test "detect_language/1 detects correct language from voice note using Bhashini" do
@@ -160,8 +157,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     end)
 
     result = CommonWebhook.webhook("detect_language", fields)
-    assert result[:success] == false
-    assert result[:detected_language] == "Could not detect language"
+    assert result == "Could not detect language"
   end
 
   test "parse_via_gpt_vision without response_format params, trying to get valid json" do
@@ -582,8 +578,7 @@ defmodule Glific.Flows.CommonWebhookTest do
   test "send_wa_group_poll", attrs do
     fields = %{}
 
-    assert %{success: false, error: "wa_group is invalid"} =
-             CommonWebhook.webhook("send_wa_group_poll", fields)
+    assert "wa_group is invalid" = CommonWebhook.webhook("send_wa_group_poll", fields)
 
     fields = %{
       "wa_group" => %{
@@ -593,8 +588,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "organization_id" => attrs.organization_id
     }
 
-    assert %{success: false, error: "poll_uuid is invalid"} =
-             CommonWebhook.webhook("send_wa_group_poll", fields)
+    assert "poll_uuid is invalid" = CommonWebhook.webhook("send_wa_group_poll", fields)
 
     poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
 
@@ -607,10 +601,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "poll_uuid" => poll.uuid
     }
 
-    assert %{
-             success: false,
-             error: "[\"Elixir.Glific.WAGroup.WAManagedPhone\", \"Resource not found\"]"
-           } =
+    assert "[\"Elixir.Glific.WAGroup.WAManagedPhone\", \"Resource not found\"]" =
              CommonWebhook.webhook("send_wa_group_poll", fields)
 
     wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
@@ -977,17 +968,13 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     result = CommonWebhook.webhook("create_certificate", fields)
 
-    assert result[:success] == false
-    assert result[:error] == "Certificate template not found for ID: #{certificate_id}"
+    assert result == "Certificate template not found for ID: #{certificate_id}"
   end
 
   test "webhook/2 for certificate should fail when validation fails" do
-    # when certificate is invalid
     invalid_fields = %{}
-
-    assert %{success: false, error: error} =
-             CommonWebhook.webhook("create_certificate", invalid_fields)
-
+    error = CommonWebhook.webhook("create_certificate", invalid_fields)
+    assert is_binary(error)
     assert String.split(error, "is required") |> length() == 5
 
     # replace text
@@ -998,7 +985,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => "John Doe"
     }
 
-    assert %{error: "replace_texts is invalid", success: false} =
+    assert "replace_texts is invalid" =
              CommonWebhook.webhook("create_certificate", invalid_fields)
 
     invalid_fields = %{
@@ -1007,8 +994,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    assert %{error: "contact is required", success: false} =
-             CommonWebhook.webhook("create_certificate", invalid_fields)
+    assert "contact is required" = CommonWebhook.webhook("create_certificate", invalid_fields)
 
     invalid_fields = %{
       "certificate_id" => 0,
@@ -1017,7 +1003,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    assert %{error: "Certificate template not found" <> _} =
+    assert "Certificate template not found" <> _ =
              CommonWebhook.webhook("create_certificate", invalid_fields)
   end
 
@@ -1236,7 +1222,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-          assert result.success == false
+          assert is_binary(result)
         end)
 
       assert %SystemError{} = exception
@@ -1258,8 +1244,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-          assert result.success == false
-          assert result.asr_response_text == "File download failed"
+          assert result == "File download failed"
         end)
 
       assert %SystemError{} = exception
@@ -1345,7 +1330,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result = CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
-          assert result.success == false
+          assert is_binary(result)
         end)
 
       assert %SystemError{} = exception
