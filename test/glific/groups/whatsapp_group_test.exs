@@ -4,7 +4,10 @@ defmodule Glific.Groups.WAGroupsTest do
 
   alias Glific.{
     Fixtures,
+    Groups.ContactWAGroup,
+    Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Partners,
     Seeds.SeedsDev
@@ -206,6 +209,172 @@ defmodule Glific.Groups.WAGroupsTest do
 
       assert result.id == original.id
       assert result.label == "Keep This Label"
+    end
+  end
+
+  describe "sync_wa_groups_with_contacts/2 (non-destructive diff)" do
+    setup attrs do
+      wa_managed_phone = Fixtures.get_wa_managed_phone(attrs.organization_id)
+
+      {:ok, wa_group} =
+        WAGroups.maybe_create_group(%{
+          label: "Diff Group",
+          bsp_id: "120363111111111111@g.us",
+          organization_id: attrs.organization_id,
+          wa_managed_phone_id: wa_managed_phone.id
+        })
+
+      Map.merge(attrs, %{wa_managed_phone: wa_managed_phone, wa_group: wa_group})
+    end
+
+    defp group_detail(wa_group, wa_managed_phone, participants, admins \\ []) do
+      %{
+        name: wa_group.label,
+        bsp_id: wa_group.bsp_id,
+        wa_managed_phone_id: wa_managed_phone.id,
+        participants: participants,
+        admins: admins
+      }
+    end
+
+    defp member_contact_ids(wa_group_id) do
+      ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
+      |> Enum.map(& &1.contact_id)
+      |> Enum.sort()
+    end
+
+    test "adds new participants and sets admin flag", ctx do
+      group =
+        group_detail(
+          ctx.wa_group,
+          ctx.wa_managed_phone,
+          ["918000000001@c.us", "918000000002@c.us"],
+          ["918000000001@c.us"]
+        )
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+
+      members = ContactWAGroups.list_contact_wa_group(%{wa_group_id: ctx.wa_group.id})
+      assert length(members) == 2
+
+      admin_member = Enum.find(members, & &1.is_admin)
+      admin_contact = Glific.Contacts.get_contact!(admin_member.contact_id)
+      assert admin_contact.phone == "918000000001"
+    end
+
+    test "removes departed participants", ctx do
+      first =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, [
+          "918000000001@c.us",
+          "918000000002@c.us"
+        ])
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([first], ctx.organization_id)
+      assert length(member_contact_ids(ctx.wa_group.id)) == 2
+
+      # Second sync drops 918000000002
+      second = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["918000000001@c.us"])
+      :ok = WAGroups.sync_wa_groups_with_contacts([second], ctx.organization_id)
+
+      remaining = member_contact_ids(ctx.wa_group.id)
+      assert length(remaining) == 1
+
+      kept = Glific.Contacts.get_contact!(hd(remaining))
+      assert kept.phone == "918000000001"
+    end
+
+    test "unchanged participants are not touched (no updated_at bump)", ctx do
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["918000000001@c.us"])
+      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+
+      [member] = ContactWAGroups.list_contact_wa_group(%{wa_group_id: ctx.wa_group.id})
+
+      # Backdate updated_at, then prove a re-sync with the same participant
+      # leaves the row completely untouched.
+      past = ~U[2020-01-01 00:00:00Z]
+
+      {1, _} =
+        ContactWAGroup
+        |> where([c], c.id == ^member.id)
+        |> Repo.update_all(set: [updated_at: past])
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+
+      reloaded = Repo.get!(ContactWAGroup, member.id)
+      assert DateTime.compare(reloaded.updated_at, past) == :eq
+    end
+  end
+
+  describe "sync_wa_group_phones/2" do
+    setup attrs do
+      wa_managed_phone = Fixtures.get_wa_managed_phone(attrs.organization_id)
+
+      {:ok, wa_group} =
+        WAGroups.maybe_create_group(%{
+          label: "Membership Group",
+          bsp_id: "120363222222222222@g.us",
+          organization_id: attrs.organization_id,
+          wa_managed_phone_id: wa_managed_phone.id
+        })
+
+      Map.merge(attrs, %{wa_managed_phone: wa_managed_phone, wa_group: wa_group})
+    end
+
+    defp membership(wa_group_id, wa_managed_phone_id) do
+      Repo.get_by(WAGroupPhone, %{
+        wa_group_id: wa_group_id,
+        wa_managed_phone_id: wa_managed_phone_id
+      })
+    end
+
+    test "upserts an active membership for groups the phone is in", ctx do
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+
+      row = membership(ctx.wa_group.id, ctx.wa_managed_phone.id)
+      assert row.is_active == true
+    end
+
+    test "deactivates memberships for groups no longer returned", ctx do
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
+
+      # Phone no longer reports being in any group
+      :ok = WAGroups.sync_wa_group_phones([], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == false
+    end
+
+    test "reactivates a previously inactive membership", ctx do
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      :ok = WAGroups.sync_wa_group_phones([], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == false
+
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
+    end
+
+    test "never changes is_primary", ctx do
+      # Seed a primary membership (as Phase 1 backfill would).
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: ctx.wa_group.id,
+        wa_managed_phone_id: ctx.wa_managed_phone.id,
+        organization_id: ctx.organization_id,
+        is_primary: true,
+        is_active: true
+      })
+
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_primary == true
+
+      # Even when the membership gets deactivated, is_primary is preserved.
+      :ok = WAGroups.sync_wa_group_phones([], ctx.wa_managed_phone)
+      deactivated = membership(ctx.wa_group.id, ctx.wa_managed_phone.id)
+      assert deactivated.is_active == false
+      assert deactivated.is_primary == true
     end
   end
 end

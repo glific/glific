@@ -12,6 +12,7 @@ defmodule Glific.Groups.WAGroups do
     Contacts,
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
     Repo,
@@ -92,6 +93,7 @@ defmodule Glific.Groups.WAGroups do
 
       create_whatsapp_groups(group_details, org_id)
       sync_wa_groups_with_contacts(group_details, org_id)
+      sync_wa_group_phones(group_details, wa_managed_phone)
     else
       {:ok, %Tesla.Env{body: body}} ->
         {:error, body}
@@ -122,73 +124,128 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Syncs the WA groups and contacts in it.
+  Syncs the contacts in each WA group by diffing Maytapi's participant list
+  against the current `contacts_wa_groups` rows: new participants are added,
+  departed participants are hard-deleted, and unchanged participants are left
+  untouched (no `updated_at` bump, so no downstream resync churn).
   """
-  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok | {:error, any()}
+  @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
-      {:ok, wa_group} = Repo.fetch_by(WAGroup, %{bsp_id: group.bsp_id})
-      wa_group_id = wa_group.id
+      {:ok, wa_group} =
+        Repo.fetch_by(WAGroup, %{
+          bsp_id: group.bsp_id,
+          wa_managed_phone_id: group.wa_managed_phone_id,
+          organization_id: org_id
+        })
 
-      Ecto.Multi.new()
-      |> delete_existing_contacts(wa_group_id)
-      |> add_wa_contact(group, wa_group_id, org_id)
-      |> Repo.transaction()
-      |> handle_transaction_result()
+      diff_contacts(group, wa_group.id, org_id)
     end)
   end
 
-  defp handle_transaction_result({:ok, _result}), do: :ok
-  defp handle_transaction_result({:error, _reason}), do: {:error, :transaction_failed}
+  @spec diff_contacts(map(), non_neg_integer(), non_neg_integer()) :: :ok
+  defp diff_contacts(group, wa_group_id, org_id) do
+    desired = resolve_desired_members(group, org_id)
+    desired_ids = MapSet.new(Map.keys(desired))
 
-  @spec delete_existing_contacts(Ecto.Multi.t(), non_neg_integer()) :: Ecto.Multi.t()
-  defp delete_existing_contacts(multi, wa_group_id) do
-    Ecto.Multi.run(multi, :delete_existing_contacts, fn _repo, _changes ->
-      existing_contact_wa_group_ids =
-        ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
-        |> Enum.map(& &1.contact_id)
+    existing_ids =
+      ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
+      |> Enum.map(& &1.contact_id)
+      |> MapSet.new()
 
-      ContactWAGroups.delete_wa_group_contacts_by_ids(wa_group_id, existing_contact_wa_group_ids)
-      {:ok, :deleted}
+    to_add = MapSet.difference(desired_ids, existing_ids)
+    to_remove = MapSet.difference(existing_ids, desired_ids)
+
+    Enum.each(to_add, fn contact_id ->
+      ContactWAGroups.create_contact_wa_group(%{
+        contact_id: contact_id,
+        wa_group_id: wa_group_id,
+        organization_id: org_id,
+        is_admin: Map.get(desired, contact_id, false)
+      })
+    end)
+
+    if MapSet.size(to_remove) > 0 do
+      ContactWAGroups.delete_wa_group_contacts_by_ids(wa_group_id, MapSet.to_list(to_remove))
+    end
+
+    :ok
+  end
+
+  # Resolves Maytapi's participant phone list into a map of
+  # %{contact_id => is_admin?}, creating contacts as needed.
+  @spec resolve_desired_members(map(), non_neg_integer()) :: %{non_neg_integer() => boolean()}
+  defp resolve_desired_members(group, org_id) do
+    admin_phone_numbers = Enum.map(group.admins || [], &phone_number(&1))
+
+    Enum.reduce(group.participants, %{}, fn participant_phone, acc ->
+      phone = phone_number(participant_phone)
+
+      case Contacts.maybe_create_contact(%{
+             phone: phone,
+             organization_id: org_id,
+             contact_type: "WA"
+           }) do
+        {:ok, contact} ->
+          Map.put(acc, contact.id, admin?(phone, admin_phone_numbers))
+
+        {:error, _reason} ->
+          acc
+      end
     end)
   end
 
-  @spec add_wa_contact(
-          Ecto.Multi.t(),
-          map(),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: Ecto.Multi.t()
-  defp add_wa_contact(multi, group, wa_group_id, org_id) do
-    admin_phone_numbers = Enum.map(group.admins, &phone_number(&1))
+  @doc """
+  Upserts `wa_groups_phones` memberships from a single phone's Maytapi
+  `getGroups` response. Groups the phone is currently in are marked
+  `is_active: true`; memberships for groups no longer returned are marked
+  `is_active: false`. `is_primary` is never touched here.
+  """
+  @spec sync_wa_group_phones(list(), WAManagedPhone.t()) :: :ok
+  def sync_wa_group_phones(group_details, wa_managed_phone) do
+    org_id = wa_managed_phone.organization_id
 
-    Ecto.Multi.run(multi, :add_contacts, fn _repo, _changes ->
-      Enum.each(group.participants, fn participant_phone ->
-        phone = phone_number(participant_phone)
-        is_admin = admin?(phone, admin_phone_numbers)
+    present_group_ids =
+      Enum.map(group_details, fn group ->
+        {:ok, wa_group} =
+          Repo.fetch_by(WAGroup, %{
+            bsp_id: group.bsp_id,
+            wa_managed_phone_id: group.wa_managed_phone_id,
+            organization_id: org_id
+          })
 
-        contact_attrs = %{
-          phone: phone,
-          organization_id: org_id,
-          contact_type: "WA"
-        }
-
-        case Contacts.maybe_create_contact(contact_attrs) do
-          {:ok, contact} ->
-            ContactWAGroups.create_contact_wa_group(%{
-              contact_id: contact.id,
-              wa_group_id: wa_group_id,
-              organization_id: org_id,
-              is_admin: is_admin
-            })
-
-          {:error, _reason} ->
-            {:error, :contact_creation_failed}
-        end
+        activate_membership(wa_group.id, wa_managed_phone)
+        wa_group.id
       end)
 
-      {:ok, :added}
-    end)
+    deactivate_missing_memberships(wa_managed_phone, present_group_ids)
+    :ok
+  end
+
+  @spec activate_membership(non_neg_integer(), WAManagedPhone.t()) :: {:ok, WAGroupPhone.t()}
+  defp activate_membership(wa_group_id, wa_managed_phone) do
+    %WAGroupPhone{}
+    |> WAGroupPhone.changeset(%{
+      wa_group_id: wa_group_id,
+      wa_managed_phone_id: wa_managed_phone.id,
+      organization_id: wa_managed_phone.organization_id,
+      is_active: true
+    })
+    |> Repo.insert(
+      on_conflict: [set: [is_active: true, updated_at: DateTime.utc_now()]],
+      conflict_target: [:wa_group_id, :wa_managed_phone_id]
+    )
+  end
+
+  @spec deactivate_missing_memberships(WAManagedPhone.t(), [non_neg_integer()]) :: :ok
+  defp deactivate_missing_memberships(wa_managed_phone, present_group_ids) do
+    WAGroupPhone
+    |> where([wgp], wgp.wa_managed_phone_id == ^wa_managed_phone.id)
+    |> where([wgp], wgp.wa_group_id not in ^present_group_ids)
+    |> where([wgp], wgp.is_active == true)
+    |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
+
+    :ok
   end
 
   @spec admin?(non_neg_integer(), [non_neg_integer()]) :: boolean()
