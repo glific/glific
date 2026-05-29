@@ -17,6 +17,6 @@ jobs:
           stale-pr-message: "Without activity, this PR will be closed in 1 day."
           close-pr-message: "This PR was closed for inactivity."
           stale-pr-label: "inactive"
-          days-before-pr-stale: 90
+          days-before-pr-stale: 30
           days-before-pr-close: 1
           exempt-all-assignees: true
