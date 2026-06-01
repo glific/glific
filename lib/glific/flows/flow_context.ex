@@ -1180,12 +1180,21 @@ defmodule Glific.Flows.FlowContext do
 
       if webhook_log do
         Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+        track_timeout_metrics(flow, context)
       end
 
       Messages.create_temp_message(context.organization_id, "Failure")
     else
       Messages.create_temp_message(context.organization_id, "No Response")
     end
+  end
+
+  # A timed-out async webhook node never reaches the flow_resume callback, so
+  # its failure count is emitted here.
+  @spec track_timeout_metrics(Flow.t(), FlowContext.t()) :: :ok
+  defp track_timeout_metrics(flow, context) do
+    webhook_url = async_webhook_url(flow, context)
+    Webhook.track_webhook_count(webhook_url, "failure")
   end
 
   # Async webhook URLs whose flow node parks the flow waiting for a Kaapi

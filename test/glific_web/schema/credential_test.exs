@@ -45,7 +45,8 @@ defmodule GlificWeb.Schema.CredentialTest do
   end
 
   test "create a credential and test possible scenarios and errors", %{user: user} do
-    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "bigquery"}})
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
 
     result =
       auth_query_gql_by(:create, user,
@@ -72,7 +73,8 @@ defmodule GlificWeb.Schema.CredentialTest do
   end
 
   test "update a credential and test possible scenarios and errors", %{user: user} do
-    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "bigquery"}})
+    [provider | _] =
+      Glific.Partners.list_providers(%{filter: %{shortcode: "google_cloud_storage"}})
 
     {:ok, query_data} =
       auth_query_gql_by(:create, user,

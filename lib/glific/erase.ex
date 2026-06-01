@@ -483,6 +483,11 @@ defmodule Glific.Erase do
         "DELETE FROM flow_contexts WHERE organization_id = #{organization_id}",
         "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
         "DELETE FROM messages WHERE organization_id = #{organization_id}",
+        "DELETE FROM assistant_config_version_knowledge_base_versions WHERE organization_id = #{organization_id}",
+        "DELETE FROM assistant_config_versions WHERE organization_id = #{organization_id}",
+        "DELETE FROM knowledge_base_versions WHERE organization_id = #{organization_id}",
+        "DELETE FROM knowledge_bases WHERE organization_id = #{organization_id}",
+        "DELETE FROM assistants WHERE organization_id = #{organization_id}",
 
         # Keep NGO Main Account, SaaS Admin, and Simulator contacts
         "DELETE FROM contacts
