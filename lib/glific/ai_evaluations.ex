@@ -16,7 +16,8 @@ defmodule Glific.AIEvaluations do
     Notifications,
     Partners,
     Repo,
-    ThirdParty.Kaapi
+    ThirdParty.Kaapi,
+    ThirdParty.Kaapi.ApiClient
   }
 
   @timeout_hours 6
@@ -271,6 +272,63 @@ defmodule Glific.AIEvaluations do
           {:ok, OrganizationEvalRequest.t()} | {:error, any()}
   def get_eval_access_request(organization_id),
     do: Repo.fetch_by(OrganizationEvalRequest, %{organization_id: organization_id})
+
+  @doc """
+  Approves eval access for an organization by inserting Langfuse credentials into Kaapi
+  and updating the eval access request status to approved. Intended to be called from IEx.
+  """
+  @spec approve_eval_access_with_langfuse(
+          non_neg_integer(),
+          String.t(),
+          String.t(),
+          String.t()
+        ) :: :ok
+  def approve_eval_access_with_langfuse(
+        org_id,
+        langfuse_public_key,
+        langfuse_secret_key,
+        langfuse_host
+      ) do
+    {:ok, secrets} = Kaapi.fetch_kaapi_creds(org_id)
+
+    case ApiClient.update_organization_credentials(
+           %{
+             provider: "langfuse",
+             credential: %{
+               langfuse: %{
+                 public_key: langfuse_public_key,
+                 secret_key: langfuse_secret_key,
+                 host: langfuse_host
+               }
+             },
+             is_active: true
+           },
+           secrets["api_key"]
+         ) do
+      {:ok, _} ->
+        IO.puts("✓ Langfuse credentials inserted successfully")
+
+      {:error, reason} ->
+        IO.puts("✗ Failed: #{inspect(reason)}")
+        raise "Aborting: Langfuse credential insert failed"
+    end
+
+    Repo.put_organization_id(org_id)
+
+    case Repo.fetch_by(OrganizationEvalRequest, %{organization_id: org_id}) do
+      {:ok, request} ->
+        case request
+             |> OrganizationEvalRequest.changeset(%{status: "approved"})
+             |> Repo.update() do
+          {:ok, updated} -> IO.puts("✓ Eval access approved (id: #{updated.id})")
+          {:error, changeset} -> IO.puts("✗ Failed: #{inspect(changeset.errors)}")
+        end
+
+      {:error, _} ->
+        IO.puts("✗ No eval access request found for org_id: #{org_id}")
+        IO.puts("  Ask the org to request access from the Glific dashboard first.")
+    end
+  end
 
   @spec filter_golden_qas(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp filter_golden_qas(query, filter) do
