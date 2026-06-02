@@ -345,6 +345,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            AIEvaluations.create_ai_evaluation(%{
              name: input.evaluation_name,
              status: String.to_existing_atom(data.status),
+             failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
              golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_id,
