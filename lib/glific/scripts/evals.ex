@@ -17,11 +17,10 @@ defmodule Glific.Scripts.Evals do
     AIEvaluations.OrganizationEvalRequest,
     Partners,
     Repo,
+    ThirdParty.Discord.Notifications,
     ThirdParty.Kaapi,
     ThirdParty.Kaapi.ApiClient
   }
-
-  alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
   @doc """
   Inserts Langfuse credentials into Kaapi and approves the eval access request
@@ -90,7 +89,7 @@ defmodule Glific.Scripts.Evals do
       {:ok, updated} ->
         IO.puts("✓ Eval access approved (id: #{updated.id})")
         organization = Partners.organization(org_id)
-        DiscordNotifications.send_eval_access_approved(organization)
+        Notifications.send_eval_access_approved(organization)
 
       {:error, changeset} ->
         IO.puts("✗ Failed: #{inspect(changeset.errors)}")
