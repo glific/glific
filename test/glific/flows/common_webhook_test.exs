@@ -122,7 +122,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     # Assert that success is false and an error message is returned
     refute result[:success]
     refute is_nil(result[:error])
-    assert result[:error] == "Received status code 500"
+    assert result[:error] =~ "HTTP error 500"
   end
 
   test "detect_language/1 detects correct language from voice note using Bhashini" do

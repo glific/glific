@@ -12,8 +12,6 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
 
-  alias Glific.Metrics
-
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
@@ -27,35 +25,64 @@ defmodule Glific.Flows.Webhooks.Geolocation do
         decode_success(body)
 
       {:ok, %Tesla.Env{status: status_code}} ->
-        Metrics.increment("Geolocation API Failure")
-        %{success: false, error: "Received status code #{status_code}"}
+        %{
+          success: false,
+          error:
+            "Geocoding failed with HTTP error #{status_code}. Please try again. If the problem continues, check that the Google Maps API key is valid and the Geocoding API is enabled."
+        }
 
       {:error, reason} ->
-        Metrics.increment("Geolocation API Failure")
-        %{success: false, error: "HTTP request failed: #{reason}"}
+        %{
+          success: false,
+          error:
+            "Could not connect to the geocoding service (#{reason}). Check your network connection and try again."
+        }
     end
   end
 
   @spec decode_success(String.t()) :: map()
   defp decode_success(body) do
-    %{"results" => results} = Jason.decode!(body)
-    Metrics.increment("Geolocation API Success")
+    case Jason.decode(body) do
+      {:ok, %{"results" => results}} ->
+        parse_results(results)
 
-    case results do
-      [%{"address_components" => components, "formatted_address" => formatted_address} | _] ->
+      {:ok, _unexpected} ->
         %{
-          success: true,
-          city: find_component(components, "locality"),
-          state: find_component(components, "administrative_area_level_1"),
-          country: find_component(components, "country"),
-          postal_code: find_component(components, "postal_code"),
-          district: find_component(components, "administrative_area_level_3"),
-          address: formatted_address
+          success: false,
+          error:
+            "The geocoding service returned an unexpected response format. Please try again later."
         }
 
-      _ ->
-        %{success: false, error: "No results found"}
+      {:error, _decode_error} ->
+        %{
+          success: false,
+          error:
+            "The geocoding service returned an unreadable response. Please try again later."
+        }
     end
+  end
+
+  @spec parse_results(list()) :: map()
+  defp parse_results([
+         %{"address_components" => components, "formatted_address" => formatted_address} | _
+       ]) do
+    %{
+      success: true,
+      city: find_component(components, "locality"),
+      state: find_component(components, "administrative_area_level_1"),
+      country: find_component(components, "country"),
+      postal_code: find_component(components, "postal_code"),
+      district: find_component(components, "administrative_area_level_3"),
+      address: formatted_address
+    }
+  end
+
+  defp parse_results(_) do
+    %{
+      success: false,
+      error:
+        "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."
+    }
   end
 
   @spec find_component([map()], String.t()) :: String.t()
