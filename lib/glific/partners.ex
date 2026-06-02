@@ -1000,6 +1000,7 @@ defmodule Glific.Partners do
     remove_organization_cache(organization.id, organization.shortcode)
 
     credential = Repo.preload(credential, [:provider])
+    attrs = Map.put_new(attrs, :organization_id, credential.organization_id)
 
     case validate_credential_permissions(credential.provider.shortcode, attrs) do
       :ok ->

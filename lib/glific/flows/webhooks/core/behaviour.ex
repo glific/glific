@@ -42,8 +42,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   `CommonWebhook.webhook/2,3` return contract: a map (success or failure
   shape), `nil`, or a bare string.
 
-  `Glific.Flows.Webhook.handle/3` coerces non-map results to `Failure`, so the
-  shape stays flexible.
+  `Glific.Flows.Webhook.handle` (private) coerces non-map results to `Failure`,
+  so the shape stays flexible.
   """
   @type sync_result :: map() | nil | String.t()
 

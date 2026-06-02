@@ -13,7 +13,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       so AppSignal grouping does not change.
 
   Callback-time and timeout-time reporting (the other two facets of webhook
-  failure) live in `report_callback_failure/2` and `report_timeout/2` here —
+  failure) live in `report_callback_failure/2` and `report_timeout/1` here —
   same `report_to_appsignal/2` sink, same exception module shapes that the
   controller and `FlowContext` use today.
   """

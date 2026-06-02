@@ -17,9 +17,18 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   def call(fields, _ctx) do
     lat = fields["lat"]
     long = fields["long"]
-    api_key = Glific.get_google_maps_api_key()
-    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
 
+    if is_nil(lat) or lat == "" or is_nil(long) or long == "" do
+      %{success: false, error: "Missing lat or long field"}
+    else
+      api_key = Glific.get_google_maps_api_key()
+      url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+      do_geocode(url)
+    end
+  end
+
+  @spec do_geocode(String.t()) :: map()
+  defp do_geocode(url) do
     case Tesla.get(url) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         decode_success(body)
@@ -35,7 +44,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
         %{
           success: false,
           error:
-            "Could not connect to the geocoding service (#{reason}). Check your network connection and try again."
+            "Could not connect to the geocoding service (#{inspect(reason)}). Check your network connection and try again."
         }
     end
   end
