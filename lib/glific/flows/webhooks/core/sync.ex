@@ -19,7 +19,12 @@ defmodule Glific.Flows.Webhooks.Sync do
       end
   """
 
-  @doc false
+  @doc """
+  Injects the default sync webhook implementation into the caller.
+
+  Requires `:name` in `opts` and defines `name/0` and `mode/0`.
+  """
+  @spec __using__(keyword()) :: Macro.t()
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)
 
@@ -28,9 +33,13 @@ defmodule Glific.Flows.Webhooks.Sync do
 
       @webhook_name unquote(webhook_name)
 
+      @doc "Returns the webhook name used in flow JSON URLs."
+      @spec name() :: String.t()
       @impl true
       def name, do: @webhook_name
 
+      @doc "Marks this webhook as synchronous."
+      @spec mode() :: :sync
       @impl true
       def mode, do: :sync
     end

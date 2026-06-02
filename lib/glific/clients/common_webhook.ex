@@ -10,6 +10,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Contacts
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
+  alias Glific.Flows.Webhooks.Dispatcher
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
@@ -296,7 +297,7 @@ defmodule Glific.Clients.CommonWebhook do
   # through the centralised dispatcher, which wraps the call with failure
   # reporting + latency telemetry.
   def webhook("geolocation", fields),
-    do: Glific.Flows.Webhooks.Dispatcher.dispatch_named("geolocation", fields)
+    do: Dispatcher.dispatch_named("geolocation", fields)
 
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_group_poll", fields) do

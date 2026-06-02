@@ -56,8 +56,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
       {:error, _decode_error} ->
         %{
           success: false,
-          error:
-            "The geocoding service returned an unreadable response. Please try again later."
+          error: "The geocoding service returned an unreadable response. Please try again later."
         }
     end
   end

@@ -27,7 +27,7 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     ctx = build_ctx(fields, headers)
 
     Instrumentation.around(module, ctx, fn ->
-      apply(module, :call, [fields, ctx])
+      module.call(fields, ctx)
     end)
   end
 

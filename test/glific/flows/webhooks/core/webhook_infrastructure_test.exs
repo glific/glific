@@ -61,7 +61,9 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
       ctx = %{organization_id: @org_id}
 
       with_mocks([{Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}]) do
-        result = Instrumentation.around(StubWebhook, ctx, fn -> %{success: true, result: "ok"} end)
+        result =
+          Instrumentation.around(StubWebhook, ctx, fn -> %{success: true, result: "ok"} end)
+
         assert result == %{success: true, result: "ok"}
       end
     end
@@ -146,8 +148,7 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
            end,
            send_error: fn _ex, _stack, _conf -> :ok end
          ]},
-        {Appsignal.Span, [:passthrough],
-         [set_sample_data: fn _span, _k, _v -> :fake_span end]},
+        {Appsignal.Span, [:passthrough], [set_sample_data: fn _span, _k, _v -> :fake_span end]},
         {Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}
       ]) do
         Instrumentation.around(StubWebhook, ctx, fn ->
@@ -187,8 +188,7 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
            add_distribution_value: fn _n, _v, _t -> :ok end,
            send_error: fn _ex, _stack, _conf -> :ok end
          ]},
-        {Appsignal.Span, [:passthrough],
-         [set_sample_data: fn _span, _k, _v -> :fake_span end]}
+        {Appsignal.Span, [:passthrough], [set_sample_data: fn _span, _k, _v -> :fake_span end]}
       ]) do
         Instrumentation.around(StubWebhook, ctx, fn ->
           %{success: false, error: "oops"}
@@ -249,7 +249,12 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
       end)
 
       with_mocks([{Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}]) do
-        result = Dispatcher.dispatch_named("geolocation", %{"lat" => "37.7749", "long" => "-122.4194", "organization_id" => @org_id})
+        result =
+          Dispatcher.dispatch_named("geolocation", %{
+            "lat" => "37.7749",
+            "long" => "-122.4194",
+            "organization_id" => @org_id
+          })
 
         assert result[:success] == true
         assert result[:city] == "San Francisco"

@@ -135,5 +135,4 @@ defmodule Glific.Flows.Webhooks.GeolocationTest do
       assert result[:error] =~ "unexpected response format"
     end
   end
-
 end

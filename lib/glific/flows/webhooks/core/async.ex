@@ -16,7 +16,13 @@ defmodule Glific.Flows.Webhooks.Async do
   and timeout phases).
   """
 
-  @doc false
+  @doc """
+  Injects the default async webhook implementation into the caller.
+
+  Requires `:name` in `opts` and defines default `name/0`, `mode/0`,
+  and `wait_time_default/0`.
+  """
+  @spec __using__(keyword()) :: Macro.t()
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)
 
@@ -25,12 +31,18 @@ defmodule Glific.Flows.Webhooks.Async do
 
       @webhook_name unquote(webhook_name)
 
+      @doc "Returns the webhook name used in flow JSON URLs."
+      @spec name() :: String.t()
       @impl true
       def name, do: @webhook_name
 
+      @doc "Marks this webhook as asynchronous."
+      @spec mode() :: :async
       @impl true
       def mode, do: :async
 
+      @doc "Default timeout in seconds while awaiting callback resume."
+      @spec wait_time_default() :: non_neg_integer()
       @impl true
       def wait_time_default, do: 60
 
