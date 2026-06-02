@@ -373,18 +373,51 @@ defmodule Glific do
   end
 
   @doc """
-  Handles logging and sending defexception erros to Appsignal
+  Handles logging and sending defexception errors to AppSignal.
+
+  Accepts an optional keyword list for per-occurrence context:
+
+    * `:tags` — a map attached as AppSignal sample data for each occurrence
+    * `:namespace` — AppSignal namespace string used to group incidents
+
+  Both opts are optional and backward-compatible: existing callers that pass
+  only the exception struct continue to work unchanged.
+
+  ## Examples
+
+      # Existing usage — unchanged
+      Glific.log_exception(%RuntimeError{message: "Something failed"})
+
+      # With namespace and tags
+      Glific.log_exception(
+        %MyModule.Error{message: "Operation failed"},
+        namespace: "my_namespace",
+        tags: %{organization_id: 1, reason: "permission denied"}
+      )
+
   """
-  @spec log_exception(map()) :: :ok
-  def log_exception(%{message: message} = error) when is_binary(message) do
+  @spec log_exception(map(), keyword()) :: :ok
+  def log_exception(error, opts \\ [])
+
+  def log_exception(%{message: message} = error, opts) when is_binary(message) do
     Logger.error(message)
 
-    Appsignal.send_error(error, [])
+    Appsignal.send_error(error, [], fn span ->
+      span
+      |> apply_appsignal_namespace(Keyword.get(opts, :namespace))
+      |> apply_appsignal_tags(Keyword.get(opts, :tags))
+    end)
 
     :ok
   end
 
-  def log_exception(_error), do: :ok
+  def log_exception(_error, _opts), do: :ok
+
+  defp apply_appsignal_namespace(span, nil), do: span
+  defp apply_appsignal_namespace(span, ns), do: Appsignal.Span.set_namespace(span, ns)
+
+  defp apply_appsignal_tags(span, nil), do: span
+  defp apply_appsignal_tags(span, tags), do: Appsignal.Span.set_sample_data(span, "tags", tags)
 
   @doc """
   Verifying Google Captcha

@@ -87,7 +87,7 @@ defmodule GlificWeb.ChatbotController do
     case URI.parse(url) do
       %URI{host: host} when is_binary(host) ->
         # Extract the first subdomain segment
-        # e.g. "ilp.tides.coloredcow.com" → "ilp"
+        # e.g. "ilp.glific.com" → "ilp"
         case String.split(host, ".") do
           [shortcode | _rest] when shortcode != "" -> {:ok, shortcode}
           _ -> {:error, :invalid_page_url}
