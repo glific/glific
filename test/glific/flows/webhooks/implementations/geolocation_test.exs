@@ -300,6 +300,11 @@ defmodule Glific.Flows.Webhooks.GeolocationTest do
                Geolocation.call(%{"lat" => "", "long" => "-122.4194"}, @ctx)
     end
 
+    test "returns {:error, message} when lat or long is whitespace-only" do
+      assert {:error, "Missing lat or long field"} =
+               Geolocation.call(%{"lat" => "   ", "long" => "-122.4194"}, @ctx)
+    end
+
     test "returns {:error, message} when response body is valid JSON but not a map" do
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{status: 200, body: Jason.encode!(["not", "a", "map"])}

@@ -171,7 +171,7 @@ def check_project(
     passed = pct >= floor
     detail = f"{pct:.2f}% (required >= {floor:.2f}%"
     if baseline_pct is not None:
-        detail += f"; base {baseline_pct:.2f}% − {PROJECT_THRESHOLD}%"
+        detail += f"; base {baseline_pct:.2f}% - {PROJECT_THRESHOLD}%"
     detail += f"; target {PROJECT_TARGET}%)"
     return GateResult("project", passed, detail)
 

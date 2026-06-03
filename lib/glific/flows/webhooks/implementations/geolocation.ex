@@ -25,10 +25,10 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
   @spec geocode(map()) :: {:ok, Address.t()} | {:error, String.t()}
   defp geocode(fields) do
-    lat = fields["lat"]
-    long = fields["long"]
+    lat = fields["lat"] |> to_string() |> String.trim()
+    long = fields["long"] |> to_string() |> String.trim()
 
-    if is_nil(lat) or lat == "" or is_nil(long) or long == "" do
+    if lat == "" or long == "" do
       {:error, "Missing lat or long field"}
     else
       api_key = Glific.get_google_maps_api_key()
