@@ -127,20 +127,27 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Syncs the contacts in each WA group by diffing Maytapi's participant list
   against the current `contacts_wa_groups` rows: new participants are
-  inserted, departed participants are deleted, unchanged participants are
-  left untouched (no `updated_at` bump, so no downstream resync churn).
+  inserted, departed participants are deleted, retained participants whose
+  admin status changed are updated, and rows whose contact + admin flag
+  already match Maytapi are left untouched (no `updated_at` bump, so no
+  downstream resync churn).
   """
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
-      {:ok, wa_group} =
-        Repo.fetch_by(WAGroup, %{
-          bsp_id: group.bsp_id,
-          wa_managed_phone_id: group.wa_managed_phone_id,
-          organization_id: org_id
-        })
-
-      diff_contacts(group, wa_group.id, org_id)
+      with {:ok, wa_group} <-
+             Repo.fetch_by(WAGroup, %{
+               bsp_id: group.bsp_id,
+               wa_managed_phone_id: group.wa_managed_phone_id,
+               organization_id: org_id
+             }) do
+        diff_contacts(group, wa_group.id, org_id)
+      else
+        {:error, _} ->
+          Logger.warning(
+            "Skipping contact sync for WA group #{group.bsp_id} (phone #{group.wa_managed_phone_id}): group not found in DB"
+          )
+      end
     end)
   end
 
@@ -164,13 +171,15 @@ defmodule Glific.Groups.WAGroups do
         end
       end)
 
-    existing_ids =
+    # Keep full rows so we can compare each retained member's is_admin
+    # flag against what Maytapi now reports.
+    existing_by_contact =
       ContactWAGroup
       |> where([c], c.wa_group_id == ^wa_group_id)
-      |> select([c], c.contact_id)
       |> Repo.all()
-      |> MapSet.new()
+      |> Map.new(&{&1.contact_id, &1})
 
+    existing_ids = MapSet.new(Map.keys(existing_by_contact))
     from_maytapi_ids = MapSet.new(Map.keys(from_maytapi))
 
     # New members → insert.
@@ -181,6 +190,19 @@ defmodule Glific.Groups.WAGroups do
         organization_id: org_id,
         is_admin: Map.fetch!(from_maytapi, contact_id)
       })
+    end
+
+    # Retained members → reconcile is_admin only when it actually changed,
+    # so unchanged rows keep their original updated_at.
+    for contact_id <- MapSet.intersection(from_maytapi_ids, existing_ids) do
+      row = existing_by_contact[contact_id]
+      desired_admin = Map.fetch!(from_maytapi, contact_id)
+
+      if row.is_admin != desired_admin do
+        row
+        |> Ecto.Changeset.change(is_admin: desired_admin)
+        |> Repo.update()
+      end
     end
 
     # Departed members → delete.
@@ -206,16 +228,23 @@ defmodule Glific.Groups.WAGroups do
     org_id = wa_managed_phone.organization_id
 
     present_group_ids =
-      Enum.map(group_details, fn group ->
-        {:ok, wa_group} =
-          Repo.fetch_by(WAGroup, %{
-            bsp_id: group.bsp_id,
-            wa_managed_phone_id: group.wa_managed_phone_id,
-            organization_id: org_id
-          })
+      Enum.flat_map(group_details, fn group ->
+        with {:ok, wa_group} <-
+               Repo.fetch_by(WAGroup, %{
+                 bsp_id: group.bsp_id,
+                 wa_managed_phone_id: group.wa_managed_phone_id,
+                 organization_id: org_id
+               }),
+             {:ok, _membership} <- activate_membership(wa_group.id, wa_managed_phone) do
+          [wa_group.id]
+        else
+          {:error, reason} ->
+            Logger.warning(
+              "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
+            )
 
-        activate_membership(wa_group.id, wa_managed_phone)
-        wa_group.id
+            []
+        end
       end)
 
     deactivate_missing_memberships(wa_managed_phone, present_group_ids)
@@ -240,9 +269,12 @@ defmodule Glific.Groups.WAGroups do
   @spec deactivate_missing_memberships(WAManagedPhone.t(), [non_neg_integer()]) :: :ok
   defp deactivate_missing_memberships(wa_managed_phone, present_group_ids) do
     WAGroupPhone
-    |> where([wgp], wgp.wa_managed_phone_id == ^wa_managed_phone.id)
-    |> where([wgp], wgp.wa_group_id not in ^present_group_ids)
-    |> where([wgp], wgp.is_active == true)
+    |> where(
+      [wgp],
+      wgp.wa_managed_phone_id == ^wa_managed_phone.id and
+        wgp.wa_group_id not in ^present_group_ids and
+        wgp.is_active == true
+    )
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
     :ok

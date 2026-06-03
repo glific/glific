@@ -283,6 +283,71 @@ defmodule Glific.Groups.WAGroupsTest do
       assert kept.phone == "918000000001"
     end
 
+    test "reconciles is_admin for retained members (promote/demote)", ctx do
+      # Initial: 918000000001 is admin, 918000000002 is regular member
+      first =
+        group_detail(
+          ctx.wa_group,
+          ctx.wa_managed_phone,
+          ["918000000001@c.us", "918000000002@c.us"],
+          ["918000000001@c.us"]
+        )
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([first], ctx.organization_id)
+
+      # Flip admin status: demote ..0001, promote ..0002
+      second =
+        group_detail(
+          ctx.wa_group,
+          ctx.wa_managed_phone,
+          ["918000000001@c.us", "918000000002@c.us"],
+          ["918000000002@c.us"]
+        )
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([second], ctx.organization_id)
+
+      rows =
+        ContactWAGroup
+        |> where([c], c.wa_group_id == ^ctx.wa_group.id)
+        |> Repo.all()
+
+      assert length(rows) == 2
+
+      admin_phones =
+        rows
+        |> Enum.filter(& &1.is_admin)
+        |> Enum.map(&Glific.Contacts.get_contact!(&1.contact_id).phone)
+
+      assert admin_phones == ["918000000002"]
+    end
+
+    test "retained member with unchanged admin status is not touched (no updated_at bump)", ctx do
+      group =
+        group_detail(
+          ctx.wa_group,
+          ctx.wa_managed_phone,
+          ["918000000001@c.us"],
+          ["918000000001@c.us"]
+        )
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+      [member] = ContactWAGroups.list_contact_wa_group(%{wa_group_id: ctx.wa_group.id})
+
+      past = ~U[2020-01-01 00:00:00Z]
+
+      {1, _} =
+        ContactWAGroup
+        |> where([c], c.id == ^member.id)
+        |> Repo.update_all(set: [updated_at: past])
+
+      # Re-sync with the same admin status — row should stay frozen.
+      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+
+      reloaded = Repo.get!(ContactWAGroup, member.id)
+      assert reloaded.is_admin == true
+      assert DateTime.compare(reloaded.updated_at, past) == :eq
+    end
+
     test "unchanged participants are not touched (no updated_at bump)", ctx do
       group = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["918000000001@c.us"])
       :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
