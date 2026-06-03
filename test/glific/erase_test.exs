@@ -3,6 +3,8 @@ defmodule Glific.EraseTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
     Contacts.ContactHistory,
     Erase,
     Fixtures,
@@ -359,5 +361,42 @@ defmodule Glific.EraseTest do
       |> Repo.all()
 
     assert length(histories) == 1
+  end
+
+  test "delete_organization_data succeeds when assistants have an active_config_version_id set",
+       attrs do
+    org_id = attrs.organization_id
+
+    {:ok, assistant} =
+      Repo.insert(
+        Assistant.changeset(%Assistant{}, %{
+          name: "Test Assistant #{System.unique_integer()}",
+          organization_id: org_id
+        })
+      )
+
+    {:ok, config_version} =
+      Repo.insert(
+        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+          assistant_id: assistant.id,
+          organization_id: org_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant.",
+          settings: %{},
+          status: :ready
+        })
+      )
+
+    Repo.update!(
+      Assistant.set_active_config_version_changeset(assistant, %{
+        active_config_version_id: config_version.id
+      })
+    )
+
+    assert :ok = Erase.delete_organization_data(org_id)
+
+    assert Repo.get(Assistant, assistant.id) == nil
+    assert Repo.get(AssistantConfigVersion, config_version.id) == nil
   end
 end
