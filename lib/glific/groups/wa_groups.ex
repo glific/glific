@@ -135,14 +135,14 @@ defmodule Glific.Groups.WAGroups do
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
-      with {:ok, wa_group} <-
-             Repo.fetch_by(WAGroup, %{
-               bsp_id: group.bsp_id,
-               wa_managed_phone_id: group.wa_managed_phone_id,
-               organization_id: org_id
-             }) do
-        diff_contacts(group, wa_group.id, org_id)
-      else
+      case Repo.fetch_by(WAGroup, %{
+             bsp_id: group.bsp_id,
+             wa_managed_phone_id: group.wa_managed_phone_id,
+             organization_id: org_id
+           }) do
+        {:ok, wa_group} ->
+          diff_contacts(group, wa_group.id, org_id)
+
         {:error, _} ->
           Logger.warning(
             "Skipping contact sync for WA group #{group.bsp_id} (phone #{group.wa_managed_phone_id}): group not found in DB"
