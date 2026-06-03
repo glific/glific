@@ -48,6 +48,19 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @type sync_result :: map() | nil | String.t()
 
   @typedoc """
+  Return shape for migrated sync webhooks during the incremental refactor.
+
+  Migrated modules return `{:ok, value}` or `{:error, message}` from `call/2`;
+  `Glific.Flows.Webhooks.Dispatcher` applies
+  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` to translate
+  these into the legacy `sync_result` shape before passing the result to
+  `Glific.Flows.Webhook.handle/3`.
+
+  Remove this type once all webhooks are migrated and `handle/3` is updated.
+  """
+  @type migrated_sync_result :: {:ok, term()} | {:error, String.t()}
+
+  @typedoc """
   Return shape for asynchronous webhooks (Kaapi STT/TTS, unified-llm-call,
   unified-voice-llm-call). `{:wait, ctx, []}` parks the flow context;
   `{:ok, ctx, [msg]}` is the immediate-failure branch (e.g. missing Kaapi
@@ -75,7 +88,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   and latency telemetry, so authors should NOT add their own `try`/`rescue`
   for AppSignal — let exceptions propagate.
   """
-  @callback call(fields :: map(), ctx :: ctx()) :: sync_result | async_result
+  @callback call(fields :: map(), ctx :: ctx()) ::
+              sync_result | migrated_sync_result | async_result
 
   @doc """
   Async-only. Invoked from the flow_resume callback path to shape the Kaapi

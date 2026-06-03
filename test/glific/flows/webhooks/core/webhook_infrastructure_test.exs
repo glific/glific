@@ -283,6 +283,24 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
         assert result[:address] == "San Francisco, CA, USA"
       end
     end
+
+    test "geolocation failures are encoded to a bare string for the Failure flow route" do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 500, body: "Internal Server Error"}
+      end)
+
+      with_mocks([{Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}]) do
+        result =
+          Dispatcher.dispatch_named("geolocation", %{
+            "lat" => "37.7749",
+            "long" => "-122.4194",
+            "organization_id" => @org_id
+          })
+
+        assert is_binary(result)
+        assert result =~ "HTTP error 500"
+      end
+    end
   end
 
   # ─── Instrumentation public reporters ────────────────────────────────────
@@ -395,7 +413,8 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
         Instrumentation.report_timeout(tags)
       end
 
-      assert_received {:appsignal_exception, %Webhook.TimeoutError{message: "Webhook timeout from stub"}}
+      assert_received {:appsignal_exception,
+                       %Webhook.TimeoutError{message: "Webhook timeout from stub"}}
     end
 
     test "falls back to 'unknown' when webhook_name is missing" do
@@ -410,13 +429,13 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
              :ok
            end
          ]},
-        {Appsignal.Span, [:passthrough],
-         [set_sample_data: fn _span, _k, _v -> :fake_span end]}
+        {Appsignal.Span, [:passthrough], [set_sample_data: fn _span, _k, _v -> :fake_span end]}
       ]) do
         Instrumentation.report_timeout(%{organization_id: @org_id})
       end
 
-      assert_received {:appsignal_exception, %Webhook.TimeoutError{message: "Webhook timeout from unknown"}}
+      assert_received {:appsignal_exception,
+                       %Webhook.TimeoutError{message: "Webhook timeout from unknown"}}
     end
   end
 

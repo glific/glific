@@ -28,17 +28,23 @@ We will land **a single `@behaviour` per webhook, one file per webhook, with sha
 
 ```
 lib/glific/flows/webhooks/
-  behaviour.ex          # Glific.Flows.Webhooks.Behaviour       — the @behaviour
-  dispatcher.ex         # Glific.Flows.Webhooks.Dispatcher      — single dispatch entry point
-  registry.ex           # Glific.Flows.Webhooks.Registry        — url-string -> module map
-  instrumentation.ex    # Glific.Flows.Webhooks.Instrumentation — error+latency wrapper (only home of with_failure_reporting)
-  errors.ex             # Glific.Flows.Webhooks.Errors          — SystemError, TimeoutError (old aliases re-exported)
-  sync.ex               # Glific.Flows.Webhooks.Sync            — use macro for sync webhooks
-  async.ex              # Glific.Flows.Webhooks.Async           — use macro for async webhooks
-  callback.ex           # Glific.Flows.Webhooks.Callback        — parse/upload/resume helpers moved from controller
-  generic_http.ex       # GenericHttp + GenericHttp.Worker      — replaces today's Webhook Oban worker
+  core/
+    behaviour.ex          # Glific.Flows.Webhooks.Behaviour
+    dispatcher.ex         # Glific.Flows.Webhooks.Dispatcher — dispatch + ResultTranslator wire encoding
+    registry.ex           # Glific.Flows.Webhooks.Registry
+    instrumentation.ex    # Glific.Flows.Webhooks.Instrumentation
+    errors.ex             # Glific.Flows.Webhooks.Errors
+    result_translator.ex       # Glific.Flows.Webhooks.ResultTranslator — TEMPORARY; remove after handle/3 refactor
+    sync.ex               # Glific.Flows.Webhooks.Sync
+    async.ex              # Glific.Flows.Webhooks.Async
+  implementations/
+    geolocation.ex        # first migrated sync webhook
+    geolocation/
+      address.ex          # Glific.Flows.Webhooks.Geolocation.Address — typed success result
+  callback.ex             # (planned) parse/upload/resume helpers moved from controller
+  generic_http.ex         # (planned) GenericHttp + GenericHttp.Worker
 
-  # one file per FUNCTION webhook:
+  # one file per FUNCTION webhook (remaining, not yet migrated):
   speech_to_text.ex          # async
   text_to_speech.ex          # async
   unified_llm.ex             # async — handles "filesearch-gpt" + "unified-llm-call"
@@ -51,7 +57,6 @@ lib/glific/flows/webhooks/
   detect_language.ex               # sync
   get_buttons.ex                   # sync
   check_response.ex                # sync
-  geolocation.ex                   # sync
   send_wa_group_poll.ex            # sync
   create_certificate.ex            # sync
 ```
@@ -74,7 +79,8 @@ lib/glific/flows/webhooks/
         flow_context: Glific.Flows.FlowContext.t()
       }
 
-@type sync_result  :: map() | nil
+@type sync_result  :: map() | nil | String.t()
+                    | {:ok, term()} | {:error, String.t()}   # migrated webhooks (encoded by Dispatcher)
 @type async_result :: {:wait, FlowContext.t(), [Message.t()]}
                     | {:ok,   FlowContext.t(), [Message.t()]}   # immediate-failure path
 
@@ -91,7 +97,9 @@ lib/glific/flows/webhooks/
 
 Decisions:
 
-- Sync `call/2` returns `map() | nil`, matching today's contract that `Webhook.handle/3` (webhook.ex:510-540) coerces non-maps to `Failure`. A sync webhook may also return `%{success: false, reason: ...}` — `Instrumentation` treats both as failures.
+- **Wire format (today):** `Glific.Flows.Webhook.handle/3` still treats any map as Success and bare strings as Failure. Until that is refactored, `Dispatcher` applies `ResultTranslator.to_legacy_structure/2` after `call/2` for migrated webhooks: `{:ok, value}` → results map (`success: true` + payload), `{:error, msg}` → string. Legacy webhooks that still return maps pass through unchanged.
+- **Internal format (migrated sync webhooks):** `call/2` returns `{:ok, typed_value}` or `{:error, String.t()}`. Geolocation uses `Geolocation.Address` instead of a generic map. Register per-module encoders in `ResultTranslator.encoder_for/1`.
+- Sync `call/2` may still return `map() | nil` on unmigrated webhooks. `%{success: false, ...}` maps remain visible to `Instrumentation` until those webhooks adopt tuple results + dispatcher encoding (or until `handle/3` is fixed).
 - Async `call/2` returns `{:wait, ctx, []}` (preserves today's `update_context_for_wait/2` shape) or `{:ok, ctx, [failure_msg]}` for immediate-failure branches (Kaapi creds missing, body decode error).
 - `handle_resume/2` is the per-webhook callback hook. The `Async` macro injects a default that mirrors today's `flow_resume_controller.do_flow_resume`. Only `unified-voice-llm-call` overrides it to run `voice_post_process`.
 - `headers` deliberately not in the signature — they're inside `fields` for FUNCTION webhooks and built by Dispatcher for HTTP.
@@ -110,8 +118,8 @@ defmacro __using__(opts) do
     def name, do: @webhook_name
     @impl true
     def mode, do: :sync
-    # Author writes only call/2. Failure-reporting + latency are added by the
-    # Dispatcher around the call, so unit tests of call/2 see raw results.
+    # Author writes only call/2. Dispatcher adds instrumentation + ResultTranslator
+    # wire encoding; unit tests of call/2 assert {:ok, _} / {:error, _} tuples.
   end
 end
 ```
@@ -134,15 +142,17 @@ Macros explicitly do **not** inject `with_failure_reporting` — that's the Disp
 `Glific.Flows.Webhooks.Dispatcher.dispatch/2` is the single funnel:
 
 ```elixir
-def dispatch(action, flow_context) do
-  module = Registry.lookup!(action)          # FUNCTION url -> module, fallthrough -> GenericHttp
-  ctx    = build_ctx(action, flow_context)   # creates WebhookLog row once
-  fields = build_fields(action, flow_context)
+def dispatch_named(name, fields, headers) do
+  module = Registry.lookup!(name)
+  ctx    = build_ctx(fields, headers)
   Instrumentation.around(module, ctx, fn ->
-    apply(module, :call, [fields, ctx])
+    module.call(fields, ctx)
+    |> ResultTranslator.to_legacy_structure(module)   # TEMPORARY — remove when handle/3 routes on success field
   end)
 end
 ```
+
+`ResultTranslator` is the only place that converts `{:error, msg}` → string for flow Failure routing. Webhook modules must not call it directly.
 
 `Instrumentation.around/3` — the only home of failure reporting + latency:
 
@@ -232,12 +242,14 @@ Extract shared helpers (signed-payload builders, mock factories) into `test/supp
 - Land `test/glific/flows/webhooks/contract_test.exs` and `test/support/webhook_contract_helpers.ex`.
 - Every assertion must pass against current code. Any failure here is a pre-existing bug — file an issue, mark `@tag :skip`, do not fix yet.
 
-**Step 2 — Behaviour + macros + Dispatcher (dormant) + first webhook (geolocation).**
-- Create `Glific.Flows.Webhooks.{Behaviour, Sync, Async, Registry, Instrumentation, Dispatcher, Errors, Callback}`.
-- `Errors` defines new `SystemError`/`TimeoutError`/`Error` structs and the old `Glific.Flows.Webhook.{SystemError,TimeoutError,Error}` modules are kept but re-export the new structs.
-- Migrate `geolocation` as the proof-of-concept (no external IO in failure path, simplest sync clause).
-- The `CommonWebhook.webhook("geolocation", ...)` clause shrinks to `Glific.Flows.Webhooks.Dispatcher.dispatch_named("geolocation", fields, headers)`. All other clauses untouched.
-- Run `mix check` + full test suite. Green = ship. **This is what we are implementing in this session.**
+**Step 2 — Behaviour + macros + Dispatcher + first webhook (geolocation).** *(landed on current branch)*
+- Created `Glific.Flows.Webhooks.{Behaviour, Sync, Async, Registry, Instrumentation, Dispatcher, Errors, ResultTranslator}` under `lib/glific/flows/webhooks/core/`.
+- `Errors` re-exports `SystemError`/`TimeoutError`/`Error` for AppSignal grouping compatibility.
+- Migrated `geolocation` to `lib/glific/flows/webhooks/implementations/geolocation.ex` with typed success struct `Geolocation.Address`.
+- `call/2` returns `{:ok, Address.t()}` | `{:error, String.t()}`. `Dispatcher` applies `ResultTranslator.to_legacy_structure/2` (map on success, string on failure) so flow routing matches legacy `normalize_failure/1` behaviour without changing `Webhook.handle/3` yet.
+- HTTP client: Tesla `Logger`, `Telemetry` (`google_maps_geocoding`), and `Glific.get_tesla_retry_middleware/0`.
+- `CommonWebhook.webhook("geolocation", ...)` delegates to `Dispatcher.dispatch_named/3`. All other clauses untouched.
+- Tests: `test/glific/flows/webhooks/implementations/geolocation_test.exs` (raw tuples + middleware/retry), `result_translator_test.exs`, `webhook_infrastructure_test.exs` (dispatcher wire format), `common_webhook_test.exs` (integration).
 
 **Step 3 — Migrate remaining sync FUNCTION webhooks, one PR each, in this order:**
 1. `detect_language`, `get_buttons`, `check_response` — pure deterministic.
@@ -247,11 +259,12 @@ Extract shared helpers (signed-payload builders, mock factories) into `test/supp
 
 **Per-webhook migration recipe:**
 - Extract `CommonWebhook.webhook("X", fields, headers)` body into `Glific.Flows.Webhooks.X.call/2`.
+- Prefer `{:ok, typed_struct}` / `{:error, String.t()}` from `call/2`; add `ResultTranslator.encoder_for/1` when the success type is not a plain map.
+- Do **not** call `ResultTranslator` from the webhook module — encoding is only in `Dispatcher`.
 - Register `X` in `Registry`.
-- Keep the `CommonWebhook.webhook("X", ...)` clause but make it call `Glific.Flows.Webhooks.Dispatcher.dispatch_named("X", fields, headers)`.
-- Dispatcher wraps the call via `Instrumentation.around/3`, replacing the inline `with_failure_reporting`.
-- Delete that webhook's inline `with_failure_reporting` call.
-- Run contract tests + relevant subset of `common_webhook_test.exs`.
+- Shrink the `CommonWebhook.webhook("X", ...)` clause to `Dispatcher.dispatch_named("X", fields, headers)`.
+- Remove that webhook's `|> normalize_failure()` pipe if present (dispatcher encoding supersedes it for tuple results).
+- Run `test/glific/flows/webhooks/` + relevant `common_webhook_test.exs` cases.
 
 **Step 4 — Migrate generic HTTP (`GenericHttp`).** Risky — handle with care.
 - The current `Webhook` Oban worker (lib/glific/flows/webhook.ex:455-540) becomes `Glific.Flows.Webhooks.GenericHttp.Worker`.
@@ -285,21 +298,16 @@ Extract shared helpers (signed-payload builders, mock factories) into `test/supp
 - `lib/glific/flows/flow_context.ex` — replace `maybe_report_timeout` with `Webhooks.Instrumentation.report_timeout/2` (same args, same struct, same tags).
 - `lib/glific/third_party/kaapi/stt_tts_worker.ex` — use `Webhooks.Errors` and `Webhooks.Instrumentation.report_callback_failure/2` from one place instead of inlining log updates.
 
-**Created** (one file per webhook follows the same shape — listing 3 representatives):
-- `lib/glific/flows/webhooks/behaviour.ex`
-- `lib/glific/flows/webhooks/dispatcher.ex`
-- `lib/glific/flows/webhooks/instrumentation.ex`
-- `lib/glific/flows/webhooks/sync.ex`
-- `lib/glific/flows/webhooks/async.ex`
-- `lib/glific/flows/webhooks/registry.ex`
-- `lib/glific/flows/webhooks/callback.ex`
-- `lib/glific/flows/webhooks/errors.ex`
-- `lib/glific/flows/webhooks/generic_http.ex` + `lib/glific/flows/webhooks/generic_http/worker.ex`
-- `lib/glific/flows/webhooks/geolocation.ex` (representative sync — first one migrated)
-- `lib/glific/flows/webhooks/speech_to_text.ex` (representative async)
-- `lib/glific/flows/webhooks/unified_voice_llm.ex` (representative async with `handle_resume/2` override)
-- `test/glific/flows/webhooks/contract_test.exs`
-- `test/support/webhook_contract_helpers.ex`
+**Created (Step 2, current branch):**
+- `lib/glific/flows/webhooks/core/{behaviour,dispatcher,registry,instrumentation,errors,result_translator,sync,async}.ex`
+- `lib/glific/flows/webhooks/implementations/geolocation.ex`
+- `lib/glific/flows/webhooks/implementations/geolocation/address.ex`
+- `test/glific/flows/webhooks/core/{webhook_infrastructure_test,result_translator_test}.exs`
+- `test/glific/flows/webhooks/implementations/geolocation_test.exs`
+
+**Planned (later steps):**
+- `lib/glific/flows/webhooks/callback.ex`, `generic_http.ex`, remaining `implementations/*.ex`
+- `test/glific/flows/webhooks/contract_test.exs`, `test/support/webhook_contract_helpers.ex`
 
 **Reused as-is** (referenced by Instrumentation / Dispatcher):
 - `Glific.Flows.Webhook.report_to_appsignal/2` (webhook.ex:80-91) — already the single AppSignal sink, kept exactly as-is.
@@ -334,10 +342,12 @@ Per step:
 - **Step 5 STT/TTS dispatch through Dispatcher inside `SttTtsWorker`** is subtle. The webhook log already exists at perform time. `Instrumentation.around/3` must accept `ctx.webhook_log_id` and skip log creation when present, matching today's `CommonWebhook.webhook("speech_to_text", ...)` which expects the log row to already exist.
 - **`call_and_wait`** is documented deprecated. Migrate last (or leave as the lone legacy clause in `CommonWebhook` and migrate when it's deleted). Do not block earlier steps on it.
 
-## This session's deliverables (Step 2)
+## Step 2 follow-ups (post-geolocation PR)
 
-- Scaffolding: `behaviour.ex`, `sync.ex`, `async.ex`, `registry.ex`, `instrumentation.ex`, `dispatcher.ex`, `errors.ex`.
-- First migrated webhook: `geolocation` — `lib/glific/flows/webhooks/geolocation.ex`.
-- Wiring: `CommonWebhook.webhook("geolocation", ...)` routes through `Dispatcher.dispatch_named/3`.
-- Tests: `test/glific/flows/webhooks/geolocation_test.exs` (or augment existing common_webhook_test.exs) — assert behaviour-preserving for geolocation through the new path.
-- Remaining webhooks: untouched, still go through their original CommonWebhook clauses with the inline `with_failure_reporting`. They are migrated one by one in subsequent sessions/PRs.
+- Refactor `Glific.Flows.Webhook.handle/3` to route on application success (not `is_map/1`), then delete `ResultTranslator`.
+- Land `contract_test.exs` (Step 1) if not already present.
+- Migrate remaining sync FUNCTION webhooks per Step 3 recipe (`{:ok,_}` / `{:error,_}` + `encoder_for/1`).
+
+## Deferred: `handle/3` map-vs-string routing
+
+`ResultTranslator` exists solely because `handle/3` emits `"Success"` for any map. Geolocation failures must be strings at the dispatcher boundary until that changes. Do not add `normalize_failure/1` to new migrated webhooks — use tuples + `ResultTranslator` instead.

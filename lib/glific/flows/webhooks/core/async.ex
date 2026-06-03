@@ -22,7 +22,6 @@ defmodule Glific.Flows.Webhooks.Async do
   Requires `:name` in `opts` and defines default `name/0`, `mode/0`,
   and `wait_time_default/0`.
   """
-  @spec __using__(keyword()) :: Macro.t()
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)
 

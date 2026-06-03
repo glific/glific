@@ -3,9 +3,10 @@ defmodule Glific.Flows.Webhooks.Sync do
   `use` macro for synchronous flow webhooks — ones that return immediately
   and don't park the flow waiting on a Kaapi callback.
 
-  Authors only write `call/2`. Failure reporting and latency telemetry are
-  added by `Glific.Flows.Webhooks.Dispatcher`, not by this macro, so unit
-  tests of `call/2` see raw return values.
+  Authors only write `call/2`. Failure reporting, latency telemetry, and
+  legacy result translation (`ResultTranslator.to_legacy_structure/2`) are added by
+  `Glific.Flows.Webhooks.Dispatcher`, not by this macro, so unit tests of
+  `call/2` see raw return values.
 
   ## Example
 
@@ -14,7 +15,7 @@ defmodule Glific.Flows.Webhooks.Sync do
 
         @impl true
         def call(%{"lat" => lat, "long" => long}, _ctx) do
-          # ... return a map ...
+          # ... return {:ok, value} or {:error, "message"} ...
         end
       end
   """
@@ -24,7 +25,6 @@ defmodule Glific.Flows.Webhooks.Sync do
 
   Requires `:name` in `opts` and defines `name/0` and `mode/0`.
   """
-  @spec __using__(keyword()) :: Macro.t()
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)
 

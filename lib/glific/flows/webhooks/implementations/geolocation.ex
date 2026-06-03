@@ -8,89 +8,174 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   clause; the centralised dispatcher adds AppSignal reporting on failure
   paths (matching what the other migrated webhooks like `parse_via_chat_gpt`
   do today).
+
+  Returns `{:ok, Address.t()}` or `{:error, String.t()}` from `call/2`. The
+  dispatcher encodes those tuples for `Webhook.handle/3` (map on success, string
+  on failure) via `Glific.Flows.Webhooks.ResultTranslator`.
   """
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
 
+  alias Glific.Flows.Webhooks.Geolocation.Address
+
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
-  def call(fields, _ctx) do
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
+          {:ok, Address.t()} | {:error, String.t()}
+  def call(fields, _ctx), do: geocode(fields)
+
+  @spec geocode(map()) :: {:ok, Address.t()} | {:error, String.t()}
+  defp geocode(fields) do
     lat = fields["lat"]
     long = fields["long"]
 
     if is_nil(lat) or lat == "" or is_nil(long) or long == "" do
-      %{success: false, error: "Missing lat or long field"}
+      {:error, "Missing lat or long field"}
     else
       api_key = Glific.get_google_maps_api_key()
-      url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
+      url =
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
+
       do_geocode(url)
     end
   end
 
-  @spec do_geocode(String.t()) :: map()
+  @doc false
+  @spec client() :: Tesla.Client.t()
+  def client do
+    # Logger middleware is intentionally omitted: the geocoding URL contains
+    # the Google Maps API key as a query parameter and must not be logged.
+    Tesla.client(
+      [
+        {Tesla.Middleware.Telemetry, metadata: %{provider: "google_maps_geocoding"}}
+      ] ++ Glific.get_tesla_retry_middleware()
+    )
+  end
+
+  @spec do_geocode(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
   defp do_geocode(url) do
-    case Tesla.get(url) do
+    case client() |> Tesla.get(url) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         decode_success(body)
 
-      {:ok, %Tesla.Env{status: status_code}} ->
-        %{
-          success: false,
-          error:
-            "Geocoding failed with HTTP error #{status_code}. Please try again. If the problem continues, check that the Google Maps API key is valid and the Geocoding API is enabled."
-        }
+      {:ok, %Tesla.Env{status: status_code} = env} ->
+        body = Map.get(env, :body, "")
+
+        {:error,
+         "Geocoding failed with HTTP error #{status_code} - #{body}. Please try again. If the problem continues, check that the Google Maps API key is valid and the Geocoding API is enabled."}
 
       {:error, reason} ->
-        %{
-          success: false,
-          error:
-            "Could not connect to the geocoding service (#{inspect(reason)}). Check your network connection and try again."
-        }
+        {:error,
+         "Could not connect to the geocoding service (#{inspect(reason)}). Check your network connection and try again."}
     end
   end
 
-  @spec decode_success(String.t()) :: map()
+  @spec decode_success(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
   defp decode_success(body) do
     case Jason.decode(body) do
-      {:ok, %{"results" => results}} ->
-        parse_results(results)
+      {:ok, decoded} when is_map(decoded) ->
+        decode_geocode_response(decoded)
 
       {:ok, _unexpected} ->
-        %{
-          success: false,
-          error:
-            "The geocoding service returned an unexpected response format. Please try again later."
-        }
+        {:error,
+         "The geocoding service returned an unexpected response format. Please try again later."}
 
       {:error, _decode_error} ->
-        %{
-          success: false,
-          error: "The geocoding service returned an unreadable response. Please try again later."
-        }
+        {:error, "The geocoding service returned an unreadable response. Please try again later."}
     end
   end
 
-  @spec parse_results(list()) :: map()
+  # Google Maps Geocoding API returns HTTP 200 with a `status` field even on failure.
+  # See https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
+  @spec decode_geocode_response(map()) :: {:ok, Address.t()} | {:error, String.t()}
+  defp decode_geocode_response(%{"status" => "OK", "results" => results}),
+    do: parse_results(results)
+
+  defp decode_geocode_response(%{"status" => status} = decoded) do
+    {:error, geocode_status_error(status, Map.get(decoded, "error_message"))}
+  end
+
+  defp decode_geocode_response(%{"results" => results}), do: parse_results(results)
+
+  defp decode_geocode_response(_unexpected) do
+    {:error,
+     "The geocoding service returned an unexpected response format. Please try again later."}
+  end
+
+  @spec geocode_status_error(String.t(), String.t() | nil) :: String.t()
+  defp geocode_status_error("ZERO_RESULTS", _error_message) do
+    "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."
+  end
+
+  defp geocode_status_error("REQUEST_DENIED", error_message) do
+    wrap_gmaps_error(
+      "Geocoding request was denied.",
+      error_message,
+      " Check that the Google Maps API key is valid and the Geocoding API is enabled."
+    )
+  end
+
+  defp geocode_status_error("OVER_QUERY_LIMIT", error_message) do
+    wrap_gmaps_error(
+      "Geocoding quota exceeded.",
+      error_message,
+      " Please try again later."
+    )
+  end
+
+  defp geocode_status_error("INVALID_REQUEST", error_message) do
+    wrap_gmaps_error(
+      "Invalid geocoding request.",
+      error_message,
+      " Verify that the latitude and longitude values are valid."
+    )
+  end
+
+  defp geocode_status_error("UNKNOWN_ERROR", error_message) do
+    wrap_gmaps_error(
+      "The geocoding service encountered an unexpected error.",
+      error_message,
+      " Please try again later."
+    )
+  end
+
+  defp geocode_status_error(status, error_message) do
+    wrap_gmaps_error(
+      "Geocoding failed (#{status}).",
+      error_message,
+      " Please try again later."
+    )
+  end
+
+  @spec wrap_gmaps_error(String.t(), String.t() | nil, String.t()) :: String.t()
+  defp wrap_gmaps_error(prefix, error_message, suffix) do
+    case blank?(error_message) do
+      true -> prefix <> suffix
+      false -> prefix <> " " <> String.trim(error_message) <> suffix
+    end
+  end
+
+  @spec blank?(String.t() | nil) :: boolean()
+  defp blank?(value), do: is_nil(value) or value == ""
+
+  @spec parse_results(list()) :: {:ok, Address.t()} | {:error, String.t()}
   defp parse_results([
          %{"address_components" => components, "formatted_address" => formatted_address} | _
        ]) do
-    %{
-      success: true,
-      city: find_component(components, "locality"),
-      state: find_component(components, "administrative_area_level_1"),
-      country: find_component(components, "country"),
-      postal_code: find_component(components, "postal_code"),
-      district: find_component(components, "administrative_area_level_3"),
-      address: formatted_address
-    }
+    {:ok,
+     %Address{
+       city: find_component(components, "locality"),
+       state: find_component(components, "administrative_area_level_1"),
+       country: find_component(components, "country"),
+       postal_code: find_component(components, "postal_code"),
+       district: find_component(components, "administrative_area_level_3"),
+       address: formatted_address
+     }}
   end
 
   defp parse_results(_) do
-    %{
-      success: false,
-      error:
-        "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."
-    }
+    {:error,
+     "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."}
   end
 
   @spec find_component([map()], String.t()) :: String.t()
