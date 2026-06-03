@@ -10,6 +10,7 @@ defmodule Glific.Groups.WAGroups do
 
   alias Glific.{
     Contacts,
+    Groups.ContactWAGroup,
     Groups.ContactWAGroups,
     Groups.WAGroup,
     Groups.WAGroupPhone,
@@ -125,9 +126,9 @@ defmodule Glific.Groups.WAGroups do
 
   @doc """
   Syncs the contacts in each WA group by diffing Maytapi's participant list
-  against the current `contacts_wa_groups` rows: new participants are added,
-  departed participants are hard-deleted, and unchanged participants are left
-  untouched (no `updated_at` bump, so no downstream resync churn).
+  against the current `contacts_wa_groups` rows: new participants are
+  inserted, departed participants are deleted, unchanged participants are
+  left untouched (no `updated_at` bump, so no downstream resync churn).
   """
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
@@ -145,54 +146,53 @@ defmodule Glific.Groups.WAGroups do
 
   @spec diff_contacts(map(), non_neg_integer(), non_neg_integer()) :: :ok
   defp diff_contacts(group, wa_group_id, org_id) do
-    desired = resolve_desired_members(group, org_id)
-    desired_ids = MapSet.new(Map.keys(desired))
+    admin_phones = Enum.map(group.admins || [], &phone_number/1)
+
+    # Who Maytapi says is in the group right now: %{contact_id => is_admin}.
+    # Contacts are created on the fly so we always have an id to compare.
+    from_maytapi =
+      Enum.reduce(group.participants, %{}, fn participant, acc ->
+        phone = phone_number(participant)
+
+        case Contacts.maybe_create_contact(%{
+               phone: phone,
+               organization_id: org_id,
+               contact_type: "WA"
+             }) do
+          {:ok, contact} -> Map.put(acc, contact.id, phone in admin_phones)
+          {:error, _} -> acc
+        end
+      end)
 
     existing_ids =
-      ContactWAGroups.list_contact_wa_group(%{wa_group_id: wa_group_id})
-      |> Enum.map(& &1.contact_id)
+      ContactWAGroup
+      |> where([c], c.wa_group_id == ^wa_group_id)
+      |> select([c], c.contact_id)
+      |> Repo.all()
       |> MapSet.new()
 
-    to_add = MapSet.difference(desired_ids, existing_ids)
-    to_remove = MapSet.difference(existing_ids, desired_ids)
+    from_maytapi_ids = MapSet.new(Map.keys(from_maytapi))
 
-    Enum.each(to_add, fn contact_id ->
+    # New members → insert.
+    for contact_id <- MapSet.difference(from_maytapi_ids, existing_ids) do
       ContactWAGroups.create_contact_wa_group(%{
         contact_id: contact_id,
         wa_group_id: wa_group_id,
         organization_id: org_id,
-        is_admin: Map.get(desired, contact_id, false)
+        is_admin: Map.fetch!(from_maytapi, contact_id)
       })
-    end)
+    end
 
-    if MapSet.size(to_remove) > 0 do
-      ContactWAGroups.delete_wa_group_contacts_by_ids(wa_group_id, MapSet.to_list(to_remove))
+    # Departed members → delete.
+    to_remove = MapSet.difference(existing_ids, from_maytapi_ids) |> MapSet.to_list()
+
+    if to_remove != [] do
+      ContactWAGroup
+      |> where([c], c.wa_group_id == ^wa_group_id and c.contact_id in ^to_remove)
+      |> Repo.delete_all()
     end
 
     :ok
-  end
-
-  # Resolves Maytapi's participant phone list into a map of
-  # %{contact_id => is_admin?}, creating contacts as needed.
-  @spec resolve_desired_members(map(), non_neg_integer()) :: %{non_neg_integer() => boolean()}
-  defp resolve_desired_members(group, org_id) do
-    admin_phone_numbers = Enum.map(group.admins || [], &phone_number(&1))
-
-    Enum.reduce(group.participants, %{}, fn participant_phone, acc ->
-      phone = phone_number(participant_phone)
-
-      case Contacts.maybe_create_contact(%{
-             phone: phone,
-             organization_id: org_id,
-             contact_type: "WA"
-           }) do
-        {:ok, contact} ->
-          Map.put(acc, contact.id, admin?(phone, admin_phone_numbers))
-
-        {:error, _reason} ->
-          acc
-      end
-    end)
   end
 
   @doc """
@@ -246,11 +246,6 @@ defmodule Glific.Groups.WAGroups do
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
     :ok
-  end
-
-  @spec admin?(non_neg_integer(), [non_neg_integer()]) :: boolean()
-  defp admin?(phone, admin_phone_numbers) do
-    phone in admin_phone_numbers
   end
 
   @spec create_whatsapp_groups(list(), non_neg_integer) :: list()
