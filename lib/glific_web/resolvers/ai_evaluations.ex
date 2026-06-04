@@ -47,6 +47,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
+  @max_golden_qa_evaluations 80
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
@@ -105,6 +106,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
+         :ok <- validate_golden_qa_question_limit(file, factor),
          {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
@@ -184,6 +186,42 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     |> Enum.map(fn {field, messages} ->
       %{message: "#{field}: #{Enum.join(messages, "; ")}"}
     end)
+  end
+
+  @spec validate_golden_qa_question_limit(struct(), integer()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_question_limit(%{path: path}, factor) do
+    case count_csv_data_rows(path) do
+      {:ok, count} ->
+        total = count * factor
+
+        if total <= @max_golden_qa_evaluations do
+          :ok
+        else
+          {:error,
+           "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
+             "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
+             "Please reduce the number of questions in the CSV or the duplication factor."}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @spec count_csv_data_rows(String.t()) :: {:ok, non_neg_integer()} | {:error, String.t()}
+  defp count_csv_data_rows(path) do
+    count =
+      path
+      |> File.stream!()
+      |> CSV.decode(headers: true)
+      |> Enum.count(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+
+    {:ok, count}
+  rescue
+    _ -> {:error, "Unable to parse the uploaded CSV file"}
   end
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
