@@ -213,7 +213,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     count =
       path
       |> File.stream!()
-      |> CSV.decode(headers: true)
+      |> CSV.decode(headers: true, escape_max_lines: 50)
       |> Enum.count(fn
         {:ok, _} -> true
         _ -> false
