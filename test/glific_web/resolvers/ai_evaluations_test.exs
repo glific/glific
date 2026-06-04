@@ -675,6 +675,80 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "valid_name"
     end
 
+    test "returns error when CSV file cannot be parsed due to stream error", %{staff: user} do
+      # A directory path passes File.stat (tiny metadata size < 1MB) but raises
+      # File.Error with :eisdir when File.stream! is enumerated, triggering the rescue
+      dir_path = System.tmp_dir!()
+
+      upload = %Plug.Upload{
+        path: dir_path,
+        content_type: "text/csv",
+        filename: "bad.csv"
+      }
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg == "Unable to parse the uploaded CSV file"
+    end
+
+    test "counts only valid CSV rows, ignoring malformed rows with escape sequence errors", %{
+      staff: user
+    } do
+      # An unclosed quote at EOF causes the CSV library to emit {:error, _} for that row,
+      # hitting the _ -> false branch. The row is counted as 0 questions.
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "malformed_csv_#{System.unique_integer([:positive])}.csv"
+        )
+
+      good_rows = for i <- 1..5, do: "Question #{i}?,Answer #{i}"
+      content = Enum.join(["question,answer" | good_rows] ++ ["\"unclosed quote"], "\n")
+      File.write!(csv_path, content)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "malformed.csv"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_name: "valid_name", dataset_id: "99004"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      # 5 valid rows × 1 = 5 <= 80; malformed row not counted; request succeeds
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.name == "valid_name"
+    end
+
     test "accepts valid name with underscores and numbers", %{
       staff: user,
       upload: upload
