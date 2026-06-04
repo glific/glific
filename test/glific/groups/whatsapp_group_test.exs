@@ -31,7 +31,7 @@ defmodule Glific.Groups.WAGroupsTest do
     :ok
   end
 
-  test "fetch_wa_groups/1 fetch groups using Maytapi API", attrs do
+  test "sync_wa_groups/1 syncs groups using Maytapi API", attrs do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 200,
@@ -40,7 +40,7 @@ defmodule Glific.Groups.WAGroupsTest do
       }
     end)
 
-    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
+    assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
 
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
@@ -61,7 +61,7 @@ defmodule Glific.Groups.WAGroupsTest do
       }
     end)
 
-    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
+    assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
     assert group.label == "Expenses"
     assert group.bsp_id == "120363213149844251@g.us"
@@ -115,7 +115,7 @@ defmodule Glific.Groups.WAGroupsTest do
              })
   end
 
-  test "fetch_wa_groups/1 fetch groups for empty group label", attrs do
+  test "sync_wa_groups/1 syncs groups for empty group label", attrs do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 200,
@@ -124,7 +124,7 @@ defmodule Glific.Groups.WAGroupsTest do
       }
     end)
 
-    assert :ok == WAGroups.fetch_wa_groups(attrs.organization_id)
+    assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
 
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "marketing"})
     assert group.label == "marketing"
@@ -244,7 +244,7 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "adds new participants and sets admin flag", ctx do
-      group =
+      first_group =
         group_detail(
           ctx.wa_group,
           ctx.wa_managed_phone,
@@ -252,14 +252,26 @@ defmodule Glific.Groups.WAGroupsTest do
           ["918000000001@c.us"]
         )
 
-      :ok = WAGroups.sync_wa_groups_with_contacts([group], ctx.organization_id)
+      :ok = WAGroups.sync_wa_groups_with_contacts([first_group], ctx.organization_id)
 
       members = ContactWAGroups.list_contact_wa_group(%{wa_group_id: ctx.wa_group.id})
       assert length(members) == 2
 
+      second_group =
+        group_detail(
+          ctx.wa_group,
+          ctx.wa_managed_phone,
+          ["918000000003@c.us", "918000000002@c.us"],
+          ["918000000003@c.us"]
+        )
+
+      :ok = WAGroups.sync_wa_groups_with_contacts([second_group], ctx.organization_id)
+
+      members = ContactWAGroups.list_contact_wa_group(%{wa_group_id: ctx.wa_group.id})
+      assert length(members) == 2
       admin_member = Enum.find(members, & &1.is_admin)
       admin_contact = Glific.Contacts.get_contact!(admin_member.contact_id)
-      assert admin_contact.phone == "918000000001"
+      assert admin_contact.phone == "918000000003"
     end
 
     test "removes departed participants", ctx do

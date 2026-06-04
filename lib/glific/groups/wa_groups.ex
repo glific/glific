@@ -71,27 +71,24 @@ defmodule Glific.Groups.WAGroups do
   defp phone_number(phone_number), do: String.split(phone_number, "@") |> List.first()
 
   @doc """
-  Fetches group using maytapi API and sync it in Glific
+  Syncs groups using maytapi API into Glific
   """
-  @spec fetch_wa_groups(non_neg_integer()) :: :ok
-  def fetch_wa_groups(org_id) do
+  @spec sync_wa_groups(non_neg_integer()) :: :ok
+  def sync_wa_groups(org_id) do
     wa_managed_phones =
       WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
     Enum.each(wa_managed_phones, fn wa_managed_phone ->
-      do_fetch_wa_groups(org_id, wa_managed_phone)
+      do_sync_wa_groups(org_id, wa_managed_phone)
     end)
   end
 
-  @spec do_fetch_wa_groups(non_neg_integer(), map()) :: list() | {:error, any()}
-  defp do_fetch_wa_groups(org_id, wa_managed_phone) do
+  @spec do_sync_wa_groups(non_neg_integer(), map()) :: list() | {:error, any()}
+  defp do_sync_wa_groups(org_id, wa_managed_phone) do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_groups(org_id, wa_managed_phone.phone_id),
-         {:ok, decoded} <- Jason.decode(body) do
-      group_details =
-        decoded
-        |> get_group_details(wa_managed_phone)
-
+         {:ok, decoded} <- Jason.decode(body),
+         group_details = get_group_details(decoded, wa_managed_phone) do
       create_whatsapp_groups(group_details, org_id)
       sync_wa_groups_with_contacts(group_details, org_id)
       sync_wa_group_phones(group_details, wa_managed_phone)
@@ -141,7 +138,7 @@ defmodule Glific.Groups.WAGroups do
              organization_id: org_id
            }) do
         {:ok, wa_group} ->
-          diff_contacts(group, wa_group.id, org_id)
+          sync_contacts(group, wa_group.id, org_id)
 
         {:error, _} ->
           Logger.warning(
@@ -151,62 +148,116 @@ defmodule Glific.Groups.WAGroups do
     end)
   end
 
-  @spec diff_contacts(map(), non_neg_integer(), non_neg_integer()) :: :ok
-  defp diff_contacts(group, wa_group_id, org_id) do
+  @spec sync_contacts(map(), non_neg_integer(), non_neg_integer()) :: :ok
+  defp sync_contacts(group, wa_group_id, org_id) do
     admin_phones = Enum.map(group.admins || [], &phone_number/1)
+    maytapi_participants = maybe_create_contacts(group.participants, admin_phones, org_id)
+    existing_contact_wa_groups = existing_contact_wa_groups(wa_group_id)
 
-    # Who Maytapi says is in the group right now: %{contact_id => is_admin}.
-    # Contacts are created on the fly so we always have an id to compare.
-    from_maytapi =
-      Enum.reduce(group.participants, %{}, fn participant, acc ->
-        phone = phone_number(participant)
+    insert_new_contact_wa_groups(
+      maytapi_participants,
+      existing_contact_wa_groups,
+      wa_group_id,
+      org_id
+    )
 
-        case Contacts.maybe_create_contact(%{
-               phone: phone,
-               organization_id: org_id,
-               contact_type: "WA"
-             }) do
-          {:ok, contact} -> Map.put(acc, contact.id, phone in admin_phones)
-          {:error, _} -> acc
-        end
-      end)
+    update_contact_wa_group_admin_flags(maytapi_participants, existing_contact_wa_groups)
 
-    # Keep full rows so we can compare each retained member's is_admin
-    # flag against what Maytapi now reports.
-    existing_by_contact =
-      ContactWAGroup
-      |> where([c], c.wa_group_id == ^wa_group_id)
-      |> Repo.all()
-      |> Map.new(&{&1.contact_id, &1})
+    delete_departed_contact_wa_groups(
+      maytapi_participants,
+      existing_contact_wa_groups,
+      wa_group_id
+    )
 
-    existing_ids = MapSet.new(Map.keys(existing_by_contact))
-    from_maytapi_ids = MapSet.new(Map.keys(from_maytapi))
+    :ok
+  end
 
-    # New members → insert.
-    for contact_id <- MapSet.difference(from_maytapi_ids, existing_ids) do
+  # Who Maytapi says is in the group right now: %{contact_id => is_admin}.
+  # Contacts are created on the fly so we always have an id to compare.
+  @spec maybe_create_contacts([String.t()], [String.t()], non_neg_integer()) ::
+          %{non_neg_integer() => boolean()}
+  defp maybe_create_contacts(participants, admin_phones, org_id) do
+    Enum.reduce(participants, %{}, fn participant, acc ->
+      phone = phone_number(participant)
+
+      case Contacts.maybe_create_contact(%{
+             phone: phone,
+             organization_id: org_id,
+             contact_type: "WA"
+           }) do
+        {:ok, contact} -> Map.put(acc, contact.id, phone in admin_phones)
+        {:error, _} -> acc
+      end
+    end)
+  end
+
+  # Keep full rows so we can compare each retained member's is_admin
+  # flag against what Maytapi now reports.
+  @spec existing_contact_wa_groups(non_neg_integer()) :: %{
+          non_neg_integer() => ContactWAGroup.t()
+        }
+  defp existing_contact_wa_groups(wa_group_id) do
+    ContactWAGroup
+    |> where([c], c.wa_group_id == ^wa_group_id)
+    |> Repo.all()
+    |> Map.new(&{&1.contact_id, &1})
+  end
+
+  @spec insert_new_contact_wa_groups(
+          %{non_neg_integer() => boolean()},
+          %{non_neg_integer() => ContactWAGroup.t()},
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: :ok
+  defp insert_new_contact_wa_groups(maytapi_participants, existing_contact_wa_groups, wa_group_id, org_id) do
+    existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
+    maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
+
+    for contact_id <- MapSet.difference(maytapi_participants_ids, existing_contact_wa_groups_ids) do
       ContactWAGroups.create_contact_wa_group(%{
         contact_id: contact_id,
         wa_group_id: wa_group_id,
         organization_id: org_id,
-        is_admin: Map.fetch!(from_maytapi, contact_id)
+        is_admin: Map.fetch!(maytapi_participants, contact_id)
       })
     end
 
-    # Retained members → reconcile is_admin only when it actually changed,
-    # so unchanged rows keep their original updated_at.
-    for contact_id <- MapSet.intersection(from_maytapi_ids, existing_ids) do
-      row = existing_by_contact[contact_id]
-      desired_admin = Map.fetch!(from_maytapi, contact_id)
+    :ok
+  end
 
-      if row.is_admin != desired_admin do
-        row
+  # Reconcile is_admin only when it actually changed, so unchanged rows keep
+  # their original updated_at.
+  @spec update_contact_wa_group_admin_flags(
+          %{non_neg_integer() => boolean()},
+          %{non_neg_integer() => ContactWAGroup.t()}
+        ) :: :ok
+  defp update_contact_wa_group_admin_flags(maytapi_participants, existing_contact_wa_groups) do
+    existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
+    maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
+
+    for contact_id <- MapSet.intersection(maytapi_participants_ids, existing_contact_wa_groups_ids) do
+      contact_wa_group = existing_contact_wa_groups[contact_id]
+      desired_admin = Map.fetch!(maytapi_participants, contact_id)
+
+      if contact_wa_group.is_admin != desired_admin do
+        contact_wa_group
         |> Ecto.Changeset.change(is_admin: desired_admin)
         |> Repo.update()
       end
     end
 
-    # Departed members → delete.
-    to_remove = MapSet.difference(existing_ids, from_maytapi_ids) |> MapSet.to_list()
+    :ok
+  end
+
+  @spec delete_departed_contact_wa_groups(
+          %{non_neg_integer() => boolean()},
+          %{non_neg_integer() => ContactWAGroup.t()},
+          non_neg_integer()
+        ) :: :ok
+  defp delete_departed_contact_wa_groups(maytapi_participants, existing_contact_wa_groups, wa_group_id) do
+    existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
+    maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
+    to_remove = MapSet.difference(existing_contact_wa_groups_ids, maytapi_participants_ids) |> MapSet.to_list()
 
     if to_remove != [] do
       ContactWAGroup
