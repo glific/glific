@@ -7,7 +7,7 @@ defmodule Glific.Flows.Webhooks.GeolocationTest do
   covered in `WebhookInfrastructureTest` and `CommonWebhookTest`.
   """
 
-  use Glific.DataCase, async: false
+  use Glific.DataCase, async: true
 
   alias Glific.Flows.Webhooks.Geolocation
   alias Glific.Flows.Webhooks.Geolocation.Address

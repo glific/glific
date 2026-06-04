@@ -180,7 +180,10 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
   @spec find_component([map()], String.t()) :: String.t()
   defp find_component(components, type) do
-    case Enum.find(components, fn component -> type in component["types"] end) do
+    case Enum.find(components, fn component ->
+           types = Map.get(component, "types", [])
+           is_list(types) and type in types
+         end) do
       nil -> "N/A"
       component -> component["long_name"]
     end

@@ -1,11 +1,11 @@
 defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
   use Glific.DataCase, async: false
 
+  import Mock
+
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Flows.Webhooks.{Dispatcher, Errors, Instrumentation, Registry}
-
-  import Mock
 
   # ─── Stub webhook used across all infrastructure tests ───────────────────
 
@@ -581,6 +581,16 @@ defmodule Glific.Flows.Webhooks.WebhookInfrastructureTest do
         {Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}
       ]) do
         result = Dispatcher.dispatch_named("stub", %{"organization_id" => :atom_value})
+        assert result[:success] == true
+      end
+    end
+
+    test "handles non-numeric string organization_id without crashing" do
+      with_mocks([
+        {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]},
+        {Glific.Metrics, [:passthrough], [increment: fn _event -> :ok end]}
+      ]) do
+        result = Dispatcher.dispatch_named("stub", %{"organization_id" => "not_a_number"})
         assert result[:success] == true
       end
     end

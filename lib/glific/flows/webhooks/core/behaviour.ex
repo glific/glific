@@ -22,12 +22,14 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   enough state for the webhook to do its work and for instrumentation to
   attach the right AppSignal tags.
 
-  Minimally `:organization_id` is always set. Async webhooks additionally
-  expect `:flow_context`, `:webhook_log_id`, `:action`, and the various ID
-  fields used in the Kaapi request_metadata.
+  Minimally `:organization_id` is set (may be `nil` when the field is
+  absent or unparseable). Async webhooks additionally expect `:flow_context`,
+  `:webhook_log_id`, `:action`, and the various ID fields used in the Kaapi
+  request_metadata.
   """
   @type ctx :: %{
-          required(:organization_id) => non_neg_integer(),
+          required(:organization_id) => non_neg_integer() | nil,
+          optional(:headers) => list(),
           optional(:flow_id) => non_neg_integer() | nil,
           optional(:contact_id) => non_neg_integer() | nil,
           optional(:flow_context_id) => non_neg_integer() | nil,
@@ -102,7 +104,7 @@ defmodule Glific.Flows.Webhooks.Behaviour do
               {:ok | :error, map()}
 
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
-  @callback wait_time_default() :: pos_integer()
+  @callback wait_time_default() :: non_neg_integer()
 
   @optional_callbacks handle_resume: 2, wait_time_default: 0
 end
