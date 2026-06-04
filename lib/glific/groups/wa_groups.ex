@@ -235,7 +235,8 @@ defmodule Glific.Groups.WAGroups do
                  wa_managed_phone_id: group.wa_managed_phone_id,
                  organization_id: org_id
                }),
-             {:ok, _membership} <- activate_membership(wa_group.id, wa_managed_phone) do
+             {:ok, _membership} <-
+               ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
           [wa_group.id]
         else
           {:error, reason} ->
@@ -249,21 +250,6 @@ defmodule Glific.Groups.WAGroups do
 
     deactivate_missing_memberships(wa_managed_phone, present_group_ids)
     :ok
-  end
-
-  @spec activate_membership(non_neg_integer(), WAManagedPhone.t()) :: {:ok, WAGroupPhone.t()}
-  defp activate_membership(wa_group_id, wa_managed_phone) do
-    %WAGroupPhone{}
-    |> WAGroupPhone.changeset(%{
-      wa_group_id: wa_group_id,
-      wa_managed_phone_id: wa_managed_phone.id,
-      organization_id: wa_managed_phone.organization_id,
-      is_active: true
-    })
-    |> Repo.insert(
-      on_conflict: [set: [is_active: true, updated_at: DateTime.utc_now()]],
-      conflict_target: [:wa_group_id, :wa_managed_phone_id]
-    )
   end
 
   @spec deactivate_missing_memberships(WAManagedPhone.t(), [non_neg_integer()]) :: :ok
@@ -368,26 +354,80 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
+  Fetches a WA group by `(bsp_id, organization_id)`. If none exists, creates
+  one; if duplicates exist (legacy data from before Phase 3 — Phase 5 will
+  collapse these), returns the oldest. In all cases ensures a
+  `wa_groups_phones` membership row exists for the calling
+  `wa_managed_phone_id` so that subsequent outbound routing knows the phone
+  is in the group:
+
+  - Newly created group → calling phone is recorded as `is_primary: true`
+    (first creator becomes the primary, matching the Phase 1 backfill
+    convention).
+  - Existing group → calling phone is recorded as `is_primary: false`
+    (joining an existing group doesn't change who's primary).
+
+  Existing membership rows are left as-is for `is_primary`; only
+  `is_active` gets re-stamped to `true`.
   """
   @spec maybe_create_group(map()) ::
           {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
-    case Repo.get_by(WAGroup, %{
-           bsp_id: params.bsp_id,
-           organization_id: params.organization_id,
-           wa_managed_phone_id: params.wa_managed_phone_id
-         }) do
+    case fetch_oldest_wa_group(params.bsp_id, params.organization_id) do
       nil ->
-        create_wa_group(params)
+        with {:ok, wa_group} <- create_wa_group(params) do
+          ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+            is_primary: true
+          )
+
+          {:ok, wa_group}
+        end
 
       wa_group ->
+        ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+          is_primary: false
+        )
+
         if params.label && wa_group.label != params.label do
           update_wa_group(wa_group, %{label: params.label})
         else
           {:ok, wa_group}
         end
     end
+  end
+
+  # Lookup keyed on `(bsp_id, organization_id)` only. If duplicate rows exist
+  # from before Phase 3, the oldest one wins — matches the Phase 1 backfill's
+  # "oldest = primary" convention so the active group stays stable.
+  @spec fetch_oldest_wa_group(String.t(), non_neg_integer()) :: WAGroup.t() | nil
+  defp fetch_oldest_wa_group(bsp_id, organization_id) do
+    WAGroup
+    |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^organization_id)
+    |> order_by([wg], asc: wg.inserted_at)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  # Idempotent upsert. On a new row, `is_primary` is stamped per the caller's
+  # context. On conflict (the row already exists), only `is_active` and
+  # `updated_at` are touched so existing primary status stays intact.
+  @spec ensure_membership(non_neg_integer(), non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, WAGroupPhone.t()} | {:error, Ecto.Changeset.t()}
+  defp ensure_membership(wa_group_id, wa_managed_phone_id, organization_id, opts) do
+    is_primary = Keyword.get(opts, :is_primary, false)
+
+    %WAGroupPhone{}
+    |> WAGroupPhone.changeset(%{
+      wa_group_id: wa_group_id,
+      wa_managed_phone_id: wa_managed_phone_id,
+      organization_id: organization_id,
+      is_primary: is_primary,
+      is_active: true
+    })
+    |> Repo.insert(
+      on_conflict: [set: [is_active: true, updated_at: DateTime.utc_now()]],
+      conflict_target: [:wa_group_id, :wa_managed_phone_id]
+    )
   end
 
   @doc """
