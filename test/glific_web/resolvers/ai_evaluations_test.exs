@@ -739,6 +739,58 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
+    test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
+      staff: user
+    } do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "wrong_cols_#{System.unique_integer([:positive])}.csv"
+        )
+
+      File.write!(csv_path, "name,response\nWhat is Glific?,A platform\n")
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "wrong_cols.csv"
+      }
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg == "CSV must have exactly two columns: 'question' and 'answer'"
+    end
+
+    test "returns error when CSV file is empty (no rows at all)", %{staff: user} do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "empty_file_#{System.unique_integer([:positive])}.csv"
+        )
+
+      File.write!(csv_path, "")
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "empty.csv"
+      }
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg == "The uploaded CSV file is empty"
+    end
+
     test "accepts valid name with underscores and numbers", %{
       staff: user,
       upload: upload

@@ -106,7 +106,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
-         :ok <- validate_golden_qa_question_limit(file, factor),
+         {:ok, row_count} <- validate_csv_structure(file),
+         :ok <- validate_golden_qa_question_limit(row_count, factor),
          {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
@@ -188,40 +189,47 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end)
   end
 
-  @spec validate_golden_qa_question_limit(struct(), integer()) :: :ok | {:error, String.t()}
-  defp validate_golden_qa_question_limit(%{path: path}, factor) do
-    case count_csv_data_rows(path) do
-      {:ok, count} ->
-        total = count * factor
-
-        if total <= @max_golden_qa_evaluations do
-          :ok
-        else
-          {:error,
-           "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
-             "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
-             "Please reduce the number of questions in the CSV or the duplication factor."}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  @spec count_csv_data_rows(String.t()) :: {:ok, non_neg_integer()} | {:error, String.t()}
-  defp count_csv_data_rows(path) do
+  @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
+  defp validate_csv_structure(%{path: path}) do
     path
     |> File.stream!()
-    |> CSV.decode(headers: true, escape_max_lines: 50)
-    |> Enum.reduce_while({:ok, 0}, fn
-      {:ok, _row}, {:ok, acc} ->
-        {:cont, {:ok, acc + 1}}
+    |> CSV.decode(headers: false, escape_max_lines: 50)
+    |> Enum.reduce_while({:await_header, 0}, fn
+      {:ok, row}, {:await_header, _} ->
+        if row == ["question", "answer"] do
+          {:cont, {:count, 0}}
+        else
+          {:halt, {:error, "CSV must have exactly two columns: 'question' and 'answer'"}}
+        end
+
+      {:ok, _row}, {:count, n} ->
+        {:cont, {:count, n + 1}}
 
       {:error, _reason}, _acc ->
         {:halt, {:error, "Unable to parse the uploaded CSV file"}}
     end)
+    |> case do
+      {:count, n} -> {:ok, n}
+      {:await_header, _} -> {:error, "The uploaded CSV file is empty"}
+      {:error, _} = err -> err
+    end
   rescue
     _ -> {:error, "Unable to parse the uploaded CSV file"}
+  end
+
+  @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
+          :ok | {:error, String.t()}
+  defp validate_golden_qa_question_limit(count, factor) do
+    total = count * factor
+
+    if total <= @max_golden_qa_evaluations do
+      :ok
+    else
+      {:error,
+       "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
+         "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
+         "Please reduce the number of questions in the CSV or the duplication factor."}
+    end
   end
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
