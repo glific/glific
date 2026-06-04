@@ -3,11 +3,15 @@ defmodule Glific.EraseTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     Contacts.ContactHistory,
     Erase,
     Fixtures,
+    Flows.FlowResult,
     Flows.FlowRevision,
     Flows.WebhookLog,
     Messages,
@@ -363,10 +367,47 @@ defmodule Glific.EraseTest do
     assert length(histories) == 1
   end
 
-  test "delete_organization_data succeeds when assistants have an active_config_version_id set",
-       attrs do
+  test "delete_organization_data clears all expected tables for the org", attrs do
     org_id = attrs.organization_id
 
+    # messages_media
+    media = Fixtures.message_media_fixture(attrs)
+
+    # messages (requires a contact)
+    contact = Fixtures.contact_fixture(attrs)
+    msg = Fixtures.message_fixture(%{sender_id: contact.id, organization_id: org_id})
+
+    # contact_histories
+    {:ok, history} =
+      %ContactHistory{}
+      |> ContactHistory.changeset(%{
+        event_type: "contact_flow_ended",
+        event_label: "Flow Completed",
+        contact_id: contact.id,
+        event_datetime: DateTime.utc_now(),
+        organization_id: org_id,
+        event_meta: %{}
+      })
+      |> Repo.insert()
+
+    # contacts_groups
+    contact_group = Fixtures.contact_group_fixture(attrs)
+
+    # flow_contexts
+    flow_context = Fixtures.flow_context_fixture(attrs)
+
+    # flow_results
+    {:ok, flow_result} =
+      FlowResult.upsert_flow_result(%{
+        contact_id: contact.id,
+        flow_context_id: flow_context.id,
+        flow_id: flow_context.flow_id,
+        flow_uuid: flow_context.flow_uuid,
+        flow_version: 1,
+        organization_id: org_id
+      })
+
+    # assistants — with active_config_version_id set (the FK violation case)
     {:ok, assistant} =
       Repo.insert(
         Assistant.changeset(%Assistant{}, %{
@@ -394,9 +435,148 @@ defmodule Glific.EraseTest do
       })
     )
 
+    # knowledge_bases and knowledge_base_versions
+    {:ok, kb} = Assistants.create_knowledge_base(%{name: "Test KB", organization_id: org_id})
+
+    {:ok, kb_version} =
+      Assistants.create_knowledge_base_version(%{
+        knowledge_base_id: kb.id,
+        organization_id: org_id,
+        files: %{},
+        status: :completed,
+        llm_service_id: Ecto.UUID.generate()
+      })
+
+    # interactive_templates
+    interactive = Fixtures.interactive_fixture(attrs)
+
+    # triggers
+    trigger = Fixtures.trigger_fixture(attrs)
+
+    # notifications
+    notification = Fixtures.notification_fixture(attrs)
+
+    # webhook_logs
+    webhook_log = Fixtures.webhook_log_fixture(attrs)
+
+    assert :ok = Erase.delete_organization_data(org_id)
+
+    # messages_media
+    assert Repo.get(Messages.MessageMedia, media.id) == nil
+
+    # messages
+    assert Repo.get(Message, msg.id) == nil
+
+    # contact_histories
+    assert Repo.get(ContactHistory, history.id) == nil
+
+    # contacts_groups
+    assert Repo.get(Glific.Groups.ContactGroup, contact_group.id) == nil
+
+    # flow_contexts
+    assert Repo.get(Glific.Flows.FlowContext, flow_context.id) == nil
+
+    # flow_results
+    assert Repo.get(FlowResult, flow_result.id) == nil
+
+    # assistants + config versions (FK violation fix)
+    assert Repo.get(Assistant, assistant.id) == nil
+    assert Repo.get(AssistantConfigVersion, config_version.id) == nil
+
+    # knowledge_bases + versions
+    assert Repo.get(KnowledgeBase, kb.id) == nil
+    assert Repo.get(KnowledgeBaseVersion, kb_version.id) == nil
+
+    # interactive_templates
+    assert Repo.get(Glific.Templates.InteractiveTemplate, interactive.id) == nil
+
+    # triggers
+    assert Repo.get(Glific.Triggers.Trigger, trigger.id) == nil
+
+    # notifications
+    assert Repo.get(Notification, notification.id) == nil
+
+    # webhook_logs
+    assert Repo.get(WebhookLog, webhook_log.id) == nil
+  end
+
+  # Adding special tests for assistants as it contains 2 way FK relationships
+  test "delete_organization_data succeeds when org has no assistants", attrs do
+    assert :ok = Erase.delete_organization_data(attrs.organization_id)
+  end
+
+  test "delete_organization_data succeeds when assistant has no active_config_version_id set",
+       attrs do
+    org_id = attrs.organization_id
+
+    {:ok, assistant} =
+      Repo.insert(
+        Assistant.changeset(%Assistant{}, %{
+          name: "Test Assistant #{System.unique_integer()}",
+          organization_id: org_id
+        })
+      )
+
+    {:ok, config_version} =
+      Repo.insert(
+        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+          assistant_id: assistant.id,
+          organization_id: org_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant.",
+          settings: %{},
+          status: :ready
+        })
+      )
+
     assert :ok = Erase.delete_organization_data(org_id)
 
     assert Repo.get(Assistant, assistant.id) == nil
     assert Repo.get(AssistantConfigVersion, config_version.id) == nil
+  end
+
+  test "delete_organization_data succeeds when multiple assistants each have active_config_version_id set",
+       attrs do
+    org_id = attrs.organization_id
+
+    assistants_with_versions =
+      Enum.map(1..3, fn i ->
+        {:ok, assistant} =
+          Repo.insert(
+            Assistant.changeset(%Assistant{}, %{
+              name: "Test Assistant #{System.unique_integer()} #{i}",
+              organization_id: org_id
+            })
+          )
+
+        {:ok, config_version} =
+          Repo.insert(
+            AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+              assistant_id: assistant.id,
+              organization_id: org_id,
+              provider: "openai",
+              model: "gpt-4o",
+              prompt: "You are a helpful assistant.",
+              settings: %{},
+              status: :ready
+            })
+          )
+
+        Repo.update!(
+          Assistant.set_active_config_version_changeset(assistant, %{
+            active_config_version_id: config_version.id
+          })
+        )
+
+        {assistant, config_version}
+      end)
+
+    assert :ok = Erase.delete_organization_data(org_id)
+
+    Enum.each(assistants_with_versions, fn {assistant, config_version} ->
+      assert Repo.get(Assistant, assistant.id) == nil
+      assert Repo.get(AssistantConfigVersion, config_version.id) == nil
+    end)
   end
 end
