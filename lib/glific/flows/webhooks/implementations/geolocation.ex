@@ -54,7 +54,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
   @spec do_geocode(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
   defp do_geocode(url) do
-    case client() |> Tesla.get(url) do
+    case Tesla.get(client(), url) do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         decode_success(body)
 
