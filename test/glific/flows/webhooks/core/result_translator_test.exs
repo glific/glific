@@ -9,7 +9,7 @@ defmodule Glific.Flows.Webhooks.ResultTranslatorTest.MyStruct do
 end
 
 defmodule Glific.Flows.Webhooks.ResultTranslatorTest do
-  use ExUnit.Case, async: true
+  use Glific.DataCase, async: true
 
   alias Glific.Flows.Webhooks.{Geolocation, ResultTranslator}
   alias Glific.Flows.Webhooks.Geolocation.Address
