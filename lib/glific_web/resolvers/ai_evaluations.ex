@@ -210,16 +210,16 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @spec count_csv_data_rows(String.t()) :: {:ok, non_neg_integer()} | {:error, String.t()}
   defp count_csv_data_rows(path) do
-    count =
-      path
-      |> File.stream!()
-      |> CSV.decode(headers: true, escape_max_lines: 50)
-      |> Enum.count(fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+    path
+    |> File.stream!()
+    |> CSV.decode(headers: true, escape_max_lines: 50)
+    |> Enum.reduce_while({:ok, 0}, fn
+      {:ok, _row}, {:ok, acc} ->
+        {:cont, {:ok, acc + 1}}
 
-    {:ok, count}
+      {:error, _reason}, _acc ->
+        {:halt, {:error, "Unable to parse the uploaded CSV file"}}
+    end)
   rescue
     _ -> {:error, "Unable to parse the uploaded CSV file"}
   end

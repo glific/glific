@@ -702,19 +702,17 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
-    test "counts only valid CSV rows, ignoring malformed rows with escape sequence errors", %{
+    test "returns error when CSV contains malformed rows (escape sequence errors)", %{
       staff: user
     } do
-      # An unclosed quote at EOF causes the CSV library to emit {:error, _} for that row,
-      # hitting the _ -> false branch. The row is counted as 0 questions.
+      # Unclosed quote triggers {:error, _} from CSV.decode; reduce_while halts immediately
       csv_path =
         Path.join(
           System.tmp_dir!(),
           "malformed_csv_#{System.unique_integer([:positive])}.csv"
         )
 
-      # 16 valid rows × 5 = 80 (at limit); if malformed row were counted: 17 × 5 = 85 → would fail
-      good_rows = for i <- 1..16, do: "Question #{i}?,Answer #{i}"
+      good_rows = for i <- 1..5, do: "Question #{i}?,Answer #{i}"
       content = Enum.join(["question,answer" | good_rows] ++ ["\"unclosed quote"], "\n")
       File.write!(csv_path, content)
       on_exit(fn -> File.rm(csv_path) end)
@@ -725,29 +723,20 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         filename: "malformed.csv"
       }
 
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{data: %{dataset_name: "valid_name", dataset_id: "99004"}}
-          }
-      end)
-
       args = %{
         input: %{
           name: "valid_name",
           file: upload,
-          duplication_factor: 5
+          duplication_factor: 1
         }
       }
 
       resolution = %{context: %{current_user: user}}
 
-      # Malformed row is not counted; 16 × 5 = 80 ≤ 80 → request succeeds
-      assert {:ok, %{golden_qa: golden_qa}} =
+      assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert golden_qa.name == "valid_name"
+      assert msg == "Unable to parse the uploaded CSV file"
     end
 
     test "accepts valid name with underscores and numbers", %{
