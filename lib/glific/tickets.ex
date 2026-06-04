@@ -248,7 +248,6 @@ defmodule Glific.Tickets do
     |> join(:left, [t], f in Flow, as: :f, on: f.id == t.flow_id)
     |> where([t], t.inserted_at >= ^start_time and t.inserted_at <= ^end_time)
     |> where([t], t.organization_id == ^org_id)
-    |> order_by([t], asc: t.inserted_at, asc: t.id)
     |> select([t, c, u, f], %{
       status: t.status,
       body: t.body,
