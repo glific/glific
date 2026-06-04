@@ -713,7 +713,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
           "malformed_csv_#{System.unique_integer([:positive])}.csv"
         )
 
-      good_rows = for i <- 1..5, do: "Question #{i}?,Answer #{i}"
+      # 16 valid rows × 5 = 80 (at limit); if malformed row were counted: 17 × 5 = 85 → would fail
+      good_rows = for i <- 1..16, do: "Question #{i}?,Answer #{i}"
       content = Enum.join(["question,answer" | good_rows] ++ ["\"unclosed quote"], "\n")
       File.write!(csv_path, content)
       on_exit(fn -> File.rm(csv_path) end)
@@ -736,13 +737,13 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         input: %{
           name: "valid_name",
           file: upload,
-          duplication_factor: 1
+          duplication_factor: 5
         }
       }
 
       resolution = %{context: %{current_user: user}}
 
-      # 5 valid rows × 1 = 5 <= 80; malformed row not counted; request succeeds
+      # Malformed row is not counted; 16 × 5 = 80 ≤ 80 → request succeeds
       assert {:ok, %{golden_qa: golden_qa}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
