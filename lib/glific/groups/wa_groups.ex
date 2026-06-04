@@ -235,7 +235,8 @@ defmodule Glific.Groups.WAGroups do
                  wa_managed_phone_id: group.wa_managed_phone_id,
                  organization_id: org_id
                }),
-             {:ok, _membership} <- activate_membership(wa_group.id, wa_managed_phone) do
+             {:ok, _membership} <-
+               ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
           [wa_group.id]
         else
           {:error, reason} ->
@@ -251,13 +252,21 @@ defmodule Glific.Groups.WAGroups do
     :ok
   end
 
-  @spec activate_membership(non_neg_integer(), WAManagedPhone.t()) :: {:ok, WAGroupPhone.t()}
-  defp activate_membership(wa_group_id, wa_managed_phone) do
+  # Idempotent upsert. On a new row, `is_primary` is stamped per the caller's
+  # context (sync passes `is_primary: false` since it doesn't manage primary
+  # — only Phase 4's failover path does). On conflict, only `is_active` and
+  # `updated_at` are touched, so existing primary status stays intact.
+  @spec ensure_membership(non_neg_integer(), non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, WAGroupPhone.t()} | {:error, Ecto.Changeset.t()}
+  defp ensure_membership(wa_group_id, wa_managed_phone_id, organization_id, opts) do
+    is_primary = Keyword.get(opts, :is_primary, false)
+
     %WAGroupPhone{}
     |> WAGroupPhone.changeset(%{
       wa_group_id: wa_group_id,
-      wa_managed_phone_id: wa_managed_phone.id,
-      organization_id: wa_managed_phone.organization_id,
+      wa_managed_phone_id: wa_managed_phone_id,
+      organization_id: organization_id,
+      is_primary: is_primary,
       is_active: true
     })
     |> Repo.insert(
