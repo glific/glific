@@ -484,6 +484,7 @@ defmodule Glific.Erase do
         "DELETE FROM flow_results WHERE organization_id = #{organization_id}",
         "DELETE FROM messages WHERE organization_id = #{organization_id}",
         "DELETE FROM assistant_config_version_knowledge_base_versions WHERE organization_id = #{organization_id}",
+        "UPDATE assistants SET active_config_version_id = NULL WHERE organization_id = #{organization_id}",
         "DELETE FROM assistant_config_versions WHERE organization_id = #{organization_id}",
         "DELETE FROM knowledge_base_versions WHERE organization_id = #{organization_id}",
         "DELETE FROM knowledge_bases WHERE organization_id = #{organization_id}",
