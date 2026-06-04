@@ -1,5 +1,11 @@
 {
   "enabledPlugins": {
     "claude-md-management@claude-plugins-official": true
+  },
+  "permissions": {
+    "deny": [
+      "Read(config/.env.dev)",
+      "Read(config/dev.secret.exs)"
+    ]
   }
 }
