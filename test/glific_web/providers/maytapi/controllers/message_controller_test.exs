@@ -1278,5 +1278,34 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       assert message.wa_managed_phone_id == first_phone.id
     end
+
+    test "duplicate inbound from a second phone (same bsp_id) is not stored a second time",
+         %{conn: conn, organization_id: org_id} do
+      # Two of our managed phones are members of the same group. Maytapi
+      # fires the inbound webhook once per phone — both with the same
+      # bsp_id, but different receiver. We should store exactly one row.
+      second_phone = seed_second_phone(org_id)
+      shared_bsp_id = Ecto.UUID.generate()
+
+      first_webhook = put_in(@text_message_webhook, ["message", "id"], shared_bsp_id)
+
+      second_webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], shared_bsp_id)
+        |> put_in(["receiver"], second_phone.phone)
+
+      conn1 = post(conn, "/maytapi", first_webhook)
+      assert conn1.halted
+
+      conn2 = post(conn, "/maytapi", second_webhook)
+      assert conn2.halted
+
+      rows =
+        WAMessage
+        |> where([m], m.bsp_id == ^shared_bsp_id and m.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert length(rows) == 1
+    end
   end
 end

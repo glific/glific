@@ -85,12 +85,36 @@ defmodule Glific.Communications.GroupMessage do
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info("Received message: type: '#{type}', id: '#{message_params[:bsp_id]}'")
 
-    {:ok, contact} =
-      message_params.sender
-      |> Map.put(:organization_id, organization_id)
-      |> Contacts.maybe_create_contact()
+    if duplicate_inbound?(message_params[:bsp_id], organization_id) do
+      Logger.info(
+        "Skipping duplicate inbound WA message: bsp_id '#{message_params[:bsp_id]}' already stored (likely arrived via another managed phone in the same group)"
+      )
 
-    do_receive_message(contact, message_params, type)
+      :ok
+    else
+      {:ok, contact} =
+        message_params.sender
+        |> Map.put(:organization_id, organization_id)
+        |> Contacts.maybe_create_contact()
+
+      do_receive_message(contact, message_params, type)
+    end
+  end
+
+  # In multi-phone orgs the same WhatsApp message can arrive once per
+  # managed phone in the group. The bsp_id (Maytapi's underlying message
+  # id) is shared across those webhooks, so a fetch_by it is enough to
+  # catch the duplicate. Missing or nil bsp_id falls through — should not
+  # happen in practice but we don't want to dedup on a nil key.
+  @spec duplicate_inbound?(String.t() | nil, non_neg_integer()) :: boolean()
+  defp duplicate_inbound?(nil, _organization_id), do: false
+  defp duplicate_inbound?("", _organization_id), do: false
+
+  defp duplicate_inbound?(bsp_id, organization_id) do
+    case Repo.fetch_by(WAMessage, %{bsp_id: bsp_id, organization_id: organization_id}) do
+      {:ok, _} -> true
+      {:error, _} -> false
+    end
   end
 
   @doc """
