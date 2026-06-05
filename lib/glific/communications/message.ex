@@ -240,8 +240,7 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> publish_data(:received_message)
-    |> process_message()
+    |> handle_inbound_create_result(message_params)
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
@@ -252,14 +251,44 @@ defmodule Glific.Communications.Message do
       |> Map.put_new(:flow, :inbound)
       |> Messages.create_message_media()
 
-    {:ok, _message} =
-      message_params
-      |> Map.put(:media_id, message_media.id)
-      |> Messages.create_message()
-      |> publish_data(:received_message)
-      |> process_message()
+    message_params
+    |> Map.put(:media_id, message_media.id)
+    |> Messages.create_message()
+    |> handle_inbound_create_result(message_params)
+  end
 
-    :ok
+  # Handles the result of creating an inbound message, with explicit deduplication logic.
+  # Gupshup delivers webhooks at-least-once, so the same bsp_message_id can arrive multiple
+  # times. The unique index correctly rejects the duplicate; here we just log and count it
+  # instead of propagating an error through Appsignal.send_error (which raises an ErlangError).
+  @spec handle_inbound_create_result(
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t()},
+          map()
+        ) :: :ok
+  defp handle_inbound_create_result({:error, changeset}, params) do
+    case Keyword.get(changeset.errors, :bsp_message_id) do
+      {"has already been taken", _} ->
+        org_id = Map.get(params, :organization_id)
+        bsp_id = Map.get(params, :bsp_message_id)
+
+        Logger.warning(
+          "Duplicate inbound message ignored: bsp_message_id=#{bsp_id}, org_id=#{org_id}"
+        )
+
+        Appsignal.increment_counter("duplicate_inbound_message", 1, %{org_id: org_id})
+        :ok
+
+      _ ->
+        {:error, changeset}
+        |> publish_data(:received_message)
+        |> process_message()
+    end
+  end
+
+  defp handle_inbound_create_result(result, _params) do
+    result
+    |> publish_data(:received_message)
+    |> process_message()
   end
 
   # handler for receiving the location message

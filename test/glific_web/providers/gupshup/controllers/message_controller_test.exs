@@ -1,6 +1,8 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
+  import Mock
+
   alias Glific.{
     Contacts,
     Contacts.Location,
@@ -148,7 +150,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.sender.phone ==
                get_in(message_params, ["payload", "sender", "phone"])
 
-      # This will call the lib/glific/communications/message.ex:error function for coverage
+      # Duplicate delivery — handled gracefully by handle_inbound_create_result/2
       conn3 = post(conn, "/gupshup", message_params)
       assert conn3.halted
     end
@@ -711,6 +713,98 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       assert error == ["Elixir.Glific.Messages.Message", "Resource not found"]
+    end
+  end
+
+  describe "duplicate message handling" do
+    setup do
+      bsp_message_id = Faker.String.base64(36)
+
+      text_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "text")
+        |> put_in(["payload", "id"], bsp_message_id)
+        |> put_in(["payload", "payload"], %{"text" => "Hello duplicate"})
+
+      image_payload = %{
+        "caption" => Faker.Lorem.sentence(),
+        "url" => Faker.Avatar.image_url(200, 200),
+        "urlExpiry" => 1_580_832_695_997
+      }
+
+      image_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "image")
+        |> put_in(["payload", "id"], bsp_message_id)
+        |> put_in(["payload", "payload"], image_payload)
+
+      %{bsp_message_id: bsp_message_id, text_params: text_params, image_params: image_params}
+    end
+
+    test "duplicate inbound text message is handled gracefully",
+         %{conn: conn, text_params: text_params, bsp_message_id: bsp_message_id} do
+      org_id = conn.assigns[:organization_id]
+
+      conn1 = post(conn, "/gupshup", text_params)
+      assert conn1.halted
+      assert_receive :received_message_to_process
+
+      {:ok, original_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                increment_counter: fn _, _, _ -> :ok end do
+        conn2 = post(conn, "/gupshup", text_params)
+        assert conn2.halted
+
+        assert called(
+                 Elixir.Appsignal.increment_counter(
+                   "duplicate_inbound_message",
+                   1,
+                   %{org_id: org_id}
+                 )
+               )
+      end
+
+      # The same message row must still exist — no second row created
+      {:ok, same_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      assert same_message.id == original_message.id
+    end
+
+    test "duplicate inbound image message is handled gracefully",
+         %{conn: conn, image_params: image_params, bsp_message_id: bsp_message_id} do
+      org_id = conn.assigns[:organization_id]
+
+      conn1 = post(conn, "/gupshup", image_params)
+      assert conn1.halted
+      assert_receive :received_message_to_process
+
+      {:ok, original_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                increment_counter: fn _, _, _ -> :ok end do
+        conn2 = post(conn, "/gupshup", image_params)
+        assert conn2.halted
+
+        assert called(
+                 Elixir.Appsignal.increment_counter(
+                   "duplicate_inbound_message",
+                   1,
+                   %{org_id: org_id}
+                 )
+               )
+      end
+
+      # The same message row must still exist — no second row created
+      {:ok, same_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      assert same_message.id == original_message.id
     end
   end
 end

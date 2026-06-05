@@ -129,6 +129,7 @@ glific/
 - **Module Attributes**: `@valid_attrs` and `@invalid_attrs` for test data
 - **HTTP Mocking**: Tesla.Mock for external API calls
 - **Coverage**: ExCoveralls with `mix test_full` task
+- **Required**: After any code change, always write or update tests covering the changed functionality before considering the task complete.
 
 ## Error Handling Patterns
 
