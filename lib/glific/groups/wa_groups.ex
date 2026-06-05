@@ -87,8 +87,8 @@ defmodule Glific.Groups.WAGroups do
   defp do_sync_wa_groups(org_id, wa_managed_phone) do
     with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
            ApiClient.list_wa_groups(org_id, wa_managed_phone.phone_id),
-         {:ok, decoded} <- Jason.decode(body),
-         group_details = get_group_details(decoded, wa_managed_phone) do
+         {:ok, decoded} <- Jason.decode(body) do
+      group_details = get_group_details(decoded, wa_managed_phone)
       create_whatsapp_groups(group_details, org_id)
       sync_wa_groups_with_contacts(group_details, org_id)
       sync_wa_group_phones(group_details, wa_managed_phone)
@@ -134,8 +134,7 @@ defmodule Glific.Groups.WAGroups do
     Enum.each(group_details, fn group ->
       case Repo.fetch_by(WAGroup, %{
              bsp_id: group.bsp_id,
-             wa_managed_phone_id: group.wa_managed_phone_id,
-             organization_id: org_id
+             wa_managed_phone_id: group.wa_managed_phone_id
            }) do
         {:ok, wa_group} ->
           sync_contacts(group, wa_group.id, org_id)
@@ -185,8 +184,15 @@ defmodule Glific.Groups.WAGroups do
              organization_id: org_id,
              contact_type: "WA"
            }) do
-        {:ok, contact} -> Map.put(acc, contact.id, phone in admin_phones)
-        {:error, _} -> acc
+        {:ok, contact} ->
+          Map.put(acc, contact.id, phone in admin_phones)
+
+        {:error, changeset} ->
+          Logger.warning(
+            "Skipping participant #{phone}: could not resolve contact: #{inspect(changeset.errors)}"
+          )
+
+          acc
       end
     end)
   end
@@ -209,7 +215,12 @@ defmodule Glific.Groups.WAGroups do
           non_neg_integer(),
           non_neg_integer()
         ) :: :ok
-  defp insert_new_contact_wa_groups(maytapi_participants, existing_contact_wa_groups, wa_group_id, org_id) do
+  defp insert_new_contact_wa_groups(
+         maytapi_participants,
+         existing_contact_wa_groups,
+         wa_group_id,
+         org_id
+       ) do
     existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
     maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
 
@@ -235,7 +246,8 @@ defmodule Glific.Groups.WAGroups do
     existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
     maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
 
-    for contact_id <- MapSet.intersection(maytapi_participants_ids, existing_contact_wa_groups_ids) do
+    for contact_id <-
+          MapSet.intersection(maytapi_participants_ids, existing_contact_wa_groups_ids) do
       contact_wa_group = existing_contact_wa_groups[contact_id]
       desired_admin = Map.fetch!(maytapi_participants, contact_id)
 
@@ -254,10 +266,17 @@ defmodule Glific.Groups.WAGroups do
           %{non_neg_integer() => ContactWAGroup.t()},
           non_neg_integer()
         ) :: :ok
-  defp delete_departed_contact_wa_groups(maytapi_participants, existing_contact_wa_groups, wa_group_id) do
+  defp delete_departed_contact_wa_groups(
+         maytapi_participants,
+         existing_contact_wa_groups,
+         wa_group_id
+       ) do
     existing_contact_wa_groups_ids = MapSet.new(Map.keys(existing_contact_wa_groups))
     maytapi_participants_ids = MapSet.new(Map.keys(maytapi_participants))
-    to_remove = MapSet.difference(existing_contact_wa_groups_ids, maytapi_participants_ids) |> MapSet.to_list()
+
+    to_remove =
+      MapSet.difference(existing_contact_wa_groups_ids, maytapi_participants_ids)
+      |> MapSet.to_list()
 
     if to_remove != [] do
       ContactWAGroup
@@ -283,8 +302,7 @@ defmodule Glific.Groups.WAGroups do
         with {:ok, wa_group} <-
                Repo.fetch_by(WAGroup, %{
                  bsp_id: group.bsp_id,
-                 wa_managed_phone_id: group.wa_managed_phone_id,
-                 organization_id: org_id
+                 wa_managed_phone_id: group.wa_managed_phone_id
                }),
              {:ok, _membership} <-
                ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
@@ -435,7 +453,6 @@ defmodule Glific.Groups.WAGroups do
   def maybe_create_group(params) do
     case Repo.get_by(WAGroup, %{
            bsp_id: params.bsp_id,
-           organization_id: params.organization_id,
            wa_managed_phone_id: params.wa_managed_phone_id
          }) do
       nil ->
