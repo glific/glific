@@ -255,9 +255,12 @@ defmodule Glific.Communications.Message do
         |> Map.put_new(:flow, :inbound)
         |> Messages.create_message_media()
 
-      case message_params
-           |> Map.put(:media_id, message_media.id)
-           |> Messages.create_message() do
+      result =
+        message_params
+        |> Map.put(:media_id, message_media.id)
+        |> Messages.create_message()
+
+      case result do
         {:ok, message} -> message
         {:error, changeset} -> Repo.rollback(changeset)
       end
@@ -287,9 +290,8 @@ defmodule Glific.Communications.Message do
         :ok
 
       _ ->
-        {:error, changeset}
-        |> publish_data(:received_message)
-        |> process_message()
+        error("Create message error", changeset)
+        :ok
     end
   end
 
