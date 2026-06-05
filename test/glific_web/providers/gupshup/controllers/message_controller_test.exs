@@ -150,9 +150,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.sender.phone ==
                get_in(message_params, ["payload", "sender", "phone"])
 
-      # Duplicate delivery — handled gracefully by handle_inbound_create_result/2
+      # Duplicate delivery — handled gracefully by handle_inbound_create_result/2;
+      # the duplicate must be swallowed without dispatching to the poolboy worker
       conn3 = post(conn, "/gupshup", message_params)
-      assert conn3.halted
+      assert response(conn3, 200) == ""
+      refute_receive :received_message_to_process, 50
     end
 
     test "Updating the contacts due to sender contact already existing", %{
