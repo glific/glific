@@ -278,7 +278,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> client()
     |> Tesla.get("/api/v1/evaluations/:evaluation_id",
       query: [get_trace_info: "true"],
-      opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 15_000]]
+      opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
     )
     |> parse_kaapi_response()
   end
