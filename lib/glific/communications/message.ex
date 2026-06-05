@@ -244,16 +244,24 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
+  # Both the media record and the message are created inside a single transaction so that a
+  # duplicate bsp_message_id (at-least-once Gupshup delivery) does not leave an orphaned
+  # message_media row: if the message insert is rolled back, the media insert is too.
   @spec receive_media(map()) :: :ok
   defp receive_media(message_params) do
-    {:ok, message_media} =
-      message_params
-      |> Map.put_new(:flow, :inbound)
-      |> Messages.create_message_media()
+    Repo.transaction(fn ->
+      {:ok, message_media} =
+        message_params
+        |> Map.put_new(:flow, :inbound)
+        |> Messages.create_message_media()
 
-    message_params
-    |> Map.put(:media_id, message_media.id)
-    |> Messages.create_message()
+      case message_params
+           |> Map.put(:media_id, message_media.id)
+           |> Messages.create_message() do
+        {:ok, message} -> message
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
     |> handle_inbound_create_result(message_params)
   end
 

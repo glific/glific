@@ -785,6 +785,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       {:ok, original_message} =
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
 
+      # Count media rows immediately after the first (successful) delivery
+      media_count_after_first = Repo.aggregate(Glific.Messages.MessageMedia, :count, :id)
+
       with_mock Elixir.Appsignal,
                 [:passthrough],
                 increment_counter: fn _, _, _ -> :ok end do
@@ -805,6 +808,32 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
 
       assert same_message.id == original_message.id
+
+      # No orphaned message_media row from the duplicate delivery (transaction rolled back)
+      assert Repo.aggregate(Glific.Messages.MessageMedia, :count, :id) == media_count_after_first
+    end
+
+    test "non-duplicate create_message error passes through to error handler",
+         %{conn: conn, text_params: text_params} do
+      error_changeset = %Ecto.Changeset{
+        errors: [body: {"is invalid", [validation: :format]}],
+        valid?: false,
+        data: %Glific.Messages.Message{}
+      }
+
+      # Mock create_message to return a non-duplicate changeset error so the _ branch
+      # of handle_inbound_create_result/2 is exercised. Also mock send_error so the
+      # AppSignal SDK does not attempt a real network call in tests.
+      with_mocks [
+        {Glific.Messages, [:passthrough],
+         [create_message: fn _params -> {:error, error_changeset} end]},
+        {Elixir.Appsignal, [:passthrough], [send_error: fn _, _, _ -> :ok end]}
+      ] do
+        conn2 = post(conn, "/gupshup", text_params)
+        # The controller still returns 200 — error is logged, not propagated
+        assert conn2.halted
+        assert called(Elixir.Appsignal.send_error(:error, :_, :_))
+      end
     end
   end
 end
