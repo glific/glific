@@ -33,6 +33,20 @@ defmodule Glific.WAManagedPhonesTest do
       assert WAManagedPhones.get_wa_managed_phone!(wa_managed_phone.id) == wa_managed_phone
     end
 
+    test "fetch_by_phone/2 returns the wa_managed_phone matching org + phone", attrs do
+      wa_managed_phone = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+      assert {:ok, fetched} =
+               WAManagedPhones.fetch_by_phone(attrs.organization_id, wa_managed_phone.phone)
+
+      assert fetched.id == wa_managed_phone.id
+    end
+
+    test "fetch_by_phone/2 returns an error when no managed phone matches", attrs do
+      assert {:error, _} =
+               WAManagedPhones.fetch_by_phone(attrs.organization_id, "919999999999")
+    end
+
     test "create_wa_managed_phone/1 with valid data creates a wa_managed_phone" do
       valid_attrs = %{
         label: "some label",

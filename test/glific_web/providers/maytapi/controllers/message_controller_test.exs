@@ -1304,6 +1304,29 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert length(rows) == 1
     end
 
+    test "inbound webhook with unknown receiver still stores the message with nil wa_managed_phone_id and nil wa_group_id",
+         %{conn: conn, organization_id: org_id} do
+      # Receiver doesn't match any of our managed phones (e.g. the phone was
+      # removed from Maytapi after the webhook was queued). resolve_receiver/1
+      # should log a warning, return nil, and the message should still get
+      # stored without phone attribution or group association.
+      webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+        |> put_in(["receiver"], "910000000000")
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == nil
+      assert message.wa_group_id == nil
+    end
+
     test "inbound webhook whose sender is one of our managed phones is dropped (echo of own outbound)",
          %{conn: conn, organization_id: org_id} do
       # Glific sends from phone A → Maytapi fires the inbound echo webhook
