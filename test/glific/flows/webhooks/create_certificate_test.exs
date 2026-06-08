@@ -1,0 +1,242 @@
+defmodule Glific.Flows.Webhooks.CreateCertificateTest do
+  use Glific.DataCase, async: false
+  use Oban.Pro.Testing, repo: Glific.Repo
+
+  import Mock
+
+  alias Glific.{
+    Certificates.CertificateTemplate,
+    Fixtures,
+    Flows.Action,
+    Flows.FlowContext,
+    Flows.Webhook,
+    Flows.WebhookLog,
+    Partners,
+    Repo,
+    Seeds.SeedsDev
+  }
+
+  @mock_presentation_id "copied_presentation123"
+  @mock_copied_slide %{"id" => @mock_presentation_id}
+  @mock_thumbnail %{"contentUrl" => "image_url"}
+
+  setup do
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+
+    {:ok, _credential} =
+      Partners.create_credential(%{
+        shortcode: "google_cloud_storage",
+        secrets: %{
+          "bucket" => "mock-bucket",
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "test",
+              private_key_id: "key",
+              client_email: "test@test.com",
+              private_key: "TEST PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      })
+
+    {:ok, _credential} =
+      Partners.create_credential(%{
+        shortcode: "google_slides",
+        secrets: %{
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "test",
+              private_key_id: "key",
+              client_email: "test@test.com",
+              private_key: "TEST PRIVATE KEY"
+            })
+        },
+        is_active: true,
+        organization_id: 1
+      })
+
+    :ok
+  end
+
+  defp build_context(attrs) do
+    flow_attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: Fixtures.contact_fixture(attrs).id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+    {Repo.preload(context, [:contact, :flow]), flow_attrs}
+  end
+
+  defp certificate_template_attrs do
+    %{
+      label: "test",
+      type: :slides,
+      url:
+        "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
+      organization_id: 1
+    }
+  end
+
+  defp mock_all_google_apis_success do
+    Tesla.Mock.mock(fn
+      %Tesla.Env{
+        method: :post,
+        url: "https://storage.googleapis.com/upload/storage/v1/b/mock-bucket/o",
+        query: [uploadType: "multipart"]
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "name" =>
+                 "uploads/certificate/#{@mock_presentation_id}/123.png",
+               "mediaLink" =>
+                 "https://storage.googleapis.com/mock-bucket/uploads/certificate/#{@mock_presentation_id}/123.png",
+               "selfLink" =>
+                 "https://storage.googleapis.com/mock-bucket/uploads/certificate/#{@mock_presentation_id}/123.png"
+             })
+         }}
+
+      %{
+        method: :get,
+        url:
+          "https://storage.googleapis.com/mock-bucket/uploads/certificate/#{@mock_presentation_id}/123.png"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+
+      %{
+        method: :post,
+        url:
+          "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_copied_slide)}}
+
+      %{
+        method: :post,
+        url:
+          "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :post,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
+
+      %{
+        method: :get,
+        url:
+          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}/pages/g2/thumbnail"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(@mock_thumbnail)}}
+
+      %{
+        method: :get,
+        url:
+          "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: ""}}
+
+      %{method: :get, url: "image_url"} ->
+        {:ok, %Tesla.Env{status: 200, body: "<<binary image data>>"}}
+    end)
+  end
+
+  describe "create_certificate" do
+    test "happy path: enqueues on custom_certificate queue and logs success", attrs do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        mock_all_google_apis_success()
+
+        {:ok, certificate} = CertificateTemplate.create_certificate_template(certificate_template_attrs())
+        contact = Fixtures.contact_fixture(attrs)
+
+        {context, flow_attrs} = build_context(attrs)
+
+        action = %Action{
+          method: "FUNCTION",
+          url: "create_certificate",
+          headers: %{},
+          body:
+            Jason.encode!(%{
+              certificate_id: certificate.id,
+              contact: %{"id" => contact.id, "name" => "Test User"},
+              replace_texts: %{}
+            })
+        }
+
+        assert Webhook.execute(action, context) == nil
+
+        [job] = all_enqueued(worker: Webhook, prefix: "global")
+        assert job.queue == "custom_certificate"
+
+        Oban.drain_queue(queue: :custom_certificate)
+
+        log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+        assert log.status == "Success"
+        assert log.response_json["success"] == true
+        assert log.response_json["certificate_url"] != nil
+      end
+    end
+
+    test "failure: Google Slides API error logs an error in the webhook log", attrs do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        Tesla.Mock.mock(fn
+          %{
+            method: :get,
+            url:
+              "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}?supportsAllDrives=true"
+          } ->
+            {:ok, %Tesla.Env{status: 200, body: ""}}
+
+          %{
+            method: :post,
+            url:
+              "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/copy?supportsAllDrives=true"
+          } ->
+            {:ok, %Tesla.Env{status: 400, body: Jason.encode!(@mock_copied_slide)}}
+        end)
+
+        {:ok, certificate} = CertificateTemplate.create_certificate_template(certificate_template_attrs())
+        contact = Fixtures.contact_fixture(attrs)
+
+        {context, flow_attrs} = build_context(attrs)
+
+        action = %Action{
+          method: "FUNCTION",
+          url: "create_certificate",
+          headers: %{},
+          body:
+            Jason.encode!(%{
+              certificate_id: certificate.id,
+              contact: %{"id" => contact.id, "name" => "Test User"},
+              replace_texts: %{}
+            })
+        }
+
+        assert Webhook.execute(action, context) == nil
+
+        Oban.drain_queue(queue: :custom_certificate)
+
+        log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+        assert log != nil
+        assert log.error != nil
+      end
+    end
+  end
+end
