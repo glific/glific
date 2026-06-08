@@ -10,7 +10,6 @@
   },
   "worktree": {
     "symlinkDirectories": [
-      "_build",
       "deps",
       "priv/cert",
       "priv/plts/dialyzer.plt",
