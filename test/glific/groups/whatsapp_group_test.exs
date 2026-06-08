@@ -434,14 +434,10 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "never changes is_primary", ctx do
-      # Seed a primary membership (as Phase 1 backfill would).
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: ctx.wa_group.id,
-        wa_managed_phone_id: ctx.wa_managed_phone.id,
-        organization_id: ctx.organization_id,
-        is_primary: true,
-        is_active: true
-      })
+      # `maybe_create_group/1` in the describe setup already inserted a
+      # primary membership for our managed phone (first creator =
+      # is_primary: true), so we just verify sync never disturbs it.
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_primary == true
 
       group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)

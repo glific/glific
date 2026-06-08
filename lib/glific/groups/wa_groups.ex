@@ -446,25 +446,58 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
+  Fetches a WA group by `(bsp_id, organization_id)`. If none exists, creates
+  one; if duplicates exist (legacy data from before Phase 3 — Phase 5 will
+  collapse these), returns the oldest. In all cases ensures a
+  `wa_groups_phones` membership row exists for the calling
+  `wa_managed_phone_id` so that subsequent outbound routing knows the phone
+  is in the group:
+
+  - Newly created group → calling phone is recorded as `is_primary: true`
+    (first creator becomes the primary, matching the Phase 1 backfill
+    convention).
+  - Existing group → calling phone is recorded as `is_primary: false`
+    (joining an existing group doesn't change who's primary).
+
+  Existing membership rows are left as-is for `is_primary`; only
+  `is_active` gets re-stamped to `true`.
   """
   @spec maybe_create_group(map()) ::
           {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
-    case Repo.get_by(WAGroup, %{
-           bsp_id: params.bsp_id,
-           wa_managed_phone_id: params.wa_managed_phone_id
-         }) do
+    case fetch_oldest_wa_group(params.bsp_id, params.organization_id) do
       nil ->
-        create_wa_group(params)
+        with {:ok, wa_group} <- create_wa_group(params) do
+          ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+            is_primary: true
+          )
+
+          {:ok, wa_group}
+        end
 
       wa_group ->
+        ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+          is_primary: false
+        )
+
         if params.label && wa_group.label != params.label do
           update_wa_group(wa_group, %{label: params.label})
         else
           {:ok, wa_group}
         end
     end
+  end
+
+  # Lookup keyed on `(bsp_id, organization_id)` only. If duplicate rows exist
+  # from before Phase 3, the oldest one wins — matches the Phase 1 backfill's
+  # "oldest = primary" convention so the active group stays stable.
+  @spec fetch_oldest_wa_group(String.t(), non_neg_integer()) :: WAGroup.t() | nil
+  defp fetch_oldest_wa_group(bsp_id, organization_id) do
+    WAGroup
+    |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^organization_id)
+    |> order_by([wg], asc: wg.inserted_at)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """

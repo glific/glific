@@ -13,9 +13,9 @@ defmodule Glific.Communications.GroupMessage do
     Groups.WAGroups,
     Messages,
     Repo,
-    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
+    WAManagedPhones,
     WAMessages
   }
 
@@ -85,12 +85,36 @@ defmodule Glific.Communications.GroupMessage do
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info("Received message: type: '#{type}', id: '#{message_params[:bsp_id]}'")
 
-    {:ok, contact} =
-      message_params.sender
-      |> Map.put(:organization_id, organization_id)
-      |> Contacts.maybe_create_contact()
+    if duplicate_inbound?(message_params[:bsp_id], organization_id) do
+      Logger.info(
+        "Skipping duplicate inbound WA message: bsp_id '#{message_params[:bsp_id]}' already stored (likely arrived via another managed phone in the same group)"
+      )
 
-    do_receive_message(contact, message_params, type)
+      :ok
+    else
+      {:ok, contact} =
+        message_params.sender
+        |> Map.put(:organization_id, organization_id)
+        |> Contacts.maybe_create_contact()
+
+      do_receive_message(contact, message_params, type)
+    end
+  end
+
+  # In multi-phone orgs the same WhatsApp message can arrive once per
+  # managed phone in the group. The bsp_id (Maytapi's underlying message
+  # id) is shared across those webhooks, so a fetch_by it is enough to
+  # catch the duplicate. Missing or nil bsp_id falls through — should not
+  # happen in practice but we don't want to dedup on a nil key.
+  @spec duplicate_inbound?(String.t() | nil, non_neg_integer()) :: boolean()
+  defp duplicate_inbound?(nil, _organization_id), do: false
+  defp duplicate_inbound?("", _organization_id), do: false
+
+  defp duplicate_inbound?(bsp_id, organization_id) do
+    case Repo.fetch_by(WAMessage, %{bsp_id: bsp_id, organization_id: organization_id}) do
+      {:ok, _} -> true
+      {:error, _} -> false
+    end
   end
 
   @doc """
@@ -214,12 +238,7 @@ defmodule Glific.Communications.GroupMessage do
 
   @spec create_message_metadata(Contact.t(), map(), atom()) :: map()
   defp create_message_metadata(contact, %{is_dm: is_dm} = message_params, type) do
-    %WAManagedPhone{id: wa_managed_phone_id} =
-      Repo.get_by(WAManagedPhone, %{
-        organization_id: message_params.organization_id,
-        phone: message_params.receiver
-      })
-
+    wa_managed_phone_id = resolve_receiver(message_params)
     wa_group_id = fetch_wa_group_id(wa_managed_phone_id, message_params)
 
     %{
@@ -232,8 +251,30 @@ defmodule Glific.Communications.GroupMessage do
     }
   end
 
-  @spec fetch_wa_group_id(non_neg_integer(), map()) :: nil | non_neg_integer()
+  # Resolve the `receiver` phone number from the webhook into our managed
+  # phone's id. If the receiver doesn't match any wa_managed_phone for the
+  # org (rare — typically means the phone was removed since the webhook was
+  # queued), log a warning and return nil. The message still gets stored,
+  # just without phone attribution.
+  @spec resolve_receiver(map()) :: non_neg_integer() | nil
+  defp resolve_receiver(%{organization_id: organization_id, receiver: receiver}) do
+    case WAManagedPhones.fetch_by_phone(organization_id, receiver) do
+      {:ok, %{id: id}} ->
+        id
+
+      {:error, _} ->
+        Logger.warning(
+          "Inbound webhook for unknown receiver phone #{receiver} in org #{organization_id}"
+        )
+
+        nil
+    end
+  end
+
+  @spec fetch_wa_group_id(non_neg_integer() | nil, map()) :: nil | non_neg_integer()
   defp fetch_wa_group_id(_wa_managed_phone_id, %{is_dm: true} = _message_params), do: nil
+
+  defp fetch_wa_group_id(nil, _message_params), do: nil
 
   defp fetch_wa_group_id(wa_managed_phone_id, message_params) do
     {:ok, wa_group} =

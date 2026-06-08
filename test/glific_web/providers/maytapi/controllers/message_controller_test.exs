@@ -5,6 +5,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
   alias Glific.{
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages.Message,
     Partners,
@@ -13,6 +14,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     WAGroup.WAMessage,
     WAManagedPhones
   }
+
+  import Ecto.Query, warn: false
 
   @message_request_params %{
     "app" => "Glific Mock App",
@@ -1109,5 +1112,196 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   test "Incoming GET request from maytapi webhook should be handled", %{conn: conn} do
     conn = get(conn, "/maytapi", %{})
     assert json_response(conn, 200) == nil
+  end
+
+  describe "Phase 3: multi-phone inbound" do
+    # Insert a second managed phone for the same org, then craft an inbound
+    # text webhook that targets it (i.e. its number is the `receiver`).
+    defp seed_second_phone(org_id) do
+      {:ok, contact} =
+        Contacts.maybe_create_contact(%{
+          phone: "917834811200",
+          organization_id: org_id,
+          contact_type: "WA"
+        })
+
+      {:ok, wa_managed_phone} =
+        WAManagedPhones.create_wa_managed_phone(%{
+          label: "second",
+          phone: "917834811200",
+          phone_id: 99_999,
+          status: "active",
+          organization_id: org_id,
+          contact_id: contact.id
+        })
+
+      wa_managed_phone
+    end
+
+    test "inbound from a second phone on an existing group does NOT create a duplicate wa_group and inserts a membership",
+         %{conn: conn, organization_id: org_id} do
+      second_phone = seed_second_phone(org_id)
+      bsp_id = "120363213149844251@g.us"
+
+      groups_before =
+        WAGroup
+        |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert length(groups_before) == 1
+      [existing_group] = groups_before
+
+      webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+        |> put_in(["receiver"], second_phone.phone)
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      groups_after =
+        WAGroup
+        |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert length(groups_after) == 1, "no duplicate wa_groups row should be created"
+
+      memberships =
+        WAGroupPhone
+        |> where([wgp], wgp.wa_group_id == ^existing_group.id)
+        |> Repo.all()
+
+      managed_phone_ids = Enum.map(memberships, & &1.wa_managed_phone_id) |> Enum.sort()
+      assert second_phone.id in managed_phone_ids
+
+      second_membership = Enum.find(memberships, &(&1.wa_managed_phone_id == second_phone.id))
+      assert second_membership.is_primary == false
+      assert second_membership.is_active == true
+    end
+
+    test "wa_messages.wa_managed_phone_id is stamped for inbound text message",
+         %{conn: conn, organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == first_phone.id
+    end
+
+    test "wa_messages.wa_managed_phone_id is stamped for inbound DM",
+         %{conn: conn, organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      webhook =
+        @text_dm_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.is_dm == true
+      assert message.wa_managed_phone_id == first_phone.id
+    end
+
+    test "wa_messages.wa_managed_phone_id is stamped for inbound location message",
+         %{conn: conn, organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      webhook =
+        @location_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == first_phone.id
+    end
+
+    test "wa_messages.wa_managed_phone_id is stamped for inbound media message",
+         %{conn: conn, organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      webhook =
+        @media_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == first_phone.id
+    end
+
+    test "wa_messages.wa_managed_phone_id is stamped for inbound poll message",
+         %{conn: conn, organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      webhook =
+        @poll_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: bsp_message_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == first_phone.id
+    end
+
+    test "duplicate inbound from a second phone (same bsp_id) is not stored a second time",
+         %{conn: conn, organization_id: org_id} do
+      # Two of our managed phones are members of the same group. Maytapi
+      # fires the inbound webhook once per phone — both with the same
+      # bsp_id, but different receiver. We should store exactly one row.
+      second_phone = seed_second_phone(org_id)
+      shared_bsp_id = Ecto.UUID.generate()
+
+      first_webhook = put_in(@text_message_webhook, ["message", "id"], shared_bsp_id)
+
+      second_webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], shared_bsp_id)
+        |> put_in(["receiver"], second_phone.phone)
+
+      conn1 = post(conn, "/maytapi", first_webhook)
+      assert conn1.halted
+
+      conn2 = post(conn, "/maytapi", second_webhook)
+      assert conn2.halted
+
+      rows =
+        WAMessage
+        |> where([m], m.bsp_id == ^shared_bsp_id and m.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert length(rows) == 1
+    end
   end
 end
