@@ -260,6 +260,12 @@ defmodule Glific.Messages do
   def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
     do: {:error, "Could not send message with empty body"}
 
+  # When type is omitted entirely, treat it as :text and reject empty/nil body.
+  # This prevents null-body messages from being persisted when callers omit the type field.
+  def create_and_send_message(%{body: body} = attrs)
+      when not is_map_key(attrs, :type) and body in ["", nil],
+      do: {:error, "Could not send message with empty body"}
+
   def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
     contact = Contacts.get_contact(receiver_id)
 
