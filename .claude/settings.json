@@ -7,5 +7,14 @@
       "Read(config/.env.dev)",
       "Read(config/dev.secret.exs)"
     ]
+  },
+  "worktree": {
+    "symlinkDirectories": [
+      "_build",
+      "deps",
+      "priv/cert",
+      "config/.env.dev",
+      "config/dev.secret.exs"
+    ]
   }
 }
