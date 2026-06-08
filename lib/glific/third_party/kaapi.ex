@@ -486,8 +486,6 @@ defmodule Glific.ThirdParty.Kaapi do
     Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(message, &1))
   end
 
-  # Default STT/TTS model used when the flow node doesn't pass one.
-  # Configurable via KAAPI_STT_MODEL / KAAPI_TTS_MODEL (see config/runtime.exs).
   @spec model_config(atom()) :: String.t()
   defp model_config(key), do: Application.fetch_env!(:glific, __MODULE__)[key]
 
