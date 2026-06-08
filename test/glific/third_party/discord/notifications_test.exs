@@ -5,7 +5,9 @@ defmodule Glific.ThirdParty.Discord.NotificationsTest do
   alias Glific.ThirdParty.Discord.Notifications
 
   describe "send_eval_access_request/1" do
-    test "posts an embed with organization details to Discord", %{organization_id: organization_id} do
+    test "posts an embed with organization details to Discord", %{
+      organization_id: organization_id
+    } do
       Application.put_env(:glific, :discord_webhook_url, "https://discord.test/webhook")
       on_exit(fn -> Application.delete_env(:glific, :discord_webhook_url) end)
 
