@@ -104,7 +104,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   defp update_credentials(org_id) do
     with :ok <- WAManagedPhones.delete_existing_wa_managed_phones(org_id),
          :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id),
-         :ok <- WAGroups.fetch_wa_groups(org_id) do
+         :ok <- WAGroups.sync_wa_groups(org_id) do
       WAGroups.set_webhook_endpoint(Partners.organization(org_id))
     else
       {:error, reason} -> {:error, reason}
@@ -130,7 +130,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   """
   @spec perform_periodic(non_neg_integer()) :: :ok
   def perform_periodic(org_id) do
-    WAGroups.fetch_wa_groups(org_id)
+    WAGroups.sync_wa_groups(org_id)
 
     Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
     :ok
