@@ -88,14 +88,14 @@ defmodule Glific.Communications.GroupMessage do
     cond do
       duplicate_inbound?(message_params[:bsp_id], organization_id) ->
         Logger.info(
-          "Skipping duplicate inbound WA message: bsp_id '#{message_params[:bsp_id]}' already stored (Maytapi webhook retry or same-phone duplicate)"
+          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (likely a webhook retry)"
         )
 
         :ok
 
       sender_is_our_managed_phone?(message_params, organization_id) ->
         Logger.info(
-          "Skipping inbound WA message: sender '#{get_in(message_params, [:sender, :phone])}' is our own managed phone — already stored via the outbound flow (multi-phone echo)"
+          "Skipping inbound: sender '#{get_in(message_params, [:sender, :phone])}' is our managed phone in org #{organization_id}; already stored via outbound"
         )
 
         :ok
@@ -290,7 +290,7 @@ defmodule Glific.Communications.GroupMessage do
 
       {:error, _} ->
         Logger.warning(
-          "Inbound webhook for unknown receiver phone #{receiver} in org #{organization_id}"
+          "Inbound webhook receiver '#{receiver}' (org #{organization_id}) doesn't match any of our managed phones; storing the message without phone attribution"
         )
 
         nil
