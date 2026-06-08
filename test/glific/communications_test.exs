@@ -455,7 +455,6 @@ defmodule Glific.CommunicationsTest do
     alias Glific.{
       Fixtures,
       Mails.BalanceAlertMail,
-      Mails.EvalAccessRequestMail,
       Mails.MailLog,
       Mails.NewPartnerOnboardedMail,
       Mails.NotificationMail,
@@ -519,16 +518,6 @@ defmodule Glific.CommunicationsTest do
 
       assert MailLog.count_mail_logs(%{
                filter: Map.merge(attrs, %{category: "low_bsp_balance"})
-             }) == 1
-    end
-
-    test "EvalAccessRequestMail sends access request notification to glific support", attrs do
-      assert {:ok, _} =
-               Partners.organization(attrs.organization_id)
-               |> EvalAccessRequestMail.send_eval_access_request_mail()
-
-      assert MailLog.count_mail_logs(%{
-               filter: Map.merge(attrs, %{category: "AI Evaluations Access Request"})
              }) == 1
     end
   end

@@ -90,6 +90,34 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
+  @doc """
+  Increment a counter for a flow-webhook node outcome so success/failure ratios
+  can be computed per webhook node. `status` is "success" or "failure".
+  """
+  @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
+  def track_webhook_count(webhook_name, status) do
+    Appsignal.increment_counter("flow_webhook_count", 1, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
+  @doc """
+  Records end-to-end latency for a webhook node execution as an AppSignal
+  distribution (so p50/p95/p99 can be charted). Generic across all node types
+  """
+  @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
+  def track_webhook_latency(webhook_name, status, duration_ms) do
+    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
   @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
@@ -244,11 +272,31 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
+  # Distinguishes a success map from an application-level failure map
+  # (%{success: false, ...}) so the WebhookLog row records the failure with a
+  # non-200 status and an error reason
+  def update_log(webhook_log, %{success: false} = result) do
+    reason =
+      Map.get(result, :reason) || Map.get(result, :error) || Map.get(result, :message)
+
+    # reason can be a non-binary term (e.g. a decoded JSON map from a Tesla 500
+    # body — see lib/glific/third_party/bhasini/bhasini.ex). to_string/1 would
+    # raise on those; inspect/1 produces a safe string for any term.
+    error =
+      cond do
+        is_binary(reason) -> reason
+        is_nil(reason) -> "Webhook failure"
+        true -> inspect(reason)
+      end
+
+    attrs = %{response_json: result, status_code: 400, error: error}
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
   def update_log(webhook_log, result) when is_map(result) do
-    attrs = %{
-      response_json: result,
-      status_code: 200
-    }
+    attrs = %{response_json: result, status_code: 200}
 
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)

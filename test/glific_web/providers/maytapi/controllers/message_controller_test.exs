@@ -296,7 +296,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert :ok == WAManagedPhones.fetch_wa_managed_phones(organization.id)
 
     assert :ok ==
-             WAGroups.fetch_wa_groups(organization.id)
+             WAGroups.sync_wa_groups(organization.id)
 
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()

@@ -30,6 +30,7 @@ defmodule Glific.Fixtures do
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
@@ -517,17 +518,13 @@ defmodule Glific.Fixtures do
   @doc false
   @spec template_tag_fixture(map()) :: Tags.TemplateTag.t()
   def template_tag_fixture(attrs \\ %{}) do
-    tag = tag_fixture(attrs)
-    template = session_template_fixture(attrs)
-
-    valid_attrs = %{
-      template_id: template.id,
-      tag_id: tag.id
-    }
+    tag_id = Map.get_lazy(attrs, :tag_id, fn -> tag_fixture(attrs).id end)
+    template_id = Map.get_lazy(attrs, :template_id, fn -> session_template_fixture(attrs).id end)
 
     {:ok, template_tag} =
       attrs
-      |> Enum.into(valid_attrs)
+      |> Map.put(:tag_id, tag_id)
+      |> Map.put(:template_id, template_id)
       |> Tags.create_template_tag()
 
     template_tag
@@ -1175,6 +1172,24 @@ defmodule Glific.Fixtures do
       |> WAGroups.create_wa_group()
 
     wa_group
+  end
+
+  @doc """
+  Generate a wa_group_phone membership row.
+  """
+  @spec wa_group_phone_fixture(map()) :: WAGroupPhone.t()
+  def wa_group_phone_fixture(attrs) do
+    {:ok, wa_group_phone} =
+      %WAGroupPhone{}
+      |> WAGroupPhone.changeset(
+        Enum.into(attrs, %{
+          is_primary: false,
+          is_active: true
+        })
+      )
+      |> Repo.insert()
+
+    wa_group_phone
   end
 
   @doc """

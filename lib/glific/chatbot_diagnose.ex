@@ -218,7 +218,7 @@ defmodule Glific.ChatbotDiagnose do
       limit = table_opts |> Map.get("limit", 20) |> min(@max_limit)
       order = Map.get(table_opts, "order")
 
-      apply_time = Map.get(table_opts, "apply_time_range", false)
+      apply_time = Map.get(table_opts, "apply_time_range", true)
 
       schema
       |> build_query(
@@ -287,17 +287,21 @@ defmodule Glific.ChatbotDiagnose do
     allowed = Map.get(@allowed_fields, table_name, [])
 
     query
-    |> maybe_apply_time_range(time_threshold, apply_time)
+    |> maybe_apply_time_range(time_threshold, apply_time, allowed)
     |> apply_filters(filters, allowed, virtual_resolutions)
     |> apply_order(order)
     |> limit(^limit)
   end
 
-  defp maybe_apply_time_range(query, nil, _apply_time), do: query
-  defp maybe_apply_time_range(query, _time_threshold, false), do: query
+  defp maybe_apply_time_range(query, nil, _apply_time, _allowed), do: query
+  defp maybe_apply_time_range(query, _time_threshold, false, _allowed), do: query
 
-  defp maybe_apply_time_range(query, time_threshold, true) do
-    where(query, [q], q.inserted_at >= ^time_threshold)
+  defp maybe_apply_time_range(query, time_threshold, true, allowed) do
+    if :inserted_at in allowed do
+      where(query, [q], q.inserted_at >= ^time_threshold)
+    else
+      query
+    end
   end
 
   defp apply_filters(query, filters, allowed, virtual_resolutions) do

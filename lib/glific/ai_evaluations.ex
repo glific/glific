@@ -11,13 +11,14 @@ defmodule Glific.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
-    Mails.EvalAccessRequestMail,
     Metrics,
     Notifications,
     Partners,
     Repo,
     ThirdParty.Kaapi
   }
+
+  alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
   @timeout_hours 6
 
@@ -257,7 +258,7 @@ defmodule Glific.AIEvaluations do
         with {:ok, _} <- result do
           organization_id
           |> Partners.organization()
-          |> EvalAccessRequestMail.send_eval_access_request_mail()
+          |> DiscordNotifications.send_eval_access_request()
         end
 
         result
