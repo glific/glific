@@ -12,8 +12,7 @@
     "symlinkDirectories": [
       "deps",
       "priv/cert",
-      "priv/plts/dialyzer.plt",
-      "priv/plts/dialyzer.plt.hash",
+      "priv/plts",
       "config/.env.dev",
       "config/dev.secret.exs"
     ]
