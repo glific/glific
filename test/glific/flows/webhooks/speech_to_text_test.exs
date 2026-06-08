@@ -72,7 +72,14 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
   # Builds the callback params that Kaapi POSTs back to /webhook/flow_resume.
   # Uses the NEW unified-API callback format (metadata + data.response.output)
   # which is what the Kaapi STT service sends.
-  defp build_callback_params(organization_id, flow_id, contact_id, webhook_log_id, success, message) do
+  defp build_callback_params(
+         organization_id,
+         flow_id,
+         contact_id,
+         webhook_log_id,
+         success,
+         message
+       ) do
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     signature_payload = %{

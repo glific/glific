@@ -201,7 +201,12 @@ defmodule Glific.Flows.Webhooks.NmtTtsWithBhasiniTest do
 
       with_mock(Gemini, [:passthrough],
         nmt_text_to_speech: fn _org_id, _text, _src, _dst, _opts ->
-          %{success: false, reason: "Gemini TTS upstream error", media_url: nil, translated_text: "Hello"}
+          %{
+            success: false,
+            reason: "Gemini TTS upstream error",
+            media_url: nil,
+            translated_text: "Hello"
+          }
         end
       ) do
         assert Webhook.execute(action, context) == nil

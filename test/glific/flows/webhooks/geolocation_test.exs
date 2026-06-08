@@ -134,6 +134,7 @@ defmodule Glific.Flows.Webhooks.GeolocationTest do
       # WebhookLog assertions — verify the webhook recorded the failure
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
+
       assert log.error != nil or
                (is_map(log.response_json) and log.response_json["success"] != true) or
                is_binary(log.response_json)

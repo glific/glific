@@ -64,7 +64,14 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
     {contact, webhook_log, flow}
   end
 
-  defp build_callback_params(organization_id, flow_id, contact_id, webhook_log_id, success, message) do
+  defp build_callback_params(
+         organization_id,
+         flow_id,
+         contact_id,
+         webhook_log_id,
+         success,
+         message
+       ) do
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     sig_payload = %{

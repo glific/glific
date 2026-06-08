@@ -92,8 +92,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
     %{
       label: "test",
       type: :slides,
-      url:
-        "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
+      url: "https://docs.google.com/presentation/d/#{@mock_presentation_id}/edit#slide=id.g2",
       organization_id: 1
     }
   end
@@ -110,8 +109,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
            status: 200,
            body:
              Jason.encode!(%{
-               "name" =>
-                 "uploads/certificate/#{@mock_presentation_id}/123.png",
+               "name" => "uploads/certificate/#{@mock_presentation_id}/123.png",
                "mediaLink" =>
                  "https://storage.googleapis.com/mock-bucket/uploads/certificate/#{@mock_presentation_id}/123.png",
                "selfLink" =>
@@ -135,15 +133,13 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
       %{
         method: :post,
-        url:
-          "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
+        url: "https://www.googleapis.com/drive/v3/files/#{@mock_presentation_id}/permissions"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
 
       %{
         method: :post,
-        url:
-          "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
+        url: "https://slides.googleapis.com/v1/presentations/#{@mock_presentation_id}:batchUpdate"
       } ->
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
 
