@@ -8,6 +8,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
     Certificates.CertificateTemplate,
     Fixtures,
     Flows.Action,
+    Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
@@ -60,16 +61,31 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
     :ok
   end
 
+  # Build a FlowContext linked to the real call_and_wait flow so that
+  # FlowContext.wakeup_one/2 can load the flow and advance it after the
+  # webhook job completes. Returns {context, flow_attrs, contact}.
   defp build_context(attrs) do
+    contact = Fixtures.contact_fixture(attrs)
+    flow = Flow.get_loaded_flow(attrs.organization_id, "published", %{keyword: "call_and_wait"})
+    [node | _] = flow.nodes
+
     flow_attrs = %{
-      flow_id: 1,
-      flow_uuid: Ecto.UUID.generate(),
-      contact_id: Fixtures.contact_fixture(attrs).id,
+      flow_id: flow.id,
+      contact_id: contact.id,
       organization_id: attrs.organization_id
     }
 
-    {:ok, context} = FlowContext.create_flow_context(flow_attrs)
-    {Repo.preload(context, [:contact, :flow]), flow_attrs}
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        organization_id: attrs.organization_id,
+        node_uuid: node.uuid,
+        is_await_result: true
+      })
+
+    {Repo.preload(context, [:contact, :flow]), flow_attrs, contact}
   end
 
   defp certificate_template_attrs do
@@ -151,7 +167,8 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
   end
 
   describe "create_certificate" do
-    test "happy path: enqueues on custom_certificate queue and logs success", attrs do
+    test "happy path: enqueues on custom_certificate queue, logs success, and resumes flow",
+         attrs do
       with_mock(Goth.Token, [],
         fetch: fn _url ->
           {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
@@ -159,10 +176,10 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
       ) do
         mock_all_google_apis_success()
 
-        {:ok, certificate} = CertificateTemplate.create_certificate_template(certificate_template_attrs())
-        contact = Fixtures.contact_fixture(attrs)
+        {:ok, certificate} =
+          CertificateTemplate.create_certificate_template(certificate_template_attrs())
 
-        {context, flow_attrs} = build_context(attrs)
+        {context, flow_attrs, contact} = build_context(attrs)
 
         action = %Action{
           method: "FUNCTION",
@@ -173,7 +190,8 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
               certificate_id: certificate.id,
               contact: %{"id" => contact.id, "name" => "Test User"},
               replace_texts: %{}
-            })
+            }),
+          result_name: "filesearch"
         }
 
         assert Webhook.execute(action, context) == nil
@@ -183,14 +201,22 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
         Oban.drain_queue(queue: :custom_certificate)
 
+        # WebhookLog assertions — verify the webhook itself succeeded
         log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
         assert log.status == "Success"
         assert log.response_json["success"] == true
         assert log.response_json["certificate_url"] != nil
+
+        # Flow execution assertion — verify the flow resumed on the success branch.
+        # The call_and_wait success node sends "@results.filesearch.message"; since
+        # the create_certificate result has no "message" key, the template expression
+        # is rendered as-is, proving the flow engine advanced past the webhook node.
+        message = await_flow_message(context.contact_id, "@results.filesearch.message")
+        assert message.body == "@results.filesearch.message"
       end
     end
 
-    test "failure: Google Slides API error logs an error in the webhook log", attrs do
+    test "failure: Google Slides API error logs an error and flow still resumes", attrs do
       with_mock(Goth.Token, [],
         fetch: fn _url ->
           {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
@@ -212,10 +238,10 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
             {:ok, %Tesla.Env{status: 400, body: Jason.encode!(@mock_copied_slide)}}
         end)
 
-        {:ok, certificate} = CertificateTemplate.create_certificate_template(certificate_template_attrs())
-        contact = Fixtures.contact_fixture(attrs)
+        {:ok, certificate} =
+          CertificateTemplate.create_certificate_template(certificate_template_attrs())
 
-        {context, flow_attrs} = build_context(attrs)
+        {context, flow_attrs, contact} = build_context(attrs)
 
         action = %Action{
           method: "FUNCTION",
@@ -226,17 +252,61 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
               certificate_id: certificate.id,
               contact: %{"id" => contact.id, "name" => "Test User"},
               replace_texts: %{}
-            })
+            }),
+          result_name: "filesearch"
         }
 
         assert Webhook.execute(action, context) == nil
 
         Oban.drain_queue(queue: :custom_certificate)
 
+        # WebhookLog assertions — verify the webhook recorded the failure
         log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
         assert log != nil
         assert log.error != nil
+
+        # Flow execution assertion — the webhook returns %{success: false, reason: ...}
+        # which handle/3 treats as a result map, so the flow advances on the success
+        # branch regardless. This proves the flow engine ran after the certificate job.
+        message = await_flow_message(context.contact_id, "@results.filesearch.message")
+        assert message.body == "@results.filesearch.message"
       end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Flow message polling helpers
+  #
+  # For synchronous webhooks, the flow resumes inside Oban.drain_queue, so
+  # the message is already in the DB when drain returns. We poll briefly to
+  # handle any in-process scheduling latency, but do NOT wait for
+  # TaskSupervisor children — create_certificate spawns a background cleanup
+  # task (delete_template_copy) that sleeps 10 s before running, which would
+  # cause the TaskSupervisor-based wait to time out unnecessarily.
+  # ---------------------------------------------------------------------------
+
+  @await_attempts 50
+  @await_interval_ms 100
+
+  defp await_flow_message(contact_id, expected_body) do
+    await_flow_message(contact_id, expected_body, @await_attempts)
+  end
+
+  defp await_flow_message(_contact_id, expected_body, 0) do
+    flunk("Timed out waiting for message #{inspect(expected_body)}")
+  end
+
+  defp await_flow_message(contact_id, expected_body, attempts) do
+    case Glific.Messages.list_messages(%{
+           filter: %{contact_id: contact_id},
+           opts: %{limit: 1, order: :desc}
+         }) do
+      [%{body: ^expected_body} = msg | _] ->
+        msg
+
+      _ ->
+        Process.sleep(@await_interval_ms)
+        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

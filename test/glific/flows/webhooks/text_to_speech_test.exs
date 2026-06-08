@@ -208,18 +208,34 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       assert message.body == "failure"
     end
 
-    test "timeout - outbound Kaapi TTS request times out, WebhookLog records the error", attrs do
+    test "timeout - outbound Kaapi TTS request times out, flow routes to failure branch", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
       Tesla.Mock.mock(fn _ -> {:error, :timeout} end)
 
-      flow_attrs = %{
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        contact_id: Fixtures.contact_fixture(attrs).id,
-        organization_id: attrs.organization_id
-      }
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
 
-      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
       context = Repo.preload(context, [:contact, :flow])
+
+      flow_filter = %{
+        flow_id: flow.id,
+        contact_id: contact.id,
+        organization_id: organization_id
+      }
 
       action = %Action{
         headers: %{"Accept" => "application/json"},
@@ -232,7 +248,12 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       assert_enqueued(worker: Webhook, prefix: "global")
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      # The Oban worker calls handle(nil, ...) on timeout, which routes to the
+      # failure branch via FlowContext.wakeup_one with a "Failure" temp message.
+      message = await_flow_message(contact.id, "failure")
+      assert message.body == "failure"
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
     end

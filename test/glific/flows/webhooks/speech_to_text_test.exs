@@ -189,15 +189,29 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
     } do
       Tesla.Mock.mock(fn _ -> {:error, :timeout} end)
 
-      flow_attrs = %{
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        contact_id: Fixtures.contact_fixture(%{organization_id: organization_id}).id,
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:contact, :flow])
+
+      flow_filter = %{
+        flow_id: flow.id,
+        contact_id: contact.id,
         organization_id: organization_id
       }
-
-      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
-      context = Repo.preload(context, [:contact, :flow])
 
       action = %Action{
         headers: %{"Content-Type" => "application/json"},
@@ -211,7 +225,13 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      # NOTE: No "failure" message assertion here. The Webhook.execute Oban path
+      # for speech_to_text converts {:error, :timeout} into %{success: false, ...}
+      # (via Kaapi.speech_to_text / download_media_content error handling). Since
+      # result_name is non-nil, handle/3 routes to the SUCCESS branch — not failure.
+      # The failure branch IS exercised by the failure callback test above.
+      # What we assert here is that the webhook log records the error.
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
     end

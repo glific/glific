@@ -96,6 +96,12 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
 
       Oban.drain_queue(queue: :webhook)
 
+      # WebhookLog assertion — verify the poll was dispatched successfully.
+      # Note: flow-level execution assertions are not added here because this
+      # is a WA group flow context (not a contact flow). WA group flows send
+      # messages to the group rather than to a contact, and there is no
+      # await_flow_message-style helper for WA group messages. The WebhookLog
+      # status is the authoritative signal for this webhook type.
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.status == "Success"
@@ -116,6 +122,8 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
 
       Oban.drain_queue(queue: :webhook)
 
+      # WebhookLog assertion — verify the error was recorded.
+      # See happy path test for the note on why flow-level assertions are omitted.
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.error != nil

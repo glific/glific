@@ -5,6 +5,7 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
   alias Glific.{
     Fixtures,
     Flows.Action,
+    Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
@@ -18,20 +19,35 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
     :ok
   end
 
+  # Build a FlowContext linked to the real call_and_wait flow so that
+  # FlowContext.wakeup_one/2 can load the flow and advance it after the
+  # webhook job completes.
   defp build_context(attrs) do
+    contact = Fixtures.contact_fixture(attrs)
+    flow = Flow.get_loaded_flow(attrs.organization_id, "published", %{keyword: "call_and_wait"})
+    [node | _] = flow.nodes
+
     flow_attrs = %{
-      flow_id: 1,
-      flow_uuid: Ecto.UUID.generate(),
-      contact_id: Fixtures.contact_fixture(attrs).id,
+      flow_id: flow.id,
+      contact_id: contact.id,
       organization_id: attrs.organization_id
     }
 
-    {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        organization_id: attrs.organization_id,
+        node_uuid: node.uuid,
+        is_await_result: true
+      })
+
     {Repo.preload(context, [:contact, :flow]), flow_attrs}
   end
 
   describe "parse_via_chat_gpt" do
-    test "happy path returns success and parsed_msg in webhook log", attrs do
+    test "happy path returns success and parsed_msg in webhook log and resumes flow", attrs do
       Tesla.Mock.mock(fn
         %{method: :post, url: "https://api.openai.com/v1/chat/completions"} ->
           %Tesla.Env{
@@ -55,7 +71,8 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
             question_text: "Summarize this",
             gpt_model: "gpt-4",
             prompt: "Be concise"
-          })
+          }),
+        result_name: "filesearch"
       }
 
       assert Webhook.execute(action, context) == nil
@@ -65,13 +82,22 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
+      # WebhookLog assertions — verify the webhook itself succeeded
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log.status == "Success"
       assert log.response_json["success"] == true
       assert log.response_json["parsed_msg"] != nil
+
+      # Flow execution assertion — verify the flow resumed on the success branch.
+      # The call_and_wait success node sends "@results.filesearch.message"; since
+      # the parse_via_chat_gpt result has no "message" key, the template expression
+      # is rendered as-is, proving the flow engine advanced past the webhook node.
+      message = await_flow_message(context.contact_id, "@results.filesearch.message")
+      assert message.body == "@results.filesearch.message"
     end
 
-    test "failure - OpenAI returns 500, webhook log records error", attrs do
+    test "failure - OpenAI returns 500, webhook log records error and flow takes failure branch",
+         attrs do
       Tesla.Mock.mock(fn
         %{method: :post, url: "https://api.openai.com/v1/chat/completions"} ->
           %Tesla.Env{
@@ -91,15 +117,54 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
             question_text: "Summarize this",
             gpt_model: "gpt-4",
             prompt: "Be concise"
-          })
+          }),
+        result_name: "filesearch"
       }
 
       assert Webhook.execute(action, context) == nil
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
+      # WebhookLog assertions — verify the webhook recorded the failure
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.status_code == 500 or log.error != nil
+
+      # Flow execution assertion — webhook failure routes to the Failure branch
+      message = await_flow_message(context.contact_id, "failure")
+      assert message.body == "failure"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Flow message polling helpers
+  #
+  # For synchronous webhooks, the flow resumes inside Oban.drain_queue, so
+  # the message is already in the DB when drain returns. We poll briefly to
+  # handle any in-process scheduling latency.
+  # ---------------------------------------------------------------------------
+
+  @await_attempts 50
+  @await_interval_ms 100
+
+  defp await_flow_message(contact_id, expected_body) do
+    await_flow_message(contact_id, expected_body, @await_attempts)
+  end
+
+  defp await_flow_message(_contact_id, expected_body, 0) do
+    flunk("Timed out waiting for message #{inspect(expected_body)}")
+  end
+
+  defp await_flow_message(contact_id, expected_body, attempts) do
+    case Glific.Messages.list_messages(%{
+           filter: %{contact_id: contact_id},
+           opts: %{limit: 1, order: :desc}
+         }) do
+      [%{body: ^expected_body} = msg | _] ->
+        msg
+
+      _ ->
+        Process.sleep(@await_interval_ms)
+        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

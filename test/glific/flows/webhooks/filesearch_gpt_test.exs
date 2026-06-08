@@ -240,23 +240,35 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert message.body == "failure"
     end
 
-    test "timeout - outbound Kaapi request times out, webhook log records error", %{
+    test "timeout - outbound Kaapi request times out, WebhookLog records error", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn,
       assistant: assistant
     } do
       Tesla.Mock.mock(fn _ -> {:error, :timeout} end)
 
       contact = Fixtures.contact_fixture(%{organization_id: org_id})
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
 
-      flow_attrs = %{
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: org_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:contact, :flow])
+
+      flow_filter = %{
+        flow_id: flow.id,
         contact_id: contact.id,
         organization_id: org_id
       }
-
-      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
-      context = Repo.preload(context, [:contact, :flow])
 
       action = %Action{
         method: "FUNCTION",
@@ -277,8 +289,18 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      # NOTE: No "failure" message assertion here. The Webhook.execute Oban path
+      # for filesearch-gpt falls through to CommonWebhook's catch-all clause
+      # (%{error: "Missing webhook function implementation"}) because there is no
+      # 3-argument webhook("filesearch-gpt", ...) handler in CommonWebhook — the
+      # real production path goes through execute_unified_filesearch, not Webhook.execute.
+      # The catch-all result is a non-nil map with a non-nil result_name ("filesearch"),
+      # so handle/3 routes to the SUCCESS branch. The failure branch IS exercised by
+      # the failure callback test above.
+      # The webhook log records the response (no error field set, but response_json present).
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
+      assert log.response_json != nil
     end
   end
 

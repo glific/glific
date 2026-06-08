@@ -147,22 +147,34 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
       assert updated_log.response_json["success"] == false
     end
 
-    test "timeout - outbound Kaapi request times out, webhook log records error", %{
+    test "timeout - outbound Kaapi request times out, flow routes to failure branch", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn
     } do
       Tesla.Mock.mock(fn _ -> {:error, :timeout} end)
 
       contact = Fixtures.contact_fixture(%{organization_id: org_id})
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
 
-      flow_attrs = %{
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: org_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
+      context = Repo.preload(context, [:contact, :flow])
+
+      flow_filter = %{
+        flow_id: flow.id,
         contact_id: contact.id,
         organization_id: org_id
       }
-
-      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
-      context = Repo.preload(context, [:contact, :flow])
 
       action = %Action{
         method: "FUNCTION",
@@ -171,7 +183,7 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
         body:
           Jason.encode!(%{
             question: "test question",
-            flow_id: 1,
+            flow_id: flow.id,
             contact_id: contact.id,
             organization_id: org_id,
             result_name: "response",
@@ -186,7 +198,12 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      # The Oban worker calls handle(nil, ...) on timeout, which routes to the
+      # failure branch via FlowContext.wakeup_one with a "Failure" temp message.
+      message = await_flow_message(contact.id, "failure")
+      assert message.body == "failure"
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
     end
