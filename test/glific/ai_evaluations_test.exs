@@ -1,6 +1,6 @@
 defmodule Glific.AIEvaluationsTest do
   @moduledoc false
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   import Ecto.Query
 
