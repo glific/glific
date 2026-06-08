@@ -85,21 +85,47 @@ defmodule Glific.Communications.GroupMessage do
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info("Received message: type: '#{type}', id: '#{message_params[:bsp_id]}'")
 
-    if duplicate_inbound?(message_params[:bsp_id], organization_id) do
-      Logger.info(
-        "Skipping duplicate inbound WA message: bsp_id '#{message_params[:bsp_id]}' already stored (likely arrived via another managed phone in the same group)"
-      )
+    cond do
+      duplicate_inbound?(message_params[:bsp_id], organization_id) ->
+        Logger.info(
+          "Skipping duplicate inbound WA message: bsp_id '#{message_params[:bsp_id]}' already stored (Maytapi webhook retry or same-phone duplicate)"
+        )
 
-      :ok
-    else
-      {:ok, contact} =
-        message_params.sender
-        |> Map.put(:organization_id, organization_id)
-        |> Contacts.maybe_create_contact()
+        :ok
 
-      do_receive_message(contact, message_params, type)
+      sender_is_our_managed_phone?(message_params, organization_id) ->
+        Logger.info(
+          "Skipping inbound WA message: sender '#{get_in(message_params, [:sender, :phone])}' is our own managed phone — already stored via the outbound flow (multi-phone echo)"
+        )
+
+        :ok
+
+      true ->
+        {:ok, contact} =
+          message_params.sender
+          |> Map.put(:organization_id, organization_id)
+          |> Contacts.maybe_create_contact()
+
+        do_receive_message(contact, message_params, type)
     end
   end
+
+  # Maytapi assigns a different `bsp_id` to the outbound API response and
+  # to the webhook echo, so dedup-by-bsp_id alone can't catch the
+  # multi-phone case. The reliable signal is the sender: if the webhook's
+  # sender phone matches one of our managed phones, the message was sent
+  # via Glific (or directly from one of our phones) — the outbound flow
+  # already stored it. Skip.
+  @spec sender_is_our_managed_phone?(map(), non_neg_integer()) :: boolean()
+  defp sender_is_our_managed_phone?(%{sender: %{phone: phone}}, organization_id)
+       when is_binary(phone) and phone != "" do
+    case WAManagedPhones.fetch_by_phone(organization_id, phone) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+
+  defp sender_is_our_managed_phone?(_, _), do: false
 
   # In multi-phone orgs the same WhatsApp message can arrive once per
   # managed phone in the group. The bsp_id (Maytapi's underlying message

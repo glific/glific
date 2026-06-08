@@ -1303,5 +1303,34 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       assert length(rows) == 1
     end
+
+    test "inbound webhook whose sender is one of our managed phones is dropped (echo of own outbound)",
+         %{conn: conn, organization_id: org_id} do
+      # Glific sends from phone A → Maytapi fires the inbound echo webhook
+      # for phone B (also a member of the group) with sender = phone A.
+      # The outbound flow already stored the message; this webhook should
+      # be skipped on the sender-match check (its bsp_id is also different
+      # from the outbound's, so bsp_id dedup wouldn't catch it).
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+      second_phone = seed_second_phone(org_id)
+
+      webhook =
+        @text_message_webhook
+        |> put_in(["message", "id"], Ecto.UUID.generate())
+        |> put_in(["user", "phone"], first_phone.phone)
+        |> put_in(["receiver"], second_phone.phone)
+
+      conn = post(conn, "/maytapi", webhook)
+      assert conn.halted
+
+      bsp_message_id = get_in(webhook, ["message", "id"])
+
+      rows =
+        WAMessage
+        |> where([m], m.bsp_id == ^bsp_message_id and m.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert rows == []
+    end
   end
 end
