@@ -1,6 +1,8 @@
 defmodule Glific.FLowsTest do
   use Glific.DataCase
 
+  import ExUnit.CaptureLog
+
   alias Glific.{
     Fixtures,
     Flows,
@@ -15,7 +17,8 @@ defmodule Glific.FLowsTest do
     Processor.ConsumerFlow,
     Processor.ConsumerWorker,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Sheets.Sheet
   }
 
   describe "flows" do
@@ -555,6 +558,87 @@ defmodule Glific.FLowsTest do
       assert {:error, %Ecto.Changeset{}} = Flows.copy_flow(flow, %{})
     end
 
+    test "import_flow/2 links valid google sheet actions",
+         %{organization_id: organization_id} do
+      mock_google_sheet_requests()
+
+      flow_name = unique_import_flow_name("valid-sheet")
+      sheet_url = valid_google_sheet_url()
+
+      import_flow = import_flow_payload([flow_revision_with_sheet_action(flow_name, sheet_url)])
+
+      assert [%{flow_name: ^flow_name, status: "Successfully imported"}] =
+               Flows.import_flow(import_flow, organization_id)
+
+      assert {:ok, sheet} = Repo.fetch_by(Sheet, %{url: sheet_url})
+
+      action = imported_google_sheet_action(flow_name)
+      assert action["sheet_id"] == sheet.id
+    end
+
+    test "import_flow/2 preserves sheet_id and logs a warning for invalid google sheet URLs",
+         %{organization_id: organization_id} do
+      mock_google_sheet_requests()
+
+      flow_name = unique_import_flow_name("invalid-sheet")
+      sheet_url = "Add Sheet URL"
+
+      import_flow =
+        import_flow_payload([
+          flow_revision_with_sheet_action(flow_name, sheet_url, sheet_id: 1234)
+        ])
+
+      log =
+        capture_log(fn ->
+          assert [%{flow_name: ^flow_name, status: "Successfully imported"}] =
+                   Flows.import_flow(import_flow, organization_id)
+        end)
+
+      action = imported_google_sheet_action(flow_name)
+      assert Map.has_key?(action, "sheet_id")
+      assert is_nil(action["sheet_id"])
+      assert log =~ "Unable to create Google Sheet while importing flow action"
+      assert log =~ sheet_url
+
+      assert {:ok, flow} = Repo.fetch_by(Flow, %{name: flow_name})
+      assert %Flow{} = Flow.get_loaded_flow(organization_id, "draft", %{id: flow.id})
+      assert is_list(Flow.validate_flow(organization_id, "draft", %{id: flow.id}))
+    end
+
+    test "import_flow/2 continues importing a batch when one google sheet URL is invalid",
+         %{organization_id: organization_id} do
+      mock_google_sheet_requests()
+
+      invalid_flow_name = unique_import_flow_name("batch-invalid-sheet")
+      valid_flow_name = unique_import_flow_name("batch-valid-sheet")
+      valid_sheet_url = valid_google_sheet_url()
+
+      import_flow =
+        import_flow_payload([
+          flow_revision_with_sheet_action(invalid_flow_name, "Add Sheet URL", sheet_id: 1234),
+          flow_revision_with_sheet_action(valid_flow_name, valid_sheet_url)
+        ])
+
+      log =
+        capture_log(fn ->
+          assert [
+                   %{flow_name: ^invalid_flow_name, status: "Successfully imported"},
+                   %{flow_name: ^valid_flow_name, status: "Successfully imported"}
+                 ] = Flows.import_flow(import_flow, organization_id)
+        end)
+
+      assert log =~ "Add Sheet URL"
+      assert {:ok, _flow} = Repo.fetch_by(Flow, %{name: invalid_flow_name})
+      assert {:ok, _flow} = Repo.fetch_by(Flow, %{name: valid_flow_name})
+
+      invalid_action = imported_google_sheet_action(invalid_flow_name)
+      valid_action = imported_google_sheet_action(valid_flow_name)
+
+      assert Map.has_key?(invalid_action, "sheet_id")
+      assert is_nil(invalid_action["sheet_id"])
+      assert is_integer(valid_action["sheet_id"])
+    end
+
     test "flow keyword map keys are always in lower case", attrs do
       flow = flow_fixture()
 
@@ -568,6 +652,105 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+  end
+
+  defp mock_google_sheet_requests do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "Add Sheet URL"} ->
+        {:error, :invalid_url}
+
+      %{method: :get, url: url} when is_binary(url) ->
+        if String.contains?(url, "export?format=csv") do
+          %Tesla.Env{
+            status: 200,
+            body: "Key,Day,Message English\r\nwelcome,1,Hello"
+          }
+        else
+          {:error, :unexpected_url}
+        end
+    end)
+  end
+
+  defp import_flow_payload(flow_revisions) do
+    %{
+      "flows" => flow_revisions,
+      "contact_field" => [],
+      "collections" => [],
+      "interactive_templates" => []
+    }
+  end
+
+  defp flow_revision_with_sheet_action(flow_name, sheet_url, opts \\ []) do
+    flow_uuid = Ecto.UUID.generate()
+    node_uuid = Ecto.UUID.generate()
+
+    action =
+      %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "link_google_sheet",
+        "name" => "#{flow_name} sheet",
+        "url" => sheet_url,
+        "action_type" => "READ",
+        "result_name" => "sheet_result",
+        "sheet_id" => Keyword.get(opts, :sheet_id)
+      }
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    %{
+      "definition" => %{
+        "name" => flow_name,
+        "uuid" => flow_uuid,
+        "spec_version" => "13.1.0",
+        "language" => "base",
+        "type" => "messaging",
+        "nodes" => [
+          %{
+            "uuid" => node_uuid,
+            "actions" => [action],
+            "exits" => []
+          }
+        ],
+        "_ui" => %{
+          "nodes" => %{
+            node_uuid => %{
+              "position" => %{
+                "top" => 0,
+                "left" => 0
+              }
+            }
+          }
+        },
+        "localization" => %{},
+        "revision" => 1,
+        "expire_after_minutes" => 10_080
+      },
+      "keywords" => []
+    }
+  end
+
+  defp imported_google_sheet_action(flow_name) do
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: flow_name})
+
+    revision =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^flow.id)
+      |> order_by([fr], desc: fr.id)
+      |> limit(1)
+      |> Repo.one!()
+
+    revision.definition
+    |> Map.get("nodes", [])
+    |> Enum.flat_map(fn node -> node["actions"] || [] end)
+    |> Enum.find(fn action -> action["type"] == "link_google_sheet" end)
+  end
+
+  defp unique_import_flow_name(prefix) do
+    "#{prefix}-#{System.unique_integer([:positive])}"
+  end
+
+  defp valid_google_sheet_url do
+    "https://docs.google.com/spreadsheets/d/#{Ecto.UUID.generate()}/edit#gid=0"
   end
 
   defp expected_error(str) do
