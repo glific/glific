@@ -13,6 +13,8 @@
       "_build",
       "deps",
       "priv/cert",
+      "priv/plts/dialyzer.plt",
+      "priv/plts/dialyzer.plt.hash",
       "config/.env.dev",
       "config/dev.secret.exs"
     ]
