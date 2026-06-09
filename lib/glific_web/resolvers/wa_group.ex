@@ -76,4 +76,50 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def wa_groups_count(_, args, _), do: {:ok, WAGroups.wa_groups_count(args)}
+
+  @doc """
+  Resolve `WAGroup.primaryPhone` — the managed phone whose membership row
+  has `is_primary: true` and `is_active: true`.
+  """
+  @spec primary_phone(Glific.Groups.WAGroup.t(), map(), %{context: map()}) ::
+          {:ok, Glific.WAGroup.WAManagedPhone.t() | nil}
+  def primary_phone(wa_group, _args, _resolution) do
+    {:ok, WAGroups.primary_phone(wa_group.id)}
+  end
+
+  @doc """
+  Promote a managed phone to the group's primary. Admin-only.
+  """
+  @spec set_primary_phone(
+          Absinthe.Resolution.t(),
+          %{wa_group_id: String.t() | integer, wa_managed_phone_id: String.t() | integer},
+          %{context: map()}
+        ) :: {:ok, map()} | {:error, any}
+  def set_primary_phone(_, %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id}, _) do
+    case WAGroups.set_primary_phone(to_int(wa_group_id), to_int(wa_managed_phone_id)) do
+      {:ok, %{wa_group_phone: wgp, warning: warning}} ->
+        {:ok, %{wa_group_phone: wgp, warning: warning}}
+
+      {:error, :membership_not_found} ->
+        {:error,
+         dgettext(
+           "errors",
+           "No membership exists for this (group, phone) pair. Add the phone to the group first."
+         )}
+
+      {:error, :inactive_membership} ->
+        {:error,
+         dgettext(
+           "errors",
+           "This phone's membership in the group is inactive. Re-add it via sync before promoting."
+         )}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  @spec to_int(integer | String.t()) :: integer
+  defp to_int(v) when is_integer(v), do: v
+  defp to_int(v) when is_binary(v), do: String.to_integer(v)
 end

@@ -1,0 +1,26 @@
+query waGroupWithPhones($id: ID!) {
+  waGroup(id: $id) {
+    waGroup {
+      id
+      label
+      primaryPhone {
+        id
+        phone
+        label
+      }
+      phones {
+        id
+        isPrimary
+        isActive
+        waManagedPhone {
+          id
+          phone
+        }
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -1,0 +1,18 @@
+mutation SetPrimaryPhone($waGroupId: ID!, $waManagedPhoneId: ID!) {
+  setPrimaryPhone(waGroupId: $waGroupId, waManagedPhoneId: $waManagedPhoneId) {
+    waGroupPhone {
+      id
+      isPrimary
+      isActive
+      waManagedPhone {
+        id
+        phone
+      }
+    }
+    warning
+    errors {
+      key
+      message
+    }
+  }
+}
