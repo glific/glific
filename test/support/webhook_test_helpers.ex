@@ -2,9 +2,12 @@ defmodule Glific.WebhookTestHelpers do
   @moduledoc false
 
   alias Glific.{
+    Contacts.Contact,
     Fixtures,
     Flows.Flow,
     Flows.FlowContext,
+    Flows.WebhookLog,
+    Messages.Message,
     Repo
   }
 
@@ -12,6 +15,7 @@ defmodule Glific.WebhookTestHelpers do
   @await_interval_ms 100
 
   @doc "Poll for a message matching expected_body sent to contact_id."
+  @spec await_flow_message(non_neg_integer(), String.t()) :: Message.t()
   def await_flow_message(contact_id, expected_body) do
     await_flow_message(contact_id, expected_body, @await_attempts)
   end
@@ -38,6 +42,7 @@ defmodule Glific.WebhookTestHelpers do
   Build a FlowContext parked in await state at the first node of the call_and_wait flow.
   Returns {contact, webhook_log, flow}.
   """
+  @spec build_await_context(non_neg_integer()) :: {Contact.t(), WebhookLog.t(), Flow.t()}
   def build_await_context(organization_id) do
     contact = Fixtures.contact_fixture(%{organization_id: organization_id})
     webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
@@ -63,6 +68,7 @@ defmodule Glific.WebhookTestHelpers do
   Build a FlowContext linked to the call_and_wait flow (not in await state).
   Returns {context, flow_attrs}.
   """
+  @spec build_flow_context(non_neg_integer(), non_neg_integer()) :: {FlowContext.t(), map()}
   def build_flow_context(organization_id, contact_id) do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
     [node | _] = flow.nodes
@@ -86,6 +92,15 @@ defmodule Glific.WebhookTestHelpers do
   Used by speech_to_text, text_to_speech, voice_filesearch_gpt tests.
   Pass extra_metadata to merge additional metadata fields (e.g., voice_post_process).
   """
+  @spec build_unified_callback_params(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          boolean(),
+          String.t(),
+          map()
+        ) :: map()
   def build_unified_callback_params(
         organization_id,
         flow_id,
@@ -143,6 +158,14 @@ defmodule Glific.WebhookTestHelpers do
   Callback params in the old Kaapi Responses API format (data.message, data.contact_id, etc.).
   Used by call_and_wait and filesearch_gpt tests.
   """
+  @spec build_old_format_callback_params(
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          boolean(),
+          String.t()
+        ) :: map()
   def build_old_format_callback_params(
         organization_id,
         flow_id,

@@ -10,67 +10,46 @@ An open source two-way communication platform for the social sector (WhatsApp-ba
 - **Deployment**: Gigalixir, CI/CD via GitHub Actions
 - **Monitoring**: AppSignal for APM, ExCoveralls for test coverage
 
+## Documentation map
+
+Read the layered docs for the area you are working in — they are the source of truth for
+conventions and patterns:
+
+| Area | File |
+|------|------|
+| Business logic (contexts, schemas, Oban, providers, caching, errors) | `lib/glific/CLAUDE.md` |
+| Web layer (GraphQL, resolvers, authorization, `.gql` assets) | `lib/glific_web/CLAUDE.md` |
+| Tests, fixtures, mocking, coverage | `test/CLAUDE.md` |
+| Database migrations | `priv/repo/migrations/CLAUDE.md` |
+
+Specialized agents in `.claude/agents/` (`backend-engineer`, `code-reviewer`,
+`test-automator`) encode the same conventions for automated implement/review/test workflows.
+
+When unsure how something is done, find the nearest existing example and mirror it. Reference
+implementations: `Glific.Tags` / `Glific.Tags.Tag`, `GlificWeb.Resolvers.Tags`,
+`GlificWeb.Schema.TagTypes`, `test/glific/tags_test.exs`, `test/glific_web/schema/tag_test.exs`.
+
 ## Directory Structure
 
 ```
 glific/
-├── .claude/             # Claude Code project configuration
-│   ├── settings.json    # Permission rules (deny list for secret files)
-│   └── skills/          # Project-specific Claude skills
-│       ├── fix-flaky-tests/
-│       ├── improve-code-coverage/
-│       └── make-branch-ready-for-review/
-├── api.docs/            # API documentation (Bruno collections, examples)
-├── assets/              # Frontend assets (JS, CSS, Tailwind, GQL)
-├── build_scripts/       # Deployment scripts (Gigalixir)
+├── .claude/             # Claude Code config (settings, skills, agents)
+├── api.docs/            # Bruno API collections
+├── assets/              # Frontend assets + assets/gql/ GraphQL operation files
 ├── config/              # Environment configs (dev, test, prod, runtime)
 ├── lib/
-│   ├── glific/          # Business logic (contexts, schemas, jobs, providers)
-│   │   ├── ai_evaluations/ # AI eval schemas (AIEvaluation, GoldenQA, OrganizationEvalRequest)
-│   │   ├── enums/       # Enum definitions (EctoEnum + constants)
-│   │   ├── flows/       # Flow engine
-│   │   ├── groups/      # Group management (regular groups + WA groups, 14 schemas)
-│   │   ├── messages/    # Message handling
-│   │   ├── contacts/    # Contact management
-│   │   ├── providers/   # BSP integrations (Gupshup, Maytapi)
-│   │   ├── scripts/     # Admin IEx console helper scripts (not web-facing)
-│   │   ├── third_party/ # External services (BigQuery, Dialogflow, GCS, Gemini, Discord, Kaapi, etc.)
-│   │   └── ...          # ~49 context modules at root level
-│   └── glific_web/      # Web layer
-│       ├── controllers/ # REST API controllers
-│       ├── schema/      # GraphQL type definitions
-│       ├── resolvers/   # GraphQL resolvers
-│       ├── plugs/       # Custom plugs (auth, rate limiting)
-│       └── router.ex    # Route definitions
-├── priv/
-│   ├── repo/migrations/ # Database migrations
-│   ├── repo/seeds*.exs  # Seed files
-│   └── data/            # Static data files
-├── rel/                 # Release configuration (vm.args, env)
-└── test/
-    ├── glific/          # Business logic tests
-    ├── glific_web/      # Web layer tests
-    └── support/         # Test helpers (DataCase, ConnCase, Fixtures)
+│   ├── glific/          # Business logic — see lib/glific/CLAUDE.md
+│   └── glific_web/      # Web layer — see lib/glific_web/CLAUDE.md
+├── priv/repo/           # Migrations, seeds, structure.sql
+├── test/                # Mirrors lib/ — see test/CLAUDE.md
+└── rel/                 # Release configuration
 ```
 
-## Multi-Tenancy
+## Cross-cutting code style
 
-- Every major table has an `organization_id` foreign key
-- `Repo.default_options/1` automatically reads organization_id from the process dictionary via `get_organization_id()`
-- `prepare_query/3` auto-injects `WHERE organization_id = ?` into all queries
-- Organization context is set once per process (e.g., in Plug pipeline or test setup) via `Repo.put_organization_id(org_id)`
-- Skip org scoping with `skip_organization_id: true` for cross-org queries
-- Unique constraints are often scoped: `unique_index(:table, [:field, :organization_id])`
+Applies to all Elixir modules unless a layer doc says otherwise.
 
-## Code Conventions
-
-### Module Organization
-
-- Namespaces: `Glific.*` for business logic, `GlificWeb.*` for web layer
-- Contexts pattern: Context modules (e.g., `Glific.Contacts`) as public API boundaries
-- Schemas in subdirectories: `Glific.Contacts.Contact`, `Glific.Messages.Message`
-
-### Import/Alias Order in Modules
+### Import/alias order
 
 1. `use` statements
 2. `alias __MODULE__` (self-reference)
@@ -81,143 +60,44 @@ glific/
 7. Type definitions (`@type t()`)
 8. Function definitions
 
-### Function Naming
-
-- `get_entity!(id)` - raises on not found
-- `get_entity(id)` - returns `nil` on not found
-- `fetch(queryable, id)` / `fetch_by(queryable, clauses)` - returns `{:ok, entity}` or `{:error, reason}`
-- `list_entities(args)` - returns list with filtering
-- `count_entities(args)` - returns count
-- `create_entity(attrs)` - returns `{:ok, entity}` or `{:error, changeset}`
-- `update_entity(entity, attrs)` - returns `{:ok, entity}` or `{:error, changeset}`
-- `delete_entity(entity)` - returns `{:ok, entity}` or `{:error, changeset}`
-
-### Schema Conventions
-
-- Always define `@type t()` with all fields
-- Separate `@required_fields` and `@optional_fields` as module attributes
-- Always include `timestamps(type: :utc_datetime)`
-- Multiple changeset functions for different purposes (e.g., `changeset/2`, `update_changeset/2`)
-
-### Specs & Docs
+### Specs & docs
 
 - `@spec` on all public functions
 - `@moduledoc` on all modules
 - `@doc` with iex examples where useful
 
-## GraphQL (Absinthe) Conventions
+## Multi-tenancy (summary)
 
-- **Schema**: `lib/glific_web/schema.ex` imports all type modules and defines root query/mutation
-- **Types**: One file per domain in `lib/glific_web/schema/` (e.g., `contact_types.ex`, `message_types.ex`)
-  - Objects, input types, result wrapper types (`contact_result`), and queries/mutations per domain
-  - Use `dataloader(Repo)` for efficient batch loading of associations
-- **Resolvers**: One file per domain in `lib/glific_web/resolvers/` (e.g., `contacts.ex`)
-  - Resolvers return `{:ok, %{entity: data}}` for mutations
-  - Use `with/else` pattern for multi-step operations
-- **Middleware**: Applied per field
-  - `Authorize` middleware for role-based access (`:staff`, `:manager`, `:admin`, `:any`)
-  - `AddOrganization` middleware injects org context
-  - `ChangesetErrors` / `QueryErrors` for error formatting
-- **Enums**: Centralized in `enum_types.ex`, backed by `EctoEnum` + `Glific.Enums.Constants`
-
-## Testing Conventions
-
-- **Test Cases**:
-  - `Glific.DataCase` - for business logic/database tests (SQL Sandbox, sets org context)
-  - `GlificWeb.ConnCase` - for HTTP/GraphQL endpoint tests (sets up auth, roles)
-  - `GlificWeb.ChannelCase` - for WebSocket channel tests
-- **Test Organization**: Mirror `lib/` structure under `test/`
-- **Fixtures**: Direct fixture functions in `test/support/fixtures.ex` (no ExMachina)
-  - Pattern: `entity_fixture(attrs \\ %{})` with sensible defaults using Faker
-  - Nested fixtures for dependencies (e.g., `organization_fixture` creates a contact first)
-- **Test Setup**: Each DataCase test automatically:
-  - Sets `organization_id` to 1 via `Repo.put_organization_id(1)`
-  - Creates a test user and fills organization cache
-- **GraphQL Testing**: `auth_query_gql_by/3` macro in ConnCase for authenticated GraphQL queries
-- **Async Tests**: `use Glific.DataCase, async: true` for parallel execution; tests that seed globally-shared Cachex credential entries (e.g., via `fill_cache` keyed under `@global_organization_id = 0`) must use `async: false` — concurrent tests can evict or overwrite those shared entries, causing intermittent failures (see `Glific.Assistants.AssistantTest` and `Glific.AIEvaluationsTest` as canonical examples)
-- **Module Attributes**: `@valid_attrs` and `@invalid_attrs` for test data
-- **HTTP Mocking**: Tesla.Mock for external API calls
-- **Coverage**: ExCoveralls with `mix test_full` task
-- **Deterministic ordering**: Always add a secondary `asc: t.id` sort when ordering by `inserted_at` — timestamp ties (common in rapid test inserts) cause non-deterministic ordering and flaky assertions
-
-## Error Handling Patterns
-
-- **`with/else` pattern** - Primary pattern for multi-step operations:
-  ```elixir
-  with {:ok, entity} <- Repo.fetch_by(Entity, %{id: id}),
-       {:ok, result} <- Context.update_entity(entity, params) do
-    {:ok, %{entity: result}}
-  end
-  ```
-- **Bang functions** (`!`) raise exceptions; non-bang return `{:ok, data}` / `{:error, reason}`
-- **Exception logging standard**: always use `Glific.log_exception/1` for exceptions and avoid direct `AppSignal.error` calls
-- **`Glific.log_error/2`** - Central error logging that logs to Logger + sends to AppSignal
-- **Rescue clauses** in resolvers for unexpected errors
-- **`Repo.fetch/2` / `Repo.fetch_by/2`** - Custom wrappers returning `{:ok, entity}` / `{:error, ["Resource not found"]}`
-
-## Background Jobs (Oban)
-
-- **Workers**: Define with `use Oban.Worker, queue: :queue_name, max_attempts: N`
-- **Entry point**: `perform(%Oban.Job{args: args})` with pattern matching
-- **Return values**: `:ok`, `{:error, reason}`, or `{:snooze, seconds}`
-- **Queues**: 11+ specialized queues (gupshup, bigquery, crontab, default, dialogflow, gcs, webhook, broadcast, wa_group, purge, etc.)
-- **Crontab**: 15 scheduled jobs via Oban Cron plugin (ranging from every minute to daily)
-- **Rate limiting**: `ExRated.check_rate/3` for BSP rate limits
-- **Feature flags**: `FunWithFlags.enabled?/2` for dynamic behavior switching
-
-## Authentication & Authorization
-
-- **Authentication**: Pow library for session/token management
-- **Token flow**: API access token + renewal token pattern
-- **Role hierarchy**: `glific_admin` > `admin` > `manager` > `staff` > `none`
-- **GraphQL Authorization**: `Authorize` middleware checks user roles per field
-- **API Auth Plug**: `GlificWeb.APIAuthPlug` extracts and validates tokens from requests
-- **Organization isolation**: Queries automatically scoped by `organization_id`
-
-## Caching
-
-- **Library**: Cachex with bucket `:glific_cache`
-- **Organization-scoped keys**: `{organization_id, key}`
-- **Global keys**: `{:global, key}`
-- **API**: `Glific.Caches.set/4`, `Glific.Caches.get/3`, `Glific.Caches.fetch/3` (with fallback function)
-- **TTL**: Default 24 hours, configurable per key
-- **Cache invalidation**: Reload key pattern (`{organization_id, :cache_reload_key}`)
-
-## Database Conventions
-
-- **Repo**: `Glific.Repo` (primary) + `Glific.RepoReplica` (read-only replica, points to primary in tests)
-- **Migrations**: Timestamp-based naming `YYYYMMDDhhmmss_description.exs`
-- **Soft deletes**: `deleted_at` field with partial indexes (`WHERE deleted_at IS NULL`)
-- **Partial unique indexes**: Used for boolean-flag uniqueness (e.g., only one `is_primary = true` row per group); named explicitly (e.g., `wa_groups_phones_one_primary`) and enforced via `unique_constraint/3` with the `name:` option in the changeset
-- **Timestamps**: Always `timestamps(type: :utc_datetime)`
-- **Seeds**: Modular seed files (`seeds_dev.exs`, `seeds_credentials.exs`, `seeds_optins.exs`, `seeds_scale.exs`)
-- **Query helpers**: Centralized in `RepoHelpers` - `list_filter/5`, `filter_with/2`, `opts_with_name/2`, `opts_with_field/3`
-- **Audit**: `ExAudit.Repo` for change tracking
+Glific is multi-tenant: every major table has `organization_id`, and `Repo.prepare_query/3`
+auto-injects org scoping from the process dictionary. Set context with
+`Repo.put_organization_id/1`; use `skip_organization_id: true` only for deliberate cross-org
+paths. **Oban workers and resolver by-id lookups have extra rules** — see
+`lib/glific/CLAUDE.md` and `lib/glific_web/CLAUDE.md`.
 
 ## Admin Scripts
 
-- **Location**: `lib/glific/scripts/` — IEx console helper modules, not web-facing or Oban workers
-- **Purpose**: One-off or manual admin operations run from the production console (e.g., `gigalixir remote_console`)
-- **Pattern**: Each script module is self-contained with a clear `@moduledoc` showing the exact IEx invocation
+- **Location**: `lib/glific/scripts/` — IEx console helpers, not web-facing or Oban workers
+- **Pattern**: self-contained module with `@moduledoc` showing the exact IEx invocation
 - **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.Evals`)
-- Always call `Repo.put_organization_id/1` at the top of any script function that touches org-scoped data
+- Always call `Repo.put_organization_id/1` at the top of any function that touches org-scoped data
 
 ## Claude Code Project Configuration
 
-- **Settings**: `.claude/settings.json` — project-level permission rules; `permissions.deny` blocks reads of secret config files (`config/.env.dev`, `config/dev.secret.exs`)
-- **Worktree symlinks**: `worktree.symlinkDirectories` symlinks `_build`, `deps`, `priv/cert`, `config/.env.dev`, and `config/dev.secret.exs` from the main checkout into isolated worktrees — avoids full recompilation and credential re-setup for parallel agent tasks
-- **Skills**: `.claude/skills/` — project-specific Claude Code skills:
-  - `fix-flaky-tests` — evidence-first workflow for diagnosing and fixing flaky tests
-  - `improve-code-coverage` — guides coverage improvements with a local check script (`check_codecov_local.py`)
-  - `make-branch-ready-for-review` — runs Credo, Dialyzer, format, and coverage checks before opening a PR
+- **Settings**: `.claude/settings.json` — `permissions.deny` blocks secret config files
+  (`config/.env.dev`, `config/dev.secret.exs`)
+- **Worktree symlinks**: `worktree.symlinkDirectories` symlinks `_build`, `deps`, `priv/cert`,
+  `config/.env.dev`, and `config/dev.secret.exs` from the main checkout into isolated worktrees
+- **Skills** (`.claude/skills/`): `fix-flaky-tests`, `improve-code-coverage`,
+  `make-branch-ready-for-review`
 
 ## Code Quality & Formatting
 
-- **Formatter**: `mix format` with imports from `:ecto`, `:ecto_sql`, `:phoenix`
-- **Linter**: Credo (non-strict mode, max 120 char lines, max 3 nesting levels)
-- **Type checking**: Dialyzer with PLT files in `priv/plts/`
-- **CI checks**: `mix check` runs Credo + Dialyzer + Format + compilation with warnings-as-errors
-- **Security**: Sobelow for security analysis
+- **Formatter**: `mix format` (imports from `:ecto`, `:ecto_sql`, `:phoenix`)
+- **Linter**: Credo (non-strict locally; `--strict` in CI)
+- **Type checking**: Dialyzer (PLTs in `priv/plts/`)
+- **CI**: `MIX_ENV=test mix check` — Credo + Dialyzer + Doctor + Format + compile with
+  warnings-as-errors
+- **Security**: Sobelow
 
 ## Common Commands
 
