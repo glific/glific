@@ -626,7 +626,7 @@ defmodule Glific.BigQuery do
           Tesla.Client.t(),
           String.t(),
           String.t(),
-          non_neg_integer() | nil
+          non_neg_integer()
         ) :: :ok
   defp cleanup_validation_dataset(conn, project_id, dataset_id, organization_id) do
     case Datasets.bigquery_datasets_delete(conn, project_id, dataset_id, [], deleteContents: true) do

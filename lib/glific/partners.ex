@@ -1000,6 +1000,7 @@ defmodule Glific.Partners do
     remove_organization_cache(organization.id, organization.shortcode)
 
     credential = Repo.preload(credential, [:provider])
+    attrs = Map.put_new(attrs, :organization_id, credential.organization_id)
 
     case validate_credential_permissions(credential.provider.shortcode, attrs) do
       :ok ->
@@ -1049,7 +1050,7 @@ defmodule Glific.Partners do
 
   defp validate_credential_permissions(_shortcode, _attrs), do: :ok
 
-  @spec do_validate_bigquery_service_account(String.t(), non_neg_integer() | nil) ::
+  @spec do_validate_bigquery_service_account(String.t(), non_neg_integer()) ::
           :ok | {:error, String.t()}
   defp do_validate_bigquery_service_account(service_account_json, organization_id) do
     with {:ok, service_account} <- Jason.decode(service_account_json),
