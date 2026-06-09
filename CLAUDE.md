@@ -14,18 +14,27 @@ An open source two-way communication platform for the social sector (WhatsApp-ba
 
 ```
 glific/
+├── .claude/             # Claude Code project configuration
+│   ├── settings.json    # Permission rules (deny list for secret files)
+│   └── skills/          # Project-specific Claude skills
+│       ├── fix-flaky-tests/
+│       ├── improve-code-coverage/
+│       └── make-branch-ready-for-review/
 ├── api.docs/            # API documentation (Bruno collections, examples)
 ├── assets/              # Frontend assets (JS, CSS, Tailwind, GQL)
 ├── build_scripts/       # Deployment scripts (Gigalixir)
 ├── config/              # Environment configs (dev, test, prod, runtime)
 ├── lib/
 │   ├── glific/          # Business logic (contexts, schemas, jobs, providers)
+│   │   ├── ai_evaluations/ # AI eval schemas (AIEvaluation, GoldenQA, OrganizationEvalRequest)
 │   │   ├── enums/       # Enum definitions (EctoEnum + constants)
 │   │   ├── flows/       # Flow engine
+│   │   ├── groups/      # Group management (regular groups + WA groups, 14 schemas)
 │   │   ├── messages/    # Message handling
 │   │   ├── contacts/    # Contact management
 │   │   ├── providers/   # BSP integrations (Gupshup, Maytapi)
-│   │   ├── third_party/ # External services (BigQuery, Dialogflow, GCS, Gemini, etc.)
+│   │   ├── scripts/     # Admin IEx console helper scripts (not web-facing)
+│   │   ├── third_party/ # External services (BigQuery, Dialogflow, GCS, Gemini, Discord, Kaapi, etc.)
 │   │   └── ...          # ~49 context modules at root level
 │   └── glific_web/      # Web layer
 │       ├── controllers/ # REST API controllers
@@ -125,10 +134,11 @@ glific/
   - Sets `organization_id` to 1 via `Repo.put_organization_id(1)`
   - Creates a test user and fills organization cache
 - **GraphQL Testing**: `auth_query_gql_by/3` macro in ConnCase for authenticated GraphQL queries
-- **Async Tests**: `use Glific.DataCase, async: true` for parallel execution
+- **Async Tests**: `use Glific.DataCase, async: true` for parallel execution; tests that seed globally-shared Cachex credential entries (e.g., via `fill_cache` keyed under `@global_organization_id = 0`) must use `async: false` — concurrent tests can evict or overwrite those shared entries, causing intermittent failures (see `Glific.Assistants.AssistantTest` and `Glific.AIEvaluationsTest` as canonical examples)
 - **Module Attributes**: `@valid_attrs` and `@invalid_attrs` for test data
 - **HTTP Mocking**: Tesla.Mock for external API calls
 - **Coverage**: ExCoveralls with `mix test_full` task
+- **Deterministic ordering**: Always add a secondary `asc: t.id` sort when ordering by `inserted_at` — timestamp ties (common in rapid test inserts) cause non-deterministic ordering and flaky assertions
 
 ## Error Handling Patterns
 
@@ -178,10 +188,28 @@ glific/
 - **Repo**: `Glific.Repo` (primary) + `Glific.RepoReplica` (read-only replica, points to primary in tests)
 - **Migrations**: Timestamp-based naming `YYYYMMDDhhmmss_description.exs`
 - **Soft deletes**: `deleted_at` field with partial indexes (`WHERE deleted_at IS NULL`)
+- **Partial unique indexes**: Used for boolean-flag uniqueness (e.g., only one `is_primary = true` row per group); named explicitly (e.g., `wa_groups_phones_one_primary`) and enforced via `unique_constraint/3` with the `name:` option in the changeset
 - **Timestamps**: Always `timestamps(type: :utc_datetime)`
 - **Seeds**: Modular seed files (`seeds_dev.exs`, `seeds_credentials.exs`, `seeds_optins.exs`, `seeds_scale.exs`)
 - **Query helpers**: Centralized in `RepoHelpers` - `list_filter/5`, `filter_with/2`, `opts_with_name/2`, `opts_with_field/3`
 - **Audit**: `ExAudit.Repo` for change tracking
+
+## Admin Scripts
+
+- **Location**: `lib/glific/scripts/` — IEx console helper modules, not web-facing or Oban workers
+- **Purpose**: One-off or manual admin operations run from the production console (e.g., `gigalixir remote_console`)
+- **Pattern**: Each script module is self-contained with a clear `@moduledoc` showing the exact IEx invocation
+- **Naming**: `Glific.Scripts.<Domain>` (e.g., `Glific.Scripts.Evals`)
+- Always call `Repo.put_organization_id/1` at the top of any script function that touches org-scoped data
+
+## Claude Code Project Configuration
+
+- **Settings**: `.claude/settings.json` — project-level permission rules; `permissions.deny` blocks reads of secret config files (`config/.env.dev`, `config/dev.secret.exs`)
+- **Worktree symlinks**: `worktree.symlinkDirectories` symlinks `_build`, `deps`, `priv/cert`, `config/.env.dev`, and `config/dev.secret.exs` from the main checkout into isolated worktrees — avoids full recompilation and credential re-setup for parallel agent tasks
+- **Skills**: `.claude/skills/` — project-specific Claude Code skills:
+  - `fix-flaky-tests` — evidence-first workflow for diagnosing and fixing flaky tests
+  - `improve-code-coverage` — guides coverage improvements with a local check script (`check_codecov_local.py`)
+  - `make-branch-ready-for-review` — runs Credo, Dialyzer, format, and coverage checks before opening a PR
 
 ## Code Quality & Formatting
 

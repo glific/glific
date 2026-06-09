@@ -187,6 +187,10 @@ config :glific, Glific.ThirdParty.Kaapi.ApiClient,
   kaapi_api_key: env!("KAAPI_API_KEY", :string, "This is not a secret"),
   upload_adapter: upload_adapter
 
+config :glific, Glific.ThirdParty.Kaapi,
+  stt_model: env!("KAAPI_STT_MODEL", :string, "gemini-3.1-pro-preview"),
+  tts_model: env!("KAAPI_TTS_MODEL", :string, "gemini-3.1-flash-tts-preview")
+
 config :glific, Glific.ThirdParty.Gemini.ApiClient,
   gemini_api_key: env!("GEMINI_API_KEY", :string, "This is not a secret"),
   stt_model: env!("GEMINI_STT_MODEL", :string, "gemini-2.5-pro"),
@@ -194,7 +198,8 @@ config :glific, Glific.ThirdParty.Gemini.ApiClient,
 
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
-  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil)
+  api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
+  discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
