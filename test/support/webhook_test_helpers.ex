@@ -1,6 +1,8 @@
 defmodule Glific.WebhookTestHelpers do
   @moduledoc false
 
+  import ExUnit.Assertions, only: [flunk: 1]
+
   alias Glific.{
     Fixtures,
     Flows.Flow,
@@ -17,7 +19,7 @@ defmodule Glific.WebhookTestHelpers do
   end
 
   def await_flow_message(_contact_id, expected_body, 0) do
-    ExUnit.Assertions.flunk("Timed out waiting for message #{inspect(expected_body)}")
+    flunk("Timed out waiting for message #{inspect(expected_body)}")
   end
 
   def await_flow_message(contact_id, expected_body, attempts) do
