@@ -10,7 +10,8 @@ defmodule Glific.Groups.WAGroupsTest do
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAManagedPhone
   }
 
   setup do
@@ -463,7 +464,7 @@ defmodule Glific.Groups.WAGroupsTest do
       # path doesn't pick up a status warning.
       {:ok, first_phone} =
         first_phone
-        |> Glific.WAGroup.WAManagedPhone.changeset(%{status: "active"})
+        |> WAManagedPhone.changeset(%{status: "active"})
         |> Repo.update()
 
       {:ok, second_contact} =
@@ -609,7 +610,7 @@ defmodule Glific.Groups.WAGroupsTest do
     test "set_primary_phone/2 succeeds and surfaces a warning when target phone's Maytapi status is not 'active'",
          ctx do
       ctx.second_phone
-      |> Glific.WAGroup.WAManagedPhone.changeset(%{status: "loading"})
+      |> WAManagedPhone.changeset(%{status: "loading"})
       |> Repo.update!()
 
       assert {:ok, %{wa_group_phone: promoted, warning: warning}} =

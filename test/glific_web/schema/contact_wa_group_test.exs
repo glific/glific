@@ -6,9 +6,11 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     Contacts,
     Fixtures,
     Groups.ContactWAGroups,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAManagedPhone
   }
 
   setup do
@@ -280,7 +282,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
       {:ok, first_phone} =
         first_phone
-        |> Glific.WAGroup.WAManagedPhone.changeset(%{status: "active"})
+        |> WAManagedPhone.changeset(%{status: "active"})
         |> Glific.Repo.update()
 
       {:ok, second_contact} =
@@ -397,7 +399,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       second_phone: second_phone
     } do
       second_phone
-      |> Glific.WAGroup.WAManagedPhone.changeset(%{status: "loading"})
+      |> WAManagedPhone.changeset(%{status: "loading"})
       |> Glific.Repo.update!()
 
       result =
@@ -457,7 +459,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
         wa_group_id: wa_group.id,
         wa_managed_phone_id: second_phone.id
       })
-      |> Glific.Groups.WAGroupPhone.changeset(%{is_active: false})
+      |> WAGroupPhone.changeset(%{is_active: false})
       |> Glific.Repo.update!()
 
       result =
