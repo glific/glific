@@ -27,7 +27,6 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
       secrets: %{
         "product_id" => "00000000-0000-0000-0000-000000000000",
         "token" => "11111111-1111-1111-1111-111111111111"
-
       },
       is_active: true
     })
