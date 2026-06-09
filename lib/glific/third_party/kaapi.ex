@@ -486,10 +486,13 @@ defmodule Glific.ThirdParty.Kaapi do
     Enum.find(@kaapi_error_types, "transcription_failed", &String.contains?(message, &1))
   end
 
+  @spec model_config(atom()) :: String.t()
+  defp model_config(key), do: Application.fetch_env!(:glific, __MODULE__)[key]
+
   @spec stt_payload(String.t(), String.t(), map(), map()) :: map()
   defp stt_payload(encoded_audio, callback_url, request_metadata, opts) do
     base_params = %{
-      model: opts[:model] || "gemini-2.5-pro",
+      model: opts[:model] || model_config(:stt_model),
       input_language: opts[:language] || "auto"
     }
 
@@ -533,7 +536,7 @@ defmodule Glific.ThirdParty.Kaapi do
             provider: opts[:provider] || "google",
             type: "tts",
             params: %{
-              model: opts[:model] || "gemini-2.5-pro-preview-tts",
+              model: opts[:model] || model_config(:tts_model),
               voice: opts[:voice] || "Kore",
               language: opts[:language] || "hindi",
               response_format: "mp3"

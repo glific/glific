@@ -26,13 +26,15 @@ glific/
 ├── config/              # Environment configs (dev, test, prod, runtime)
 ├── lib/
 │   ├── glific/          # Business logic (contexts, schemas, jobs, providers)
+│   │   ├── ai_evaluations/ # AI eval schemas (AIEvaluation, GoldenQA, OrganizationEvalRequest)
 │   │   ├── enums/       # Enum definitions (EctoEnum + constants)
 │   │   ├── flows/       # Flow engine
+│   │   ├── groups/      # Group management (regular groups + WA groups, 14 schemas)
 │   │   ├── messages/    # Message handling
 │   │   ├── contacts/    # Contact management
 │   │   ├── providers/   # BSP integrations (Gupshup, Maytapi)
 │   │   ├── scripts/     # Admin IEx console helper scripts (not web-facing)
-│   │   ├── third_party/ # External services (BigQuery, Dialogflow, GCS, Gemini, Discord, etc.)
+│   │   ├── third_party/ # External services (BigQuery, Dialogflow, GCS, Gemini, Discord, Kaapi, etc.)
 │   │   └── ...          # ~49 context modules at root level
 │   └── glific_web/      # Web layer
 │       ├── controllers/ # REST API controllers
@@ -132,7 +134,7 @@ glific/
   - Sets `organization_id` to 1 via `Repo.put_organization_id(1)`
   - Creates a test user and fills organization cache
 - **GraphQL Testing**: `auth_query_gql_by/3` macro in ConnCase for authenticated GraphQL queries
-- **Async Tests**: `use Glific.DataCase, async: true` for parallel execution
+- **Async Tests**: `use Glific.DataCase, async: true` for parallel execution; tests that seed globally-shared Cachex credential entries (e.g., via `fill_cache` keyed under `@global_organization_id = 0`) must use `async: false` — concurrent tests can evict or overwrite those shared entries, causing intermittent failures (see `Glific.Assistants.AssistantTest` and `Glific.AIEvaluationsTest` as canonical examples)
 - **Module Attributes**: `@valid_attrs` and `@invalid_attrs` for test data
 - **HTTP Mocking**: Tesla.Mock for external API calls
 - **Coverage**: ExCoveralls with `mix test_full` task
@@ -203,6 +205,7 @@ glific/
 ## Claude Code Project Configuration
 
 - **Settings**: `.claude/settings.json` — project-level permission rules; `permissions.deny` blocks reads of secret config files (`config/.env.dev`, `config/dev.secret.exs`)
+- **Worktree symlinks**: `worktree.symlinkDirectories` symlinks `_build`, `deps`, `priv/cert`, `config/.env.dev`, and `config/dev.secret.exs` from the main checkout into isolated worktrees — avoids full recompilation and credential re-setup for parallel agent tasks
 - **Skills**: `.claude/skills/` — project-specific Claude Code skills:
   - `fix-flaky-tests` — evidence-first workflow for diagnosing and fixing flaky tests
   - `improve-code-coverage` — guides coverage improvements with a local check script (`check_codecov_local.py`)
