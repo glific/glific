@@ -25,8 +25,9 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
       shortcode: "maytapi",
       keys: %{},
       secrets: %{
-        "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
-        "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        "product_id" => "00000000-0000-0000-0000-000000000000",
+        "token" => "11111111-1111-1111-1111-111111111111"
+
       },
       is_active: true
     })
