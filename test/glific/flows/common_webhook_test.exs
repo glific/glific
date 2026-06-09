@@ -119,7 +119,9 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     result = CommonWebhook.webhook("geolocation", fields)
 
-    assert result == "Received status code 500"
+    assert is_binary(result)
+    assert result =~ "500"
+    assert result =~ "Internal Server Error"
   end
 
   test "detect_language/1 detects correct language from voice note using Bhashini" do

@@ -1,7 +1,7 @@
 ---
 name: make-branch-ready-for-review
 description: >-
-  Prepare the current branch for PR review in Glific: run mix check and tests,
+  Prepare the current branch for PR review in Glific: run MIX_ENV=test mix check and tests,
   meet Codecov thresholds, self-review, commit, push, then poll CI/Codecov/CodeRabbit
   until green. Use when the user asks to make a branch review-ready, get changes
   ready for review, or invokes make-branch-ready-for-review.
@@ -33,7 +33,7 @@ End-to-end workflow to take **the current branch** from local changes through gr
 Copy and update as you go:
 
 ```
-- [ ] Phase 1 — Local quality (mix check, tests, coverage)
+- [ ] Phase 1 — Local quality (MIX_ENV=test mix check, tests, coverage)
 - [ ] Phase 2 — Review agent + high-risk gate
 - [ ] Phase 3 — Commit and push
 - [ ] Phase 4 — CI loop (tests, codecov, coderabbit)
@@ -44,19 +44,20 @@ Copy and update as you go:
 
 ## Phase 1 — Local quality
 
-### 1.1 `mix check`
+### 1.1 `MIX_ENV=test mix check`
 
-Run:
+Run (matches the CI `code-quality` job — `MIX_ENV=test` compiles `test/support/` so Doctor
+validates support-module `@spec`s):
 
 ```bash
-mix check
+MIX_ENV=test mix check
 ```
 
-Fix every reported issue (format, Credo, Dialyzer, compile warnings-as-errors).
+Fix every reported issue (format, Credo, Dialyzer, Doctor, compile warnings-as-errors).
 
 | Situation | Action |
 |-----------|--------|
-| Safe, mechanical fix (format, obvious Credo, missing `@spec`, clear Dialyzer fix in changed code) | Fix and re-run `mix check` until green |
+| Safe, mechanical fix (format, obvious Credo, missing `@spec`, clear Dialyzer fix in changed code) | Fix and re-run `MIX_ENV=test mix check` until green |
 | Fix requires behavior change, suppressing a rule, large refactor, or touching unrelated files | **Stop and ask the user** how to proceed |
 | Dialyzer/PLT missing locally | Run `mix dialyzer --plt` once, then retry; if still blocked, ask the user |
 
@@ -221,7 +222,7 @@ Verify checks stay green once (single `gh pr checks` after push). Then report:
 
 ## When to ask the user (summary)
 
-- Unsafe or ambiguous `mix check` / Dialyzer fixes
+- Unsafe or ambiguous `MIX_ENV=test mix check` / Dialyzer fixes
 - High-risk diff categories (Phase 2.2)
 - Major CodeRabbit or review-agent suggestions
 - CI failures outside PR scope or requiring workflow changes
