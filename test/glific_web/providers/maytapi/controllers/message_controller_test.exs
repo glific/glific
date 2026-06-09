@@ -1472,8 +1472,27 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         GroupMessage.receive_message(params, :text)
       end
     end
-  end
 
-  describe "GroupMessage.receive_message/2 — log + defensive-clause coverage" do
+    test "resolve_receiver/1 short-circuits to nil when receiver is missing or empty",
+         %{organization_id: org_id} do
+      # Webhook arrives without a receiver field (or with receiver: ""). The
+      # nil/empty clause of resolve_receiver/1 returns nil without issuing a
+      # phone-not-found warning or running a wasted DB lookup. Message is
+      # still stored, with wa_managed_phone_id = nil and wa_group_id = nil.
+      for receiver_value <- [nil, ""] do
+        bsp_id = Ecto.UUID.generate()
+
+        params =
+          base_params(org_id) |> Map.put(:receiver, receiver_value) |> Map.put(:bsp_id, bsp_id)
+
+        assert :ok = GroupMessage.receive_message(params, :text)
+
+        {:ok, message} =
+          Repo.fetch_by(WAMessage, %{bsp_id: bsp_id, organization_id: org_id})
+
+        assert message.wa_managed_phone_id == nil
+        assert message.wa_group_id == nil
+      end
+    end
   end
 end

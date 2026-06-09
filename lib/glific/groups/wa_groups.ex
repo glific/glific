@@ -465,7 +465,7 @@ defmodule Glific.Groups.WAGroups do
   @spec maybe_create_group(map()) ::
           {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
-    case fetch_oldest_wa_group(params.bsp_id, params.organization_id) do
+    case fetch_oldest_wa_group(params.bsp_id) do
       nil ->
         with {:ok, wa_group} <- create_wa_group(params) do
           ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
@@ -488,14 +488,15 @@ defmodule Glific.Groups.WAGroups do
     end
   end
 
-  # Lookup keyed on `(bsp_id, organization_id)` only. If duplicate rows exist
-  # from before Phase 3, the oldest one wins — matches the Phase 1 backfill's
-  # "oldest = primary" convention so the active group stays stable.
-  @spec fetch_oldest_wa_group(String.t(), non_neg_integer()) :: WAGroup.t() | nil
-  defp fetch_oldest_wa_group(bsp_id, organization_id) do
+  # Lookup keyed on bsp_id. If
+  # duplicate rows exist from before Phase 3, the oldest one wins — matches
+  # the Phase 1 backfill's "oldest = primary" convention so the active
+  # group stays stable.
+  @spec fetch_oldest_wa_group(String.t()) :: WAGroup.t() | nil
+  defp fetch_oldest_wa_group(bsp_id) do
     WAGroup
-    |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^organization_id)
-    |> order_by([wg], asc: wg.inserted_at)
+    |> where([wg], wg.bsp_id == ^bsp_id)
+    |> order_by([wg], asc: wg.inserted_at, asc: wg.id)
     |> limit(1)
     |> Repo.one()
   end

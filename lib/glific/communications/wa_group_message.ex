@@ -86,14 +86,14 @@ defmodule Glific.Communications.GroupMessage do
     Logger.info("Received message: type: '#{type}', id: '#{message_params[:bsp_id]}'")
 
     cond do
-      duplicate_inbound?(message_params[:bsp_id], organization_id) ->
+      duplicate_inbound?(message_params[:bsp_id]) ->
         Logger.info(
           "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (likely a webhook retry)"
         )
 
         :ok
 
-      sender_is_our_managed_phone?(message_params, organization_id) ->
+      sender_is_our_managed_phone?(message_params) ->
         Logger.info(
           "Skipping inbound: sender '#{get_in(message_params, [:sender, :phone])}' is our managed phone in org #{organization_id}; already stored via outbound"
         )
@@ -116,28 +116,28 @@ defmodule Glific.Communications.GroupMessage do
   # sender phone matches one of our managed phones, the message was sent
   # via Glific (or directly from one of our phones) — the outbound flow
   # already stored it. Skip.
-  @spec sender_is_our_managed_phone?(map(), non_neg_integer()) :: boolean()
-  defp sender_is_our_managed_phone?(%{sender: %{phone: phone}}, organization_id)
+  @spec sender_is_our_managed_phone?(map()) :: boolean()
+  defp sender_is_our_managed_phone?(%{sender: %{phone: phone}})
        when is_binary(phone) and phone != "" do
-    case WAManagedPhones.fetch_by_phone(organization_id, phone) do
+    case WAManagedPhones.fetch_by_phone(phone) do
       {:ok, _} -> true
       _ -> false
     end
   end
 
-  defp sender_is_our_managed_phone?(_, _), do: false
+  defp sender_is_our_managed_phone?(_), do: false
 
   # In multi-phone orgs the same WhatsApp message can arrive once per
   # managed phone in the group. The bsp_id (Maytapi's underlying message
   # id) is shared across those webhooks, so a fetch_by it is enough to
   # catch the duplicate. Missing or nil bsp_id falls through — should not
   # happen in practice but we don't want to dedup on a nil key.
-  @spec duplicate_inbound?(String.t() | nil, non_neg_integer()) :: boolean()
-  defp duplicate_inbound?(nil, _organization_id), do: false
-  defp duplicate_inbound?("", _organization_id), do: false
+  @spec duplicate_inbound?(String.t() | nil) :: boolean()
+  defp duplicate_inbound?(nil), do: false
+  defp duplicate_inbound?(""), do: false
 
-  defp duplicate_inbound?(bsp_id, organization_id) do
-    case Repo.fetch_by(WAMessage, %{bsp_id: bsp_id, organization_id: organization_id}) do
+  defp duplicate_inbound?(bsp_id) do
+    case Repo.fetch_by(WAMessage, %{bsp_id: bsp_id}) do
       {:ok, _} -> true
       {:error, _} -> false
     end
@@ -283,8 +283,10 @@ defmodule Glific.Communications.GroupMessage do
   # queued), log a warning and return nil. The message still gets stored,
   # just without phone attribution.
   @spec resolve_receiver(map()) :: non_neg_integer() | nil
+  defp resolve_receiver(%{receiver: receiver}) when receiver in [nil, ""], do: nil
+
   defp resolve_receiver(%{organization_id: organization_id, receiver: receiver}) do
-    case WAManagedPhones.fetch_by_phone(organization_id, receiver) do
+    case WAManagedPhones.fetch_by_phone(receiver) do
       {:ok, %{id: id}} ->
         id
 
