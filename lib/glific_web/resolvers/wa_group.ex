@@ -95,7 +95,11 @@ defmodule GlificWeb.Resolvers.WaGroup do
           %{wa_group_id: String.t() | integer, wa_managed_phone_id: String.t() | integer},
           %{context: map()}
         ) :: {:ok, map()} | {:error, any}
-  def set_primary_phone(_, %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id}, _) do
+  def set_primary_phone(
+        _,
+        %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id},
+        _
+      ) do
     case WAGroups.set_primary_phone(to_int(wa_group_id), to_int(wa_managed_phone_id)) do
       {:ok, %{wa_group_phone: wgp, warning: warning}} ->
         {:ok, %{wa_group_phone: wgp, warning: warning}}

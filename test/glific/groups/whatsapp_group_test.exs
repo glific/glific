@@ -577,7 +577,8 @@ defmodule Glific.Groups.WAGroupsTest do
                WAGroups.set_primary_phone(ctx.wa_group.id, ghost_phone.id)
     end
 
-    test "set_primary_phone/2 returns :inactive_membership when target is is_active: false", ctx do
+    test "set_primary_phone/2 returns :inactive_membership when target is is_active: false",
+         ctx do
       ctx.wa_group.id
       |> membership(ctx.second_phone.id)
       |> WAGroupPhone.changeset(%{is_active: false})
