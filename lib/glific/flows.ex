@@ -1164,9 +1164,15 @@ defmodule Glific.Flows do
        ) do
     sheet_url = action["url"]
     sheet_name = action["name"]
-    sheet = get_or_create_sheet(sheet_url, sheet_name)
-    updated_action = Map.put(action, "sheet_id", sheet.id)
-    {:ok, updated_action}
+    sheet_type = action["action_type"] || "READ"
+
+    case get_or_create_sheet(sheet_url, sheet_name, sheet_type) do
+      nil ->
+        {:ok, Map.put(action, "sheet_id", nil)}
+
+      sheet ->
+        {:ok, Map.put(action, "sheet_id", sheet.id)}
+    end
   end
 
   defp process_action(
@@ -1231,12 +1237,13 @@ defmodule Glific.Flows do
     Map.has_key?(action, "templating") and template_uuid not in template_uuid_list
   end
 
-  defp get_or_create_sheet(sheet_url, sheet_name) do
+  defp get_or_create_sheet(sheet_url, sheet_name, sheet_type) do
     current_user = Repo.get_current_user()
 
     attrs = %{
       url: sheet_url,
       label: sheet_name,
+      type: sheet_type,
       organization_id: current_user.organization_id
     }
 
@@ -1245,8 +1252,18 @@ defmodule Glific.Flows do
         sheet
 
       {:error, _} ->
-        {:ok, sheet} = Sheets.create_sheet(attrs)
-        sheet
+        case Sheets.create_sheet(attrs) do
+          {:ok, sheet} ->
+            sheet
+
+          {:error, reason} ->
+            Logger.warning(
+              "Unable to create Google Sheet while importing flow action for URL " <>
+                "#{inspect(sheet_url)}: #{inspect(reason)}"
+            )
+
+            nil
+        end
     end
   end
 
