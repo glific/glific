@@ -449,5 +449,147 @@ defmodule Glific.Groups.WAGroupsTest do
       assert deactivated.is_active == false
       assert deactivated.is_primary == true
     end
+
+    test "cross-phone: deactivates other managed phone's row when it's not in participants", ctx do
+      # Bug the user saw: phone M was removed from the group but M's own
+      # sync is stale, so M's row stayed is_active: true. The syncing
+      # phone's `participants` list is the source of truth — if M's
+      # number isn't there, flip M's row inactive without waiting for M.
+      {:ok, removed_contact} =
+        Glific.Contacts.maybe_create_contact(%{
+          phone: "919999900042",
+          organization_id: ctx.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, removed_phone} =
+        Glific.WAManagedPhones.create_wa_managed_phone(%{
+          label: "removed",
+          phone: "919999900042",
+          phone_id: 4_242_424,
+          status: "active",
+          organization_id: ctx.organization_id,
+          contact_id: removed_contact.id
+        })
+
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: ctx.wa_group.id,
+        wa_managed_phone_id: removed_phone.id,
+        organization_id: ctx.organization_id,
+        is_primary: false,
+        is_active: true
+      })
+
+      # ctx.wa_managed_phone syncs and sees ctx.wa_group with participants
+      # that do NOT include removed_phone.phone.
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["918888888888@c.us"])
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+
+      assert membership(ctx.wa_group.id, removed_phone.id).is_active == false
+    end
+
+    test "cross-phone: reactivates other managed phone's row when it IS in participants", ctx do
+      # Inverse: M was previously removed (is_active: false). M is added
+      # back to the group on WhatsApp. P's sync sees G with M in
+      # participants → reactivate M's row without waiting for M's own sync.
+      {:ok, rejoin_contact} =
+        Glific.Contacts.maybe_create_contact(%{
+          phone: "919999900043",
+          organization_id: ctx.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, rejoin_phone} =
+        Glific.WAManagedPhones.create_wa_managed_phone(%{
+          label: "rejoin",
+          phone: "919999900043",
+          phone_id: 4_343_434,
+          status: "active",
+          organization_id: ctx.organization_id,
+          contact_id: rejoin_contact.id
+        })
+
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: ctx.wa_group.id,
+        wa_managed_phone_id: rejoin_phone.id,
+        organization_id: ctx.organization_id,
+        is_primary: false,
+        is_active: false
+      })
+
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{rejoin_phone.phone}@c.us"])
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+
+      assert membership(ctx.wa_group.id, rejoin_phone.id).is_active == true
+    end
+
+    test "cross-phone: non-managed contact participants don't get wa_groups_phones rows", ctx do
+      # Random contact phones in `participants` who aren't any of our
+      # managed phones must be ignored — reconciliation iterates only the
+      # org's managed phones, never the broader participants list.
+      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, ["917777777777@c.us"])
+
+      :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+
+      # Only one row in wa_groups_phones for ctx.wa_group — the syncing
+      # phone's. No row was created for "917777777777".
+      count =
+        Glific.Repo.aggregate(
+          from(wgp in WAGroupPhone, where: wgp.wa_group_id == ^ctx.wa_group.id),
+          :count
+        )
+
+      assert count == 1
+    end
+  end
+
+  describe "maybe_create_group/1 (cross-phone)" do
+    test "returns the existing group when a different phone queries it (no duplicate WAGroup row)",
+         attrs do
+      first_phone = Fixtures.get_wa_managed_phone(attrs.organization_id)
+
+      {:ok, original} =
+        WAGroups.maybe_create_group(%{
+          label: "Shared Group",
+          bsp_id: "120363255555555555@g.us",
+          organization_id: attrs.organization_id,
+          wa_managed_phone_id: first_phone.id
+        })
+
+      # A second managed phone joins the org and now sees the same group.
+      {:ok, second_contact} =
+        Glific.Contacts.maybe_create_contact(%{
+          phone: "919999900050",
+          organization_id: attrs.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, second_phone} =
+        Glific.WAManagedPhones.create_wa_managed_phone(%{
+          label: "second",
+          phone: "919999900050",
+          phone_id: 5_555_555,
+          status: "active",
+          organization_id: attrs.organization_id,
+          contact_id: second_contact.id
+        })
+
+      assert {:ok, found} =
+               WAGroups.maybe_create_group(%{
+                 label: original.label,
+                 bsp_id: original.bsp_id,
+                 organization_id: attrs.organization_id,
+                 wa_managed_phone_id: second_phone.id
+               })
+
+      assert found.id == original.id
+
+      rows =
+        WAGroup
+        |> where([wg], wg.bsp_id == ^original.bsp_id)
+        |> Repo.all()
+
+      assert length(rows) == 1, "no duplicate WAGroup row should be created"
+    end
   end
 end
