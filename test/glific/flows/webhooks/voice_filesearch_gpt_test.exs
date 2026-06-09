@@ -2,6 +2,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
   use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
+
   alias Glific.{
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
@@ -28,7 +30,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         is_active: true
       })
 
-    Partners.get_organization!(1) |> Partners.fill_cache()
     :ok
   end
 
@@ -68,27 +69,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     assistant
   end
 
-  defp build_await_context(organization_id) do
-    contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-    webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
-    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
-    [node | _] = flow.nodes
-
-    {:ok, _context} =
-      FlowContext.create_flow_context(%{
-        contact_id: contact.id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
-        organization_id: organization_id,
-        wakeup_at: DateTime.add(DateTime.utc_now(), 60),
-        is_await_result: true,
-        node_uuid: node.uuid
-      })
-
-    {contact, webhook_log, flow}
-  end
-
+  # Voice-specific callback format: includes voice_post_process metadata
   defp build_voice_callback_params(
          organization_id,
          flow_id,
@@ -220,12 +201,16 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       contact = Fixtures.contact_fixture(%{organization_id: org_id})
 
       flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
 
       flow_attrs = %{
         flow_id: flow.id,
         flow_uuid: flow.uuid,
         contact_id: contact.id,
-        organization_id: org_id
+        organization_id: org_id,
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
       }
 
       {:ok, context} = FlowContext.create_flow_context(flow_attrs)
@@ -272,46 +257,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.error != nil
-    end
-  end
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_resume_tasks()
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_resume_tasks(attempts \\ 50)
-  defp await_flow_resume_tasks(0), do: flunk("Timed out waiting for flow resume task")
-
-  defp await_flow_resume_tasks(attempts) do
-    case Supervisor.count_children(Glific.TaskSupervisor) do
-      %{active: 0} ->
-        :ok
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_resume_tasks(attempts - 1)
-    end
-  end
-
-  defp await_flow_message(contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)} for contact #{contact_id}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

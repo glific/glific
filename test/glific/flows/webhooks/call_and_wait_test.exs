@@ -2,11 +2,12 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
   use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
+
   alias Glific.{
     Fixtures,
     Flows.Action,
     Flows.Flow,
-    Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
     Partners,
@@ -26,76 +27,7 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
         is_active: true
       })
 
-    Partners.get_organization!(1) |> Partners.fill_cache()
     :ok
-  end
-
-  # Build a flow context parked in await state at the first node of the
-  # `call_and_wait` flow. This mirrors the setup in flow_resume_controller_test.exs.
-  defp build_await_context(organization_id) do
-    contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-    webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
-    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
-    [node | _] = flow.nodes
-
-    {:ok, _context} =
-      FlowContext.create_flow_context(%{
-        contact_id: contact.id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
-        organization_id: organization_id,
-        wakeup_at: DateTime.add(DateTime.utc_now(), 60),
-        is_await_result: true,
-        node_uuid: node.uuid
-      })
-
-    {contact, webhook_log, flow}
-  end
-
-  # Build callback params in the OLD Kaapi Responses API format:
-  # data.message, data.contact_id, data.flow_id, etc. (not data.response.output)
-  defp build_old_format_callback_params(
-         organization_id,
-         flow_id,
-         contact_id,
-         webhook_log_id,
-         success,
-         message
-       ) do
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        timestamp
-      )
-
-    %{
-      "data" => %{
-        "callback" =>
-          "https://api.glific.com/webhook/flow_resume?organization_id=#{organization_id}",
-        "contact_id" => contact_id,
-        "flow_id" => flow_id,
-        "message" => message,
-        "organization_id" => organization_id,
-        "response_id" => "resp_#{:rand.uniform(100_000)}",
-        "signature" => signature,
-        "status" => if(success, do: "success", else: "failure"),
-        "timestamp" => timestamp,
-        "webhook_log_id" => webhook_log_id,
-        "result_name" => "filesearch"
-      },
-      "success" => success
-    }
   end
 
   describe "call_and_wait" do
@@ -154,27 +86,8 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
 
       contact = Fixtures.contact_fixture(%{organization_id: org_id})
       flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
-      [node | _] = flow.nodes
 
-      {:ok, context} =
-        FlowContext.create_flow_context(%{
-          contact_id: contact.id,
-          flow_id: flow.id,
-          flow_uuid: flow.uuid,
-          uuid_map: %{},
-          organization_id: org_id,
-          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
-          is_await_result: true,
-          node_uuid: node.uuid
-        })
-
-      context = Repo.preload(context, [:contact, :flow])
-
-      flow_filter = %{
-        flow_id: flow.id,
-        contact_id: contact.id,
-        organization_id: org_id
-      }
+      {context, flow_filter} = build_flow_context(org_id, contact.id)
 
       action = %Action{
         method: "FUNCTION",
@@ -186,8 +99,7 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
             flow_id: flow.id,
             contact_id: contact.id,
             organization_id: org_id,
-            result_name: "response",
-            webhook_log_id: 1
+            result_name: "response"
           })
       }
 
@@ -198,54 +110,15 @@ defmodule Glific.Flows.Webhooks.CallAndWaitTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # The Oban worker calls handle(nil, ...) on timeout, which routes to the
-      # failure branch via FlowContext.wakeup_one with a "Failure" temp message.
+      # The Oban worker calls handle/3 with action.result_name == nil (the %Action{}
+      # struct has no result_name set), so handle/3 routes to the FAILURE branch
+      # via FlowContext.wakeup_one with a "Failure" temp message.
       message = await_flow_message(contact.id, "failure")
       assert message.body == "failure"
 
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
-    end
-  end
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_resume_tasks()
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_resume_tasks(attempts \\ 50)
-  defp await_flow_resume_tasks(0), do: flunk("Timed out waiting for flow resume task")
-
-  defp await_flow_resume_tasks(attempts) do
-    case Supervisor.count_children(Glific.TaskSupervisor) do
-      %{active: 0} ->
-        :ok
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_resume_tasks(attempts - 1)
-    end
-  end
-
-  defp await_flow_message(contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)} for contact #{contact_id}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

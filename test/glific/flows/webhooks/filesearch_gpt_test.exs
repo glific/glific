@@ -2,6 +2,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
   use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
+
   alias Glific.{
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
@@ -27,8 +29,6 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
         secrets: %{"api_key" => "sk_test_key"},
         is_active: true
       })
-
-    Partners.get_organization!(1) |> Partners.fill_cache()
 
     {assistant, _config} = create_assistant_with_config(1)
 
@@ -86,49 +86,6 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     }
   end
 
-  # Build the callback params for /webhook/flow_resume
-  defp build_callback_params(
-         organization_id,
-         flow_id,
-         contact_id,
-         webhook_log_id,
-         success,
-         message
-       ) do
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        timestamp
-      )
-
-    %{
-      "data" => %{
-        "callback" =>
-          "https://api.glific.com/webhook/flow_resume?organization_id=#{organization_id}",
-        "contact_id" => contact_id,
-        "flow_id" => flow_id,
-        "message" => message,
-        "organization_id" => organization_id,
-        "signature" => signature,
-        "status" => if(success, do: "success", else: "failure"),
-        "timestamp" => timestamp,
-        "webhook_log_id" => webhook_log_id,
-        "result_name" => "filesearch"
-      },
-      "success" => success
-    }
-  end
-
   describe "filesearch-gpt" do
     test "happy path - flow moves to success route after callback", %{
       conn: %{assigns: %{organization_id: org_id}} = conn,
@@ -170,7 +127,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       expected_message = "Glific is an open-source messaging platform"
 
       params =
-        build_callback_params(
+        build_old_format_callback_params(
           org_id,
           flow.id,
           contact.id,
@@ -224,7 +181,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert webhook_log != nil
 
       params =
-        build_callback_params(
+        build_old_format_callback_params(
           org_id,
           flow.id,
           contact.id,
@@ -289,11 +246,9 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # NOTE: No "failure" message assertion here. The Webhook.execute Oban path
-      # for filesearch-gpt falls through to CommonWebhook's catch-all clause
-      # (%{error: "Missing webhook function implementation"}) because there is no
-      # 3-argument webhook("filesearch-gpt", ...) handler in CommonWebhook — the
-      # real production path goes through execute_unified_filesearch, not Webhook.execute.
+      # NOTE: Webhook.execute routes filesearch-gpt through the CommonWebhook catch-all handler,
+      # not execute_unified_filesearch. This is a dead code path in production — the real path
+      # goes through execute_unified_filesearch directly.
       # The catch-all result is a non-nil map with a non-nil result_name ("filesearch"),
       # so handle/3 routes to the SUCCESS branch. The failure branch IS exercised by
       # the failure callback test above.
@@ -301,46 +256,6 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.response_json != nil
-    end
-  end
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_resume_tasks()
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_resume_tasks(attempts \\ 50)
-  defp await_flow_resume_tasks(0), do: flunk("Timed out waiting for flow resume task")
-
-  defp await_flow_resume_tasks(attempts) do
-    case Supervisor.count_children(Glific.TaskSupervisor) do
-      %{active: 0} ->
-        :ok
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_resume_tasks(attempts - 1)
-    end
-  end
-
-  defp await_flow_message(contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)} for contact #{contact_id}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

@@ -12,6 +12,7 @@ defmodule Glific.Flows.Webhooks.NmtTtsWithBhasiniTest do
   use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
   import Mock
 
   alias Glific.{
@@ -50,7 +51,6 @@ defmodule Glific.Flows.Webhooks.NmtTtsWithBhasiniTest do
         organization_id: 1
       })
 
-    Partners.get_organization!(1) |> Partners.fill_cache()
     :ok
   end
 
@@ -79,38 +79,6 @@ defmodule Glific.Flows.Webhooks.NmtTtsWithBhasiniTest do
       })
 
     {Repo.preload(context, [:contact, :flow]), contact, flow}
-  end
-
-  # ---------------------------------------------------------------------------
-  # Helpers — poll for the message the flow sends after the Oban job completes.
-  # These are SYNCHRONOUS FUNCTION webhooks: wakeup_one runs inside perform/1
-  # (not via a TaskSupervisor task), so Oban.drain_queue is sufficient to
-  # synchronise; no TaskSupervisor wait is needed.
-  # ---------------------------------------------------------------------------
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_message(contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)} for contact #{contact_id}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
-    end
   end
 
   # ---------------------------------------------------------------------------
@@ -222,7 +190,7 @@ defmodule Glific.Flows.Webhooks.NmtTtsWithBhasiniTest do
 
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
-      assert log.error != nil or log.status_code >= 400
+      assert log.error != nil
 
       # End-to-end flow assertion: failure result causes wakeup_one to fire with
       # the "Failure" temp message, routing the call_and_wait flow to the failure

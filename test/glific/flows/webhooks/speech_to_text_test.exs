@@ -12,6 +12,8 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
   use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
+
   alias Glific.{
     Fixtures,
     Flows.Action,
@@ -36,7 +38,6 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
         is_active: true
       })
 
-    Partners.get_organization!(1) |> Partners.fill_cache()
     :ok
   end
 
@@ -44,34 +45,11 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
   # Helpers
   # ---------------------------------------------------------------------------
 
-  # Creates a FlowContext already in await state (is_await_result: true).
-  # Mirrors the pattern in flow_resume_controller_test.exs:
-  # the flow engine puts the context in this state when it hits the call_and_wait
-  # node; we create it directly here to isolate the callback round-trip.
-  defp build_await_context(organization_id) do
-    contact = Fixtures.contact_fixture(%{organization_id: organization_id})
-    webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
-    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
-    [node | _] = flow.nodes
-
-    {:ok, _context} =
-      FlowContext.create_flow_context(%{
-        contact_id: contact.id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
-        organization_id: organization_id,
-        wakeup_at: DateTime.add(DateTime.utc_now(), 60),
-        is_await_result: true,
-        node_uuid: node.uuid
-      })
-
-    {contact, webhook_log, flow}
-  end
-
   # Builds the callback params that Kaapi POSTs back to /webhook/flow_resume.
   # Uses the NEW unified-API callback format (metadata + data.response.output)
   # which is what the Kaapi STT service sends.
+  # The success and failure branches have different shapes that don't fit the
+  # generic build_unified_callback_params helper cleanly.
   defp build_callback_params(
          organization_id,
          flow_id,
@@ -233,58 +211,15 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
       # NOTE: No "failure" message assertion here. The Webhook.execute Oban path
-      # for speech_to_text converts {:error, :timeout} into %{success: false, ...}
-      # (via Kaapi.speech_to_text / download_media_content error handling). Since
-      # result_name is non-nil, handle/3 routes to the SUCCESS branch — not failure.
+      # for speech_to_text routes to Failure because action.result_name is nil in
+      # the %Action{} struct passed to the Oban worker (the struct has no result_name
+      # set at the job-dispatch level). Since result_name is nil, handle/3 routes
+      # to the FAILURE branch.
       # The failure branch IS exercised by the failure callback test above.
       # What we assert here is that the webhook log records the error.
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
-    end
-  end
-
-  # ---------------------------------------------------------------------------
-  # await_flow_message helpers (copied verbatim from spec)
-  # ---------------------------------------------------------------------------
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_resume_tasks()
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_resume_tasks(attempts \\ 50)
-  defp await_flow_resume_tasks(0), do: flunk("Timed out waiting for flow resume task")
-
-  defp await_flow_resume_tasks(attempts) do
-    case Supervisor.count_children(Glific.TaskSupervisor) do
-      %{active: 0} ->
-        :ok
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_resume_tasks(attempts - 1)
-    end
-  end
-
-  defp await_flow_message(contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)} for contact #{contact_id}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end

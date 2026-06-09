@@ -2,6 +2,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
   use Glific.DataCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
 
+  import Glific.WebhookTestHelpers
   import Mock
 
   alias Glific.{
@@ -267,42 +268,6 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         message = await_flow_message(context.contact_id, "@results.filesearch.message")
         assert message.body == "@results.filesearch.message"
       end
-    end
-  end
-
-  # ---------------------------------------------------------------------------
-  # Flow message polling helpers
-  #
-  # For synchronous webhooks, the flow resumes inside Oban.drain_queue, so
-  # the message is already in the DB when drain returns. We poll briefly to
-  # handle any in-process scheduling latency, but do NOT wait for
-  # TaskSupervisor children — create_certificate spawns a background cleanup
-  # task (delete_template_copy) that sleeps 10 s before running, which would
-  # cause the TaskSupervisor-based wait to time out unnecessarily.
-  # ---------------------------------------------------------------------------
-
-  @await_attempts 50
-  @await_interval_ms 100
-
-  defp await_flow_message(contact_id, expected_body) do
-    await_flow_message(contact_id, expected_body, @await_attempts)
-  end
-
-  defp await_flow_message(_contact_id, expected_body, 0) do
-    flunk("Timed out waiting for message #{inspect(expected_body)}")
-  end
-
-  defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
-        msg
-
-      _ ->
-        Process.sleep(@await_interval_ms)
-        await_flow_message(contact_id, expected_body, attempts - 1)
     end
   end
 end
