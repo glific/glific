@@ -2,6 +2,7 @@
 name: fix-flaky-tests
 description: Diagnose and fix flaky tests in Glific by reproducing intermittency, isolating ordering and global-mock conflicts, applying the smallest safe fix, and verifying stability with repeated targeted and suite runs. Use when the user reports flaky or nondeterministic test failures, or shares CI logs for intermittent failures.
 disable-model-invocation: true
+effort: xhigh
 ---
 
 # Fix Flaky Tests
