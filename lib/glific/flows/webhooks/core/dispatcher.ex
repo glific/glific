@@ -27,8 +27,8 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   """
   @spec dispatch_named(String.t(), map(), keyword() | list()) :: any()
   def dispatch_named(name, fields, headers \\ []) when is_binary(name) and is_map(fields) do
-    module = Registry.lookup!(name)
-    ctx = build_ctx(fields, headers)
+  module = Registry.lookup!(name)
+    ctx = build_context(fields, headers)
 
     Instrumentation.around(module, ctx, fn ->
       module.call(fields, ctx)
@@ -40,8 +40,8 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   # AppSignal tags). Per-webhook modules can pull anything else they need
   # from the fields map; richer ctx (flow_context, action) lands when async
   # webhooks migrate.
-  @spec build_ctx(map(), keyword() | list()) :: map()
-  defp build_ctx(fields, headers) do
+  @spec build_context(map(), keyword() | list()) :: map()
+  defp build_context(fields, headers) do
     org_id =
       case fields["organization_id"] do
         nil ->

@@ -29,14 +29,14 @@ defmodule Glific.Flows.Webhooks.Registry do
   been migrated yet (the caller falls back to the legacy path).
   """
   @spec lookup(String.t()) :: module() | nil
-  def lookup(name) when is_binary(name), do: Map.get(@webhooks, name)
+  def lookup(name), do: Map.get(@webhooks, name)
 
   @doc """
   Like `lookup/1` but raises if the webhook isn't registered. Use this
   from code paths that have already confirmed the webhook is migrated.
   """
   @spec lookup!(String.t()) :: module()
-  def lookup!(name) when is_binary(name) do
+  def lookup!(name) do
     case lookup(name) do
       nil -> raise ArgumentError, "no webhook registered for #{inspect(name)}"
       module -> module
