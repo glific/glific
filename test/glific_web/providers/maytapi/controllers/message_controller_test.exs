@@ -4,6 +4,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Communications.GroupMessage,
     Groups.WAGroup,
     Groups.WAGroupPhone,
     Groups.WAGroups,
@@ -1355,5 +1356,124 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       assert rows == []
     end
+
+    # Build a minimal valid message_params that would normally make it past
+    # both dedup checks and reach do_receive_message.
+    defp base_params(org_id) do
+      %{
+        organization_id: org_id,
+        receiver: "917834811114",
+        sender: %{phone: "919876543210", name: "External", contact_type: "WA"},
+        is_dm: false,
+        wa_group_bsp_id: "120363213149844251@g.us",
+        group_name: "Default Group name",
+        body: "hello",
+        flow: :inbound,
+        status: :received,
+        bsp_id: Ecto.UUID.generate()
+      }
+    end
+
+    test "duplicate_inbound? skips when bsp_id matches an existing wa_message (L89-94 branch)",
+         %{organization_id: org_id} do
+      existing_bsp = Ecto.UUID.generate()
+      params = base_params(org_id) |> Map.put(:bsp_id, existing_bsp)
+
+      # First call stores the message.
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      # Second call with the same bsp_id hits the duplicate_inbound? true
+      # branch (L89-94) and short-circuits — no second row is stored.
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      rows =
+        WAMessage
+        |> where([m], m.bsp_id == ^existing_bsp and m.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert length(rows) == 1
+    end
+
+    test "sender_is_our_managed_phone? skips when sender phone matches a managed phone (L96-101 branch)",
+         %{organization_id: org_id} do
+      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+
+      params =
+        base_params(org_id)
+        |> Map.put(:sender, %{phone: first_phone.phone, name: "echo", contact_type: "WA"})
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      rows =
+        WAMessage
+        |> where([m], m.bsp_id == ^params.bsp_id and m.organization_id == ^org_id)
+        |> Repo.all()
+
+      assert rows == []
+    end
+
+    test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown (L291-296)",
+         %{organization_id: org_id} do
+      params = base_params(org_id) |> Map.put(:receiver, "910000000000")
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
+
+      assert message.wa_managed_phone_id == nil
+      assert message.wa_group_id == nil
+    end
+
+    test "duplicate_inbound? returns false for nil bsp_id and message still gets stored",
+         %{organization_id: org_id} do
+      # Hits the `defp duplicate_inbound?(nil, _organization_id), do: false`
+      # clause. Without this, a nil-key fetch_by would raise.
+      params = base_params(org_id) |> Map.put(:bsp_id, nil)
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      [message] =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and is_nil(m.bsp_id) and m.body == "hello")
+        |> Repo.all()
+
+      assert message.body == "hello"
+    end
+
+    test "duplicate_inbound? returns false for empty-string bsp_id and message still gets stored",
+         %{organization_id: org_id} do
+      # Hits the `defp duplicate_inbound?("", _organization_id), do: false`
+      # clause.
+      params = base_params(org_id) |> Map.put(:bsp_id, "")
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      [message] =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and m.bsp_id == "" and m.body == "hello")
+        |> Repo.all()
+
+      assert message.body == "hello"
+    end
+
+    test "sender_is_our_managed_phone? catch-all returns false when sender map has no phone key",
+         %{organization_id: org_id} do
+      # Sender shape doesn't match the first clause's `%{sender: %{phone: phone}}`
+      # pattern, so the catch-all `(_, _) -> false` fires. The downstream
+      # contact-creation path will then fail because we're missing a phone —
+      # we wrap that with assert_raise to confirm the dedup path got past the
+      # sender check (i.e. the catch-all was exercised, not a pattern crash).
+      params =
+        base_params(org_id)
+        |> Map.put(:sender, %{name: "no phone field", contact_type: "WA"})
+
+      assert_raise KeyError, fn ->
+        GroupMessage.receive_message(params, :text)
+      end
+    end
+  end
+
+  describe "GroupMessage.receive_message/2 — log + defensive-clause coverage" do
   end
 end
