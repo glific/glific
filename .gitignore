@@ -44,7 +44,7 @@ npm-debug.log
 .env.test
 
 # Ignore the dialyzer cache files
-/priv/plts
+/priv/plts/
 
 # ignore visual studio and macos temp files
 .vscode/
