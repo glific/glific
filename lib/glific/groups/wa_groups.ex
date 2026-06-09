@@ -313,22 +313,22 @@ defmodule Glific.Groups.WAGroups do
           wa_group ->
             case ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
               {:ok, _membership} ->
-                reconcile_other_managed_phones(
-                  wa_group,
-                  group.participants,
-                  other_managed_phones,
-                  org_id
-                )
-
-                [wa_group.id]
+                :ok
 
               {:error, reason} ->
                 Logger.warning(
                   "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
                 )
-
-                []
             end
+
+            reconcile_other_managed_phones(
+              wa_group,
+              group.participants,
+              other_managed_phones,
+              org_id
+            )
+
+            [wa_group.id]
         end
       end)
 
