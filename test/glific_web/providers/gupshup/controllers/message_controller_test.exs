@@ -1,6 +1,8 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
+  import Mock
+
   alias Glific.{
     Contacts,
     Contacts.Location,
@@ -148,9 +150,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.sender.phone ==
                get_in(message_params, ["payload", "sender", "phone"])
 
-      # This will call the lib/glific/communications/message.ex:error function for coverage
+      # Duplicate delivery — handled gracefully by handle_inbound_create_result/2;
+      # the duplicate must be swallowed without dispatching to the poolboy worker
       conn3 = post(conn, "/gupshup", message_params)
-      assert conn3.halted
+      assert response(conn3, 200) == ""
+      refute_receive :received_message_to_process, 50
     end
 
     test "Updating the contacts due to sender contact already existing", %{
@@ -711,6 +715,133 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       assert error == ["Elixir.Glific.Messages.Message", "Resource not found"]
+    end
+  end
+
+  describe "duplicate message handling" do
+    setup do
+      bsp_message_id = Faker.String.base64(36)
+
+      text_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "text")
+        |> put_in(["payload", "id"], bsp_message_id)
+        |> put_in(["payload", "payload"], %{"text" => "Hello duplicate"})
+
+      image_payload = %{
+        "caption" => Faker.Lorem.sentence(),
+        "url" => Faker.Avatar.image_url(200, 200),
+        "urlExpiry" => 1_580_832_695_997
+      }
+
+      image_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "image")
+        |> put_in(["payload", "id"], bsp_message_id)
+        |> put_in(["payload", "payload"], image_payload)
+
+      %{bsp_message_id: bsp_message_id, text_params: text_params, image_params: image_params}
+    end
+
+    test "duplicate inbound text message is handled gracefully",
+         %{conn: conn, text_params: text_params, bsp_message_id: bsp_message_id} do
+      org_id = conn.assigns[:organization_id]
+
+      conn1 = post(conn, "/gupshup", text_params)
+      assert conn1.halted
+      assert_receive :received_message_to_process
+
+      {:ok, original_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                increment_counter: fn _, _, _ -> :ok end do
+        conn2 = post(conn, "/gupshup", text_params)
+        assert conn2.halted
+        # Duplicate delivery must not trigger downstream flow processing
+        refute_receive :received_message_to_process, 50
+
+        assert called(
+                 Elixir.Appsignal.increment_counter(
+                   "duplicate_inbound_message",
+                   1,
+                   %{org_id: org_id}
+                 )
+               )
+      end
+
+      # The same message row must still exist — no second row created
+      {:ok, same_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      assert same_message.id == original_message.id
+    end
+
+    test "duplicate inbound image message is handled gracefully",
+         %{conn: conn, image_params: image_params, bsp_message_id: bsp_message_id} do
+      org_id = conn.assigns[:organization_id]
+
+      conn1 = post(conn, "/gupshup", image_params)
+      assert conn1.halted
+      assert_receive :received_message_to_process
+
+      {:ok, original_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      # Count media rows immediately after the first (successful) delivery
+      media_count_after_first = Repo.aggregate(Glific.Messages.MessageMedia, :count, :id)
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                increment_counter: fn _, _, _ -> :ok end do
+        conn2 = post(conn, "/gupshup", image_params)
+        assert conn2.halted
+        # Duplicate delivery must not trigger downstream flow processing
+        refute_receive :received_message_to_process, 50
+
+        assert called(
+                 Elixir.Appsignal.increment_counter(
+                   "duplicate_inbound_message",
+                   1,
+                   %{org_id: org_id}
+                 )
+               )
+      end
+
+      # The same message row must still exist — no second row created
+      {:ok, same_message} =
+        Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id, organization_id: org_id})
+
+      assert same_message.id == original_message.id
+
+      # No orphaned message_media row from the duplicate delivery (transaction rolled back)
+      assert Repo.aggregate(Glific.Messages.MessageMedia, :count, :id) == media_count_after_first
+    end
+
+    test "non-duplicate create_message error passes through to error handler",
+         %{conn: conn, text_params: text_params} do
+      error_changeset = %Ecto.Changeset{
+        errors: [body: {"is invalid", [validation: :format]}],
+        valid?: false,
+        data: %Glific.Messages.Message{}
+      }
+
+      # Mock create_message to return a non-duplicate changeset error so the _ branch
+      # of handle_inbound_create_result/2 is exercised. Also mock send_error so the
+      # AppSignal SDK does not attempt a real network call in tests.
+      with_mocks [
+        {Glific.Messages, [:passthrough],
+         [create_message: fn _params -> {:error, error_changeset} end]},
+        {Elixir.Appsignal, [:passthrough], [send_error: fn _, _, _ -> :ok end]}
+      ] do
+        conn2 = post(conn, "/gupshup", text_params)
+        # The controller still returns 200 — error is logged, not propagated
+        assert conn2.halted
+        # Error path must not trigger downstream flow processing either
+        refute_receive :received_message_to_process, 50
+        assert called(Elixir.Appsignal.send_error(:error, :_, :_))
+      end
     end
   end
 end

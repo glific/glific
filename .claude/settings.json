@@ -1,5 +1,22 @@
 {
   "enabledPlugins": {
     "claude-md-management@claude-plugins-official": true
+  },
+  "permissions": {
+    "deny": [
+      "Read(config/.env.dev)",
+      "Read(config/dev.secret.exs)"
+    ]
+  },
+  "worktree": {
+    "symlinkDirectories": [
+      "_build",
+      "deps",
+      "priv/cert",
+      "priv/plts/dialyzer.plt",
+      "priv/plts/dialyzer.plt.hash",
+      "config/.env.dev",
+      "config/dev.secret.exs"
+    ]
   }
 }

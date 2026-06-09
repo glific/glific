@@ -518,17 +518,13 @@ defmodule Glific.Fixtures do
   @doc false
   @spec template_tag_fixture(map()) :: Tags.TemplateTag.t()
   def template_tag_fixture(attrs \\ %{}) do
-    tag = tag_fixture(attrs)
-    template = session_template_fixture(attrs)
-
-    valid_attrs = %{
-      template_id: template.id,
-      tag_id: tag.id
-    }
+    tag_id = Map.get_lazy(attrs, :tag_id, fn -> tag_fixture(attrs).id end)
+    template_id = Map.get_lazy(attrs, :template_id, fn -> session_template_fixture(attrs).id end)
 
     {:ok, template_tag} =
       attrs
-      |> Enum.into(valid_attrs)
+      |> Map.put(:tag_id, tag_id)
+      |> Map.put(:template_id, template_id)
       |> Tags.create_template_tag()
 
     template_tag
