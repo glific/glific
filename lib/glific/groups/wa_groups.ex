@@ -89,7 +89,6 @@ defmodule Glific.Groups.WAGroups do
            ApiClient.list_wa_groups(org_id, wa_managed_phone.phone_id),
          {:ok, decoded} <- Jason.decode(body) do
       group_details = get_group_details(decoded, wa_managed_phone)
-      IO.inspect(group_details, label: "group details for phone #{wa_managed_phone.phone_id}")
       create_whatsapp_groups(group_details, org_id)
       sync_wa_groups_with_contacts(group_details, org_id)
       sync_wa_group_phones(group_details, wa_managed_phone)
