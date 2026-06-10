@@ -529,7 +529,8 @@ defmodule Glific.Flags do
       :is_ask_glific_enabled,
       :is_whatsapp_forms_enabled,
       :high_trigger_tps_enabled,
-      :ai_evaluations
+      :ai_evaluations,
+      :is_gpt_vision_base64_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(
