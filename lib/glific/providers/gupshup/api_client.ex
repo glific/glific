@@ -70,10 +70,11 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   end
 
   @doc """
-  Downloads the media content, and Base64 encodes the content.
+  Downloads the media content, Base64 encodes it, and returns the response's
+  Content-Type (nil if the server didn't send one) so callers can build a data URL.
   """
   @spec download_media_content(String.t(), non_neg_integer()) ::
-          {:ok, String.t()} | {:error, :download_failed}
+          {:ok, String.t(), String.t() | nil} | {:error, :download_failed}
   def download_media_content(audio_url, organization_id) do
     # Using a separate client as Logger middleware throws errors
     # if debug is not disabled since it does not handle bitstrings.
@@ -88,8 +89,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     client
     |> Tesla.get(audio_url)
     |> case do
-      {:ok, %{status: 200, body: content}} ->
-        {:ok, Base.encode64(content)}
+      {:ok, %Tesla.Env{status: 200, body: content} = env} ->
+        {:ok, Base.encode64(content), Tesla.get_header(env, "content-type")}
 
       {:ok, %Tesla.Env{status: status_code, body: body}} ->
         Glific.log_exception(%Error{
