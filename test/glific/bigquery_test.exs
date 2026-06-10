@@ -11,8 +11,11 @@ defmodule Glific.BigQueryTest do
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
+    Repo,
     Seeds.SeedsDev
   }
+
+  import Glific.Fixtures
 
   alias GoogleApi.BigQuery.V2.Connection
 
@@ -648,6 +651,63 @@ defmodule Glific.BigQueryTest do
       assert {:error, _} = BigQuery.validate_bigquery_permissions(conn, "test_project")
       # cleanup_validation_dataset should have been called
       assert :counters.get(delete_calls, 1) >= 1
+    end
+  end
+
+  describe "wa_groups BigQuery serialization" do
+    test "wa_groups_phones_schema/0 includes all expected fields" do
+      schema = Glific.BigQuery.Schema.wa_groups_phones_schema()
+      field_names = Enum.map(schema, & &1.name)
+
+      assert "id" in field_names
+      assert "wa_group_id" in field_names
+      assert "wa_managed_phone_id" in field_names
+      assert "is_primary" in field_names
+      assert "is_active" in field_names
+      assert "inserted_at" in field_names
+      assert "updated_at" in field_names
+    end
+
+    test "wa_message_schema/0 includes wa_phone_id field" do
+      schema = Glific.BigQuery.Schema.wa_message_schema()
+      field_names = Enum.map(schema, & &1.name)
+      assert "wa_phone_id" in field_names
+    end
+
+    test "wa_groups_phones is registered in bigquery_tables" do
+      tables = BigQuery.bigquery_tables(1)
+      assert Map.has_key?(tables, "wa_groups_phones")
+    end
+
+    test "primary_wa_phone/1 returns phone from primary membership", %{
+      organization_id: org_id
+    } do
+      phone = wa_managed_phone_fixture(%{organization_id: org_id})
+      group = wa_group_fixture(%{organization_id: org_id, wa_managed_phone_id: phone.id})
+
+      wa_group_phone_fixture(%{
+        organization_id: org_id,
+        wa_group_id: group.id,
+        wa_managed_phone_id: phone.id,
+        is_primary: true
+      })
+
+      group_with_preloads =
+        Repo.preload(group, [:wa_managed_phone, wa_groups_phones: :wa_managed_phone])
+
+      assert BigQueryWorker.primary_wa_phone(group_with_preloads) == phone.phone
+    end
+
+    test "primary_wa_phone/1 falls back to wa_managed_phone when no primary membership", %{
+      organization_id: org_id
+    } do
+      phone = wa_managed_phone_fixture(%{organization_id: org_id})
+      group = wa_group_fixture(%{organization_id: org_id, wa_managed_phone_id: phone.id})
+
+      group_with_preloads =
+        Repo.preload(group, [:wa_managed_phone, wa_groups_phones: :wa_managed_phone])
+
+      assert BigQueryWorker.primary_wa_phone(group_with_preloads) == phone.phone
     end
   end
 end

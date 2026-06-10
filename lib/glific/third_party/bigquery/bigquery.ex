@@ -86,6 +86,7 @@ defmodule Glific.BigQuery do
     "trackers" => :trackers_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
+    "wa_groups_phones" => :wa_groups_phones_schema,
     "wa_messages" => :wa_message_schema,
     "wa_reactions" => :wa_reactions_schema,
     "whatsapp_forms" => :whatsapp_form_schema,
