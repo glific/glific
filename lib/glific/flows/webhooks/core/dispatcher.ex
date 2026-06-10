@@ -27,7 +27,7 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   """
   @spec dispatch_named(String.t(), map(), keyword() | list()) :: any()
   def dispatch_named(name, fields, headers \\ []) when is_binary(name) and is_map(fields) do
-  module = Registry.lookup!(name)
+    module = Registry.lookup!(name)
     ctx = build_context(fields, headers)
 
     Instrumentation.around(module, ctx, fn ->
