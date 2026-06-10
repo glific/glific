@@ -1115,30 +1115,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
     assert json_response(conn, 200) == nil
   end
 
-  describe "Phase 3: multi-phone inbound" do
-    # Insert a second managed phone for the same org, then craft an inbound
-    # text webhook that targets it (i.e. its number is the `receiver`).
-    defp seed_second_phone(org_id) do
-      {:ok, contact} =
-        Contacts.maybe_create_contact(%{
-          phone: "917834811200",
-          organization_id: org_id,
-          contact_type: "WA"
-        })
-
-      {:ok, wa_managed_phone} =
-        WAManagedPhones.create_wa_managed_phone(%{
-          label: "second",
-          phone: "917834811200",
-          phone_id: 99_999,
-          status: "active",
-          organization_id: org_id,
-          contact_id: contact.id
-        })
-
-      wa_managed_phone
-    end
-
+  describe "multi-phone inbound" do
     test "inbound from a second phone on an existing group does NOT create a duplicate wa_group and inserts a membership",
          %{conn: conn, organization_id: org_id} do
       second_phone = seed_second_phone(org_id)
@@ -1357,24 +1334,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert rows == []
     end
 
-    # Build a minimal valid message_params that would normally make it past
-    # both dedup checks and reach do_receive_message.
-    defp base_params(org_id) do
-      %{
-        organization_id: org_id,
-        receiver: "917834811114",
-        sender: %{phone: "919876543210", name: "External", contact_type: "WA"},
-        is_dm: false,
-        wa_group_bsp_id: "120363213149844251@g.us",
-        group_name: "Default Group name",
-        body: "hello",
-        flow: :inbound,
-        status: :received,
-        bsp_id: Ecto.UUID.generate()
-      }
-    end
-
-    test "duplicate_inbound? skips when bsp_id matches an existing wa_message (L89-94 branch)",
+    test "duplicate_inbound? skips when bsp_id matches an existing wa_message",
          %{organization_id: org_id} do
       existing_bsp = Ecto.UUID.generate()
       params = base_params(org_id) |> Map.put(:bsp_id, existing_bsp)
@@ -1383,7 +1343,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert :ok = GroupMessage.receive_message(params, :text)
 
       # Second call with the same bsp_id hits the duplicate_inbound? true
-      # branch (L89-94) and short-circuits — no second row is stored.
+      # branch and short-circuits — no second row is stored.
       assert :ok = GroupMessage.receive_message(params, :text)
 
       rows =
@@ -1394,7 +1354,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert length(rows) == 1
     end
 
-    test "sender_is_our_managed_phone? skips when sender phone matches a managed phone (L96-101 branch)",
+    test "sender_is_our_managed_phone? skips when sender phone matches a managed phone",
          %{organization_id: org_id} do
       [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
@@ -1412,7 +1372,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert rows == []
     end
 
-    test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown (L291-296)",
+    test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",
          %{organization_id: org_id} do
       params = base_params(org_id) |> Map.put(:receiver, "910000000000")
 
@@ -1493,6 +1453,46 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         assert message.wa_managed_phone_id == nil
         assert message.wa_group_id == nil
       end
+    end
+
+    # Insert a second managed phone for the same org, then craft an inbound
+    # text webhook that targets it (i.e. its number is the `receiver`).
+    defp seed_second_phone(org_id) do
+      {:ok, contact} =
+        Contacts.maybe_create_contact(%{
+          phone: "917834811200",
+          organization_id: org_id,
+          contact_type: "WA"
+        })
+
+      {:ok, wa_managed_phone} =
+        WAManagedPhones.create_wa_managed_phone(%{
+          label: "second",
+          phone: "917834811200",
+          phone_id: 99_999,
+          status: "active",
+          organization_id: org_id,
+          contact_id: contact.id
+        })
+
+      wa_managed_phone
+    end
+
+    # Build a minimal valid message_params that would normally make it past
+    # both dedup checks and reach do_receive_message.
+    defp base_params(org_id) do
+      %{
+        organization_id: org_id,
+        receiver: "917834811114",
+        sender: %{phone: "919876543210", name: "External", contact_type: "WA"},
+        is_dm: false,
+        wa_group_bsp_id: "120363213149844251@g.us",
+        group_name: "Default Group name",
+        body: "hello",
+        flow: :inbound,
+        status: :received,
+        bsp_id: Ecto.UUID.generate()
+      }
     end
   end
 end

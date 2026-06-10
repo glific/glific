@@ -450,7 +450,8 @@ defmodule Glific.Groups.WAGroupsTest do
       assert deactivated.is_primary == true
     end
 
-    test "cross-phone: deactivates other managed phone's row when it's not in participants", ctx do
+    test "cross-phone: deactivates other managed phone's row when it's not in participants",
+         ctx do
       # Bug the user saw: phone M was removed from the group but M's own
       # sync is stale, so M's row stayed is_active: true. The syncing
       # phone's `participants` list is the source of truth — if M's

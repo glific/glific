@@ -118,7 +118,7 @@ defmodule Glific.Communications.GroupMessage do
   # already stored it. Skip.
   @spec sender_is_our_managed_phone?(map()) :: boolean()
   defp sender_is_our_managed_phone?(%{sender: %{phone: phone}})
-       when is_binary(phone) and phone != "" do
+       when is_binary(phone) do
     case WAManagedPhones.fetch_by_phone(phone) do
       {:ok, _} -> true
       _ -> false
@@ -283,7 +283,14 @@ defmodule Glific.Communications.GroupMessage do
   # queued), log a warning and return nil. The message still gets stored,
   # just without phone attribution.
   @spec resolve_receiver(map()) :: non_neg_integer() | nil
-  defp resolve_receiver(%{receiver: receiver}) when receiver in [nil, ""], do: nil
+  defp resolve_receiver(%{organization_id: organization_id, receiver: receiver})
+       when receiver in [nil, ""] do
+    Logger.warning(
+      "Inbound webhook arrived without a receiver (org #{organization_id}); storing the message without phone attribution"
+    )
+
+    nil
+  end
 
   defp resolve_receiver(%{organization_id: organization_id, receiver: receiver}) do
     case WAManagedPhones.fetch_by_phone(receiver) do
