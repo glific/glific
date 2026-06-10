@@ -13,6 +13,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.Providers.Maytapi
   alias Glific.Repo
   alias Glific.SafeLog
@@ -22,7 +23,6 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.ThirdParty.Kaapi.ApiClient
   alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
-  alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
 
   require Logger
 
