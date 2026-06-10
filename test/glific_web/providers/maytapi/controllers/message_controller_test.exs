@@ -1116,45 +1116,55 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   end
 
   describe "multi-phone inbound" do
-    test "inbound from a second phone on an existing group does NOT create a duplicate wa_group and inserts a membership",
+    test "inbound on a non-primary phone is dropped and does not duplicate the wa_group or create a membership",
          %{conn: conn, organization_id: org_id} do
+      # Primary-only routing: a webhook arriving on a non-primary managed
+      # phone is dropped at receive_message. We assert no wa_message row is
+      # stored and no group/membership side-effects fire (the wa_group is
+      # unchanged, the second phone gains no membership). Membership for
+      # the second phone is now WAGroups.sync_wa_groups's responsibility,
+      # not a side-effect of inbound webhooks.
       second_phone = seed_second_phone(org_id)
-      bsp_id = "120363213149844251@g.us"
+      group_bsp_id = "120363213149844251@g.us"
 
-      groups_before =
+      [existing_group] =
         WAGroup
-        |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^org_id)
+        |> where([wg], wg.bsp_id == ^group_bsp_id and wg.organization_id == ^org_id)
         |> Repo.all()
 
-      assert length(groups_before) == 1
-      [existing_group] = groups_before
+      bsp_id = Ecto.UUID.generate()
 
       webhook =
         @text_message_webhook
-        |> put_in(["message", "id"], Ecto.UUID.generate())
+        |> put_in(["message", "id"], bsp_id)
         |> put_in(["receiver"], second_phone.phone)
 
       conn = post(conn, "/maytapi", webhook)
       assert conn.halted
 
+      # No wa_message stored — webhook was dropped.
+      assert WAMessage
+             |> where([m], m.bsp_id == ^bsp_id and m.organization_id == ^org_id)
+             |> Repo.all() == []
+
+      # wa_group is unchanged (no duplicate).
       groups_after =
         WAGroup
-        |> where([wg], wg.bsp_id == ^bsp_id and wg.organization_id == ^org_id)
+        |> where([wg], wg.bsp_id == ^group_bsp_id and wg.organization_id == ^org_id)
         |> Repo.all()
 
-      assert length(groups_after) == 1, "no duplicate wa_groups row should be created"
+      assert length(groups_after) == 1
 
+      # Second phone gained no membership in this group via the dropped webhook.
       memberships =
         WAGroupPhone
-        |> where([wgp], wgp.wa_group_id == ^existing_group.id)
+        |> where(
+          [wgp],
+          wgp.wa_group_id == ^existing_group.id and wgp.wa_managed_phone_id == ^second_phone.id
+        )
         |> Repo.all()
 
-      managed_phone_ids = Enum.map(memberships, & &1.wa_managed_phone_id) |> Enum.sort()
-      assert second_phone.id in managed_phone_ids
-
-      second_membership = Enum.find(memberships, &(&1.wa_managed_phone_id == second_phone.id))
-      assert second_membership.is_primary == false
-      assert second_membership.is_active == true
+      assert memberships == []
     end
 
     test "wa_messages.wa_managed_phone_id is stamped for inbound text message",
@@ -1305,36 +1315,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.wa_group_id == nil
     end
 
-    test "second inbound webhook with the same WhatsApp msg id (different fromMe/participant) is dedupped",
-         %{conn: conn, organization_id: org_id} do
-      # Same physical WhatsApp message echoes to two of our managed phones
-      # in the group. Maytapi's `_serialized` bsp_id encodes the receiving
-      # phone's fromMe perspective, so the two webhooks have DIFFERENT
-      # bsp_ids — `duplicate_inbound?/1` can't catch it. The middle msgId
-      # segment is identical though, so `same_message_already_stored?/1`
-      # picks it up.
-      bsp_id = "false_120363213149844251@g.us_3EBABCDEF1234567890ABC_919917443994@c.us"
-      bsp_id_echo = "true_120363213149844251@g.us_3EBABCDEF1234567890ABC_919917443994@c.us"
-
-      first_webhook = put_in(@text_message_webhook, ["message", "id"], bsp_id)
-      echo_webhook = put_in(@text_message_webhook, ["message", "id"], bsp_id_echo)
-
-      conn1 = post(conn, "/maytapi", first_webhook)
-      assert conn1.halted
-
-      conn2 = post(conn, "/maytapi", echo_webhook)
-      assert conn2.halted
-
-      # Only the first webhook's wa_message was stored — the echo was
-      # recognised by its wa_msg_id and dropped.
-      rows =
-        WAMessage
-        |> where([m], m.organization_id == ^org_id and m.wa_msg_id == "3EBABCDEF1234567890ABC")
-        |> Repo.all()
-
-      assert length(rows) == 1
-    end
-
     test "duplicate_inbound? skips when bsp_id matches an existing wa_message",
          %{organization_id: org_id} do
       existing_bsp = Ecto.UUID.generate()
@@ -1355,146 +1335,106 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert length(rows) == 1
     end
 
-    test "same_message_already_stored? skips a second receive_message/2 with the same wa_msg_id but a different bsp_id",
+    test "non_primary_receiver? drops an inbound delivered to a managed phone that isn't the group's primary",
          %{organization_id: org_id} do
-      first_bsp = "false_120363213149844251@g.us_3EBPARSE1234567890ABC_919876543210@c.us"
-      echo_bsp = "true_120363213149844251@g.us_3EBPARSE1234567890ABC_919876543210@c.us"
-
-      first_params = base_params(org_id) |> Map.put(:bsp_id, first_bsp)
-      assert :ok = GroupMessage.receive_message(first_params, :text)
-
-      echo_params = %{first_params | bsp_id: echo_bsp}
-      assert :ok = GroupMessage.receive_message(echo_params, :text)
-
-      rows =
-        WAMessage
-        |> where(
-          [m],
-          m.organization_id == ^org_id and m.wa_msg_id == "3EBPARSE1234567890ABC"
-        )
-        |> Repo.all()
-
-      assert length(rows) == 1
-    end
-
-    test "same_message_already_stored? does NOT skip when the wa_msg_id segments differ",
-         %{organization_id: org_id} do
-      first_bsp = "false_120363213149844251@g.us_3EBAAA1111111111111111_919876543210@c.us"
-      other_bsp = "false_120363213149844251@g.us_3EBBBB2222222222222222_919876543210@c.us"
-
-      first_params = base_params(org_id) |> Map.put(:bsp_id, first_bsp)
-      assert :ok = GroupMessage.receive_message(first_params, :text)
-
-      other_params = %{first_params | bsp_id: other_bsp}
-      assert :ok = GroupMessage.receive_message(other_params, :text)
-
-      rows =
-        WAMessage
-        |> where([m], m.organization_id == ^org_id and not is_nil(m.wa_msg_id))
-        |> Repo.all()
-
-      assert length(rows) == 2
-    end
-
-    test "same_message_already_stored? returns false when bsp_id isn't in `_serialized` format (e.g. Glific outbound UUID)",
-         %{organization_id: org_id} do
-      first_params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
-      assert :ok = GroupMessage.receive_message(first_params, :text)
-
-      second_params = %{first_params | bsp_id: Ecto.UUID.generate()}
-      assert :ok = GroupMessage.receive_message(second_params, :text)
-
-      # Both stored, wa_msg_id is nil for each (the parser only succeeds
-      # on the 4-segment `_serialized` format).
-      rows =
-        WAMessage
-        |> where([m], m.organization_id == ^org_id and is_nil(m.wa_msg_id))
-        |> Repo.all()
-
-      assert length(rows) >= 2
-    end
-
-    test "echo_of_our_outbound? stamps wa_msg_id on a recent unacked outbound and skips the insert",
-         %{organization_id: org_id} do
-      # Glific just sent a group message from primary phone — outbound row
-      # in DB with bsp_id = UUID, wa_msg_id = nil. The echo of that send
-      # arrives on the second managed phone in the group before the ack.
-      # The body + managed-phone match catches it: outbound row is stamped,
-      # no new inbound row is inserted.
-      {:ok, primary} = WAManagedPhones.fetch_by_phone("917834811114")
+      # Setup: primary managed phone 917834811114 is already the primary
+      # for group 120363213149844251@g.us (per the setup seed). We add a
+      # second managed phone, then send a webhook whose `receiver` is the
+      # second phone. Since the second phone isn't the primary, the inbound
+      # must be dropped — no wa_message row created.
       second_phone = seed_second_phone(org_id)
 
-      {:ok, outbound} =
-        Glific.WAMessages.create_message(%{
-          organization_id: org_id,
-          contact_id: primary.contact_id,
-          wa_managed_phone_id: primary.id,
-          body: "hello",
-          bsp_id: Ecto.UUID.generate(),
-          bsp_status: :enqueued,
-          status: :sent,
-          flow: :outbound,
-          type: :text
-        })
-
-      echo_bsp = "false_120363213149844251@g.us_3EBECHO9999999999999_917834811114@c.us"
-
-      echo_params =
+      params =
         base_params(org_id)
         |> Map.put(:receiver, second_phone.phone)
-        |> Map.put(:bsp_id, echo_bsp)
-        |> put_in([:sender, :phone], primary.phone)
+        |> Map.put(:bsp_id, Ecto.UUID.generate())
 
-      assert :ok = GroupMessage.receive_message(echo_params, :text)
-
-      outbound_after = Repo.get!(WAMessage, outbound.id)
-      assert outbound_after.wa_msg_id == "3EBECHO9999999999999"
+      assert :ok = GroupMessage.receive_message(params, :text)
 
       rows =
         WAMessage
-        |> where([m], m.organization_id == ^org_id and m.body == "hello")
+        |> where([m], m.organization_id == ^org_id and m.bsp_id == ^params.bsp_id)
         |> Repo.all()
 
-      assert length(rows) == 1, "no duplicate inbound row should be created"
+      assert rows == []
     end
 
-    test "echo_of_our_outbound? does NOT fire when the sender phone isn't one of our managed phones",
+    test "non_primary_receiver? accepts an inbound delivered to the group's primary phone",
          %{organization_id: org_id} do
-      # Outbound row from Glific exists with body 'hello'. A real member
-      # inbound happens to share that body but its sender is NOT a managed
-      # phone — the body fallback must NOT misfire, so the inbound is stored
-      # as a genuinely new message.
-      {:ok, primary} = WAManagedPhones.fetch_by_phone("917834811114")
+      # Receiver is 917834811114 — the primary for this group from setup.
+      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
 
-      {:ok, outbound} =
-        Glific.WAMessages.create_message(%{
-          organization_id: org_id,
-          contact_id: primary.contact_id,
-          wa_managed_phone_id: primary.id,
-          body: "hello",
-          bsp_id: Ecto.UUID.generate(),
-          bsp_status: :enqueued,
-          status: :sent,
-          flow: :outbound,
-          type: :text
-        })
+      assert :ok = GroupMessage.receive_message(params, :text)
 
-      member_bsp = "false_120363213149844251@g.us_3EBMEMBER77777777777_919876543210@c.us"
+      {:ok, _} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
+    end
 
-      member_params = base_params(org_id) |> Map.put(:bsp_id, member_bsp)
-      # base_params already sets sender.phone = "919876543210" (a member, not managed)
+    test "non_primary_receiver? fails open for DMs (is_dm: true bypasses the primary check)",
+         %{organization_id: org_id} do
+      # DMs aren't group messages, so primary-of-group routing doesn't apply.
+      # Even if the receiver is a non-primary managed phone, the DM should
+      # be stored.
+      second_phone = seed_second_phone(org_id)
 
-      assert :ok = GroupMessage.receive_message(member_params, :text)
+      params =
+        base_params(org_id)
+        |> Map.put(:receiver, second_phone.phone)
+        |> Map.put(:is_dm, true)
+        |> Map.put(:bsp_id, Ecto.UUID.generate())
 
-      outbound_after = Repo.get!(WAMessage, outbound.id)
-      assert outbound_after.wa_msg_id == nil
+      assert :ok = GroupMessage.receive_message(params, :text)
 
-      rows =
-        WAMessage
-        |> where([m], m.organization_id == ^org_id and m.body == "hello")
-        |> Repo.all()
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
 
-      assert length(rows) == 2, "real member inbound must not be deduped against our outbound"
+      assert message.is_dm == true
+    end
+
+    test "non_primary_receiver? fails open when the group doesn't exist yet (lets maybe_create_group run)",
+         %{organization_id: org_id} do
+      # Brand new group Glific has never seen. Receiver is our primary
+      # managed phone but the wa_group row doesn't exist yet — must
+      # process so maybe_create_group can create the group + membership
+      # (the receiving phone becomes the new group's primary).
+      new_group_bsp_id = "999999999999999999@g.us"
+
+      params =
+        base_params(org_id)
+        |> Map.put(:wa_group_bsp_id, new_group_bsp_id)
+        |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      {:ok, _} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
+
+      {:ok, _} =
+        Repo.fetch_by(WAGroup, %{bsp_id: new_group_bsp_id, organization_id: org_id})
+    end
+
+    test "non_primary_receiver? fails open when the group has no primary phone set",
+         %{organization_id: org_id} do
+      # Group exists but its sole primary membership has been deactivated
+      # (data drift from Phase 3 backfill gap). Inbound must still be
+      # processed; the helper logs a warning but does not drop the message.
+      group_bsp_id = base_params(org_id).wa_group_bsp_id
+
+      Glific.Groups.WAGroupPhone
+      |> where([wgp], wgp.organization_id == ^org_id and wgp.is_primary == true)
+      |> Repo.update_all(set: [is_primary: false])
+
+      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      {:ok, _} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
+
+      # sanity: the group used by base_params exists but had no primary at
+      # the time of the inbound
+      {:ok, _} =
+        Repo.fetch_by(WAGroup, %{bsp_id: group_bsp_id, organization_id: org_id})
     end
 
     test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",

@@ -61,22 +61,12 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     nil
   end
 
-  # Updates the provider message status. The ack payload's `msgId` is
-  # Maytapi's UUID (matches what we stored as `bsp_id` at outbound time),
-  # and `rxid` is the WhatsApp `_serialized` form — we use the latter to
-  # populate `wa_msg_id` for echo-dedup.
   @spec do_update_status(map(), String.t(), non_neg_integer()) :: any()
   defp do_update_status(params, ack_type, org_id) do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
-    rxid = Map.get(params, "rxid")
 
-    Communications.GroupMessage.update_bsp_status_and_wa_msg_id(
-      bsp_message_id,
-      rxid,
-      status,
-      org_id
-    )
+    Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
   end
 
   @spec do_update_error_status(map(), non_neg_integer()) :: any()

@@ -153,23 +153,6 @@ defmodule Glific.Providers.Maytapi.Message do
     )
   end
 
-  @doc """
-  Extract the underlying WhatsApp message id from Maytapi's `_serialized`
-  bsp_id format `{fromMe}_{remoteJid}_{msgId}_{participant}`. Returns the
-  middle segment, or nil if the input isn't in that shape (Glific's
-  outbound API may return a UUID-only msgId; some webhook events have
-  shorter ids).
-  """
-  @spec wa_msg_id_from_serialized(String.t() | nil) :: String.t() | nil
-  def wa_msg_id_from_serialized(serialized) when is_binary(serialized) do
-    case String.split(serialized, "_") do
-      [_from_me, _remote_jid, msg_id, _participant] -> msg_id
-      _ -> nil
-    end
-  end
-
-  def wa_msg_id_from_serialized(_), do: nil
-
   @doc false
   @spec receive_text(payload :: map()) :: map()
   def receive_text(%{"message" => %{"fromMe" => from_me}} = params) do

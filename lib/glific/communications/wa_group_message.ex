@@ -10,9 +10,10 @@ defmodule Glific.Communications.GroupMessage do
     Contacts,
     Contacts.Contact,
     Groups.ContactWAGroups,
+    Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages,
-    Providers.Maytapi.Message,
     Repo,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
@@ -37,9 +38,6 @@ defmodule Glific.Communications.GroupMessage do
     location_request_message: :send_interactive,
     poll: :send_poll
   }
-
-  # Time window for matching an inbound echo to a still-unacked outbound row.
-  @outbound_echo_window_seconds 30
 
   @doc """
   Send message to receiver using define provider.
@@ -83,7 +81,12 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @doc """
-  Callback when we receive a message from whatsapp group providers
+  Callback when we receive a message from whatsapp group providers.
+
+  Group inbounds are accepted only on the group's primary managed phone — any
+  webhook delivered to a non-primary phone is dropped. DMs, brand-new groups
+  (no `wa_group` row yet), groups with no primary set, and webhooks delivered
+  to an unknown receiver all fail open and are processed normally.
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
@@ -92,23 +95,12 @@ defmodule Glific.Communications.GroupMessage do
     cond do
       duplicate_inbound?(message_params[:bsp_id]) ->
         Logger.info(
-          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (likely a webhook retry)"
+          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (webhook retry)"
         )
 
         :ok
 
-      same_message_already_stored?(message_params) ->
-        Logger.info(
-          "Skipping inbound: wa_msg_id '#{Message.wa_msg_id_from_serialized(message_params[:bsp_id])}' already stored in org #{organization_id} (echo of the same WhatsApp message on another managed phone)"
-        )
-
-        :ok
-
-      echo_of_our_outbound?(message_params) ->
-        Logger.info(
-          "Skipping inbound: matches a recent unacked Glific outbound (org #{organization_id}); stamped wa_msg_id on the outbound row"
-        )
-
+      non_primary_receiver?(message_params, organization_id) ->
         :ok
 
       true ->
@@ -121,65 +113,63 @@ defmodule Glific.Communications.GroupMessage do
     end
   end
 
-  @spec same_message_already_stored?(map()) :: boolean()
-  defp same_message_already_stored?(message_params) do
-    case Message.wa_msg_id_from_serialized(message_params[:bsp_id]) do
-      nil -> false
-      wa_msg_id -> Repo.exists?(from(m in WAMessage, where: m.wa_msg_id == ^wa_msg_id))
-    end
-  end
+  # Returns true when this inbound should be dropped because another managed
+  # phone is the primary for the group it arrived on. Fails open (returns
+  # false) for DMs, unknown receivers, brand-new groups, and groups with no
+  # primary set; the last case is warned about loudly.
+  @spec non_primary_receiver?(map(), non_neg_integer()) :: boolean()
+  defp non_primary_receiver?(%{is_dm: true}, _org_id), do: false
 
-  # Catches the race where an echo of a Glific-sent message arrives before
-  # its ack populates wa_msg_id on the outbound row. Looks for a recent
-  # outbound row with matching body sent from the phone now echoing back;
-  # if found, stamps it with wa_msg_id and tells the caller to skip the
-  # insert. Media-without-caption isn't caught here (no body); the ack-time
-  # cleanup in update_bsp_status_and_wa_msg_id/4 handles those.
-  @spec echo_of_our_outbound?(map()) :: boolean()
-  defp echo_of_our_outbound?(%{body: body, sender: %{phone: sender_phone}} = message_params)
-       when is_binary(body) and body != "" and is_binary(sender_phone) and sender_phone != "" do
-    with wa_msg_id when is_binary(wa_msg_id) <-
-           Message.wa_msg_id_from_serialized(message_params[:bsp_id]),
-         %WAMessage{id: id} <- find_matching_outbound(body, sender_phone) do
-      from(m in WAMessage, where: m.id == ^id)
-      |> Repo.update_all(set: [wa_msg_id: wa_msg_id])
+  defp non_primary_receiver?(%{receiver: receiver}, _org_id) when receiver in [nil, ""],
+    do: false
 
-      true
+  defp non_primary_receiver?(
+         %{receiver: receiver, wa_group_bsp_id: group_bsp_id},
+         org_id
+       ) do
+    with {:ok, %{id: managed_phone_id}} <- WAManagedPhones.fetch_by_phone(receiver),
+         %WAGroup{id: group_id} <- WAGroups.fetch_oldest_wa_group(group_bsp_id) do
+      case primary_managed_phone_id(group_id) do
+        ^managed_phone_id ->
+          false
+
+        nil ->
+          Logger.warning(
+            "Group #{group_bsp_id} (org #{org_id}) has no primary phone; processing inbound on #{receiver} anyway"
+          )
+
+          false
+
+        _other ->
+          Logger.info(
+            "Dropping inbound on #{receiver}: a different managed phone is primary for group #{group_bsp_id} (org #{org_id})"
+          )
+
+          true
+      end
     else
       _ -> false
     end
   end
 
-  defp echo_of_our_outbound?(_), do: false
+  defp non_primary_receiver?(_message_params, _org_id), do: false
 
-  @spec find_matching_outbound(String.t(), String.t()) :: WAMessage.t() | nil
-  defp find_matching_outbound(body, sender_phone) do
-    case WAManagedPhones.fetch_by_phone(sender_phone) do
-      {:ok, %{id: managed_phone_id}} ->
-        cutoff = DateTime.add(DateTime.utc_now(), -@outbound_echo_window_seconds, :second)
-
-        from(m in WAMessage,
-          where:
-            m.flow == :outbound and
-              m.body == ^body and
-              m.wa_managed_phone_id == ^managed_phone_id and
-              is_nil(m.wa_msg_id) and
-              m.inserted_at >= ^cutoff,
-          order_by: [desc: m.inserted_at],
-          limit: 1
-        )
-        |> Repo.one()
-
-      _ ->
-        nil
-    end
+  @spec primary_managed_phone_id(non_neg_integer()) :: non_neg_integer() | nil
+  defp primary_managed_phone_id(group_id) do
+    WAGroupPhone
+    |> where(
+      [wgp],
+      wgp.wa_group_id == ^group_id and wgp.is_primary == true and wgp.is_active == true
+    )
+    |> select([wgp], wgp.wa_managed_phone_id)
+    |> limit(1)
+    |> Repo.one()
   end
 
-  # In multi-phone orgs the same WhatsApp message can arrive once per
-  # managed phone in the group. The bsp_id (Maytapi's underlying message
-  # id) is shared across those webhooks, so a fetch_by it is enough to
-  # catch the duplicate. Missing or nil bsp_id falls through — should not
-  # happen in practice but we don't want to dedup on a nil key.
+  # In multi-phone orgs Maytapi can retry the same webhook delivery; the
+  # bsp_id is identical across retries, so a fetch_by it catches the duplicate.
+  # Missing or nil bsp_id falls through — should not happen in practice but
+  # we don't want to dedup on a nil key.
   @spec duplicate_inbound?(String.t() | nil) :: boolean()
   defp duplicate_inbound?(nil), do: false
   defp duplicate_inbound?(""), do: false
@@ -192,32 +182,13 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @doc """
-  Callback used by Maytapi ack/status events. Looks up the row by
-  `bsp_id` (Maytapi's UUID-shaped `msgId`, which we stored at outbound
-  time) and updates `bsp_status`. If the ack also carries an `rxid` —
-  the WhatsApp `_serialized` form `{fromMe}_{group}_{msgId}_{participant}`
-  — we parse the middle msgId segment out of it and stamp it on the row
-  as `wa_msg_id`, so subsequent multi-phone-echo dedup
-  (`same_message_already_stored?/1`) has a key to match against.
+  Callback to update the provider status for a message
   """
-  @spec update_bsp_status_and_wa_msg_id(
-          String.t(),
-          String.t() | nil,
-          atom(),
-          non_neg_integer()
-        ) :: any()
-  def update_bsp_status_and_wa_msg_id(bsp_message_id, rxid, bsp_status, org_id) do
-    set_attrs = [bsp_status: bsp_status, updated_at: DateTime.utc_now()]
-
-    set_attrs =
-      case Message.wa_msg_id_from_serialized(rxid) do
-        nil -> set_attrs
-        wa_msg_id -> Keyword.put(set_attrs, :wa_msg_id, wa_msg_id)
-      end
-
+  @spec update_bsp_status(String.t(), atom(), non_neg_integer()) :: any()
+  def update_bsp_status(bsp_message_id, bsp_status, org_id) do
     WAMessage
     |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
-    |> Repo.update_all(set: set_attrs)
+    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
   end
 
   @doc """
@@ -340,8 +311,7 @@ defmodule Glific.Communications.GroupMessage do
       is_dm: is_dm,
       organization_id: contact.organization_id,
       wa_group_id: wa_group_id,
-      wa_managed_phone_id: wa_managed_phone_id,
-      wa_msg_id: Message.wa_msg_id_from_serialized(message_params[:bsp_id])
+      wa_managed_phone_id: wa_managed_phone_id
     }
   end
 
