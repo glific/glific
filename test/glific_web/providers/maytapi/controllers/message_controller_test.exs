@@ -1414,6 +1414,89 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert length(rows) >= 2
     end
 
+    test "echo_of_our_outbound? stamps wa_msg_id on a recent unacked outbound and skips the insert",
+         %{organization_id: org_id} do
+      # Glific just sent a group message from primary phone — outbound row
+      # in DB with bsp_id = UUID, wa_msg_id = nil. The echo of that send
+      # arrives on the second managed phone in the group before the ack.
+      # The body + managed-phone match catches it: outbound row is stamped,
+      # no new inbound row is inserted.
+      {:ok, primary} = WAManagedPhones.fetch_by_phone("917834811114")
+      second_phone = seed_second_phone(org_id)
+
+      {:ok, outbound} =
+        Glific.WAMessages.create_message(%{
+          organization_id: org_id,
+          contact_id: primary.contact_id,
+          wa_managed_phone_id: primary.id,
+          body: "hello",
+          bsp_id: Ecto.UUID.generate(),
+          bsp_status: :enqueued,
+          status: :sent,
+          flow: :outbound,
+          type: :text
+        })
+
+      echo_bsp = "false_120363213149844251@g.us_3EBECHO9999999999999_917834811114@c.us"
+
+      echo_params =
+        base_params(org_id)
+        |> Map.put(:receiver, second_phone.phone)
+        |> Map.put(:bsp_id, echo_bsp)
+        |> put_in([:sender, :phone], primary.phone)
+
+      assert :ok = GroupMessage.receive_message(echo_params, :text)
+
+      outbound_after = Repo.get!(WAMessage, outbound.id)
+      assert outbound_after.wa_msg_id == "3EBECHO9999999999999"
+
+      rows =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and m.body == "hello")
+        |> Repo.all()
+
+      assert length(rows) == 1, "no duplicate inbound row should be created"
+    end
+
+    test "echo_of_our_outbound? does NOT fire when the sender phone isn't one of our managed phones",
+         %{organization_id: org_id} do
+      # Outbound row from Glific exists with body 'hello'. A real member
+      # inbound happens to share that body but its sender is NOT a managed
+      # phone — the body fallback must NOT misfire, so the inbound is stored
+      # as a genuinely new message.
+      {:ok, primary} = WAManagedPhones.fetch_by_phone("917834811114")
+
+      {:ok, outbound} =
+        Glific.WAMessages.create_message(%{
+          organization_id: org_id,
+          contact_id: primary.contact_id,
+          wa_managed_phone_id: primary.id,
+          body: "hello",
+          bsp_id: Ecto.UUID.generate(),
+          bsp_status: :enqueued,
+          status: :sent,
+          flow: :outbound,
+          type: :text
+        })
+
+      member_bsp = "false_120363213149844251@g.us_3EBMEMBER77777777777_919876543210@c.us"
+
+      member_params = base_params(org_id) |> Map.put(:bsp_id, member_bsp)
+      # base_params already sets sender.phone = "919876543210" (a member, not managed)
+
+      assert :ok = GroupMessage.receive_message(member_params, :text)
+
+      outbound_after = Repo.get!(WAMessage, outbound.id)
+      assert outbound_after.wa_msg_id == nil
+
+      rows =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and m.body == "hello")
+        |> Repo.all()
+
+      assert length(rows) == 2, "real member inbound must not be deduped against our outbound"
+    end
+
     test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",
          %{organization_id: org_id} do
       params = base_params(org_id) |> Map.put(:receiver, "910000000000")

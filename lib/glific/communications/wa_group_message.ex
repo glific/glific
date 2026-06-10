@@ -154,22 +154,24 @@ defmodule Glific.Communications.GroupMessage do
 
   @spec find_matching_outbound(String.t(), String.t()) :: WAMessage.t() | nil
   defp find_matching_outbound(body, sender_phone) do
-    with {:ok, %{id: managed_phone_id}} <- WAManagedPhones.fetch_by_phone(sender_phone) do
-      cutoff = DateTime.add(DateTime.utc_now(), -@outbound_echo_window_seconds, :second)
+    case WAManagedPhones.fetch_by_phone(sender_phone) do
+      {:ok, %{id: managed_phone_id}} ->
+        cutoff = DateTime.add(DateTime.utc_now(), -@outbound_echo_window_seconds, :second)
 
-      from(m in WAMessage,
-        where:
-          m.flow == :outbound and
-            m.body == ^body and
-            m.wa_managed_phone_id == ^managed_phone_id and
-            is_nil(m.wa_msg_id) and
-            m.inserted_at >= ^cutoff,
-        order_by: [desc: m.inserted_at],
-        limit: 1
-      )
-      |> Repo.one()
-    else
-      _ -> nil
+        from(m in WAMessage,
+          where:
+            m.flow == :outbound and
+              m.body == ^body and
+              m.wa_managed_phone_id == ^managed_phone_id and
+              is_nil(m.wa_msg_id) and
+              m.inserted_at >= ^cutoff,
+          order_by: [desc: m.inserted_at],
+          limit: 1
+        )
+        |> Repo.one()
+
+      _ ->
+        nil
     end
   end
 
