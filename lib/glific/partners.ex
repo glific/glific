@@ -1446,7 +1446,9 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
       "assistant_config_versions_enabled" =>
-        Flags.get_assistant_config_versions_enabled(organization)
+        Flags.get_assistant_config_versions_enabled(organization),
+      "gpt_vision_base64_enabled" =>
+        Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization)
     }
   end
 
