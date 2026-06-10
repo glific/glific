@@ -167,7 +167,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
 
       - name: Run tests with coverage
-        run: mix coveralls.json
+        run: mix coveralls.json --max-cases 2
 
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@v5.4.0
