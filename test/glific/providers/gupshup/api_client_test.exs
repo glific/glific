@@ -4,20 +4,31 @@ defmodule Glific.Providers.Gupshup.ApiClientTest do
   alias Glific.Providers.Gupshup.ApiClient
 
   describe "download_media_content/2" do
-    test "returns base64 encoded content on successful download" do
+    test "returns base64 encoded content and content-type on successful download" do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://example.com/media/audio.mp3"} ->
           %Tesla.Env{
             status: 200,
-            body: <<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46>>
+            body: <<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46>>,
+            headers: [{"content-type", "audio/mpeg"}]
           }
       end)
 
-      assert {:ok, encoded} =
+      assert {:ok, encoded, "audio/mpeg"} =
                ApiClient.download_media_content("https://example.com/media/audio.mp3", 1)
 
       assert encoded ==
                Base.encode64(<<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46>>)
+    end
+
+    test "returns nil content-type when the server omits the header" do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://example.com/media/audio.mp3"} ->
+          %Tesla.Env{status: 200, body: <<0xFF, 0xD8>>}
+      end)
+
+      assert {:ok, _encoded, nil} =
+               ApiClient.download_media_content("https://example.com/media/audio.mp3", 1)
     end
 
     test "returns error on non-200 status code" do
