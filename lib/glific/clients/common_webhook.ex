@@ -14,6 +14,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.Providers.Maytapi
   alias Glific.Repo
   alias Glific.SafeLog
@@ -246,6 +247,7 @@ defmodule Glific.Clients.CommonWebhook do
     with_failure_reporting("parse_via_gpt_vision", org_id, fn ->
       # validating if the url passed is a valid image url
       with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
+           {:ok, fields} <- maybe_inline_image(fields, url, org_id),
            {:ok, fields} <- parse_response_format(fields),
            {:ok, response} <- ChatGPT.gpt_vision(fields) do
         %{success: true, response: parse_gpt_response(response)}
@@ -683,6 +685,31 @@ defmodule Glific.Clients.CommonWebhook do
       _ -> nil
     end
   end
+
+  @spec maybe_inline_image(map(), String.t(), non_neg_integer() | nil) ::
+          {:ok, map()} | {:error, String.t()}
+  defp maybe_inline_image(fields, image_url, org_id) do
+    if FunWithFlags.enabled?(:is_gpt_vision_base64_enabled, for: %{organization_id: org_id}) do
+      case GupshupClient.download_media_content(image_url, org_id) do
+        {:ok, encoded_image, content_type} ->
+          # OpenAI needs a data URL (data:<mime>;base64,<...>), not bare base64.
+          # Use the server's Content-Type since Gupshup media URLs carry no extension.
+          mime = normalize_image_mime(content_type)
+          {:ok, Map.put(fields, "url", "data:#{mime};base64,#{encoded_image}")}
+
+        {:error, _reason} ->
+          {:error, "Failed to download image for vision parsing"}
+      end
+    else
+      {:ok, fields}
+    end
+  end
+
+  @spec normalize_image_mime(String.t() | nil) :: String.t()
+  defp normalize_image_mime(nil), do: "image/jpeg"
+
+  defp normalize_image_mime(content_type),
+    do: content_type |> String.split(";") |> hd() |> String.trim()
 
   # Webhook param validation hook. Single check today; convert to a
   # short-circuiting `with` once there's more than one field to validate.
