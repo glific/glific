@@ -520,6 +520,5 @@ defmodule Glific.CommunicationsTest do
                filter: Map.merge(attrs, %{category: "low_bsp_balance"})
              }) == 1
     end
-
   end
 end

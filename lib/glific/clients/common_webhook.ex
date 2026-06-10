@@ -10,6 +10,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Contacts
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
+  alias Glific.Flows.Webhooks.Dispatcher
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
@@ -292,30 +293,11 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
 
-  def webhook("geolocation", fields) do
-    lat = fields["lat"]
-    long = fields["long"]
-    org_id = parse_org_id(fields)
-    api_key = Glific.get_google_maps_api_key()
-
-    url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=#{lat},#{long}&key=#{api_key}"
-
-    with_failure_reporting("geolocation", org_id, fn ->
-      case Tesla.get(url) do
-        {:ok, %Tesla.Env{status: 200, body: body}} ->
-          Glific.Metrics.increment("Geolocation API Success")
-          body |> Jason.decode!() |> Map.fetch!("results") |> parse_geolocation_results()
-
-        {:ok, %Tesla.Env{status: status_code}} ->
-          Glific.Metrics.increment("Geolocation API Failure")
-          "Received status code #{status_code}"
-
-        {:error, reason} ->
-          Glific.Metrics.increment("Geolocation API Failure")
-          "HTTP request failed: #{SafeLog.safe_inspect(reason)}"
-      end
-    end)
-  end
+  # Migrated to Glific.Flows.Webhooks.Geolocation. This clause now routes
+  # through the centralised dispatcher, which wraps the call with failure
+  # reporting + latency telemetry.
+  def webhook("geolocation", fields),
+    do: Dispatcher.dispatch_named("geolocation", fields)
 
   # webhook for sending whatsapp group polls in a flow
   def webhook("send_wa_group_poll", fields) do
@@ -445,31 +427,6 @@ defmodule Glific.Clients.CommonWebhook do
         %{success: false, reason: inspect(reason)}
     end
   end
-
-  @spec find_component(list(map()), String.t()) :: String.t()
-  defp find_component(components, type) do
-    case Enum.find(components, fn component -> type in component["types"] end) do
-      nil -> "N/A"
-      component -> component["long_name"]
-    end
-  end
-
-  @spec parse_geolocation_results(list(map())) :: map() | String.t()
-  defp parse_geolocation_results([
-         %{"address_components" => components, "formatted_address" => formatted_address} | _
-       ]) do
-    %{
-      success: true,
-      city: find_component(components, "locality"),
-      state: find_component(components, "administrative_area_level_1"),
-      country: find_component(components, "country"),
-      postal_code: find_component(components, "postal_code"),
-      district: find_component(components, "administrative_area_level_3"),
-      address: formatted_address
-    }
-  end
-
-  defp parse_geolocation_results(_), do: "No results found"
 
   @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
   defp do_text_to_speech_with_bhasini(fields) do

@@ -225,7 +225,7 @@ defmodule GlificWeb.KaapiControllerTest do
 
     test "does not update already failed knowledge base version",
          %{conn: conn, knowledge_base_version: knowledge_base_version} do
-      {:ok, _} =
+      {:ok, failed_version} =
         Assistants.update_knowledge_base_version(knowledge_base_version, %{status: :failed})
 
       params = %{
@@ -246,7 +246,7 @@ defmodule GlificWeb.KaapiControllerTest do
         Repo.fetch(KnowledgeBaseVersion, knowledge_base_version.id, skip_organization_id: true)
 
       assert updated.status == :failed
-      assert updated.updated_at == knowledge_base_version.updated_at
+      assert updated.updated_at == failed_version.updated_at
     end
   end
 
