@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup elixir
         uses: erlef/setup-elixir@v1
@@ -69,7 +69,7 @@ jobs:
     container:
       image: erlangsolutions/safe:latest-ex-1.18
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download _build directory
         uses: actions/download-artifact@v4
