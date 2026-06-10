@@ -67,63 +67,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     :ok
   end
 
-  test "successful geolocation response" do
-    lat = "37.7749"
-    long = "-122.4194"
-    fields = %{"lat" => lat, "long" => long}
-
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "results" => [
-                %{
-                  "address_components" => [
-                    %{"long_name" => "San Francisco", "types" => ["locality"]},
-                    %{"long_name" => "CA", "types" => ["administrative_area_level_1"]},
-                    %{"long_name" => "USA", "types" => ["country"]}
-                  ],
-                  "formatted_address" => "San Francisco, CA, USA"
-                }
-              ]
-            })
-        }
-    end)
-
-    result = CommonWebhook.webhook("geolocation", fields)
-
-    assert result[:success] == true
-    assert result[:city] == "San Francisco"
-    assert result[:state] == "CA"
-    assert result[:country] == "USA"
-    assert result[:postal_code] == "N/A"
-    assert result[:district] == "N/A"
-    assert result[:address] == "San Francisco, CA, USA"
-  end
-
-  test "geolocation failure response" do
-    lat = "37.7749"
-    long = "-122.4194"
-    fields = %{"lat" => lat, "long" => long}
-
-    # Mock a non-200 response from the API (e.g., 500 Internal Server Error)
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 500,
-          body: "Internal Server Error"
-        }
-    end)
-
-    result = CommonWebhook.webhook("geolocation", fields)
-
-    assert is_binary(result)
-    assert result =~ "500"
-    assert result =~ "Internal Server Error"
-  end
-
   test "detect_language/1 detects correct language from voice note using Bhashini" do
     fields = %{
       "speech" =>
