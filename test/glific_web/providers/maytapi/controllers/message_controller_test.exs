@@ -1413,6 +1413,24 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         Repo.fetch_by(WAGroup, %{bsp_id: new_group_bsp_id, organization_id: org_id})
     end
 
+    test "brand-new group with no group_name in the webhook: label defaults to bsp_id",
+         %{organization_id: org_id} do
+      new_group_bsp_id = "888888888888888888@g.us"
+
+      params =
+        base_params(org_id)
+        |> Map.put(:wa_group_bsp_id, new_group_bsp_id)
+        |> Map.put(:group_name, nil)
+        |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      {:ok, group} =
+        Repo.fetch_by(WAGroup, %{bsp_id: new_group_bsp_id, organization_id: org_id})
+
+      assert group.label == new_group_bsp_id
+    end
+
     test "non_primary_receiver? fails open when the group has no primary phone set",
          %{organization_id: org_id} do
       # Group exists but its sole primary membership has been deactivated
@@ -1435,6 +1453,63 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # the time of the inbound
       {:ok, _} =
         Repo.fetch_by(WAGroup, %{bsp_id: group_bsp_id, organization_id: org_id})
+    end
+
+    test "single-number org: inbound on the sole managed phone is stored normally",
+         %{organization_id: org_id} do
+      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      {:ok, message} =
+        Repo.fetch_by(WAMessage, %{bsp_id: params.bsp_id, organization_id: org_id})
+
+      assert message.flow == :inbound
+    end
+
+    test "Glific outbound + echo on a non-primary phone leaves a single wa_message row",
+         %{organization_id: org_id} do
+      # Simulate the round trip:
+      #   1. Glific sends a group message from the primary phone — outbound
+      #      row created in DB.
+      #   2. Maytapi echoes the message back via webhook to other managed
+      #      phones in the group. With primary-only routing, an echo
+      #      arriving on a non-primary phone is dropped at receive_message,
+      #      so no second row is inserted.
+      # Result: exactly one wa_message row for the body — the outbound.
+      {:ok, primary} = WAManagedPhones.fetch_by_phone("917834811114")
+      second_phone = seed_second_phone(org_id)
+
+      {:ok, outbound} =
+        Glific.WAMessages.create_message(%{
+          organization_id: org_id,
+          contact_id: primary.contact_id,
+          wa_managed_phone_id: primary.id,
+          body: "hello from glific",
+          bsp_id: Ecto.UUID.generate(),
+          bsp_status: :enqueued,
+          status: :sent,
+          flow: :outbound,
+          type: :text
+        })
+
+      echo_params =
+        base_params(org_id)
+        |> Map.put(:receiver, second_phone.phone)
+        |> Map.put(:body, "hello from glific")
+        |> Map.put(:bsp_id, "false_120363213149844251@g.us_3EBECHO_917834811114@c.us")
+
+      assert :ok = GroupMessage.receive_message(echo_params, :text)
+
+      rows =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and m.body == "hello from glific")
+        |> Repo.all()
+
+      assert length(rows) == 1
+      [only] = rows
+      assert only.id == outbound.id
+      assert only.flow == :outbound
     end
 
     test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",

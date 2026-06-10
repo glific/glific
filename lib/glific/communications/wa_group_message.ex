@@ -350,12 +350,20 @@ defmodule Glific.Communications.GroupMessage do
   defp fetch_wa_group_id(nil, _message_params), do: nil
 
   defp fetch_wa_group_id(wa_managed_phone_id, message_params) do
+    # Some Maytapi webhooks (notably for brand-new groups) arrive with no
+    # conversation_name. WAGroup requires a label, so fall back to the
+    # bsp_id; the sync job will overwrite it once the real name is known.
+    label =
+      if message_params.group_name in [nil, ""],
+        do: message_params.wa_group_bsp_id,
+        else: message_params.group_name
+
     {:ok, wa_group} =
       WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         wa_managed_phone_id: wa_managed_phone_id,
         bsp_id: message_params.wa_group_bsp_id,
-        label: message_params.group_name
+        label: label
       })
 
     wa_group.id
