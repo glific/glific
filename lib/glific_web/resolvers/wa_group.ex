@@ -7,7 +7,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
 
   alias Glific.{
     Groups.ContactWAGroups,
-    Groups.WAGroups
+    Groups.WAGroup,
+    Groups.WAGroups,
+    WAGroup.WAManagedPhone
   }
 
   @doc """
@@ -81,8 +83,8 @@ defmodule GlificWeb.Resolvers.WaGroup do
   Resolve `WAGroup.primaryPhone` — the managed phone whose membership row
   has `is_primary: true` and `is_active: true`.
   """
-  @spec primary_phone(Glific.Groups.WAGroup.t(), map(), %{context: map()}) ::
-          {:ok, Glific.WAGroup.WAManagedPhone.t() | nil}
+  @spec primary_phone(WAGroup.t(), map(), %{context: map()}) ::
+          {:ok, WAManagedPhone.t() | nil}
   def primary_phone(wa_group, _args, _resolution) do
     {:ok, WAGroups.primary_phone(wa_group.id)}
   end
@@ -92,38 +94,36 @@ defmodule GlificWeb.Resolvers.WaGroup do
   """
   @spec set_primary_phone(
           Absinthe.Resolution.t(),
-          %{wa_group_id: String.t() | integer, wa_managed_phone_id: String.t() | integer},
-          %{context: map()}
-        ) :: {:ok, map()} | {:error, any}
+          %{wa_group_id: integer, wa_managed_phone_id: integer},
+          %{
+            context: map()
+          }
+        ) :: {:ok, any} | {:error, any}
   def set_primary_phone(
         _,
         %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id},
         _
       ) do
-    case WAGroups.set_primary_phone(to_int(wa_group_id), to_int(wa_managed_phone_id)) do
-      {:ok, %{wa_group_phone: wgp, warning: warning}} ->
-        {:ok, %{wa_group_phone: wgp, warning: warning}}
+    case WAGroups.set_primary_phone(wa_group_id, wa_managed_phone_id) do
+      {:ok, result} ->
+        {:ok, result}
 
       {:error, :membership_not_found} ->
         {:error,
          dgettext(
            "errors",
-           "No membership exists for this (group, phone) pair. Add the phone to the group first."
+           "This phone is not a member of the group. Add it to the group on WhatsApp before promoting."
          )}
 
       {:error, :inactive_membership} ->
         {:error,
          dgettext(
            "errors",
-           "This phone's membership in the group is inactive. Re-add it via sync before promoting."
+           "This phone was removed from the group. Re-add it on WhatsApp before promoting."
          )}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:error, changeset}
     end
   end
-
-  @spec to_int(integer | String.t()) :: integer
-  defp to_int(v) when is_integer(v), do: v
-  defp to_int(v) when is_binary(v), do: String.to_integer(v)
 end

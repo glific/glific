@@ -447,7 +447,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
       assert {:ok, query_data} = result
       [error] = query_data[:errors]
-      assert error.message =~ "No membership"
+      assert error.message =~ "not a member of the group"
     end
 
     test "setPrimaryPhone errors when target membership is inactive", %{
@@ -472,7 +472,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
       assert {:ok, query_data} = result
       [error] = query_data[:errors]
-      assert error.message =~ "inactive"
+      assert error.message =~ "removed from the group"
     end
 
     test "setPrimaryPhone is rejected for non-admin roles (manager)", %{
