@@ -93,7 +93,7 @@ defmodule Glific.Repo.Migrations.FixDeleteOrganizationDataPermissions do
         WHERE id = org_id;
 
         FOR tbl IN
-          SELECT table_name
+          SELECT DISTINCT table_name
           FROM information_schema.columns
           WHERE column_name = 'organization_id'
             AND table_schema = 'public'
@@ -113,7 +113,7 @@ defmodule Glific.Repo.Migrations.FixDeleteOrganizationDataPermissions do
         RAISE;
       END;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $$ LANGUAGE plpgsql;
     """)
   end
 end
