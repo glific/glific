@@ -8,6 +8,7 @@ defmodule Glific.BigQueryTest do
     BigQuery,
     BigQuery.BigQueryJob,
     BigQuery.BigQueryWorker,
+    BigQuery.Schema,
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
@@ -656,7 +657,7 @@ defmodule Glific.BigQueryTest do
 
   describe "wa_groups BigQuery serialization" do
     test "wa_groups_phones_schema/0 includes all expected fields" do
-      schema = Glific.BigQuery.Schema.wa_groups_phones_schema()
+      schema = Schema.wa_groups_phones_schema()
       field_names = Enum.map(schema, & &1.name)
 
       assert "id" in field_names
@@ -669,7 +670,7 @@ defmodule Glific.BigQueryTest do
     end
 
     test "wa_message_schema/0 includes wa_phone_id field" do
-      schema = Glific.BigQuery.Schema.wa_message_schema()
+      schema = Schema.wa_message_schema()
       field_names = Enum.map(schema, & &1.name)
       assert "wa_phone_id" in field_names
     end
