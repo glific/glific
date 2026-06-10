@@ -351,7 +351,8 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
   def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
-    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+    with {:ok, encoded_audio, _content_type} <-
+           GupshupClient.download_media_content(audio_url, organization_id),
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
