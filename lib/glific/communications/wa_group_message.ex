@@ -38,6 +38,9 @@ defmodule Glific.Communications.GroupMessage do
     poll: :send_poll
   }
 
+  # Time window for matching an inbound echo to a still-unacked outbound row.
+  @outbound_echo_window_seconds 30
+
   @doc """
   Send message to receiver using define provider.
   """
@@ -101,6 +104,13 @@ defmodule Glific.Communications.GroupMessage do
 
         :ok
 
+      echo_of_our_outbound?(message_params) ->
+        Logger.info(
+          "Skipping inbound: matches a recent unacked Glific outbound (org #{organization_id}); stamped wa_msg_id on the outbound row"
+        )
+
+        :ok
+
       true ->
         {:ok, contact} =
           message_params.sender
@@ -116,6 +126,50 @@ defmodule Glific.Communications.GroupMessage do
     case Message.wa_msg_id_from_serialized(message_params[:bsp_id]) do
       nil -> false
       wa_msg_id -> Repo.exists?(from(m in WAMessage, where: m.wa_msg_id == ^wa_msg_id))
+    end
+  end
+
+  # Catches the race where an echo of a Glific-sent message arrives before
+  # its ack populates wa_msg_id on the outbound row. Looks for a recent
+  # outbound row with matching body sent from the phone now echoing back;
+  # if found, stamps it with wa_msg_id and tells the caller to skip the
+  # insert. Media-without-caption isn't caught here (no body); the ack-time
+  # cleanup in update_bsp_status_and_wa_msg_id/4 handles those.
+  @spec echo_of_our_outbound?(map()) :: boolean()
+  defp echo_of_our_outbound?(%{body: body, sender: %{phone: sender_phone}} = message_params)
+       when is_binary(body) and body != "" and is_binary(sender_phone) and sender_phone != "" do
+    with wa_msg_id when is_binary(wa_msg_id) <-
+           Message.wa_msg_id_from_serialized(message_params[:bsp_id]),
+         %WAMessage{id: id} <- find_matching_outbound(body, sender_phone) do
+      from(m in WAMessage, where: m.id == ^id)
+      |> Repo.update_all(set: [wa_msg_id: wa_msg_id])
+
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp echo_of_our_outbound?(_), do: false
+
+  @spec find_matching_outbound(String.t(), String.t()) :: WAMessage.t() | nil
+  defp find_matching_outbound(body, sender_phone) do
+    with {:ok, %{id: managed_phone_id}} <- WAManagedPhones.fetch_by_phone(sender_phone) do
+      cutoff = DateTime.add(DateTime.utc_now(), -@outbound_echo_window_seconds, :second)
+
+      from(m in WAMessage,
+        where:
+          m.flow == :outbound and
+            m.body == ^body and
+            m.wa_managed_phone_id == ^managed_phone_id and
+            is_nil(m.wa_msg_id) and
+            m.inserted_at >= ^cutoff,
+        order_by: [desc: m.inserted_at],
+        limit: 1
+      )
+      |> Repo.one()
+    else
+      _ -> nil
     end
   end
 
