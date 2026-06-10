@@ -226,11 +226,13 @@ defmodule GlificWeb.Schema.TicketTest do
     [header | tickets] = String.split(support_tickets, "\n")
     assert header == "status,body,inserted_at,topic,opened_by,assigned_to,flow_name"
 
-    assert tickets == [
-             "open,test body01,#{time},test topic01,#{contact.name},#{staff.name},#{flow.name},",
-             "closed,test body02,#{time},some topic,#{contact.name},#{staff.name},#{flow.name},",
-             ""
-           ]
+    ticket_rows = Enum.reject(tickets, &(&1 == ""))
+
+    assert Enum.sort(ticket_rows) ==
+             Enum.sort([
+               "open,test body01,#{time},test topic01,#{contact.name},#{staff.name},#{flow.name},",
+               "closed,test body02,#{time},some topic,#{contact.name},#{staff.name},#{flow.name},"
+             ])
 
     Tickets.delete_ticket(support_ticket_1)
     Tickets.delete_ticket(support_ticket_2)

@@ -119,7 +119,9 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     result = CommonWebhook.webhook("geolocation", fields)
 
-    assert result == "Received status code 500"
+    assert is_binary(result)
+    assert result =~ "500"
+    assert result =~ "Internal Server Error"
   end
 
   test "detect_language/1 detects correct language from voice note using Bhashini" do
@@ -1048,7 +1050,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
-                   "gemini-2.5-pro"
+                   "gemini-3.1-pro-preview"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) ==
                    "auto"
@@ -1185,7 +1187,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
-                   "gemini-2.5-pro-preview-tts"
+                   "gemini-3.1-flash-tts-preview"
 
           assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
 

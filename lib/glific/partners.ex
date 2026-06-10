@@ -1051,7 +1051,7 @@ defmodule Glific.Partners do
 
   @spec do_validate_bigquery_service_account(String.t(), non_neg_integer() | nil) ::
           :ok | {:error, String.t()}
-  defp do_validate_bigquery_service_account(service_account_json, organization_id \\ nil) do
+  defp do_validate_bigquery_service_account(service_account_json, organization_id) do
     with {:ok, service_account} <- Jason.decode(service_account_json),
          {:ok, :valid} <- BigQuery.validate_bigquery_credentials(service_account, organization_id) do
       :ok
