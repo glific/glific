@@ -62,7 +62,7 @@ gh run view <run-id> --log-failed
 
 | Check / job | Local equivalent |
 |-------------|------------------|
-| `code-quality` | `mix check` |
+| `code-quality` | `MIX_ENV=test mix check` |
 | `tests` | `mix test` (+ postgres) |
 | `compile` | `mix compile --warnings-as-errors` |
 | Coverage upload | **improve-code-coverage** skill (local gate), then CI `mix coveralls.json` |

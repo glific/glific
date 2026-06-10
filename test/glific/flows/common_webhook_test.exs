@@ -119,7 +119,9 @@ defmodule Glific.Flows.CommonWebhookTest do
 
     result = CommonWebhook.webhook("geolocation", fields)
 
-    assert result == "Received status code 500"
+    assert is_binary(result)
+    assert result =~ "500"
+    assert result =~ "Internal Server Error"
   end
 
   test "detect_language/1 detects correct language from voice note using Bhashini" do
@@ -378,6 +380,74 @@ defmodule Glific.Flows.CommonWebhookTest do
 
       assert "I'm sorry, but I can't provide the information from the document." =
                CommonWebhook.webhook("parse_via_gpt_vision", fields)
+    end
+  end
+
+  test "parse_via_gpt_vision with base64 flag on downloads the image and sends it inline" do
+    FunWithFlags.enable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
+
+    try do
+      with_mock(
+        Messages,
+        validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+      ) do
+        image_bytes = <<137, 80, 78, 71, 13, 10, 26, 10>>
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: "https://example.com/image.png"} ->
+            %Tesla.Env{status: 200, body: image_bytes, headers: [{"content-type", "image/png"}]}
+
+          %{method: :post, url: "https://api.openai.com/v1/chat/completions", body: body} ->
+            assert body =~ "data:image/png;base64,#{Base.encode64(image_bytes)}"
+            refute body =~ "https://example.com/image.png"
+
+            %Tesla.Env{
+              status: 200,
+              body: %{"choices" => [%{"message" => %{"content" => "{\"answer\": 10}"}}]}
+            }
+        end)
+
+        fields = %{
+          "prompt" => "what's the answer",
+          "url" => "https://example.com/image.png",
+          "model" => "gpt-4o",
+          "organization_id" => "1",
+          "response_format" => %{"type" => "json_object"}
+        }
+
+        assert %{success: true, response: %{"answer" => 10}} =
+                 CommonWebhook.webhook("parse_via_gpt_vision", fields)
+      end
+    after
+      FunWithFlags.disable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
+    end
+  end
+
+  test "parse_via_gpt_vision with base64 flag on routes to Failure when image download fails" do
+    FunWithFlags.enable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
+
+    try do
+      with_mock(
+        Messages,
+        validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
+      ) do
+        Tesla.Mock.mock(fn
+          %{method: :get, url: "https://example.com/missing.png"} ->
+            {:error, :timeout}
+        end)
+
+        fields = %{
+          "prompt" => "what's the answer",
+          "url" => "https://example.com/missing.png",
+          "model" => "gpt-4o",
+          "organization_id" => "1"
+        }
+
+        assert "Failed to download image for vision parsing" ==
+                 CommonWebhook.webhook("parse_via_gpt_vision", fields)
+      end
+    after
+      FunWithFlags.disable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
     end
   end
 
