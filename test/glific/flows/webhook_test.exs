@@ -127,6 +127,10 @@ defmodule Glific.Flows.WebhookTest do
 
       assert_enqueued(worker: Webhook, prefix: "global")
 
+      # Warm the org cache before draining so Cachex's fallback DB query
+      # doesn't fire from the Oban job's spawned process, which lacks sandbox ownership.
+      Partners.organization(attrs.organization_id)
+
       Oban.drain_queue(queue: :webhook)
 
       webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
