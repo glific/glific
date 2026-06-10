@@ -54,14 +54,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   @spec do_geocode(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
   defp do_geocode(url) do
     case Tesla.get(client(), url) do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        decode_success(body)
-
-      {:ok, %Tesla.Env{status: status_code} = env} ->
-        body = Map.get(env, :body, "")
-
-        {:error,
-         "Geocoding failed with HTTP error #{status_code} - #{body}. Please try again. If the problem continues, check that the Google Maps API key is valid and the Geocoding API is enabled."}
+      {:ok, %Tesla.Env{body: body}} ->
+        decode_response(body)
 
       {:error, reason} ->
         {:error,
@@ -69,8 +63,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     end
   end
 
-  @spec decode_success(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
-  defp decode_success(body) do
+  @spec decode_response(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
+  defp decode_response(body) do
     case Jason.decode(body) do
       {:ok, decoded} when is_map(decoded) ->
         decode_geocode_response(decoded)
@@ -84,7 +78,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     end
   end
 
-  # Google Maps Geocoding API returns HTTP 200 with a `status` field even on failure.
+  # The Geocoding API contract is defined purely by the `status` field in the JSON body —
+  # the docs make no guarantees about HTTP status codes.
   # See https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
   @spec decode_geocode_response(map()) :: {:ok, Address.t()} | {:error, String.t()}
   defp decode_geocode_response(%{"status" => "OK", "results" => results}),
@@ -94,6 +89,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     {:error, geocode_status_error(status, Map.get(decoded, "error_message"))}
   end
 
+  # Must come after the status-bearing clause above — a response with both "status" and
+  # "results" should be routed by status, not treated as a no-status success.
   defp decode_geocode_response(%{"results" => results}), do: parse_results(results)
 
   defp decode_geocode_response(_unexpected) do
