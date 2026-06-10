@@ -93,7 +93,9 @@ defmodule Glific.Jobs.MinuteWorker do
         )
 
       "stats" ->
-        Stats.generate_stats([], false)
+        Appsignal.CheckIn.cron("glific_stats_hourly", fn ->
+          Stats.generate_stats([], false)
+        end)
     end
 
     :ok
