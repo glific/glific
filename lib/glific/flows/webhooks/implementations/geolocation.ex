@@ -89,6 +89,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     {:error, geocode_status_error(status, Map.get(decoded, "error_message"))}
   end
 
+  # Must come after the status-bearing clause above — a response with both "status" and
+  # "results" should be routed by status, not treated as a no-status success.
   defp decode_geocode_response(%{"results" => results}), do: parse_results(results)
 
   defp decode_geocode_response(_unexpected) do

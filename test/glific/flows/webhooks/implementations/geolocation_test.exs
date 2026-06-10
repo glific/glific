@@ -150,29 +150,13 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
   end
 
   describe "call/2 - transport failures" do
-    test "returns {:error, string} when response body is not valid JSON" do
+    test "returns unreadable-response error when body is not valid JSON" do
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{status: 500, body: "Internal Server Error"}
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
-      assert is_binary(msg)
-    end
-
-    test "status field in JSON body is used regardless of HTTP status code" do
-      body =
-        Jason.encode!(%{
-          "status" => "REQUEST_DENIED",
-          "error_message" => "This API project is not authorized to use this API."
-        })
-
-      Tesla.Mock.mock(fn %{method: :get} ->
-        %Tesla.Env{status: 400, body: body}
-      end)
-
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
-      assert msg =~ "denied"
-      assert msg =~ "This API project is not authorized"
+      assert msg =~ "unreadable response"
     end
 
     test "returns {:error, string} on network failure" do
@@ -219,7 +203,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
-      assert msg =~ "denied"
+      assert msg =~ "Geocoding request was denied."
       assert msg =~ "This API project is not authorized"
     end
 
@@ -231,7 +215,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
-      assert msg =~ "denied"
+      assert msg =~ "Geocoding request was denied."
       refute msg =~ "nil"
     end
 
