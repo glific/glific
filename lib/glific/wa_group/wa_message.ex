@@ -32,6 +32,7 @@ defmodule Glific.WAGroup.WAMessage do
           body: String.t() | nil,
           bsp_status: String.t() | nil,
           bsp_id: String.t() | nil,
+          wa_msg_id: String.t() | nil,
           errors: map() | nil,
           message_number: integer(),
           contact_id: non_neg_integer | nil,
@@ -73,6 +74,7 @@ defmodule Glific.WAGroup.WAMessage do
   @optional_fields [
     :body,
     :bsp_id,
+    :wa_msg_id,
     :wa_managed_phone_id,
     :group_id,
     :wa_group_id,
@@ -104,6 +106,7 @@ defmodule Glific.WAGroup.WAMessage do
     field(:sent_at, :utc_datetime)
     field(:context_id, :string)
     field(:bsp_id, :string)
+    field(:wa_msg_id, :string)
     field(:is_dm, :boolean)
     field(:flow_label, :string)
     field(:poll_content, :map, default: %{})

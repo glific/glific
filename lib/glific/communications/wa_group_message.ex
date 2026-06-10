@@ -12,6 +12,7 @@ defmodule Glific.Communications.GroupMessage do
     Groups.ContactWAGroups,
     Groups.WAGroups,
     Messages,
+    Providers.Maytapi.Message,
     Repo,
     WAGroup.WAMessage,
     WAGroup.WaReaction,
@@ -93,9 +94,9 @@ defmodule Glific.Communications.GroupMessage do
 
         :ok
 
-      sender_is_our_managed_phone?(message_params) ->
+      same_message_already_stored?(message_params) ->
         Logger.info(
-          "Skipping inbound: sender '#{get_in(message_params, [:sender, :phone])}' is our managed phone in org #{organization_id}; already stored via outbound"
+          "Skipping inbound: wa_msg_id '#{Message.wa_msg_id_from_serialized(message_params[:bsp_id])}' already stored in org #{organization_id} (echo of the same WhatsApp message on another managed phone)"
         )
 
         :ok
@@ -110,22 +111,13 @@ defmodule Glific.Communications.GroupMessage do
     end
   end
 
-  # Maytapi assigns a different `bsp_id` to the outbound API response and
-  # to the webhook echo, so dedup-by-bsp_id alone can't catch the
-  # multi-phone case. The reliable signal is the sender: if the webhook's
-  # sender phone matches one of our managed phones, the message was sent
-  # via Glific (or directly from one of our phones) — the outbound flow
-  # already stored it. Skip.
-  @spec sender_is_our_managed_phone?(map()) :: boolean()
-  defp sender_is_our_managed_phone?(%{sender: %{phone: phone}})
-       when is_binary(phone) do
-    case WAManagedPhones.fetch_by_phone(phone) do
-      {:ok, _} -> true
-      _ -> false
+  @spec same_message_already_stored?(map()) :: boolean()
+  defp same_message_already_stored?(message_params) do
+    case Message.wa_msg_id_from_serialized(message_params[:bsp_id]) do
+      nil -> false
+      wa_msg_id -> Repo.exists?(from(m in WAMessage, where: m.wa_msg_id == ^wa_msg_id))
     end
   end
-
-  defp sender_is_our_managed_phone?(_), do: false
 
   # In multi-phone orgs the same WhatsApp message can arrive once per
   # managed phone in the group. The bsp_id (Maytapi's underlying message
@@ -144,13 +136,32 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @doc """
-  Callback to update the provider status for a message
+  Callback used by Maytapi ack/status events. Looks up the row by
+  `bsp_id` (Maytapi's UUID-shaped `msgId`, which we stored at outbound
+  time) and updates `bsp_status`. If the ack also carries an `rxid` —
+  the WhatsApp `_serialized` form `{fromMe}_{group}_{msgId}_{participant}`
+  — we parse the middle msgId segment out of it and stamp it on the row
+  as `wa_msg_id`, so subsequent multi-phone-echo dedup
+  (`same_message_already_stored?/1`) has a key to match against.
   """
-  @spec update_bsp_status(String.t(), atom(), non_neg_integer()) :: any()
-  def update_bsp_status(bsp_message_id, bsp_status, org_id) do
+  @spec update_bsp_status_and_wa_msg_id(
+          String.t(),
+          String.t() | nil,
+          atom(),
+          non_neg_integer()
+        ) :: any()
+  def update_bsp_status_and_wa_msg_id(bsp_message_id, rxid, bsp_status, org_id) do
+    set_attrs = [bsp_status: bsp_status, updated_at: DateTime.utc_now()]
+
+    set_attrs =
+      case Message.wa_msg_id_from_serialized(rxid) do
+        nil -> set_attrs
+        wa_msg_id -> Keyword.put(set_attrs, :wa_msg_id, wa_msg_id)
+      end
+
     WAMessage
     |> where([wa_msg], wa_msg.bsp_id == ^bsp_message_id and wa_msg.organization_id == ^org_id)
-    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+    |> Repo.update_all(set: set_attrs)
   end
 
   @doc """
@@ -273,7 +284,8 @@ defmodule Glific.Communications.GroupMessage do
       is_dm: is_dm,
       organization_id: contact.organization_id,
       wa_group_id: wa_group_id,
-      wa_managed_phone_id: wa_managed_phone_id
+      wa_managed_phone_id: wa_managed_phone_id,
+      wa_msg_id: Message.wa_msg_id_from_serialized(message_params[:bsp_id])
     }
   end
 

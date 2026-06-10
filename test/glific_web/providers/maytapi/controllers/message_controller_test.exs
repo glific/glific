@@ -1305,33 +1305,34 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert message.wa_group_id == nil
     end
 
-    test "inbound webhook whose sender is one of our managed phones is dropped (echo of own outbound)",
+    test "second inbound webhook with the same WhatsApp msg id (different fromMe/participant) is dedupped",
          %{conn: conn, organization_id: org_id} do
-      # Glific sends from phone A → Maytapi fires the inbound echo webhook
-      # for phone B (also a member of the group) with sender = phone A.
-      # The outbound flow already stored the message; this webhook should
-      # be skipped on the sender-match check (its bsp_id is also different
-      # from the outbound's, so bsp_id dedup wouldn't catch it).
-      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
-      second_phone = seed_second_phone(org_id)
+      # Same physical WhatsApp message echoes to two of our managed phones
+      # in the group. Maytapi's `_serialized` bsp_id encodes the receiving
+      # phone's fromMe perspective, so the two webhooks have DIFFERENT
+      # bsp_ids — `duplicate_inbound?/1` can't catch it. The middle msgId
+      # segment is identical though, so `same_message_already_stored?/1`
+      # picks it up.
+      bsp_id = "false_120363213149844251@g.us_3EBABCDEF1234567890ABC_919917443994@c.us"
+      bsp_id_echo = "true_120363213149844251@g.us_3EBABCDEF1234567890ABC_919917443994@c.us"
 
-      webhook =
-        @text_message_webhook
-        |> put_in(["message", "id"], Ecto.UUID.generate())
-        |> put_in(["user", "phone"], first_phone.phone)
-        |> put_in(["receiver"], second_phone.phone)
+      first_webhook = put_in(@text_message_webhook, ["message", "id"], bsp_id)
+      echo_webhook = put_in(@text_message_webhook, ["message", "id"], bsp_id_echo)
 
-      conn = post(conn, "/maytapi", webhook)
-      assert conn.halted
+      conn1 = post(conn, "/maytapi", first_webhook)
+      assert conn1.halted
 
-      bsp_message_id = get_in(webhook, ["message", "id"])
+      conn2 = post(conn, "/maytapi", echo_webhook)
+      assert conn2.halted
 
+      # Only the first webhook's wa_message was stored — the echo was
+      # recognised by its wa_msg_id and dropped.
       rows =
         WAMessage
-        |> where([m], m.bsp_id == ^bsp_message_id and m.organization_id == ^org_id)
+        |> where([m], m.organization_id == ^org_id and m.wa_msg_id == "3EBABCDEF1234567890ABC")
         |> Repo.all()
 
-      assert rows == []
+      assert length(rows) == 1
     end
 
     test "duplicate_inbound? skips when bsp_id matches an existing wa_message",
@@ -1354,22 +1355,63 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert length(rows) == 1
     end
 
-    test "sender_is_our_managed_phone? skips when sender phone matches a managed phone",
+    test "same_message_already_stored? skips a second receive_message/2 with the same wa_msg_id but a different bsp_id",
          %{organization_id: org_id} do
-      [first_phone] = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+      first_bsp = "false_120363213149844251@g.us_3EBPARSE1234567890ABC_919876543210@c.us"
+      echo_bsp = "true_120363213149844251@g.us_3EBPARSE1234567890ABC_919876543210@c.us"
 
-      params =
-        base_params(org_id)
-        |> Map.put(:sender, %{phone: first_phone.phone, name: "echo", contact_type: "WA"})
+      first_params = base_params(org_id) |> Map.put(:bsp_id, first_bsp)
+      assert :ok = GroupMessage.receive_message(first_params, :text)
 
-      assert :ok = GroupMessage.receive_message(params, :text)
+      echo_params = %{first_params | bsp_id: echo_bsp}
+      assert :ok = GroupMessage.receive_message(echo_params, :text)
 
       rows =
         WAMessage
-        |> where([m], m.bsp_id == ^params.bsp_id and m.organization_id == ^org_id)
+        |> where(
+          [m],
+          m.organization_id == ^org_id and m.wa_msg_id == "3EBPARSE1234567890ABC"
+        )
         |> Repo.all()
 
-      assert rows == []
+      assert length(rows) == 1
+    end
+
+    test "same_message_already_stored? does NOT skip when the wa_msg_id segments differ",
+         %{organization_id: org_id} do
+      first_bsp = "false_120363213149844251@g.us_3EBAAA1111111111111111_919876543210@c.us"
+      other_bsp = "false_120363213149844251@g.us_3EBBBB2222222222222222_919876543210@c.us"
+
+      first_params = base_params(org_id) |> Map.put(:bsp_id, first_bsp)
+      assert :ok = GroupMessage.receive_message(first_params, :text)
+
+      other_params = %{first_params | bsp_id: other_bsp}
+      assert :ok = GroupMessage.receive_message(other_params, :text)
+
+      rows =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and not is_nil(m.wa_msg_id))
+        |> Repo.all()
+
+      assert length(rows) == 2
+    end
+
+    test "same_message_already_stored? returns false when bsp_id isn't in `_serialized` format (e.g. Glific outbound UUID)",
+         %{organization_id: org_id} do
+      first_params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
+      assert :ok = GroupMessage.receive_message(first_params, :text)
+
+      second_params = %{first_params | bsp_id: Ecto.UUID.generate()}
+      assert :ok = GroupMessage.receive_message(second_params, :text)
+
+      # Both stored, wa_msg_id is nil for each (the parser only succeeds
+      # on the 4-segment `_serialized` format).
+      rows =
+        WAMessage
+        |> where([m], m.organization_id == ^org_id and is_nil(m.wa_msg_id))
+        |> Repo.all()
+
+      assert length(rows) >= 2
     end
 
     test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",
@@ -1415,22 +1457,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         |> Repo.all()
 
       assert message.body == "hello"
-    end
-
-    test "sender_is_our_managed_phone? catch-all returns false when sender map has no phone key",
-         %{organization_id: org_id} do
-      # Sender shape doesn't match the first clause's `%{sender: %{phone: phone}}`
-      # pattern, so the catch-all `(_, _) -> false` fires. The downstream
-      # contact-creation path will then fail because we're missing a phone —
-      # we wrap that with assert_raise to confirm the dedup path got past the
-      # sender check (i.e. the catch-all was exercised, not a pattern crash).
-      params =
-        base_params(org_id)
-        |> Map.put(:sender, %{name: "no phone field", contact_type: "WA"})
-
-      assert_raise KeyError, fn ->
-        GroupMessage.receive_message(params, :text)
-      end
     end
 
     test "resolve_receiver/1 short-circuits to nil when receiver is missing or empty",
