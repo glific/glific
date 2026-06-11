@@ -113,10 +113,13 @@ defmodule Glific.Communications.GroupMessage do
     end
   end
 
-  # Returns true when this inbound should be dropped because another managed
-  # phone is the primary for the group it arrived on. Fails open (returns
-  # false) for DMs, unknown receivers, brand-new groups, and groups with no
-  # primary set; the last case is warned about loudly.
+  # Should we drop this inbound? Returns true only when we're sure another
+  # managed phone is the primary for this group (so this one is a duplicate
+  # echo). Returns false — meaning "keep the message" — unknown
+  # receivers, brand-new groups we've never seen, and groups that don't have
+  # a primary set yet. We'd rather store a message we didn't strictly need
+  # than silently lose a real one; the no-primary case is logged loudly so
+  # we can spot data drift.
   @spec non_primary_receiver?(map(), non_neg_integer()) :: boolean()
   defp non_primary_receiver?(%{is_dm: true}, _org_id), do: false
 
