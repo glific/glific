@@ -15,6 +15,13 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :errors, list_of(:input_error)
   end
 
+  @desc "Result of setPrimaryPhone. `warning` is set when the target phone's Maytapi status isn't 'active' so the UI can prompt for confirmation."
+  object :set_primary_phone_result do
+    field :wa_group_phone, :wa_group_phone
+    field :warning, :string
+    field :errors, list_of(:input_error)
+  end
+
   @desc "Membership row linking a WAManagedPhone to a WAGroup. Exactly one row per group has `isPrimary: true`."
   object :wa_group_phone do
     field :id, :id
@@ -88,6 +95,16 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:filter, :wa_group_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
+    end
+  end
+
+  object :wa_group_mutations do
+    @desc "Promote a managed phone to the group's primary. Admin-only. Demote-then-promote runs in a single transaction."
+    field :set_primary_phone, :set_primary_phone_result do
+      arg(:wa_group_id, non_null(:id))
+      arg(:wa_managed_phone_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.set_primary_phone/3)
     end
   end
 end
