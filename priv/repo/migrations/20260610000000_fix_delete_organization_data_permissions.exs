@@ -18,6 +18,7 @@ defmodule Glific.Repo.Migrations.FixDeleteOrganizationDataPermissions do
   No elevated privileges required — works with the standard app DB user.
   """
 
+  @spec up() :: :ok
   def up do
     execute("""
     CREATE OR REPLACE FUNCTION delete_organization_data(org_id BIGINT)
@@ -167,6 +168,7 @@ defmodule Glific.Repo.Migrations.FixDeleteOrganizationDataPermissions do
     """)
   end
 
+  @spec down() :: :ok
   def down do
     execute("""
     CREATE OR REPLACE FUNCTION delete_organization_data(org_id BIGINT)
