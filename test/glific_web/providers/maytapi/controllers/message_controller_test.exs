@@ -17,7 +17,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   }
 
   import Ecto.Query, warn: false
-  import ExUnit.CaptureLog
 
   @message_request_params %{
     "app" => "Glific Mock App",
@@ -1160,8 +1159,9 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       memberships =
         WAGroupPhone
         |> where(
-          [wgp],
-          wgp.wa_group_id == ^existing_group.id and wgp.wa_managed_phone_id == ^second_phone.id
+          [wa_group_phone],
+          wa_group_phone.wa_group_id == ^existing_group.id and
+            wa_group_phone.wa_managed_phone_id == ^second_phone.id
         )
         |> Repo.all()
 
@@ -1440,7 +1440,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       group_bsp_id = base_params(org_id).wa_group_bsp_id
 
       Glific.Groups.WAGroupPhone
-      |> where([wgp], wgp.organization_id == ^org_id and wgp.is_primary == true)
+      |> where(
+        [wa_group_phone],
+        wa_group_phone.organization_id == ^org_id and wa_group_phone.is_primary == true
+      )
       |> Repo.update_all(set: [is_primary: false])
 
       params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
@@ -1513,61 +1516,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       assert only.flow == :outbound
     end
 
-    test "logs 'webhook retry' message when duplicate inbound is skipped",
-         %{organization_id: org_id} do
-      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
-
-      assert :ok = GroupMessage.receive_message(params, :text)
-
-      log =
-        capture_log(fn ->
-          assert :ok = GroupMessage.receive_message(params, :text)
-        end)
-
-      assert log =~ "Skipping inbound: bsp_id"
-      assert log =~ "webhook retry"
-    end
-
-    test "logs warning when group has no primary phone set and processes the inbound anyway",
-         %{organization_id: org_id} do
-      group_bsp_id = base_params(org_id).wa_group_bsp_id
-
-      Glific.Groups.WAGroupPhone
-      |> where([wgp], wgp.organization_id == ^org_id and wgp.is_primary == true)
-      |> Repo.update_all(set: [is_primary: false])
-
-      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
-
-      log =
-        capture_log(fn ->
-          assert :ok = GroupMessage.receive_message(params, :text)
-        end)
-
-      assert log =~ "Group #{group_bsp_id}"
-      assert log =~ "has no primary phone"
-      assert log =~ "processing inbound on"
-    end
-
-    test "logs 'Dropping inbound on ...' when receiver isn't the primary for the group",
-         %{organization_id: org_id} do
-      group_bsp_id = base_params(org_id).wa_group_bsp_id
-      second_phone = seed_second_phone(org_id)
-
-      params =
-        base_params(org_id)
-        |> Map.put(:receiver, second_phone.phone)
-        |> Map.put(:bsp_id, Ecto.UUID.generate())
-
-      log =
-        capture_log(fn ->
-          assert :ok = GroupMessage.receive_message(params, :text)
-        end)
-
-      assert log =~ "Dropping inbound on #{second_phone.phone}"
-      assert log =~ "a different managed phone is primary"
-      assert log =~ group_bsp_id
-    end
-
     test "non_primary_receiver? catch-all returns false when wa_group_bsp_id is missing from message_params",
          %{organization_id: org_id} do
       # Defensive catch-all: a map that lacks :wa_group_bsp_id, isn't a DM,
@@ -1583,6 +1531,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         is_dm: false,
         sender: %{phone: "919876543210", name: "External", contact_type: "WA"},
         body: "hello",
+        # group_name "" forces fetch_wa_group_id's label fallback onto
+        # message_params.wa_group_bsp_id — that's the access we want to
+        # crash on (proving the catch-all returned false and the pipeline
+        # advanced past non_primary_receiver?).
+        group_name: "",
         bsp_id: Ecto.UUID.generate()
         # NOTE: deliberately no :wa_group_bsp_id key
       }

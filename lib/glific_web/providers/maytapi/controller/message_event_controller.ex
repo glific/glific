@@ -61,11 +61,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     nil
   end
 
+  # Updates the provider message statuses based on provider message id
   @spec do_update_status(map(), String.t(), non_neg_integer()) :: any()
   defp do_update_status(params, ack_type, org_id) do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
-
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
   end
 

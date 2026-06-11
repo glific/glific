@@ -95,7 +95,7 @@ defmodule Glific.Communications.GroupMessage do
     cond do
       duplicate_inbound?(message_params[:bsp_id]) ->
         Logger.info(
-          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (webhook retry)"
+          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id}"
         )
 
         :ok
@@ -158,10 +158,11 @@ defmodule Glific.Communications.GroupMessage do
   defp primary_managed_phone_id(group_id) do
     WAGroupPhone
     |> where(
-      [wgp],
-      wgp.wa_group_id == ^group_id and wgp.is_primary == true and wgp.is_active == true
+      [wa_group_phone],
+      wa_group_phone.wa_group_id == ^group_id and wa_group_phone.is_primary == true and
+        wa_group_phone.is_active == true
     )
-    |> select([wgp], wgp.wa_managed_phone_id)
+    |> select([wa_group_phone], wa_group_phone.wa_managed_phone_id)
     |> limit(1)
     |> Repo.one()
   end
