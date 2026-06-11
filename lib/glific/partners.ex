@@ -569,35 +569,48 @@ defmodule Glific.Partners do
   """
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
-    # For this process, lets set the organization id
-    Repo.put_organization_id(organization.id)
+    organization = build_org_data(organization)
 
-    organization =
+    Caches.set(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}],
       organization
-      |> set_root_user()
-      |> set_credentials()
-      |> Repo.preload([:bsp, :contact])
-      |> set_bsp_info()
-      |> set_out_of_office_values()
-      |> Flags.set_out_of_office()
-      |> set_languages()
-      |> Flags.set_flow_uuid_display()
-      |> Flags.set_roles_and_permission()
-      |> Flags.set_open_ai_auto_translation_enabled()
-      |> Flags.set_auto_translation_enabled_for_google_trans()
-      |> Flags.set_contact_profile_enabled()
-      |> Flags.set_whatsapp_group_enabled()
-      |> Flags.set_ticketing_enabled()
-      |> Flags.set_certificate_enabled()
-      |> Flags.set_interactive_re_response_enabled()
-      |> Flags.set_is_ask_glific_enabled()
-      |> Flags.set_is_whatsapp_forms_enabled()
-      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
-      |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
+    )
 
     # also update the flags table with updated values
     Flags.init(organization)
     organization
+  end
+
+  # Builds the fully-populated org struct without touching the cache.
+  # Used by fill_cache (called from test setup and credential update callbacks)
+  # and by load_cache (the Cachex fetch callback, which runs in the Cachex
+  # GenServer process where Caches.set would cause re-entrancy).
+  @spec build_org_data(Organization.t()) :: Organization.t()
+  defp build_org_data(organization) do
+    Repo.put_organization_id(organization.id)
+
+    organization
+    |> set_root_user()
+    |> set_credentials()
+    |> Repo.preload([:bsp, :contact])
+    |> set_bsp_info()
+    |> set_out_of_office_values()
+    |> Flags.set_out_of_office()
+    |> set_languages()
+    |> Flags.set_flow_uuid_display()
+    |> Flags.set_roles_and_permission()
+    |> Flags.set_open_ai_auto_translation_enabled()
+    |> Flags.set_auto_translation_enabled_for_google_trans()
+    |> Flags.set_contact_profile_enabled()
+    |> Flags.set_whatsapp_group_enabled()
+    |> Flags.set_ticketing_enabled()
+    |> Flags.set_certificate_enabled()
+    |> Flags.set_interactive_re_response_enabled()
+    |> Flags.set_is_ask_glific_enabled()
+    |> Flags.set_is_whatsapp_forms_enabled()
+    |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
+    |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
   end
 
   @doc """
@@ -614,8 +627,13 @@ defmodule Glific.Partners do
 
     organization =
       case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
-        {:ok, org} -> fill_cache(org)
-        _ -> raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
+        {:ok, org} ->
+          org_data = build_org_data(org)
+          Flags.init(org_data)
+          org_data
+
+        _ ->
+          raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
       end
 
     {:commit, organization}
