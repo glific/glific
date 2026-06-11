@@ -13,6 +13,7 @@ defmodule Glific.PartnersTest do
     Notifications.Notification,
     Partners,
     Partners.Credential,
+    Partners.Organization,
     Partners.Provider,
     Providers.Gupshup.PartnerAPI,
     Providers.Maytapi.WAWorker,
@@ -1922,6 +1923,33 @@ defmodule Glific.PartnersTest do
 
     test "returns empty list when no orgs have a disabled credential" do
       assert [] == Partners.list_orgs_with_disabled_credential("bigquery")
+    end
+
+    test "excludes orgs with ready_to_delete or forced_suspension status",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      Partners.disable_credential(organization_id, "bigquery", "test: permission denied")
+
+      for status <- [:ready_to_delete, :forced_suspension] do
+        Organization
+        |> where([o], o.id == ^organization_id)
+        |> Repo.update_all([set: [status: status]], skip_organization_id: true)
+
+        result = Partners.list_orgs_with_disabled_credential("bigquery")
+
+        refute organization_id in Enum.map(result, & &1.id),
+               "expected org to be excluded when status is #{status}"
+      end
     end
   end
 
