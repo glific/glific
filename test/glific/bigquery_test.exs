@@ -1,5 +1,5 @@
 defmodule Glific.BigQueryTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
   import Mock

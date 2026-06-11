@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.Api.WaMessageTest do
-  use GlificWeb.ConnCase
+  use GlificWeb.ConnCase, async: false
   use Wormwood.GQLCase
 
   import Ecto.Query

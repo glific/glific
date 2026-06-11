@@ -1,5 +1,5 @@
 defmodule Glific.BillingTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: false
   use ExUnit.Case
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 

@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.WhatsappFormTest do
-  use GlificWeb.ConnCase
+  use GlificWeb.ConnCase, async: false
   use Wormwood.GQLCase
   import Mock
   use Oban.Pro.Testing, repo: Glific.Repo

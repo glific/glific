@@ -1,5 +1,5 @@
 defmodule Glific.Flows.PeriodicTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: false
 
   alias Glific.{
     Fixtures,

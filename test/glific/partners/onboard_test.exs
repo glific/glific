@@ -1,6 +1,6 @@
 defmodule Glific.OnboardTest do
   alias Glific.GCS.GcsWorker
-  use Glific.DataCase
+  use Glific.DataCase, async: false
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
   import Mock
 

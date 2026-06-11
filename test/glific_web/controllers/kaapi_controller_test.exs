@@ -1,5 +1,5 @@
 defmodule GlificWeb.KaapiControllerTest do
-  use GlificWeb.ConnCase
+  use GlificWeb.ConnCase, async: false
 
   alias Glific.Assistants
   alias Glific.Assistants.Assistant

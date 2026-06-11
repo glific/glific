@@ -1,5 +1,5 @@
 defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigrationTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: false
 
   alias Ecto.Changeset
   alias Glific.Assistants

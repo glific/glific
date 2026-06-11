@@ -2,7 +2,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   @moduledoc """
   Test suite for GraphQL resolvers related to Assistants.
   """
-  use GlificWeb.ConnCase
+  use GlificWeb.ConnCase, async: false
   use Oban.Pro.Testing, repo: Glific.Repo
   use Wormwood.GQLCase
 

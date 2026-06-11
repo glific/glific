@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.CertificateTest do
-  use GlificWeb.ConnCase
+  use GlificWeb.ConnCase, async: false
   use Wormwood.GQLCase
   import Mock
 
