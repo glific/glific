@@ -99,11 +99,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
             context: map()
           }
         ) :: {:ok, any} | {:error, any}
-  def set_primary_phone(
-        _,
-        %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id},
-        _
-      ) do
+  def set_primary_phone(_, args, _) do
+    %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id} = args
+
     case WAGroups.set_primary_phone(wa_group_id, wa_managed_phone_id) do
       {:ok, result} ->
         {:ok, result}

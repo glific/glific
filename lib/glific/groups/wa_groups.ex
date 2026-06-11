@@ -358,7 +358,7 @@ defmodule Glific.Groups.WAGroups do
            is_active: true
          }) do
       nil -> nil
-      wgp -> Repo.preload(wgp, :wa_managed_phone).wa_managed_phone
+      wa_group_phone -> Repo.preload(wa_group_phone, :wa_managed_phone).wa_managed_phone
     end
   end
 
