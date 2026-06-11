@@ -76,6 +76,17 @@ defmodule Glific.WAManagedPhones do
   end
 
   @doc """
+  Fetch a managed phone by phone number.
+  Used by the inbound webhook path to resolve Maytapi's `receiver` field
+  into the WA managed phone that received the message.
+  """
+  @spec fetch_by_phone(String.t()) ::
+          {:ok, WAManagedPhone.t()} | {:error, [String.t()]}
+  def fetch_by_phone(phone) do
+    Repo.fetch_by(WAManagedPhone, %{phone: phone})
+  end
+
+  @doc """
   Creates a wa_managed_phone.
 
   ## Examples
