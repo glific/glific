@@ -1446,7 +1446,9 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
       "assistant_config_versions_enabled" =>
-        Flags.get_assistant_config_versions_enabled(organization)
+        Flags.get_assistant_config_versions_enabled(organization),
+      "gpt_vision_base64_enabled" =>
+        Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization)
     }
   end
 
@@ -1574,6 +1576,8 @@ defmodule Glific.Partners do
     |> join(:inner, [c, _p], o in Organization, on: c.organization_id == o.id)
     |> where([c, p, _o], p.shortcode == ^shortcode)
     |> where([c, _p, _o], c.is_active == false)
+    |> where([_c, _p, o], o.is_trial_org == false)
+    |> where([_c, _p, o], o.status not in ["ready_to_delete", "forced_suspension"])
     |> order_by([c, _p, _o], asc: c.updated_at)
     |> select([c, _p, o], %{id: o.id, name: o.name, disabled_since: c.updated_at})
     |> Repo.all(skip_organization_id: true)

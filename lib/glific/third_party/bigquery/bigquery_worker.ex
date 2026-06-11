@@ -42,6 +42,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Groups.ContactWAGroup,
     Groups.Group,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Jobs,
     Messages.Message,
@@ -598,7 +599,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           %{
             id: row.id,
             label: row.label,
-            wa_phone: row.wa_managed_phone.phone,
+            wa_phone: primary_wa_phone(row),
             last_communication_at:
               BigQuery.format_date(row.last_communication_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
@@ -613,6 +614,37 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :wa_groups, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("wa_groups_phones", organization_id, attrs) do
+    Logger.info(
+      "fetching wa_groups_phones data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+    )
+
+    fetch_data("wa_groups_phones", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            wa_group_id: row.wa_group_id,
+            wa_managed_phone_id: row.wa_managed_phone_id,
+            is_primary: row.is_primary,
+            is_active: row.is_active,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :wa_groups_phones, organization_id, attrs))
 
     :ok
   end
@@ -1334,6 +1366,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             bsp_status: row.bsp_status,
             wa_group_id: row.wa_group_id,
             wa_group_name: if(!is_nil(row.wa_group), do: row.wa_group.label),
+            wa_phone_id: row.wa_managed_phone_id,
             flow_label: if(!is_nil(row.flow_label), do: row.flow_label),
             poll_content: BigQuery.format_json(row.poll_content)
           }
@@ -1455,6 +1488,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp queue_table_data(_, _, _), do: :ok
 
   @spec bq_fields(non_neg_integer) :: map()
+  defp primary_wa_phone(row) do
+    primary = Enum.find(row.wa_groups_phones || [], & &1.is_primary)
+    phone = primary && primary.wa_managed_phone && primary.wa_managed_phone.phone
+    phone || (row.wa_managed_phone && row.wa_managed_phone.phone)
+  end
+
   defp bq_fields(org_id) do
     %{
       bq_uuid: Ecto.UUID.generate(),
@@ -1745,7 +1784,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:wa_managed_phone])
+      |> preload([:wa_managed_phone, wa_groups_phones: :wa_managed_phone])
+
+  defp get_query("wa_groups_phones", organization_id, attrs),
+    do:
+      WAGroupPhone
+      |> where([p], p.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([p], [p.inserted_at, p.id])
 
   defp get_query("groups", organization_id, attrs),
     do:
