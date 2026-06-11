@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.WaGroupTypes do
 
   @desc "Result of setPrimaryPhone. `warning` is set when the target phone's Maytapi status isn't 'active' so the UI can prompt for confirmation."
   object :set_primary_phone_result do
-    field :wa_group_phone, :wa_group_phone
+    field :primary_phone, :wa_group_phone
     field :warning, :string
     field :errors, list_of(:input_error)
   end

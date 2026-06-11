@@ -425,20 +425,20 @@ defmodule Glific.Groups.WAGroups do
   current primary and promote the target in a single transaction.
 
   Returns:
-  - `{:ok, %{wa_group_phone: row, warning: string | nil}}` — `warning` is non-nil when the target phone's Maytapi `status != "active"`, so the UI can surface a confirmation ("phone is reconnecting, messages may fail") without the backend blocking the change. The operator may be intentionally pre-staging a switch during an outage.
+  - `{:ok, %{primary_phone: row, warning: string | nil}}` — `warning` is non-nil when the target phone's Maytapi `status != "active"`, so the UI can surface a confirmation ("phone is reconnecting, messages may fail") without the backend blocking the change. The operator may be intentionally pre-staging a switch during an outage.
   - `{:error, :membership_not_found}` — no `(wa_group_id, wa_managed_phone_id)` row exists
   - `{:error, :inactive_membership}` — target row exists but `is_active == false`
   - `{:error, %Ecto.Changeset{}}` — surfaces the `wa_groups_phones_one_primary` partial-unique-index violation if it ever fires (it shouldn't, since we demote first)
   """
   @spec set_primary_phone(non_neg_integer(), non_neg_integer()) ::
-          {:ok, %{wa_group_phone: WAGroupPhone.t(), warning: String.t() | nil}}
+          {:ok, %{primary_phone: WAGroupPhone.t(), warning: String.t() | nil}}
           | {:error, atom() | Ecto.Changeset.t()}
   def set_primary_phone(wa_group_id, wa_managed_phone_id) do
     Repo.transaction(fn ->
       with {:ok, target} <- fetch_target_membership(wa_group_id, wa_managed_phone_id),
            :ok <- validate_active(target),
            {:ok, promoted} <- maybe_swap_primary(target, wa_group_id) do
-        %{wa_group_phone: promoted, warning: phone_status_warning(wa_managed_phone_id)}
+        %{primary_phone: promoted, warning: phone_status_warning(wa_managed_phone_id)}
       else
         {:error, reason} -> Repo.rollback(reason)
       end

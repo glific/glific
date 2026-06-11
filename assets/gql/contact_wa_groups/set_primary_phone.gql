@@ -1,6 +1,6 @@
 mutation SetPrimaryPhone($waGroupId: ID!, $waManagedPhoneId: ID!) {
   setPrimaryPhone(waGroupId: $waGroupId, waManagedPhoneId: $waManagedPhoneId) {
-    waGroupPhone {
+    primaryPhone {
       id
       isPrimary
       isActive

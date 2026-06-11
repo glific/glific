@@ -386,8 +386,8 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       assert {:ok, query_data} = result
       data = get_in(query_data, [:data, "setPrimaryPhone"])
       assert data["warning"] == nil
-      assert data["waGroupPhone"]["isPrimary"] == true
-      assert data["waGroupPhone"]["waManagedPhone"]["id"] == to_string(second_phone.id)
+      assert data["primaryPhone"]["isPrimary"] == true
+      assert data["primaryPhone"]["waManagedPhone"]["id"] == to_string(second_phone.id)
 
       assert WAGroups.primary_phone(wa_group.id).id == second_phone.id
       refute WAGroups.primary_phone(wa_group.id).id == first_phone.id
@@ -412,7 +412,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
 
       assert {:ok, query_data} = result
       data = get_in(query_data, [:data, "setPrimaryPhone"])
-      assert data["waGroupPhone"]["isPrimary"] == true
+      assert data["primaryPhone"]["isPrimary"] == true
       assert data["warning"] =~ "loading"
     end
 

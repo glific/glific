@@ -674,7 +674,7 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "set_primary_phone/2 demotes the current primary and promotes the target", ctx do
-      assert {:ok, %{wa_group_phone: promoted, warning: nil}} =
+      assert {:ok, %{primary_phone: promoted, warning: nil}} =
                WAGroups.set_primary_phone(ctx.wa_group.id, ctx.second_phone.id)
 
       assert promoted.wa_managed_phone_id == ctx.second_phone.id
@@ -727,7 +727,7 @@ defmodule Glific.Groups.WAGroupsTest do
       # No demote+promote should fire — the row stays at is_primary: true.
       original = membership(ctx.wa_group.id, ctx.first_phone.id)
 
-      assert {:ok, %{wa_group_phone: returned, warning: nil}} =
+      assert {:ok, %{primary_phone: returned, warning: nil}} =
                WAGroups.set_primary_phone(ctx.wa_group.id, ctx.first_phone.id)
 
       assert returned.id == original.id
@@ -744,7 +744,7 @@ defmodule Glific.Groups.WAGroupsTest do
       |> WAManagedPhone.changeset(%{status: "loading"})
       |> Repo.update!()
 
-      assert {:ok, %{wa_group_phone: promoted, warning: warning}} =
+      assert {:ok, %{primary_phone: promoted, warning: warning}} =
                WAGroups.set_primary_phone(ctx.wa_group.id, ctx.second_phone.id)
 
       assert promoted.is_primary == true
