@@ -17,6 +17,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
   }
 
   import Ecto.Query, warn: false
+  import ExUnit.CaptureLog
 
   @message_request_params %{
     "app" => "Glific Mock App",
@@ -1510,6 +1511,85 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       [only] = rows
       assert only.id == outbound.id
       assert only.flow == :outbound
+    end
+
+    test "logs 'webhook retry' message when duplicate inbound is skipped",
+         %{organization_id: org_id} do
+      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      assert :ok = GroupMessage.receive_message(params, :text)
+
+      log =
+        capture_log(fn ->
+          assert :ok = GroupMessage.receive_message(params, :text)
+        end)
+
+      assert log =~ "Skipping inbound: bsp_id"
+      assert log =~ "webhook retry"
+    end
+
+    test "logs warning when group has no primary phone set and processes the inbound anyway",
+         %{organization_id: org_id} do
+      group_bsp_id = base_params(org_id).wa_group_bsp_id
+
+      Glific.Groups.WAGroupPhone
+      |> where([wgp], wgp.organization_id == ^org_id and wgp.is_primary == true)
+      |> Repo.update_all(set: [is_primary: false])
+
+      params = base_params(org_id) |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      log =
+        capture_log(fn ->
+          assert :ok = GroupMessage.receive_message(params, :text)
+        end)
+
+      assert log =~ "Group #{group_bsp_id}"
+      assert log =~ "has no primary phone"
+      assert log =~ "processing inbound on"
+    end
+
+    test "logs 'Dropping inbound on ...' when receiver isn't the primary for the group",
+         %{organization_id: org_id} do
+      group_bsp_id = base_params(org_id).wa_group_bsp_id
+      second_phone = seed_second_phone(org_id)
+
+      params =
+        base_params(org_id)
+        |> Map.put(:receiver, second_phone.phone)
+        |> Map.put(:bsp_id, Ecto.UUID.generate())
+
+      log =
+        capture_log(fn ->
+          assert :ok = GroupMessage.receive_message(params, :text)
+        end)
+
+      assert log =~ "Dropping inbound on #{second_phone.phone}"
+      assert log =~ "a different managed phone is primary"
+      assert log =~ group_bsp_id
+    end
+
+    test "non_primary_receiver? catch-all returns false when wa_group_bsp_id is missing from message_params",
+         %{organization_id: org_id} do
+      # Defensive catch-all: a map that lacks :wa_group_bsp_id, isn't a DM,
+      # and has a valid receiver doesn't match any of the earlier function
+      # heads. The catch-all returns false (fail open) and the pipeline
+      # continues — but downstream fetch_wa_group_id needs that key, so the
+      # call raises a KeyError. We assert on the raise to prove the catch-all
+      # ran (otherwise the function would have raised FunctionClauseError
+      # earlier, never reaching downstream code).
+      params = %{
+        organization_id: org_id,
+        receiver: "917834811114",
+        is_dm: false,
+        sender: %{phone: "919876543210", name: "External", contact_type: "WA"},
+        body: "hello",
+        bsp_id: Ecto.UUID.generate()
+        # NOTE: deliberately no :wa_group_bsp_id key
+      }
+
+      assert_raise KeyError, ~r/key :wa_group_bsp_id not found/, fn ->
+        GroupMessage.receive_message(params, :text)
+      end
     end
 
     test "resolve_receiver/1 falls through to nil branch when the receiver phone is unknown",

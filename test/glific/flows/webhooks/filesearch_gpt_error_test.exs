@@ -46,7 +46,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
         method: "FUNCTION",
         url: "filesearch-gpt",
         headers: %{"Accept" => "application/json"},
-        body: Jason.encode!(%{"question" => "tell me about glific", "assistant_id" => "asst_123"}),
+        body:
+          Jason.encode!(%{"question" => "tell me about glific", "assistant_id" => "asst_123"}),
         result_name: "filesearch",
         node_uuid: "Test UUID"
       }
@@ -66,7 +67,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
         method: "FUNCTION",
         url: "filesearch-gpt",
         headers: %{"Accept" => "application/json"},
-        body: Jason.encode!(%{"question" => "tell me about glific", "assistant_id" => "asst_123"}),
+        body:
+          Jason.encode!(%{"question" => "tell me about glific", "assistant_id" => "asst_123"}),
         result_name: "filesearch",
         node_uuid: "Test UUID"
       }
