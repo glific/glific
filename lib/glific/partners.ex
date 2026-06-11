@@ -1577,7 +1577,7 @@ defmodule Glific.Partners do
     |> where([c, p, _o], p.shortcode == ^shortcode)
     |> where([c, _p, _o], c.is_active == false)
     |> where([_c, _p, o], o.is_trial_org == false)
-    |> where([_c, _p, o], o.status not in ["ready_to_delete", "forced_suspension"])
+    |> where([_c, _p, o], o.status not in [:ready_to_delete, :forced_suspension])
     |> order_by([c, _p, _o], asc: c.updated_at)
     |> select([c, _p, o], %{id: o.id, name: o.name, disabled_since: c.updated_at})
     |> Repo.all(skip_organization_id: true)
