@@ -231,7 +231,7 @@ defmodule Glific.Flows.WebhookTest do
       }
 
       assert Webhook.execute(action, context) == nil
-      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs})) |> IO.inspect()
+      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
 
       # benign header kept, credential-bearing headers masked
       assert webhook_log.request_headers["Accept"] == "application/json"
