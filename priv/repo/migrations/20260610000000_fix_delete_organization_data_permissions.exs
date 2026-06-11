@@ -191,16 +191,12 @@ defmodule Glific.Repo.Migrations.FixDeleteOrganizationDataPermissions do
         WHERE id = org_id;
 
         FOR tbl IN
-          SELECT DISTINCT cls.relname::text AS table_nm
-          FROM pg_attribute att
-          JOIN pg_class cls ON att.attrelid = cls.oid
-          JOIN pg_namespace ns ON cls.relnamespace = ns.oid
-          WHERE att.attname = 'organization_id'
-            AND ns.nspname = 'public'
-            AND cls.relkind = 'r'
-            AND cls.relname != 'organizations'
-            AND NOT att.attisdropped
-          ORDER BY table_nm
+          SELECT table_name
+          FROM information_schema.columns
+          WHERE column_name = 'organization_id'
+            AND table_schema = 'public'
+            AND table_name != 'organizations'
+          ORDER BY table_name
         LOOP
           EXECUTE format('DELETE FROM %I WHERE organization_id = %s', tbl, org_id);
           GET DIAGNOSTICS rows_deleted = ROW_COUNT;
