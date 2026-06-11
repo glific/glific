@@ -631,16 +631,8 @@ defmodule Glific.Groups.WAGroupsTest do
           wa_managed_phone_id: first_phone.id
         })
 
-      # Seed memberships explicitly. (Phase 3's `maybe_create_group/1`
-      # ensure_membership wiring is not on master yet, so we don't rely on it.)
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: first_phone.id,
-        organization_id: attrs.organization_id,
-        is_primary: true,
-        is_active: true
-      })
-
+      # maybe_create_group/1 above already inserted the first_phone
+      # membership as is_primary: true. Only seed the second_phone here.
       Fixtures.wa_group_phone_fixture(%{
         wa_group_id: wa_group.id,
         wa_managed_phone_id: second_phone.id,
