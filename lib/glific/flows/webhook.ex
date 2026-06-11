@@ -230,9 +230,6 @@ defmodule Glific.Flows.Webhook do
     {:ok, webhook_log} =
       %{
         request_json: body,
-        # Redact credentials (injected X-API-KEY, user-supplied Authorization /
-        # Bearer / vendor API keys) before they are persisted to the log. The
-        # real `headers` used for the outbound HTTP call are untouched.
         request_headers: HeaderRedactor.redact(headers),
         url: action.url,
         method: action.method,
