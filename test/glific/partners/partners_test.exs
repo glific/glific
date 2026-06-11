@@ -1,7 +1,7 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
   use Oban.Pro.Testing, repo: Glific.Repo
-  use Glific.DataCase, async: false
+  use Glific.DataCase
   import Mock
   import Swoosh.TestAssertions
 

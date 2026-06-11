@@ -1,5 +1,5 @@
 defmodule Glific.AssistantsTest do
-  use Glific.DataCase, async: false
+  use Glific.DataCase
   import Tesla.Mock
 
   import Ecto.Query

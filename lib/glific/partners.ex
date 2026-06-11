@@ -595,12 +595,6 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
 
-    Caches.set(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}],
-      organization
-    )
-
     # also update the flags table with updated values
     Flags.init(organization)
     organization
@@ -609,7 +603,7 @@ defmodule Glific.Partners do
   @doc """
   Follow the cachex protocol to load the cache from the DB
   """
-  @spec load_cache(tuple()) :: {:ignore, Organization.t()}
+  @spec load_cache(tuple()) :: {:commit, Organization.t()}
   def load_cache(cachex_key) do
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
@@ -624,10 +618,7 @@ defmodule Glific.Partners do
         _ -> raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
       end
 
-    # we are already storing this in the cache (in the function fill_cache),
-    # so we can ask cachex to ignore the value. We need to do this since we are
-    # storing multiple keys for the same object
-    {:ignore, organization}
+    {:commit, organization}
   end
 
   @doc """

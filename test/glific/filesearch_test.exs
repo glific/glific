@@ -14,7 +14,7 @@ defmodule Glific.FilesearchTest do
     Repo
   }
 
-  use GlificWeb.ConnCase, async: false
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
   import Ecto.Query
 

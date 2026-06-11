@@ -1,5 +1,5 @@
 defmodule Glific.SheetsTest do
-  use Glific.DataCase, async: false
+  use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Ecto.Query
