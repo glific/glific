@@ -132,17 +132,14 @@ defmodule Glific.Groups.WAGroups do
   @spec sync_wa_groups_with_contacts(list(), non_neg_integer()) :: :ok
   def sync_wa_groups_with_contacts(group_details, org_id) do
     Enum.each(group_details, fn group ->
-      case Repo.fetch_by(WAGroup, %{
-             bsp_id: group.bsp_id,
-             wa_managed_phone_id: group.wa_managed_phone_id
-           }) do
-        {:ok, wa_group} ->
-          sync_contacts(group, wa_group.id, org_id)
-
-        {:error, _} ->
+      case fetch_oldest_wa_group(group.bsp_id) do
+        nil ->
           Logger.warning(
             "Skipping contact sync for WA group #{group.bsp_id} (phone #{group.wa_managed_phone_id}): group not found in DB"
           )
+
+        wa_group ->
+          sync_contacts(group, wa_group.id, org_id)
       end
     end)
   end
@@ -297,27 +294,88 @@ defmodule Glific.Groups.WAGroups do
   def sync_wa_group_phones(group_details, wa_managed_phone) do
     org_id = wa_managed_phone.organization_id
 
+    # Cross-phone reconciliation needs every other managed phone in the
+    # org so it can check each one against this group's participants list.
+    other_managed_phones =
+      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+      |> Enum.reject(&(&1.id == wa_managed_phone.id))
+
     present_group_ids =
       Enum.flat_map(group_details, fn group ->
-        with {:ok, wa_group} <-
-               Repo.fetch_by(WAGroup, %{
-                 bsp_id: group.bsp_id,
-                 wa_managed_phone_id: group.wa_managed_phone_id
-               }),
-             {:ok, _membership} <-
-               ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
-          [wa_group.id]
-        else
-          {:error, reason} ->
+        case fetch_oldest_wa_group(group.bsp_id) do
+          nil ->
             Logger.warning(
-              "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
+              "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): group not found in DB"
             )
 
             []
+
+          wa_group ->
+            case ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
+              {:ok, _membership} ->
+                :ok
+
+              {:error, reason} ->
+                Logger.warning(
+                  "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
+                )
+            end
+
+            reconcile_other_managed_phones(
+              wa_group,
+              group.participants,
+              other_managed_phones,
+              org_id
+            )
+
+            [wa_group.id]
         end
       end)
 
     deactivate_missing_memberships(wa_managed_phone, present_group_ids)
+    :ok
+  end
+
+  # Use the participants list from one phone's view of the group to fix
+  # the membership rows of all OTHER managed phones in the same group:
+  # in participants → active, not in participants → inactive.
+  #
+  # Without this, a phone whose own sync is stale or skipped keeps a
+  # wrong `is_active` flag until its next successful sync.
+  @spec reconcile_other_managed_phones(
+          WAGroup.t(),
+          [String.t()],
+          [WAManagedPhone.t()],
+          non_neg_integer()
+        ) :: :ok
+  defp reconcile_other_managed_phones(wa_group, participants, other_managed_phones, org_id) do
+    participant_phones =
+      participants
+      |> Enum.map(&phone_number/1)
+      |> MapSet.new()
+
+    Enum.each(other_managed_phones, fn managed_phone ->
+      if MapSet.member?(participant_phones, managed_phone.phone) do
+        ensure_membership(wa_group.id, managed_phone.id, org_id, is_primary: false)
+      else
+        deactivate_one_membership(wa_group.id, managed_phone.id)
+      end
+    end)
+
+    :ok
+  end
+
+  @spec deactivate_one_membership(non_neg_integer(), non_neg_integer()) :: :ok
+  defp deactivate_one_membership(wa_group_id, wa_managed_phone_id) do
+    WAGroupPhone
+    |> where(
+      [wgp],
+      wgp.wa_group_id == ^wa_group_id and
+        wgp.wa_managed_phone_id == ^wa_managed_phone_id and
+        wgp.is_active == true
+    )
+    |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
+
     :ok
   end
 
@@ -556,25 +614,59 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Fetches a group with given bsp_id and organization_id (Creates a group if doesnt exist)
+  Fetches a WA group by `(bsp_id, organization_id)`. If none exists, creates
+  one; if duplicates exist (legacy data from before Phase 3 — Phase 5 will
+  collapse these), returns the oldest. In all cases ensures a
+  `wa_groups_phones` membership row exists for the calling
+  `wa_managed_phone_id` so that subsequent outbound routing knows the phone
+  is in the group:
+
+  - Newly created group → calling phone is recorded as `is_primary: true`
+    (first creator becomes the primary, matching the Phase 1 backfill
+    convention).
+  - Existing group → calling phone is recorded as `is_primary: false`
+    (joining an existing group doesn't change who's primary).
+
+  Existing membership rows are left as-is for `is_primary`; only
+  `is_active` gets re-stamped to `true`.
   """
   @spec maybe_create_group(map()) ::
           {:ok, Glific.Groups.WAGroup.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_group(params) do
-    case Repo.get_by(WAGroup, %{
-           bsp_id: params.bsp_id,
-           wa_managed_phone_id: params.wa_managed_phone_id
-         }) do
+    case fetch_oldest_wa_group(params.bsp_id) do
       nil ->
-        create_wa_group(params)
+        with {:ok, wa_group} <- create_wa_group(params) do
+          ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+            is_primary: true
+          )
+
+          {:ok, wa_group}
+        end
 
       wa_group ->
+        ensure_membership(wa_group.id, params.wa_managed_phone_id, params.organization_id,
+          is_primary: false
+        )
+
         if params.label && wa_group.label != params.label do
           update_wa_group(wa_group, %{label: params.label})
         else
           {:ok, wa_group}
         end
     end
+  end
+
+  # Lookup keyed on bsp_id. If
+  # duplicate rows exist from before Phase 3, the oldest one wins — matches
+  # the Phase 1 backfill's "oldest = primary" convention so the active
+  # group stays stable.
+  @spec fetch_oldest_wa_group(String.t()) :: WAGroup.t() | nil
+  defp fetch_oldest_wa_group(bsp_id) do
+    WAGroup
+    |> where([wg], wg.bsp_id == ^bsp_id)
+    |> order_by([wg], asc: wg.inserted_at, asc: wg.id)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """
