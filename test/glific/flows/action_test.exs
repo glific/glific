@@ -1560,6 +1560,38 @@ defmodule Glific.Flows.ActionTest do
     end
   end
 
+  test "execute filesearch-gpt action routes to unified filesearch webhook",
+       attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    action = %Action{
+      type: "call_webhook",
+      method: "FUNCTION",
+      url: "filesearch-gpt",
+      headers: %{"Accept" => "application/json"},
+      body:
+        Jason.encode!(%{
+          "question" => "What is Glific?",
+          "assistant_id" => "asst_123"
+        }),
+      result_name: "filesearch",
+      node_uuid: "Test UUID"
+    }
+
+    with_mock Webhook,
+      execute_unified_filesearch: fn _action, _context -> {:wait, context, []} end do
+      result = Action.execute(action, context, [])
+      assert {:wait, ^context, []} = result
+      assert called(Webhook.execute_unified_filesearch(action, context))
+    end
+  end
+
   test "execute a wa group unsupported action",
        _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
