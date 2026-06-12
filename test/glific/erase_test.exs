@@ -20,6 +20,8 @@ defmodule Glific.EraseTest do
     Notifications.Notification,
     Partners.Organization,
     Repo,
+    WhatsappForms,
+    WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
@@ -321,6 +323,39 @@ defmodule Glific.EraseTest do
 
     [[count]] = result.rows
     assert count == 0
+  end
+
+  test "deletes organization data with circular FK structures (whatsapp_forms/revisions)" do
+    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+
+    # Temporarily switch org context to create whatsapp_form data for the target org.
+    # whatsapp_forms/whatsapp_form_revisions have a circular FK (form.revision_id ↔
+    # revision.whatsapp_form_id). This was the scenario that required session_replication_role
+    # superuser privilege in the old implementation.
+    Repo.put_process_state(organization.id)
+    user = Repo.get_current_user()
+
+    {:ok, form} =
+      WhatsappForms.do_create_whatsapp_form(%{
+        name: "test_form",
+        description: "test",
+        status: "draft",
+        categories: [],
+        organization_id: organization.id,
+        meta_flow_id: "meta_flow_test"
+      })
+
+    {:ok, revision} = WhatsappForms.create_whatsapp_form_revision(form, user)
+    WhatsappForms.update_revision_id(form.id, revision.id)
+
+    # Reset org context to org 1 for the deletion job.
+    Repo.put_process_state(1)
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert :ok = perform_job(Erase, job.args)
+
+    assert Repo.get(WhatsappForm, form.id, skip_organization_id: true) == nil
+    assert Repo.get(WhatsappFormRevision, revision.id, skip_organization_id: true) == nil
   end
 
   test "perform_periodic clears contact histories older than 2 month", attrs do
