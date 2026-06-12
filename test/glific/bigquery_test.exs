@@ -319,6 +319,64 @@ defmodule Glific.BigQueryTest do
     assert :ok == BigQuery.create_tables(conn, 1, "test_dataset", "test_table")
   end
 
+  test "create_tables/3 sets partitioning and clustering only where configured" do
+    test_pid = self()
+
+    Tesla.Mock.mock(fn %{method: :post} = env ->
+      send(test_pid, {:insert_body, env.body})
+
+      %Tesla.Env{
+        status: 200,
+        body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
+      }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert :ok == BigQuery.create_tables(conn, 1, "test_dataset", "test_table")
+
+    bodies = collect_insert_bodies()
+
+    # partitioned + clustered table
+    messages = fetch_table_body(bodies, "messages")
+    assert messages["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
+    assert messages["clustering"] == %{"fields" => ["contact_phone", "flow_id"]}
+
+    # fact table: clustered (leading inserted_at), not partitioned
+    conversations = fetch_table_body(bodies, "message_conversations")
+    refute Map.has_key?(conversations, "timePartitioning")
+    assert conversations["clustering"] == %{"fields" => ["inserted_at", "phone"]}
+
+    # dimension table: neither partitioned nor clustered
+    tags = fetch_table_body(bodies, "tags")
+    refute Map.has_key?(tags, "timePartitioning")
+    refute Map.has_key?(tags, "clustering")
+  end
+
+  # Drains the test mailbox of the JSON insert bodies captured by the mock.
+  defp collect_insert_bodies(acc \\ []) do
+    receive do
+      {:insert_body, body} -> collect_insert_bodies([Jason.decode!(body) | acc])
+    after
+      0 -> acc
+    end
+  end
+
+  defp fetch_table_body(bodies, table_id),
+    do: Enum.find(bodies, &(get_in(&1, ["tableReference", "tableId"]) == table_id))
+
   test "alter_tables/3 should throw error tables" do
     Tesla.Mock.mock(fn
       %{method: :get} ->
