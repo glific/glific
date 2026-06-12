@@ -402,6 +402,116 @@ defmodule Glific.Groups.WAGroups do
     )
   end
 
+  @doc """
+  Return the `WAManagedPhone` whose membership row in `wa_groups_phones`
+  is `is_primary: true` and `is_active: true` for the given group.
+  Returns `nil` if no primary is set (legacy data or all memberships
+  have been deactivated).
+  """
+  @spec primary_phone(non_neg_integer()) :: WAManagedPhone.t() | nil
+  def primary_phone(wa_group_id) do
+    case Repo.get_by(WAGroupPhone, %{
+           wa_group_id: wa_group_id,
+           is_primary: true,
+           is_active: true
+         }) do
+      nil -> nil
+      wa_group_phone -> Repo.preload(wa_group_phone, :wa_managed_phone).wa_managed_phone
+    end
+  end
+
+  @doc """
+  Promote a different managed phone to be the group's primary. Demote the
+  current primary and promote the target in a single transaction.
+
+  Returns:
+  - `{:ok, %{primary_phone: row, warning: string | nil}}` — `warning` is non-nil when the target phone's Maytapi `status != "active"`, so the UI can surface a confirmation ("phone is reconnecting, messages may fail") without the backend blocking the change. The operator may be intentionally pre-staging a switch during an outage.
+  - `{:error, :membership_not_found}` — no `(wa_group_id, wa_managed_phone_id)` row exists
+  - `{:error, :inactive_membership}` — target row exists but `is_active == false`
+  - `{:error, %Ecto.Changeset{}}` — surfaces the `wa_groups_phones_one_primary` partial-unique-index violation if it ever fires (it shouldn't, since we demote first)
+  """
+  @spec set_primary_phone(non_neg_integer(), non_neg_integer()) ::
+          {:ok, %{primary_phone: WAGroupPhone.t(), warning: String.t() | nil}}
+          | {:error, atom() | Ecto.Changeset.t()}
+  def set_primary_phone(wa_group_id, wa_managed_phone_id) do
+    Repo.transaction(fn ->
+      with {:ok, target} <- fetch_target_membership(wa_group_id, wa_managed_phone_id),
+           :ok <- validate_active(target),
+           {:ok, promoted} <- maybe_swap_primary(target, wa_group_id) do
+        %{primary_phone: promoted, warning: phone_status_warning(wa_managed_phone_id)}
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  # If the target is already primary, no DB writes are needed. Otherwise
+  # demote the current primary and promote the target in that order — the
+  # partial unique index `wa_groups_phones_one_primary` forbids two
+  # `is_primary: true` rows per group, so demote must come first.
+  @spec maybe_swap_primary(WAGroupPhone.t(), non_neg_integer()) ::
+          {:ok, WAGroupPhone.t()} | {:error, Ecto.Changeset.t()}
+  defp maybe_swap_primary(%{is_primary: true} = target, _wa_group_id), do: {:ok, target}
+
+  defp maybe_swap_primary(target, wa_group_id) do
+    with {:ok, _} <- demote_current_primary(wa_group_id) do
+      promote_to_primary(target)
+    end
+  end
+
+  @spec fetch_target_membership(non_neg_integer(), non_neg_integer()) ::
+          {:ok, WAGroupPhone.t()} | {:error, :membership_not_found}
+  defp fetch_target_membership(wa_group_id, wa_managed_phone_id) do
+    case Repo.get_by(WAGroupPhone, %{
+           wa_group_id: wa_group_id,
+           wa_managed_phone_id: wa_managed_phone_id
+         }) do
+      nil -> {:error, :membership_not_found}
+      membership -> {:ok, membership}
+    end
+  end
+
+  @spec validate_active(WAGroupPhone.t()) :: :ok | {:error, :inactive_membership}
+  defp validate_active(%{is_active: true}), do: :ok
+  defp validate_active(_), do: {:error, :inactive_membership}
+
+  @spec phone_status_warning(non_neg_integer()) :: String.t() | nil
+  defp phone_status_warning(wa_managed_phone_id) do
+    case Repo.get(WAManagedPhone, wa_managed_phone_id) do
+      %{status: status, phone: phone} when status != "active" ->
+        message =
+          "WhatsApp phone #{phone} is currently '#{status}' on Maytapi. Messages may fail until it reconnects."
+
+        Logger.warning("set_primary_phone with non-active phone: #{message}")
+        message
+
+      _ ->
+        nil
+    end
+  end
+
+  @spec demote_current_primary(non_neg_integer()) ::
+          {:ok, WAGroupPhone.t() | nil} | {:error, Ecto.Changeset.t()}
+  defp demote_current_primary(wa_group_id) do
+    case Repo.get_by(WAGroupPhone, %{wa_group_id: wa_group_id, is_primary: true}) do
+      nil ->
+        {:ok, nil}
+
+      current_primary ->
+        current_primary
+        |> WAGroupPhone.changeset(%{is_primary: false})
+        |> Repo.update()
+    end
+  end
+
+  @spec promote_to_primary(WAGroupPhone.t()) ::
+          {:ok, WAGroupPhone.t()} | {:error, Ecto.Changeset.t()}
+  defp promote_to_primary(membership) do
+    membership
+    |> WAGroupPhone.changeset(%{is_primary: true})
+    |> Repo.update()
+  end
+
   @spec deactivate_missing_memberships(WAManagedPhone.t(), [non_neg_integer()]) :: :ok
   defp deactivate_missing_memberships(wa_managed_phone, present_group_ids) do
     WAGroupPhone
