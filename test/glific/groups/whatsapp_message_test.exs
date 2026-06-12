@@ -4,14 +4,19 @@ defmodule Glific.Groups.WhatsappMessageTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Contacts,
     Fixtures,
+    Groups.WAGroupPhone,
+    Groups.WAGroups,
     Groups.WaGroupsCollections,
     Partners,
     Partners.Credential,
     Providers.Maytapi.Message,
     Providers.Maytapi.WAWorker,
     Seeds.SeedsDev,
-    WAGroup.WAMessage
+    WAGroup.WAManagedPhone,
+    WAGroup.WAMessage,
+    WAManagedPhones
   }
 
   setup do
@@ -31,6 +36,9 @@ defmodule Glific.Groups.WhatsappMessageTest do
     :ok
   end
 
+  @failover_success_body ~s({"success": true, "data": {"chatId": "120363999999999999@g.us", "msgId": "failover-msg-id"}})
+  @failover_server_error_body ~s({"success": false, "message": "internal server error"})
+
   defp mock_maytapi_response(status, body) do
     Tesla.Mock.mock(fn
       %Tesla.Env{
@@ -38,6 +46,16 @@ defmodule Glific.Groups.WhatsappMessageTest do
         url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/sendMessage"
       } ->
         {:ok, %Tesla.Env{status: status, body: body}}
+    end)
+  end
+
+  # Mock keyed by the phone_id embedded in the Maytapi sendMessage URL:
+  # https://api.maytapi.com/api/<product_id>/<phone_id>/sendMessage
+  defp mock_by_phone(responses) do
+    Tesla.Mock.mock(fn %Tesla.Env{method: :post, url: url} ->
+      phone_id = url |> String.split("/") |> Enum.at(-2) |> String.to_integer()
+      {status, body} = Map.fetch!(responses, phone_id)
+      {:ok, %Tesla.Env{status: status, body: body}}
     end)
   end
 
@@ -446,5 +464,133 @@ defmodule Glific.Groups.WhatsappMessageTest do
 
     assert wa_message.bsp_status == :error
     assert String.contains?(wa_message.errors["message"], "You dont own the phone")
+  end
+
+  describe "WAWorker phone-level failover" do
+    setup attrs do
+      # Primary phone (242 from the fixture), forced to Maytapi-active.
+      primary =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+        |> WAManagedPhone.changeset(%{status: "active"})
+        |> Repo.update!()
+
+      {:ok, second_contact} =
+        Contacts.maybe_create_contact(%{
+          phone: "919999900050",
+          organization_id: attrs.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, backup} =
+        WAManagedPhones.create_wa_managed_phone(%{
+          label: "backup",
+          phone: "919999900050",
+          phone_id: 9_999_050,
+          status: "active",
+          organization_id: attrs.organization_id,
+          contact_id: second_contact.id
+        })
+
+      # maybe_create_group inserts the primary membership automatically.
+      {:ok, wa_group} =
+        WAGroups.maybe_create_group(%{
+          label: "Failover Group",
+          bsp_id: "120363999999999999@g.us",
+          organization_id: attrs.organization_id,
+          wa_managed_phone_id: primary.id
+        })
+
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: backup.id,
+        organization_id: attrs.organization_id,
+        is_primary: false,
+        is_active: true
+      })
+
+      Map.merge(attrs, %{primary: primary, backup: backup, wa_group: wa_group})
+    end
+
+    test "a 5xx on the primary fails over to the backup phone, which is promoted", ctx do
+      mock_by_phone(%{
+        ctx.primary.phone_id => {500, @failover_server_error_body},
+        ctx.backup.phone_id => {200, @failover_success_body}
+      })
+
+      {:ok, _wa_message} =
+        Message.create_and_send_wa_message(ctx.wa_group, %{
+          wa_group_id: ctx.wa_group.id,
+          message: "hi"
+        })
+
+      assert_enqueued(worker: WAWorker, prefix: "global")
+
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+      # Backup was promoted to primary via Sender.pick_for_send/2.
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.backup.id
+    end
+
+    test "a phone-level error with no healthy backup handles the original error (no failover)",
+         ctx do
+      # Remove the backup membership: the primary is the only group member,
+      # so the failover candidate search comes up empty and the worker falls
+      # back to handling the original error response.
+      ctx.wa_group.id
+      |> membership(ctx.backup.id)
+      |> Repo.delete!()
+
+      mock_by_phone(%{ctx.primary.phone_id => {500, @failover_server_error_body}})
+
+      {:ok, wa_message} =
+        Message.create_and_send_wa_message(ctx.wa_group, %{
+          wa_group_id: ctx.wa_group.id,
+          message: "hi"
+        })
+
+      assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :wa_group, with_scheduled: true, with_safety: false)
+
+      # Primary unchanged — nothing to fail over to.
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.primary.id
+
+      wa_message =
+        WAMessage
+        |> where([wa], wa.id == ^wa_message.id)
+        |> Repo.one()
+
+      assert wa_message.bsp_status == :error
+    end
+
+    test "a job already marked retried does not fail over again", ctx do
+      mock_by_phone(%{
+        ctx.primary.phone_id => {500, @failover_server_error_body},
+        ctx.backup.phone_id => {200, @failover_success_body}
+      })
+
+      {:ok, _wa_message} =
+        Message.create_and_send_wa_message(ctx.wa_group, %{
+          wa_group_id: ctx.wa_group.id,
+          message: "hi"
+        })
+
+      [job | _] = all_enqueued(worker: WAWorker, prefix: "global")
+
+      # Force the retried flag, mimicking the second pass of a failover.
+      retried_args = put_in(job.args, ["payload", "retried"], true)
+
+      # retried short-circuits the failover branch: the 5xx is handled
+      # directly and the primary is NOT changed.
+      assert {:error, _body} = WAWorker.perform(%{job | args: retried_args})
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.primary.id
+    end
+  end
+
+  defp membership(wa_group_id, wa_managed_phone_id) do
+    Repo.get_by!(WAGroupPhone, %{
+      wa_group_id: wa_group_id,
+      wa_managed_phone_id: wa_managed_phone_id
+    })
   end
 end

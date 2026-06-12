@@ -4,6 +4,8 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
+  use Gettext, backend: GlificWeb.Gettext
+
   alias Glific.{
     Contacts.Contact,
     Groups.ContactGroups,
@@ -266,8 +268,26 @@ defmodule GlificWeb.Resolvers.Messages do
            Repo.fetch_by(WAGroup, %{
              id: wa_group_id,
              organization_id: user.organization_id
-           }) do
-      Maytapi.Message.create_and_send_wa_message(wa_group, params)
+           }),
+         {:ok, message} <- Maytapi.Message.create_and_send_wa_message(wa_group, params) do
+      {:ok, message}
+    else
+      {:error, :no_active_phones} ->
+        {:error,
+         dgettext(
+           "errors",
+           "No active phones are linked to this group. Reconnect a phone or add a backup before sending."
+         )}
+
+      {:error, :promotion_failed} ->
+        {:error,
+         dgettext(
+           "errors",
+           "Could not switch to a backup phone right now. Please retry."
+         )}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

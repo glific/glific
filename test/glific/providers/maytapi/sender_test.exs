@@ -190,6 +190,21 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
     end
+
+    test "failover with no primary membership: picks the oldest member and notifies (primary shown as '(none)')",
+         ctx do
+      # Demote both memberships so the group has rows but no is_primary one.
+      # primary_phone/1 then returns nil, exercising the nil-primary
+      # failover_message clause + phone_label(nil).
+      WAGroupPhone
+      |> where([wa_group_phone], wa_group_phone.wa_group_id == ^ctx.wa_group.id)
+      |> Repo.update_all(set: [is_primary: false])
+
+      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert phone.id == ctx.first_phone.id
+
+      assert warning_notification_exists?(ctx, "Primary phone (none) for group")
+    end
   end
 
   describe "promote/2" do
