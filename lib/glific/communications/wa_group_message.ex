@@ -10,6 +10,8 @@ defmodule Glific.Communications.GroupMessage do
     Contacts,
     Contacts.Contact,
     Groups.ContactWAGroups,
+    Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroups,
     Messages,
     Repo,
@@ -79,7 +81,12 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @doc """
-  Callback when we receive a message from whatsapp group providers
+  Callback when we receive a message from whatsapp group providers.
+
+  Group inbounds are accepted only on the group's primary managed phone — any
+  webhook delivered to a non-primary phone is dropped. DMs, brand-new groups
+  (no `wa_group` row yet), groups with no primary set, and webhooks delivered
+  to an unknown receiver all fail open and are processed normally.
   """
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
@@ -88,16 +95,12 @@ defmodule Glific.Communications.GroupMessage do
     cond do
       duplicate_inbound?(message_params[:bsp_id]) ->
         Logger.info(
-          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id} (likely a webhook retry)"
+          "Skipping inbound: bsp_id '#{message_params[:bsp_id]}' already stored in org #{organization_id}"
         )
 
         :ok
 
-      sender_is_our_managed_phone?(message_params) ->
-        Logger.info(
-          "Skipping inbound: sender '#{get_in(message_params, [:sender, :phone])}' is our managed phone in org #{organization_id}; already stored via outbound"
-        )
-
+      non_primary_receiver?(message_params, organization_id) ->
         :ok
 
       true ->
@@ -110,28 +113,67 @@ defmodule Glific.Communications.GroupMessage do
     end
   end
 
-  # Maytapi assigns a different `bsp_id` to the outbound API response and
-  # to the webhook echo, so dedup-by-bsp_id alone can't catch the
-  # multi-phone case. The reliable signal is the sender: if the webhook's
-  # sender phone matches one of our managed phones, the message was sent
-  # via Glific (or directly from one of our phones) — the outbound flow
-  # already stored it. Skip.
-  @spec sender_is_our_managed_phone?(map()) :: boolean()
-  defp sender_is_our_managed_phone?(%{sender: %{phone: phone}})
-       when is_binary(phone) do
-    case WAManagedPhones.fetch_by_phone(phone) do
-      {:ok, _} -> true
+  # Should we drop this inbound? Returns true only when we're sure another
+  # managed phone is the primary for this group (so this one is a duplicate
+  # echo). Returns false — meaning "keep the message" — unknown
+  # receivers, brand-new groups we've never seen, and groups that don't have
+  # a primary set yet. We'd rather store a message we didn't strictly need
+  # than silently lose a real one; the no-primary case is logged loudly so
+  # we can spot data drift.
+  @spec non_primary_receiver?(map(), non_neg_integer()) :: boolean()
+  defp non_primary_receiver?(%{is_dm: true}, _org_id), do: false
+
+  defp non_primary_receiver?(%{receiver: receiver}, _org_id) when receiver in [nil, ""],
+    do: false
+
+  defp non_primary_receiver?(
+         %{receiver: receiver, wa_group_bsp_id: group_bsp_id},
+         org_id
+       ) do
+    with {:ok, %{id: managed_phone_id}} <- WAManagedPhones.fetch_by_phone(receiver),
+         %WAGroup{id: group_id} <- WAGroups.fetch_oldest_wa_group(group_bsp_id) do
+      case primary_managed_phone_id(group_id) do
+        ^managed_phone_id ->
+          false
+
+        nil ->
+          Logger.warning(
+            "Group #{group_bsp_id} (org #{org_id}) has no primary phone; processing inbound on #{receiver} anyway"
+          )
+
+          false
+
+        _other ->
+          Logger.info(
+            "Dropping inbound on #{receiver}: a different managed phone is primary for group #{group_bsp_id} (org #{org_id})"
+          )
+
+          true
+      end
+    else
       _ -> false
     end
   end
 
-  defp sender_is_our_managed_phone?(_), do: false
+  defp non_primary_receiver?(_message_params, _org_id), do: false
 
-  # In multi-phone orgs the same WhatsApp message can arrive once per
-  # managed phone in the group. The bsp_id (Maytapi's underlying message
-  # id) is shared across those webhooks, so a fetch_by it is enough to
-  # catch the duplicate. Missing or nil bsp_id falls through — should not
-  # happen in practice but we don't want to dedup on a nil key.
+  @spec primary_managed_phone_id(non_neg_integer()) :: non_neg_integer() | nil
+  defp primary_managed_phone_id(group_id) do
+    WAGroupPhone
+    |> where(
+      [wa_group_phone],
+      wa_group_phone.wa_group_id == ^group_id and wa_group_phone.is_primary == true and
+        wa_group_phone.is_active == true
+    )
+    |> select([wa_group_phone], wa_group_phone.wa_managed_phone_id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  # In multi-phone orgs Maytapi can retry the same webhook delivery; the
+  # bsp_id is identical across retries, so a fetch_by it catches the duplicate.
+  # Missing or nil bsp_id falls through — should not happen in practice but
+  # we don't want to dedup on a nil key.
   @spec duplicate_inbound?(String.t() | nil) :: boolean()
   defp duplicate_inbound?(nil), do: false
   defp duplicate_inbound?(""), do: false
@@ -312,12 +354,20 @@ defmodule Glific.Communications.GroupMessage do
   defp fetch_wa_group_id(nil, _message_params), do: nil
 
   defp fetch_wa_group_id(wa_managed_phone_id, message_params) do
+    # Some Maytapi webhooks (notably for brand-new groups) arrive with no
+    # conversation_name. WAGroup requires a label, so fall back to the
+    # bsp_id; the sync job will overwrite it once the real name is known.
+    label =
+      if message_params.group_name in [nil, ""],
+        do: message_params.wa_group_bsp_id,
+        else: message_params.group_name
+
     {:ok, wa_group} =
       WAGroups.maybe_create_group(%{
         organization_id: message_params.organization_id,
         wa_managed_phone_id: wa_managed_phone_id,
         bsp_id: message_params.wa_group_bsp_id,
-        label: message_params.group_name
+        label: label
       })
 
     wa_group.id
