@@ -8,6 +8,7 @@ defmodule Glific.Flows.Webhook do
 
   alias Glific.Clients.CommonWebhook
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
+  alias Glific.Flows.Webhook.HeaderRedactor
   alias Glific.Messages
   alias Glific.Messages.Message
   alias Glific.Repo
@@ -229,7 +230,7 @@ defmodule Glific.Flows.Webhook do
     {:ok, webhook_log} =
       %{
         request_json: body,
-        request_headers: headers,
+        request_headers: HeaderRedactor.redact(headers),
         url: action.url,
         method: action.method,
         organization_id: context.organization_id,
