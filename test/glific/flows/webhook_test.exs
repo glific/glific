@@ -204,6 +204,41 @@ defmodule Glific.Flows.WebhookTest do
       assert webhook_log.url == "www.one.com/#{contact_id}"
     end
 
+    test "execute redacts credential headers before persisting the webhook log", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: Jason.encode!(@results)}
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = %Action{
+        headers: %{
+          "Accept" => "application/json",
+          "Authorization" => "Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature",
+          "X-API-KEY" => "kp_live_super_secret_value_123"
+        },
+        method: "POST",
+        url: "some url",
+        body: Jason.encode!(@action_body)
+      }
+
+      assert Webhook.execute(action, context) == nil
+      webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
+
+      # benign header kept, credential-bearing headers masked
+      assert webhook_log.request_headers["Accept"] == "application/json"
+      assert webhook_log.request_headers["Authorization"] == "[REDACTED]"
+      assert webhook_log.request_headers["X-API-KEY"] == "[REDACTED]"
+    end
+
     test "execute a webhook for post method should not break and update the webhook log in case of array/list response",
          attrs do
       Tesla.Mock.mock(fn
