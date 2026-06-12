@@ -656,12 +656,13 @@ defmodule Glific.Groups.WAGroups do
     end
   end
 
-  # Lookup keyed on bsp_id. If
-  # duplicate rows exist from before Phase 3, the oldest one wins — matches
-  # the Phase 1 backfill's "oldest = primary" convention so the active
-  # group stays stable.
+  @doc """
+  Look up a `wa_group` by its WhatsApp `bsp_id`. If duplicate rows exist
+  from before Phase 3, the oldest one wins — matches the Phase 1 backfill's
+  "oldest = primary" convention so the active group stays stable.
+  """
   @spec fetch_oldest_wa_group(String.t()) :: WAGroup.t() | nil
-  defp fetch_oldest_wa_group(bsp_id) do
+  def fetch_oldest_wa_group(bsp_id) do
     WAGroup
     |> where([wg], wg.bsp_id == ^bsp_id)
     |> order_by([wg], asc: wg.inserted_at, asc: wg.id)
