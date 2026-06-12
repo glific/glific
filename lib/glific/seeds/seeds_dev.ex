@@ -22,6 +22,7 @@ if Code.ensure_loaded?(Faker) do
       Groups,
       Groups.Group,
       Groups.WAGroup,
+      Groups.WAGroupPhone,
       Groups.WAGroups,
       Groups.WAGroupsCollection,
       Messages.Message,
@@ -1965,6 +1966,33 @@ if Code.ensure_loaded?(Faker) do
 
       # seed wa_groups
       Repo.insert_all(WAGroup, wa_group_entries)
+
+      seed_wa_group_phones(organization)
+    end
+
+    @doc false
+    @spec seed_wa_group_phones(Organization.t() | nil) :: {integer(), nil}
+    def seed_wa_group_phones(organization \\ nil) do
+      organization = get_organization(organization)
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      membership_entries =
+        WAGroups.list_wa_groups(%{filter: %{organization_id: organization.id}})
+        |> Enum.map(fn wa_group ->
+          %{
+            wa_group_id: wa_group.id,
+            wa_managed_phone_id: wa_group.wa_managed_phone_id,
+            organization_id: organization.id,
+            is_primary: true,
+            is_active: true,
+            inserted_at: now,
+            updated_at: now
+          }
+        end)
+
+      # seed wa_groups_phones memberships
+      Repo.insert_all(WAGroupPhone, membership_entries)
     end
 
     @doc false

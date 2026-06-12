@@ -10,7 +10,8 @@ defmodule Glific.Groups.WAGroupsTest do
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Partners,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    WAGroup.WAManagedPhone
   }
 
   setup do
@@ -591,6 +592,167 @@ defmodule Glific.Groups.WAGroupsTest do
         |> Repo.all()
 
       assert length(rows) == 1, "no duplicate WAGroup row should be created"
+    end
+  end
+
+  describe "primary_phone/1 and set_primary_phone/2" do
+    setup attrs do
+      first_phone = Fixtures.get_wa_managed_phone(attrs.organization_id)
+
+      # Default fixture status is "loading"; force "active" so the no-op
+      # path doesn't pick up a status warning.
+      {:ok, first_phone} =
+        first_phone
+        |> WAManagedPhone.changeset(%{status: "active"})
+        |> Repo.update()
+
+      {:ok, second_contact} =
+        Glific.Contacts.maybe_create_contact(%{
+          phone: "919999900001",
+          organization_id: attrs.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, second_phone} =
+        Glific.WAManagedPhones.create_wa_managed_phone(%{
+          label: "second",
+          phone: "919999900001",
+          phone_id: 9_999_001,
+          status: "active",
+          organization_id: attrs.organization_id,
+          contact_id: second_contact.id
+        })
+
+      {:ok, wa_group} =
+        WAGroups.maybe_create_group(%{
+          label: "Primary Switch Group",
+          bsp_id: "120363211111111111@g.us",
+          organization_id: attrs.organization_id,
+          wa_managed_phone_id: first_phone.id
+        })
+
+      # maybe_create_group/1 above already inserted the first_phone
+      # membership as is_primary: true. Only seed the second_phone here.
+      Fixtures.wa_group_phone_fixture(%{
+        wa_group_id: wa_group.id,
+        wa_managed_phone_id: second_phone.id,
+        organization_id: attrs.organization_id,
+        is_primary: false,
+        is_active: true
+      })
+
+      Map.merge(attrs, %{
+        first_phone: first_phone,
+        second_phone: second_phone,
+        wa_group: wa_group
+      })
+    end
+
+    test "primary_phone/1 returns the WAManagedPhone whose membership is is_primary + is_active",
+         ctx do
+      assert phone = WAGroups.primary_phone(ctx.wa_group.id)
+      assert phone.id == ctx.first_phone.id
+    end
+
+    test "primary_phone/1 returns nil when no membership is primary", ctx do
+      # Demote the existing primary so no row is is_primary: true.
+      ctx.wa_group.id
+      |> membership(ctx.first_phone.id)
+      |> WAGroupPhone.changeset(%{is_primary: false})
+      |> Repo.update!()
+
+      assert WAGroups.primary_phone(ctx.wa_group.id) == nil
+    end
+
+    test "primary_phone/1 returns nil when the primary membership is inactive", ctx do
+      ctx.wa_group.id
+      |> membership(ctx.first_phone.id)
+      |> WAGroupPhone.changeset(%{is_active: false})
+      |> Repo.update!()
+
+      assert WAGroups.primary_phone(ctx.wa_group.id) == nil
+    end
+
+    test "set_primary_phone/2 demotes the current primary and promotes the target", ctx do
+      assert {:ok, %{primary_phone: promoted, warning: nil}} =
+               WAGroups.set_primary_phone(ctx.wa_group.id, ctx.second_phone.id)
+
+      assert promoted.wa_managed_phone_id == ctx.second_phone.id
+      assert promoted.is_primary == true
+
+      old_primary = membership(ctx.wa_group.id, ctx.first_phone.id)
+      assert old_primary.is_primary == false
+
+      # Exactly one row remains is_primary: true for this group.
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id
+    end
+
+    test "set_primary_phone/2 returns :membership_not_found when no row exists", ctx do
+      {:ok, ghost_contact} =
+        Glific.Contacts.maybe_create_contact(%{
+          phone: "919999900099",
+          organization_id: ctx.organization_id,
+          contact_type: "WA"
+        })
+
+      {:ok, ghost_phone} =
+        Glific.WAManagedPhones.create_wa_managed_phone(%{
+          label: "ghost",
+          phone: "919999900099",
+          phone_id: 9_999_099,
+          status: "active",
+          organization_id: ctx.organization_id,
+          contact_id: ghost_contact.id
+        })
+
+      assert {:error, :membership_not_found} =
+               WAGroups.set_primary_phone(ctx.wa_group.id, ghost_phone.id)
+    end
+
+    test "set_primary_phone/2 returns :inactive_membership when target is is_active: false",
+         ctx do
+      ctx.wa_group.id
+      |> membership(ctx.second_phone.id)
+      |> WAGroupPhone.changeset(%{is_active: false})
+      |> Repo.update!()
+
+      assert {:error, :inactive_membership} =
+               WAGroups.set_primary_phone(ctx.wa_group.id, ctx.second_phone.id)
+
+      # Original primary unchanged.
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.first_phone.id
+    end
+
+    test "set_primary_phone/2 is a no-op when the target is already the primary", ctx do
+      # No demote+promote should fire — the row stays at is_primary: true.
+      original = membership(ctx.wa_group.id, ctx.first_phone.id)
+
+      assert {:ok, %{primary_phone: returned, warning: nil}} =
+               WAGroups.set_primary_phone(ctx.wa_group.id, ctx.first_phone.id)
+
+      assert returned.id == original.id
+      assert returned.is_primary == true
+
+      # DB state unchanged: original primary still primary, runner-up still not.
+      assert membership(ctx.wa_group.id, ctx.first_phone.id).is_primary == true
+      assert membership(ctx.wa_group.id, ctx.second_phone.id).is_primary == false
+    end
+
+    test "set_primary_phone/2 succeeds and surfaces a warning when target phone's Maytapi status is not 'active'",
+         ctx do
+      ctx.second_phone
+      |> WAManagedPhone.changeset(%{status: "loading"})
+      |> Repo.update!()
+
+      assert {:ok, %{primary_phone: promoted, warning: warning}} =
+               WAGroups.set_primary_phone(ctx.wa_group.id, ctx.second_phone.id)
+
+      assert promoted.is_primary == true
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id
+
+      assert is_binary(warning)
+      assert warning =~ "'loading'"
+      assert warning =~ ctx.second_phone.phone
     end
   end
 end

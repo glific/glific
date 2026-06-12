@@ -7,7 +7,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
 
   alias Glific.{
     Groups.ContactWAGroups,
-    Groups.WAGroups
+    Groups.WAGroup,
+    Groups.WAGroups,
+    WAGroup.WAManagedPhone
   }
 
   @doc """
@@ -76,4 +78,50 @@ defmodule GlificWeb.Resolvers.WaGroup do
   @spec wa_groups_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def wa_groups_count(_, args, _), do: {:ok, WAGroups.wa_groups_count(args)}
+
+  @doc """
+  Resolve `WAGroup.primaryPhone` — the managed phone whose membership row
+  has `is_primary: true` and `is_active: true`.
+  """
+  @spec primary_phone(WAGroup.t(), map(), %{context: map()}) ::
+          {:ok, WAManagedPhone.t() | nil}
+  def primary_phone(wa_group, _args, _resolution) do
+    {:ok, WAGroups.primary_phone(wa_group.id)}
+  end
+
+  @doc """
+  Promote a managed phone to the group's primary. Admin-only.
+  """
+  @spec set_primary_phone(
+          Absinthe.Resolution.t(),
+          %{wa_group_id: integer, wa_managed_phone_id: integer},
+          %{
+            context: map()
+          }
+        ) :: {:ok, any} | {:error, any}
+  def set_primary_phone(_, args, _) do
+    %{wa_group_id: wa_group_id, wa_managed_phone_id: wa_managed_phone_id} = args
+
+    case WAGroups.set_primary_phone(wa_group_id, wa_managed_phone_id) do
+      {:ok, result} ->
+        {:ok, result}
+
+      {:error, :membership_not_found} ->
+        {:error,
+         dgettext(
+           "errors",
+           "This phone is not a member of the group. Add it to the group on WhatsApp before promoting."
+         )}
+
+      {:error, :inactive_membership} ->
+        {:error,
+         dgettext(
+           "errors",
+           "This phone was removed from the group. Re-add it on WhatsApp before promoting."
+         )}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:error, changeset}
+    end
+  end
 end
