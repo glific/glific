@@ -66,7 +66,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
     assert wa_message.body == params.message
     assert wa_message.bsp_status == :sent
     assert wa_message.flow == :outbound
@@ -154,7 +154,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :image
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
     assert wa_message.type == :image
     assert is_nil(wa_message.media_id) == false
 
@@ -168,7 +168,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :audio
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
 
     assert wa_message.type == :audio
     assert is_nil(wa_message.media_id) == false
@@ -187,7 +187,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :video
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
     assert wa_message.type == :video
     assert is_nil(wa_message.media_id) == false
 
@@ -205,7 +205,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :document
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
     assert wa_message.type == :document
     assert is_nil(wa_message.media_id) == false
 
@@ -219,7 +219,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :sticker
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
     assert wa_message.type == :sticker
     assert is_nil(wa_message.media_id) == false
 
@@ -238,7 +238,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
     }
 
     {:error, error_message} =
-      Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+      Message.create_and_send_wa_message(wa_group, params)
 
     assert error_message == "Message size greater than 6000 characters"
   end
@@ -260,7 +260,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:error, error_msg} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:error, error_msg} = Message.create_and_send_wa_message(wa_group, params)
     assert error_msg == "Message size greater than 6000 characters"
   end
 
@@ -361,7 +361,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       type: :image
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
 
     assert_enqueued(worker: WAWorker, prefix: "global")
 
@@ -395,7 +395,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
 
     assert_enqueued(worker: WAWorker, prefix: "global")
 
@@ -432,7 +432,7 @@ defmodule Glific.Groups.WhatsappMessageTest do
       wa_managed_phone_id: wa_managed_phone.id
     }
 
-    {:ok, wa_message} = Message.create_and_send_wa_message(wa_managed_phone, wa_group, params)
+    {:ok, wa_message} = Message.create_and_send_wa_message(wa_group, params)
 
     assert_enqueued(worker: WAWorker, prefix: "global")
 

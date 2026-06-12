@@ -14,8 +14,7 @@ defmodule GlificWeb.Resolvers.Messages do
     Messages.MessageMedia,
     Providers.Maytapi,
     Repo,
-    Users.User,
-    WAGroup.WAManagedPhone
+    Users.User
   }
 
   @doc """
@@ -260,20 +259,15 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def send_message_in_wa_group(
         _,
-        %{input: %{wa_managed_phone_id: wa_managed_phone_id, wa_group_id: wa_group_id} = params},
+        %{input: %{wa_group_id: wa_group_id} = params},
         %{context: %{current_user: user}}
       ) do
-    with {:ok, wa_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{
-             id: wa_managed_phone_id,
-             organization_id: user.organization_id
-           }),
-         {:ok, wa_group} <-
+    with {:ok, wa_group} <-
            Repo.fetch_by(WAGroup, %{
              id: wa_group_id,
              organization_id: user.organization_id
            }) do
-      Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, params)
+      Maytapi.Message.create_and_send_wa_message(wa_group, params)
     end
   end
 

@@ -22,7 +22,6 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
-  alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
 
   require Logger
@@ -307,11 +306,6 @@ defmodule Glific.Clients.CommonWebhook do
 
     with_failure_reporting("send_wa_group_poll", org_id, fn ->
       with {:ok, fields} <- parse_wa_poll_params(fields),
-           {:ok, wa_phone} <-
-             Repo.fetch_by(WAManagedPhone, %{
-               id: fields.wa_group["wa_managed_phone_id"],
-               organization_id: fields.organization_id
-             }),
            {:ok, wa_group} <-
              Repo.fetch_by(WAGroup, %{
                id: fields.wa_group["id"],
@@ -323,7 +317,7 @@ defmodule Glific.Clients.CommonWebhook do
                organization_id: fields.organization_id
              }),
            {:ok, wa_message} <-
-             Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+             Maytapi.Message.create_and_send_wa_message(wa_group, %{poll_id: wa_poll.id}) do
         %{success: true, poll: wa_message.poll_content}
       else
         {:error, reason} when is_binary(reason) ->

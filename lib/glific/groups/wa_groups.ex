@@ -369,10 +369,10 @@ defmodule Glific.Groups.WAGroups do
   defp deactivate_one_membership(wa_group_id, wa_managed_phone_id) do
     WAGroupPhone
     |> where(
-      [wgp],
-      wgp.wa_group_id == ^wa_group_id and
-        wgp.wa_managed_phone_id == ^wa_managed_phone_id and
-        wgp.is_active == true
+      [wa_group_phone],
+      wa_group_phone.wa_group_id == ^wa_group_id and
+        wa_group_phone.wa_managed_phone_id == ^wa_managed_phone_id and
+        wa_group_phone.is_active == true
     )
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
@@ -418,6 +418,59 @@ defmodule Glific.Groups.WAGroups do
       nil -> nil
       wa_group_phone -> Repo.preload(wa_group_phone, :wa_managed_phone).wa_managed_phone
     end
+  end
+
+  @doc """
+  Return the oldest active membership's managed phone for a group, optionally
+  excluding a list of `wa_managed_phone_id`s. "Active" here means BOTH:
+  `wa_groups_phones.is_active == true` AND `wa_managed_phones.status == "active"`.
+
+  Used by `Glific.Providers.Maytapi.Sender.pick_for_send/2` as the *strict*
+  failover candidate when the current primary is unhealthy. Returns `nil`
+  when no eligible member exists.
+  """
+  @spec next_active_member(non_neg_integer(), [non_neg_integer()]) ::
+          WAManagedPhone.t() | nil
+  def next_active_member(wa_group_id, exclude \\ []) do
+    next_member_query(wa_group_id, exclude)
+    |> where([_wa_group_phone, wa_managed_phone], wa_managed_phone.status == "active")
+    |> Repo.one()
+  end
+
+  @doc """
+  Return the oldest active membership's managed phone for a group, ignoring
+  the Maytapi `WAManagedPhone.status`. Caller is opting in to "best-effort"
+  selection — used by `Glific.Providers.Maytapi.Sender` as a relaxed
+  fallback when no Maytapi-active phone exists for the group; the cached
+  status might be stale and trying a phone is better than refusing the
+  send outright. Returns `nil` only when the group has no remaining
+  membership rows at all.
+  """
+  @spec next_member(non_neg_integer(), [non_neg_integer()]) ::
+          WAManagedPhone.t() | nil
+  def next_member(wa_group_id, exclude \\ []) do
+    next_member_query(wa_group_id, exclude)
+    |> Repo.one()
+  end
+
+  @spec next_member_query(non_neg_integer(), [non_neg_integer()]) :: Ecto.Query.t()
+  defp next_member_query(wa_group_id, exclude) do
+    WAGroupPhone
+    |> join(:inner, [wa_group_phone], wa_managed_phone in WAManagedPhone,
+      on: wa_managed_phone.id == wa_group_phone.wa_managed_phone_id
+    )
+    |> where(
+      [wa_group_phone, _wa_managed_phone],
+      wa_group_phone.wa_group_id == ^wa_group_id and
+        wa_group_phone.is_active == true and
+        wa_group_phone.wa_managed_phone_id not in ^exclude
+    )
+    |> order_by([wa_group_phone, _wa_managed_phone],
+      asc: wa_group_phone.inserted_at,
+      asc: wa_group_phone.id
+    )
+    |> limit(1)
+    |> select([_wa_group_phone, wa_managed_phone], wa_managed_phone)
   end
 
   @doc """
@@ -516,10 +569,10 @@ defmodule Glific.Groups.WAGroups do
   defp deactivate_missing_memberships(wa_managed_phone, present_group_ids) do
     WAGroupPhone
     |> where(
-      [wgp],
-      wgp.wa_managed_phone_id == ^wa_managed_phone.id and
-        wgp.wa_group_id not in ^present_group_ids and
-        wgp.is_active == true
+      [wa_group_phone],
+      wa_group_phone.wa_managed_phone_id == ^wa_managed_phone.id and
+        wa_group_phone.wa_group_id not in ^present_group_ids and
+        wa_group_phone.is_active == true
     )
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
