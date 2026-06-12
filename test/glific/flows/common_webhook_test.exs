@@ -614,7 +614,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "poll_uuid" => poll.uuid
     }
 
-    assert ~s|["Elixir.Glific.WAGroup.WAManagedPhone", "Resource not found"]| =
+    assert ~s|["Elixir.Glific.Groups.WAGroup", "Resource not found"]| =
              CommonWebhook.webhook("send_wa_group_poll", fields)
 
     wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
