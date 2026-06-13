@@ -117,7 +117,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -174,7 +174,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -241,7 +241,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -270,7 +270,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -310,7 +310,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -359,7 +359,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })
@@ -396,7 +396,7 @@ defmodule GlificWeb.Schema.Api.WaMessageTest do
       })
 
     wa_grp =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_phone.id
       })

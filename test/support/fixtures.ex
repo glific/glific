@@ -1292,7 +1292,7 @@ defmodule Glific.Fixtures do
     wa_managed_phone = get_wa_managed_phone(attrs.organization_id)
 
     wg1 =
-      wa_group_fixture(%{
+      wa_group_with_primary_fixture(%{
         organization_id: attrs.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
