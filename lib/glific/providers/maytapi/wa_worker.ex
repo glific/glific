@@ -10,6 +10,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     priority: 0
 
   alias Glific.{
+    Groups.WAGroup,
     Groups.WAGroups,
     Messages.Message,
     Notifications,
@@ -18,8 +19,10 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Partners.Organization,
     Providers.Maytapi.ApiClient,
     Providers.Maytapi.ResponseHandler,
+    Providers.Maytapi.Sender,
     Providers.Worker,
     Repo,
+    WAGroup.WAManagedPhone,
     WAManagedPhones
   }
 
@@ -70,10 +73,55 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   @spec process_maytapi(non_neg_integer(), map(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
   defp process_maytapi(org_id, payload, message) do
+    Repo.put_process_state(org_id)
     phone_id = payload["phone_id"]
+    response = ApiClient.send_message(org_id, payload, phone_id)
 
-    ApiClient.send_message(org_id, payload, phone_id)
-    |> ResponseHandler.handle_response(message)
+    cond do
+      Map.get(payload, "retried", false) ->
+        ResponseHandler.handle_response(response, message)
+
+      ResponseHandler.phone_level_error?(response) ->
+        retry_with_failover(response, org_id, payload, message)
+
+      true ->
+        ResponseHandler.handle_response(response, message)
+    end
+  end
+
+  # Phase 4 failover retry: a single send-time retry through the next
+  # active phone in the group. Sender.pick_for_send/2 promotes the
+  # fallback phone on success.
+  @spec retry_with_failover(any(), non_neg_integer(), map(), map()) ::
+          {:ok, any()} | {:error, any()} | :ok
+  defp retry_with_failover(original_response, org_id, payload, message) do
+    with {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{id: message["wa_group_id"], organization_id: org_id}),
+         {:ok, failed_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             phone_id: payload["phone_id"],
+             organization_id: org_id
+           }),
+         {:ok, new_phone, :failover} <-
+           Sender.pick_for_send(wa_group,
+             exclude: [failed_phone.id],
+             reason: :send_error
+           ) do
+      Logger.info(
+        "Maytapi failover: retrying send on group #{wa_group.id} via phone #{new_phone.phone} (excluded #{failed_phone.phone})"
+      )
+
+      new_payload =
+        payload
+        |> Map.put("phone_id", new_phone.phone_id)
+        |> Map.put("retried", true)
+
+      response = ApiClient.send_message(org_id, new_payload, new_phone.phone_id)
+      ResponseHandler.handle_response(response, message)
+    else
+      _ ->
+        ResponseHandler.handle_response(original_response, message)
+    end
   end
 
   @spec perform_credential_update(non_neg_integer()) ::

@@ -12,18 +12,28 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WAGroup,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
+    Providers.Maytapi.Sender,
     Repo,
-    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAGroup.WaPoll,
     WAMessages
   }
 
-  @doc false
-  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) ::
+  @doc """
+  Pick the managed phone for `wa_group` via `Sender.pick_for_send/2` (so
+  primary-with-failover applies), record the outbound `wa_message`, and
+  dispatch it through Maytapi.
+
+  Returns `{:ok, %WAMessage{}}` on success, `{:error, :no_active_phones}`
+  when the group has no usable phone, `{:error, :promotion_failed}` when
+  a failover candidate was found but the primary swap could not be
+  persisted, or any error surfaced by the underlying create/send pipeline.
+  """
+  @spec create_and_send_wa_message(WAGroup.t(), map()) ::
           {:ok, WAMessage.t()} | {:error, any()}
-  def create_and_send_wa_message(wa_phone, wa_group, attrs) do
-    with {:ok, {attrs, poll}} <- add_poll_details(attrs),
+  def create_and_send_wa_message(%WAGroup{} = wa_group, attrs) do
+    with {:ok, wa_phone, _source} <- Sender.pick_for_send(wa_group),
+         {:ok, {attrs, poll}} <- add_poll_details(attrs),
          {:ok, message} <- create_wa_message(attrs, wa_phone, wa_group) do
       GroupMessage.send_message(message, %{
         wa_group_bsp_id: wa_group.bsp_id,
@@ -73,7 +83,7 @@ defmodule Glific.Providers.Maytapi.Message do
       WaGroupsCollections.list_wa_groups_collection(%{
         filter: %{group_id: group.id, organization_id: group.organization_id}
       })
-      |> Repo.preload([:wa_group])
+      |> Repo.preload(wa_group: :primary_phone)
 
     case wa_group_collections do
       [] ->
@@ -89,14 +99,7 @@ defmodule Glific.Providers.Maytapi.Message do
           fn wa_group_collection ->
             Repo.put_process_state(wa_group_collection.organization_id)
 
-            {:ok, wa_managed_phone} =
-              Repo.fetch_by(WAManagedPhone, %{
-                id: wa_group_collection.wa_group.wa_managed_phone_id,
-                organization_id: wa_group_collection.organization_id
-              })
-
             create_and_send_wa_message(
-              wa_managed_phone,
               wa_group_collection.wa_group,
               Map.delete(attrs, :group_id)
             )
@@ -116,11 +119,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
   def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
-    {:ok, wa_managed_phone} =
-      Repo.fetch_by(WAManagedPhone, %{
-        id: wa_group_collection.wa_group.wa_managed_phone_id,
-        organization_id: group.organization_id
-      })
+    wa_managed_phone = wa_group_collection.wa_group.primary_phone
 
     attrs
     |> Map.put_new(:type, :text)
