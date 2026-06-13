@@ -9,19 +9,16 @@ defmodule Glific.Providers.Maytapi.Sender do
   """
 
   require Logger
-  import Ecto.Query
 
   alias Glific.{
     Groups.WAGroup,
-    Groups.WAGroupPhone,
     Groups.WAGroups,
     Notifications,
-    Repo,
     WAGroup.WAManagedPhone
   }
 
-  @typedoc "Why we picked this phone: directly-the-primary, promoted-via-failover, or legacy-column fallback."
-  @type source :: :primary | :failover | :legacy_fallback
+  @typedoc "Why we picked this phone: directly-the-primary or promoted-via-failover."
+  @type source :: :primary | :failover
 
   @doc """
   Pick the `WAManagedPhone` to send from for `wa_group`.
@@ -40,9 +37,6 @@ defmodule Glific.Providers.Maytapi.Sender do
   - `{:ok, %WAManagedPhone{}, :failover}` — primary unhealthy/excluded;
     promoted the next active member and returned it. Fires a `:warning`
     notification + `glific.maytapi.failover` counter.
-  - `{:ok, %WAManagedPhone{}, :legacy_fallback}` — defensive read of
-    `wa_group.wa_managed_phone_id` when no `wa_groups_phones` rows exist
-    for the group (shouldn't happen post-Phase-1). Logged at warn level.
   - `{:error, :no_active_phones}` — no eligible phone. Fires a
     `:critical` notification + `glific.maytapi.send_no_active_phones`
     counter.
@@ -56,11 +50,7 @@ defmodule Glific.Providers.Maytapi.Sender do
     exclude = Keyword.get(opts, :exclude, [])
     reason = Keyword.get(opts, :reason, :stale_primary_status)
 
-    if memberships_exist?(wa_group.id) do
-      pick_from_memberships(wa_group, exclude, reason)
-    else
-      legacy_fallback(wa_group)
-    end
+    pick_from_memberships(wa_group, exclude, reason)
   end
 
   @doc """
@@ -163,41 +153,6 @@ defmodule Glific.Providers.Maytapi.Sender do
 
         {:error, :promotion_failed}
     end
-  end
-
-  @spec legacy_fallback(WAGroup.t()) ::
-          {:ok, WAManagedPhone.t(), :legacy_fallback} | {:error, :no_active_phones}
-  defp legacy_fallback(%WAGroup{wa_managed_phone_id: nil} = wa_group) do
-    Logger.warning(
-      "Sender: wa_group #{wa_group.id} has no wa_groups_phones rows and no legacy wa_managed_phone_id"
-    )
-
-    notify_no_active_phones(wa_group)
-    {:error, :no_active_phones}
-  end
-
-  defp legacy_fallback(%WAGroup{wa_managed_phone_id: phone_id} = wa_group) do
-    Logger.warning(
-      "Sender: wa_group #{wa_group.id} has no wa_groups_phones rows; falling back to legacy wa_managed_phone_id=#{phone_id}"
-    )
-
-    case Repo.get(WAManagedPhone, phone_id) do
-      nil ->
-        notify_no_active_phones(wa_group)
-        {:error, :no_active_phones}
-
-      phone ->
-        {:ok, phone, :legacy_fallback}
-    end
-  end
-
-  @spec memberships_exist?(non_neg_integer()) :: boolean()
-  defp memberships_exist?(wa_group_id) do
-    Repo.exists?(
-      from(wa_group_phone in WAGroupPhone,
-        where: wa_group_phone.wa_group_id == ^wa_group_id
-      )
-    )
   end
 
   @spec notify_failover(

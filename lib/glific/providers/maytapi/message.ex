@@ -14,7 +14,6 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WaGroupsCollections,
     Providers.Maytapi.Sender,
     Repo,
-    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAGroup.WaPoll,
     WAMessages
@@ -83,7 +82,7 @@ defmodule Glific.Providers.Maytapi.Message do
       WaGroupsCollections.list_wa_groups_collection(%{
         filter: %{group_id: group.id, organization_id: group.organization_id}
       })
-      |> Repo.preload([:wa_group])
+      |> Repo.preload(wa_group: :primary_phone)
 
     case wa_group_collections do
       [] ->
@@ -119,11 +118,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
   def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
-    {:ok, wa_managed_phone} =
-      Repo.fetch_by(WAManagedPhone, %{
-        id: wa_group_collection.wa_group.wa_managed_phone_id,
-        organization_id: group.organization_id
-      })
+    wa_managed_phone = wa_group_collection.wa_group.primary_phone
 
     attrs
     |> Map.put_new(:type, :text)

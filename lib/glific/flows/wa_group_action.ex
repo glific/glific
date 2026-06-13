@@ -71,14 +71,13 @@ defmodule Glific.Flows.WAGroupAction do
 
     {type, media_id} = ContactAction.get_media_from_attachment(attachments, text, context, nil)
 
-    context = Repo.preload(context, [:wa_group, wa_group: :wa_managed_phone])
+    context = Repo.preload(context, :wa_group)
 
     attrs = %{
       uuid: action.node_uuid,
       body: body,
       type: type,
       media_id: media_id,
-      contact_id: context.wa_group.wa_managed_phone.contact_id,
       organization_id: organization_id,
       flow_label: flow_label,
       flow_id: context.flow_id,

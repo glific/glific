@@ -162,17 +162,6 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       assert phone.id == ctx.first_phone.id
     end
 
-    test "legacy fallback: no wa_groups_phones rows but wa_group.wa_managed_phone_id is set",
-         ctx do
-      # Wipe all memberships for the group to hit the defensive path.
-      WAGroupPhone
-      |> where([wa_group_phone], wa_group_phone.wa_group_id == ^ctx.wa_group.id)
-      |> Repo.delete_all()
-
-      assert {:ok, phone, :legacy_fallback} = Sender.pick_for_send(ctx.wa_group)
-      assert phone.id == ctx.wa_group.wa_managed_phone_id
-    end
-
     test "deactivated memberships are skipped: relaxed pick falls through to the still-active primary",
          ctx do
       ctx.first_phone
