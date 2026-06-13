@@ -88,9 +88,12 @@ defmodule Glific.Scripts.BackfillWAGroupPrimary do
   @spec list_groups_without_primary(non_neg_integer()) :: [WAGroup.t()]
   defp list_groups_without_primary(org_id) do
     from(wa_group in WAGroup,
-      left_join: wa_group_phone in WAGroupPhone,
-      on: wa_group_phone.wa_group_id == wa_group.id and wa_group_phone.is_primary == true,
-      where: wa_group.organization_id == ^org_id and is_nil(wa_group_phone.id)
+      join: membership in WAGroupPhone,
+      on: membership.wa_group_id == wa_group.id,
+      left_join: primary in WAGroupPhone,
+      on: primary.wa_group_id == wa_group.id and primary.is_primary == true,
+      where: wa_group.organization_id == ^org_id and is_nil(primary.id),
+      distinct: wa_group.id
     )
     |> Repo.all()
   end

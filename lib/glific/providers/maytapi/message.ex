@@ -20,13 +20,14 @@ defmodule Glific.Providers.Maytapi.Message do
   }
 
   @doc """
-  Pick the managed phone for `wa_group` via `Sender.pick_for_send/1` (so
+  Pick the managed phone for `wa_group` via `Sender.pick_for_send/2` (so
   primary-with-failover applies), record the outbound `wa_message`, and
   dispatch it through Maytapi.
 
   Returns `{:ok, %WAMessage{}}` on success, `{:error, :no_active_phones}`
-  when the group has no usable phone, or any error surfaced by the
-  underlying create/send pipeline.
+  when the group has no usable phone, `{:error, :promotion_failed}` when
+  a failover candidate was found but the primary swap could not be
+  persisted, or any error surfaced by the underlying create/send pipeline.
   """
   @spec create_and_send_wa_message(WAGroup.t(), map()) ::
           {:ok, WAMessage.t()} | {:error, any()}

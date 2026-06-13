@@ -73,6 +73,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   @spec process_maytapi(non_neg_integer(), map(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
   defp process_maytapi(org_id, payload, message) do
+    Repo.put_process_state(org_id)
     phone_id = payload["phone_id"]
     response = ApiClient.send_message(org_id, payload, phone_id)
 

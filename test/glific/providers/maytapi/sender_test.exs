@@ -66,8 +66,6 @@ defmodule Glific.Providers.Maytapi.SenderTest do
         is_active: true
       })
 
-      wa_group = Repo.preload(wa_group, [])
-
       Map.merge(attrs, %{
         first_phone: first_phone,
         second_phone: second_phone,

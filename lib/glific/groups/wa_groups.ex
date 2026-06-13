@@ -443,8 +443,9 @@ defmodule Glific.Groups.WAGroups do
   selection — used by `Glific.Providers.Maytapi.Sender` as a relaxed
   fallback when no Maytapi-active phone exists for the group; the cached
   status might be stale and trying a phone is better than refusing the
-  send outright. Returns `nil` only when the group has no remaining
-  membership rows at all.
+  send outright. Returns `nil` when the group has no membership rows with
+  `wa_groups_phones.is_active == true` (either no memberships at all, or
+  every membership is inactive).
   """
   @spec next_member(non_neg_integer(), [non_neg_integer()]) ::
           WAManagedPhone.t() | nil
