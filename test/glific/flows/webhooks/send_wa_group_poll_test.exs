@@ -45,7 +45,8 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
     |> update([f], set: [status: "published"])
     |> Repo.update_all([])
 
-    wa_group = Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+    wa_group =
+      Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
 
     flow_attrs = %{
       flow_id: flow.id,

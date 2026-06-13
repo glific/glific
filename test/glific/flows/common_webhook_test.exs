@@ -618,7 +618,9 @@ defmodule Glific.Flows.CommonWebhookTest do
              CommonWebhook.webhook("send_wa_group_poll", fields)
 
     wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
-    wa_group = Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+    wa_group =
+      Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
 
     fields = %{
       "wa_group" => %{
