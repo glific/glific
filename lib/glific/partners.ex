@@ -592,6 +592,7 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_ask_glific_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_copy_node_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
 
