@@ -35,16 +35,10 @@ defmodule Glific.Flows.Webhooks.SpeechToTextWithBhasini do
     end
   end
 
-  @spec translate_gemini_result(map() | String.t()) :: {:ok, map()} | {:error, String.t()}
+  @spec translate_gemini_result(map()) :: {:ok, map()} | {:error, String.t()}
   defp translate_gemini_result(%{success: true} = result),
     do: {:ok, Map.delete(result, :success)}
 
   defp translate_gemini_result(%{success: false, asr_response_text: reason}),
     do: {:error, to_string(reason)}
-
-  defp translate_gemini_result(%{success: false} = result),
-    do: {:error, "Speech to text failed: #{inspect(result)}"}
-
-  defp translate_gemini_result(other),
-    do: {:error, "Unexpected response from speech_to_text: #{inspect(other)}"}
 end
