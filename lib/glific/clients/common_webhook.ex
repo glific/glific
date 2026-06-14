@@ -5,25 +5,16 @@ defmodule Glific.Clients.CommonWebhook do
 
   alias Glific.ASR.Bhasini
   alias Glific.Assistants.Assistant
-  alias Glific.Certificates.Certificate
-  alias Glific.Certificates.CertificateTemplate
-  alias Glific.Contacts
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Flows.Webhooks.Dispatcher
-  alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
-  alias Glific.Providers.Maytapi
   alias Glific.Repo
-  alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
-  alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
-  alias Glific.WAGroup.WAManagedPhone
-  alias Glific.WAGroup.WaPoll
 
   require Logger
 
@@ -201,24 +192,18 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
 
-  def webhook("speech_to_text_with_bhasini", fields) do
-    fields
-    |> do_speech_to_text_with_bhasini()
-    |> normalize_failure()
-  end
+  def webhook("speech_to_text_with_bhasini", fields),
+    do: Dispatcher.dispatch_named("speech_to_text_with_bhasini", fields)
 
   # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes.
-  def webhook("text_to_speech_with_bhasini", fields) do
-    fields
-    |> do_text_to_speech_with_bhasini()
-    |> normalize_failure()
-  end
+  def webhook("text_to_speech_with_bhasini", fields),
+    do: Dispatcher.dispatch_named("text_to_speech_with_bhasini", fields)
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
-  @spec webhook(String.t(), map()) :: map()
+  @spec webhook(String.t(), map()) :: map() | String.t()
   def webhook("parse_via_chat_gpt", fields) do
     org_id = parse_org_id(fields)
 
@@ -261,21 +246,16 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  def webhook("nmt_tts_with_bhasini", fields) do
-    fields
-    |> do_nmt_tts_with_bhasini()
-    |> normalize_failure()
-  end
+  # Migrated to Glific.Flows.Webhooks.NmtTtsWithBhasini. This clause now routes
+  # through the centralised dispatcher, which wraps the call with failure
+  # reporting + latency telemetry.
+  def webhook("nmt_tts_with_bhasini", fields),
+    do: Dispatcher.dispatch_named("nmt_tts_with_bhasini", fields)
 
-  def webhook("detect_language", fields) do
-    speech = fields["speech"]
-    org_id = parse_org_id(fields)
-
-    with_failure_reporting("detect_language", org_id, fn ->
-      Bhasini.detect_language(speech)
-    end)
-    |> normalize_failure()
-  end
+  # Migrated to Glific.Flows.Webhooks.DetectLanguage. This clause now routes
+  # through the central dispatcher.
+  def webhook("detect_language", fields),
+    do: Dispatcher.dispatch_named("detect_language", fields)
 
   def webhook("get_buttons", fields) do
     buttons =
@@ -301,60 +281,17 @@ defmodule Glific.Clients.CommonWebhook do
   def webhook("geolocation", fields),
     do: Dispatcher.dispatch_named("geolocation", fields)
 
-  # webhook for sending whatsapp group polls in a flow
-  def webhook("send_wa_group_poll", fields) do
-    org_id = parse_org_id(fields)
+  # Migrated to Glific.Flows.Webhooks.SendWaGroupPoll. This clause now routes
+  # through the centralised dispatcher, which wraps the call with failure
+  # reporting + latency telemetry.
+  def webhook("send_wa_group_poll", fields),
+    do: Dispatcher.dispatch_named("send_wa_group_poll", fields)
 
-    with_failure_reporting("send_wa_group_poll", org_id, fn ->
-      with {:ok, fields} <- parse_wa_poll_params(fields),
-           {:ok, wa_phone} <-
-             Repo.fetch_by(WAManagedPhone, %{
-               id: fields.wa_group["wa_managed_phone_id"],
-               organization_id: fields.organization_id
-             }),
-           {:ok, wa_group} <-
-             Repo.fetch_by(WAGroup, %{
-               id: fields.wa_group["id"],
-               organization_id: fields.organization_id
-             }),
-           {:ok, wa_poll} <-
-             Repo.fetch_by(WaPoll, %{
-               uuid: fields.poll_uuid,
-               organization_id: fields.organization_id
-             }),
-           {:ok, wa_message} <-
-             Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
-        %{success: true, poll: wa_message.poll_content}
-      else
-        {:error, reason} when is_binary(reason) ->
-          reason
-
-        {:error, reason} ->
-          SafeLog.safe_inspect(reason)
-      end
-    end)
-  end
-
-  def webhook("create_certificate", fields) do
-    org_id = parse_org_id(fields)
-
-    with_failure_reporting("create_certificate", org_id, fn ->
-      with {:ok, parsed_fields} <- parse_certificate_params(fields),
-           {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
-           {:ok, slide_details} <-
-             Slide.parse_slides_url(certificate_template.url) do
-        Certificate.generate_certificate(
-          parsed_fields,
-          parsed_fields.contact["id"],
-          slide_details.presentation_id,
-          slide_details.page_id
-        )
-      else
-        {:error, reason} ->
-          reason
-      end
-    end)
-  end
+  # Migrated to Glific.Flows.Webhooks.CreateCertificate. This clause now routes
+  # through the centralised dispatcher, which wraps the call with failure
+  # reporting + latency telemetry.
+  def webhook("create_certificate", fields),
+    do: Dispatcher.dispatch_named("create_certificate", fields)
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
@@ -428,34 +365,6 @@ defmodule Glific.Clients.CommonWebhook do
       {:error, reason} ->
         %{success: false, reason: inspect(reason)}
     end
-  end
-
-  @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
-  defp do_text_to_speech_with_bhasini(fields) do
-    text = fields["text"]
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.label |> String.downcase()
-    speech_engine = Map.get(fields, "speech_engine", "")
-
-    with_failure_reporting("text_to_speech_with_bhasini", org_id, fn ->
-      cond do
-        speech_engine == "open_ai" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        speech_engine == "bhashini" ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-
-        source_language == "english" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        true ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-      end
-    end)
   end
 
   # Spec includes `{:error, _}` defensively so the unified-voice-llm-call call
@@ -603,65 +512,6 @@ defmodule Glific.Clients.CommonWebhook do
          "temperature" => Map.get(fields, "temperature", 0),
          "response_format" => Map.get(fields, "response_format", nil)
        }}
-    end
-  end
-
-  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
-  defp parse_wa_poll_params(fields) do
-    # if wa_group is in the map, then the inner keys will be already filled by
-    # webhook module
-    with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
-         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
-         {:ok, _} <-
-           Ecto.UUID.cast(fields["poll_uuid"]) do
-      {:ok,
-       %{
-         wa_group: fields["wa_group"],
-         poll_uuid: fields["poll_uuid"],
-         organization_id: fields["organization_id"]
-       }}
-    else
-      :error ->
-        {:error, "poll_uuid is invalid"}
-
-      {false, field} ->
-        {:error, "#{field} is invalid"}
-    end
-  end
-
-  @spec parse_certificate_params(map()) :: {:ok, map()} | {:error, String.t()}
-  defp parse_certificate_params(fields) do
-    certificate_params_schema = %{
-      certificate_id: [
-        type: :integer,
-        required: true,
-        cast_func: fn value ->
-          {:ok, if(is_binary(value), do: Glific.parse_maybe_integer!(value), else: value)}
-        end
-      ],
-      contact: [type: :map, required: true],
-      replace_texts: [type: :map, required: true],
-      organization_id: [type: :integer, required: true]
-    }
-
-    Tarams.cast(fields, certificate_params_schema) |> Glific.handle_tarams_result()
-  end
-
-  @spec fetch_certificate_template(map()) :: {:ok, CertificateTemplate.t()} | {:error, String.t()}
-  defp fetch_certificate_template(fields) do
-    case Repo.fetch_by(CertificateTemplate, %{
-           id: fields.certificate_id,
-           organization_id: fields.organization_id
-         }) do
-      {:ok, certificate_template} ->
-        {:ok, certificate_template}
-
-      {:error, _reason} ->
-        Logger.error(
-          "Certificate template not found for ID: #{fields.certificate_id} and organization: #{fields.organization_id}"
-        )
-
-        {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
     end
   end
 
@@ -875,21 +725,6 @@ defmodule Glific.Clients.CommonWebhook do
   # FUNCTION webhooks signal Failure to the flow by returning a non-map (see
   # Glific.Flows.Webhook.handle/3, which keys off is_map). Convert a
   # %{success: false} result into a bare error string so the flow routes to the
-  # Failure category; pass anything else (success maps, already-bare strings)
-  # through unchanged.
-  @spec normalize_failure(map() | String.t()) :: map() | String.t()
-  defp normalize_failure(%{success: false} = result) do
-    cond do
-      is_binary(result[:reason]) -> result[:reason]
-      is_binary(result[:error]) -> result[:error]
-      is_binary(result[:asr_response_text]) -> result[:asr_response_text]
-      is_binary(result[:detected_language]) -> result[:detected_language]
-      true -> "Webhook execution failed"
-    end
-  end
-
-  defp normalize_failure(result), do: result
-
   @spec record_webhook_outcome(any(), String.t(), non_neg_integer() | nil, non_neg_integer()) ::
           :ok
   defp record_webhook_outcome(%{success: false} = result, webhook_name, org_id, duration_ms) do
