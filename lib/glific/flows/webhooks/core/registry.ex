@@ -16,12 +16,24 @@ defmodule Glific.Flows.Webhooks.Registry do
   target Dispatcher itself, coupling test isolation to the orchestration
   layer. The indirection preserves a clean seam for both unit tests and
   integration tests.
+
+  ## Node URL vs. observability webhook_name
+
+  For most webhooks `name/0` (the node URL / registry key) equals the
+  observability `webhook_name` used in Kaapi `request_metadata` and AppSignal
+  metrics. The two unified-llm nodes are an exception — their node URL differs
+  from their observability name. Use `lookup_by_webhook_name/1` when you have
+  an observability name from a Kaapi callback and need the module.
   """
 
   alias Glific.Flows.Webhooks
 
   @webhooks %{
-    "geolocation" => Webhooks.Geolocation
+    "geolocation" => Webhooks.Geolocation,
+    "speech_to_text" => Webhooks.SpeechToText,
+    "text_to_speech" => Webhooks.TextToSpeech,
+    "filesearch-gpt" => Webhooks.UnifiedLlm,
+    "voice-filesearch-gpt" => Webhooks.UnifiedVoiceLlm
   }
 
   @doc """
@@ -46,4 +58,46 @@ defmodule Glific.Flows.Webhooks.Registry do
   @doc "List every webhook name registered so far. Used by tests."
   @spec names() :: [String.t()]
   def names, do: Map.keys(@webhooks)
+
+  @doc """
+  Returns the node-URL strings for all registered async webhooks (those whose
+  `mode/0` returns `:async`). Used by `Glific.Flows.Action` to route async
+  FUNCTION nodes through `Dispatcher.dispatch_async/3`, and by
+  `Glific.Flows.FlowContext` to identify async webhook nodes for timeout
+  reporting.
+  """
+  @spec async_urls() :: [String.t()]
+  def async_urls do
+    @webhooks
+    |> Enum.filter(fn {_url, mod} -> mod.mode() == :async end)
+    |> Enum.map(fn {url, _mod} -> url end)
+  end
+
+  @doc """
+  Finds the async webhook module whose `webhook_name/0` matches `webhook_name`.
+
+  Used by `FlowResumeController` to route a Kaapi callback to the correct
+  module's `handle_resume/2`. Returns `nil` if no registered async module has
+  that observability name (the caller falls back to the default behaviour).
+  """
+  @spec lookup_by_webhook_name(String.t()) :: module() | nil
+  def lookup_by_webhook_name(webhook_name) when is_binary(webhook_name) do
+    @webhooks
+    |> Enum.find_value(fn {_url, mod} ->
+      if mod.mode() == :async and resolve_webhook_name(mod) == webhook_name do
+        mod
+      end
+    end)
+  end
+
+  # Safely resolves a module's webhook_name/0; falls back to name/0 for modules
+  # that don't export webhook_name/0 (e.g. the sync Geolocation module).
+  @spec resolve_webhook_name(module()) :: String.t()
+  defp resolve_webhook_name(mod) do
+    if function_exported?(mod, :webhook_name, 0) do
+      mod.webhook_name()
+    else
+      mod.name()
+    end
+  end
 end

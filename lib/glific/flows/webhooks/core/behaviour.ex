@@ -80,16 +80,38 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @callback call(fields :: map(), ctx :: ctx()) :: sync_result() | async_result()
 
   @doc """
-  Async-only. Invoked from the flow_resume callback path to shape the Kaapi
-  callback payload into the response map merged into the flow context.
-  Defaults to the standard do_flow_resume behaviour. Override for webhooks
-  whose callback needs post-processing (e.g. `unified-voice-llm-call`).
+  Async-only. Invoked from the flow_resume callback path to shape the **parsed**
+  Kaapi callback (`parse_callback_response/1` output) into the response map merged
+  into the flow context. `ctx` carries `:organization_id` and `:success` (the raw
+  callback success flag).
+
+  Most webhooks omit this and the flow_resume controller uses the parsed response
+  unchanged. Override for webhooks whose callback needs post-processing
+  (e.g. `unified-voice-llm-call` runs NMT+TTS).
   """
-  @callback handle_resume(callback :: map(), ctx :: ctx()) ::
+  @callback handle_resume(response :: map(), ctx :: ctx()) ::
               {:ok | :error, map()}
 
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
-  @optional_callbacks handle_resume: 2, wait_time_default: 0
+  @doc """
+  Observability/callback webhook name.
+
+  For most webhooks this equals `name/0` (the node URL). The two unified-llm nodes
+  are an exception: their node URL in deployed flow JSON (`"filesearch-gpt"`,
+  `"voice-filesearch-gpt"`) differs from the `webhook_name` string embedded in
+  Kaapi `request_metadata` and AppSignal metric tags (`"unified-llm-call"`,
+  `"unified-voice-llm-call"`).
+
+  - Registry lookup and `action.ex` dispatch use `name/0`.
+  - AppSignal tags, Kaapi callback matching, and metric counters use `webhook_name/0`.
+
+  The `Glific.Flows.Webhooks.Async` macro injects a default implementation that
+  returns the same value as `name/0`. Override only when the node URL differs from
+  the observability name.
+  """
+  @callback webhook_name() :: String.t()
+
+  @optional_callbacks handle_resume: 2, wait_time_default: 0, webhook_name: 0
 end

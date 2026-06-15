@@ -6,14 +6,11 @@ defmodule Glific.Flows.Webhook do
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
-  alias Glific.Clients.CommonWebhook
-  alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
-  alias Glific.Flows.Webhook.HeaderRedactor
+  alias Glific.Flows.{Action, FlowContext, WebhookLog}
+  alias Glific.Flows.Webhooks.AsyncSupport
   alias Glific.Messages
   alias Glific.Messages.Message
   alias Glific.Repo
-  alias Glific.ThirdParty.Kaapi
-  alias Glific.ThirdParty.Kaapi.SttTtsWorker
 
   @webhook_unified_llm "unified-llm-call"
   @webhook_speech_to_text "speech_to_text"
@@ -70,8 +67,7 @@ defmodule Glific.Flows.Webhook do
     "speech_to_text",
     "text_to_speech",
     "speech_to_text_with_bhasini",
-    "nmt_tts_with_bhasini",
-    "call_and_wait"
+    "nmt_tts_with_bhasini"
   ]
 
   @doc """
@@ -119,12 +115,9 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
+  @spec add_signature(map() | nil, non_neg_integer(), String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
-    now = System.system_time(:second)
-    sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
-
-    Map.put(headers, :"X-Glific-Signature", sig)
+    AsyncSupport.add_signature(headers, organization_id, body)
   end
 
   @doc """
@@ -146,102 +139,42 @@ defmodule Glific.Flows.Webhook do
   @doc """
   Execute a Kaapi STT webhook (async — flow waits for callback via flow_resume).
 
-  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
-  that enforces per-organization rate limiting before calling Kaapi.
+  Delegates to `AsyncSupport.enqueue_stt_tts/3`. Kept for test compatibility;
+  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
   """
   @spec execute_kaapi_stt(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_kaapi_stt(action, context) do
-    enqueue_stt_tts_job(action, context, @webhook_speech_to_text)
+    AsyncSupport.enqueue_stt_tts(action, context, @webhook_speech_to_text)
   end
 
   @doc """
   Execute a Kaapi TTS webhook (async — flow waits for callback via flow_resume).
 
-  Puts the flow in await state immediately and enqueues a `SttTtsWorker` job
-  that enforces per-organization rate limiting before calling Kaapi.
+  Delegates to `AsyncSupport.enqueue_stt_tts/3`. Kept for test compatibility;
+  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
   """
   @spec execute_kaapi_tts(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_kaapi_tts(action, context) do
-    enqueue_stt_tts_job(action, context, @webhook_text_to_speech)
-  end
-
-  @spec enqueue_stt_tts_job(Action.t(), FlowContext.t(), String.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp enqueue_stt_tts_job(action, context, webhook_name) do
-    case Kaapi.fetch_kaapi_creds(context.organization_id) do
-      {:ok, _secrets} ->
-        do_enqueue_stt_tts_job(action, context, webhook_name)
-
-      {:error, _reason} ->
-        kaapi_not_active_error(action, context)
-    end
-  end
-
-  defp do_enqueue_stt_tts_job(action, context, webhook_name) do
-    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
-
-    case create_body(context, action.body) do
-      {:error, message} ->
-        webhook_log = create_log(action, %{}, action.headers, context)
-        update_log(webhook_log, message)
-        {:ok, context, [failure_message]}
-
-      {fields, _body} ->
-        webhook_log = create_log(action, fields, action.headers, context)
-
-        fields =
-          fields
-          |> Map.put("webhook_log_id", webhook_log.id)
-          |> Map.put("result_name", action.result_name)
-          |> Map.put("flow_id", context.flow_id)
-          |> Map.put("contact_id", context.contact_id)
-
-        case SttTtsWorker.enqueue(
-               webhook_name,
-               fields,
-               webhook_log.id,
-               context.id,
-               context.organization_id
-             ) do
-          {:ok, _job} ->
-            wait_time = action.wait_time || 60
-            update_context_for_wait(context, wait_time)
-
-          {:error, changeset} ->
-            update_log(webhook_log.id, inspect(changeset))
-            {:ok, context, [failure_message]}
-        end
-    end
+    AsyncSupport.enqueue_stt_tts(action, context, @webhook_text_to_speech)
   end
 
   @doc """
   Execute a filesearch webhook routed through the unified LLM API (/api/v1/llm/call).
+
+  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
+  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
   """
   @spec execute_unified_filesearch(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_unified_filesearch(action, context) do
-    unified_llm_and_wait(action, context, @webhook_unified_llm)
+    AsyncSupport.unified_llm_and_wait(action, context, @webhook_unified_llm)
   end
 
   @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
   defp create_log(action, body, headers, context) do
-    {:ok, webhook_log} =
-      %{
-        request_json: body,
-        request_headers: HeaderRedactor.redact(headers),
-        url: action.url,
-        method: action.method,
-        organization_id: context.organization_id,
-        flow_id: context.flow_id,
-        contact_id: context.contact_id,
-        wa_group_id: context.wa_group_id,
-        flow_context_id: context.id
-      }
-      |> WebhookLog.create_webhook_log()
-
-    webhook_log
+    AsyncSupport.create_log(action, body, headers, context)
   end
 
   @doc """
@@ -314,84 +247,9 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
-
   defp create_body(context, action_body) do
-    case Jason.decode(action_body) do
-      {:ok, action_body_map} ->
-        do_create_body(context, action_body_map)
-
-      _ ->
-        Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
-
-        {:error,
-         dgettext(
-           "errors",
-           "Error in decoding webhook body. Please check the json body in floweditor"
-         )}
-    end
+    AsyncSupport.create_body(context, action_body)
   end
-
-  @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
-  defp do_create_body(context, action_body_map) do
-    default_payload = %{
-      contact: get_contact(context),
-      wa_group: get_wa_group(context),
-      results: context.results,
-      flow: %{name: context.flow.name, id: context.flow.id}
-    }
-
-    fields = FlowContext.get_vars_to_parse(context)
-
-    action_body_map =
-      MessageVarParser.parse_map(action_body_map, fields)
-      |> Enum.map(fn
-        {k, "@contact"} -> {k, default_payload.contact}
-        {k, "@wa_group"} -> {k, default_payload.wa_group}
-        {k, "@results"} -> {k, default_payload.results}
-        {k, v} -> {k, v}
-      end)
-      |> Enum.into(%{})
-      |> Map.put("organization_id", context.organization_id)
-
-    Jason.encode(action_body_map)
-    |> case do
-      {:ok, action_body} ->
-        {action_body_map, action_body}
-
-      _ ->
-        Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
-
-        {:error,
-         dgettext(
-           "errors",
-           "Error in encoding webhook body. Please check the json body in floweditor"
-         )}
-    end
-  end
-
-  @spec get_contact(FlowContext.t()) :: map()
-  defp get_contact(%FlowContext{contact_id: contact_id} = context) when contact_id != nil do
-    %{
-      id: context.contact.id,
-      name: context.contact.name,
-      phone: context.contact.phone,
-      fields: context.contact.fields
-    }
-  end
-
-  defp get_contact(_context), do: %{}
-
-  @spec get_wa_group(FlowContext.t()) :: map()
-  defp get_wa_group(%FlowContext{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
-    %{
-      id: context.wa_group.id,
-      label: context.wa_group.label,
-      wa_managed_phone_id: context.wa_group.wa_managed_phone_id
-    }
-  end
-
-  defp get_wa_group(_context), do: %{}
 
   # method can be either a get or a post. The do_oban function
   # does the right thing based on if it is a get or post
@@ -413,12 +271,7 @@ defmodule Glific.Flows.Webhook do
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
   defp parse_header_and_url(action, context) do
-    fields = FlowContext.get_vars_to_parse(context)
-
-    header = MessageVarParser.parse_map(action.headers, fields)
-    url = MessageVarParser.parse(action.url, fields)
-
-    %{header: header, url: url}
+    AsyncSupport.parse_header_and_url(action, context)
   end
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
@@ -632,158 +485,25 @@ defmodule Glific.Flows.Webhook do
   @doc """
   The function fetches Kaapi creds, injects the API key, then updates the
   flow_context and waits for the unified LLM API to send a response.
+
+  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
+  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
   """
   @spec unified_llm_and_wait(Action.t(), FlowContext.t(), String.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def unified_llm_and_wait(action, context, webhook_name) do
-    case Kaapi.fetch_kaapi_creds(context.organization_id) do
-      {:ok, %{"api_key" => api_key}} when is_binary(api_key) ->
-        updated_action = %{action | headers: Map.put(action.headers, "X-API-KEY", api_key)}
-        do_unified_llm_call(updated_action, context, webhook_name)
-
-      _ ->
-        kaapi_not_active_error(action, context)
-    end
-  end
-
-  defp kaapi_not_active_error(action, context) do
-    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
-    webhook_log = create_log(action, %{}, action.headers, context)
-    update_log(webhook_log.id, "Kaapi is not active")
-
-    %SystemError{message: "Webhook system_error: Kaapi is not active"}
-    |> report_to_appsignal(%{
-      organization_id: context.organization_id,
-      flow_id: context.flow_id,
-      contact_id: context.contact_id,
-      webhook_log_id: webhook_log.id,
-      reason: "Kaapi is not active"
-    })
-
-    {:ok, context, [failure_message]}
-  end
-
-  defp do_unified_llm_call(action, context, webhook_name) do
-    parsed_attrs = parse_header_and_url(action, context)
-    failure_message = Messages.create_temp_message(context.organization_id, "Failure")
-
-    case create_body(context, action.body) do
-      {:error, message} ->
-        webhook_log = create_log(action, %{}, action.headers, context)
-        update_log(webhook_log, message)
-        {:ok, context, [failure_message]}
-
-      {fields, body} ->
-        webhook_log = create_log(action, fields, action.headers, context)
-
-        params = %{
-          action: action,
-          context: context,
-          webhook_log: webhook_log,
-          fields: fields,
-          body: body,
-          headers: parsed_attrs.header
-        }
-
-        do_unified_llm_and_wait(params, failure_message, webhook_name)
-    end
-  end
-
-  @spec do_unified_llm_and_wait(map(), Message.t(), String.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp do_unified_llm_and_wait(params, failure_message, webhook_name) do
-    webhook_log_id = params.webhook_log.id
-
-    fields =
-      params.fields
-      |> Map.put("webhook_log_id", webhook_log_id)
-      |> Map.put("result_name", params.action.result_name)
-      |> Map.put("flow_id", params.context.flow_id)
-      |> Map.put("contact_id", params.context.contact_id)
-
-    headers =
-      params.headers
-      |> add_signature(params.context.organization_id, params.body)
-      |> Enum.reduce([], fn {k, v}, acc -> acc ++ [{k, v}] end)
-
-    process_unified_llm_call(%{
-      webhook_log_id: webhook_log_id,
-      fields: fields,
-      headers: headers,
-      action: params.action,
-      context: params.context,
-      failure_message: failure_message,
-      webhook_name: webhook_name
-    })
-  end
-
-  @spec process_unified_llm_call(map()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  defp process_unified_llm_call(params) do
-    response = CommonWebhook.webhook(params.webhook_name, params.fields, params.headers)
-
-    case response do
-      %{success: true, data: data} ->
-        update_log(params.webhook_log_id, data)
-        wait_time = params.action.wait_time || 60
-        update_context_for_wait(params.context, wait_time)
-
-      %{success: true} ->
-        wait_time = params.action.wait_time || 60
-        update_context_for_wait(params.context, wait_time)
-
-      %{success: false, reason: data} ->
-        update_log(params.webhook_log_id, data)
-        {:ok, params.context, [params.failure_message]}
-
-      _ ->
-        update_log(params.webhook_log_id, "Something went wrong")
-        {:ok, params.context, [params.failure_message]}
-    end
+    AsyncSupport.unified_llm_and_wait(action, context, webhook_name)
   end
 
   @doc """
   Execute a voice unified LLM webhook (async — flow waits for voice_flow_resume callback).
 
-  Fetches Kaapi creds, injects the API key, then delegates to unified_llm_and_wait with
-  the "unified-voice-llm-call" webhook name. CommonWebhook handles the synchronous STT
-  step before making the async LLM call.
+  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
+  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
   """
   @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]}
   def execute_unified_voice_filesearch(action, context) do
-    with_failure_reporting("unified-voice-llm-call", context.organization_id, fn ->
-      unified_llm_and_wait(action, context, "unified-voice-llm-call")
-    end)
-  end
-
-  defp with_failure_reporting(webhook_name, organization_id, fun) do
-    fun.()
-  rescue
-    exception ->
-      %SystemError{message: "Webhook system_error from #{webhook_name}"}
-      |> report_to_appsignal(%{
-        organization_id: organization_id,
-        webhook_name: webhook_name,
-        reason: Exception.message(exception)
-      })
-
-      reraise exception, __STACKTRACE__
-  end
-
-  @spec update_context_for_wait(FlowContext.t(), integer()) ::
-          {:wait, FlowContext.t(), []}
-  defp update_context_for_wait(context, wait_time) do
-    {:ok, context} =
-      FlowContext.update_flow_context(
-        context,
-        %{
-          wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-          is_background_flow: context.flow.is_background,
-          is_await_result: true
-        }
-      )
-
-    {:wait, context, []}
+    AsyncSupport.unified_llm_and_wait(action, context, "unified-voice-llm-call")
   end
 end

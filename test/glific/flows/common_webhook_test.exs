@@ -1457,23 +1457,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
   end
 
-  describe "call_and_wait" do
-    test "returns a clean failure (no crash) when the X-API-KEY header is missing" do
-      fields = %{
-        "question" => "Tell me a joke",
-        "assistant_id" => "asst_123",
-        "organization_id" => "1",
-        "flow_id" => "1",
-        "contact_id" => "2",
-        "webhook_log_id" => 1,
-        "result_name" => "filesearch"
-      }
-
-      assert "Missing Kaapi API key" =
-               CommonWebhook.webhook("call_and_wait", fields, [])
-    end
-  end
-
   describe "unified-llm-call lookup_kaapi_config" do
     setup do
       {:ok, _credential} =

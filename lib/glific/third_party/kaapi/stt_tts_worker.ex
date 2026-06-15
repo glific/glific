@@ -25,6 +25,7 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorker do
 
   alias Glific.Clients.CommonWebhook
   alias Glific.Flows.Webhook
+  alias Glific.Flows.Webhooks.Instrumentation
 
   # Maximum concurrent Kaapi STT/TTS requests per organization.
   # Window of 60 seconds (60_000 ms).
@@ -95,12 +96,44 @@ defmodule Glific.ThirdParty.Kaapi.SttTtsWorker do
           reason: reason
         })
 
+        report_worker_failure(webhook_name, fields, webhook_log_id, organization_id,
+          error_type: error_type,
+          reason: reason
+        )
+
         wake_flow_with_failure(context_id, organization_id)
 
       _ ->
         Webhook.update_log(webhook_log_id, "Unexpected response from Kaapi")
+
+        report_worker_failure(webhook_name, fields, webhook_log_id, organization_id,
+          reason: "Unexpected response from Kaapi"
+        )
+
         wake_flow_with_failure(context_id, organization_id)
     end
+  end
+
+  # Reports a worker-side Kaapi dispatch failure (STT/TTS) to AppSignal through the
+  # central Instrumentation module. This path runs inside the Oban job, after the
+  # framework's around_async/3 has already returned {:wait, ...}, so failures here
+  # would otherwise go unreported.
+  @spec report_worker_failure(
+          String.t(),
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          keyword()
+        ) :: :ok
+  defp report_worker_failure(webhook_name, fields, webhook_log_id, organization_id, opts) do
+    Instrumentation.report_async_failure(webhook_name, %{
+      organization_id: organization_id,
+      flow_id: fields["flow_id"],
+      contact_id: fields["contact_id"],
+      webhook_log_id: webhook_log_id,
+      error_type: Keyword.get(opts, :error_type),
+      reason: Keyword.get(opts, :reason)
+    })
   end
 
   @spec wake_flow_with_failure(non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}

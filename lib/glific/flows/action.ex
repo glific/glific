@@ -37,6 +37,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  alias Glific.Flows.Webhooks.Dispatcher, as: WebhooksDispatcher
+
   require Logger
 
   @contact_profile %{
@@ -645,7 +647,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    Webhook.execute_kaapi_stt(action, context)
+    WebhooksDispatcher.dispatch_async("speech_to_text", action, context)
   end
 
   def execute(
@@ -653,7 +655,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    Webhook.execute_kaapi_tts(action, context)
+    WebhooksDispatcher.dispatch_async("text_to_speech", action, context)
   end
 
   def execute(
@@ -661,7 +663,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    Webhook.execute_unified_voice_filesearch(action, context)
+    WebhooksDispatcher.dispatch_async("voice-filesearch-gpt", action, context)
   end
 
   def execute(
@@ -669,7 +671,7 @@ defmodule Glific.Flows.Action do
         context,
         []
       ) do
-    Webhook.execute_unified_filesearch(action, context)
+    WebhooksDispatcher.dispatch_async("filesearch-gpt", action, context)
   end
 
   def execute(%{type: "call_webhook"} = action, context, []) do

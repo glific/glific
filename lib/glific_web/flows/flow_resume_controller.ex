@@ -18,6 +18,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
     Repo
   }
 
+  alias Glific.Flows.Webhooks.{Instrumentation, Registry}
+
   @doc """
   Implementation of resuming the flow after the flow was waiting for result from 3rd party service
   """
@@ -73,6 +75,12 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     track_callback_outcome(result, response)
 
+    # Resolve the module for this webhook (if registered) and call handle_resume/2
+    # with the parsed (and TTS-uploaded) `response`. The raw callback success flag is
+    # passed via ctx. Standard/unregistered nodes fall back to the parsed `response`.
+    ctx = %{organization_id: organization_id, success: result["success"]}
+    shaped_response = shape_resume_response(response, ctx)
+
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
@@ -83,7 +91,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
            FlowContext.resume_contact_flow(
              contact,
              response["flow_id"],
-             %{response_key => response},
+             %{response_key => shaped_response},
              message
            ) do
       :ok
@@ -134,29 +142,44 @@ defmodule GlificWeb.Flows.FlowResumeController do
     :ok
   end
 
-  # Reports a Kaapi callback whose result is a failure to AppSignal, so failed
-  # callbacks get ops visibility. The "no callback at all" timeout case is
-  # reported separately by FlowContext.handle_nil_message; this reports the
-  # callbacks that did arrive but came back as a failure.
+  # Routes callback failure reporting through the centralised Instrumentation module
+  # so all failure events share the same AppSignal namespace and tag shape.
   @spec maybe_report_callback_failure(map(), map()) :: :ok
-  defp maybe_report_callback_failure(%{"success" => success} = result, response)
-       when success != true do
-    reason =
-      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
-
-    %Webhook.SystemError{message: "Webhook callback failure"}
-    |> Webhook.report_to_appsignal(%{
-      organization_id: response["organization_id"],
-      webhook_name: response["webhook_name"],
-      flow_id: response["flow_id"],
-      contact_id: response["contact_id"],
-      webhook_log_id: response["webhook_log_id"],
-      error_type: result["error_type"],
-      reason: reason
-    })
+  defp maybe_report_callback_failure(result, response) do
+    Instrumentation.report_callback_failure(result, response)
   end
 
-  defp maybe_report_callback_failure(_result, _response), do: :ok
+  # Shapes the parsed callback `response` via the registered webhook module's
+  # handle_resume/2 (e.g. voice post-processing). Standard nodes have no module
+  # or no handle_resume override and fall back to the parsed `response` unchanged.
+  @spec shape_resume_response(map(), map()) :: map()
+  defp shape_resume_response(response, ctx) do
+    with module when is_atom(module) and not is_nil(module) <-
+           Registry.lookup_by_webhook_name(response["webhook_name"]),
+         true <- function_exported?(module, :handle_resume, 2),
+         {:ok, shaped} <- module.handle_resume(response, ctx) do
+      shaped
+    else
+      _ -> response
+    end
+  end
+
+  # Resolves "unified-voice-llm-call" and runs its handle_resume/2 (NMT+TTS voice
+  # post-processing) on the parsed `response`. Falls back to voice_post_process/3 if
+  # the module is missing or handle_resume returns an error.
+  @spec shape_voice_response(non_neg_integer(), map(), map()) :: map()
+  defp shape_voice_response(organization_id, result, response) do
+    ctx = %{organization_id: organization_id, success: result["success"]}
+    webhook_name = response["webhook_name"] || "unified-voice-llm-call"
+
+    with module when is_atom(module) and not is_nil(module) <-
+           Registry.lookup_by_webhook_name(webhook_name),
+         {:ok, shaped} <- module.handle_resume(response, ctx) do
+      shaped
+    else
+      _ -> CommonWebhook.voice_post_process(organization_id, result["success"], response)
+    end
+  end
 
   @doc """
   Callback for voice unified LLM calls.
@@ -188,15 +211,14 @@ defmodule GlificWeb.Flows.FlowResumeController do
         do: Messages.create_temp_message(organization_id, "Success"),
         else: Messages.create_temp_message(organization_id, "Failure")
 
+    voice_response = shape_voice_response(organization_id, result, response)
+
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
              id: response["contact_id"],
              organization_id: organization.id
            }) do
-      voice_response =
-        CommonWebhook.voice_post_process(organization_id, result["success"], response)
-
       if response["webhook_log_id"],
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 

@@ -23,6 +23,7 @@ defmodule Glific.Flows.FlowContext do
   alias Glific.Flows.Node
   alias Glific.Flows.Webhook
   alias Glific.Flows.WebhookLog
+  alias Glific.Flows.Webhooks.{Instrumentation, Registry}
   alias Glific.Groups.WAGroup
   alias Glific.Groups.WAGroups
   alias Glific.Messages
@@ -1171,15 +1172,10 @@ defmodule Glific.Flows.FlowContext do
     maybe_report_timeout(flow, context)
 
     if current_node_async_webhook?(flow, context) do
-      webhook_log =
-        WebhookLog
-        |> where([w], w.flow_context_id == ^context.id)
-        |> order_by([w], desc: w.inserted_at)
-        |> limit(1)
-        |> Repo.one()
+      webhook_log_id = fetch_latest_webhook_log_id(context)
 
-      if webhook_log do
-        Webhook.update_log(webhook_log.id, "Timeout: taking long to process response")
+      if webhook_log_id do
+        Webhook.update_log(webhook_log_id, "Timeout: taking long to process response")
         track_timeout_metrics(flow, context)
       end
 
@@ -1197,15 +1193,9 @@ defmodule Glific.Flows.FlowContext do
     Webhook.track_webhook_count(webhook_url, "failure")
   end
 
-  # Async webhook URLs whose flow node parks the flow waiting for a Kaapi
-  # callback. A nil-message wakeup of such a node means the callback never
-  # arrived within the wait window.
-  @async_webhook_urls [
-    "speech_to_text",
-    "text_to_speech",
-    "filesearch-gpt",
-    "voice-filesearch-gpt"
-  ]
+  # Async webhook node URLs — derived at compile time from the Registry so this list
+  # stays in sync with the registered implementations automatically.
+  @async_webhook_urls Registry.async_urls()
 
   @spec async_webhook_url(Flow.t(), FlowContext.t()) :: String.t() | nil
   defp async_webhook_url(flow, context) do
@@ -1223,22 +1213,57 @@ defmodule Glific.Flows.FlowContext do
     do: not is_nil(async_webhook_url(flow, context))
 
   # When a flow times out (woken with no callback message), report async
-  # webhook nodes to AppSignal. Gated to async webhook nodes so plain
-  # wait_for_time node expiries — which are normal, not failures — are skipped.
+  # webhook nodes to AppSignal via the central Instrumentation module.
+  # Uses the observability webhook_name (from the registered module's webhook_name/0)
+  # rather than the raw node URL so metrics are consistent with callback payloads.
   @spec maybe_report_timeout(Flow.t(), FlowContext.t()) :: :ok
   defp maybe_report_timeout(flow, context) do
     case async_webhook_url(flow, context) do
       nil ->
         :ok
 
-      webhook_url ->
-        %Webhook.TimeoutError{message: "Webhook timeout from #{webhook_url}"}
-        |> Webhook.report_to_appsignal(%{
+      node_url ->
+        observability_name = resolve_observability_name(node_url)
+
+        webhook_log_id = fetch_latest_webhook_log_id(context)
+
+        Instrumentation.report_timeout(%{
+          webhook_name: observability_name,
           organization_id: context.organization_id,
-          webhook_name: webhook_url,
           flow_id: context.flow_id,
-          contact_id: context.contact_id
+          contact_id: context.contact_id,
+          webhook_log_id: webhook_log_id
         })
     end
+  end
+
+  # Maps a node URL to the observability webhook_name via the Registry. If the node URL
+  # is registered and the module exports webhook_name/0, that is returned; otherwise the
+  # raw node URL is used (covers nodes not yet in the Registry).
+  @spec resolve_observability_name(String.t()) :: String.t()
+  defp resolve_observability_name(node_url) do
+    case Registry.lookup(node_url) do
+      nil ->
+        node_url
+
+      module ->
+        if function_exported?(module, :webhook_name, 0) do
+          module.webhook_name()
+        else
+          node_url
+        end
+    end
+  end
+
+  # Fetches the id of the most-recent WebhookLog row for the given context.
+  # Returns nil if no log exists yet (e.g. the flow timed out before the log was created).
+  @spec fetch_latest_webhook_log_id(FlowContext.t()) :: non_neg_integer() | nil
+  defp fetch_latest_webhook_log_id(context) do
+    WebhookLog
+    |> where([w], w.flow_context_id == ^context.id)
+    |> order_by([w], desc: w.inserted_at)
+    |> limit(1)
+    |> select([w], w.id)
+    |> Repo.one()
   end
 end

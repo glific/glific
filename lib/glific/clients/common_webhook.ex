@@ -32,54 +32,6 @@ defmodule Glific.Clients.CommonWebhook do
   additional functionality as needed
   """
   @spec webhook(String.t(), map(), list()) :: map() | String.t()
-  def webhook("call_and_wait", fields, headers) do
-    {:ok, organization_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    result_name = fields["result_name"]
-    webhook_log_id = fields["webhook_log_id"]
-    {:ok, flow_id} = fields["flow_id"] |> Glific.parse_maybe_integer()
-    {:ok, contact_id} = fields["contact_id"] |> Glific.parse_maybe_integer()
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        signature_payload["timestamp"]
-      )
-
-    organization = Partners.organization(organization_id)
-
-    callback_url =
-      Glific.api_callback_base(organization.shortcode) <>
-        "/webhook/flow_resume"
-
-    payload =
-      fields
-      |> Map.merge(signature_payload)
-      |> Map.put("signature", signature)
-      |> Map.put("callback_url", callback_url)
-      |> Map.put("webhook_log_id", webhook_log_id)
-      |> Map.put("result_name", result_name)
-      |> maybe_put_response_id(fields)
-
-    case Enum.find(headers, fn {key, _v} -> key == "X-API-KEY" end) do
-      {_, org_api_key} ->
-        call_responses_and_format(payload, org_api_key)
-
-      _ ->
-        # returns a bare-string failure that routes the flow to the Failure category,
-        # not logging any failure to appsignal because the function is set for deprecation
-        "Missing Kaapi API key"
-    end
-  end
-
   def webhook("unified-llm-call", fields, headers) do
     {organization_id, flow_id, contact_id} = parse_flow_fields(fields)
 
@@ -89,9 +41,7 @@ defmodule Glific.Clients.CommonWebhook do
     request_metadata =
       Map.merge(request_metadata, %{call_type: "llm", webhook_name: "unified-llm-call"})
 
-    with_failure_reporting("unified-llm-call", organization_id, fn ->
-      do_unified_llm_call(fields, headers, callback_url, request_metadata)
-    end)
+    do_unified_llm_call(fields, headers, callback_url, request_metadata)
   end
 
   # Does synchronous STT (via Bhasini/Gemini) then calls the unified LLM with a voice
@@ -129,9 +79,7 @@ defmodule Glific.Clients.CommonWebhook do
             }
           })
 
-        with_failure_reporting("unified-voice-llm-call", organization_id, fn ->
-          do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
-        end)
+        do_unified_llm_call(updated_fields, headers, callback_url, request_metadata)
 
       %{success: false} = stt_failure ->
         %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
@@ -161,16 +109,14 @@ defmodule Glific.Clients.CommonWebhook do
       output_language: fields["output_language"]
     }
 
-    with_failure_reporting("speech_to_text", organization_id, fn ->
-      case validate_params(fields) do
-        :ok ->
-          Glific.Metrics.increment("Kaapi STT Call", organization_id)
-          Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+    case validate_params(fields) do
+      :ok ->
+        Glific.Metrics.increment("Kaapi STT Call", organization_id)
+        Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
 
-        {:error, reason} ->
-          %{success: false, reason: reason}
-      end
-    end)
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
   end
 
   # Generic Kaapi TTS webhook (async — result delivered via flow_resume callback).
@@ -193,10 +139,7 @@ defmodule Glific.Clients.CommonWebhook do
     }
 
     Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-
-    with_failure_reporting("text_to_speech", organization_id, fn ->
-      Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
-    end)
+    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
   end
 
   def webhook(function, fields, _headers), do: webhook(function, fields)
@@ -541,21 +484,6 @@ defmodule Glific.Clients.CommonWebhook do
     end
   end
 
-  @spec call_responses_and_format(map(), String.t()) :: map()
-  defp call_responses_and_format(payload, org_api_key) do
-    case ApiClient.call_responses_api(payload, org_api_key) do
-      {:ok, body} ->
-        Map.merge(%{success: true}, body)
-
-      {:error, %{status: _status, body: body}} ->
-        result = Jason.encode!(body)
-        %{success: false, reason: result}
-
-      {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
-    end
-  end
-
   defp parse_response_format(%{"response_format" => response_format} = fields) do
     case response_format do
       %{"type" => "json_schema"} ->
@@ -780,14 +708,6 @@ defmodule Glific.Clients.CommonWebhook do
     {callback_url, request_metadata}
   end
 
-  @spec maybe_put_response_id(map(), map()) :: map()
-  defp maybe_put_response_id(map, fields) do
-    case fields["thread_id"] do
-      nil -> map
-      thread_id -> Map.put(map, "response_id", thread_id)
-    end
-  end
-
   @spec build_conversation(String.t() | nil) :: map()
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(thread_id), do: %{id: thread_id}
@@ -849,11 +769,6 @@ defmodule Glific.Clients.CommonWebhook do
   defp fetch_kaapi_uuid(%{kaapi_uuid: nil}), do: {:error, :missing_kaapi_uuid}
   defp fetch_kaapi_uuid(%{kaapi_uuid: uuid}), do: {:ok, uuid}
 
-  # Webhooks whose real outcome arrives later via a flow_resume callback. Here we
-  # only see the dispatch ack, so their success is counted at the callback
-  # (GlificWeb.Flows.FlowResumeController) to avoid double counting.
-  @async_webhooks ~w(speech_to_text text_to_speech unified-llm-call unified-voice-llm-call)
-
   @spec with_failure_reporting(String.t(), non_neg_integer() | nil, (-> any())) :: any()
   defp with_failure_reporting(webhook_name, org_id, fun) do
     start = System.monotonic_time(:millisecond)
@@ -909,9 +824,7 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   defp record_webhook_outcome(_result, webhook_name, _org_id, duration_ms) do
-    unless webhook_name in @async_webhooks,
-      do: record_webhook_metrics(webhook_name, "success", duration_ms)
-
+    record_webhook_metrics(webhook_name, "success", duration_ms)
     :ok
   end
 

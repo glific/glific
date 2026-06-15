@@ -17,7 +17,9 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   still resolved exactly as today.
   """
 
+  alias Glific.Flows.{Action, FlowContext}
   alias Glific.Flows.Webhooks.{Instrumentation, Registry, ResultTranslator}
+  alias Glific.Messages.Message
 
   @doc """
   Dispatch a webhook by `name` (the string as it appears in flow JSON URLs),
@@ -34,6 +36,33 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
       module.call(fields, ctx)
       |> ResultTranslator.to_legacy_structure(module)
     end)
+  end
+
+  @doc """
+  Dispatch an async webhook by node URL, wrapping the call with `Instrumentation.around_async/3`.
+
+  Looks up the module in the Registry, builds a context map that includes `:action` and
+  `:flow_context`, then delegates to `Instrumentation.around_async/3` which times the
+  call and reports immediate failures to AppSignal.
+
+  Returns the async tuple unchanged: `{:wait, context, []}` or `{:ok, context, [msg]}`.
+  """
+  @spec dispatch_async(String.t(), Action.t(), FlowContext.t()) ::
+          {:wait | :ok, FlowContext.t(), [Message.t()]}
+  def dispatch_async(url, action, context)
+      when is_binary(url) do
+    module = Registry.lookup!(url)
+
+    ctx = %{
+      organization_id: context.organization_id,
+      action: action,
+      flow_context: context,
+      flow_id: context.flow_id,
+      contact_id: context.contact_id,
+      flow_context_id: context.id
+    }
+
+    Instrumentation.around_async(module, ctx, fn -> module.call(%{}, ctx) end)
   end
 
   # Builds the minimal ctx that Instrumentation needs (organization_id for
