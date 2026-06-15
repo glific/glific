@@ -1176,8 +1176,10 @@ defmodule Glific.Flows.FlowContext do
 
       if webhook_log_id do
         Webhook.update_log(webhook_log_id, "Timeout: taking long to process response")
-        track_timeout_metrics(flow, context)
       end
+
+      # Always count the timeout failure, even when no WebhookLog row exists yet.
+      track_timeout_metrics(flow, context)
 
       Messages.create_temp_message(context.organization_id, "Failure")
     else

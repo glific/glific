@@ -112,17 +112,21 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
-  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map, raising
-  if any are missing/unparseable (the Kaapi callback signature depends on all three).
+  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. All three
+  are required (the Kaapi callback signature depends on them). Returns a tagged tuple so
+  callers route a malformed payload to the Failure branch rather than crashing the worker;
+  the error string intentionally omits the payload to avoid leaking user data into logs.
   """
-  @spec parse_flow_fields(map()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  @spec parse_flow_fields(map()) ::
+          {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
+          | {:error, String.t()}
   def parse_flow_fields(fields) do
     with {:ok, organization_id} <- Glific.parse_maybe_integer(fields["organization_id"]),
          {:ok, flow_id} <- Glific.parse_maybe_integer(fields["flow_id"]),
          {:ok, contact_id} <- Glific.parse_maybe_integer(fields["contact_id"]) do
-      {organization_id, flow_id, contact_id}
+      {:ok, {organization_id, flow_id, contact_id}}
     else
-      _ -> raise ArgumentError, "Invalid flow metadata for Kaapi webhook: #{inspect(fields)}"
+      _ -> {:error, "Invalid or missing flow metadata for Kaapi webhook"}
     end
   end
 

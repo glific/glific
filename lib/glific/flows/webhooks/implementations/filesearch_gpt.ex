@@ -22,20 +22,20 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
   @impl true
   @spec call(map(), Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
-    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
+    with {:ok, {organization_id, flow_id, contact_id}} <-
+           KaapiSupport.parse_flow_fields(fields),
+         {:ok, %{"api_key" => api_key}} when is_binary(api_key) <-
+           Kaapi.fetch_kaapi_creds(organization_id) do
+      {callback_url, request_metadata} =
+        KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    case Kaapi.fetch_kaapi_creds(organization_id) do
-      {:ok, %{"api_key" => api_key}} when is_binary(api_key) ->
-        {callback_url, request_metadata} =
-          KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+      request_metadata =
+        Map.merge(request_metadata, %{call_type: "llm", webhook_name: name()})
 
-        request_metadata =
-          Map.merge(request_metadata, %{call_type: "llm", webhook_name: name()})
-
-        KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
-
-      _ ->
-        %{success: false, reason: "Kaapi is not active"}
+      KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
+    else
+      {:error, reason} when is_binary(reason) -> %{success: false, reason: reason}
+      _ -> %{success: false, reason: "Kaapi is not active"}
     end
   end
 

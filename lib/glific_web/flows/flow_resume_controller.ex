@@ -174,6 +174,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     with module when is_atom(module) and not is_nil(module) <-
            Registry.lookup_by_webhook_name(webhook_name),
+         true <- function_exported?(module, :handle_resume, 2),
          {:ok, shaped} <- module.handle_resume(response, ctx) do
       shaped
     else

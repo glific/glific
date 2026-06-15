@@ -7,14 +7,18 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
-  alias Glific.Flows.Webhooks.{AsyncSupport, Dispatcher, Registry}
+  alias Glific.Flows.Webhooks.{Dispatcher, Registry, Support}
   alias Glific.Messages
-  alias Glific.Messages.Message
+  alias Glific.Partners
   alias Glific.Repo
 
-  @webhook_unified_llm "unified-llm-call"
-  @webhook_speech_to_text "speech_to_text"
-  @webhook_text_to_speech "text_to_speech"
+  # Per-org rate limit for Kaapi STT/TTS dispatch (lifted from the former SttTtsWorker):
+  # at most @rate_limit_max requests per org within @rate_limit_window_ms; over-limit jobs
+  # snooze rather than hammer Kaapi.
+  @rate_limited_urls ["speech_to_text", "text_to_speech"]
+  @rate_limit_window_ms 60_000
+  @rate_limit_max 10
+  @rate_limit_snooze_seconds 5
 
   use Oban.Worker,
     queue: :webhook,
@@ -117,7 +121,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec add_signature(map() | nil, non_neg_integer(), String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
-    AsyncSupport.add_signature(headers, organization_id, body)
+    Support.add_signature(headers, organization_id, body)
   end
 
   @doc """
@@ -136,45 +140,9 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  @doc """
-  Execute a Kaapi STT webhook (async — flow waits for callback via flow_resume).
-
-  Delegates to `AsyncSupport.enqueue_stt_tts/3`. Kept for test compatibility;
-  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
-  """
-  @spec execute_kaapi_stt(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def execute_kaapi_stt(action, context) do
-    AsyncSupport.enqueue_stt_tts(action, context, @webhook_speech_to_text)
-  end
-
-  @doc """
-  Execute a Kaapi TTS webhook (async — flow waits for callback via flow_resume).
-
-  Delegates to `AsyncSupport.enqueue_stt_tts/3`. Kept for test compatibility;
-  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
-  """
-  @spec execute_kaapi_tts(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def execute_kaapi_tts(action, context) do
-    AsyncSupport.enqueue_stt_tts(action, context, @webhook_text_to_speech)
-  end
-
-  @doc """
-  Execute a filesearch webhook routed through the unified LLM API (/api/v1/llm/call).
-
-  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
-  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
-  """
-  @spec execute_unified_filesearch(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def execute_unified_filesearch(action, context) do
-    AsyncSupport.unified_llm_and_wait(action, context, @webhook_unified_llm)
-  end
-
   @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
   defp create_log(action, body, headers, context) do
-    AsyncSupport.create_log(action, body, headers, context)
+    Support.create_log(action, body, headers, context)
   end
 
   @doc """
@@ -248,7 +216,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
   defp create_body(context, action_body) do
-    AsyncSupport.create_body(context, action_body)
+    Support.create_body(context, action_body)
   end
 
   # method can be either a get or a post. The do_oban function
@@ -271,7 +239,7 @@ defmodule Glific.Flows.Webhook do
   # THis function will create a dynamic headers
   @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
   defp parse_header_and_url(action, context) do
-    AsyncSupport.parse_header_and_url(action, context)
+    Support.parse_header_and_url(action, context)
   end
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
@@ -343,12 +311,10 @@ defmodule Glific.Flows.Webhook do
     }
   rescue
     error ->
-      error_message =
-        "Calling webhook function threw an exception, error: #{inspect(error)} , args: #{inspect(function)}, object: #{inspect(fields)},"
-
-      Logger.error(error_message)
-      Appsignal.send_error(:error, error_message, __STACKTRACE__)
-      {:error, error_message}
+      # Report via the centralized wrapper (not Appsignal directly). The webhook name is
+      # safe to log; the request payload is omitted to avoid leaking user data.
+      Glific.log_exception(error)
+      {:error, "Calling webhook function #{inspect(function)} threw: #{Exception.message(error)}"}
   end
 
   # Routes a function-type webhook to the central Dispatcher when it is registered (sync or
@@ -358,7 +324,7 @@ defmodule Glific.Flows.Webhook do
   defp dispatch_function(function, fields, headers) do
     case Registry.lookup(function) do
       module when not is_nil(module) and is_atom(module) ->
-        Dispatcher.dispatch_named(function, fields, headers)
+        Dispatcher.dispatch(function, fields, headers)
 
       _ ->
         Glific.Clients.webhook(function, fields, headers)
@@ -369,70 +335,91 @@ defmodule Glific.Flows.Webhook do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string} | {:snooze, pos_integer()}
   def perform(
         %Oban.Job{
-          args: %{
-            "method" => method,
-            "url" => url,
-            "result_name" => result_name,
-            "body" => body,
-            "headers" => headers,
-            "webhook_log_id" => webhook_log_id,
-            "context" => context,
-            "organization_id" => organization_id
-          } = args
+          args:
+            %{
+              "method" => method,
+              "url" => url,
+              "result_name" => result_name,
+              "body" => body,
+              "headers" => headers,
+              "webhook_log_id" => webhook_log_id,
+              "context" => context,
+              "organization_id" => organization_id
+            } = args
         } = _job
       ) do
     Repo.put_process_state(organization_id)
 
-    headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
+    if rate_limited?(url, organization_id) do
+      {:snooze, @rate_limit_snooze_seconds}
+    else
+      headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    # Function webhooks receive the decoded body enriched with the flow metadata the
-    # registered modules need (flow/contact ids, webhook_log_id, result_name). POST/GET
-    # keep the raw body string they send to the external service.
-    enrichment = %{
-      "flow_id" => args["flow_id"],
-      "contact_id" => args["contact_id"],
-      "webhook_log_id" => webhook_log_id,
-      "result_name" => result_name
-    }
+      # Function webhooks receive the decoded body enriched with the flow metadata the
+      # registered modules need (flow/contact ids, webhook_log_id, result_name). POST/GET
+      # keep the raw body string they send to the external service.
+      enrichment = %{
+        "flow_id" => args["flow_id"],
+        "contact_id" => args["contact_id"],
+        "webhook_log_id" => webhook_log_id,
+        "result_name" => result_name
+      }
 
-    result =
-      case do_action(method, url, action_input(method, body, enrichment), headers) do
-        {:ok, :function, result} ->
-          update_log(webhook_log_id, result)
-          result
+      result =
+        case do_action(method, url, action_input(method, body, enrichment), headers) do
+          {:ok, :function, result} ->
+            update_log(webhook_log_id, result)
+            result
 
-        {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
-          case Jason.decode(message.body) do
-            {:ok, list_response} when is_list(list_response) ->
-              list_response = format_response(list_response)
-              updated_message = Map.put(message, :body, Jason.encode!(list_response))
-              update_log(webhook_log_id, updated_message)
-              list_response
+          {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
+            case Jason.decode(message.body) do
+              {:ok, list_response} when is_list(list_response) ->
+                list_response = format_response(list_response)
+                updated_message = Map.put(message, :body, Jason.encode!(list_response))
+                update_log(webhook_log_id, updated_message)
+                list_response
 
-            {:ok, json_response} ->
-              update_log(webhook_log_id, message)
-              format_response(json_response)
+              {:ok, json_response} ->
+                update_log(webhook_log_id, message)
+                format_response(json_response)
 
-            {:error, _error} ->
-              update_log(webhook_log_id, "Could not decode message body: " <> message.body)
+              {:error, _error} ->
+                update_log(webhook_log_id, "Could not decode message body: " <> message.body)
 
-              nil
-          end
+                nil
+            end
 
-        {:ok, %Tesla.Env{} = message} ->
-          update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
-          nil
+          {:ok, %Tesla.Env{} = message} ->
+            update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
+            nil
 
-        {:error, error_message} ->
-          update_log(webhook_log_id, inspect(error_message))
-          nil
-      end
+          {:error, error_message} ->
+            update_log(webhook_log_id, inspect(error_message))
+            nil
+        end
 
-    handle_webhook_result(result, context, result_name, url, organization_id)
+      handle_webhook_result(result, context, result_name, url, organization_id)
+    end
   end
+
+  # Per-org rate limit for Kaapi STT/TTS dispatch. ExRated.check_rate both checks and
+  # consumes a token, so a successful check (under limit) reserves this job's slot; an
+  # over-limit job is snoozed and retried later. Other webhooks are never rate limited.
+  @spec rate_limited?(String.t(), non_neg_integer()) :: boolean()
+  defp rate_limited?(url, organization_id) when url in @rate_limited_urls do
+    organization = Partners.organization(organization_id)
+    key = "kaapi_stt_tts:#{organization.shortcode}"
+
+    case ExRated.check_rate(key, @rate_limit_window_ms, @rate_limit_max) do
+      {:ok, _count} -> false
+      {:error, _limit} -> true
+    end
+  end
+
+  defp rate_limited?(_url, _organization_id), do: false
 
   # Builds the input passed to do_action/4. Function webhooks get the decoded body
   # merged with flow metadata; POST/GET keep the raw body string.
@@ -553,29 +540,4 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
-
-  @doc """
-  The function fetches Kaapi creds, injects the API key, then updates the
-  flow_context and waits for the unified LLM API to send a response.
-
-  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
-  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
-  """
-  @spec unified_llm_and_wait(Action.t(), FlowContext.t(), String.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def unified_llm_and_wait(action, context, webhook_name) do
-    AsyncSupport.unified_llm_and_wait(action, context, webhook_name)
-  end
-
-  @doc """
-  Execute a voice unified LLM webhook (async — flow waits for voice_flow_resume callback).
-
-  Delegates to `AsyncSupport.unified_llm_and_wait/3`. Kept for test compatibility;
-  action dispatch now goes through `Glific.Flows.Webhooks.Dispatcher.dispatch_async/3`.
-  """
-  @spec execute_unified_voice_filesearch(Action.t(), FlowContext.t()) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]}
-  def execute_unified_voice_filesearch(action, context) do
-    AsyncSupport.unified_llm_and_wait(action, context, "unified-voice-llm-call")
-  end
 end

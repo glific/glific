@@ -74,72 +74,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
-  Wrap an async webhook invocation with failure reporting + latency telemetry.
-
-  Behaviour:
-  - `{:wait, ctx, []}` — flow parked successfully. Emit async latency with outcome `:ok`.
-    Do NOT increment success/failure metric here (the count happens at callback time in
-    `FlowResumeController`, so we avoid double-counting).
-  - `{:ok, ctx, [_failure_msg]}` — immediate failure (missing creds, body error, enqueue
-    error). Emit async latency with outcome `:error`, increment failure metric, report a
-    `SystemError` via `Glific.log_exception/1`.
-  - rescue — emit latency `:error`, increment failure, report `SystemError`, reraise.
-
-  AppSignal metric tags use `module.webhook_name()` (the observability name) rather than
-  `module.name()` (the node URL) so metrics are consistent with Kaapi callback payloads.
-  """
-  @spec around_async(module(), map(), (-> {:wait | :ok, any(), list()})) ::
-          {:wait | :ok, any(), list()}
-  def around_async(module, ctx, fun)
-      when is_atom(module) and is_map(ctx) and is_function(fun, 0) do
-    webhook_name = resolve_webhook_name(module)
-    start = System.monotonic_time()
-
-    try do
-      result = fun.()
-
-      case result do
-        {:wait, _context, _msgs} ->
-          emit_latency(webhook_name, :async, start, :ok)
-
-        {:ok, _context, _msgs} ->
-          emit_latency(webhook_name, :async, start, :error)
-          track_metrics(webhook_name, nil)
-          report_webhook_failure(webhook_name, ctx, nil, "Async webhook immediate failure")
-      end
-
-      result
-    rescue
-      exception ->
-        emit_latency(webhook_name, :async, start, :error)
-        track_metrics(webhook_name, nil)
-        report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
-        reraise exception, __STACKTRACE__
-    end
-  end
-
-  @doc """
-  Reports a failure raised while an async webhook's *deferred* Kaapi request is
-  dispatched from `Glific.ThirdParty.Kaapi.SttTtsWorker`.
-
-  STT/TTS nodes park the flow at dispatch time (`around_async/3` returns `{:wait, …}`
-  before the real Kaapi call runs in the Oban worker), so the worker's Kaapi failure
-  falls outside `around_async/3`. This function restores SystemError reporting + the
-  per-webhook failure metric for that path. Success is intentionally NOT counted here —
-  it is counted at callback time in `FlowResumeController` to avoid double counting.
-  """
-  @spec report_async_failure(String.t(), map()) :: :ok
-  def report_async_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
-    track_metrics(webhook_name, nil)
-
-    %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: Map.put(tags, :webhook_name, webhook_name)
-    )
-  end
-
-  @doc """
   Callback-time failure report (the Kaapi callback arrived but `success` was
   not `true`). Preserves the same tag keys so AppSignal filtering is unchanged.
   """
@@ -254,22 +188,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       |> Enum.map_join(" ", &String.capitalize/1)
 
     "#{title} API #{outcome}"
-  end
-
-  # Safely resolves the observability webhook name for a module. For async modules
-  # this is module.webhook_name() (which may differ from module.name() for the unified
-  # LLM nodes). Falls back to module.name() for modules that don't export webhook_name/0
-  # (e.g. sync modules called through around/3).
-  # Code.ensure_loaded? is required: function_exported?/3 returns false for a module
-  # that hasn't been loaded yet, which would silently fall back to name/0 and tag
-  # metrics with the node URL instead of the observability webhook_name.
-  @spec resolve_webhook_name(module()) :: String.t()
-  defp resolve_webhook_name(module) do
-    if Code.ensure_loaded?(module) and function_exported?(module, :webhook_name, 0) do
-      module.webhook_name()
-    else
-      module.name()
-    end
   end
 
   @spec emit_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok

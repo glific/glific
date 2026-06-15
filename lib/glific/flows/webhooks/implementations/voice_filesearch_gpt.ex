@@ -25,16 +25,28 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @impl true
   @spec call(map(), Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
+    case KaapiSupport.parse_flow_fields(fields) do
+      {:ok, {organization_id, flow_id, contact_id}} ->
+        run_voice_pipeline(fields, organization_id, flow_id, contact_id)
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
+  end
+
+  @spec run_voice_pipeline(map(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          map()
+  defp run_voice_pipeline(fields, organization_id, flow_id, contact_id) do
     stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    Glific.Metrics.increment("Voice Unified LLM Call", org_id)
+    Glific.Metrics.increment("Voice Unified LLM Call", organization_id)
 
     case CommonWebhook.webhook("speech_to_text_with_bhasini", stt_fields) do
       %{success: true, asr_response_text: transcribed_text} ->
-        updated_fields = Map.put(fields, "question", transcribed_text)
-        dispatch_llm(updated_fields, voice_start_timestamp)
+        fields
+        |> Map.put("question", transcribed_text)
+        |> dispatch_llm(organization_id, flow_id, contact_id, voice_start_timestamp)
 
       %{success: false} = stt_failure ->
         %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
@@ -44,10 +56,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     end
   end
 
-  @spec dispatch_llm(map(), integer()) :: map()
-  defp dispatch_llm(fields, voice_start_timestamp) do
-    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
-
+  @spec dispatch_llm(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), integer()) ::
+          map()
+  defp dispatch_llm(fields, organization_id, flow_id, contact_id, voice_start_timestamp) do
     case Kaapi.fetch_kaapi_creds(organization_id) do
       {:ok, %{"api_key" => api_key}} when is_binary(api_key) ->
         {callback_url, request_metadata} =

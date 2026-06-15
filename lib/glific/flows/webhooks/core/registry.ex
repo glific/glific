@@ -6,7 +6,7 @@ defmodule Glific.Flows.Webhooks.Registry do
   Migration is incremental — only webhooks that have been ported live here.
   `Glific.Clients.CommonWebhook` keeps its existing per-name clauses for
   the unmigrated webhooks; once a webhook moves to this registry, its
-  CommonWebhook clause shrinks to a `Dispatcher.dispatch_named/3` call.
+  CommonWebhook clause shrinks to a `Dispatcher.dispatch/3` call.
 
   ## Why Registry is separate from Dispatcher
 
@@ -17,13 +17,12 @@ defmodule Glific.Flows.Webhooks.Registry do
   layer. The indirection preserves a clean seam for both unit tests and
   integration tests.
 
-  ## Node URL vs. observability webhook_name
+  ## webhook_name
 
-  For most webhooks `name/0` (the node URL / registry key) equals the
-  observability `webhook_name` used in Kaapi `request_metadata` and AppSignal
-  metrics. The two unified-llm nodes are an exception — their node URL differs
-  from their observability name. Use `lookup_by_webhook_name/1` when you have
-  an observability name from a Kaapi callback and need the module.
+  `name/0` (the node URL / registry key) equals the observability `webhook_name`
+  used in Kaapi `request_metadata` and AppSignal metrics. Use
+  `lookup_by_webhook_name/1` when you have a webhook_name from a Kaapi callback
+  and need the owning module (e.g. to run its `handle_resume/2`).
   """
 
   alias Glific.Flows.Webhooks
@@ -61,10 +60,8 @@ defmodule Glific.Flows.Webhooks.Registry do
 
   @doc """
   Returns the node-URL strings for all registered async webhooks (those whose
-  `mode/0` returns `:async`). Used by `Glific.Flows.Action` to route async
-  FUNCTION nodes through `Dispatcher.dispatch_async/3`, and by
-  `Glific.Flows.FlowContext` to identify async webhook nodes for timeout
-  reporting.
+  `mode/0` returns `:async`). Used by `Glific.Flows.FlowContext` to identify
+  async webhook nodes for timeout reporting.
   """
   @spec async_urls() :: [String.t()]
   def async_urls do

@@ -24,28 +24,27 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
   @spec call(map(), Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
     speech = fields["speech"]
-    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
 
-    {callback_url, request_metadata} =
-      KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+    with {:ok, {organization_id, flow_id, contact_id}} <-
+           KaapiSupport.parse_flow_fields(fields),
+         :ok <- KaapiSupport.validate_media(speech) do
+      {callback_url, request_metadata} =
+        KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    request_metadata =
-      Map.merge(request_metadata, %{call_type: "stt", webhook_name: "speech_to_text"})
+      request_metadata =
+        Map.merge(request_metadata, %{call_type: "stt", webhook_name: "speech_to_text"})
 
-    stt_opts = %{
-      provider: fields["provider"],
-      model: fields["model"],
-      language: fields["language"],
-      output_language: fields["output_language"]
-    }
+      stt_opts = %{
+        provider: fields["provider"],
+        model: fields["model"],
+        language: fields["language"],
+        output_language: fields["output_language"]
+      }
 
-    case KaapiSupport.validate_media(speech) do
-      :ok ->
-        Glific.Metrics.increment("Kaapi STT Call", organization_id)
-        Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
+      Glific.Metrics.increment("Kaapi STT Call", organization_id)
+      Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+    else
+      {:error, reason} -> %{success: false, reason: reason}
     end
   end
 

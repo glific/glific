@@ -20,24 +20,34 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
   @impl true
   @spec call(map(), Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
-    text = fields["text"]
-    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
+    case KaapiSupport.parse_flow_fields(fields) do
+      {:ok, {organization_id, flow_id, contact_id}} ->
+        {callback_url, request_metadata} =
+          KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
 
-    {callback_url, request_metadata} =
-      KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+        request_metadata =
+          Map.merge(request_metadata, %{call_type: "tts", webhook_name: "text_to_speech"})
 
-    request_metadata =
-      Map.merge(request_metadata, %{call_type: "tts", webhook_name: "text_to_speech"})
+        tts_opts = %{
+          provider: fields["provider"],
+          model: fields["model"],
+          language: fields["language"],
+          voice: fields["voice"]
+        }
 
-    tts_opts = %{
-      provider: fields["provider"],
-      model: fields["model"],
-      language: fields["language"],
-      voice: fields["voice"]
-    }
+        Glific.Metrics.increment("Kaapi TTS Call", organization_id)
 
-    Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
+        Kaapi.text_to_speech(
+          organization_id,
+          fields["text"],
+          callback_url,
+          request_metadata,
+          tts_opts
+        )
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
   end
 
   @doc """
