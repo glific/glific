@@ -37,6 +37,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  alias Glific.Flows.Webhooks.Registry, as: WebhooksRegistry
+
   require Logger
 
   @contact_profile %{
@@ -642,7 +644,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, []) do
     Webhook.execute(action, context)
-    {:wait, context, []}
+    {:wait, park_async_webhook(action, context), []}
   end
 
   def execute(%{type: "call_webhook"} = _action, context, messages) do
@@ -1003,6 +1005,27 @@ defmodule Glific.Flows.Action do
   end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  # Async webhooks (STT/TTS/filesearch) park the flow at this node and are resumed by a
+  # Kaapi callback to FlowResumeController, which finds the parked context via
+  # FlowContext.await_context (is_await_result == true). So we must put the context into
+  # the await state here; wakeup_at also arms the timeout fallback if no callback arrives.
+  # Plain webhooks resume via the Oban worker's wakeup_one and don't need this.
+  @spec park_async_webhook(Action.t(), FlowContext.t()) :: FlowContext.t()
+  defp park_async_webhook(%{url: url} = action, context) do
+    if url in WebhooksRegistry.async_urls() do
+      {:ok, context} =
+        FlowContext.update_flow_context(context, %{
+          wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || 60),
+          is_background_flow: context.flow.is_background,
+          is_await_result: true
+        })
+
+      context
+    else
+      context
+    end
+  end
+
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
 
   defp add_flow_label(%{last_message: last_message}, flow_label) do

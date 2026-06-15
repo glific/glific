@@ -60,9 +60,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
     try do
       result = fun.()
-      emit_latency(webhook_name, mode, start, :ok)
-      track_metrics(webhook_name, result)
-      maybe_report_webhook_failure(result, webhook_name, ctx)
+      record_outcome(mode, result, webhook_name, start, ctx)
       result
     rescue
       exception ->
@@ -71,6 +69,27 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
         reraise exception, __STACKTRACE__
     end
+  end
+
+  # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
+  @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
+  defp record_outcome(:sync, result, webhook_name, start, ctx) do
+    emit_latency(webhook_name, :sync, start, :ok)
+    track_metrics(webhook_name, result)
+    maybe_report_webhook_failure(result, webhook_name, ctx)
+  end
+
+  # Async webhooks: a successful ack means the Kaapi request is in flight. The real
+  # round-trip latency and the success count are recorded at callback time
+  # (FlowResumeController), so record nothing here — recording an ack-time latency would
+  # pollute the same `flow_webhook_latency` metric the callback fills. Only a dispatch
+  # failure, which never reaches the callback, is recorded now.
+  defp record_outcome(:async, %{success: true}, _webhook_name, _start, _ctx), do: :ok
+
+  defp record_outcome(:async, result, webhook_name, start, ctx) do
+    emit_latency(webhook_name, :async, start, :error)
+    track_metrics(webhook_name, result)
+    maybe_report_webhook_failure(result, webhook_name, ctx)
   end
 
   @doc """
