@@ -20,7 +20,7 @@ defmodule Glific.AIEvaluations do
 
   alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
-  @timeout_hours 6
+  @timeout_hours 24
 
   @doc """
   Returns the list of AI evaluations for an organization.
