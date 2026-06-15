@@ -7,7 +7,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
     Flows.Action,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhook,
+    Flows.Webhooks.Errors,
     Flows.WebhookLog,
     Repo,
     Seeds.SeedsDev
@@ -83,8 +83,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
         Action.execute(action, context, [])
       end
 
-      assert_received {:appsignal_error, %Webhook.SystemError{} = exception}
-      assert Exception.message(exception) == "Webhook system_error: Kaapi is not active"
+      assert_received {:appsignal_error, %Errors.SystemError{} = exception}
+      assert Exception.message(exception) == "Webhook system_error from unified-llm-call"
 
       webhook_log = Repo.get_by(WebhookLog, %{url: "filesearch-gpt"})
       assert webhook_log.error == "Kaapi is not active"
@@ -143,8 +143,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
         Action.execute(action, context, [])
       end
 
-      assert_received {:appsignal_error, %Webhook.SystemError{} = exception}
-      assert Exception.message(exception) == "Webhook system_error: Kaapi is not active"
+      assert_received {:appsignal_error, %Errors.SystemError{} = exception}
+      assert Exception.message(exception) == "Webhook system_error from unified-voice-llm-call"
 
       webhook_log = Repo.get_by(WebhookLog, %{url: "voice-filesearch-gpt"})
       assert webhook_log.error == "Kaapi is not active"
