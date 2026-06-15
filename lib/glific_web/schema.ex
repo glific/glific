@@ -210,6 +210,8 @@ defmodule GlificWeb.Schema do
 
     import_fields(:contact_wa_group_mutations)
 
+    import_fields(:wa_group_mutations)
+
     import_fields(:wa_groups_collection_mutations)
 
     import_fields(:filesearch_mutations)
