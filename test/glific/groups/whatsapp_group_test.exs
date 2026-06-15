@@ -439,6 +439,23 @@ defmodule Glific.Groups.WAGroupsTest do
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
     end
 
+    test "skips when Maytapi returns a bsp_id that has no matching wa_group row",
+         ctx do
+      orphan =
+        group_detail(
+          %{ctx.wa_group | bsp_id: "120363099999999999@g.us"},
+          ctx.wa_managed_phone,
+          ["#{ctx.wa_managed_phone.phone}@c.us"]
+        )
+
+      known =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
+      :ok = WAGroups.sync_wa_group_phones([orphan, known], ctx.wa_managed_phone)
+
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
+    end
+
     test "never changes is_primary", ctx do
       # `maybe_create_group/1` in the describe setup already inserted a
       # primary membership for our managed phone (first creator =
