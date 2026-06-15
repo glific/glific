@@ -80,7 +80,7 @@ defmodule Glific.Flows.Webhooks.Registry do
   module's `handle_resume/2`. Returns `nil` if no registered async module has
   that observability name (the caller falls back to the default behaviour).
   """
-  @spec lookup_by_webhook_name(String.t()) :: module() | nil
+  @spec lookup_by_webhook_name(term()) :: module() | nil
   def lookup_by_webhook_name(webhook_name) when is_binary(webhook_name) do
     @webhooks
     |> Enum.find_value(fn {_url, mod} ->
@@ -89,6 +89,11 @@ defmodule Glific.Flows.Webhooks.Registry do
       end
     end)
   end
+
+  # Callbacks whose payload carries no `webhook_name` (e.g. the STT/TTS/filesearch
+  # Kaapi callbacks) pass `nil` here. Fall back to nil so callers use the parsed
+  # response unchanged rather than crashing on a FunctionClauseError.
+  def lookup_by_webhook_name(_webhook_name), do: nil
 
   # Safely resolves a module's webhook_name/0; falls back to name/0 for modules
   # that don't export webhook_name/0 (e.g. the sync Geolocation module).

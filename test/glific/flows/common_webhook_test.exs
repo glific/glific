@@ -1103,7 +1103,10 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert result.success == true
     end
 
-    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+    # NOTE: speech_to_text is an async webhook — CommonWebhook only computes the
+    # failure RESULT here; AppSignal reporting now happens in SttTtsWorker via
+    # Instrumentation.report_async_failure/2 (covered in webhook_infrastructure_test.exs).
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
       fields: fields
     } do
       Tesla.Mock.mock(fn
@@ -1114,51 +1117,29 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result.success == false
-          assert result.error_type == "kaapi_logical_failure"
-          assert result.reason == "boom"
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.http_status == 200
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == false
+      assert result.error_type == "kaapi_logical_failure"
+      assert result.reason == "boom"
     end
 
-    test "reports SystemError on a Kaapi 5xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.http_status == 503
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result.success == false
     end
 
-    test "rejects empty speech URL without calling Kaapi and reports SystemError", %{
+    test "rejects empty speech URL without calling Kaapi", %{
       fields: fields
     } do
       fields = Map.put(fields, "speech", "")
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result == %{success: false, reason: "Media URL is invalid"}
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.reason == "Media URL is invalid"
-      assert is_nil(tags.http_status)
+      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      assert result == %{success: false, reason: "Media URL is invalid"}
     end
   end
 
@@ -1606,7 +1587,11 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
-  describe "unified-llm-call failure reporting" do
+  # NOTE: unified-llm-call is an async webhook — CommonWebhook only computes the
+  # failure RESULT here. AppSignal reporting now happens in the framework's
+  # Instrumentation.around_async/3 when AsyncSupport returns an immediate-failure
+  # tuple (covered in webhook_infrastructure_test.exs).
+  describe "unified-llm-call failure result" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1634,39 +1619,25 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{fields: fields}
     end
 
-    test "reports SystemError with http_status on a Kaapi 4xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 4xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 400
+      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      assert result.success == false
     end
 
-    test "reports SystemError with http_status on a Kaapi 5xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 503
+      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      assert result.success == false
     end
 
-    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
       fields: fields
     } do
       Tesla.Mock.mock(fn
@@ -1674,17 +1645,10 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-          assert result.error_type == "kaapi_logical_failure"
-          assert result.reason == "boom"
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 200
+      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      assert result.success == false
+      assert result.error_type == "kaapi_logical_failure"
+      assert result.reason == "boom"
     end
   end
 
@@ -1982,7 +1946,11 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert is_nil(tags.http_status)
     end
 
-    test "reports SystemError under unified-voice-llm-call when LLM dispatch fails" do
+    # NOTE: unified-voice-llm-call is async — the bhasini STT step still reports its own
+    # failures (see the test above), but a failure in the LLM dispatch only produces a
+    # failure RESULT here. That failure is reported by Instrumentation.around_async/3
+    # (covered in webhook_infrastructure_test.exs).
+    test "returns failure result under unified-voice-llm-call when LLM dispatch fails" do
       organization_id = 1
       assistant_display_id = "asst_voice_llm_fail"
       create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
@@ -2026,18 +1994,10 @@ defmodule Glific.Flows.CommonWebhookTest do
           end
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result =
-            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+      result = CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
 
-          assert result.success == false
-          assert result.http_status == 503
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-voice-llm-call"
-      assert tags.http_status == 503
+      assert result.success == false
+      assert result.http_status == 503
     end
   end
 
