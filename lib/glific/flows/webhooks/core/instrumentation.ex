@@ -260,9 +260,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # this is module.webhook_name() (which may differ from module.name() for the unified
   # LLM nodes). Falls back to module.name() for modules that don't export webhook_name/0
   # (e.g. sync modules called through around/3).
+  # Code.ensure_loaded? is required: function_exported?/3 returns false for a module
+  # that hasn't been loaded yet, which would silently fall back to name/0 and tag
+  # metrics with the node URL instead of the observability webhook_name.
   @spec resolve_webhook_name(module()) :: String.t()
   defp resolve_webhook_name(module) do
-    if function_exported?(module, :webhook_name, 0) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :webhook_name, 0) do
       module.webhook_name()
     else
       module.name()

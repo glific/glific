@@ -7,7 +7,7 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
-  alias Glific.Flows.Webhooks.AsyncSupport
+  alias Glific.Flows.Webhooks.{AsyncSupport, Dispatcher, Registry}
   alias Glific.Messages
   alias Glific.Messages.Message
   alias Glific.Repo
@@ -290,6 +290,8 @@ defmodule Glific.Flows.Webhook do
         body: body,
         headers: headers,
         webhook_log_id: webhook_log.id,
+        flow_id: context.flow_id,
+        contact_id: context.contact_id,
         # for job uniqueness,
         context_id: context.id,
         context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
@@ -321,7 +323,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_action(String.t(), String.t(), map(), list()) :: any
+  @spec do_action(String.t(), String.t(), map() | String.t(), list()) :: any
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
@@ -333,20 +335,34 @@ defmodule Glific.Flows.Webhook do
         opts: [adapter: [recv_timeout: 10_000]]
       )
 
-  defp do_action("function", function, body, headers) do
+  defp do_action("function", function, fields, headers) do
     {
       :ok,
       :function,
-      Glific.Clients.webhook(function, Jason.decode!(body), headers)
+      dispatch_function(function, fields, headers)
     }
   rescue
     error ->
       error_message =
-        "Calling webhook function threw an exception, error: #{inspect(error)} , args: #{inspect(function)}, object: #{inspect(body)},"
+        "Calling webhook function threw an exception, error: #{inspect(error)} , args: #{inspect(function)}, object: #{inspect(fields)},"
 
       Logger.error(error_message)
       Appsignal.send_error(:error, error_message, __STACKTRACE__)
       {:error, error_message}
+  end
+
+  # Routes a function-type webhook to the central Dispatcher when it is registered (sync or
+  # async — both run their module's call/2 wrapped in instrumentation), otherwise falls back
+  # to the legacy Glific.Clients.webhook chain (CommonWebhook + per-org client modules).
+  @spec dispatch_function(String.t(), map(), list()) :: any()
+  defp dispatch_function(function, fields, headers) do
+    case Registry.lookup(function) do
+      module when not is_nil(module) and is_atom(module) ->
+        Dispatcher.dispatch_named(function, fields, headers)
+
+      _ ->
+        Glific.Clients.webhook(function, fields, headers)
+    end
   end
 
   @doc """
@@ -365,15 +381,25 @@ defmodule Glific.Flows.Webhook do
             "webhook_log_id" => webhook_log_id,
             "context" => context,
             "organization_id" => organization_id
-          }
+          } = args
         } = _job
       ) do
     Repo.put_process_state(organization_id)
 
     headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
+    # Function webhooks receive the decoded body enriched with the flow metadata the
+    # registered modules need (flow/contact ids, webhook_log_id, result_name). POST/GET
+    # keep the raw body string they send to the external service.
+    enrichment = %{
+      "flow_id" => args["flow_id"],
+      "contact_id" => args["contact_id"],
+      "webhook_log_id" => webhook_log_id,
+      "result_name" => result_name
+    }
+
     result =
-      case do_action(method, url, body, headers) do
+      case do_action(method, url, action_input(method, body, enrichment), headers) do
         {:ok, :function, result} ->
           update_log(webhook_log_id, result)
           result
@@ -405,7 +431,53 @@ defmodule Glific.Flows.Webhook do
           nil
       end
 
-    handle(result, context, result_name)
+    handle_webhook_result(result, context, result_name, url, organization_id)
+  end
+
+  # Builds the input passed to do_action/4. Function webhooks get the decoded body
+  # merged with flow metadata; POST/GET keep the raw body string.
+  @spec action_input(String.t(), String.t(), map()) :: map() | String.t()
+  defp action_input("function", body, enrichment),
+    do: body |> Jason.decode!() |> Map.merge(enrichment)
+
+  defp action_input(_method, body, _enrichment), do: body
+
+  # Routes the dispatch result to the flow engine. For async webhooks a successful ack
+  # leaves the flow parked (the Kaapi callback resumes it via FlowResumeController); a
+  # failure wakes the flow on the Failure branch. Sync webhooks resume immediately.
+  @spec handle_webhook_result(any(), map(), String.t(), String.t(), non_neg_integer()) :: :ok
+  defp handle_webhook_result(result, context, result_name, url, organization_id) do
+    if async_webhook?(url) do
+      case result do
+        %{success: true} -> :ok
+        _ -> wake_with_failure(context, organization_id)
+      end
+    else
+      handle(result, context, result_name)
+    end
+  end
+
+  # True when the URL is a registered async webhook (one that parks the flow for a callback).
+  @spec async_webhook?(String.t()) :: boolean()
+  defp async_webhook?(url) do
+    case Registry.lookup(url) do
+      module when is_atom(module) and not is_nil(module) -> module.mode() == :async
+      _ -> false
+    end
+  end
+
+  # Wakes a parked flow on the Failure branch (used when an async webhook fails to dispatch).
+  @spec wake_with_failure(map(), non_neg_integer()) :: :ok
+  defp wake_with_failure(context_data, organization_id) do
+    context =
+      Repo.get!(FlowContext, context_data["id"])
+      |> Repo.preload(:flow)
+      |> Map.put(:delay, context_data["delay"] || 0)
+      |> Map.put(:uuids_seen, context_data["uuids_seen"])
+
+    message = Messages.create_temp_message(organization_id, "Failure")
+    FlowContext.wakeup_one(context, message)
+    :ok
   end
 
   @spec handle(String.t(), map(), String.t()) :: :ok

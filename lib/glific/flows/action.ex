@@ -37,8 +37,6 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
-  alias Glific.Flows.Webhooks.Dispatcher, as: WebhooksDispatcher
-
   require Logger
 
   @contact_profile %{
@@ -640,38 +638,6 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "link_google_sheet"} = action, context, _messages) do
     {context, message} = Sheets.execute(action, context)
     {:ok, context, [message]}
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "speech_to_text"} = action,
-        context,
-        []
-      ) do
-    WebhooksDispatcher.dispatch_async("speech_to_text", action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "text_to_speech"} = action,
-        context,
-        []
-      ) do
-    WebhooksDispatcher.dispatch_async("text_to_speech", action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "voice-filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    WebhooksDispatcher.dispatch_async("voice-filesearch-gpt", action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    WebhooksDispatcher.dispatch_async("filesearch-gpt", action, context)
   end
 
   def execute(%{type: "call_webhook"} = action, context, []) do

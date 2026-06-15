@@ -2,31 +2,51 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
   @moduledoc """
   Async webhook implementation for the `speech_to_text` flow node.
 
-  Parks the flow in the await state and enqueues a `Glific.ThirdParty.Kaapi.SttTtsWorker`
-  job to perform the Kaapi STT call. The flow is resumed by a Kaapi callback to
-  `GlificWeb.Flows.FlowResumeController.flow_resume/2`.
+  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it fires the
+  Kaapi STT request and returns the Kaapi ack. Kaapi POSTs the transcription to
+  `GlificWeb.Flows.FlowResumeController.flow_resume/2`, which resumes the parked flow.
 
-  `name/0` returns `"speech_to_text"` — the URL string as it appears in deployed flow JSON.
-  Since the node URL equals the observability webhook_name, no `webhook_name/0` override is
-  needed.
+  A successful ack (`%{success: true}`) means "Kaapi accepted the request" — the flow
+  stays parked until the callback arrives. A failure routes the flow to the Failure branch.
   """
 
   use Glific.Flows.Webhooks.Async, name: "speech_to_text"
 
-  alias Glific.Flows.Webhooks.AsyncSupport
   alias Glific.Flows.Webhooks.Behaviour
+  alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
+  alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Delegates to `AsyncSupport.enqueue_stt_tts/3` with the `"speech_to_text"` webhook name.
-
-  Returns `{:wait, context, []}` on success (flow parked) or
-  `{:ok, context, [failure_msg]}` on immediate failure (missing Kaapi creds, invalid body,
-  enqueue error).
+  Fires the Kaapi STT request. Validates the speech URL, builds the signed callback
+  metadata, and dispatches to Kaapi. Returns the Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: Behaviour.async_result()
-  def call(_fields, %{action: action, flow_context: context}) do
-    AsyncSupport.enqueue_stt_tts(action, context, "speech_to_text")
+  @spec call(map(), Behaviour.ctx()) :: map()
+  def call(fields, _ctx) do
+    speech = fields["speech"]
+    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
+
+    {callback_url, request_metadata} =
+      KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "stt", webhook_name: "speech_to_text"})
+
+    stt_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"],
+      output_language: fields["output_language"]
+    }
+
+    case KaapiSupport.validate_media(speech) do
+      :ok ->
+        Glific.Metrics.increment("Kaapi STT Call", organization_id)
+        Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+
+      {:error, reason} ->
+        %{success: false, reason: reason}
+    end
   end
 
   @doc """

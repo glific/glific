@@ -2,31 +2,42 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
   @moduledoc """
   Async webhook implementation for the `text_to_speech` flow node.
 
-  Parks the flow in the await state and enqueues a `Glific.ThirdParty.Kaapi.SttTtsWorker`
-  job to perform the Kaapi TTS call. The flow is resumed by a Kaapi callback to
-  `GlificWeb.Flows.FlowResumeController.flow_resume/2`.
-
-  `name/0` returns `"text_to_speech"` — the URL string as it appears in deployed flow JSON.
-  Since the node URL equals the observability webhook_name, no `webhook_name/0` override is
-  needed.
+  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it fires the
+  Kaapi TTS request and returns the Kaapi ack. Kaapi POSTs the generated audio to
+  `GlificWeb.Flows.FlowResumeController.flow_resume/2`, which resumes the parked flow.
   """
 
   use Glific.Flows.Webhooks.Async, name: "text_to_speech"
 
-  alias Glific.Flows.Webhooks.AsyncSupport
   alias Glific.Flows.Webhooks.Behaviour
+  alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
+  alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Delegates to `AsyncSupport.enqueue_stt_tts/3` with the `"text_to_speech"` webhook name.
-
-  Returns `{:wait, context, []}` on success (flow parked) or
-  `{:ok, context, [failure_msg]}` on immediate failure (missing Kaapi creds, invalid body,
-  enqueue error).
+  Fires the Kaapi TTS request. Builds the signed callback metadata and dispatches to
+  Kaapi. Returns the Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: Behaviour.async_result()
-  def call(_fields, %{action: action, flow_context: context}) do
-    AsyncSupport.enqueue_stt_tts(action, context, "text_to_speech")
+  @spec call(map(), Behaviour.ctx()) :: map()
+  def call(fields, _ctx) do
+    text = fields["text"]
+    {organization_id, flow_id, contact_id} = KaapiSupport.parse_flow_fields(fields)
+
+    {callback_url, request_metadata} =
+      KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
+
+    request_metadata =
+      Map.merge(request_metadata, %{call_type: "tts", webhook_name: "text_to_speech"})
+
+    tts_opts = %{
+      provider: fields["provider"],
+      model: fields["model"],
+      language: fields["language"],
+      voice: fields["voice"]
+    }
+
+    Glific.Metrics.increment("Kaapi TTS Call", organization_id)
+    Kaapi.text_to_speech(organization_id, text, callback_url, request_metadata, tts_opts)
   end
 
   @doc """

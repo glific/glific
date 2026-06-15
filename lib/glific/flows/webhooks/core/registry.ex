@@ -32,8 +32,8 @@ defmodule Glific.Flows.Webhooks.Registry do
     "geolocation" => Webhooks.Geolocation,
     "speech_to_text" => Webhooks.SpeechToText,
     "text_to_speech" => Webhooks.TextToSpeech,
-    "filesearch-gpt" => Webhooks.UnifiedLlm,
-    "voice-filesearch-gpt" => Webhooks.UnifiedVoiceLlm
+    "filesearch-gpt" => Webhooks.FilesearchGpt,
+    "voice-filesearch-gpt" => Webhooks.VoiceFilesearchGpt
   }
 
   @doc """
@@ -97,9 +97,11 @@ defmodule Glific.Flows.Webhooks.Registry do
 
   # Safely resolves a module's webhook_name/0; falls back to name/0 for modules
   # that don't export webhook_name/0 (e.g. the sync Geolocation module).
+  # Code.ensure_loaded? is required because function_exported?/3 returns false for a
+  # not-yet-loaded module, which would make lookup match on name/0 instead.
   @spec resolve_webhook_name(module()) :: String.t()
   defp resolve_webhook_name(mod) do
-    if function_exported?(mod, :webhook_name, 0) do
+    if Code.ensure_loaded?(mod) and function_exported?(mod, :webhook_name, 0) do
       mod.webhook_name()
     else
       mod.name()
