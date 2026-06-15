@@ -630,14 +630,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     } do
       organization_id = conn.assigns[:organization_id]
 
-      on_exit(fn ->
-        FunWithFlags.disable(:is_copy_node_enabled,
-          for_actor: %{organization_id: organization_id}
-        )
-
-        Glific.Partners.fill_cache(Glific.Partners.organization(organization_id))
-      end)
-
       FunWithFlags.enable(:is_copy_node_enabled,
         for_actor: %{organization_id: organization_id}
       )
@@ -649,6 +641,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         |> get("/flow-editor/copy-node-enabled", %{})
 
       assert json_response(conn, 200)["is_enabled"] == true
+
+      FunWithFlags.disable(:is_copy_node_enabled,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      Glific.Partners.fill_cache(Glific.Partners.organization(organization_id))
     end
   end
 end
