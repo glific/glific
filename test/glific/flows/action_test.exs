@@ -24,9 +24,10 @@ defmodule Glific.Flows.ActionTest do
     Flow,
     FlowContext,
     Node,
-    Webhook,
     WebhookLog
   }
+
+  alias Glific.Flows.Webhooks.Dispatcher, as: WebhooksDispatcher
 
   setup do
     organization = SeedsDev.seed_organizations()
@@ -1552,11 +1553,11 @@ defmodule Glific.Flows.ActionTest do
       node_uuid: "Test UUID"
     }
 
-    with_mock Webhook,
-      execute_unified_voice_filesearch: fn _action, _context -> {:wait, context, []} end do
+    with_mock WebhooksDispatcher,
+      dispatch_async: fn _url, _action, _context -> {:wait, context, []} end do
       result = Action.execute(action, context, [])
       assert {:wait, ^context, []} = result
-      assert called(Webhook.execute_unified_voice_filesearch(action, context))
+      assert called(WebhooksDispatcher.dispatch_async("voice-filesearch-gpt", action, context))
     end
   end
 
@@ -1584,11 +1585,11 @@ defmodule Glific.Flows.ActionTest do
       node_uuid: "Test UUID"
     }
 
-    with_mock Webhook,
-      execute_unified_filesearch: fn _action, _context -> {:wait, context, []} end do
+    with_mock WebhooksDispatcher,
+      dispatch_async: fn _url, _action, _context -> {:wait, context, []} end do
       result = Action.execute(action, context, [])
       assert {:wait, ^context, []} = result
-      assert called(Webhook.execute_unified_filesearch(action, context))
+      assert called(WebhooksDispatcher.dispatch_async("filesearch-gpt", action, context))
     end
   end
 

@@ -7,8 +7,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Fixtures,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhook.SystemError,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.SystemError,
     Repo,
     Seeds.SeedsDev
   }

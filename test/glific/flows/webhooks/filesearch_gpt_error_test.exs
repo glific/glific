@@ -7,8 +7,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptErrorTest do
     Flows.Action,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhooks.Errors,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors,
     Repo,
     Seeds.SeedsDev
   }
