@@ -71,10 +71,12 @@ defmodule Glific.Groups.WAGroups do
   defp phone_number(phone_number), do: String.split(phone_number, "@") |> List.first()
 
   @doc """
-  Syncs groups using maytapi API into Glific
+  Syncs groups and phones using maytapi API into Glific
   """
   @spec sync_wa_groups(non_neg_integer()) :: :ok
   def sync_wa_groups(org_id) do
+    WAManagedPhones.fetch_wa_managed_phones(org_id)
+
     wa_managed_phones =
       WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
