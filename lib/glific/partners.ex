@@ -1249,13 +1249,6 @@ defmodule Glific.Partners do
 
         {:ok, _} ->
           fetch_and_cache_goth_token(organization_id, provider_shortcode, organization, opts)
-
-        _ ->
-          Logger.error(
-            "Could not fetch token for service #{provider_shortcode} for org id: #{organization_id}"
-          )
-
-          nil
       end
     end
   end
@@ -1404,11 +1397,6 @@ defmodule Glific.Partners do
 
       {:ok, services} ->
         services
-
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve organization services: #{error}"
-        )
     end
   end
 

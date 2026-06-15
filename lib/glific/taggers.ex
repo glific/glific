@@ -39,11 +39,6 @@ defmodule Glific.Taggers do
 
       {:ok, tag_maps} ->
         tag_maps
-
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve tag maps for #{organization_id}: #{error}"
-        )
     end
   end
 

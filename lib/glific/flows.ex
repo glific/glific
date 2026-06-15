@@ -560,17 +560,13 @@ defmodule Glific.Flows do
 
       {:ok, flow} ->
         {:ok, flow}
-
-      {:error, error} ->
-        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{inspect(error)}")
-        {:error, error}
     end
   end
 
   # Fetches the flow from the DB (in the caller's process, preserving SQL Sandbox
   # ownership) and populates the cache under all applicable keys.
   @spec fetch_and_cache_flow(non_neg_integer, {atom(), any(), String.t()}) ::
-          {:ok, Flow.t()}
+          {:ok, Flow.t()} | {:error, String.t()}
   defp fetch_and_cache_flow(organization_id, {key, value, status}) do
     Repo.put_organization_id(organization_id)
     Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
@@ -578,6 +574,9 @@ defmodule Glific.Flows do
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     {:ok, flow}
+  rescue
+    Ecto.NoResultsError ->
+      {:error, "Flow not found for #{inspect({key, value, status})}"}
   end
 
   @doc """
@@ -885,11 +884,6 @@ defmodule Glific.Flows do
 
       {:ok, value} ->
         value
-
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve flow_keywords_map, #{inspect(organization_id)}, #{error}"
-        )
     end
   end
 
