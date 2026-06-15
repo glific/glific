@@ -139,7 +139,7 @@ defmodule Glific.Providers.Maytapi.Sender do
       {:ok, _} ->
         if match == :relaxed do
           Logger.warning(
-            "Sender: relaxed promotion — no Maytapi-active member in group #{wa_group.id}; promoting #{candidate.phone} (status=#{candidate.status}) anyway"
+            "Sender: group #{wa_group.id} has no Maytapi-active phone; promoting #{candidate.phone} (status=#{candidate.status}) — status may be stale"
           )
         end
 
