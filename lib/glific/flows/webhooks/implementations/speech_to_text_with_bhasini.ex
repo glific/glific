@@ -18,8 +18,8 @@ defmodule Glific.Flows.Webhooks.SpeechToTextWithBhasini do
   use Glific.Flows.Webhooks.Sync, name: "speech_to_text_with_bhasini"
 
   alias Glific.ASR.Bhasini
-  alias Glific.ThirdParty.Gemini
   alias Glific.Metrics
+  alias Glific.ThirdParty.Gemini
 
   @doc """
   Transcribe an audio file using the Bhasini/Gemini speech-to-text pipeline.

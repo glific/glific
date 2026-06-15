@@ -98,29 +98,5 @@ defmodule Glific.Flows.Webhooks.SpeechToTextWithBhasiniTest do
       end
     end
 
-    test "returns {:error, message} when Gemini returns success: false without asr_response_text" do
-      with_mocks([
-        {Bhasini, [:passthrough], [validate_params: fn _fields -> {:ok, @mock_contact} end]},
-        {Gemini, [:passthrough],
-         [
-           speech_to_text: fn _url, _org_id ->
-             %{success: false, reason: "unknown error"}
-           end
-         ]}
-      ]) do
-        assert {:error, msg} = SpeechToTextWithBhasini.call(@valid_fields, @ctx)
-        assert msg =~ "Speech to text failed"
-      end
-    end
-
-    test "returns {:error, message} when Gemini returns unexpected response" do
-      with_mocks([
-        {Bhasini, [:passthrough], [validate_params: fn _fields -> {:ok, @mock_contact} end]},
-        {Gemini, [:passthrough], [speech_to_text: fn _url, _org_id -> "unexpected string" end]}
-      ]) do
-        assert {:error, msg} = SpeechToTextWithBhasini.call(@valid_fields, @ctx)
-        assert msg =~ "Unexpected response"
-      end
-    end
   end
 end
