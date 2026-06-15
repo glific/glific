@@ -14,8 +14,6 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
 
   use Glific.Flows.Webhooks.Sync, name: "create_certificate"
 
-  require Logger
-
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Repo
@@ -26,12 +24,13 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
           {:ok, map()} | {:error, String.t()}
   def call(fields, ctx) do
     with {:ok, parsed_fields} <- parse_certificate_params(fields, ctx.organization_id),
+         {:ok, contact_id} <- extract_contact_id(parsed_fields.contact),
          {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
          {:ok, slide_details} <- Slide.parse_slides_url(certificate_template.url) do
       result =
         Certificate.generate_certificate(
           parsed_fields,
-          parsed_fields.contact["id"],
+          contact_id,
           slide_details.presentation_id,
           slide_details.page_id
         )
@@ -51,7 +50,19 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
         type: :integer,
         required: true,
         cast_func: fn value ->
-          {:ok, if(is_binary(value), do: Glific.parse_maybe_integer!(value), else: value)}
+          cond do
+            is_integer(value) ->
+              {:ok, value}
+
+            is_binary(value) ->
+              case Integer.parse(value) do
+                {int, ""} -> {:ok, int}
+                _ -> {:error, "certificate_id must be an integer"}
+              end
+
+            true ->
+              {:error, "certificate_id must be an integer"}
+          end
         end
       ],
       contact: [type: :map, required: true],
@@ -61,6 +72,17 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
     case Tarams.cast(fields, certificate_params_schema) |> Glific.handle_tarams_result() do
       {:ok, parsed} -> {:ok, Map.put(parsed, :organization_id, org_id)}
       err -> err
+    end
+  end
+
+  @spec extract_contact_id(map()) :: {:ok, any()} | {:error, String.t()}
+  defp extract_contact_id(contact) do
+    contact_id = get_in(contact, ["id"]) || get_in(contact, [:id])
+
+    if is_nil(contact_id) or contact_id == "" do
+      {:error, "contact.id is required"}
+    else
+      {:ok, contact_id}
     end
   end
 
@@ -74,11 +96,9 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
         {:ok, certificate_template}
 
       {:error, _reason} ->
-        Logger.error(
+        Glific.log_error(
           "Certificate template not found for ID: #{fields.certificate_id} and organization: #{fields.organization_id}"
         )
-
-        {:error, "Certificate template not found for ID: #{fields.certificate_id}"}
     end
   end
 end

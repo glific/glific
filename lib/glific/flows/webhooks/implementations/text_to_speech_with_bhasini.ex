@@ -41,24 +41,31 @@ defmodule Glific.Flows.Webhooks.TextToSpeechWithBhasini do
   @spec do_call(map(), Glific.Flows.Webhooks.Behaviour.ctx(), String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   defp do_call(fields, ctx, text, contact_id) do
-    contact = Contacts.preload_contact_language(contact_id)
-    source_language = if contact.language, do: String.downcase(contact.language.label), else: ""
-    speech_engine = Map.get(fields, "speech_engine", "")
+    case Contacts.preload_contact_language(contact_id) do
+      nil ->
+        {:error, "Contact not found for id: #{contact_id}"}
 
-    cond do
-      speech_engine == "open_ai" ->
-        translate_tts_result(ChatGPT.text_to_speech_with_open_ai(ctx.organization_id, text))
+      contact ->
+        source_language =
+          if contact.language, do: String.downcase(contact.language.label), else: ""
 
-      speech_engine == "bhashini" ->
-        Metrics.increment("Gemini TTS Call", ctx.organization_id)
-        translate_tts_result(Gemini.text_to_speech(ctx.organization_id, text))
+        speech_engine = Map.get(fields, "speech_engine", "")
 
-      source_language == "english" ->
-        translate_tts_result(ChatGPT.text_to_speech_with_open_ai(ctx.organization_id, text))
+        cond do
+          speech_engine == "open_ai" ->
+            translate_tts_result(ChatGPT.text_to_speech_with_open_ai(ctx.organization_id, text))
 
-      true ->
-        Metrics.increment("Gemini TTS Call", ctx.organization_id)
-        translate_tts_result(Gemini.text_to_speech(ctx.organization_id, text))
+          speech_engine == "bhashini" ->
+            Metrics.increment("Gemini TTS Call", ctx.organization_id)
+            translate_tts_result(Gemini.text_to_speech(ctx.organization_id, text))
+
+          source_language == "english" ->
+            translate_tts_result(ChatGPT.text_to_speech_with_open_ai(ctx.organization_id, text))
+
+          true ->
+            Metrics.increment("Gemini TTS Call", ctx.organization_id)
+            translate_tts_result(Gemini.text_to_speech(ctx.organization_id, text))
+        end
     end
   end
 

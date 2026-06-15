@@ -27,6 +27,7 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
           {:ok, map()} | {:error, String.t()}
   def call(fields, ctx) do
     org_id = ctx.organization_id
+    Repo.put_organization_id(org_id)
 
     with {:ok, parsed} <- parse_wa_poll_params(fields),
          {:ok, wa_phone} <-

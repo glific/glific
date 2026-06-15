@@ -18,9 +18,19 @@ defmodule Glific.Flows.Webhooks.SpeechToTextWithBhasini do
   use Glific.Flows.Webhooks.Sync, name: "speech_to_text_with_bhasini"
 
   alias Glific.ASR.Bhasini
-  alias Glific.Metrics
   alias Glific.ThirdParty.Gemini
+  alias Glific.Metrics
 
+  @doc """
+  Transcribe an audio file using the Bhasini/Gemini speech-to-text pipeline.
+
+  Validates contact and audio URL via `Glific.ASR.Bhasini.validate_params/1`,
+  increments a Gemini STT metric, then delegates to
+  `Glific.ThirdParty.Gemini.speech_to_text/2`.
+
+  Returns `{:ok, %{asr_response_text: String.t()}}` on success or
+  `{:error, String.t()}` on failure.
+  """
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
           {:ok, map()} | {:error, String.t()}

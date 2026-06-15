@@ -19,6 +19,13 @@ defmodule Glific.Flows.Webhooks.DetectLanguage do
 
   alias Glific.ASR.Bhasini
 
+  @doc """
+  Detect the spoken language in an audio file.
+
+  Requires a non-empty `speech` field containing a URL to the audio file.
+  Returns `{:ok, %{detected_language: label}}` on success or
+  `{:error, String.t()}` when the field is missing or Bhasini returns a failure.
+  """
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
           {:ok, map()} | {:error, String.t()}
