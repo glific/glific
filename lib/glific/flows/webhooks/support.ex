@@ -10,8 +10,6 @@ defmodule Glific.Flows.Webhooks.Support do
 
   use Gettext, backend: GlificWeb.Gettext
 
-  require Logger
-
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
   alias Glific.Flows.Webhook.HeaderRedactor
 
@@ -54,7 +52,8 @@ defmodule Glific.Flows.Webhooks.Support do
         do_create_body(context, action_body_map)
 
       _ ->
-        Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+        # Don't log the raw body — it may contain user data.
+        Glific.log_error("Error in decoding webhook body", false)
 
         {:error,
          dgettext(
@@ -84,7 +83,7 @@ defmodule Glific.Flows.Webhooks.Support do
   def add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
     sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
-    Map.put(headers, :"X-Glific-Signature", sig)
+    Map.put(headers || %{}, :"X-Glific-Signature", sig)
   end
 
   # ---- Private helpers --------------------------------------------------
@@ -116,7 +115,8 @@ defmodule Glific.Flows.Webhooks.Support do
         {action_body_map, action_body}
 
       _ ->
-        Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
+        # Don't log the raw body — it may contain user data.
+        Glific.log_error("Error in encoding webhook body", false)
 
         {:error,
          dgettext(

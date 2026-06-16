@@ -335,7 +335,7 @@ defmodule Glific.Flows.Webhook do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string} | {:snooze, pos_integer()}
+  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(
         %Oban.Job{
           args:
