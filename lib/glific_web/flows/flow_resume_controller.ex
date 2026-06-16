@@ -43,16 +43,41 @@ defmodule GlificWeb.Flows.FlowResumeController do
   defp do_flow_resume(organization_id, result, response) do
     Repo.put_process_state(organization_id)
     organization = Partners.organization(organization_id)
+
+    # Validate the callback signature BEFORE acting on it — only then do we touch the
+    # webhook log, emit metrics, run the module's handle_resume/2, or resume the flow.
+    # A forged/unsigned callback must not drive any of that.
+    with true <- validate_request(organization_id, response),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             id: response["contact_id"],
+             organization_id: organization.id
+           }) do
+      resume_validated_flow(organization_id, result, response, contact)
+    else
+      false ->
+        Logger.warning(
+          "Flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
+        )
+
+      {:error, reason} ->
+        Logger.warning("Flow resume contact lookup failed: #{inspect(reason)}")
+    end
+
+    :ok
+  end
+
+  @spec resume_validated_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  defp resume_validated_flow(organization_id, result, response, contact) do
     response_key = response["result_name"] || "response"
 
-    log_message =
-      %{
-        success: result["success"],
-        message: response["message"] || result["error"],
-        error_type: result["error_type"],
-        reason: result["reason"],
-        thread_id: response["thread_id"]
-      }
+    log_message = %{
+      success: result["success"],
+      message: response["message"] || result["error"],
+      error_type: result["error_type"],
+      reason: result["reason"],
+      thread_id: response["thread_id"]
+    }
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], log_message)
 
@@ -81,32 +106,18 @@ defmodule GlificWeb.Flows.FlowResumeController do
     ctx = %{organization_id: organization_id, success: result["success"]}
     shaped_response = shape_resume_response(response, ctx)
 
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }),
-         {:ok, _context, _messages} <-
-           FlowContext.resume_contact_flow(
-             contact,
-             response["flow_id"],
-             %{response_key => shaped_response},
-             message
-           ) do
-      :ok
-    else
-      false ->
-        Logger.warning(
-          "Flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
-        )
-
-      {:error, reason = [_, "Resource not found"]} ->
-        Logger.warning("Flow resume contact lookup failed: #{inspect(reason)}")
+    case FlowContext.resume_contact_flow(
+           contact,
+           response["flow_id"],
+           %{response_key => shaped_response},
+           message
+         ) do
+      {:ok, _context, _messages} ->
+        :ok
 
       {:error, reason} ->
         Logger.warning(
-          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{reason}"
+          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{inspect(reason)}"
         )
     end
 
@@ -207,19 +218,21 @@ defmodule GlificWeb.Flows.FlowResumeController do
     organization = Partners.organization(organization_id)
     response_key = response["result_name"] || "response"
 
-    message =
-      if result["success"],
-        do: Messages.create_temp_message(organization_id, "Success"),
-        else: Messages.create_temp_message(organization_id, "Failure")
-
-    voice_response = shape_voice_response(organization_id, result, response)
-
+    # Validate BEFORE the expensive, side-effecting voice post-processing (NMT + TTS +
+    # GCS upload in shape_voice_response). A forged callback must not trigger that work.
     with true <- validate_request(organization_id, response),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
              id: response["contact_id"],
              organization_id: organization.id
            }) do
+      message =
+        if result["success"],
+          do: Messages.create_temp_message(organization_id, "Success"),
+          else: Messages.create_temp_message(organization_id, "Failure")
+
+      voice_response = shape_voice_response(organization_id, result, response)
+
       if response["webhook_log_id"],
         do: Webhook.update_log(response["webhook_log_id"], voice_response)
 
@@ -236,7 +249,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
         {:error, reason} ->
           Logger.warning(
-            "Voice flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{reason}"
+            "Voice flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{inspect(reason)}"
           )
       end
     else

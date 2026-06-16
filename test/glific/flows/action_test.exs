@@ -1543,4 +1543,53 @@ defmodule Glific.Flows.ActionTest do
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
+
+  describe "call_webhook await state (park_async_webhook)" do
+    setup %{organization_id: org_id} do
+      contact = Repo.get_by(Contact, %{name: "Default receiver"})
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: org_id,
+          node_uuid: node.uuid
+        })
+
+      %{context: Repo.preload(context, [:contact, :flow])}
+    end
+
+    test "an async webhook parks the flow with is_await_result + wakeup_at", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "FUNCTION",
+        url: "filesearch-gpt",
+        headers: %{"Content-Type" => "application/json"},
+        body: Jason.encode!(%{"question" => "hi", "assistant_id" => "asst_1"}),
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == true
+      assert parked.wakeup_at != nil
+    end
+
+    test "a regular (non-async) webhook does not set is_await_result", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "POST",
+        url: "https://example.com/hook",
+        headers: %{"Content-Type" => "application/json"},
+        body: "{}",
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == false
+    end
+  end
 end

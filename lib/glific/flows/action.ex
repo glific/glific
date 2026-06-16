@@ -643,8 +643,13 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "call_webhook"} = action, context, []) do
+    # Park BEFORE enqueuing the Oban job. The job's worker may fail the dispatch and call
+    # wakeup_one to resume the flow; if that ran before the await-state write committed, the
+    # stale park write would re-park an already-resumed flow. Committing the await state first
+    # closes that race.
+    context = park_async_webhook(action, context)
     Webhook.execute(action, context)
-    {:wait, park_async_webhook(action, context), []}
+    {:wait, context, []}
   end
 
   def execute(%{type: "call_webhook"} = _action, context, messages) do
@@ -1012,18 +1017,27 @@ defmodule Glific.Flows.Action do
   # Plain webhooks resume via the Oban worker's wakeup_one and don't need this.
   @spec park_async_webhook(Action.t(), FlowContext.t()) :: FlowContext.t()
   defp park_async_webhook(%{url: url} = action, context) do
-    if url in WebhooksRegistry.async_urls() do
-      {:ok, context} =
-        FlowContext.update_flow_context(context, %{
-          wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || 60),
-          is_background_flow: context.flow.is_background,
-          is_await_result: true
-        })
+    case WebhooksRegistry.lookup(url) do
+      module when is_atom(module) and not is_nil(module) ->
+        if module.mode() == :async,
+          do: do_park(action, context, module.wait_time_default()),
+          else: context
 
-      context
-    else
-      context
+      _ ->
+        context
     end
+  end
+
+  @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
+  defp do_park(action, context, default_wait_time) do
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || default_wait_time),
+        is_background_flow: context.flow.is_background,
+        is_await_result: true
+      })
+
+    context
   end
 
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil

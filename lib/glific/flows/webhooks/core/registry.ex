@@ -58,6 +58,15 @@ defmodule Glific.Flows.Webhooks.Registry do
   @spec names() :: [String.t()]
   def names, do: Map.keys(@webhooks)
 
+  @doc "True when `url` is a registered async webhook (parks the flow for a callback)."
+  @spec async?(String.t()) :: boolean()
+  def async?(url) do
+    case lookup(url) do
+      module when is_atom(module) and not is_nil(module) -> module.mode() == :async
+      _ -> false
+    end
+  end
+
   @doc """
   Returns the node-URL strings for all registered async webhooks (those whose
   `mode/0` returns `:async`). Used by `Glific.Flows.FlowContext` to identify

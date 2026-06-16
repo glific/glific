@@ -434,22 +434,13 @@ defmodule Glific.Flows.Webhook do
   # failure wakes the flow on the Failure branch. Sync webhooks resume immediately.
   @spec handle_webhook_result(any(), map(), String.t(), String.t(), non_neg_integer()) :: :ok
   defp handle_webhook_result(result, context, result_name, url, organization_id) do
-    if async_webhook?(url) do
+    if Registry.async?(url) do
       case result do
         %{success: true} -> :ok
         _ -> wake_with_failure(context, organization_id)
       end
     else
       handle(result, context, result_name)
-    end
-  end
-
-  # True when the URL is a registered async webhook (one that parks the flow for a callback).
-  @spec async_webhook?(String.t()) :: boolean()
-  defp async_webhook?(url) do
-    case Registry.lookup(url) do
-      module when is_atom(module) and not is_nil(module) -> module.mode() == :async
-      _ -> false
     end
   end
 
