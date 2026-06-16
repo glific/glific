@@ -75,6 +75,13 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :fields, :json
   end
 
+  @desc "Input for createWaGroup. `numbers` are E.164 phone numbers without the +."
+  input_object :create_wa_group_input do
+    field :name, non_null(:string)
+    field :wa_managed_phone_id, non_null(:id)
+    field :numbers, list_of(:string)
+  end
+
   object :wa_group_queries do
     @desc "get the details of one wa group"
     field :wa_group, :wa_group_result do
@@ -105,6 +112,22 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:wa_managed_phone_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.WaGroup.set_primary_phone/3)
+    end
+
+    @desc "Create a new WhatsApp group via Maytapi using the chosen managed phone as the creator. Admin-only."
+    field :create_wa_group, :wa_group_result do
+      arg(:input, non_null(:create_wa_group_input))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.create_wa_group/3)
+    end
+
+    @desc "Rename a WhatsApp group via Maytapi (sets its subject). Admin-only."
+    field :update_wa_group_subject, :wa_group_result do
+      arg(:id, non_null(:id))
+      arg(:wa_managed_phone_id, non_null(:id))
+      arg(:subject, non_null(:string))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.update_wa_group_subject/3)
     end
   end
 end

@@ -728,6 +728,87 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
+  Provision a new WhatsApp group via Maytapi from `wa_managed_phone_id`.
+
+  Calls `ApiClient.create_group/3`; on success persists the new `wa_groups`
+  row plus an `is_primary: true` membership for the creating phone.
+
+  `attrs` shape:
+      %{name: "Group name", numbers: ["91xxxxxxxxxx", ...]}
+  """
+  @spec create_group_via_maytapi(non_neg_integer(), non_neg_integer(), map()) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  def create_group_via_maytapi(org_id, wa_managed_phone_id, attrs) do
+    with {:ok, wa_managed_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
+         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
+           ApiClient.create_group(org_id, wa_managed_phone.phone_id, %{
+             name: attrs[:name],
+             numbers: attrs[:numbers] || []
+           }),
+         {:ok, decoded} <- Jason.decode(body),
+         {:ok, bsp_id} <- extract_created_group_id(decoded) do
+      maybe_create_group(%{
+        label: attrs[:name],
+        bsp_id: bsp_id,
+        organization_id: org_id,
+        wa_managed_phone_id: wa_managed_phone_id
+      })
+    else
+      {:ok, %Tesla.Env{body: body}} ->
+        Glific.log_error("Maytapi create_group failed: org=#{org_id} body=#{inspect(body)}")
+        {:error, body}
+
+      {:error, reason} = err ->
+        Glific.log_error("Maytapi create_group failed: org=#{org_id} reason=#{inspect(reason)}")
+        err
+    end
+  end
+
+  @doc """
+  Rename a WhatsApp group via Maytapi (sets its subject in WhatsApp terms).
+
+  On success updates `wa_groups.label` so Glific stays in sync without
+  waiting for the next periodic sync.
+  """
+  @spec update_group_subject(WAGroup.t(), non_neg_integer(), String.t()) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  def update_group_subject(%WAGroup{} = wa_group, wa_managed_phone_id, subject) do
+    with {:ok, wa_managed_phone} <-
+           Repo.fetch_by(WAManagedPhone, %{
+             id: wa_managed_phone_id,
+             organization_id: wa_group.organization_id
+           }),
+         {:ok, %Tesla.Env{status: status}} when status in 200..299 <-
+           ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
+             conversation_id: wa_group.bsp_id,
+             subject: subject
+           }) do
+      update_wa_group(wa_group, %{label: subject})
+    else
+      {:ok, %Tesla.Env{body: body}} ->
+        Glific.log_error(
+          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} body=#{inspect(body)}"
+        )
+
+        {:error, body}
+
+      {:error, reason} = err ->
+        Glific.log_error(
+          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
+        )
+
+        err
+    end
+  end
+
+  # Maytapi's createGroup response shape (per docs): `{"success": true, "data": {"id": "120363...@g.us", ...}}`.
+  # Fail with a clear tuple if the body doesn't match — easier to grep than a KeyError.
+  @spec extract_created_group_id(map()) :: {:ok, String.t()} | {:error, :invalid_create_group_response}
+  defp extract_created_group_id(%{"data" => %{"id" => id}}) when is_binary(id), do: {:ok, id}
+  defp extract_created_group_id(_), do: {:error, :invalid_create_group_response}
+
+  @doc """
   Returns a WAGroup.t() as map
   """
   @spec get_wa_group_map(integer()) :: map()

@@ -125,4 +125,40 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       maytapi_post(url, Jason.encode!(payload), token)
     end
   end
+
+  @doc """
+  Creates a new WhatsApp group from one of the org's managed phones.
+
+  `payload` shape (per Maytapi docs):
+      %{name: "Group name", numbers: ["91xxxxxxxxxx", ...]}
+
+  The calling `phone_id` becomes the group creator/admin on WhatsApp.
+  """
+  @spec create_group(non_neg_integer(), non_neg_integer(), map()) :: Tesla.Env.result()
+  def create_group(org_id, phone_id, payload) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/createGroup"
+      maytapi_post(url, Jason.encode!(payload), token)
+    end
+  end
+
+  @doc """
+  Renames a WhatsApp group (sets its "subject" in WhatsApp terms).
+
+  `payload` shape:
+      %{conversation_id: "120363...@g.us", subject: "New name"}
+  """
+  @spec set_group_subject(non_neg_integer(), non_neg_integer(), map()) :: Tesla.Env.result()
+  def set_group_subject(org_id, phone_id, payload) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/setGroupSubject"
+      maytapi_post(url, Jason.encode!(payload), token)
+    end
+  end
 end

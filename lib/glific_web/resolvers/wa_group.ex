@@ -124,4 +124,51 @@ defmodule GlificWeb.Resolvers.WaGroup do
         {:error, changeset}
     end
   end
+
+  @doc """
+  Provision a new WhatsApp group via Maytapi. Admin-only.
+  """
+  @spec create_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def create_wa_group(_, %{input: input}, %{context: %{current_user: user}}) do
+    with {:ok, wa_managed_phone_id} <- parse_id(input[:wa_managed_phone_id]),
+         {:ok, wa_group} <-
+           WAGroups.create_group_via_maytapi(user.organization_id, wa_managed_phone_id, %{
+             name: input[:name],
+             numbers: input[:numbers] || []
+           }) do
+      {:ok, %{wa_group: wa_group}}
+    end
+  end
+
+  @doc """
+  Rename a WhatsApp group via Maytapi. Admin-only.
+  """
+  @spec update_wa_group_subject(
+          Absinthe.Resolution.t(),
+          %{id: integer, wa_managed_phone_id: integer, subject: String.t()},
+          %{context: map()}
+        ) :: {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def update_wa_group_subject(
+        _,
+        %{id: id, wa_managed_phone_id: wa_managed_phone_id, subject: subject},
+        %{context: %{current_user: user}}
+      ) do
+    with {:ok, wa_group} <-
+           Glific.Repo.fetch_by(WAGroup, %{id: id, organization_id: user.organization_id}),
+         {:ok, wa_managed_phone_id} <- parse_id(wa_managed_phone_id),
+         {:ok, updated} <- WAGroups.update_group_subject(wa_group, wa_managed_phone_id, subject) do
+      {:ok, %{wa_group: updated}}
+    end
+  end
+
+  @spec parse_id(integer() | String.t()) :: {:ok, non_neg_integer()} | {:error, String.t()}
+  defp parse_id(id) when is_integer(id), do: {:ok, id}
+
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> {:ok, n}
+      _ -> {:error, "invalid id #{inspect(id)}"}
+    end
+  end
 end
