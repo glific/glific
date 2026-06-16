@@ -20,7 +20,6 @@ defmodule Glific.EraseTest do
     Notifications.Notification,
     Partners.Organization,
     Repo,
-    WhatsappForms,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
@@ -290,90 +289,19 @@ defmodule Glific.EraseTest do
     assert job.args["organization_id"] == organization.id
   end
 
-  test "handles organization deletion with dependent data" do
-    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
-    contact = Fixtures.contact_fixture(%{organization_id: organization.id})
-
-    Fixtures.message_fixture(%{
-      organization_id: organization.id,
-      sender_id: contact.id,
-      receiver_id: contact.id
-    })
-
-    assert {:ok, job} = Erase.delete_organization(organization.id)
-
-    assert :ok = perform_job(Erase, job.args)
-
-    # Organization record preserved with deleted_at set
-    {:ok, deleted_org} =
-      Repo.fetch(Organization, organization.id, skip_organization_id: true, include_deleted: true)
-
-    assert deleted_org.deleted_at != nil
-
-    # All related data should be deleted
-    {:ok, result} =
-      Repo.query("SELECT count(*) FROM messages WHERE organization_id = #{organization.id}")
-
-    [[count]] = result.rows
-    assert count == 0
-
-    {:ok, result} =
-      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = #{organization.id}")
-
-    [[count]] = result.rows
-    assert count == 0
-  end
-
-  test "deletes all org-scoped data while leaving the survivor org intact", %{
+  test "deletes data from every org-scoped table while leaving the survivor org intact", %{
     organization_id: org1_id
   } do
-    # Create the org to delete, with representative data across many tables.
-    # This also covers the circular-FK case: whatsapp_forms.revision_id ↔
-    # whatsapp_form_revisions.whatsapp_form_id.
     org2 = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
-    # Build data for org2. Switch context so Repo.get_current_user() resolves
-    # correctly for APIs that read it internally (e.g. create_whatsapp_form_revision).
-    Repo.put_process_state(org2.id)
-    user2 = Repo.get_current_user()
+    tables = org_scoped_tables()
 
-    contact2 = Fixtures.contact_fixture(%{organization_id: org2.id})
+    # Seed exactly one row per org-scoped table for org2 (dependencies are created
+    # transitively, e.g. inserting "messages" first creates the "contacts" row it needs).
+    Enum.each(tables, &ensure_row(&1, org2.id))
 
-    Fixtures.message_fixture(%{
-      organization_id: org2.id,
-      sender_id: contact2.id,
-      receiver_id: contact2.id
-    })
-
-    # notification_fixture expects at least 2 contacts in the org.
-    Fixtures.contact_fixture(%{organization_id: org2.id})
-
-    Fixtures.group_fixture(%{organization_id: org2.id})
-    Fixtures.notification_fixture(%{organization_id: org2.id})
-    Fixtures.webhook_log_fixture(%{organization_id: org2.id})
-
-    {:ok, form} =
-      WhatsappForms.do_create_whatsapp_form(%{
-        name: "test_form",
-        description: "test",
-        status: "draft",
-        categories: [],
-        organization_id: org2.id,
-        meta_flow_id: "meta_flow_test"
-      })
-
-    {:ok, revision} = WhatsappForms.create_whatsapp_form_revision(form, user2)
-    WhatsappForms.update_revision_id(form.id, revision.id)
-
-    # Reset context to org 1 for the deletion job.
-    Repo.put_process_state(1)
-
-    # Snapshot org1 key table counts before deletion.
-    {:ok, %{rows: [[contacts_before]]}} =
-      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = $1", [org1_id])
-
-    {:ok, %{rows: [[messages_before]]}} =
-      Repo.query("SELECT count(*) FROM messages WHERE organization_id = $1", [org1_id])
+    # Snapshot org1's row counts before deletion, to prove org1 is left untouched.
+    org1_counts_before = count_rows_per_table(tables, org1_id)
 
     # Run the deletion.
     assert {:ok, job} = Erase.delete_organization(org2.id)
@@ -386,38 +314,20 @@ defmodule Glific.EraseTest do
     assert deleted_org2.deleted_at != nil
 
     # Every org-scoped table must have zero rows for org2 after deletion.
-    {:ok, %{rows: table_rows}} =
-      Repo.query("""
-      SELECT DISTINCT table_name
-      FROM information_schema.columns
-      WHERE column_name = 'organization_id'
-        AND table_schema = 'public'
-        AND table_name != 'organizations'
-      ORDER BY table_name
-      """)
+    org2_counts_after = count_rows_per_table(tables, org2.id)
 
-    for [table] <- table_rows do
-      {:ok, %{rows: [[count]]}} =
-        Repo.query(
-          "SELECT count(*) FROM #{table} WHERE organization_id = $1",
-          [org2.id]
-        )
-
+    for {table, count} <- org2_counts_after do
       assert count == 0, "Expected 0 rows in #{table} for org2, found #{count}"
     end
 
-    # org1 data must be completely unaffected.
-    {:ok, %{rows: [[contacts_after]]}} =
-      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = $1", [org1_id])
+    # org1 data must be completely unaffected, in every org-scoped table.
+    org1_counts_after = count_rows_per_table(tables, org1_id)
 
-    {:ok, %{rows: [[messages_after]]}} =
-      Repo.query("SELECT count(*) FROM messages WHERE organization_id = $1", [org1_id])
-
-    assert contacts_after == contacts_before,
-           "Org1 contacts changed after org2 deletion: #{contacts_before} → #{contacts_after}"
-
-    assert messages_after == messages_before,
-           "Org1 messages changed after org2 deletion: #{messages_before} → #{messages_after}"
+    for table <- tables do
+      assert org1_counts_after[table] == org1_counts_before[table],
+             "Org1 row count in #{table} changed after org2 deletion: " <>
+               "#{org1_counts_before[table]} → #{org1_counts_after[table]}"
+    end
   end
 
   test "perform_periodic clears contact histories older than 2 month", attrs do
@@ -675,5 +585,328 @@ defmodule Glific.EraseTest do
       assert Repo.get(Assistant, assistant.id) == nil
       assert Repo.get(AssistantConfigVersion, config_version.id) == nil
     end)
+  end
+
+  # ── Generic org-scoped table seeding helpers ────────────────────────────
+  #
+  # Discovers every table with an organization_id column (mirroring exactly
+  # what delete_organization_data targets) and inserts one minimal valid row
+  # per table for a given org, resolving FK dependencies recursively via raw
+  # catalog introspection. This keeps the test in sync automatically as new
+  # org-scoped tables are added, instead of hand-maintaining a fixture list.
+
+  # Returns every public-schema table that has an organization_id column, i.e.
+  # the exact table set delete_organization_data operates on.
+  @spec org_scoped_tables() :: [String.t()]
+  defp org_scoped_tables do
+    {:ok, %{rows: rows}} =
+      Repo.query("""
+      SELECT DISTINCT table_name
+      FROM information_schema.columns
+      WHERE column_name = 'organization_id'
+        AND table_schema = 'public'
+        AND table_name != 'organizations'
+      ORDER BY table_name
+      """)
+
+    Enum.map(rows, fn [table] -> table end)
+  end
+
+  # Counts rows for the given organization_id in each of the given tables,
+  # returning a %{table_name => count} map. Used to snapshot/compare counts
+  # before and after deletion (for both the deleted org and the survivor org).
+  @spec count_rows_per_table([String.t()], non_neg_integer()) :: %{String.t() => integer()}
+  defp count_rows_per_table(tables, organization_id) do
+    Map.new(tables, fn table ->
+      {:ok, %{rows: [[count]]}} =
+        Repo.query("SELECT count(*) FROM #{table} WHERE organization_id = $1", [
+          organization_id
+        ])
+
+      {table, count}
+    end)
+  end
+
+  # Looks up every foreign-key column on the given table via pg_constraint and
+  # returns a %{column_name => referenced_table} map (referenced_table comes
+  # back schema-qualified, e.g. "global.permissions", when outside public).
+  # Used to figure out which other table must have a row created first before
+  # a given column can be filled in.
+  @spec fk_columns(String.t()) :: %{String.t() => String.t()}
+  defp fk_columns(table) do
+    {:ok, %{rows: rows}} =
+      Repo.query(
+        """
+        SELECT a.attname AS column_name, con.confrelid::regclass::text AS ref_table
+        FROM pg_constraint con
+        CROSS JOIN LATERAL
+          unnest(con.conkey) WITH ORDINALITY AS u(local_attnum, ord)
+        JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = u.local_attnum
+        WHERE con.contype = 'f' AND con.conrelid = to_regclass($1)
+        """,
+        [table]
+      )
+
+    Map.new(rows, fn [column, ref_table] -> {column, ref_table} end)
+  end
+
+  # Returns [column_name, data_type, udt_name] for every column on the given
+  # table that is NOT NULL with no DB-level default — i.e. every column that
+  # an INSERT must supply a value for. Accepts a plain table name or a
+  # schema-qualified one (e.g. "global.permissions").
+  @spec required_columns(String.t()) :: [[String.t()]]
+  defp required_columns(table) do
+    {schema, bare_table} =
+      case String.split(table, ".", parts: 2) do
+        [schema, bare_table] -> {schema, bare_table}
+        [bare_table] -> {"public", bare_table}
+      end
+
+    {:ok, %{rows: rows}} =
+      Repo.query(
+        """
+        SELECT column_name, data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_schema = $1 AND table_name = $2
+          AND is_nullable = 'NO' AND column_default IS NULL
+          AND column_name != 'id'
+        """,
+        [schema, bare_table]
+      )
+
+    rows
+  end
+
+  # Returns the first valid label of a real Postgres enum type (e.g.
+  # whatsapp_forms_status_enum), or nil if udt_name isn't an enum type at all.
+  # Needed for columns declared with a Postgres ENUM rather than plain text,
+  # since any other string would violate the type.
+  @spec enum_label(String.t()) :: String.t() | nil
+  defp enum_label(udt_name) do
+    {:ok, %{rows: rows}} =
+      Repo.query(
+        """
+        SELECT e.enumlabel FROM pg_type t
+        JOIN pg_enum e ON t.oid = e.enumtypid
+        WHERE t.typname = $1
+        ORDER BY e.enumsortorder LIMIT 1
+        """,
+        [udt_name]
+      )
+
+    case rows do
+      [[label]] -> label
+      [] -> nil
+    end
+  end
+
+  # Returns an id to use for an FK pointing at a non-org-scoped (global) table,
+  # e.g. languages or providers. Global lookup tables are usually pre-seeded,
+  # so this normally just grabs an existing row; if one is genuinely empty in
+  # this test DB (e.g. global.permissions), it creates a minimal row instead
+  # of failing. Caches the resolved id per table for the rest of the test.
+  @spec global_lookup_id(String.t()) :: integer()
+  defp global_lookup_id(table) do
+    case Process.get({:global_id_cache, table}) do
+      nil ->
+        id = existing_global_row_id(table) || create_global_row(table)
+        Process.put({:global_id_cache, table}, id)
+        id
+
+      id ->
+        id
+    end
+  end
+
+  # Returns the id of any existing row in a global (non-org-scoped) table, or
+  # nil if the table has no rows at all.
+  @spec existing_global_row_id(String.t()) :: integer() | nil
+  defp existing_global_row_id(table) do
+    {:ok, %{rows: rows}} = Repo.query("SELECT id FROM #{table} ORDER BY id LIMIT 1")
+
+    case rows do
+      [[id]] -> id
+      [] -> nil
+    end
+  end
+
+  # Inserts a minimal valid row into a global (non-org-scoped) table by
+  # filling every required column with a dummy value (recursing into
+  # global_lookup_id for any of its own FK columns), and returns the new id.
+  @spec create_global_row(String.t()) :: integer()
+  defp create_global_row(table) do
+    fk_map = fk_columns(table)
+
+    {columns, values} =
+      table
+      |> required_columns()
+      |> Enum.map(fn [column, data_type, udt_name] ->
+        value =
+          if Map.has_key?(fk_map, column) do
+            global_lookup_id(fk_map[column])
+          else
+            dummy_scalar(column, data_type, udt_name)
+          end
+
+        {column, value}
+      end)
+      |> Enum.unzip()
+
+    placeholders = values |> Enum.with_index(1) |> Enum.map_join(", ", fn {_v, i} -> "$#{i}" end)
+    column_list = Enum.join(columns, ", ")
+
+    {:ok, %{rows: [[id]]}} =
+      Repo.query(
+        "INSERT INTO #{table} (#{column_list}) VALUES (#{placeholders}) RETURNING id",
+        values
+      )
+
+    id
+  end
+
+  # Generates a placeholder value for a required, non-FK column, picked
+  # purely from its Postgres data_type/udt_name (column name is only used as
+  # a fallback to make the value recognizable). Each clause below handles one
+  # data_type family so a new type just needs a new clause, not a bigger
+  # conditional.
+  @spec dummy_scalar(String.t(), String.t(), String.t()) :: term()
+  defp dummy_scalar(_column, "boolean", _udt_name), do: false
+
+  defp dummy_scalar(_column, type, _udt_name) when type in ["integer", "bigint", "smallint"],
+    do: 1
+
+  defp dummy_scalar(_column, type, _udt_name)
+       when type in ["numeric", "double precision", "real"],
+       do: 1
+
+  defp dummy_scalar(_column, "uuid", _udt_name), do: Ecto.UUID.bingenerate()
+  defp dummy_scalar(_column, type, _udt_name) when type in ["jsonb", "json"], do: %{}
+  defp dummy_scalar(_column, "date", _udt_name), do: Date.utc_today()
+
+  defp dummy_scalar(_column, type, _udt_name)
+       when type in ["timestamp without time zone", "timestamp with time zone"] do
+    NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+  end
+
+  defp dummy_scalar(_column, "inet", _udt_name), do: "127.0.0.1"
+  defp dummy_scalar(_column, "ARRAY", _udt_name), do: []
+
+  # "USER-DEFINED" covers real Postgres enum/domain types (e.g. citext); try
+  # to resolve a real enum label first, otherwise fall back to plain text.
+  defp dummy_scalar(column, "USER-DEFINED", udt_name),
+    do: enum_label(udt_name) || "test_#{column}"
+
+  # Fallback for any other type (varchar, text, citext, etc.) — a short,
+  # unique-ish string so it doesn't collide with unique constraints.
+  defp dummy_scalar(column, _data_type, _udt_name) do
+    "test_#{column}_#{String.slice(Ecto.UUID.generate(), 0, 8)}"
+  end
+
+  # Returns the id of the org-scoped row for `table`/`organization_id`,
+  # creating it (and any FK dependencies it needs) on first call. Subsequent
+  # calls for the same table return the cached id instead of inserting again
+  # — this is what lets the dependency recursion in insert_row/2 call back
+  # into this function freely without ever double-inserting a table.
+  @spec ensure_row(String.t(), non_neg_integer()) :: integer()
+  defp ensure_row(table, organization_id) do
+    case Process.get({:row_cache, table}) do
+      nil -> create_row(table, organization_id)
+      id -> id
+    end
+  end
+
+  # Resolves the row to use for table/organization_id: reuses one if it
+  # already exists (e.g. organization_fixture already created a contact or
+  # credential row), otherwise inserts a fresh one.
+  @spec create_row(String.t(), non_neg_integer()) :: integer()
+  defp create_row(table, organization_id) do
+    case existing_row_id(table, organization_id) do
+      nil ->
+        insert_row(table, organization_id)
+
+      id ->
+        Process.put({:row_cache, table}, id)
+        id
+    end
+  end
+
+  # Some org-scoped rows already exist as a side effect of organization_fixture
+  # (e.g. credentials, users, contacts) — reuse them instead of inserting a
+  # conflicting duplicate.
+  @spec existing_row_id(String.t(), non_neg_integer()) :: integer() | nil
+  defp existing_row_id(table, organization_id) do
+    {:ok, %{rows: rows}} =
+      Repo.query("SELECT id FROM #{table} WHERE organization_id = $1 LIMIT 1", [
+        organization_id
+      ])
+
+    case rows do
+      [[id]] -> id
+      [] -> nil
+    end
+  end
+
+  # Inserts one fresh, minimal valid row into `table` for `organization_id`
+  # and returns its new id. Builds the row by walking every NOT-NULL column
+  # (from required_columns/1) and, for each one:
+  #   - "organization_id" -> the org being seeded
+  #   - an FK to "organizations" -> the same org id
+  #   - an FK to another org-scoped table -> ensure_row/2 for that table,
+  #     recursing (and transitively creating) whatever it depends on
+  #   - an FK to a non-org-scoped table -> global_lookup_id/1
+  #   - anything else -> dummy_scalar/3 picks a type-appropriate placeholder
+  # Tracks {:in_progress, table} for the duration of the call so that a true
+  # circular NOT NULL FK (which the production delete_organization_data
+  # function would also be unable to resolve) raises a clear error instead of
+  # recursing forever.
+  @spec insert_row(String.t(), non_neg_integer()) :: integer()
+  defp insert_row(table, organization_id) do
+    if Process.get({:in_progress, table}) do
+      raise "Unbreakable FK cycle detected involving #{table} " <>
+              "(NOT NULL FK back to a table still being created)"
+    end
+
+    Process.put({:in_progress, table}, true)
+    org_scoped = org_scoped_tables()
+    fk_map = fk_columns(table)
+
+    {columns, values} =
+      table
+      |> required_columns()
+      |> Enum.map(fn [column, data_type, udt_name] ->
+        value =
+          cond do
+            column == "organization_id" ->
+              organization_id
+
+            Map.has_key?(fk_map, column) ->
+              ref_table = fk_map[column]
+
+              cond do
+                ref_table == "organizations" -> organization_id
+                ref_table in org_scoped -> ensure_row(ref_table, organization_id)
+                true -> global_lookup_id(ref_table)
+              end
+
+            true ->
+              dummy_scalar(column, data_type, udt_name)
+          end
+
+        {column, value}
+      end)
+      |> Enum.unzip()
+
+    placeholders = values |> Enum.with_index(1) |> Enum.map_join(", ", fn {_v, i} -> "$#{i}" end)
+    column_list = Enum.join(columns, ", ")
+
+    {:ok, %{rows: [[id]]}} =
+      Repo.query(
+        "INSERT INTO #{table} (#{column_list}) VALUES (#{placeholders}) RETURNING id",
+        values
+      )
+
+    Process.put({:row_cache, table}, id)
+    Process.delete({:in_progress, table})
+    id
   end
 end
