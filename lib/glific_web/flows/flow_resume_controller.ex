@@ -69,8 +69,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
   @spec resume_validated_flow(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume_validated_flow(organization_id, result, response, contact) do
-    response_key = response["result_name"] || "response"
-
     log_message = %{
       success: result["success"],
       message: response["message"] || result["error"],
@@ -81,23 +79,6 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], log_message)
 
-    message =
-      case {result["success"], response["webhook_log_id"]} do
-        {true, nil} ->
-          Messages.create_temp_message(organization_id, "No Response")
-
-        {true, _} ->
-          Messages.create_temp_message(organization_id, "Success")
-
-        {false, _} ->
-          Messages.create_temp_message(organization_id, "Failure")
-
-        _ ->
-          # Sending nil so that it remains compatible with other webhook responses
-          # (besides Kaapi) and falls back to the default behavior.
-          nil
-      end
-
     track_callback_outcome(result, response)
 
     # Resolve the module for this webhook (if registered) and call handle_resume/2
@@ -105,21 +86,36 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # passed via ctx. Standard/unregistered nodes fall back to the parsed `response`.
     ctx = %{organization_id: organization_id, success: result["success"]}
     shaped_response = shape_resume_response(response, ctx)
+    response_key = response["result_name"] || "response"
 
-    case FlowContext.resume_contact_flow(
-           contact,
-           response["flow_id"],
-           %{response_key => shaped_response},
-           message
-         ) do
-      {:ok, _context, _messages} ->
-        :ok
+    FlowContext.resume_contact_flow(
+      contact,
+      response["flow_id"],
+      %{response_key => shaped_response},
+      resume_message(result, response, organization_id)
+    )
+    |> log_resume_error(response)
+  end
 
-      {:error, reason} ->
-        Logger.warning(
-          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{inspect(reason)}"
-        )
+  # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
+  # webhook responses (falls back to the default behavior).
+  @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
+  defp resume_message(result, response, organization_id) do
+    case {result["success"], response["webhook_log_id"]} do
+      {true, nil} -> Messages.create_temp_message(organization_id, "No Response")
+      {true, _} -> Messages.create_temp_message(organization_id, "Success")
+      {false, _} -> Messages.create_temp_message(organization_id, "Failure")
+      _ -> nil
     end
+  end
+
+  @spec log_resume_error(tuple(), map()) :: :ok
+  defp log_resume_error({:ok, _context, _messages}, _response), do: :ok
+
+  defp log_resume_error({:error, reason}, response) do
+    Logger.warning(
+      "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{inspect(reason)}"
+    )
 
     :ok
   end
