@@ -2,7 +2,6 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Groups.WAGroups
   alias Glific.Messages
   use Glific.DataCase
-  import Mock
 
   alias Glific.{
     Contacts.Contact,
@@ -26,8 +25,6 @@ defmodule Glific.Flows.ActionTest do
     Node,
     WebhookLog
   }
-
-  alias Glific.Flows.Webhooks.Dispatcher, as: WebhooksDispatcher
 
   setup do
     organization = SeedsDev.seed_organizations()
@@ -1527,70 +1524,6 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
-  end
-
-  test "execute voice-filesearch-gpt action routes to unified voice webhook",
-       attrs do
-    Partners.organization(attrs.organization_id)
-
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
-
-    action = %Action{
-      type: "call_webhook",
-      method: "FUNCTION",
-      url: "voice-filesearch-gpt",
-      headers: %{"Accept" => "application/json"},
-      body:
-        Jason.encode!(%{
-          "speech" => "https://example.com/audio.ogg",
-          "assistant_id" => "asst_123"
-        }),
-      result_name: "llm",
-      node_uuid: "Test UUID"
-    }
-
-    with_mock WebhooksDispatcher,
-      dispatch_async: fn _url, _action, _context -> {:wait, context, []} end do
-      result = Action.execute(action, context, [])
-      assert {:wait, ^context, []} = result
-      assert called(WebhooksDispatcher.dispatch_async("voice-filesearch-gpt", action, context))
-    end
-  end
-
-  test "execute filesearch-gpt action routes to unified filesearch webhook",
-       attrs do
-    Partners.organization(attrs.organization_id)
-
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
-
-    action = %Action{
-      type: "call_webhook",
-      method: "FUNCTION",
-      url: "filesearch-gpt",
-      headers: %{"Accept" => "application/json"},
-      body:
-        Jason.encode!(%{
-          "question" => "What is Glific?",
-          "assistant_id" => "asst_123"
-        }),
-      result_name: "filesearch",
-      node_uuid: "Test UUID"
-    }
-
-    with_mock WebhooksDispatcher,
-      dispatch_async: fn _url, _action, _context -> {:wait, context, []} end do
-      result = Action.execute(action, context, [])
-      assert {:wait, ^context, []} = result
-      assert called(WebhooksDispatcher.dispatch_async("filesearch-gpt", action, context))
-    end
   end
 
   test "execute a wa group unsupported action",

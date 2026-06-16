@@ -74,6 +74,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
   # Build an action for the filesearch-gpt webhook
   defp build_filesearch_action(assistant_display_id) do
     %Action{
+      type: "call_webhook",
       method: "FUNCTION",
       url: "filesearch-gpt",
       headers: %{"Content-Type" => "application/json"},
@@ -117,9 +118,10 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
 
       action = build_filesearch_action(assistant.assistant_display_id)
 
-      Webhook.execute_unified_filesearch(action, context)
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # The webhook log is created inside execute_unified_filesearch — fetch the latest one
+      # The webhook log is created in do_oban — fetch the latest one
       webhook_logs = WebhookLog.list_webhook_logs(%{filter: %{organization_id: org_id}})
       webhook_log = List.first(webhook_logs)
       assert webhook_log != nil
@@ -173,9 +175,10 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
 
       action = build_filesearch_action(assistant.assistant_display_id)
 
-      Webhook.execute_unified_filesearch(action, context)
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # Fetch the webhook log created inside execute_unified_filesearch
+      # Fetch the webhook log created in do_oban
       webhook_logs = WebhookLog.list_webhook_logs(%{filter: %{organization_id: org_id}})
       webhook_log = List.first(webhook_logs)
       assert webhook_log != nil
@@ -246,16 +249,11 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
 
       Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # NOTE: Webhook.execute routes filesearch-gpt through the CommonWebhook catch-all handler,
-      # not execute_unified_filesearch. This is a dead code path in production — the real path
-      # goes through execute_unified_filesearch directly.
-      # The catch-all result is a non-nil map with a non-nil result_name ("filesearch"),
-      # so handle/3 routes to the SUCCESS branch. The failure branch IS exercised by
-      # the failure callback test above.
-      # The webhook log records the response (no error field set, but response_json present).
+      # The worker dispatches FilesearchGpt.call, the Kaapi request times out, and the
+      # call returns %{success: false}, so the webhook log records the failure.
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
-      assert log.response_json != nil
+      assert log.error != nil
     end
   end
 end

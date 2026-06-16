@@ -11,7 +11,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Action,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhook,
     Flows.WebhookLog,
     Partners,
     Repo,
@@ -124,6 +123,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
   defp build_action(contact_id) do
     %Action{
+      type: "call_webhook",
       method: "FUNCTION",
       url: "voice-filesearch-gpt",
       headers: %{"Content-Type" => "application/json"},
@@ -190,10 +190,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert message.body == "failure"
     end
 
-    # Timeout: the outbound Kaapi LLM call times out during webhook execution.
-    # STT (Bhasini/Gemini) succeeds but the LLM call itself returns {:error, :timeout}.
-    # execute_unified_voice_filesearch should return {:ok, ...} (not {:wait, ...})
-    # and the webhook log should record the error.
+    # Timeout: the outbound Kaapi LLM call times out in the worker.
+    # STT (Bhasini/Gemini) succeeds but the LLM call returns {:error, :timeout}, so
+    # VoiceFilesearchGpt.call returns %{success: false} and the webhook log records the error.
     test "timeout - Bhasini STT succeeds but Kaapi LLM times out, webhook log records error", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn
     } do
@@ -248,12 +247,10 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           end
       end)
 
-      # When Kaapi LLM times out, execute_unified_voice_filesearch returns
-      # {:ok, context, [failure_message]} (failure branch, NOT await)
-      result = Webhook.execute_unified_voice_filesearch(action, context)
-      assert match?({:ok, _, _}, result)
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # The webhook log created inside unified_llm_and_wait should record the timeout error
+      # The webhook log created in do_oban should record the timeout error
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.error != nil

@@ -25,18 +25,26 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @impl true
   @spec call(map(), Behaviour.ctx()) :: map()
   def call(fields, _ctx) do
-    case KaapiSupport.parse_flow_fields(fields) do
-      {:ok, {organization_id, flow_id, contact_id}} ->
-        run_voice_pipeline(fields, organization_id, flow_id, contact_id)
-
-      {:error, reason} ->
-        %{success: false, reason: reason}
+    # Check Kaapi creds before running STT — no point transcribing if the LLM call can't
+    # be made. The Bhasini STT step itself uses Gemini/Bhasini, not the Kaapi API key.
+    with {:ok, {organization_id, flow_id, contact_id}} <- KaapiSupport.parse_flow_fields(fields),
+         {:ok, %{"api_key" => api_key}} when is_binary(api_key) <-
+           Kaapi.fetch_kaapi_creds(organization_id) do
+      run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key)
+    else
+      {:error, reason} when is_binary(reason) -> %{success: false, reason: reason}
+      _ -> %{success: false, reason: "Kaapi is not active"}
     end
   end
 
-  @spec run_voice_pipeline(map(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
-          map()
-  defp run_voice_pipeline(fields, organization_id, flow_id, contact_id) do
+  @spec run_voice_pipeline(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) :: map()
+  defp run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key) do
     stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
@@ -46,47 +54,52 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       %{success: true, asr_response_text: transcribed_text} ->
         fields
         |> Map.put("question", transcribed_text)
-        |> dispatch_llm(organization_id, flow_id, contact_id, voice_start_timestamp)
+        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, voice_start_timestamp)
 
       %{success: false} = stt_failure ->
         %{success: false, reason: stt_failure[:asr_response_text] || "Speech to text failed"}
 
-      {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
+      # The public speech_to_text_with_bhasini webhook normalizes failures to a bare
+      # string (the FUNCTION-webhook Failure contract), so handle that shape too.
+      reason when is_binary(reason) ->
+        %{success: false, reason: reason}
+
+      other ->
+        %{success: false, reason: inspect(other)}
     end
   end
 
-  @spec dispatch_llm(map(), non_neg_integer(), non_neg_integer(), non_neg_integer(), integer()) ::
-          map()
-  defp dispatch_llm(fields, organization_id, flow_id, contact_id, voice_start_timestamp) do
-    case Kaapi.fetch_kaapi_creds(organization_id) do
-      {:ok, %{"api_key" => api_key}} when is_binary(api_key) ->
-        {callback_url, request_metadata} =
-          KaapiSupport.build_flow_resume_metadata(
-            organization_id,
-            flow_id,
-            contact_id,
-            fields,
-            "/kaapi/voice_flow_resume",
-            voice_start_timestamp
-          )
+  @spec dispatch_llm(
+          map(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          integer()
+        ) :: map()
+  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, voice_start_timestamp) do
+    {callback_url, request_metadata} =
+      KaapiSupport.build_flow_resume_metadata(
+        organization_id,
+        flow_id,
+        contact_id,
+        fields,
+        "/kaapi/voice_flow_resume",
+        voice_start_timestamp
+      )
 
-        request_metadata =
-          Map.merge(request_metadata, %{
-            call_type: "voice_llm",
-            webhook_name: name(),
-            voice_post_process: %{
-              source_language: fields["source_language"],
-              target_language: fields["target_language"],
-              speech_engine: fields["speech_engine"] || ""
-            }
-          })
+    request_metadata =
+      Map.merge(request_metadata, %{
+        call_type: "voice_llm",
+        webhook_name: name(),
+        voice_post_process: %{
+          source_language: fields["source_language"],
+          target_language: fields["target_language"],
+          speech_engine: fields["speech_engine"] || ""
+        }
+      })
 
-        KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
-
-      _ ->
-        %{success: false, reason: "Kaapi is not active"}
-    end
+    KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
   end
 
   @doc """

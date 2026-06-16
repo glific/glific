@@ -9,6 +9,10 @@ defmodule Glific.Flows.CommonWebhookTest do
     Clients.CommonWebhook,
     Fixtures,
     Flows.Webhook.SystemError,
+    Flows.Webhooks.FilesearchGpt,
+    Flows.Webhooks.SpeechToText,
+    Flows.Webhooks.TextToSpeech,
+    Flows.Webhooks.VoiceFilesearchGpt,
     Messages,
     Partners,
     Partners.Provider,
@@ -1043,7 +1047,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == true
     end
 
@@ -1079,7 +1083,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == true
     end
 
@@ -1098,7 +1102,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("speech_to_text", Map.put(fields, "output_language", "english"), [])
+        SpeechToText.call(Map.put(fields, "output_language", "english"), %{})
 
       assert result.success == true
     end
@@ -1117,7 +1121,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == false
       assert result.error_type == "kaapi_logical_failure"
       assert result.reason == "boom"
@@ -1129,7 +1133,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == false
     end
 
@@ -1138,7 +1142,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     } do
       fields = Map.put(fields, "speech", "")
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result == %{success: false, reason: "Media URL is invalid"}
     end
   end
@@ -1165,7 +1169,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
       end)
 
-      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      result = TextToSpeech.call(fields, %{})
       assert result.success == true
     end
 
@@ -1196,7 +1200,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
-      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      result = TextToSpeech.call(fields, %{})
       assert result.success == true
     end
   end
@@ -1463,8 +1467,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] == "assistant_id is required"
@@ -1481,8 +1484,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Assistant not found"
@@ -1531,8 +1533,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Kaapi version number not found"
@@ -1579,8 +1580,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Assistant is still being set up"
@@ -1624,7 +1624,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
       end)
 
-      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      result = FilesearchGpt.call(fields, %{})
       assert result.success == false
     end
 
@@ -1633,7 +1633,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      result = FilesearchGpt.call(fields, %{})
       assert result.success == false
     end
 
@@ -1645,7 +1645,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
+      result = FilesearchGpt.call(fields, %{})
       assert result.success == false
       assert result.error_type == "kaapi_logical_failure"
       assert result.reason == "boom"
@@ -1701,11 +1701,21 @@ defmodule Glific.Flows.CommonWebhookTest do
     {assistant, config_version}
   end
 
-  defp unified_llm_headers do
-    [{"X-API-KEY", "test-api-key"}]
-  end
-
   describe "unified-voice-llm-call webhook" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
+
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      :ok
+    end
+
     test "does STT then calls unified LLM with voice callback path" do
       organization_id = 1
       assistant_display_id = "asst_voice_test"
@@ -1767,7 +1777,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result.success == true
 
@@ -1835,7 +1845,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result == %{success: false, reason: "File download failed"}
     end
@@ -1899,7 +1909,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result.success == true
 
@@ -1935,7 +1945,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result =
-            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+            VoiceFilesearchGpt.call(fields, %{})
 
           assert result == %{success: false, reason: "Media URL is invalid"}
         end)
@@ -1994,7 +2004,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           end
       end)
 
-      result = CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+      result = VoiceFilesearchGpt.call(fields, %{})
 
       assert result.success == false
       assert result.http_status == 503

@@ -2,10 +2,9 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
   @moduledoc """
   Contract tests for the four async webhook implementation modules.
 
-  Verifies the behaviour surface that is pure (no Kaapi/HTTP): the node URL `name/0`
-  vs the observability `webhook_name/0`, `mode/0`, and `handle_resume/2`. The call/2
-  dispatch path is covered end-to-end in the per-webhook callback tests and in
-  async_support_test.exs.
+  Verifies the behaviour surface that is pure (no Kaapi/HTTP): `name/0`, `webhook_name/0`
+  (which now equals `name/0` — the node URL), `mode/0`, and `handle_resume/2`. The worker-
+  phase `call/2` dispatch path is covered in the per-webhook callback tests.
   """
   use Glific.DataCase, async: false
 
@@ -14,35 +13,35 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
   alias Glific.Clients.CommonWebhook
 
   alias Glific.Flows.Webhooks.{
+    FilesearchGpt,
     SpeechToText,
     TextToSpeech,
-    UnifiedLlm,
-    UnifiedVoiceLlm
+    VoiceFilesearchGpt
   }
 
   describe "name/0, webhook_name/0, mode/0" do
-    test "speech_to_text uses the same string for node URL and observability name" do
+    test "speech_to_text" do
       assert SpeechToText.name() == "speech_to_text"
       assert SpeechToText.webhook_name() == "speech_to_text"
       assert SpeechToText.mode() == :async
     end
 
-    test "text_to_speech uses the same string for node URL and observability name" do
+    test "text_to_speech" do
       assert TextToSpeech.name() == "text_to_speech"
       assert TextToSpeech.webhook_name() == "text_to_speech"
       assert TextToSpeech.mode() == :async
     end
 
-    test "unified_llm node URL differs from its observability name" do
-      assert UnifiedLlm.name() == "filesearch-gpt"
-      assert UnifiedLlm.webhook_name() == "unified-llm-call"
-      assert UnifiedLlm.mode() == :async
+    test "filesearch_gpt — webhook_name equals the node URL" do
+      assert FilesearchGpt.name() == "filesearch-gpt"
+      assert FilesearchGpt.webhook_name() == "filesearch-gpt"
+      assert FilesearchGpt.mode() == :async
     end
 
-    test "unified_voice_llm node URL differs from its observability name" do
-      assert UnifiedVoiceLlm.name() == "voice-filesearch-gpt"
-      assert UnifiedVoiceLlm.webhook_name() == "unified-voice-llm-call"
-      assert UnifiedVoiceLlm.mode() == :async
+    test "voice_filesearch_gpt — webhook_name equals the node URL" do
+      assert VoiceFilesearchGpt.name() == "voice-filesearch-gpt"
+      assert VoiceFilesearchGpt.webhook_name() == "voice-filesearch-gpt"
+      assert VoiceFilesearchGpt.mode() == :async
     end
   end
 
@@ -57,18 +56,18 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
       assert {:ok, ^response} = TextToSpeech.handle_resume(response, %{organization_id: 1})
     end
 
-    test "unified_llm returns the parsed response unchanged" do
+    test "filesearch_gpt returns the parsed response unchanged" do
       response = %{"message" => "an answer"}
-      assert {:ok, ^response} = UnifiedLlm.handle_resume(response, %{organization_id: 1})
+      assert {:ok, ^response} = FilesearchGpt.handle_resume(response, %{organization_id: 1})
     end
 
-    test "unified_voice_llm post-processes the response via voice_post_process/3" do
+    test "voice_filesearch_gpt post-processes the response via voice_post_process/3" do
       response = %{"message" => "an answer"}
 
       with_mock CommonWebhook, [:passthrough],
         voice_post_process: fn 1, true, ^response -> Map.put(response, "processed", true) end do
         assert {:ok, %{"processed" => true}} =
-                 UnifiedVoiceLlm.handle_resume(response, %{organization_id: 1, success: true})
+                 VoiceFilesearchGpt.handle_resume(response, %{organization_id: 1, success: true})
 
         assert_called(CommonWebhook.voice_post_process(1, true, response))
       end

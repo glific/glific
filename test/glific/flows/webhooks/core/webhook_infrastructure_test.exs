@@ -37,17 +37,6 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     def wait_time_default, do: 120
   end
 
-  # Async stub whose observability webhook_name/0 differs from its node-URL name/0,
-  # mirroring UnifiedLlm ("filesearch-gpt" / "unified-llm-call"). Used to assert
-  # around_async/3 tags with webhook_name/0, not name/0.
-  defmodule StubAsyncObservability do
-    use Glific.Flows.Webhooks.Async, name: "stub_node_url"
-    @impl true
-    def call(_fields, _ctx), do: {:wait, :ctx, []}
-    @impl true
-    def webhook_name, do: "stub-observability-name"
-  end
-
   # --- Registry ---------------------------------------------------------------
 
   describe "Registry" do
@@ -75,9 +64,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert "geolocation" in names
     end
 
-    test "lookup_by_webhook_name/1 resolves the observability name to its module" do
-      assert Registry.lookup_by_webhook_name("unified-llm-call") ==
-               Glific.Flows.Webhooks.UnifiedLlm
+    test "lookup_by_webhook_name/1 resolves the webhook name to its module" do
+      assert Registry.lookup_by_webhook_name("filesearch-gpt") ==
+               Glific.Flows.Webhooks.FilesearchGpt
 
       assert Registry.lookup_by_webhook_name("speech_to_text") ==
                Glific.Flows.Webhooks.SpeechToText
@@ -200,91 +189,56 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # --- Instrumentation.around_async/3 -----------------------------------------
+  # --- Instrumentation.around/3 (async webhooks) ------------------------------
+  # Async webhooks defer latency + success to callback time, so a successful ack
+  # records nothing; only a dispatch failure (which never reaches the callback) is
+  # recorded here.
 
-  describe "Instrumentation.around_async/3" do
-    test "{:wait, ...} emits latency but does not report or count a failure" do
+  describe "Instrumentation.around/3 — async mode" do
+    test "a successful ack records nothing (deferred to callback)" do
       result =
         with_mocks([
           {Appsignal, [:passthrough],
            [
-             send_error: fn _ex, _stack, _conf ->
-               flunk("send_error should not be called when the flow parks")
-             end,
-             add_distribution_value: fn _name, _val, _tags -> :ok end
+             send_error: fn _ex, _stack, _conf -> flunk("should not report on async ack") end,
+             add_distribution_value: fn _name, _val, _tags ->
+               flunk("should not emit latency on async ack")
+             end
            ]},
           {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]}
         ]) do
-          Instrumentation.around_async(StubAsyncWebhook, %{organization_id: 1}, fn ->
-            {:wait, :ctx, []}
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
+            %{success: true}
           end)
         end
 
-      assert result == {:wait, :ctx, []}
+      assert result == %{success: true}
     end
 
-    test "{:ok, ...} immediate failure reports SystemError and returns the tuple unchanged" do
+    test "a dispatch failure reports SystemError" do
       {exception, tags} =
         capture_appsignal(fn ->
-          result =
-            Instrumentation.around_async(StubAsyncWebhook, %{organization_id: 7}, fn ->
-              {:ok, :ctx, [:failure_msg]}
-            end)
-
-          assert result == {:ok, :ctx, [:failure_msg]}
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
+            %{success: false, reason: "boom"}
+          end)
         end)
 
       assert %Errors.SystemError{} = exception
       assert exception.message =~ "stub_async_infra"
-      assert tags.webhook_name == "stub_async_infra"
       assert tags.organization_id == 7
     end
 
-    test "reports SystemError on exception and reraises" do
+    test "an exception reports SystemError and reraises" do
       {exception, _tags} =
         capture_appsignal(fn ->
           assert_raise RuntimeError, "async boom", fn ->
-            Instrumentation.around_async(StubAsyncWebhook, %{organization_id: 1}, fn ->
+            Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
               raise RuntimeError, "async boom"
             end)
           end
         end)
 
       assert %Errors.SystemError{} = exception
-    end
-
-    test "tags use webhook_name/0 (observability name), not name/0" do
-      {_exception, tags} =
-        capture_appsignal(fn ->
-          Instrumentation.around_async(StubAsyncObservability, %{organization_id: 1}, fn ->
-            {:ok, :ctx, [:failure_msg]}
-          end)
-        end)
-
-      assert tags.webhook_name == "stub-observability-name"
-    end
-  end
-
-  # --- Instrumentation.report_async_failure/2 ---------------------------------
-
-  describe "Instrumentation.report_async_failure/2" do
-    test "reports SystemError with webhook_name folded into the tags" do
-      {exception, tags} =
-        capture_appsignal(fn ->
-          Instrumentation.report_async_failure("speech_to_text", %{
-            organization_id: 3,
-            flow_id: 1,
-            contact_id: 2,
-            webhook_log_id: 5,
-            reason: "Kaapi request failed"
-          })
-        end)
-
-      assert %Errors.SystemError{} = exception
-      assert exception.message =~ "speech_to_text"
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.organization_id == 3
-      assert tags.reason == "Kaapi request failed"
     end
   end
 
