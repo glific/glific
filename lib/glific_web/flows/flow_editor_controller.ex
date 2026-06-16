@@ -583,14 +583,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
-  @spec copy_node_enabled(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def copy_node_enabled(conn, _) do
-    organization_id = conn.assigns[:organization_id]
-    organization = Partners.organization(organization_id)
-    json(conn, %{is_enabled: organization.is_copy_node_enabled})
-  end
-
-  @doc false
   @spec flow_attachment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flow_attachment(conn, %{"media" => media, "extension" => extension} = _params) do
     organization_id = conn.assigns[:organization_id]

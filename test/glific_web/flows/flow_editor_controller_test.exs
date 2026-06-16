@@ -605,48 +605,5 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert Glific.Repo.get!(Flows.FlowRevision, revision_id) != nil
     end
 
-    test "copy_node_enabled returns false when flag is disabled", %{
-      conn: conn,
-      access_token: token
-    } do
-      organization_id = conn.assigns[:organization_id]
-
-      FunWithFlags.disable(:is_copy_node_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
-      Glific.Partners.fill_cache(Glific.Partners.organization(organization_id))
-
-      conn =
-        get_auth_token(conn, token)
-        |> get("/flow-editor/copy-node-enabled", %{})
-
-      assert json_response(conn, 200)["is_enabled"] == false
-    end
-
-    test "copy_node_enabled returns true when flag is enabled", %{
-      conn: conn,
-      access_token: token
-    } do
-      organization_id = conn.assigns[:organization_id]
-
-      FunWithFlags.enable(:is_copy_node_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
-      Glific.Partners.fill_cache(Glific.Partners.organization(organization_id))
-
-      conn =
-        get_auth_token(conn, token)
-        |> get("/flow-editor/copy-node-enabled", %{})
-
-      assert json_response(conn, 200)["is_enabled"] == true
-
-      FunWithFlags.disable(:is_copy_node_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
-      Glific.Partners.fill_cache(Glific.Partners.organization(organization_id))
-    end
   end
 end

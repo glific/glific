@@ -193,8 +193,6 @@ defmodule GlificWeb.Router do
 
     get("/attachments-enabled", FlowEditorController, :attachments_enabled)
 
-    get("/copy-node-enabled", FlowEditorController, :copy_node_enabled)
-
     post("/flow-attachment", FlowEditorController, :flow_attachment)
 
     get("/sheets", FlowEditorController, :sheets)

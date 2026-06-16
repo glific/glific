@@ -32,6 +32,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:whatsapp_forms_enabled, :boolean)
     field(:ai_evaluations_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
+    field(:copy_node_enabled, :boolean)
   end
 
   object :organization_export_result do
