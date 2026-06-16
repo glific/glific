@@ -21,7 +21,6 @@ defmodule Glific.EraseTest do
     Partners.Organization,
     Repo,
     WhatsappForms,
-    WhatsappForms.WhatsappForm,
     WhatsappForms.WhatsappFormRevision,
     WhatsappFormsRevisions
   }
@@ -325,15 +324,33 @@ defmodule Glific.EraseTest do
     assert count == 0
   end
 
-  test "deletes organization data with circular FK structures (whatsapp_forms/revisions)" do
-    organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
+  test "deletes all org-scoped data while leaving the survivor org intact", %{
+    organization_id: org1_id
+  } do
+    # Create the org to delete, with representative data across many tables.
+    # This also covers the circular-FK case: whatsapp_forms.revision_id ↔
+    # whatsapp_form_revisions.whatsapp_form_id.
+    org2 = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
-    # Temporarily switch org context to create whatsapp_form data for the target org.
-    # whatsapp_forms/whatsapp_form_revisions have a circular FK (form.revision_id ↔
-    # revision.whatsapp_form_id). This was the scenario that required session_replication_role
-    # superuser privilege in the old implementation.
-    Repo.put_process_state(organization.id)
-    user = Repo.get_current_user()
+    # Build data for org2. Switch context so Repo.get_current_user() resolves
+    # correctly for APIs that read it internally (e.g. create_whatsapp_form_revision).
+    Repo.put_process_state(org2.id)
+    user2 = Repo.get_current_user()
+
+    contact2 = Fixtures.contact_fixture(%{organization_id: org2.id})
+
+    Fixtures.message_fixture(%{
+      organization_id: org2.id,
+      sender_id: contact2.id,
+      receiver_id: contact2.id
+    })
+
+    # notification_fixture expects at least 2 contacts in the org.
+    Fixtures.contact_fixture(%{organization_id: org2.id})
+
+    Fixtures.group_fixture(%{organization_id: org2.id})
+    Fixtures.notification_fixture(%{organization_id: org2.id})
+    Fixtures.webhook_log_fixture(%{organization_id: org2.id})
 
     {:ok, form} =
       WhatsappForms.do_create_whatsapp_form(%{
@@ -341,21 +358,66 @@ defmodule Glific.EraseTest do
         description: "test",
         status: "draft",
         categories: [],
-        organization_id: organization.id,
+        organization_id: org2.id,
         meta_flow_id: "meta_flow_test"
       })
 
-    {:ok, revision} = WhatsappForms.create_whatsapp_form_revision(form, user)
+    {:ok, revision} = WhatsappForms.create_whatsapp_form_revision(form, user2)
     WhatsappForms.update_revision_id(form.id, revision.id)
 
-    # Reset org context to org 1 for the deletion job.
+    # Reset context to org 1 for the deletion job.
     Repo.put_process_state(1)
 
-    assert {:ok, job} = Erase.delete_organization(organization.id)
+    # Snapshot org1 key table counts before deletion.
+    {:ok, %{rows: [[contacts_before]]}} =
+      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = $1", [org1_id])
+
+    {:ok, %{rows: [[messages_before]]}} =
+      Repo.query("SELECT count(*) FROM messages WHERE organization_id = $1", [org1_id])
+
+    # Run the deletion.
+    assert {:ok, job} = Erase.delete_organization(org2.id)
     assert :ok = perform_job(Erase, job.args)
 
-    assert Repo.get(WhatsappForm, form.id, skip_organization_id: true) == nil
-    assert Repo.get(WhatsappFormRevision, revision.id, skip_organization_id: true) == nil
+    # org2 row is preserved (soft-delete marker), not hard-deleted.
+    {:ok, deleted_org2} =
+      Repo.fetch(Organization, org2.id, skip_organization_id: true, include_deleted: true)
+
+    assert deleted_org2.deleted_at != nil
+
+    # Every org-scoped table must have zero rows for org2 after deletion.
+    {:ok, %{rows: table_rows}} =
+      Repo.query("""
+      SELECT DISTINCT table_name
+      FROM information_schema.columns
+      WHERE column_name = 'organization_id'
+        AND table_schema = 'public'
+        AND table_name != 'organizations'
+      ORDER BY table_name
+      """)
+
+    for [table] <- table_rows do
+      {:ok, %{rows: [[count]]}} =
+        Repo.query(
+          "SELECT count(*) FROM #{table} WHERE organization_id = $1",
+          [org2.id]
+        )
+
+      assert count == 0, "Expected 0 rows in #{table} for org2, found #{count}"
+    end
+
+    # org1 data must be completely unaffected.
+    {:ok, %{rows: [[contacts_after]]}} =
+      Repo.query("SELECT count(*) FROM contacts WHERE organization_id = $1", [org1_id])
+
+    {:ok, %{rows: [[messages_after]]}} =
+      Repo.query("SELECT count(*) FROM messages WHERE organization_id = $1", [org1_id])
+
+    assert contacts_after == contacts_before,
+           "Org1 contacts changed after org2 deletion: #{contacts_before} → #{contacts_after}"
+
+    assert messages_after == messages_before,
+           "Org1 messages changed after org2 deletion: #{messages_before} → #{messages_after}"
   end
 
   test "perform_periodic clears contact histories older than 2 month", attrs do
