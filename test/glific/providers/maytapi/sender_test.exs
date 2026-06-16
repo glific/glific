@@ -103,22 +103,21 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id
     end
 
-    test "relaxed failover: when no Maytapi-active member exists, the oldest group member (including the unhealthy primary) is used",
+    test "no Maytapi-active member but a backup exists: backup is promoted (not the stale primary)",
          ctx do
+      # Both phones marked non-active by Maytapi cache. The primary
+      # (first_phone) is older but stays excluded — the backup
+      # (second_phone) wins on the any-status backup pass.
       ctx.first_phone |> WAManagedPhone.changeset(%{status: "loading"}) |> Repo.update!()
       ctx.second_phone |> WAManagedPhone.changeset(%{status: "loading"}) |> Repo.update!()
 
       assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
 
-      # first_phone is the older member (inserted by maybe_create_group during
-      # setup, before second_phone's explicit fixture). Relaxed pick orders by
-      # membership inserted_at ASC, so it returns first_phone — which is the
-      # current primary. promote/2 is idempotent in this case.
-      assert phone.id == ctx.first_phone.id
-      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.first_phone.id
+      assert phone.id == ctx.second_phone.id
+      assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id
 
-      # Warning notification fired; NO critical.
-      assert warning_notification_exists?(ctx, "no backup is available")
+      # Real failover happened — backup-switched message, NO critical.
+      assert warning_notification_exists?(ctx, "switched to phone #{ctx.second_phone.phone}")
       refute critical_notification_exists?(ctx, "No active managed phones")
     end
 

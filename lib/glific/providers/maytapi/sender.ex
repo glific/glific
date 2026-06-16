@@ -96,11 +96,15 @@ defmodule Glific.Providers.Maytapi.Sender do
     end
   end
 
-  # First pass prefers a member whose Maytapi status is "active" and excludes
-  # the failed primary (we just rejected it). Second pass drops the status
-  # filter so a single-member group with an unhealthy primary can still
-  # promote itself on a stale-cache failover — `candidate.status` then tells
-  # us downstream that the pick is a fallback.
+  # Three passes, each keeping the failed primary excluded until the last
+  # so a stale-cache primary isn't re-picked when ANY backup exists:
+  #   1. Active backup — `wa_managed_phones.status = "active"`.
+  #   2. Any-status backup — primary still excluded, so the next-oldest
+  #      backup wins even if its cached status says it isn't active.
+  #   3. Primary itself — only reached when the group has no backup; this
+  #      is the single-member-group / "promote-anyway" path. The retry hook
+  #      passes the failed phone in `exclude`, so it can't be re-picked here.
+  # Downstream uses `candidate.status` to tell whether the pick was a fallback.
   @spec pick_failover_candidate(
           non_neg_integer(),
           WAManagedPhone.t() | nil,
@@ -110,6 +114,7 @@ defmodule Glific.Providers.Maytapi.Sender do
     with_primary_excluded = if primary, do: Enum.uniq([primary.id | exclude]), else: exclude
 
     WAGroups.next_active_member(wa_group_id, with_primary_excluded) ||
+      WAGroups.next_member(wa_group_id, with_primary_excluded) ||
       WAGroups.next_member(wa_group_id, exclude)
   end
 
