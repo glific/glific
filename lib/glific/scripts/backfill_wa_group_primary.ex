@@ -115,7 +115,7 @@ defmodule Glific.Scripts.BackfillWAGroupPrimary do
 
           {:error, err} ->
             Logger.warning(
-              "BackfillWAGroupPrimary: set_primary_phone failed for wa_group #{wa_group.id} phone #{phone.id}: #{inspect(err)}"
+              "Maytapi primary change failed (backfill): wa_group=#{wa_group.id} phone=#{phone.id} reason=#{inspect(err)}"
             )
 
             :skip

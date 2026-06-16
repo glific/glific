@@ -272,24 +272,27 @@ defmodule GlificWeb.Resolvers.Messages do
          {:ok, message} <- Maytapi.Message.create_and_send_wa_message(wa_group, params) do
       {:ok, message}
     else
-      {:error, :no_active_phones} ->
-        {:error,
-         dgettext(
-           "errors",
-           "No active phones are linked to this group. Reconnect a phone or add a backup before sending."
-         )}
-
-      {:error, :promotion_failed} ->
-        {:error,
-         dgettext(
-           "errors",
-           "Could not switch to a backup phone right now. Please retry."
-         )}
-
       {:error, reason} ->
-        {:error, reason}
+        Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "graphql_mutation"})
+        {:error, send_in_wa_group_error(reason)}
     end
   end
+
+  defp send_in_wa_group_error(:no_active_phones),
+    do:
+      dgettext(
+        "errors",
+        "No active phones are linked to this group. Reconnect a phone or add a backup before sending."
+      )
+
+  defp send_in_wa_group_error(:promotion_failed),
+    do:
+      dgettext(
+        "errors",
+        "Could not switch to a backup phone right now. Please retry."
+      )
+
+  defp send_in_wa_group_error(other), do: other
 
   @doc false
   @spec send_message_to_wa_group_collection(Absinthe.Resolution.t(), map(), map()) :: {:ok, any()}

@@ -45,18 +45,12 @@ defmodule Glific.Providers.Maytapi.Message do
       })
     else
       {:error, reason} when reason in [:no_active_phones, :promotion_failed] ->
-        # Sender already counts these via glific.maytapi.send_no_active_phones
-        # and glific.maytapi.failover, so skip double-counting here.
         {:error, reason}
 
       {:error, reason} ->
         Glific.log_error(
           "Maytapi send failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
         )
-
-        Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{
-          source: "create_and_send"
-        })
 
         {:error, reason}
     end
@@ -158,7 +152,10 @@ defmodule Glific.Providers.Maytapi.Message do
       "Maytapi send failed (collection task crashed): group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
     )
 
-    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection_task_crash"})
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{
+      source: "collection_task_crash"
+    })
+
     :ok
   end
 
@@ -173,7 +170,7 @@ defmodule Glific.Providers.Maytapi.Message do
         _attrs
       ) do
     Glific.log_error(
-      "Maytapi create_wa_group_message: wa_group #{inspect(wa_group.id)} (org #{org_id}, collection #{inspect(group_id)}) has no primary phone — skipping group-level wa_message row"
+      "Maytapi collection: skipping group-level wa_message row (no primary phone) wa_group=#{inspect(wa_group.id)} org=#{org_id} collection=#{inspect(group_id)}"
     )
 
     {:error, :no_primary_phone}
@@ -201,7 +198,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
       {:error, error} ->
         Glific.log_error(
-          "Maytapi create_wa_group_message: wa_messages.create_message failed for collection #{inspect(group.id)} (org #{group.organization_id}): #{inspect(error)}"
+          "Maytapi collection: group-level wa_message insert failed collection=#{inspect(group.id)} org=#{group.organization_id} error=#{inspect(error)}"
         )
 
         {:error, error}

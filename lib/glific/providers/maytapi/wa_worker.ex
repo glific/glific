@@ -108,8 +108,10 @@ defmodule Glific.Providers.Maytapi.WAWorker do
              reason: :send_error
            ) do
       Logger.info(
-        "Maytapi failover: retrying send on group #{wa_group.id} via phone #{new_phone.phone} (excluded #{failed_phone.phone})"
+        "Maytapi send retry: wa_group=#{wa_group.id} via phone=#{new_phone.phone} (excluded=#{failed_phone.phone})"
       )
+
+      Appsignal.increment_counter("glific.maytapi.retry_with_failover", 1, %{result: "started"})
 
       new_payload =
         payload
@@ -133,9 +135,10 @@ defmodule Glific.Providers.Maytapi.WAWorker do
 
   defp log_retry_skip(result, message, payload, org_id) do
     Glific.log_error(
-      "Maytapi retry_with_failover failed: wa_group=#{inspect(message["wa_group_id"])} phone_id=#{inspect(payload["phone_id"])} org=#{org_id} result=#{inspect(result)}"
+      "Maytapi send retry failed: wa_group=#{inspect(message["wa_group_id"])} phone_id=#{inspect(payload["phone_id"])} org=#{org_id} result=#{inspect(result)}"
     )
 
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "worker_retry"})
     :ok
   end
 
