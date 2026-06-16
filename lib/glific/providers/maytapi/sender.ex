@@ -86,68 +86,53 @@ defmodule Glific.Providers.Maytapi.Sender do
           {:ok, WAManagedPhone.t(), :failover}
           | {:error, :no_active_phones | :promotion_failed}
   defp failover(wa_group, primary, exclude, reason) do
-    strict_exclude = if primary, do: Enum.uniq([primary.id | exclude]), else: exclude
-
-    case pick_failover_candidate(wa_group.id, strict_exclude, exclude) do
-      {:none} ->
+    case pick_failover_candidate(wa_group.id, primary, exclude) do
+      nil ->
         notify_no_active_phones(wa_group)
         {:error, :no_active_phones}
 
-      {candidate, match} ->
-        finish_failover(wa_group, primary, candidate, reason, match)
+      candidate ->
+        finish_failover(wa_group, primary, candidate, reason)
     end
   end
 
-  # Two-tier candidate selection:
-  # 1. `:strict`  — `wa_groups_phones.is_active = true` AND
-  #    `wa_managed_phones.status = "active"`, excluding the failed
-  #    primary and any caller-passed exclude.
-  # 2. `:relaxed` — `wa_groups_phones.is_active = true`, any
-  #    `wa_managed_phones.status`. Excludes
-  #    ONLY the caller-passed list (NOT the primary) — so a single-member
-  #    group with an unhealthy primary can still promote it on a stale-cache
-  #    failover. The send-time retry path passes the failed phone in
-  #    `exclude` so we don't retry the same phone.
-  # No candidate → `{:none}` and the caller fires the critical notification.
+  # First pass prefers a member whose Maytapi status is "active" and excludes
+  # the failed primary (we just rejected it). Second pass drops the status
+  # filter so a single-member group with an unhealthy primary can still
+  # promote itself on a stale-cache failover — `candidate.status` then tells
+  # us downstream that the pick is a fallback.
   @spec pick_failover_candidate(
           non_neg_integer(),
-          [non_neg_integer()],
+          WAManagedPhone.t() | nil,
           [non_neg_integer()]
-        ) :: {WAManagedPhone.t(), :strict | :relaxed} | {:none}
-  defp pick_failover_candidate(wa_group_id, strict_exclude, relaxed_exclude) do
-    case WAGroups.next_active_member(wa_group_id, strict_exclude) do
-      %WAManagedPhone{} = phone ->
-        {phone, :strict}
+        ) :: WAManagedPhone.t() | nil
+  defp pick_failover_candidate(wa_group_id, primary, exclude) do
+    with_primary_excluded = if primary, do: Enum.uniq([primary.id | exclude]), else: exclude
 
-      nil ->
-        case WAGroups.next_member(wa_group_id, relaxed_exclude) do
-          %WAManagedPhone{} = phone -> {phone, :relaxed}
-          nil -> {:none}
-        end
-    end
+    WAGroups.next_active_member(wa_group_id, with_primary_excluded) ||
+      WAGroups.next_member(wa_group_id, exclude)
   end
 
   @spec finish_failover(
           WAGroup.t(),
           WAManagedPhone.t() | nil,
           WAManagedPhone.t(),
-          atom(),
-          :strict | :relaxed
+          atom()
         ) :: {:ok, WAManagedPhone.t(), :failover} | {:error, :promotion_failed}
-  defp finish_failover(wa_group, primary, candidate, reason, match) do
+  defp finish_failover(wa_group, primary, candidate, reason) do
     case promote(wa_group.id, candidate.id) do
       {:ok, _} ->
-        if match == :relaxed do
+        if candidate.status != "active" do
           Logger.warning(
             "Sender: group #{wa_group.id} has no Maytapi-active phone; promoting #{candidate.phone} (status=#{candidate.status}) — status may be stale"
           )
         end
 
-        notify_failover(wa_group, primary, candidate, reason, match)
+        notify_failover(wa_group, primary, candidate, reason)
         {:ok, candidate, :failover}
 
       {:error, err} ->
-        Logger.error(
+        Glific.log_error(
           "Sender: failed to promote wa_managed_phone #{candidate.id} for group #{wa_group.id}: #{inspect(err)}"
         )
 
@@ -159,10 +144,9 @@ defmodule Glific.Providers.Maytapi.Sender do
           WAGroup.t(),
           WAManagedPhone.t() | nil,
           WAManagedPhone.t(),
-          atom(),
-          :strict | :relaxed
+          atom()
         ) :: any()
-  defp notify_failover(wa_group, primary, candidate, reason, match) do
+  defp notify_failover(wa_group, primary, candidate, reason) do
     Notifications.create_notification(%{
       category: "WA Group",
       message: failover_message(wa_group, primary, candidate),
@@ -176,7 +160,7 @@ defmodule Glific.Providers.Maytapi.Sender do
 
     Appsignal.increment_counter("glific.maytapi.failover", 1, %{
       reason: to_string(reason),
-      match: to_string(match)
+      candidate_status: candidate.status
     })
   end
 
@@ -185,8 +169,12 @@ defmodule Glific.Providers.Maytapi.Sender do
     "Primary phone #{candidate.phone} for group #{wa_group.label} shows status '#{candidate.status}' but no backup is available; sending via primary anyway."
   end
 
+  defp failover_message(wa_group, nil, candidate) do
+    "Primary phone for group #{wa_group.label} is not set; switched to phone #{candidate.phone}."
+  end
+
   defp failover_message(wa_group, primary, candidate) do
-    "Primary phone #{phone_label(primary)} for group #{wa_group.label} is unavailable; switched to phone #{candidate.phone}."
+    "Primary phone #{primary.phone} for group #{wa_group.label} is unavailable; switched to phone #{candidate.phone}."
   end
 
   @spec notify_no_active_phones(WAGroup.t()) :: any()
@@ -204,8 +192,4 @@ defmodule Glific.Providers.Maytapi.Sender do
 
     Appsignal.increment_counter("glific.maytapi.send_no_active_phones", 1, %{})
   end
-
-  @spec phone_label(WAManagedPhone.t() | nil) :: String.t()
-  defp phone_label(nil), do: "(none)"
-  defp phone_label(%{phone: phone}), do: phone
 end

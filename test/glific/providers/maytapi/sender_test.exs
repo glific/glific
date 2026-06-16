@@ -1,7 +1,7 @@
 defmodule Glific.Providers.Maytapi.SenderTest do
   use Glific.DataCase, async: false
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Fixtures,
@@ -16,63 +16,57 @@ defmodule Glific.Providers.Maytapi.SenderTest do
 
   setup do
     organization = SeedsDev.seed_organizations()
-    Fixtures.wa_managed_phone_fixture(%{organization_id: organization.id})
-    {:ok, %{organization_id: organization.id}}
+    # Primary phone (forced active; default fixture status is "loading").
+    first_phone =
+      Fixtures.wa_managed_phone_fixture(%{organization_id: organization.id})
+      |> WAManagedPhone.changeset(%{status: "active"})
+      |> Repo.update!()
+
+    {:ok, second_contact} =
+      Glific.Contacts.maybe_create_contact(%{
+        phone: "919999900001",
+        organization_id: organization.id,
+        contact_type: "WA"
+      })
+
+    {:ok, second_phone} =
+      Glific.WAManagedPhones.create_wa_managed_phone(%{
+        label: "second",
+        phone: "919999900001",
+        phone_id: 9_999_001,
+        status: "active",
+        organization_id: organization.id,
+        contact_id: second_contact.id
+      })
+
+    # Group created with first_phone; maybe_create_group inserts the primary
+    # membership automatically. Seed second_phone as a non-primary active member.
+    {:ok, wa_group} =
+      WAGroups.maybe_create_group(%{
+        label: "Sender Group",
+        bsp_id: "120363222222222222@g.us",
+        organization_id: organization.id,
+        wa_managed_phone_id: first_phone.id
+      })
+
+    Fixtures.wa_group_phone_fixture(%{
+      wa_group_id: wa_group.id,
+      wa_managed_phone_id: second_phone.id,
+      organization_id: organization.id,
+      is_primary: false,
+      is_active: true
+    })
+
+    {:ok,
+     %{
+       organization_id: organization.id,
+       first_phone: first_phone,
+       second_phone: second_phone,
+       wa_group: wa_group
+     }}
   end
 
   describe "pick_for_send/2" do
-    setup attrs do
-      # Primary phone (forced to active; default fixture status is "loading").
-      first_phone = Fixtures.get_wa_managed_phone(attrs.organization_id)
-
-      {:ok, first_phone} =
-        first_phone
-        |> WAManagedPhone.changeset(%{status: "active"})
-        |> Repo.update()
-
-      {:ok, second_contact} =
-        Glific.Contacts.maybe_create_contact(%{
-          phone: "919999900001",
-          organization_id: attrs.organization_id,
-          contact_type: "WA"
-        })
-
-      {:ok, second_phone} =
-        Glific.WAManagedPhones.create_wa_managed_phone(%{
-          label: "second",
-          phone: "919999900001",
-          phone_id: 9_999_001,
-          status: "active",
-          organization_id: attrs.organization_id,
-          contact_id: second_contact.id
-        })
-
-      # Group created with first_phone; maybe_create_group inserts the
-      # primary membership automatically.
-      {:ok, wa_group} =
-        WAGroups.maybe_create_group(%{
-          label: "Sender Group",
-          bsp_id: "120363222222222222@g.us",
-          organization_id: attrs.organization_id,
-          wa_managed_phone_id: first_phone.id
-        })
-
-      # Manually seed second_phone as a non-primary active member.
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: second_phone.id,
-        organization_id: attrs.organization_id,
-        is_primary: false,
-        is_active: true
-      })
-
-      Map.merge(attrs, %{
-        first_phone: first_phone,
-        second_phone: second_phone,
-        wa_group: wa_group
-      })
-    end
-
     test "returns primary with :primary tag when primary is healthy", ctx do
       assert {:ok, phone, :primary} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
@@ -178,11 +172,11 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       assert phone.id == ctx.first_phone.id
     end
 
-    test "failover with no primary membership: picks the oldest member and notifies (primary shown as '(none)')",
+    test "failover with no primary membership: picks the oldest member and notifies (primary-not-set wording)",
          ctx do
       # Demote both memberships so the group has rows but no is_primary one.
       # primary_phone/1 then returns nil, exercising the nil-primary
-      # failover_message clause + phone_label(nil).
+      # failover_message clause.
       WAGroupPhone
       |> where([wa_group_phone], wa_group_phone.wa_group_id == ^ctx.wa_group.id)
       |> Repo.update_all(set: [is_primary: false])
@@ -190,57 +184,14 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
 
-      assert warning_notification_exists?(ctx, "Primary phone (none) for group")
+      assert warning_notification_exists?(
+               ctx,
+               "Primary phone for group #{ctx.wa_group.label} is not set"
+             )
     end
   end
 
   describe "promote/2" do
-    setup attrs do
-      first_phone =
-        Fixtures.get_wa_managed_phone(attrs.organization_id)
-        |> WAManagedPhone.changeset(%{status: "active"})
-        |> Repo.update!()
-
-      {:ok, second_contact} =
-        Glific.Contacts.maybe_create_contact(%{
-          phone: "919999900002",
-          organization_id: attrs.organization_id,
-          contact_type: "WA"
-        })
-
-      {:ok, second_phone} =
-        Glific.WAManagedPhones.create_wa_managed_phone(%{
-          label: "second",
-          phone: "919999900002",
-          phone_id: 9_999_002,
-          status: "active",
-          organization_id: attrs.organization_id,
-          contact_id: second_contact.id
-        })
-
-      {:ok, wa_group} =
-        WAGroups.maybe_create_group(%{
-          label: "Promote Group",
-          bsp_id: "120363333333333333@g.us",
-          organization_id: attrs.organization_id,
-          wa_managed_phone_id: first_phone.id
-        })
-
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: second_phone.id,
-        organization_id: attrs.organization_id,
-        is_primary: false,
-        is_active: true
-      })
-
-      Map.merge(attrs, %{
-        first_phone: first_phone,
-        second_phone: second_phone,
-        wa_group: wa_group
-      })
-    end
-
     test "delegates to WAGroups.set_primary_phone/2 and demotes the current primary", ctx do
       assert {:ok, _} = Sender.promote(ctx.wa_group.id, ctx.second_phone.id)
       assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id

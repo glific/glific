@@ -116,8 +116,9 @@ defmodule Glific.Providers.Maytapi.WAWorker do
         |> Map.put("phone_id", new_phone.phone_id)
         |> Map.put("retried", true)
 
-      response = ApiClient.send_message(org_id, new_payload, new_phone.phone_id)
-      ResponseHandler.handle_response(response, message)
+      org_id
+      |> ApiClient.send_message(new_payload, new_phone.phone_id)
+      |> ResponseHandler.handle_response(message)
     else
       _ ->
         ResponseHandler.handle_response(original_response, message)
