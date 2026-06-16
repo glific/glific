@@ -569,31 +569,7 @@ defmodule Glific.Partners do
   """
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
-    # For this process, lets set the organization id
-    Repo.put_organization_id(organization.id)
-
-    organization =
-      organization
-      |> set_root_user()
-      |> set_credentials()
-      |> Repo.preload([:bsp, :contact])
-      |> set_bsp_info()
-      |> set_out_of_office_values()
-      |> Flags.set_out_of_office()
-      |> set_languages()
-      |> Flags.set_flow_uuid_display()
-      |> Flags.set_roles_and_permission()
-      |> Flags.set_open_ai_auto_translation_enabled()
-      |> Flags.set_auto_translation_enabled_for_google_trans()
-      |> Flags.set_contact_profile_enabled()
-      |> Flags.set_whatsapp_group_enabled()
-      |> Flags.set_ticketing_enabled()
-      |> Flags.set_certificate_enabled()
-      |> Flags.set_interactive_re_response_enabled()
-      |> Flags.set_is_ask_glific_enabled()
-      |> Flags.set_is_whatsapp_forms_enabled()
-      |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
-      |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
+    organization = build_org_data(organization)
 
     Caches.set(
       @global_organization_id,
@@ -606,28 +582,33 @@ defmodule Glific.Partners do
     organization
   end
 
-  @doc """
-  Follow the cachex protocol to load the cache from the DB
-  """
-  @spec load_cache(tuple()) :: {:ignore, Organization.t()}
-  def load_cache(cachex_key) do
-    # this is of the form {:global_org_key, {:organization, value}}
-    # we want the value element
-    cache_key = cachex_key |> elem(1) |> elem(1)
-    Logger.info("Loading organization cache: #{cache_key}")
+  # Builds the fully-populated org struct without touching the cache.
+  # Used by fill_cache and fetch_and_cache_organization.
+  @spec build_org_data(Organization.t()) :: Organization.t()
+  defp build_org_data(organization) do
+    Repo.put_organization_id(organization.id)
 
-    clauses = if is_integer(cache_key), do: %{id: cache_key}, else: %{shortcode: cache_key}
-
-    organization =
-      case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
-        {:ok, org} -> fill_cache(org)
-        _ -> raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
-      end
-
-    # we are already storing this in the cache (in the function fill_cache),
-    # so we can ask cachex to ignore the value. We need to do this since we are
-    # storing multiple keys for the same object
-    {:ignore, organization}
+    organization
+    |> set_root_user()
+    |> set_credentials()
+    |> Repo.preload([:bsp, :contact])
+    |> set_bsp_info()
+    |> set_out_of_office_values()
+    |> Flags.set_out_of_office()
+    |> set_languages()
+    |> Flags.set_flow_uuid_display()
+    |> Flags.set_roles_and_permission()
+    |> Flags.set_open_ai_auto_translation_enabled()
+    |> Flags.set_auto_translation_enabled_for_google_trans()
+    |> Flags.set_contact_profile_enabled()
+    |> Flags.set_whatsapp_group_enabled()
+    |> Flags.set_ticketing_enabled()
+    |> Flags.set_certificate_enabled()
+    |> Flags.set_interactive_re_response_enabled()
+    |> Flags.set_is_ask_glific_enabled()
+    |> Flags.set_is_whatsapp_forms_enabled()
+    |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
+    |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
   end
 
   @doc """
@@ -636,13 +617,46 @@ defmodule Glific.Partners do
   @spec organization(non_neg_integer | String.t()) ::
           Organization.t() | nil | {:error, String.t()}
   def organization(cache_key) do
-    case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
-      {:error, error} ->
-        {:error, error}
+    case Caches.get(@global_organization_id, {:organization, cache_key}) do
+      {:ok, false} ->
+        case fetch_and_cache_organization(cache_key) do
+          {:ok, org_data} ->
+            Repo.put_organization_id(org_data.id)
+            org_data
 
-      {_, organization} ->
-        Repo.put_organization_id(organization.id)
-        organization
+          {:error, _} = error ->
+            error
+        end
+
+      {:ok, org_data} ->
+        Repo.put_organization_id(org_data.id)
+        org_data
+    end
+  end
+
+  # Fetches the organization from the DB (in the caller's process, preserving SQL Sandbox
+  # ownership) and populates the cache under both the id and shortcode keys.
+  @spec fetch_and_cache_organization(non_neg_integer | String.t()) ::
+          {:ok, Organization.t()} | {:error, String.t()}
+  defp fetch_and_cache_organization(cache_key) do
+    Logger.info("Loading organization cache: #{cache_key}")
+    clauses = if is_integer(cache_key), do: %{id: cache_key}, else: %{shortcode: cache_key}
+
+    case Repo.fetch_by(Organization, clauses, skip_organization_id: true) do
+      {:ok, org} ->
+        org_data = build_org_data(org)
+        Flags.init(org_data)
+
+        Caches.set(
+          @global_organization_id,
+          [{:organization, org_data.id}, {:organization, org_data.shortcode}],
+          org_data
+        )
+
+        {:ok, org_data}
+
+      _ ->
+        {:error, "Could not find an organization with #{cache_key}"}
     end
   end
 
@@ -1229,37 +1243,32 @@ defmodule Glific.Partners do
     if is_nil(organization.services[provider_shortcode]) do
       nil
     else
-      Caches.fetch(organization_id, key, fn key -> load_goth_token(key, opts) end)
-      |> case do
-        {_status, res} when is_map(res) ->
-          res
+      case Caches.get(organization_id, key) do
+        {:ok, token} when is_map(token) ->
+          token
 
-        _ ->
-          Logger.error(
-            "Could not fetch token for service #{provider_shortcode} for org id: #{organization_id}"
-          )
-
-          nil
+        {:ok, _} ->
+          fetch_and_cache_goth_token(organization_id, provider_shortcode, organization, opts)
       end
     end
   end
 
-  @spec load_goth_token(tuple(), Keyword.t()) :: tuple()
-  defp load_goth_token(cache_key, goth_opts) do
-    {organization_id, {:provider_token, provider_shortcode}} = cache_key
-
-    organization = organization(organization_id)
+  # Fetches a Goth token in the caller's process (preserving SQL Sandbox ownership for any
+  # error-path DB writes) and caches it with a token-lifetime-derived TTL.
+  @spec fetch_and_cache_goth_token(non_neg_integer, String.t(), Organization.t(), Keyword.t()) ::
+          nil | Goth.Token.t()
+  defp fetch_and_cache_goth_token(organization_id, provider_shortcode, organization, goth_opts) do
     credentials = organization.services[provider_shortcode] |> config()
 
     if credentials == :error do
-      {:ignore, nil}
+      nil
     else
       Goth.Token.fetch(source: {:service_account, credentials, goth_opts})
       |> case do
         {:ok, token} ->
-          opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
-          Caches.set(organization_id, {:provider_token, provider_shortcode}, token, opts)
-          {:ignore, token}
+          cache_opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
+          Caches.set(organization_id, {:provider_token, provider_shortcode}, token, cache_opts)
+          token
 
         {:error, error} ->
           Logger.info(
@@ -1267,7 +1276,7 @@ defmodule Glific.Partners do
           )
 
           handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
-          {:ignore, nil}
+          nil
       end
     end
   end
@@ -1382,24 +1391,19 @@ defmodule Glific.Partners do
   """
   @spec get_organization_services :: map()
   def get_organization_services do
-    case Caches.fetch(
-           @global_organization_id,
-           "organization_services",
-           &load_organization_services/1
-         ) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve organization services: #{error}"
-        )
+    case Caches.get(@global_organization_id, "organization_services") do
+      {:ok, false} ->
+        fetch_and_cache_organization_services()
 
-      {_, services} ->
+      {:ok, services} ->
         services
     end
   end
 
-  # this is a global cache, so we kinda ignore the cache key
-  @spec load_organization_services(tuple()) :: {:commit, map()}
-  defp load_organization_services(_cache_key) do
+  # Fetches organization services from DB in the caller's process (preserving SQL Sandbox
+  # ownership) and stores the result in the cache.
+  @spec fetch_and_cache_organization_services() :: map()
+  defp fetch_and_cache_organization_services do
     services =
       active_organizations([])
       |> Enum.reduce(
@@ -1410,7 +1414,8 @@ defmodule Glific.Partners do
       )
       |> combine_services()
 
-    {:commit, services}
+    Caches.set(@global_organization_id, "organization_services", services)
+    services
   end
 
   @doc """

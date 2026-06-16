@@ -545,39 +545,38 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec load_flow_cache(tuple()) :: tuple()
-  defp load_flow_cache(cache_key) do
-    {organization_id, {key, value, status}} = cache_key
-    Repo.put_organization_id(organization_id)
-    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
-    args = make_args(key, value)
-
-    flow = Flow.get_loaded_flow(organization_id, status, args)
-
-    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
-    # We are setting the cache in the above statement with multiple keys
-    # hence we are asking Cachex to just ignore this aspect. All the other
-    # requests will get the cache value sent above
-    {:ignore, flow}
-  end
-
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
-  It will also set the loaded flow to cache in case it does not exists.
+  It will also set the loaded flow to cache in case it does not exist.
   """
   @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) ::
           {atom, any} | {atom(), String.t()}
   def get_cached_flow(nil, _key), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key) do
-    case Caches.fetch(organization_id, key, &load_flow_cache/1) do
-      {:error, error} ->
-        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{inspect(error)}")
-        {:error, error}
+    case Caches.get(organization_id, key) do
+      {:ok, false} ->
+        fetch_and_cache_flow(organization_id, key)
 
-      {_, flow} ->
+      {:ok, flow} ->
         {:ok, flow}
     end
+  end
+
+  # Fetches the flow from the DB (in the caller's process, preserving SQL Sandbox
+  # ownership) and populates the cache under all applicable keys.
+  @spec fetch_and_cache_flow(non_neg_integer, {atom(), any(), String.t()}) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  defp fetch_and_cache_flow(organization_id, {key, value, status}) do
+    Repo.put_organization_id(organization_id)
+    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
+    args = make_args(key, value)
+    flow = Flow.get_loaded_flow(organization_id, status, args)
+    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+    {:ok, flow}
+  rescue
+    Ecto.NoResultsError ->
+      {:error, "Flow not found for #{inspect({key, value, status})}"}
   end
 
   @doc """
@@ -879,13 +878,11 @@ defmodule Glific.Flows do
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
   def flow_keywords_map(organization_id) do
-    case Caches.fetch(organization_id, "flow_keywords_map", &load_flow_keywords_map/1) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve flow_keywords_map, #{inspect(organization_id)}, #{error}"
-        )
+    case Caches.get(organization_id, "flow_keywords_map") do
+      {:ok, false} ->
+        fetch_and_cache_flow_keywords_map(organization_id)
 
-      {_, value} ->
+      {:ok, value} ->
         value
     end
   end
@@ -941,11 +938,10 @@ defmodule Glific.Flows do
 
   defp update_flow_keyword_map_with_template_flow(flow_keyword_map, _flow), do: flow_keyword_map
 
-  @spec load_flow_keywords_map(tuple()) :: tuple()
-  defp load_flow_keywords_map(cache_key) do
-    # this is of the form {organization_id, "flow_keywords_map}"
-    # we want the organization_id
-    organization_id = cache_key |> elem(0)
+  # Fetches the flow keywords map from DB in the caller's process (preserving SQL Sandbox
+  # ownership) and stores it in the cache.
+  @spec fetch_and_cache_flow_keywords_map(non_neg_integer) :: map()
+  defp fetch_and_cache_flow_keywords_map(organization_id) do
     organization = Partners.organization(organization_id)
 
     keyword_map =
@@ -974,7 +970,8 @@ defmodule Glific.Flows do
       |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
       |> Map.put("org_default_optin", organization.optin_flow_id)
 
-    {:commit, keyword_map}
+    Caches.set(organization_id, "flow_keywords_map", keyword_map)
+    keyword_map
   end
 
   @spec add_default_flows(map(), map()) :: map()
