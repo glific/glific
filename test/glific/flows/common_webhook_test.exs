@@ -1107,9 +1107,9 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert result.success == true
     end
 
-    # NOTE: speech_to_text is an async webhook — CommonWebhook only computes the
-    # failure RESULT here; AppSignal reporting now happens in SttTtsWorker via
-    # Instrumentation.report_async_failure/2 (covered in webhook_infrastructure_test.exs).
+    # NOTE: speech_to_text is an async webhook — SpeechToText.call only computes the
+    # failure RESULT here; AppSignal reporting happens in Instrumentation.around/3 when the
+    # generic Webhook worker dispatches it (covered in webhook_infrastructure_test.exs).
     test "returns failure result when Kaapi returns 200 with a success:false body", %{
       fields: fields
     } do
