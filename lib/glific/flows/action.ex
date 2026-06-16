@@ -558,7 +558,7 @@ defmodule Glific.Flows.Action do
 
     [
       {Webhook,
-       "The '#{url}' Bhashini webhook is deprecated. Please migrate this node to the '#{replacement}' node before publishing.",
+       "The '#{url}' webhook is deprecated. Please migrate this node to the '#{replacement}' node before publishing.",
        "Critical"}
       | errors
     ]
