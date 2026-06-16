@@ -289,6 +289,16 @@ defmodule Glific.EraseTest do
     assert job.args["organization_id"] == organization.id
   end
 
+  test "flags new org-scoped tables that delete_organization_data will now also erase" do
+    tables = org_scoped_tables()
+    new_tables = tables -- known_org_scoped_tables()
+    removed_tables = known_org_scoped_tables() -- tables
+
+    assert new_tables == []
+
+    assert removed_tables == []
+  end
+
   test "deletes data from every org-scoped table while leaving the survivor org intact", %{
     organization_id: org1_id
   } do
@@ -610,6 +620,96 @@ defmodule Glific.EraseTest do
       """)
 
     Enum.map(rows, fn [table] -> table end)
+  end
+
+  # Every table with an organization_id column as of this writing — i.e. every
+  # table delete_organization_data will erase data from on org deletion.
+  @spec known_org_scoped_tables() :: [String.t()]
+  defp known_org_scoped_tables do
+    [
+      "ai_evaluations",
+      "ask_glific_conversations",
+      "assistant_config_version_knowledge_base_versions",
+      "assistant_config_versions",
+      "assistants",
+      "bigquery_jobs",
+      "billings",
+      "certificate_templates",
+      "consulting_hours",
+      "contact_histories",
+      "contacts",
+      "contacts_fields",
+      "contacts_groups",
+      "contacts_tags",
+      "contacts_wa_groups",
+      "credentials",
+      "extensions",
+      "flow_contexts",
+      "flow_counts",
+      "flow_labels",
+      "flow_results",
+      "flow_revisions",
+      "flow_roles",
+      "flows",
+      "gcs_jobs",
+      "golden_qas",
+      "group_roles",
+      "groups",
+      "intents",
+      "interactive_templates",
+      "invoices",
+      "issued_certificates",
+      "knowledge_base_versions",
+      "knowledge_bases",
+      "locations",
+      "mail_logs",
+      "message_broadcast_contacts",
+      "message_broadcasts",
+      "messages",
+      "messages_conversations",
+      "messages_media",
+      "messages_tags",
+      "notifications",
+      "openai_assistants",
+      "openai_vector_stores",
+      "organization_data",
+      "organization_eval_requests",
+      "profiles",
+      "registrations",
+      "role_permissions",
+      "roles",
+      "saas",
+      "saved_searches",
+      "session_templates",
+      "sheets",
+      "sheets_data",
+      "stats",
+      "tags",
+      "templates_tags",
+      "tickets",
+      "trackers",
+      "translate_logs",
+      "trigger_logs",
+      "trigger_roles",
+      "triggers",
+      "user_jobs",
+      "user_roles",
+      "users",
+      "users_groups",
+      "users_tokens",
+      "versions",
+      "wa_groups",
+      "wa_groups_collections",
+      "wa_groups_phones",
+      "wa_managed_phones",
+      "wa_messages",
+      "wa_polls",
+      "wa_reactions",
+      "webhook_logs",
+      "whatsapp_form_revisions",
+      "whatsapp_forms",
+      "whatsapp_forms_responses"
+    ]
   end
 
   # Counts rows for the given organization_id in each of the given tables,
