@@ -2,9 +2,9 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
   @moduledoc """
   Contract tests for the four async webhook implementation modules.
 
-  Verifies the behaviour surface that is pure (no Kaapi/HTTP): `name/0`, `webhook_name/0`
-  (which now equals `name/0` — the node URL), `mode/0`, and `handle_resume/2`. The worker-
-  phase `call/2` dispatch path is covered in the per-webhook callback tests.
+  Verifies the behaviour surface that is pure (no Kaapi/HTTP): `name/0`, `mode/0`, and
+  `handle_resume/2`. The worker-phase `call/2` dispatch path is covered in the per-webhook
+  callback tests.
   """
   use Glific.DataCase, async: false
 
@@ -19,28 +19,24 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
     VoiceFilesearchGpt
   }
 
-  describe "name/0, webhook_name/0, mode/0" do
+  describe "name/0, mode/0" do
     test "speech_to_text" do
       assert SpeechToText.name() == "speech_to_text"
-      assert SpeechToText.webhook_name() == "speech_to_text"
       assert SpeechToText.mode() == :async
     end
 
     test "text_to_speech" do
       assert TextToSpeech.name() == "text_to_speech"
-      assert TextToSpeech.webhook_name() == "text_to_speech"
       assert TextToSpeech.mode() == :async
     end
 
-    test "filesearch_gpt — webhook_name equals the node URL" do
+    test "filesearch_gpt" do
       assert FilesearchGpt.name() == "filesearch-gpt"
-      assert FilesearchGpt.webhook_name() == "filesearch-gpt"
       assert FilesearchGpt.mode() == :async
     end
 
-    test "voice_filesearch_gpt — webhook_name equals the node URL" do
+    test "voice_filesearch_gpt" do
       assert VoiceFilesearchGpt.name() == "voice-filesearch-gpt"
-      assert VoiceFilesearchGpt.webhook_name() == "voice-filesearch-gpt"
       assert VoiceFilesearchGpt.mode() == :async
     end
   end

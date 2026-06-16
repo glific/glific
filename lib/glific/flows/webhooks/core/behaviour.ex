@@ -95,23 +95,5 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
-  @doc """
-  Observability/callback webhook name.
-
-  For most webhooks this equals `name/0` (the node URL). The two unified-llm nodes
-  are an exception: their node URL in deployed flow JSON (`"filesearch-gpt"`,
-  `"voice-filesearch-gpt"`) differs from the `webhook_name` string embedded in
-  Kaapi `request_metadata` and AppSignal metric tags (`"unified-llm-call"`,
-  `"unified-voice-llm-call"`).
-
-  - Registry lookup and `action.ex` dispatch use `name/0`.
-  - AppSignal tags, Kaapi callback matching, and metric counters use `webhook_name/0`.
-
-  The `Glific.Flows.Webhooks.Async` macro injects a default implementation that
-  returns the same value as `name/0`. Override only when the node URL differs from
-  the observability name.
-  """
-  @callback webhook_name() :: String.t()
-
-  @optional_callbacks handle_resume: 2, wait_time_default: 0, webhook_name: 0
+  @optional_callbacks handle_resume: 2, wait_time_default: 0
 end

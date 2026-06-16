@@ -71,37 +71,24 @@ defmodule Glific.Flows.Webhooks.Registry do
   end
 
   @doc """
-  Finds the async webhook module whose `webhook_name/0` matches `webhook_name`.
+  Finds the async webhook module whose `name/0` matches the `webhook_name` from a
+  Kaapi callback payload (the two are the same string).
 
-  Used by `FlowResumeController` to route a Kaapi callback to the correct
-  module's `handle_resume/2`. Returns `nil` if no registered async module has
-  that observability name (the caller falls back to the default behaviour).
+  Used by `FlowResumeController` to route a Kaapi callback to the correct module's
+  `handle_resume/2`. Returns `nil` when the payload carries no `webhook_name` (the
+  STT/TTS/filesearch callbacks pass `nil`) or no async module matches — the caller
+  then uses the parsed response unchanged.
   """
   @spec lookup_by_webhook_name(term()) :: module() | nil
   def lookup_by_webhook_name(webhook_name) when is_binary(webhook_name) do
-    @webhooks
-    |> Enum.find_value(fn {_url, mod} ->
-      if mod.mode() == :async and resolve_webhook_name(mod) == webhook_name do
-        mod
-      end
-    end)
-  end
+    case lookup(webhook_name) do
+      module when is_atom(module) and not is_nil(module) ->
+        if module.mode() == :async, do: module
 
-  # Callbacks whose payload carries no `webhook_name` (e.g. the STT/TTS/filesearch
-  # Kaapi callbacks) pass `nil` here. Fall back to nil so callers use the parsed
-  # response unchanged rather than crashing on a FunctionClauseError.
-  def lookup_by_webhook_name(_webhook_name), do: nil
-
-  # Safely resolves a module's webhook_name/0; falls back to name/0 for modules
-  # that don't export webhook_name/0 (e.g. the sync Geolocation module).
-  # Code.ensure_loaded? is required because function_exported?/3 returns false for a
-  # not-yet-loaded module, which would make lookup match on name/0 instead.
-  @spec resolve_webhook_name(module()) :: String.t()
-  defp resolve_webhook_name(mod) do
-    if Code.ensure_loaded?(mod) and function_exported?(mod, :webhook_name, 0) do
-      mod.webhook_name()
-    else
-      mod.name()
+      _ ->
+        nil
     end
   end
+
+  def lookup_by_webhook_name(_webhook_name), do: nil
 end

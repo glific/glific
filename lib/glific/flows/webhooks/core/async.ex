@@ -45,16 +45,7 @@ defmodule Glific.Flows.Webhooks.Async do
       @impl true
       def wait_time_default, do: 60
 
-      @doc """
-      Observability/callback webhook name. Defaults to `name/0` (the flow-JSON node URL).
-      Override in modules where the node URL differs from the AppSignal / Kaapi
-      `request_metadata.webhook_name` string (e.g. UnifiedLlm, UnifiedVoiceLlm).
-      """
-      @spec webhook_name() :: String.t()
-      @impl Glific.Flows.Webhooks.Behaviour
-      def webhook_name, do: @webhook_name
-
-      defoverridable wait_time_default: 0, webhook_name: 0
+      defoverridable wait_time_default: 0
     end
   end
 end

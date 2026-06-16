@@ -1216,8 +1216,6 @@ defmodule Glific.Flows.FlowContext do
 
   # When a flow times out (woken with no callback message), report async
   # webhook nodes to AppSignal via the central Instrumentation module.
-  # Uses the observability webhook_name (from the registered module's webhook_name/0)
-  # rather than the raw node URL so metrics are consistent with callback payloads.
   @spec maybe_report_timeout(Flow.t(), FlowContext.t()) :: :ok
   defp maybe_report_timeout(flow, context) do
     case async_webhook_url(flow, context) do
@@ -1225,35 +1223,13 @@ defmodule Glific.Flows.FlowContext do
         :ok
 
       node_url ->
-        observability_name = resolve_observability_name(node_url)
-
-        webhook_log_id = fetch_latest_webhook_log_id(context)
-
         Instrumentation.report_timeout(%{
-          webhook_name: observability_name,
+          webhook_name: node_url,
           organization_id: context.organization_id,
           flow_id: context.flow_id,
           contact_id: context.contact_id,
-          webhook_log_id: webhook_log_id
+          webhook_log_id: fetch_latest_webhook_log_id(context)
         })
-    end
-  end
-
-  # Maps a node URL to the observability webhook_name via the Registry. If the node URL
-  # is registered and the module exports webhook_name/0, that is returned; otherwise the
-  # raw node URL is used (covers nodes not yet in the Registry).
-  @spec resolve_observability_name(String.t()) :: String.t()
-  defp resolve_observability_name(node_url) do
-    case Registry.lookup(node_url) do
-      nil ->
-        node_url
-
-      module ->
-        if function_exported?(module, :webhook_name, 0) do
-          module.webhook_name()
-        else
-          node_url
-        end
     end
   end
 
