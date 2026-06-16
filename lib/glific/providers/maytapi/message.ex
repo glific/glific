@@ -5,6 +5,8 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Communications,
     Communications.GroupMessage,
@@ -41,6 +43,22 @@ defmodule Glific.Providers.Maytapi.Message do
         phone: wa_phone.phone,
         poll: poll
       })
+    else
+      {:error, reason} when reason in [:no_active_phones, :promotion_failed] ->
+        # Sender already counts these via glific.maytapi.send_no_active_phones
+        # and glific.maytapi.failover, so skip double-counting here.
+        {:error, reason}
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Maytapi send failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
+        )
+
+        Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{
+          source: "create_and_send"
+        })
+
+        {:error, reason}
     end
   end
 
@@ -99,18 +117,49 @@ defmodule Glific.Providers.Maytapi.Message do
           fn wa_group_collection ->
             Repo.put_process_state(wa_group_collection.organization_id)
 
-            create_and_send_wa_message(
-              wa_group_collection.wa_group,
-              Map.delete(attrs, :group_id)
-            )
+            result =
+              create_and_send_wa_message(
+                wa_group_collection.wa_group,
+                Map.delete(attrs, :group_id)
+              )
+
+            log_collection_send_failure(result, wa_group_collection, group)
+            result
           end,
           max_concurrency: 20,
           on_timeout: :kill_task
         )
-        |> Stream.run()
+        |> Enum.each(&log_collection_task_exit(&1, group))
 
         {:ok, %{success: true}}
     end
+  end
+
+  @spec log_collection_send_failure(any(), WAGroupsCollection.t(), Group.t()) :: :ok
+  defp log_collection_send_failure({:ok, _}, _wa_group_collection, _group), do: :ok
+
+  defp log_collection_send_failure(result, %{wa_group_id: wa_group_id}, %{
+         id: group_id,
+         organization_id: org_id
+       }) do
+    Glific.log_error(
+      "Maytapi send failed (collection): wa_group=#{inspect(wa_group_id)} group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
+    )
+
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection"})
+    :ok
+  end
+
+  @spec log_collection_task_exit(tuple(), Group.t()) :: :ok
+  defp log_collection_task_exit({:ok, _result}, _group), do: :ok
+
+  defp log_collection_task_exit(result, %{id: group_id, organization_id: org_id}) do
+    Glific.log_error(
+      "Maytapi send failed (collection task crashed): group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
+    )
+
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection_task_crash"})
+    :ok
   end
 
   @doc """
@@ -118,6 +167,18 @@ defmodule Glific.Providers.Maytapi.Message do
   """
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
+  def create_wa_group_message(
+        [%{wa_group: %{primary_phone: nil} = wa_group} | _rest],
+        %{id: group_id, organization_id: org_id} = _group,
+        _attrs
+      ) do
+    Glific.log_error(
+      "Maytapi create_wa_group_message: wa_group #{inspect(wa_group.id)} (org #{org_id}, collection #{inspect(group_id)}) has no primary phone — skipping group-level wa_message row"
+    )
+
+    {:error, :no_primary_phone}
+  end
+
   def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
     wa_managed_phone = wa_group_collection.wa_group.primary_phone
 
@@ -139,6 +200,10 @@ defmodule Glific.Providers.Maytapi.Message do
         {:ok, wa_message}
 
       {:error, error} ->
+        Glific.log_error(
+          "Maytapi create_wa_group_message: wa_messages.create_message failed for collection #{inspect(group.id)} (org #{group.organization_id}): #{inspect(error)}"
+        )
+
         {:error, error}
     end
   end

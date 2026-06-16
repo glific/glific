@@ -129,16 +129,17 @@ defmodule Glific.Providers.Maytapi.Sender do
       {:ok, _} ->
         if candidate.status != "active" do
           Logger.warning(
-            "Sender: group #{wa_group.id} has no Maytapi-active phone; promoting #{candidate.phone} (status=#{candidate.status}) — status may be stale"
+            "Maytapi primary changed (stale-status fallback): group=#{wa_group.id} phone=#{candidate.phone} status=#{candidate.status}"
           )
         end
 
+        Appsignal.increment_counter("glific.maytapi.primary_changed", 1, %{source: "failover"})
         notify_failover(wa_group, primary, candidate, reason)
         {:ok, candidate, :failover}
 
       {:error, err} ->
         Glific.log_error(
-          "Sender: failed to promote wa_managed_phone #{candidate.id} for group #{wa_group.id}: #{inspect(err)}"
+          "Maytapi primary change failed: wa_group=#{wa_group.id} candidate=#{candidate.id} reason=#{inspect(err)}"
         )
 
         {:error, :promotion_failed}

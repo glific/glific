@@ -120,9 +120,23 @@ defmodule Glific.Providers.Maytapi.WAWorker do
       |> ApiClient.send_message(new_payload, new_phone.phone_id)
       |> ResponseHandler.handle_response(message)
     else
-      _ ->
+      result ->
+        log_retry_skip(result, message, payload, org_id)
         ResponseHandler.handle_response(original_response, message)
     end
+  end
+
+  @spec log_retry_skip(any(), map(), map(), non_neg_integer()) :: :ok
+  defp log_retry_skip({:error, reason}, _message, _payload, _org_id)
+       when reason in [:no_active_phones, :promotion_failed],
+       do: :ok
+
+  defp log_retry_skip(result, message, payload, org_id) do
+    Glific.log_error(
+      "Maytapi retry_with_failover failed: wa_group=#{inspect(message["wa_group_id"])} phone_id=#{inspect(payload["phone_id"])} org=#{org_id} result=#{inspect(result)}"
+    )
+
+    :ok
   end
 
   @spec perform_credential_update(non_neg_integer()) ::
