@@ -1,7 +1,7 @@
 defmodule Glific.Flows.Webhooks.Async do
   @moduledoc """
   `use` macro for asynchronous flow webhooks — Kaapi STT/TTS,
-  unified-llm-call, unified-voice-llm-call. These park the flow context with
+  filesearch-gpt, voice-filesearch-gpt. These park the flow context with
   `is_await_result: true` and are resumed by a callback to
   `flow_resume_controller`.
 

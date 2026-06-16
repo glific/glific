@@ -164,13 +164,13 @@ defmodule GlificWeb.Flows.FlowResumeController do
     end
   end
 
-  # Resolves "unified-voice-llm-call" and runs its handle_resume/2 (NMT+TTS voice
+  # Resolves "voice-filesearch-gpt" and runs its handle_resume/2 (NMT+TTS voice
   # post-processing) on the parsed `response`. Falls back to voice_post_process/3 if
   # the module is missing or handle_resume returns an error.
   @spec shape_voice_response(non_neg_integer(), map(), map()) :: map()
   defp shape_voice_response(organization_id, result, response) do
     ctx = %{organization_id: organization_id, success: result["success"]}
-    webhook_name = response["webhook_name"] || "unified-voice-llm-call"
+    webhook_name = response["webhook_name"] || "voice-filesearch-gpt"
 
     with module when is_atom(module) and not is_nil(module) <-
            Registry.lookup_by_webhook_name(webhook_name),
@@ -252,7 +252,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
     :ok
   end
 
-  # New format from unified-llm-call (/api/v1/llm/call):
+  # New format from filesearch-gpt (/api/v1/llm/call):
   # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
   # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
   # For TTS (output type "audio"), "message" holds the raw base64 and "output_type" is set

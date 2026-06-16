@@ -1442,7 +1442,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
   end
 
-  describe "unified-llm-call lookup_kaapi_config" do
+  describe "filesearch-gpt lookup_kaapi_config" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1587,11 +1587,11 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
-  # NOTE: unified-llm-call is an async webhook — CommonWebhook only computes the
+  # NOTE: filesearch-gpt is an async webhook — CommonWebhook only computes the
   # failure RESULT here. AppSignal reporting now happens in the framework's
   # Instrumentation.around_async/3 when AsyncSupport returns an immediate-failure
   # tuple (covered in webhook_infrastructure_test.exs).
-  describe "unified-llm-call failure result" do
+  describe "filesearch-gpt failure result" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1701,7 +1701,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     {assistant, config_version}
   end
 
-  describe "unified-voice-llm-call webhook" do
+  describe "voice-filesearch-gpt webhook" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1956,11 +1956,11 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert is_nil(tags.http_status)
     end
 
-    # NOTE: unified-voice-llm-call is async — the bhasini STT step still reports its own
+    # NOTE: voice-filesearch-gpt is async — the bhasini STT step still reports its own
     # failures (see the test above), but a failure in the LLM dispatch only produces a
     # failure RESULT here. That failure is reported by Instrumentation.around_async/3
     # (covered in webhook_infrastructure_test.exs).
-    test "returns failure result under unified-voice-llm-call when LLM dispatch fails" do
+    test "returns failure result under voice-filesearch-gpt when LLM dispatch fails" do
       organization_id = 1
       assistant_display_id = "asst_voice_llm_fail"
       create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
@@ -2034,7 +2034,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
     assert %SystemError{} = exception
-    assert tags.webhook_name == "unified-voice-llm-call"
+    assert tags.webhook_name == "voice-filesearch-gpt"
     # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
     # HTTP layer, the body was just unusable.
     assert tags.http_status == 200

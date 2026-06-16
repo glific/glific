@@ -213,7 +213,7 @@ defmodule Glific.Clients.CommonWebhook do
         # sending error code 200 since the call from kaapi is success
         success ->
           report_webhook_failure(
-            "unified-voice-llm-call",
+            "voice-filesearch-gpt",
             organization_id,
             200,
             "Kaapi callback returned success=true but message was empty/nil"
@@ -260,7 +260,7 @@ defmodule Glific.Clients.CommonWebhook do
     end)
   end
 
-  # Spec includes `{:error, _}` defensively so the unified-voice-llm-call call
+  # Spec includes `{:error, _}` defensively so the voice-filesearch-gpt call
   # site can keep an error-tuple match (even if Gemini.speech_to_text doesn't
   # currently surface one) without Dialyzer flagging the clause as unreachable.
   @spec do_speech_to_text_with_bhasini(map()) :: map() | String.t() | {:error, any()}

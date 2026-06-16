@@ -50,8 +50,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @type sync_result :: map() | nil | String.t() | {:ok, term()} | {:error, String.t()}
 
   @typedoc """
-  Return shape for asynchronous webhooks (Kaapi STT/TTS, unified-llm-call,
-  unified-voice-llm-call). `{:wait, ctx, []}` parks the flow context;
+  Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt,
+  voice-filesearch-gpt). `{:wait, ctx, []}` parks the flow context;
   `{:ok, ctx, [msg]}` is the immediate-failure branch (e.g. missing Kaapi
   creds, body decode error) where the flow continues with a Failure message
   without ever entering the await state.
@@ -87,7 +87,7 @@ defmodule Glific.Flows.Webhooks.Behaviour do
 
   Most webhooks omit this and the flow_resume controller uses the parsed response
   unchanged. Override for webhooks whose callback needs post-processing
-  (e.g. `unified-voice-llm-call` runs NMT+TTS).
+  (e.g. `voice-filesearch-gpt` runs NMT+TTS).
   """
   @callback handle_resume(response :: map(), ctx :: ctx()) ::
               {:ok | :error, map()}
