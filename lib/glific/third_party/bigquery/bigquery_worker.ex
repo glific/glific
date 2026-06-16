@@ -114,6 +114,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       "tickets",
       "wa_groups",
       "wa_groups_collections",
+      "wa_groups_phones",
       "wa_messages",
       "wa_reactions",
       "whatsapp_forms",
