@@ -123,7 +123,7 @@ defmodule Glific.Providers.Maytapi.Message do
           max_concurrency: 20,
           on_timeout: :kill_task
         )
-        |> Enum.each(&log_collection_task_exit(&1, group))
+        |> Stream.run()
 
         {:ok, %{success: true}}
     end
@@ -141,21 +141,6 @@ defmodule Glific.Providers.Maytapi.Message do
     )
 
     Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection"})
-    :ok
-  end
-
-  @spec log_collection_task_exit(tuple(), Group.t()) :: :ok
-  defp log_collection_task_exit({:ok, _result}, _group), do: :ok
-
-  defp log_collection_task_exit(result, %{id: group_id, organization_id: org_id}) do
-    Glific.log_error(
-      "Maytapi send failed (collection task crashed): group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
-    )
-
-    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{
-      source: "collection_task_crash"
-    })
-
     :ok
   end
 
