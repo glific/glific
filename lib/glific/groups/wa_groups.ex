@@ -421,9 +421,15 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Return the oldest active membership's managed phone for a group, optionally
-  excluding a list of `wa_managed_phone_id`s. "Active" here means BOTH:
-  `wa_groups_phones.is_active == true` AND `wa_managed_phones.status == "active"`.
+  Return the oldest active membership's managed phone for a group.
+
+  `exclude` is a list of `wa_managed_phone_id`s to skip while selecting the
+  candidate — the failover path passes the phone(s) it has already tried
+  (e.g. the unhealthy primary, or a phone that just errored on send) so the
+  same phone isn't picked again. Pass `[]` to consider every member.
+
+  "Active" here means BOTH `wa_groups_phones.is_active == true` AND
+  `wa_managed_phones.status == "active"`.
 
   Used by `Glific.Providers.Maytapi.Sender.pick_for_send/2` as the *strict*
   failover candidate when the current primary is unhealthy. Returns `nil`

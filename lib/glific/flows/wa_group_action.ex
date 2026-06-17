@@ -100,9 +100,9 @@ defmodule Glific.Flows.WAGroupAction do
   defp handle_message_result({:ok, _wa_message}, context, _messages, _attrs),
     do: {:ok, context, []}
 
-  defp handle_message_result({:error, reason}, context, _messages, attrs) do
+  defp handle_message_result({:error, reason}, context, _messages, _attrs) do
     Glific.log_error(
-      "Maytapi send failed (flow action): wa_group=#{inspect(context.wa_group_id)} org=#{context.organization_id} reason=#{inspect(reason)} attrs=#{inspect(Map.take(attrs, [:flow_id, :uuid, :type]))}"
+      "Maytapi send failed (flow action): wa_group=#{inspect(context.wa_group_id)} reason=#{inspect(reason)}"
     )
 
     Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "flow_action"})

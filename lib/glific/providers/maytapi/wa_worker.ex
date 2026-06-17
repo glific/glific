@@ -102,7 +102,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
              phone_id: payload["phone_id"],
              organization_id: org_id
            }),
-         {:ok, new_phone, :failover} <-
+         {:ok, new_phone, :promoted} <-
            Sender.pick_for_send(wa_group,
              exclude: [failed_phone.id],
              reason: :send_error

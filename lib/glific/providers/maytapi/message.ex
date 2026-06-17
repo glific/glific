@@ -43,16 +43,6 @@ defmodule Glific.Providers.Maytapi.Message do
         phone: wa_phone.phone,
         poll: poll
       })
-    else
-      {:error, reason} when reason in [:no_active_phones, :promotion_failed] ->
-        {:error, reason}
-
-      {:error, reason} ->
-        Glific.log_error(
-          "Maytapi send failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
-        )
-
-        {:error, reason}
     end
   end
 

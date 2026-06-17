@@ -18,7 +18,7 @@ defmodule Glific.Providers.Maytapi.Sender do
   }
 
   @typedoc "Why we picked this phone: directly-the-primary or promoted-via-failover."
-  @type source :: :primary | :failover
+  @type source :: :primary | :promoted
 
   @doc """
   Pick the `WAManagedPhone` to send from for `wa_group`.
@@ -34,7 +34,7 @@ defmodule Glific.Providers.Maytapi.Sender do
   ## Returns
   - `{:ok, %WAManagedPhone{}, :primary}` — primary was healthy and
     not excluded.
-  - `{:ok, %WAManagedPhone{}, :failover}` — primary unhealthy/excluded;
+  - `{:ok, %WAManagedPhone{}, :promoted}` — primary unhealthy/excluded;
     promoted the next active member and returned it. Fires a `:warning`
     notification + `glific.maytapi.failover` counter.
   - `{:error, :no_active_phones}` — no eligible phone. Fires a
@@ -83,7 +83,7 @@ defmodule Glific.Providers.Maytapi.Sender do
   defp primary_usable?(_, _), do: false
 
   @spec failover(WAGroup.t(), WAManagedPhone.t() | nil, [non_neg_integer()], atom()) ::
-          {:ok, WAManagedPhone.t(), :failover}
+          {:ok, WAManagedPhone.t(), :promoted}
           | {:error, :no_active_phones | :promotion_failed}
   defp failover(wa_group, primary, exclude, reason) do
     case pick_failover_candidate(wa_group.id, primary, exclude) do
@@ -123,7 +123,7 @@ defmodule Glific.Providers.Maytapi.Sender do
           WAManagedPhone.t() | nil,
           WAManagedPhone.t(),
           atom()
-        ) :: {:ok, WAManagedPhone.t(), :failover} | {:error, :promotion_failed}
+        ) :: {:ok, WAManagedPhone.t(), :promoted} | {:error, :promotion_failed}
   defp finish_failover(wa_group, primary, candidate, reason) do
     case promote(wa_group.id, candidate.id) do
       {:ok, _} ->
@@ -135,7 +135,7 @@ defmodule Glific.Providers.Maytapi.Sender do
 
         Appsignal.increment_counter("glific.maytapi.primary_changed", 1, %{source: "failover"})
         notify_failover(wa_group, primary, candidate, reason)
-        {:ok, candidate, :failover}
+        {:ok, candidate, :promoted}
 
       {:error, err} ->
         Glific.log_error(

@@ -81,7 +81,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       |> WAManagedPhone.changeset(%{status: "loading"})
       |> Repo.update!()
 
-      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert {:ok, phone, :promoted} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.second_phone.id
 
       # Promotion happened.
@@ -93,7 +93,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
     end
 
     test "fails over when primary is in opts[:exclude] (response-handler retry path)", ctx do
-      assert {:ok, phone, :failover} =
+      assert {:ok, phone, :promoted} =
                Sender.pick_for_send(ctx.wa_group,
                  exclude: [ctx.first_phone.id],
                  reason: :send_error
@@ -111,7 +111,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       ctx.first_phone |> WAManagedPhone.changeset(%{status: "loading"}) |> Repo.update!()
       ctx.second_phone |> WAManagedPhone.changeset(%{status: "loading"}) |> Repo.update!()
 
-      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert {:ok, phone, :promoted} = Sender.pick_for_send(ctx.wa_group)
 
       assert phone.id == ctx.second_phone.id
       assert WAGroups.primary_phone(ctx.wa_group.id).id == ctx.second_phone.id
@@ -149,7 +149,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
 
       # exclude must omit the only member; pick_for_send is called as part
       # of the normal flow (not the retry hook), so exclude is [].
-      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert {:ok, phone, :promoted} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
     end
 
@@ -167,7 +167,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       |> WAGroupPhone.changeset(%{is_active: false})
       |> Repo.update!()
 
-      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert {:ok, phone, :promoted} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
     end
 
@@ -180,7 +180,7 @@ defmodule Glific.Providers.Maytapi.SenderTest do
       |> where([wa_group_phone], wa_group_phone.wa_group_id == ^ctx.wa_group.id)
       |> Repo.update_all(set: [is_primary: false])
 
-      assert {:ok, phone, :failover} = Sender.pick_for_send(ctx.wa_group)
+      assert {:ok, phone, :promoted} = Sender.pick_for_send(ctx.wa_group)
       assert phone.id == ctx.first_phone.id
 
       assert warning_notification_exists?(

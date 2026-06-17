@@ -274,6 +274,7 @@ defmodule GlificWeb.Resolvers.Messages do
     else
       {:error, reason} ->
         Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "graphql_mutation"})
+
         {:error, send_in_wa_group_error(reason)}
     end
   end
