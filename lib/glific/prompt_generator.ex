@@ -131,10 +131,9 @@ defmodule Glific.PromptGenerator do
   @spec handle_callback(map()) ::
           {:ok, PromptGenerationRequest.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def handle_callback(%{"data" => %{"job_id" => job_id} = data}) do
-    with {:ok, request} <-
-           Repo.fetch_by(PromptGenerationRequest, %{kaapi_job_id: job_id},
-             skip_organization_id: true
-           ),
+    # Org context is set from the callback subdomain (same as the knowledge-base
+    # callback), so the lookup is scoped to the organization that owns the job.
+    with {:ok, request} <- Repo.fetch_by(PromptGenerationRequest, %{kaapi_job_id: job_id}),
          {:ok, updated} <- apply_callback(request, data) do
       {:ok, updated}
     else

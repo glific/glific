@@ -73,6 +73,8 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
     |> foreign_key_constraint(:user_id)
-    |> unique_constraint(:kaapi_job_id)
+    |> unique_constraint([:kaapi_job_id, :organization_id],
+      name: :prompt_generation_requests_kaapi_job_id_organization_id_index
+    )
   end
 end
