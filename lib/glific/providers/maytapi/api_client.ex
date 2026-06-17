@@ -106,8 +106,25 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
-
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/remove"
+      maytapi_post(url, Jason.encode!(payload), token)
+    end
+  end
+
+  @doc """
+  Adds members to the given WhatsApp group. Same payload shape as
+  `remove_group_member/3`: a `number` array of plain phone numbers.
+
+  `payload` shape:
+      %{conversation_id: "120363...@g.us", number: ["91xxxxxxxxxx", ...]}
+  """
+  @spec add_group_member(non_neg_integer(), map(), non_neg_integer()) :: Tesla.Env.result()
+  def add_group_member(org_id, payload, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/add"
       maytapi_post(url, Jason.encode!(payload), token)
     end
   end
@@ -161,4 +178,28 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       maytapi_post(url, Jason.encode!(payload), token)
     end
   end
+
+  @doc """
+  Handles a Maytapi group-operation response.
+
+  Maytapi answers HTTP 200 even on failure, with
+  `%{"success" => false, "message" => "...", "code" => "..."}`, so a 2xx status
+  alone is not enough — we decode the body and check `success`.
+
+  Returns `:ok` on success, or `{:error, message}` with Maytapi's message (or a
+  generic message for non-2xx / transport / unexpected responses).
+  """
+  @spec handle_maytapi_response(Tesla.Env.result()) :: :ok | {:error, String.t()}
+  def handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}})
+      when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, %{"success" => true}} -> :ok
+      {:ok, %{"success" => false, "message" => message}} -> {:error, message}
+      {:ok, %{"success" => false}} -> {:error, "Maytapi request failed"}
+      _ -> {:error, "Unexpected Maytapi response"}
+    end
+  end
+
+  def handle_maytapi_response({:ok, %Tesla.Env{body: body}}), do: {:error, inspect(body)}
+  def handle_maytapi_response({:error, reason}), do: {:error, inspect(reason)}
 end

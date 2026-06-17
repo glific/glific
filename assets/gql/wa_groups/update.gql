@@ -1,0 +1,13 @@
+mutation updateWaGroup($input: UpdateWaGroupInput!) {
+  updateWaGroup(input: $input) {
+    waGroup {
+      id
+      label
+      bspId
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

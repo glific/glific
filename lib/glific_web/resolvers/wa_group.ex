@@ -143,21 +143,19 @@ defmodule GlificWeb.Resolvers.WaGroup do
   end
 
   @doc """
-  Rename a WhatsApp group via Maytapi. Admin-only.
+  Update a WhatsApp group via Maytapi: rename and/or add/remove members in one
+  call. Admin-only. Any subset of `name` / `add_contact_ids` /
+  `remove_contact_id` may be supplied.
   """
-  @spec update_wa_group_subject(
-          Absinthe.Resolution.t(),
-          %{id: integer, wa_managed_phone_id: integer, subject: String.t()},
-          %{context: map()}
-        ) :: {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
-  def update_wa_group_subject(
-        _,
-        %{id: id, wa_managed_phone_id: wa_managed_phone_id, subject: subject},
-        %{context: %{current_user: user}}
-      ) do
+  @spec update_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def update_wa_group(_, %{input: %{id: id} = input}, %{
+        context: %{current_user: user}
+      }) do
     with {:ok, wa_group} <-
            Glific.Repo.fetch_by(WAGroup, %{id: id, organization_id: user.organization_id}),
-         {:ok, updated} <- WAGroups.update_group_subject(wa_group, wa_managed_phone_id, subject) do
+         {:ok, updated} <-
+           WAGroups.update_wa_group_via_maytapi(wa_group, input) do
       {:ok, %{wa_group: updated}}
     end
   end

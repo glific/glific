@@ -82,6 +82,18 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :numbers, list_of(:string)
   end
 
+  @desc """
+  Input for updateWaGroup. Supply any subset: `name` renames the group,
+  `addContactIds` adds members in one call, `removeContactId` removes a single
+  member (Maytapi's group/remove takes one number at a time).
+  """
+  input_object :update_wa_group_input do
+    field :id, non_null(:id)
+    field :name, :string
+    field :add_contact_ids, list_of(:id)
+    field :remove_contact_id, :id
+  end
+
   object :wa_group_queries do
     @desc "get the details of one wa group"
     field :wa_group, :wa_group_result do
@@ -121,13 +133,11 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(&Resolvers.WaGroup.create_wa_group/3)
     end
 
-    @desc "Rename a WhatsApp group via Maytapi (sets its subject). Admin-only."
-    field :update_wa_group_subject, :wa_group_result do
-      arg(:id, non_null(:id))
-      arg(:wa_managed_phone_id, non_null(:id))
-      arg(:subject, non_null(:string))
+    @desc "Update a WhatsApp group via Maytapi: rename and/or add/remove members in one call. Admin-only."
+    field :update_wa_group, :wa_group_result do
+      arg(:input, non_null(:update_wa_group_input))
       middleware(Authorize, :admin)
-      resolve(&Resolvers.WaGroup.update_wa_group_subject/3)
+      resolve(&Resolvers.WaGroup.update_wa_group/3)
     end
   end
 end

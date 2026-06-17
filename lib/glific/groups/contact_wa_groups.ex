@@ -7,9 +7,11 @@ defmodule Glific.Groups.ContactWAGroups do
     Contacts,
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
+    Groups.WAGroup,
     Groups.WAGroups,
     Providers.Maytapi.ApiClient,
-    Repo
+    Repo,
+    WAGroup.WAManagedPhone
   }
 
   use Ecto.Schema
@@ -144,17 +146,114 @@ defmodule Glific.Groups.ContactWAGroups do
 
     Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
       contact = Contacts.get_contact!(contact_id)
-      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone <> "@c.us"}
+      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
-        {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+      case ApiClient.handle_maytapi_response(
+             ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id)
+           ) do
+        :ok ->
           fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
           {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
           numbers_deleted + number_deleted
 
-        _ ->
+        {:error, _} ->
           numbers_deleted
       end
     end)
+  end
+
+  @doc """
+  Add and/or remove members of a WhatsApp group via Maytapi, using
+  `wa_managed_phone_id` as the acting phone for every Maytapi call.
+
+  `add_contact_ids` are added in a single Maytapi `group/add` call (it accepts
+  an array of numbers); `remove_contact_id` is a single contact removed via
+  `group/remove` (which takes one number at a time). On success we insert/delete
+  the matching `contacts_wa_groups` rows.
+
+  Maytapi answers HTTP 200 even on failure (e.g.
+  `%{"success" => false, "message" => "NOT_A_PARTICIPANT"}`), so we inspect the
+  `success` field and stop with `{:error, message}` on the first failure.
+
+  `wa_managed_phone_id` is the acting phone. Callers must pass a phone whose
+  contact is a group admin (Maytapi only honours admin actions) — the caller
+  resolves this via `WAGroups.acting_phone/1`, so this function does not
+  re-verify admin status.
+
+  Returns `{:ok, %{added: n, removed: n}}` or `{:error, message}`.
+  """
+  @spec modify_members(WAGroup.t(), non_neg_integer(), list(), non_neg_integer() | nil) ::
+          {:ok, %{added: non_neg_integer(), removed: non_neg_integer()}} | {:error, String.t()}
+  def modify_members(_wa_group, _wa_managed_phone_id, [], nil),
+    do: {:ok, %{added: 0, removed: 0}}
+
+  def modify_members(
+        %WAGroup{} = wa_group,
+        wa_managed_phone_id,
+        add_contact_ids,
+        remove_contact_id
+      ) do
+    org_id = wa_group.organization_id
+
+    with {:ok, %WAManagedPhone{phone_id: acting_phone_id}} <-
+           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id}),
+         {:ok, added} <- add_members(org_id, wa_group, acting_phone_id, add_contact_ids),
+         {:ok, removed} <- remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
+      {:ok, %{added: added, removed: removed}}
+    else
+      {:error, ["Resource not found"]} -> {:error, "Acting phone not found in this organization"}
+      {:error, message} -> {:error, message}
+    end
+  end
+
+  @spec add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), list()) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp add_members(_org_id, _wa_group, _acting_phone_id, []), do: {:ok, 0}
+
+  defp add_members(org_id, wa_group, acting_phone_id, contact_ids) do
+    # /group/add takes a `number` array of plain phone numbers (no @c.us) and
+    # adds them all in a single call, so we batch every contact into one request.
+    phones = Enum.map(contact_ids, &Contacts.get_contact!(&1).phone)
+    payload = %{conversation_id: wa_group.bsp_id, number: phones}
+
+    case ApiClient.handle_maytapi_response(
+           ApiClient.add_group_member(org_id, payload, acting_phone_id)
+         ) do
+      :ok ->
+        Enum.each(contact_ids, fn contact_id ->
+          create_contact_wa_group(%{
+            contact_id: contact_id,
+            wa_group_id: wa_group.id,
+            organization_id: org_id,
+            is_admin: false
+          })
+        end)
+
+        {:ok, length(contact_ids)}
+
+      {:error, message} ->
+        {:error, message}
+    end
+  end
+
+  @spec remove_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp remove_members(_org_id, _wa_group, _acting_phone_id, nil), do: {:ok, 0}
+
+  defp remove_members(org_id, wa_group, acting_phone_id, contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    # /group/remove takes a single plain phone number (a string, not an array).
+    payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
+
+    case ApiClient.handle_maytapi_response(
+           ApiClient.remove_group_member(org_id, payload, acting_phone_id)
+         ) do
+      :ok ->
+        delete_wa_group_contacts_by_ids(wa_group.id, [contact_id])
+        {:ok, 1}
+
+      {:error, message} ->
+        {:error, message}
+    end
   end
 end

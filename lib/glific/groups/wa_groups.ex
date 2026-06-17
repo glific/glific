@@ -421,6 +421,37 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
+  The managed phone that performs Maytapi group-management actions (rename,
+  add/remove members) for `wa_group_id`: one of our managed numbers whose
+  contact is an admin of this group. The caller (frontend) never chooses it —
+  Maytapi only honours actions from a group admin, so we resolve it server-side.
+
+  Admin membership is kept fresh by the group sync, so when none of our numbers
+  is an admin we genuinely cannot act on the group — this returns `nil` and the
+  caller surfaces an error. There is deliberately **no** primary-phone fallback:
+  a non-admin phone would just be rejected by Maytapi.
+  """
+  @spec acting_phone(non_neg_integer()) :: WAManagedPhone.t() | nil
+  def acting_phone(wa_group_id) do
+    admin_ids = admin_contact_ids(wa_group_id)
+
+    WAManagedPhone
+    |> where([wmp], wmp.contact_id in ^admin_ids)
+    |> order_by([wmp], asc: wmp.id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  # Glific contact ids that are admins of this group.
+  @spec admin_contact_ids(non_neg_integer()) :: [non_neg_integer()]
+  defp admin_contact_ids(wa_group_id) do
+    ContactWAGroup
+    |> where([cwg], cwg.wa_group_id == ^wa_group_id and cwg.is_admin == true)
+    |> select([cwg], cwg.contact_id)
+    |> Repo.all()
+  end
+
+  @doc """
   Promote a different managed phone to be the group's primary. Demote the
   current primary and promote the target in a single transaction.
 
@@ -741,13 +772,13 @@ defmodule Glific.Groups.WAGroups do
   def create_group_via_maytapi(org_id, wa_managed_phone_id, attrs) do
     with {:ok, wa_managed_phone} <-
            Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
-         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
+         response <-
            ApiClient.create_group(org_id, wa_managed_phone.phone_id, %{
              name: attrs[:name],
              numbers: attrs[:numbers] || []
            }),
-         {:ok, decoded} <- Jason.decode(body),
-         {:ok, bsp_id} <- extract_created_group_id(decoded) do
+         :ok <- ApiClient.handle_maytapi_response(response),
+         {:ok, bsp_id} <- extract_created_group_id(response) do
       maybe_create_group(%{
         label: attrs[:name],
         bsp_id: bsp_id,
@@ -755,21 +786,59 @@ defmodule Glific.Groups.WAGroups do
         wa_managed_phone_id: wa_managed_phone_id
       })
     else
-      {:ok, %Tesla.Env{body: body}} ->
-        Glific.log_error("Maytapi create_group failed: org=#{org_id} body=#{inspect(body)}")
-        {:error, body}
-
-      {:error, reason} = err ->
+      {:error, reason} ->
         Glific.log_error("Maytapi create_group failed: org=#{org_id} reason=#{inspect(reason)}")
-        err
+        {:error, reason}
     end
   end
 
   @doc """
-  Rename a WhatsApp group via Maytapi (sets its subject in WhatsApp terms).
+  Update a WhatsApp group via Maytapi in one call: optionally rename it and/or
+  add/remove members. The acting phone is resolved via
+  `acting_phone/1` (a managed number whose contact is a group admin), since Maytapi only honours actions from a group
+  admin.
 
-  On success updates `wa_groups.label` so Glific stays in sync without
-  waiting for the next periodic sync.
+  `attrs` (any subset): `%{name: "New name", add_contact_ids: [...],
+  remove_contact_id: id}`. Returns the (possibly renamed) `wa_group`, or
+  `{:error, reason}` when none of the org's numbers is an admin of the group.
+  Member add/remove is delegated to `ContactWAGroups.modify_members/4`.
+  """
+  @spec update_wa_group_via_maytapi(WAGroup.t(), map()) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  def update_wa_group_via_maytapi(%WAGroup{} = wa_group, attrs) do
+    case acting_phone(wa_group.id) do
+      nil ->
+        {:error,
+         "None of your WhatsApp numbers is an admin of this group, so it can't be managed from Glific. Add one of your numbers as a group admin on WhatsApp first."}
+
+      %WAManagedPhone{id: wa_managed_phone_id} ->
+        with {:ok, wa_group} <- maybe_update_subject(wa_group, wa_managed_phone_id, attrs[:name]),
+             {:ok, _counts} <-
+               ContactWAGroups.modify_members(
+                 wa_group,
+                 wa_managed_phone_id,
+                 attrs[:add_contact_ids] || [],
+                 attrs[:remove_contact_id]
+               ) do
+          {:ok, wa_group}
+        end
+    end
+  end
+
+  @spec maybe_update_subject(WAGroup.t(), non_neg_integer(), String.t() | nil) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  defp maybe_update_subject(wa_group, _wa_managed_phone_id, name) when name in [nil, ""],
+    do: {:ok, wa_group}
+
+  defp maybe_update_subject(wa_group, wa_managed_phone_id, name),
+    do: update_group_subject(wa_group, wa_managed_phone_id, name)
+
+  @doc """
+  Rename a WhatsApp group via Maytapi (sets its subject in WhatsApp terms),
+  acting as `wa_managed_phone_id`.
+
+  On success updates `wa_groups.label` so Glific stays in sync without waiting
+  for the next periodic sync.
   """
   @spec update_group_subject(WAGroup.t(), non_neg_integer(), String.t()) ::
           {:ok, WAGroup.t()} | {:error, any()}
@@ -779,33 +848,35 @@ defmodule Glific.Groups.WAGroups do
              id: wa_managed_phone_id,
              organization_id: wa_group.organization_id
            }),
-         {:ok, %Tesla.Env{status: status}} when status in 200..299 <-
-           ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
-             conversation_id: wa_group.bsp_id,
-             subject: subject
-           }) do
+         :ok <-
+           ApiClient.handle_maytapi_response(
+             ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
+               conversation_id: wa_group.bsp_id,
+               subject: subject
+             })
+           ) do
       update_wa_group(wa_group, %{label: subject})
     else
-      {:ok, %Tesla.Env{body: body}} ->
-        Glific.log_error(
-          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} body=#{inspect(body)}"
-        )
-
-        {:error, body}
-
-      {:error, reason} = err ->
+      {:error, reason} ->
         Glific.log_error(
           "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
         )
 
-        err
+        {:error, reason}
     end
   end
 
   # Maytapi's createGroup response shape (per docs): `{"success": true, "data": {"id": "120363...@g.us", ...}}`.
   # Fail with a clear tuple if the body doesn't match — easier to grep than a KeyError.
-  @spec extract_created_group_id(map()) :: {:ok, String.t()} | {:error, :invalid_create_group_response}
-  defp extract_created_group_id(%{"data" => %{"id" => id}}) when is_binary(id), do: {:ok, id}
+  @spec extract_created_group_id(Tesla.Env.result()) ::
+          {:ok, String.t()} | {:error, :invalid_create_group_response}
+  defp extract_created_group_id({:ok, %Tesla.Env{body: body}}) do
+    case Jason.decode(body) do
+      {:ok, %{"data" => %{"id" => id}}} when is_binary(id) -> {:ok, id}
+      _ -> {:error, :invalid_create_group_response}
+    end
+  end
+
   defp extract_created_group_id(_), do: {:error, :invalid_create_group_response}
 
   @doc """
