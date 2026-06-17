@@ -29,6 +29,8 @@ defmodule Glific.PromptGeneratorTest do
         shortcode: "kaapi"
       })
 
+    FunWithFlags.enable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
+
     :ok
   end
 
@@ -185,6 +187,16 @@ defmodule Glific.PromptGeneratorTest do
 
   describe "generate_prompt/3" do
     setup :enable_kaapi
+
+    test "returns error (no row) when the feature flag is disabled",
+         %{organization_id: org_id} do
+      FunWithFlags.disable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
+
+      assert {:error, "AI Prompt Generator is not enabled for the organization."} =
+               PromptGenerator.generate_prompt(@valid_answers, org_id)
+
+      assert Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true) == 0
+    end
 
     test "happy path: persists :in_progress row with kaapi_job_id",
          %{organization_id: org_id} do

@@ -41,6 +41,10 @@ defmodule Glific.PromptGenerator do
   # AppSignal namespace for prompt-generation errors (enables a dedicated error-rate trigger).
   @appsignal_namespace "prompt_generator"
 
+  # Per-org feature flag (BETA). Enforced server-side here in addition to the frontend
+  # hiding the entry point — see Glific.Flags.init_fun_with_flags/1 where it is registered.
+  @feature_flag :is_prompt_generator_enabled
+
   # Server-side meta-prompt — kept here so it can be tuned without frontend changes.
   @meta_prompt "You are an expert prompt engineer. Using the NGO's answers below, write a clear, production-ready SYSTEM PROMPT for a WhatsApp chatbot. Output ONLY the prompt text, ready to paste — no preamble, no markdown. Cover role & purpose, audience, language policy, tone, response length/format, off-limits topics, the exact fallback message, and the escalation path. If an answer is blank, omit that section gracefully — never invent details."
 
@@ -67,12 +71,13 @@ defmodule Glific.PromptGenerator do
   calls Kaapi to obtain a `job_id`, then persists a `:in_progress`
   `PromptGenerationRequest` row. Returns `{:ok, request}` on success.
 
-  Returns `{:error, reason}` — without inserting a row — when Kaapi is inactive for
-  the org or when the Kaapi call itself fails.
+  Returns `{:error, reason}` — without inserting a row — when the per-org
+  `:is_prompt_generator_enabled` feature flag is off, when Kaapi is inactive for the
+  org, or when the Kaapi call itself fails.
 
-  Visibility of the feature is driven by the per-org `:is_prompt_generator_enabled`
-  flag exposed on the organization (the frontend hides the entry point when off);
-  this context does not re-gate on the flag.
+  The feature is enforced server-side on the `:is_prompt_generator_enabled` flag (the
+  frontend also hides the entry point when it is off) — frontend hiding alone is not
+  sufficient for entitlement control.
 
   ## Parameters
 
@@ -94,7 +99,8 @@ defmodule Glific.PromptGenerator do
     callback_url = build_callback_url(org_id)
     payload = build_llm_payload(answers, callback_url, request_id)
 
-    with {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
+    with :ok <- check_feature_enabled(org_id),
+         {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
       create_request(%{
         inputs: answers,
         status: :in_progress,
@@ -260,6 +266,15 @@ defmodule Glific.PromptGenerator do
       %Error{message: message, reason: Keyword.get(opts, :reason)},
       namespace: @appsignal_namespace
     )
+  end
+
+  @spec check_feature_enabled(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp check_feature_enabled(org_id) do
+    if FunWithFlags.enabled?(@feature_flag, for: %{organization_id: org_id}) do
+      :ok
+    else
+      {:error, "AI Prompt Generator is not enabled for the organization."}
+    end
   end
 
   @spec build_callback_url(non_neg_integer()) :: String.t()
