@@ -5,6 +5,8 @@ defmodule GlificWeb.KaapiControllerTest do
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Partners
+  alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.Repo
 
   describe "create_knowledge_base_version/2" do
@@ -248,6 +250,104 @@ defmodule GlificWeb.KaapiControllerTest do
       assert updated.status == :failed
       assert updated.updated_at == failed_version.updated_at
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # prompt_generation_callback/2
+  # ---------------------------------------------------------------------------
+
+  describe "prompt_generation_callback/2" do
+    setup :setup_prompt_generation
+
+    test "returns 200 and flips row to :ready on SUCCESSFUL callback",
+         %{conn: conn, prompt_generation_request: request} do
+      params = %{
+        "data" => %{
+          "job_id" => request.kaapi_job_id,
+          "status" => "SUCCESSFUL",
+          "text" => "Generated prompt text from LLM.",
+          "error_message" => nil
+        }
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+
+      assert response(conn, 200) == "Prompt generation callback handled successfully"
+
+      {:ok, updated} =
+        Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
+
+      assert updated.status == :ready
+      assert updated.generated_prompt == "Generated prompt text from LLM."
+    end
+
+    test "returns 200 and flips row to :failed on FAILED callback",
+         %{conn: conn, prompt_generation_request: request} do
+      params = %{
+        "data" => %{
+          "job_id" => request.kaapi_job_id,
+          "status" => "FAILED",
+          "text" => nil,
+          "error_message" => "LLM processing failed"
+        }
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+
+      assert response(conn, 200) == "Prompt generation callback handled successfully"
+
+      {:ok, updated} =
+        Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
+
+      assert updated.status == :failed
+      assert updated.error_message == "LLM processing failed"
+    end
+
+    test "returns 200 when job_id is not found",
+         %{conn: conn} do
+      params = %{
+        "data" => %{
+          "job_id" => "nonexistent_job_pg",
+          "status" => "SUCCESSFUL",
+          "text" => "some text",
+          "error_message" => nil
+        }
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+      assert response(conn, 200) == "Prompt generation callback handled successfully"
+    end
+  end
+
+  defp setup_prompt_generation(%{organization_id: organization_id}) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"}
+      })
+
+    {:ok, _credential} =
+      Partners.update_credential(credential, %{
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"},
+        is_active: true,
+        organization_id: organization_id,
+        shortcode: "kaapi"
+      })
+
+    {:ok, request} =
+      %PromptGenerationRequest{}
+      |> PromptGenerationRequest.changeset(%{
+        inputs: %{"name" => "Test NGO"},
+        status: :in_progress,
+        kaapi_job_id: "job_pg_ctrl_001",
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    %{prompt_generation_request: request, organization_id: organization_id}
   end
 
   defp setup_knowledge_base(%{organization_id: organization_id}) do
