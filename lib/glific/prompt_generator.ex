@@ -277,6 +277,7 @@ defmodule Glific.PromptGenerator do
       generated_prompt: generated_prompt
     })
     |> Repo.update()
+    |> record_outcome("success")
   end
 
   defp apply_callback(request, params) do
@@ -292,7 +293,24 @@ defmodule Glific.PromptGenerator do
       error_message: error_message
     })
     |> Repo.update()
+    |> record_outcome("failure")
   end
+
+  # Track generation latency (dispatch -> callback) and the success/failure count in
+  # AppSignal, mirroring the flow-webhook telemetry (track_webhook_count/latency). Only
+  # fires on a real transition — the terminal-state guard short-circuits duplicate callbacks.
+  @spec record_outcome(
+          {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()},
+          String.t()
+        ) :: {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()}
+  defp record_outcome({:ok, request} = result, status) do
+    duration_ms = DateTime.diff(DateTime.utc_now(), request.inserted_at, :millisecond)
+    Appsignal.increment_counter("prompt_generator_count", 1, %{status: status})
+    Appsignal.add_distribution_value("prompt_generator_latency", duration_ms, %{status: status})
+    result
+  end
+
+  defp record_outcome(result, _status), do: result
 
   @spec log_callback_error(String.t(), keyword()) :: :ok
   defp log_callback_error(message, opts) do
