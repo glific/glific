@@ -1038,9 +1038,20 @@ defmodule Glific.BigQuery do
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta
         WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
-          '#{timezone}')) a WHERE a.rn <> 1 ORDER BY id);
+          '#{timezone}')#{partition_filter(table, timezone)}) a WHERE a.rn <> 1 ORDER BY id);
     """
   end
+
+  # For MONTH-partitioned tables, also bound the dedup scan by `inserted_at` (the
+  # partition key) so BigQuery prunes to recent partitions instead of full-scanning.
+  # These are transactional tables whose `updated_at` stays close to creation, so
+  # duplicates (from re-syncs of recently-updated rows) fall inside a 3-month window.
+  @spec partition_filter(String.t(), String.t()) :: String.t()
+  defp partition_filter(table, timezone) when table in @partitioned_tables,
+    do:
+      "\n    AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+
+  defp partition_filter(_table, _timezone), do: ""
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok

@@ -152,7 +152,8 @@ defmodule Glific.BigQueryTest do
       ) AS rn
       FROM `test_dataset.messages` delta
       WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
-        'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+        'Asia/Kolkata')
+      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
   """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
@@ -184,6 +185,19 @@ defmodule Glific.BigQueryTest do
                %{conn: conn, project_id: "test_project", dataset_id: "test_dataset"},
                attrs.organization_id
              )
+  end
+
+  test "generate_duplicate_removal_query/3 omits the inserted_at filter for non-partitioned tables",
+       attrs do
+    query =
+      BigQuery.generate_duplicate_removal_query(
+        "contacts",
+        %{project_id: "test_project", dataset_id: "test_dataset"},
+        attrs.organization_id
+      )
+
+    assert query =~ "DELETE FROM `test_dataset.contacts`"
+    refute query =~ "INTERVAL 3 MONTH"
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
