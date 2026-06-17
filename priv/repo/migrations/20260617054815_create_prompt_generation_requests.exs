@@ -30,11 +30,13 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
       timestamps(type: :utc_datetime)
     end
 
-    # Intentionally GLOBAL (not org-scoped): kaapi_job_id is a globally-unique token
-    # minted by Kaapi, and the unauthenticated callback looks it up by job_id alone
-    # (skip_organization_id). A global unique index guarantees that lookup resolves to
-    # exactly one row across all orgs — an org-scoped index would not.
-    create unique_index(:prompt_generation_requests, [:kaapi_job_id])
+    # Org-scoped uniqueness (tenant rule). The Kaapi callback resolves the row with
+    # org context set from the callback subdomain (same as the knowledge-base callback),
+    # so the lookup is by kaapi_job_id within the organization.
+    create unique_index(:prompt_generation_requests, [:kaapi_job_id, :organization_id],
+             name: :prompt_generation_requests_kaapi_job_id_organization_id_index
+           )
+
     create index(:prompt_generation_requests, [:organization_id])
   end
 end
