@@ -40,6 +40,7 @@ glific/
 ├── lib/
 │   ├── glific/          # Business logic — see lib/glific/CLAUDE.md
 │   └── glific_web/      # Web layer — see lib/glific_web/CLAUDE.md
+├── plans/               # Architecture planning docs (e.g. webhook-refactor.md)
 ├── priv/repo/           # Migrations, seeds, structure.sql
 ├── test/                # Mirrors lib/ — see test/CLAUDE.md
 └── rel/                 # Release configuration
