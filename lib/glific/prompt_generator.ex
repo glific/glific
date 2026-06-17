@@ -23,6 +23,9 @@ defmodule Glific.PromptGenerator do
   alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.ThirdParty.Kaapi
 
+  # Feature flag gating the prompt generator per organization (BETA rollout).
+  @feature_flag :prompt_generator
+
   # Server-side meta-prompt — kept here so it can be tuned without frontend changes.
   @meta_prompt "You are an expert prompt engineer. Using the NGO's answers below, write a clear, production-ready SYSTEM PROMPT for a WhatsApp chatbot. Output ONLY the prompt text, ready to paste — no preamble, no markdown. Cover role & purpose, audience, language policy, tone, response length/format, off-limits topics, the exact fallback message, and the escalation path. If an answer is blank, omit that section gracefully — never invent details."
 
@@ -49,8 +52,9 @@ defmodule Glific.PromptGenerator do
   calls Kaapi to obtain a `job_id`, then persists a `:in_progress`
   `PromptGenerationRequest` row. Returns `{:ok, request}` on success.
 
-  Returns `{:error, reason}` — without inserting a row — when Kaapi is inactive for
-  the org or the Kaapi call itself fails.
+  Returns `{:error, reason}` — without inserting a row — when the `#{@feature_flag}`
+  feature flag is disabled for the org, when Kaapi is inactive for the org, or when
+  the Kaapi call itself fails.
 
   ## Parameters
 
@@ -72,7 +76,8 @@ defmodule Glific.PromptGenerator do
     callback_url = build_callback_url(org_id)
     payload = build_llm_payload(answers, callback_url, request_id)
 
-    with {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
+    with :ok <- check_feature_enabled(org_id),
+         {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
       create_request(%{
         inputs: answers,
         status: :in_progress,
@@ -101,9 +106,12 @@ defmodule Glific.PromptGenerator do
       ```
   """
   @spec handle_callback(map()) ::
-          {:ok, PromptGenerationRequest.t()} | {:error, String.t()}
+          {:ok, PromptGenerationRequest.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def handle_callback(%{"data" => %{"job_id" => job_id} = data}) do
-    with {:ok, request} <- Repo.fetch_by(PromptGenerationRequest, %{kaapi_job_id: job_id}),
+    with {:ok, request} <-
+           Repo.fetch_by(PromptGenerationRequest, %{kaapi_job_id: job_id},
+             skip_organization_id: true
+           ),
          {:ok, updated} <- apply_callback(request, data) do
       {:ok, updated}
     else
@@ -115,6 +123,14 @@ defmodule Glific.PromptGenerator do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  # Defensive catch-all: the callback endpoint is public, so a malformed body must
+  # not raise (the controller must still return 200). Kaapi sends a well-formed
+  # `%{"data" => %{"job_id" => ...}}` payload; anything else is logged and ignored.
+  def handle_callback(params) do
+    Logger.error("PromptGenerator callback: unexpected payload shape: #{inspect(params)}")
+    {:error, "Unexpected prompt generation callback payload"}
   end
 
   @doc """
@@ -208,6 +224,15 @@ defmodule Glific.PromptGenerator do
       error_message: data["error_message"]
     })
     |> Repo.update()
+  end
+
+  @spec check_feature_enabled(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp check_feature_enabled(org_id) do
+    if FunWithFlags.enabled?(@feature_flag, for: %{organization_id: org_id}) do
+      :ok
+    else
+      {:error, "AI Prompt Generator is not enabled for the organization."}
+    end
   end
 
   @spec build_callback_url(non_neg_integer()) :: String.t()
