@@ -32,7 +32,8 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
       add :user_id, references(:users, on_delete: :nilify_all),
         comment: "User who initiated the generation request; nullable"
 
-      timestamps(type: :utc_datetime)
+      # microsecond precision so dispatch->callback latency (tracked in AppSignal) is accurate to ms
+      timestamps(type: :utc_datetime_usec)
     end
 
     # Org-scoped uniqueness on request_id — this is the real callback correlation key.

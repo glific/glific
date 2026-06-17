@@ -66,7 +66,7 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
     belongs_to(:organization, Organization)
     belongs_to(:user, User)
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
