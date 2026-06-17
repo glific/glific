@@ -6,6 +6,14 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
   WhatsApp chatbot system-prompt generation via Kaapi. The row starts as `:in_progress`,
   and transitions to `:ready` (with `generated_prompt` populated) or `:failed` (with
   `error_message`) when Kaapi posts its async callback.
+
+  ## Callback correlation
+
+  We generate a UUID `request_id` before calling Kaapi and embed it as
+  `request_metadata.request_id` in the payload. Kaapi echoes it back as
+  `metadata.request_id` in the async callback body — this is the lookup key.
+  `kaapi_job_id` is stored for informational purposes only (from the Kaapi sync ack)
+  and is NOT the callback correlation key.
   """
 
   use Ecto.Schema
@@ -22,6 +30,7 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
           inputs: map() | nil,
           generated_prompt: String.t() | nil,
           status: atom() | nil,
+          request_id: String.t() | nil,
           kaapi_job_id: String.t() | nil,
           error_message: String.t() | nil,
           organization_id: non_neg_integer() | nil,
@@ -35,6 +44,7 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
   @required_fields [
     :inputs,
     :status,
+    :request_id,
     :organization_id
   ]
 
@@ -49,6 +59,7 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
     field(:inputs, :map)
     field(:generated_prompt, :string)
     field(:status, Ecto.Enum, values: [:in_progress, :ready, :failed], default: :in_progress)
+    field(:request_id, :string)
     field(:kaapi_job_id, :string)
     field(:error_message, :string)
 
@@ -63,7 +74,7 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
 
   ## Examples
 
-      iex> PromptGenerationRequest.changeset(%PromptGenerationRequest{}, %{inputs: %{}, status: :in_progress, organization_id: 1})
+      iex> PromptGenerationRequest.changeset(%PromptGenerationRequest{}, %{inputs: %{}, status: :in_progress, request_id: "uuid-123", organization_id: 1})
       %Ecto.Changeset{valid?: true}
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
@@ -73,8 +84,8 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
     |> foreign_key_constraint(:user_id)
-    |> unique_constraint([:kaapi_job_id, :organization_id],
-      name: :prompt_generation_requests_kaapi_job_id_organization_id_index
+    |> unique_constraint([:request_id, :organization_id],
+      name: :prompt_generation_requests_request_id_organization_id_index
     )
   end
 end
