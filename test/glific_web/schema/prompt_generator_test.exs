@@ -147,6 +147,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
         |> PromptGenerationRequest.changeset(%{
           inputs: %{"name" => "Test NGO"},
           status: :in_progress,
+          request_id: "req_poll_001",
           kaapi_job_id: "job_poll_001",
           organization_id: org_id
         })
@@ -185,6 +186,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
         |> PromptGenerationRequest.changeset(%{
           inputs: %{"name" => "Org A NGO"},
           status: :in_progress,
+          request_id: "req_cross_org_001",
           kaapi_job_id: "job_cross_org_001",
           organization_id: org_id
         })
@@ -235,15 +237,18 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
 
       assert request.kaapi_job_id == "job_pg_test"
 
-      # Step 3: simulate the Kaapi callback
+      # Step 3: simulate the Kaapi callback (real shape, correlated by request_id)
       {:ok, _updated} =
         PromptGenerator.handle_callback(%{
+          "success" => true,
           "data" => %{
-            "job_id" => request.kaapi_job_id,
-            "status" => "SUCCESSFUL",
-            "text" => "You are a helpful chatbot for #{org_id}.",
-            "error_message" => nil
-          }
+            "response" => %{
+              "output" => %{"content" => %{"value" => "You are a helpful chatbot for #{org_id}."}}
+            }
+          },
+          "error" => nil,
+          "errors" => nil,
+          "metadata" => %{"request_id" => request.request_id}
         })
 
       # Step 4: poll via GraphQL and assert :ready

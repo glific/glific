@@ -259,15 +259,21 @@ defmodule GlificWeb.KaapiControllerTest do
   describe "prompt_generation_callback/2" do
     setup :setup_prompt_generation
 
-    test "returns 200 and flips row to :ready on SUCCESSFUL callback",
+    test "returns 200 and flips row to :ready on a successful callback",
          %{conn: conn, prompt_generation_request: request} do
       params = %{
+        "success" => true,
         "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "SUCCESSFUL",
-          "text" => "Generated prompt text from LLM.",
-          "error_message" => nil
-        }
+          "response" => %{
+            "output" => %{
+              "type" => "text",
+              "content" => %{"format" => "text", "value" => "Generated prompt text from LLM."}
+            }
+          }
+        },
+        "error" => nil,
+        "errors" => nil,
+        "metadata" => %{"request_id" => request.request_id}
       }
 
       conn = post(conn, "/kaapi/prompt_generation", params)
@@ -281,15 +287,14 @@ defmodule GlificWeb.KaapiControllerTest do
       assert updated.generated_prompt == "Generated prompt text from LLM."
     end
 
-    test "returns 200 and flips row to :failed on FAILED callback",
+    test "returns 200 and flips row to :failed on a failed callback",
          %{conn: conn, prompt_generation_request: request} do
       params = %{
-        "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "FAILED",
-          "text" => nil,
-          "error_message" => "LLM processing failed"
-        }
+        "success" => false,
+        "data" => nil,
+        "error" => "LLM processing failed",
+        "errors" => nil,
+        "metadata" => %{"request_id" => request.request_id}
       }
 
       conn = post(conn, "/kaapi/prompt_generation", params)
@@ -303,15 +308,12 @@ defmodule GlificWeb.KaapiControllerTest do
       assert updated.error_message == "LLM processing failed"
     end
 
-    test "returns 200 when job_id is not found",
+    test "returns 200 when the request_id is not found",
          %{conn: conn} do
       params = %{
-        "data" => %{
-          "job_id" => "nonexistent_job_pg",
-          "status" => "SUCCESSFUL",
-          "text" => "some text",
-          "error_message" => nil
-        }
+        "success" => true,
+        "data" => %{"response" => %{"output" => %{"content" => %{"value" => "some text"}}}},
+        "metadata" => %{"request_id" => "nonexistent_req_pg"}
       }
 
       conn = post(conn, "/kaapi/prompt_generation", params)
@@ -342,6 +344,7 @@ defmodule GlificWeb.KaapiControllerTest do
       |> PromptGenerationRequest.changeset(%{
         inputs: %{"name" => "Test NGO"},
         status: :in_progress,
+        request_id: "req_pg_ctrl_001",
         kaapi_job_id: "job_pg_ctrl_001",
         organization_id: organization_id
       })
