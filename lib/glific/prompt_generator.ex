@@ -13,8 +13,6 @@ defmodule Glific.PromptGenerator do
       3. `handle_callback/1` — look up by `kaapi_job_id`, update status + text/error.
   """
 
-  require Logger
-
   alias Glific.{
     Partners,
     Repo
@@ -23,8 +21,29 @@ defmodule Glific.PromptGenerator do
   alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.ThirdParty.Kaapi
 
-  # Feature flag gating the prompt generator per organization (BETA rollout).
-  @feature_flag :prompt_generator
+  defmodule Error do
+    @moduledoc """
+    Custom error for prompt-generation failures.
+
+    The callback endpoint is a backend-to-backend integration with Kaapi (NGOs
+    never interact with it), so failures are reported to AppSignal under the
+    `"prompt_generator"` namespace rather than surfaced to a user. This lets us
+    build an error-rate trigger on the namespace.
+    """
+    defexception [:message, :reason, :organization_id]
+
+    @spec message(%__MODULE__{}) :: String.t()
+    def message(%Error{} = error) do
+      "#{error.message} reason: #{error.reason} organization_id: #{error.organization_id}"
+    end
+  end
+
+  # AppSignal namespace for prompt-generation errors (enables a dedicated error-rate trigger).
+  @appsignal_namespace "prompt_generator"
+
+  # Per-org feature flag (BETA). Enforced server-side here in addition to the frontend
+  # hiding the entry point — see Glific.Flags.init_fun_with_flags/1 where it is registered.
+  @feature_flag :is_prompt_generator_enabled
 
   # Server-side meta-prompt — kept here so it can be tuned without frontend changes.
   @meta_prompt "You are an expert prompt engineer. Using the NGO's answers below, write a clear, production-ready SYSTEM PROMPT for a WhatsApp chatbot. Output ONLY the prompt text, ready to paste — no preamble, no markdown. Cover role & purpose, audience, language policy, tone, response length/format, off-limits topics, the exact fallback message, and the escalation path. If an answer is blank, omit that section gracefully — never invent details."
@@ -52,9 +71,13 @@ defmodule Glific.PromptGenerator do
   calls Kaapi to obtain a `job_id`, then persists a `:in_progress`
   `PromptGenerationRequest` row. Returns `{:ok, request}` on success.
 
-  Returns `{:error, reason}` — without inserting a row — when the `#{@feature_flag}`
-  feature flag is disabled for the org, when Kaapi is inactive for the org, or when
-  the Kaapi call itself fails.
+  Returns `{:error, reason}` — without inserting a row — when the per-org
+  `:is_prompt_generator_enabled` feature flag is off, when Kaapi is inactive for the
+  org, or when the Kaapi call itself fails.
+
+  The feature is enforced server-side on the `:is_prompt_generator_enabled` flag (the
+  frontend also hides the entry point when it is off) — frontend hiding alone is not
+  sufficient for entitlement control.
 
   ## Parameters
 
@@ -116,7 +139,9 @@ defmodule Glific.PromptGenerator do
       {:ok, updated}
     else
       {:error, [_, "Resource not found"]} ->
-        Logger.error("PromptGenerator callback: no request found for job_id=#{job_id}")
+        log_callback_error("No prompt generation request found for the callback",
+          reason: "job_id=#{job_id}"
+        )
 
         {:error, "Prompt generation request not found for job_id=#{job_id}"}
 
@@ -127,9 +152,12 @@ defmodule Glific.PromptGenerator do
 
   # Defensive catch-all: the callback endpoint is public, so a malformed body must
   # not raise (the controller must still return 200). Kaapi sends a well-formed
-  # `%{"data" => %{"job_id" => ...}}` payload; anything else is logged and ignored.
+  # `%{"data" => %{"job_id" => ...}}` payload; anything else is reported and ignored.
   def handle_callback(params) do
-    Logger.error("PromptGenerator callback: unexpected payload shape: #{inspect(params)}")
+    log_callback_error("Unexpected prompt generation callback payload",
+      reason: inspect(params)
+    )
+
     {:error, "Unexpected prompt generation callback payload"}
   end
 
@@ -208,6 +236,12 @@ defmodule Glific.PromptGenerator do
 
   @spec apply_callback(PromptGenerationRequest.t(), map()) ::
           {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()}
+  # Terminal states are immutable: a late callback must not clobber a row that
+  # already reached :ready (losing the generated prompt) or :failed.
+  defp apply_callback(%PromptGenerationRequest{status: status} = request, _data)
+       when status in [:ready, :failed],
+       do: {:ok, request}
+
   defp apply_callback(request, %{"status" => "SUCCESSFUL"} = data) do
     request
     |> PromptGenerationRequest.changeset(%{
@@ -224,6 +258,14 @@ defmodule Glific.PromptGenerator do
       error_message: data["error_message"]
     })
     |> Repo.update()
+  end
+
+  @spec log_callback_error(String.t(), keyword()) :: :ok
+  defp log_callback_error(message, opts) do
+    Glific.log_exception(
+      %Error{message: message, reason: Keyword.get(opts, :reason)},
+      namespace: @appsignal_namespace
+    )
   end
 
   @spec check_feature_enabled(non_neg_integer()) :: :ok | {:error, String.t()}

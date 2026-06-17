@@ -405,10 +405,6 @@ defmodule Glific.ThirdParty.Kaapi do
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
       case body do
         %{data: %{job_id: job_id}} when is_binary(job_id) ->
-          Logger.info(
-            "Kaapi prompt generation job dispatched for org: #{organization_id}, job_id: #{job_id}"
-          )
-
           {:ok, %{job_id: job_id}}
 
         other ->

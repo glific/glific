@@ -29,7 +29,7 @@ defmodule Glific.PromptGeneratorTest do
         shortcode: "kaapi"
       })
 
-    FunWithFlags.enable(:prompt_generator, for_actor: %{organization_id: org_id})
+    FunWithFlags.enable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
 
     :ok
   end
@@ -190,12 +190,12 @@ defmodule Glific.PromptGeneratorTest do
 
     test "returns error (no row) when the feature flag is disabled",
          %{organization_id: org_id} do
-      FunWithFlags.disable(:prompt_generator, for_actor: %{organization_id: org_id})
+      FunWithFlags.disable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
 
       assert {:error, "AI Prompt Generator is not enabled for the organization."} =
                PromptGenerator.generate_prompt(@valid_answers, org_id)
 
-      assert Repo.aggregate(PromptGenerationRequest, :count) == 0
+      assert Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true) == 0
     end
 
     test "happy path: persists :in_progress row with kaapi_job_id",
@@ -277,9 +277,14 @@ defmodule Glific.PromptGeneratorTest do
         %Tesla.Env{status: 422, body: %{error: "Unprocessable entity"}}
       end)
 
+      count_before = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
+
       result = PromptGenerator.generate_prompt(@valid_answers, org_id)
 
       assert {:error, _reason} = result
+
+      count_after = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
+      assert count_before == count_after
     end
   end
 
@@ -379,6 +384,40 @@ defmodule Glific.PromptGeneratorTest do
 
       assert {:ok, _first} = PromptGenerator.handle_callback(params)
       assert {:ok, _second} = PromptGenerator.handle_callback(params)
+    end
+
+    test "late FAILED callback does not clobber an already :ready row",
+         %{request: request} do
+      success = %{
+        "data" => %{
+          "job_id" => request.kaapi_job_id,
+          "status" => "SUCCESSFUL",
+          "text" => "The generated prompt.",
+          "error_message" => nil
+        }
+      }
+
+      late_failure = %{
+        "data" => %{
+          "job_id" => request.kaapi_job_id,
+          "status" => "FAILED",
+          "text" => nil,
+          "error_message" => "Too late"
+        }
+      }
+
+      assert {:ok, ready} = PromptGenerator.handle_callback(success)
+      assert ready.status == :ready
+
+      assert {:ok, unchanged} = PromptGenerator.handle_callback(late_failure)
+      assert unchanged.status == :ready
+      assert unchanged.generated_prompt == "The generated prompt."
+      assert is_nil(unchanged.error_message)
+    end
+
+    test "malformed payload (no data/job_id) returns error without crashing" do
+      assert {:error, _reason} = PromptGenerator.handle_callback(%{"unexpected" => "shape"})
+      assert {:error, _reason} = PromptGenerator.handle_callback(%{})
     end
   end
 end
