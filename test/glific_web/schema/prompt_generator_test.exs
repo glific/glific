@@ -44,6 +44,8 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
         shortcode: "kaapi"
       })
 
+    FunWithFlags.enable(:prompt_generator, for_actor: %{organization_id: org_id})
+
     :ok
   end
 
