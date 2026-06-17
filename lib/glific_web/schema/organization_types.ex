@@ -32,6 +32,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:whatsapp_forms_enabled, :boolean)
     field(:ai_evaluations_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
+    field(:copy_node_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -140,6 +141,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:is_whatsapp_group_enabled, :boolean)
     field(:is_certificate_enabled, :boolean)
     field(:is_whatsapp_forms_enabled, :boolean)
+    field(:is_copy_node_enabled, :boolean)
     field(:is_trial_org, :boolean)
     field(:trial_expiration_date, :datetime)
     field(:assistant_config_versions_enabled, :boolean)
