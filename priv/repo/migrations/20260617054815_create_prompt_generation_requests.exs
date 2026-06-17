@@ -15,8 +15,13 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
         default: "in_progress",
         comment: "Lifecycle status: in_progress | ready | failed"
 
+      add :request_id, :string,
+        null: false,
+        comment:
+          "Correlation id we send to Kaapi in request_metadata; echoed back in the callback metadata"
+
       add :kaapi_job_id, :string,
-        comment: "Async job ID returned by Kaapi; used to match the callback"
+        comment: "Async job id from the Kaapi sync ack (informational; not the callback key)"
 
       add :error_message, :text, comment: "Error detail from Kaapi callback when status is failed"
 
@@ -30,11 +35,10 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
       timestamps(type: :utc_datetime)
     end
 
-    # Org-scoped uniqueness (tenant rule). The Kaapi callback resolves the row with
-    # org context set from the callback subdomain (same as the knowledge-base callback),
-    # so the lookup is by kaapi_job_id within the organization.
-    create unique_index(:prompt_generation_requests, [:kaapi_job_id, :organization_id],
-             name: :prompt_generation_requests_kaapi_job_id_organization_id_index
+    # Org-scoped uniqueness on request_id — this is the real callback correlation key.
+    # Kaapi echoes it back as metadata.request_id in the async callback body.
+    create unique_index(:prompt_generation_requests, [:request_id, :organization_id],
+             name: :prompt_generation_requests_request_id_organization_id_index
            )
 
     create index(:prompt_generation_requests, [:organization_id])

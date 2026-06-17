@@ -4,13 +4,20 @@ defmodule Glific.PromptGenerator do
 
   An NGO supplies answers to 9 questions; this context calls Kaapi's async LLM
   service and persists the request. When Kaapi completes, it POSTs back to
-  `/kaapi/prompt_generation` (wired in M2) and `handle_callback/1` updates the row.
+  `/kaapi/prompt_generation` and `handle_callback/1` updates the row.
 
   ## Flow
 
       1. `generate_prompt/3` — build payload, call Kaapi, persist `:in_progress` row.
       2. Kaapi processes asynchronously and POSTs to the callback URL.
-      3. `handle_callback/1` — look up by `kaapi_job_id`, update status + text/error.
+      3. `handle_callback/1` — look up by `metadata.request_id`, update status + text/error.
+
+  ## Callback correlation
+
+  We generate a UUID `request_id` before calling Kaapi and embed it as
+  `request_metadata.request_id` in the payload. Kaapi echoes it back as
+  `metadata.request_id` in the async callback body. The `kaapi_job_id` from the
+  Kaapi sync ack is stored on the row for informational purposes only.
   """
 
   alias Glific.{
@@ -71,6 +78,11 @@ defmodule Glific.PromptGenerator do
   calls Kaapi to obtain a `job_id`, then persists a `:in_progress`
   `PromptGenerationRequest` row. Returns `{:ok, request}` on success.
 
+  The `request_id` (a UUID we generate) is stored on the row and sent to Kaapi as
+  `request_metadata.request_id`. Kaapi echoes it back in the async callback as
+  `metadata.request_id` — this is the correlation key. The `kaapi_job_id` from the
+  Kaapi sync ack is also stored but is informational only.
+
   Returns `{:error, reason}` — without inserting a row — when the per-org
   `:is_prompt_generator_enabled` feature flag is off, when Kaapi is inactive for the
   org, or when the Kaapi call itself fails.
@@ -104,6 +116,7 @@ defmodule Glific.PromptGenerator do
       create_request(%{
         inputs: answers,
         status: :in_progress,
+        request_id: request_id,
         kaapi_job_id: job_id,
         organization_id: org_id,
         user_id: user_id
@@ -114,35 +127,49 @@ defmodule Glific.PromptGenerator do
   @doc """
   Handles the async callback POSTed by Kaapi after LLM completion.
 
-  Looks up the `PromptGenerationRequest` by `kaapi_job_id`. On `"SUCCESSFUL"`,
-  sets `status: :ready` and `generated_prompt`. On any other status, sets
-  `status: :failed` and `error_message`. Unknown `job_id` logs and returns an error.
+  Looks up the `PromptGenerationRequest` by `metadata.request_id` (the UUID we
+  generated and sent to Kaapi in `request_metadata.request_id`; Kaapi echoes it back).
+  On `success: true`, sets `status: :ready` and `generated_prompt`. On failure
+  (`success: false` or error present), sets `status: :failed` and `error_message`.
+  Unknown `request_id` logs and returns an error.
 
-  This function is idempotent: calling it twice on the same row is safe — the row
-  is simply re-updated to the same terminal state.
+  This function is idempotent: calling it twice on the same row is safe — the
+  terminal-state guard returns `{:ok, request}` unchanged for rows already in
+  `:ready` or `:failed`.
+
+  The real callback shape (string-keyed after Plug JSON parsing):
+
+  ```json
+  {
+    "success": true,
+    "data": {
+      "response": {
+        "output": { "content": { "value": "<generated prompt text>" } }
+      }
+    },
+    "metadata": { "request_id": "<uuid we sent>" }
+  }
+  ```
 
   ## Parameters
 
-    - `data` — the parsed JSON body from Kaapi:
-      ```json
-      {"data": {"job_id": "...", "status": "SUCCESSFUL", "text": "...", "error_message": null}}
-      ```
+    - `params` — the parsed JSON body from Kaapi (string-keyed).
   """
   @spec handle_callback(map()) ::
           {:ok, PromptGenerationRequest.t()} | {:error, String.t() | Ecto.Changeset.t()}
-  def handle_callback(%{"data" => %{"job_id" => job_id} = data}) do
+  def handle_callback(%{"metadata" => %{"request_id" => request_id}} = params) do
     # Org context is set from the callback subdomain (same as the knowledge-base
-    # callback), so the lookup is scoped to the organization that owns the job.
-    with {:ok, request} <- Repo.fetch_by(PromptGenerationRequest, %{kaapi_job_id: job_id}),
-         {:ok, updated} <- apply_callback(request, data) do
+    # callback), so the lookup is scoped to the organization that owns the request.
+    with {:ok, request} <- Repo.fetch_by(PromptGenerationRequest, %{request_id: request_id}),
+         {:ok, updated} <- apply_callback(request, params) do
       {:ok, updated}
     else
       {:error, [_, "Resource not found"]} ->
         log_callback_error("No prompt generation request found for the callback",
-          reason: "job_id=#{job_id}"
+          reason: "request_id=#{request_id}"
         )
 
-        {:error, "Prompt generation request not found for job_id=#{job_id}"}
+        {:error, "Prompt generation request not found for request_id=#{request_id}"}
 
       {:error, reason} ->
         {:error, reason}
@@ -150,8 +177,8 @@ defmodule Glific.PromptGenerator do
   end
 
   # Defensive catch-all: the callback endpoint is public, so a malformed body must
-  # not raise (the controller must still return 200). Kaapi sends a well-formed
-  # `%{"data" => %{"job_id" => ...}}` payload; anything else is reported and ignored.
+  # not raise (the controller must still return 200). Kaapi sends a well-formed payload
+  # with metadata.request_id; anything else is reported and ignored.
   def handle_callback(params) do
     log_callback_error("Unexpected prompt generation callback payload",
       reason: inspect(params)
@@ -237,24 +264,32 @@ defmodule Glific.PromptGenerator do
           {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()}
   # Terminal states are immutable: a late callback must not clobber a row that
   # already reached :ready (losing the generated prompt) or :failed.
-  defp apply_callback(%PromptGenerationRequest{status: status} = request, _data)
+  defp apply_callback(%PromptGenerationRequest{status: status} = request, _params)
        when status in [:ready, :failed],
        do: {:ok, request}
 
-  defp apply_callback(request, %{"status" => "SUCCESSFUL"} = data) do
+  defp apply_callback(request, %{"success" => true} = params) do
+    generated_prompt = get_in(params, ["data", "response", "output", "content", "value"])
+
     request
     |> PromptGenerationRequest.changeset(%{
       status: :ready,
-      generated_prompt: data["text"]
+      generated_prompt: generated_prompt
     })
     |> Repo.update()
   end
 
-  defp apply_callback(request, data) do
+  defp apply_callback(request, params) do
+    error_message =
+      case params["error"] do
+        nil -> inspect(params["errors"])
+        msg -> msg
+      end
+
     request
     |> PromptGenerationRequest.changeset(%{
       status: :failed,
-      error_message: data["error_message"]
+      error_message: error_message
     })
     |> Repo.update()
   end

@@ -198,7 +198,7 @@ defmodule Glific.PromptGeneratorTest do
       assert Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true) == 0
     end
 
-    test "happy path: persists :in_progress row with kaapi_job_id",
+    test "happy path: persists :in_progress row with request_id and kaapi_job_id",
          %{organization_id: org_id} do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{
@@ -213,6 +213,9 @@ defmodule Glific.PromptGeneratorTest do
       assert request.status == :in_progress
       assert request.kaapi_job_id == "job_pg_123"
       assert request.organization_id == org_id
+      # request_id is the real callback correlation key — must be stored
+      assert is_binary(request.request_id)
+      assert byte_size(request.request_id) > 0
       # Atom-keyed map is preserved in the struct returned by Repo.insert/1
       assert request.inputs[:name] == "Pratham Education"
     end
@@ -289,34 +292,52 @@ defmodule Glific.PromptGeneratorTest do
   end
 
   # ---------------------------------------------------------------------------
-  # handle_callback/1
+  # handle_callback/1 — real Kaapi callback shape
   # ---------------------------------------------------------------------------
 
   describe "handle_callback/1" do
     setup :enable_kaapi
 
     setup %{organization_id: org_id} do
+      request_id = Ecto.UUID.generate()
+
       {:ok, request} =
         %PromptGenerationRequest{}
         |> PromptGenerationRequest.changeset(%{
           inputs: %{"name" => "Test NGO"},
           status: :in_progress,
+          request_id: request_id,
           kaapi_job_id: "job_cb_001",
           organization_id: org_id
         })
         |> Repo.insert()
 
-      %{request: request}
+      %{request: request, request_id: request_id}
     end
 
-    test "SUCCESSFUL callback sets status :ready and generated_prompt",
-         %{request: request} do
+    test "success callback sets status :ready and generated_prompt",
+         %{request: request, request_id: request_id} do
       params = %{
+        "success" => true,
         "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "SUCCESSFUL",
-          "text" => "You are a helpful WhatsApp chatbot for Test NGO.",
-          "error_message" => nil
+          "response" => %{
+            "provider" => "openai-native",
+            "model" => "gpt-4o-2024-08-06",
+            "output" => %{
+              "type" => "text",
+              "content" => %{
+                "format" => "text",
+                "value" => "You are a helpful WhatsApp chatbot for Test NGO."
+              }
+            }
+          },
+          "usage" => %{"input_tokens" => 161, "output_tokens" => 76, "total_tokens" => 237}
+        },
+        "error" => nil,
+        "errors" => nil,
+        "metadata" => %{
+          "request_id" => request_id,
+          "warnings" => []
         }
       }
 
@@ -326,15 +347,14 @@ defmodule Glific.PromptGeneratorTest do
       assert updated.id == request.id
     end
 
-    test "FAILED callback sets status :failed and error_message",
-         %{request: request} do
+    test "failure callback (success: false) sets status :failed and error_message",
+         %{request_id: request_id} do
       params = %{
-        "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "FAILED",
-          "text" => nil,
-          "error_message" => "LLM rate limit exceeded"
-        }
+        "success" => false,
+        "data" => nil,
+        "error" => "LLM rate limit exceeded",
+        "errors" => nil,
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
       }
 
       assert {:ok, updated} = PromptGenerator.handle_callback(params)
@@ -342,68 +362,72 @@ defmodule Glific.PromptGeneratorTest do
       assert updated.error_message == "LLM rate limit exceeded"
     end
 
-    test "non-SUCCESSFUL status (e.g. TIMEOUT) sets status :failed",
-         %{request: request} do
+    test "failure callback with errors list sets status :failed",
+         %{request_id: request_id} do
       params = %{
-        "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "TIMEOUT",
-          "text" => nil,
-          "error_message" => "Job timed out"
-        }
+        "success" => false,
+        "data" => nil,
+        "error" => nil,
+        "errors" => ["quota exceeded", "upstream timeout"],
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
       }
 
       assert {:ok, updated} = PromptGenerator.handle_callback(params)
       assert updated.status == :failed
+      assert is_binary(updated.error_message)
+      refute is_nil(updated.error_message)
     end
 
-    test "unknown job_id returns error without crashing" do
+    test "unknown request_id returns error without crashing" do
       params = %{
+        "success" => true,
         "data" => %{
-          "job_id" => "nonexistent_job",
-          "status" => "SUCCESSFUL",
-          "text" => "some text",
-          "error_message" => nil
-        }
+          "response" => %{
+            "output" => %{"content" => %{"value" => "some text"}}
+          }
+        },
+        "metadata" => %{"request_id" => "nonexistent-uuid-000", "warnings" => []}
       }
 
       assert {:error, reason} = PromptGenerator.handle_callback(params)
-      assert String.contains?(reason, "nonexistent_job")
+      assert String.contains?(reason, "nonexistent-uuid-000")
     end
 
     test "double callback (idempotent): calling twice does not crash",
-         %{request: request} do
+         %{request_id: request_id} do
       params = %{
+        "success" => true,
         "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "SUCCESSFUL",
-          "text" => "Generated prompt text.",
-          "error_message" => nil
-        }
+          "response" => %{
+            "output" => %{
+              "content" => %{"value" => "Generated prompt text."}
+            }
+          }
+        },
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
       }
 
       assert {:ok, _first} = PromptGenerator.handle_callback(params)
       assert {:ok, _second} = PromptGenerator.handle_callback(params)
     end
 
-    test "late FAILED callback does not clobber an already :ready row",
-         %{request: request} do
+    test "late failure callback does not clobber an already :ready row",
+         %{request_id: request_id} do
       success = %{
+        "success" => true,
         "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "SUCCESSFUL",
-          "text" => "The generated prompt.",
-          "error_message" => nil
-        }
+          "response" => %{
+            "output" => %{"content" => %{"value" => "The generated prompt."}}
+          }
+        },
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
       }
 
       late_failure = %{
-        "data" => %{
-          "job_id" => request.kaapi_job_id,
-          "status" => "FAILED",
-          "text" => nil,
-          "error_message" => "Too late"
-        }
+        "success" => false,
+        "data" => nil,
+        "error" => "Too late",
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
       }
 
       assert {:ok, ready} = PromptGenerator.handle_callback(success)
@@ -415,9 +439,37 @@ defmodule Glific.PromptGeneratorTest do
       assert is_nil(unchanged.error_message)
     end
 
-    test "malformed payload (no data/job_id) returns error without crashing" do
+    test "late success callback does not clobber an already :failed row",
+         %{request_id: request_id} do
+      failure = %{
+        "success" => false,
+        "data" => nil,
+        "error" => "Upstream error",
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
+      }
+
+      late_success = %{
+        "success" => true,
+        "data" => %{
+          "response" => %{
+            "output" => %{"content" => %{"value" => "Too late."}}
+          }
+        },
+        "metadata" => %{"request_id" => request_id, "warnings" => []}
+      }
+
+      assert {:ok, failed} = PromptGenerator.handle_callback(failure)
+      assert failed.status == :failed
+
+      assert {:ok, unchanged} = PromptGenerator.handle_callback(late_success)
+      assert unchanged.status == :failed
+      assert is_nil(unchanged.generated_prompt)
+    end
+
+    test "malformed payload (no metadata.request_id) returns error without crashing" do
       assert {:error, _reason} = PromptGenerator.handle_callback(%{"unexpected" => "shape"})
       assert {:error, _reason} = PromptGenerator.handle_callback(%{})
+      assert {:error, _reason} = PromptGenerator.handle_callback(%{"metadata" => %{}})
     end
   end
 end
