@@ -1,0 +1,15 @@
+fragment PromptGenerationFields on PromptGenerationResult {
+  promptGeneration {
+    id
+    status
+    generatedPrompt
+    errorMessage
+  }
+}
+
+fragment ErrorFields on PromptGenerationResult {
+  errors {
+    key
+    message
+  }
+}
