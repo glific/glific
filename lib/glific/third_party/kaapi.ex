@@ -387,6 +387,50 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Initiates async LLM prompt generation via Kaapi unified LLM API.
+
+  Receives an already-built payload (from `Glific.PromptGenerator.build_llm_payload/3`)
+  and dispatches it to Kaapi. On success, extracts and returns `{:ok, %{job_id: job_id}}`
+  for the caller to persist. On failure, logs the exception and returns `{:error, reason}`.
+
+  ## Parameters
+
+    - `payload` — the LLM call envelope built by `Glific.PromptGenerator.build_llm_payload/3`.
+    - `organization_id` — used to look up the Kaapi API key via `fetch_kaapi_creds/1`.
+  """
+  @spec generate_prompt(map(), non_neg_integer()) ::
+          {:ok, %{job_id: String.t()}} | {:error, any()}
+  def generate_prompt(payload, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+      case body do
+        %{data: %{job_id: job_id}} when is_binary(job_id) ->
+          Logger.info(
+            "Kaapi prompt generation job dispatched for org: #{organization_id}, job_id: #{job_id}"
+          )
+
+          {:ok, %{job_id: job_id}}
+
+        other ->
+          Glific.log_exception(%Error{
+            message:
+              "Kaapi generate_prompt returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
+          })
+
+          {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
+      end
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi generate_prompt failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Converts a Kaapi 2xx async-dispatch body into the standard webhook result
   """
   @spec normalize_kaapi_body(any()) :: map()
