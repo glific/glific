@@ -354,6 +354,11 @@ defmodule Glific.BigQueryTest do
     assert messages["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
     assert messages["clustering"] == %{"fields" => ["contact_phone", "flow_id"]}
 
+    # partitioned table clustered by a single non-time key
+    media = fetch_table_body(bodies, "messages_media")
+    assert media["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
+    assert media["clustering"] == %{"fields" => ["content_type"]}
+
     # fact table: clustered (leading inserted_at), not partitioned
     conversations = fetch_table_body(bodies, "message_conversations")
     refute Map.has_key?(conversations, "timePartitioning")

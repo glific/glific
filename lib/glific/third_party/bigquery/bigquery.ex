@@ -8,7 +8,7 @@ defmodule Glific.BigQuery do
 
     * **Partitioning** — `MONTH` time-unit partitioning on `inserted_at` for the heavy,
       time-series tables in `@partitioned_tables` (`messages`, `flow_contexts`,
-      `flow_results`, `contact_histories`, `wa_messages`). A sandbox cost experiment
+      `flow_results`, `contact_histories`, `wa_messages`, `messages_media`). A sandbox cost experiment
       showed `MONTH` prunes recent-window dashboard queries far better than `YEAR` for
       large orgs and is never worse.
     * **Clustering** — per-table keys from `@cluster_fields` (fact, link and `contacts`
@@ -120,7 +120,7 @@ defmodule Glific.BigQuery do
   # dashboard queries far better than YEAR for our heavy orgs, and is never worse.
   # Only applied at table creation (`create_table/2`); BigQuery cannot repartition
   # existing tables, so existing orgs are left untouched.
-  @partitioned_tables ~w(messages flow_contexts flow_results contact_histories wa_messages)
+  @partitioned_tables ~w(messages flow_contexts flow_results contact_histories wa_messages messages_media)
   @partition_field "inserted_at"
   @partition_type "MONTH"
 
@@ -136,7 +136,7 @@ defmodule Glific.BigQuery do
     "contact_histories" => ["phone", "event_type"],
     "wa_messages" => ["wa_group_id", "contact_phone"],
     "message_conversations" => ["inserted_at", "phone"],
-    "messages_media" => ["inserted_at", "content_type"],
+    "messages_media" => ["content_type"],
     "message_broadcasts" => ["inserted_at", "flow_id"],
     "message_broadcast_contacts" => ["inserted_at", "phone"],
     "wa_reactions" => ["inserted_at", "phone"],
