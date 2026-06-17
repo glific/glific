@@ -22,12 +22,11 @@ defmodule GlificWeb.KaapiController do
   @doc """
   Handles the async callback POSTed by Kaapi after LLM-based prompt generation completes.
 
-  Always returns 200 — Kaapi does not retry on non-2xx, and the job_id is treated as an
+  Always returns 200 — Kaapi does not retry on non-2xx, and the request_id is treated as an
   unguessable token (matching the auth posture of the knowledge_base_version callback above).
   """
   @spec prompt_generation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def prompt_generation_callback(conn, params) do
-    Logger.info("Received prompt generation callback", params: params)
     PromptGenerator.handle_callback(params)
     send_resp(conn, 200, "Prompt generation callback handled successfully")
   end
