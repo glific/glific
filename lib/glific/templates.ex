@@ -77,7 +77,10 @@ defmodule Glific.Templates do
   @spec list_grouped_hsm_templates(map()) :: [map()]
   def list_grouped_hsm_templates(args) do
     args
-    |> Map.update(:filter, %{is_hsm: true}, &Map.put(&1, :is_hsm, true))
+    |> Map.update(:filter, %{is_hsm: true}, fn
+      nil -> %{is_hsm: true}
+      filter -> Map.put(filter, :is_hsm, true)
+    end)
     |> list_session_templates()
     |> Repo.preload([:language, :tag])
     |> Enum.group_by(& &1.shortcode)
