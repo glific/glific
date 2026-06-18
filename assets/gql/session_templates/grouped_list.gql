@@ -2,7 +2,6 @@ query groupedHsmTemplates($filter: SessionTemplateFilter, $opts: Opts) {
   groupedHsmTemplates(filter: $filter, opts: $opts) {
     shortcode
     label
-    body
     category
     tag {
       id
@@ -11,6 +10,8 @@ query groupedHsmTemplates($filter: SessionTemplateFilter, $opts: Opts) {
     languageVariants {
       id
       bspId
+      body
+      category
       language {
         id
         label

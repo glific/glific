@@ -88,7 +88,6 @@ defmodule Glific.Templates do
       %{
         shortcode: shortcode,
         label: first.label,
-        body: first.body,
         category: first.category,
         tag: first.tag,
         language_variants:
@@ -96,6 +95,8 @@ defmodule Glific.Templates do
             %{
               id: t.id,
               bsp_id: t.bsp_id,
+              body: t.body,
+              category: t.category,
               language: t.language,
               status: t.status,
               quality: t.quality,

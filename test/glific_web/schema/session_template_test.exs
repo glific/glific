@@ -245,7 +245,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     [first_group | _] = groups
     assert Map.has_key?(first_group, "shortcode")
     assert Map.has_key?(first_group, "label")
-    assert Map.has_key?(first_group, "body")
     assert Map.has_key?(first_group, "category")
     assert Map.has_key?(first_group, "languageVariants")
 
@@ -257,6 +256,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
       [variant | _] = variants
       assert Map.has_key?(variant, "id")
+      assert Map.has_key?(variant, "body")
       assert Map.has_key?(variant, "status")
       assert Map.has_key?(variant, "language")
     end)

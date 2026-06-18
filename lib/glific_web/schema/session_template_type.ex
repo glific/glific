@@ -83,6 +83,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   object :template_language_variant do
     field :id, :id
     field :bsp_id, :string
+    field :body, :string
+    field :category, :string
     field :status, :string
     field :quality, :string
     field :reason, :string
@@ -97,7 +99,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   object :grouped_hsm_template do
     field :shortcode, :string
     field :label, :string
-    field :body, :string
     field :category, :string
 
     field :tag, :tag do
