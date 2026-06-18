@@ -12,8 +12,6 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
   We generate a UUID `request_id` before calling Kaapi and embed it as
   `request_metadata.request_id` in the payload. Kaapi echoes it back as
   `metadata.request_id` in the async callback body — this is the lookup key.
-  `kaapi_job_id` is stored for informational purposes only (from the Kaapi sync ack)
-  and is NOT the callback correlation key.
   """
 
   use Ecto.Schema
@@ -31,7 +29,6 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
           generated_prompt: String.t() | nil,
           status: atom() | nil,
           request_id: String.t() | nil,
-          kaapi_job_id: String.t() | nil,
           error_message: String.t() | nil,
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -50,7 +47,6 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
 
   @optional_fields [
     :generated_prompt,
-    :kaapi_job_id,
     :error_message,
     :user_id
   ]
@@ -60,7 +56,6 @@ defmodule Glific.PromptGenerator.PromptGenerationRequest do
     field(:generated_prompt, :string)
     field(:status, Ecto.Enum, values: [:in_progress, :ready, :failed], default: :in_progress)
     field(:request_id, :string)
-    field(:kaapi_job_id, :string)
     field(:error_message, :string)
 
     belongs_to(:organization, Organization)

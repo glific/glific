@@ -20,9 +20,6 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
         comment:
           "Correlation id we send to Kaapi in request_metadata; echoed back in the callback metadata"
 
-      add :kaapi_job_id, :string,
-        comment: "Async job id from the Kaapi sync ack (informational; not the callback key)"
-
       add :error_message, :text, comment: "Error detail from Kaapi callback when status is failed"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
@@ -43,5 +40,6 @@ defmodule Glific.Repo.Migrations.CreatePromptGenerationRequests do
            )
 
     create index(:prompt_generation_requests, [:organization_id])
+    create index(:prompt_generation_requests, [:user_id])
   end
 end

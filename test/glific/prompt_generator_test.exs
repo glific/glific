@@ -29,8 +29,6 @@ defmodule Glific.PromptGeneratorTest do
         shortcode: "kaapi"
       })
 
-    FunWithFlags.enable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
-
     :ok
   end
 
@@ -184,17 +182,7 @@ defmodule Glific.PromptGeneratorTest do
   describe "generate_prompt/3" do
     setup :enable_kaapi
 
-    test "returns error (no row) when the feature flag is disabled",
-         %{organization_id: org_id} do
-      FunWithFlags.disable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
-
-      assert {:error, "AI Prompt Generator is not enabled for the organization."} =
-               PromptGenerator.generate_prompt(@valid_answers, org_id)
-
-      assert Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true) == 0
-    end
-
-    test "happy path: persists :in_progress row with request_id and kaapi_job_id",
+    test "happy path: persists :in_progress row with request_id",
          %{organization_id: org_id} do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{
@@ -207,9 +195,8 @@ defmodule Glific.PromptGeneratorTest do
                PromptGenerator.generate_prompt(@valid_answers, org_id)
 
       assert request.status == :in_progress
-      assert request.kaapi_job_id == "job_pg_123"
       assert request.organization_id == org_id
-      # request_id is the real callback correlation key — must be stored
+      # request_id is the callback correlation key — must be stored as a non-nil binary
       assert is_binary(request.request_id)
       assert byte_size(request.request_id) > 0
       # Atom-keyed map is preserved in the struct returned by Repo.insert/1
@@ -303,7 +290,6 @@ defmodule Glific.PromptGeneratorTest do
           inputs: %{"name" => "Test NGO"},
           status: :in_progress,
           request_id: request_id,
-          kaapi_job_id: "job_cb_001",
           organization_id: org_id
         })
         |> Repo.insert()
@@ -503,6 +489,35 @@ defmodule Glific.PromptGeneratorTest do
       latest = PromptGenerator.latest_request(org_id, user.id)
       assert latest.request_id == mine.request_id
       assert latest.inputs == %{"name" => "My NGO"}
+    end
+
+    test "returns the most recent request when a user has multiple", %{organization_id: org_id} do
+      user = Glific.Fixtures.user_fixture()
+
+      {:ok, _first} =
+        %PromptGenerationRequest{}
+        |> PromptGenerationRequest.changeset(%{
+          inputs: %{"name" => "First NGO"},
+          status: :in_progress,
+          request_id: Ecto.UUID.generate(),
+          organization_id: org_id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {:ok, second} =
+        %PromptGenerationRequest{}
+        |> PromptGenerationRequest.changeset(%{
+          inputs: %{"name" => "Second NGO"},
+          status: :in_progress,
+          request_id: Ecto.UUID.generate(),
+          organization_id: org_id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      latest = PromptGenerator.latest_request(org_id, user.id)
+      assert latest.request_id == second.request_id
     end
   end
 end
