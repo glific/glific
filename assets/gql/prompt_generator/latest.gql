@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query latestPromptGeneration {
+  latestPromptGeneration {
+    ...PromptGenerationFields
+
+    ...ErrorFields
+  }
+}

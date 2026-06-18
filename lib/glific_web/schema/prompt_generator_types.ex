@@ -21,6 +21,22 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
     field(:status, :string)
     field(:generated_prompt, :string)
     field(:error_message, :string)
+
+    @desc "The 9 answers the user submitted (for pre-filling the wizard)"
+    field(:inputs, :prompt_generator_answers)
+  end
+
+  @desc "The 9 stored NGO answers, mirroring prompt_generator_input (for pre-fill)"
+  object :prompt_generator_answers do
+    field(:name, :string)
+    field(:purpose, :string)
+    field(:audience, :string)
+    field(:language, :string)
+    field(:tone, :string)
+    field(:format, :string)
+    field(:off_limits, :string)
+    field(:fallback, :string)
+    field(:escalation, :string)
   end
 
   @desc "Input object for prompt generation — the 9-question NGO answers"
@@ -59,6 +75,12 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.PromptGenerator.get/3)
+    end
+
+    @desc "Fetch the current user's most recent prompt generation request (for pre-filling the wizard)"
+    field :latest_prompt_generation, :prompt_generation_result do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.PromptGenerator.get_latest/3)
     end
   end
 

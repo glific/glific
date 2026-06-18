@@ -57,6 +57,17 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
     end
   end
 
+  @doc """
+  Fetches the caller's most recent prompt generation request, for pre-filling the
+  wizard with their previous answers. Returns `prompt_generation: nil` when the user
+  has no prior request.
+  """
+  @spec get_latest(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
+  def get_latest(_, _args, %{context: %{current_user: user}}) do
+    request = Glific.PromptGenerator.latest_request(user.organization_id, user.id)
+    {:ok, %{prompt_generation: request && to_graphql(request)}}
+  end
+
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
@@ -93,7 +104,27 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
       id: request.id,
       status: to_string(request.status),
       generated_prompt: request.generated_prompt,
-      error_message: request.error_message
+      error_message: request.error_message,
+      inputs: format_inputs(request.inputs)
+    }
+  end
+
+  # inputs is stored as a string-keyed jsonb map; shape it into the atom-keyed map
+  # the :prompt_generator_answers object resolves from.
+  @spec format_inputs(map() | nil) :: map() | nil
+  defp format_inputs(nil), do: nil
+
+  defp format_inputs(inputs) do
+    %{
+      name: inputs["name"],
+      purpose: inputs["purpose"],
+      audience: inputs["audience"],
+      language: inputs["language"],
+      tone: inputs["tone"],
+      format: inputs["format"],
+      off_limits: inputs["off_limits"],
+      fallback: inputs["fallback"],
+      escalation: inputs["escalation"]
     }
   end
 end
