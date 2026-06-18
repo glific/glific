@@ -17,6 +17,7 @@ defmodule Glific.Groups.WAGroups do
     Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -97,7 +98,7 @@ defmodule Glific.Groups.WAGroups do
         {:error, body}
 
       {:error, message} ->
-        {:error, inspect(message)}
+        {:error, SafeLog.safe_inspect(message)}
     end
   end
 
@@ -339,7 +340,7 @@ defmodule Glific.Groups.WAGroups do
 
           {:error, reason} ->
             Logger.warning(
-              "Could not upsert wa_groups_phones row for WA group #{wa_group.bsp_id} (phone #{managed_phone.phone_id}): #{inspect(reason)}"
+              "Could not upsert wa_groups_phones row for WA group #{wa_group.bsp_id} (phone #{managed_phone.phone_id}): #{SafeLog.safe_inspect(reason)}"
             )
         end
       else
@@ -687,7 +688,7 @@ defmodule Glific.Groups.WAGroups do
 
       {:error, error} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(error)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{SafeLog.safe_inspect(error)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}
