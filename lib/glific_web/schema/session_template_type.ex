@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_active, :boolean
 
     field :language, :language do
-      resolve(dataloader(Repo))
+      resolve(fn variant, _, _ -> {:ok, variant.language} end)
     end
   end
 
@@ -101,7 +101,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :category, :string
 
     field :tag, :tag do
-      resolve(dataloader(Repo))
+      resolve(fn group, _, _ -> {:ok, group.tag} end)
     end
 
     field :language_variants, list_of(:template_language_variant)

@@ -79,6 +79,7 @@ defmodule Glific.Templates do
     args
     |> Map.update(:filter, %{is_hsm: true}, &Map.put(&1, :is_hsm, true))
     |> list_session_templates()
+    |> Repo.preload([:language, :tag])
     |> Enum.group_by(& &1.shortcode)
     |> Enum.map(fn {shortcode, [first | _rest] = variants} ->
       %{
@@ -86,13 +87,13 @@ defmodule Glific.Templates do
         label: first.label,
         body: first.body,
         category: first.category,
-        tag_id: first.tag_id,
+        tag: first.tag,
         language_variants:
           Enum.map(variants, fn t ->
             %{
               id: t.id,
               bsp_id: t.bsp_id,
-              language_id: t.language_id,
+              language: t.language,
               status: t.status,
               quality: t.quality,
               reason: t.reason,
