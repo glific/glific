@@ -54,8 +54,9 @@ defmodule Glific.PromptGenerator do
   # hiding the entry point — see Glific.Flags.init_fun_with_flags/1 where it is registered.
   @feature_flag :is_prompt_generator_enabled
 
-  # Server-side meta-prompt — kept here so it can be tuned without frontend changes.
+  # Server-side meta-prompt — kept here so it can be tuned without a frontend release.
   # Structured, few-shot prompt so Kaapi returns a clean, sectioned WhatsApp system prompt.
+  # TODO (post-beta): move this into org config / DB so admins can edit it without a deploy.
   @meta_prompt ~S"""
   You are an expert prompt engineer helping non-profits in India build their first AI assistant on Glific, a WhatsApp chatbot platform.
 
@@ -217,9 +218,6 @@ defmodule Glific.PromptGenerator do
   Return only the system prompt. No explanation, no preamble, no closing note.
   """
 
-  # Per-field max length clamp (characters) to avoid overwhelming the LLM context window.
-  @max_field_length 2_000
-
   # Ordered list of {field_atom, label} for the 9 NGO questions. Labels match the
   # few-shot input keys in @meta_prompt so the model maps input -> output consistently.
   @answer_fields [
@@ -276,7 +274,7 @@ defmodule Glific.PromptGenerator do
 
     with :ok <- check_feature_enabled(org_id),
          {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
-      create_request(%{
+      create_prompt_request(%{
         inputs: answers,
         status: :in_progress,
         request_id: request_id,
@@ -405,13 +403,14 @@ defmodule Glific.PromptGenerator do
   @doc """
   Formats the NGO answer map into a labelled Q→A string for the LLM.
 
-  Blank, nil, or empty answers are omitted. Each answer is clamped to
-  `#{@max_field_length}` characters to avoid context-window overflow.
+  Blank, nil, or empty answers are omitted. Per-field length is validated and
+  rejected at the resolver boundary (see `GlificWeb.Resolvers.PromptGenerator`), so
+  this function does not clamp — it formats the answers as given.
 
   ## Examples
 
       iex> Glific.PromptGenerator.format_answers(%{name: "Pratham", purpose: ""})
-      "Organization Name: Pratham\n"
+      "- persona: Pratham\n"
   """
   @spec format_answers(map()) :: String.t()
   def format_answers(answers) do
@@ -423,8 +422,7 @@ defmodule Glific.PromptGenerator do
       if blank?(value) do
         acc
       else
-        clamped = String.slice(to_string(value), 0, @max_field_length)
-        acc <> "- #{label}: #{clamped}\n"
+        acc <> "- #{label}: #{to_string(value)}\n"
       end
     end)
   end
@@ -433,9 +431,9 @@ defmodule Glific.PromptGenerator do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  @spec create_request(map()) ::
+  @spec create_prompt_request(map()) ::
           {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()}
-  defp create_request(attrs) do
+  defp create_prompt_request(attrs) do
     %PromptGenerationRequest{}
     |> PromptGenerationRequest.changeset(attrs)
     |> Repo.insert()

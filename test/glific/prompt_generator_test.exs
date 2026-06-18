@@ -83,15 +83,11 @@ defmodule Glific.PromptGeneratorTest do
       refute String.contains?(result, "objective")
     end
 
-    test "clamps field values to 2000 chars" do
+    test "formats long values as-is (oversized fields are rejected at the resolver, not clamped)" do
       long_value = String.duplicate("x", 3_000)
-      answers = %{name: long_value}
-      result = PromptGenerator.format_answers(answers)
+      result = PromptGenerator.format_answers(%{name: long_value})
 
-      # The label + ": " prefix, then exactly 2000 chars, then "\n"
-      [_label, rest] = String.split(result, ": ", parts: 2)
-      value = String.trim_trailing(rest)
-      assert String.length(value) == 2_000
+      assert String.contains?(result, "- persona: #{long_value}")
     end
 
     test "accepts string-keyed maps" do
