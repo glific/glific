@@ -54,33 +54,33 @@ defmodule Glific.PromptGeneratorTest do
     test "includes all non-blank answers" do
       result = PromptGenerator.format_answers(@valid_answers)
 
-      assert String.contains?(result, "Organization Name: Pratham Education")
-      assert String.contains?(result, "Purpose / Mission: Help children learn")
-      assert String.contains?(result, "Target Audience: Children aged 6-14")
-      assert String.contains?(result, "Language Policy: Hindi and English")
-      assert String.contains?(result, "Tone: Friendly and encouraging")
-      assert String.contains?(result, "Response Format: Short messages under 160 characters")
-      assert String.contains?(result, "Off-Limits Topics: Politics, religion, violence")
-      assert String.contains?(result, "Fallback Message: I don't understand")
-      assert String.contains?(result, "Escalation Path: Reply AGENT")
+      assert String.contains?(result, "- persona: Pratham Education")
+      assert String.contains?(result, "- objective: Help children learn")
+      assert String.contains?(result, "- audience: Children aged 6-14")
+      assert String.contains?(result, "- language: Hindi and English")
+      assert String.contains?(result, "- tone: Friendly and encouraging")
+      assert String.contains?(result, "- length: Short messages under 160 characters")
+      assert String.contains?(result, "- skip_answer_topics: Politics, religion, violence")
+      assert String.contains?(result, "- fallback_answer: I don't understand")
+      assert String.contains?(result, "- escalation_details: Reply AGENT")
     end
 
     test "omits blank/nil/empty answers" do
       answers = %{name: "NGO", purpose: "", audience: nil, language: "English"}
       result = PromptGenerator.format_answers(answers)
 
-      assert String.contains?(result, "Organization Name: NGO")
-      assert String.contains?(result, "Language Policy: English")
-      refute String.contains?(result, "Purpose / Mission")
-      refute String.contains?(result, "Target Audience")
+      assert String.contains?(result, "- persona: NGO")
+      assert String.contains?(result, "- language: English")
+      refute String.contains?(result, "objective")
+      refute String.contains?(result, "audience")
     end
 
     test "omits whitespace-only answers" do
       answers = %{name: "NGO", purpose: "   "}
       result = PromptGenerator.format_answers(answers)
 
-      assert String.contains?(result, "Organization Name: NGO")
-      refute String.contains?(result, "Purpose / Mission")
+      assert String.contains?(result, "- persona: NGO")
+      refute String.contains?(result, "objective")
     end
 
     test "clamps field values to 2000 chars" do
@@ -98,8 +98,8 @@ defmodule Glific.PromptGeneratorTest do
       answers = %{"name" => "StringNGO", "purpose" => "Testing"}
       result = PromptGenerator.format_answers(answers)
 
-      assert String.contains?(result, "Organization Name: StringNGO")
-      assert String.contains?(result, "Purpose / Mission: Testing")
+      assert String.contains?(result, "- persona: StringNGO")
+      assert String.contains?(result, "- objective: Testing")
     end
 
     test "returns empty string when all answers are blank" do
@@ -169,7 +169,7 @@ defmodule Glific.PromptGeneratorTest do
       payload = PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "r")
 
       input = get_in(payload, [:query, :input])
-      assert String.contains?(input, "Organization Name: Pratham Education")
+      assert String.contains?(input, "- persona: Pratham Education")
     end
 
     test "blank answers are omitted from query.input" do
@@ -177,7 +177,7 @@ defmodule Glific.PromptGeneratorTest do
       payload = PromptGenerator.build_llm_payload(answers, "https://cb.example.com", "r")
 
       input = get_in(payload, [:query, :input])
-      refute String.contains?(input, "Purpose / Mission")
+      refute String.contains?(input, "objective")
     end
   end
 
