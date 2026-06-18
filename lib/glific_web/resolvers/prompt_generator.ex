@@ -105,26 +105,7 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
       status: to_string(request.status),
       generated_prompt: request.generated_prompt,
       error_message: request.error_message,
-      inputs: format_inputs(request.inputs)
-    }
-  end
-
-  # inputs is stored as a string-keyed jsonb map; shape it into the atom-keyed map
-  # the :prompt_generator_answers object resolves from.
-  @spec format_inputs(map() | nil) :: map() | nil
-  defp format_inputs(nil), do: nil
-
-  defp format_inputs(inputs) do
-    %{
-      name: inputs["name"],
-      purpose: inputs["purpose"],
-      audience: inputs["audience"],
-      language: inputs["language"],
-      tone: inputs["tone"],
-      format: inputs["format"],
-      off_limits: inputs["off_limits"],
-      fallback: inputs["fallback"],
-      escalation: inputs["escalation"]
+      inputs: request.inputs
     }
   end
 end

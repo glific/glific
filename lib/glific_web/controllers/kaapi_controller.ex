@@ -28,6 +28,6 @@ defmodule GlificWeb.KaapiController do
   @spec prompt_generation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def prompt_generation_callback(conn, params) do
     PromptGenerator.handle_callback(params)
-    send_resp(conn, 200, "Prompt generation callback handled successfully")
+    send_resp(conn, 200, "")
   end
 end

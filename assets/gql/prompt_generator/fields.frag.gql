@@ -4,17 +4,7 @@ fragment PromptGenerationFields on PromptGenerationResult {
     status
     generatedPrompt
     errorMessage
-    inputs {
-      name
-      purpose
-      audience
-      language
-      tone
-      format
-      offLimits
-      fallback
-      escalation
-    }
+    inputs
   }
 }
 

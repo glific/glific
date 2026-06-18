@@ -22,21 +22,10 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
     field(:generated_prompt, :string)
     field(:error_message, :string)
 
-    @desc "The 9 answers the user submitted (for pre-filling the wizard)"
-    field(:inputs, :prompt_generator_answers)
-  end
-
-  @desc "The 9 stored NGO answers, mirroring prompt_generator_input (for pre-fill)"
-  object :prompt_generator_answers do
-    field(:name, :string)
-    field(:purpose, :string)
-    field(:audience, :string)
-    field(:language, :string)
-    field(:tone, :string)
-    field(:format, :string)
-    field(:off_limits, :string)
-    field(:fallback, :string)
-    field(:escalation, :string)
+    @desc "The submitted answers as a flexible JSON map (for pre-filling the wizard). Kept
+    as :json rather than a typed object so adding/removing questions only touches the
+    frontend + the generation meta-prompt, not this schema."
+    field(:inputs, :json)
   end
 
   @desc "Input object for prompt generation — the 9-question NGO answers"

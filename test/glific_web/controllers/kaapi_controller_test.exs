@@ -278,7 +278,7 @@ defmodule GlificWeb.KaapiControllerTest do
 
       conn = post(conn, "/kaapi/prompt_generation", params)
 
-      assert response(conn, 200) == "Prompt generation callback handled successfully"
+      assert response(conn, 200) == ""
 
       {:ok, updated} =
         Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
@@ -299,7 +299,7 @@ defmodule GlificWeb.KaapiControllerTest do
 
       conn = post(conn, "/kaapi/prompt_generation", params)
 
-      assert response(conn, 200) == "Prompt generation callback handled successfully"
+      assert response(conn, 200) == ""
 
       {:ok, updated} =
         Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
@@ -317,7 +317,7 @@ defmodule GlificWeb.KaapiControllerTest do
       }
 
       conn = post(conn, "/kaapi/prompt_generation", params)
-      assert response(conn, 200) == "Prompt generation callback handled successfully"
+      assert response(conn, 200) == ""
     end
   end
 

@@ -240,8 +240,10 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
       {:ok, query_data} = auth_query_gql_by(:latest, user, variables: %{})
 
       pg = get_in(query_data, [:data, "latestPromptGeneration", "promptGeneration"])
-      assert pg["inputs"]["name"] == "Newer NGO"
-      assert pg["inputs"]["tone"] == "Friendly"
+      # inputs is a flexible :json map (serialized as a JSON string by the scalar)
+      inputs = Jason.decode!(pg["inputs"])
+      assert inputs["name"] == "Newer NGO"
+      assert inputs["tone"] == "Friendly"
     end
 
     test "returns null prompt_generation when the user has no prior request", %{staff: user} do
