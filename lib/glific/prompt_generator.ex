@@ -16,19 +16,18 @@ defmodule Glific.PromptGenerator do
 
   We generate a UUID `request_id` before calling Kaapi and embed it as
   `request_metadata.request_id` in the payload. Kaapi echoes it back as
-  `metadata.request_id` in the async callback body. The `kaapi_job_id` from the
-  Kaapi sync ack is stored on the row for informational purposes only.
+  `metadata.request_id` in the async callback body — this is the correlation key.
   """
 
   import Ecto.Query
+  import Glific.SafeLog
 
   alias Glific.{
     Partners,
-    Repo
+    PromptGenerator.PromptGenerationRequest,
+    Repo,
+    ThirdParty.Kaapi
   }
-
-  alias Glific.PromptGenerator.PromptGenerationRequest
-  alias Glific.ThirdParty.Kaapi
 
   defmodule Error do
     @moduledoc """
@@ -49,10 +48,6 @@ defmodule Glific.PromptGenerator do
 
   # AppSignal namespace for prompt-generation errors (enables a dedicated error-rate trigger).
   @appsignal_namespace "prompt_generator"
-
-  # Per-org feature flag (BETA). Enforced server-side here in addition to the frontend
-  # hiding the entry point — see Glific.Flags.init_fun_with_flags/1 where it is registered.
-  @feature_flag :is_prompt_generator_enabled
 
   # Server-side meta-prompt — kept here so it can be tuned without a frontend release.
   # Structured, few-shot prompt so Kaapi returns a clean, sectioned WhatsApp system prompt.
@@ -236,21 +231,19 @@ defmodule Glific.PromptGenerator do
   Initiates async prompt generation for the given NGO answers.
 
   Builds the Kaapi LLM payload (including a unique `request_id` and `callback_url`),
-  calls Kaapi to obtain a `job_id`, then persists a `:in_progress`
-  `PromptGenerationRequest` row. Returns `{:ok, request}` on success.
+  calls Kaapi, then persists a `:in_progress` `PromptGenerationRequest` row.
+  Returns `{:ok, request}` on success.
 
   The `request_id` (a UUID we generate) is stored on the row and sent to Kaapi as
   `request_metadata.request_id`. Kaapi echoes it back in the async callback as
-  `metadata.request_id` — this is the correlation key. The `kaapi_job_id` from the
-  Kaapi sync ack is also stored but is informational only.
+  `metadata.request_id` — this is the correlation key.
 
-  Returns `{:error, reason}` — without inserting a row — when the per-org
-  `:is_prompt_generator_enabled` feature flag is off, when Kaapi is inactive for the
-  org, or when the Kaapi call itself fails.
+  Returns `{:error, reason}` — without inserting a row — when Kaapi is inactive for
+  the org or when the Kaapi call itself fails.
 
-  The feature is enforced server-side on the `:is_prompt_generator_enabled` flag (the
-  frontend also hides the entry point when it is off) — frontend hiding alone is not
-  sufficient for entitlement control.
+  The `:is_prompt_generator_enabled` feature flag gates access to this function at the
+  GraphQL mutation layer (M2). The flag is registered in `Glific.Flags` and exposed via
+  the organization schema.
 
   ## Parameters
 
@@ -272,13 +265,11 @@ defmodule Glific.PromptGenerator do
     callback_url = build_callback_url(org_id)
     payload = build_llm_payload(answers, callback_url, request_id)
 
-    with :ok <- check_feature_enabled(org_id),
-         {:ok, %{job_id: job_id}} <- Kaapi.generate_prompt(payload, org_id) do
+    with {:ok, _ack} <- Kaapi.generate_prompt(payload, org_id) do
       create_prompt_request(%{
         inputs: answers,
         status: :in_progress,
         request_id: request_id,
-        kaapi_job_id: job_id,
         organization_id: org_id,
         user_id: user_id
       })
@@ -342,7 +333,7 @@ defmodule Glific.PromptGenerator do
   # with metadata.request_id; anything else is reported and ignored.
   def handle_callback(params) do
     log_callback_error("Unexpected prompt generation callback payload",
-      reason: inspect(params)
+      reason: safe_inspect(params)
     )
 
     {:error, "Unexpected prompt generation callback payload"}
@@ -422,7 +413,7 @@ defmodule Glific.PromptGenerator do
       if blank?(value) do
         acc
       else
-        acc <> "- #{label}: #{to_string(value)}\n"
+        acc <> "- #{label}: #{value}\n"
       end
     end)
   end
@@ -462,7 +453,7 @@ defmodule Glific.PromptGenerator do
   defp apply_callback(request, params) do
     error_message =
       case params["error"] do
-        nil -> inspect(params["errors"])
+        nil -> safe_inspect(params["errors"])
         msg -> msg
       end
 
@@ -489,6 +480,14 @@ defmodule Glific.PromptGenerator do
     result
   end
 
+  defp record_outcome({:error, changeset} = result, status) do
+    log_callback_error("Failed to persist prompt generation as :#{status}",
+      reason: safe_inspect(changeset)
+    )
+
+    result
+  end
+
   defp record_outcome(result, _status), do: result
 
   @spec log_callback_error(String.t(), keyword()) :: :ok
@@ -497,15 +496,6 @@ defmodule Glific.PromptGenerator do
       %Error{message: message, reason: Keyword.get(opts, :reason)},
       namespace: @appsignal_namespace
     )
-  end
-
-  @spec check_feature_enabled(non_neg_integer()) :: :ok | {:error, String.t()}
-  defp check_feature_enabled(org_id) do
-    if FunWithFlags.enabled?(@feature_flag, for: %{organization_id: org_id}) do
-      :ok
-    else
-      {:error, "AI Prompt Generator is not enabled for the organization."}
-    end
   end
 
   @spec build_callback_url(non_neg_integer()) :: String.t()
