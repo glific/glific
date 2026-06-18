@@ -74,14 +74,16 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Syncs groups and phones using maytapi API into Glific
   """
-  @spec sync_wa_groups(non_neg_integer()) :: :ok
+  @spec sync_wa_groups(non_neg_integer()) :: :ok | {:error, String.t()}
   def sync_wa_groups(org_id) do
-    wa_managed_phones =
-      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+    with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id) do
+      wa_managed_phones =
+        WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
-    Enum.each(wa_managed_phones, fn wa_managed_phone ->
-      do_sync_wa_groups(org_id, wa_managed_phone)
-    end)
+      Enum.each(wa_managed_phones, fn wa_managed_phone ->
+        do_sync_wa_groups(org_id, wa_managed_phone)
+      end)
+    end
   end
 
   @spec do_sync_wa_groups(non_neg_integer(), map()) :: list() | {:error, any()}
