@@ -43,6 +43,15 @@ defmodule GlificWeb.Resolvers.Templates do
     {:ok, Templates.count_session_templates(args)}
   end
 
+  @doc """
+  Get HSM templates grouped by shortcode for the expandable list view
+  """
+  @spec grouped_hsm_templates(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [map()]}
+  def grouped_hsm_templates(_, args, _) do
+    {:ok, Templates.list_grouped_hsm_templates(args)}
+  end
+
   @doc false
   @spec create_session_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

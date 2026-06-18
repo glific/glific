@@ -63,6 +63,47 @@ defmodule Glific.Templates do
   def count_session_templates(args),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
+  @doc """
+  List HSM session templates grouped by shortcode.
+  Each returned map represents one template family with all its language variants.
+  The grouping is done in memory on top of the existing list query — no migration needed.
+
+  ## Examples
+
+      iex> list_grouped_hsm_templates(%{filter: %{status: "APPROVED"}})
+      [%{shortcode: "otp_verify", label: "OTP Verification", ...}, ...]
+
+  """
+  @spec list_grouped_hsm_templates(map()) :: [map()]
+  def list_grouped_hsm_templates(args) do
+    args
+    |> Map.update(:filter, %{is_hsm: true}, &Map.put(&1, :is_hsm, true))
+    |> list_session_templates()
+    |> Enum.group_by(& &1.shortcode)
+    |> Enum.map(fn {shortcode, [first | _rest] = variants} ->
+      %{
+        shortcode: shortcode,
+        label: first.label,
+        body: first.body,
+        category: first.category,
+        tag_id: first.tag_id,
+        language_variants:
+          Enum.map(variants, fn t ->
+            %{
+              id: t.id,
+              bsp_id: t.bsp_id,
+              language_id: t.language_id,
+              status: t.status,
+              quality: t.quality,
+              reason: t.reason,
+              updated_at: t.updated_at,
+              is_active: t.is_active
+            }
+          end)
+      }
+    end)
+  end
+
   # codebeat:disable[ABC,LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do

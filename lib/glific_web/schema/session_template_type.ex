@@ -80,6 +80,33 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   end
 
   @desc "Filtering options for session_templates"
+  object :template_language_variant do
+    field :id, :id
+    field :bsp_id, :string
+    field :status, :string
+    field :quality, :string
+    field :reason, :string
+    field :updated_at, :datetime
+    field :is_active, :boolean
+
+    field :language, :language do
+      resolve(dataloader(Repo))
+    end
+  end
+
+  object :grouped_hsm_template do
+    field :shortcode, :string
+    field :label, :string
+    field :body, :string
+    field :category, :string
+
+    field :tag, :tag do
+      resolve(dataloader(Repo))
+    end
+
+    field :language_variants, list_of(:template_language_variant)
+  end
+
   input_object :session_template_filter do
     @desc "Match term with label and associated tag of template"
     field(:term, :string)
@@ -192,6 +219,14 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:filter, :session_template_filter)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.count_session_templates/3)
+    end
+
+    @desc "Get HSM templates grouped by shortcode for the expandable list view"
+    field :grouped_hsm_templates, list_of(:grouped_hsm_template) do
+      arg(:filter, :session_template_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.grouped_hsm_templates/3)
     end
   end
 

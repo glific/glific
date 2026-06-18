@@ -38,6 +38,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     "assets/gql/session_templates/create_from_message.gql"
   )
 
+  load_gql(
+    :grouped_list,
+    GlificWeb.Schema,
+    "assets/gql/session_templates/grouped_list.gql"
+  )
+
   test "session templates field returns list of session_templates", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
@@ -225,6 +231,70 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) == 3
+  end
+
+  test "grouped_hsm_templates returns templates grouped by shortcode", %{staff: user} do
+    result = auth_query_gql_by(:grouped_list, user, variables: %{"filter" => %{"isHsm" => true}})
+    assert {:ok, query_data} = result
+
+    groups = get_in(query_data, [:data, "groupedHsmTemplates"])
+    assert is_list(groups)
+    assert length(groups) > 0
+
+    # each group must have the expected shape
+    [first_group | _] = groups
+    assert Map.has_key?(first_group, "shortcode")
+    assert Map.has_key?(first_group, "label")
+    assert Map.has_key?(first_group, "body")
+    assert Map.has_key?(first_group, "category")
+    assert Map.has_key?(first_group, "languageVariants")
+
+    # each group must have at least one language variant
+    Enum.each(groups, fn group ->
+      variants = get_in(group, ["languageVariants"])
+      assert is_list(variants)
+      assert length(variants) >= 1
+
+      [variant | _] = variants
+      assert Map.has_key?(variant, "id")
+      assert Map.has_key?(variant, "status")
+      assert Map.has_key?(variant, "language")
+    end)
+
+    # shortcodes are unique per group — grouping is correct
+    shortcodes = Enum.map(groups, & &1["shortcode"])
+    assert shortcodes == Enum.uniq(shortcodes)
+  end
+
+  test "grouped_hsm_templates filters by status and only returns matching groups", %{staff: user} do
+    # seed has: missed_message=PENDING, otp=REJECTED, user-registration=REJECTED
+    result =
+      auth_query_gql_by(:grouped_list, user,
+        variables: %{"filter" => %{"isHsm" => true, "status" => "REJECTED"}}
+      )
+
+    assert {:ok, query_data} = result
+    rejected_groups = get_in(query_data, [:data, "groupedHsmTemplates"])
+    assert length(rejected_groups) >= 1
+
+    Enum.each(rejected_groups, fn group ->
+      Enum.each(group["languageVariants"], fn variant ->
+        assert variant["status"] == "REJECTED"
+      end)
+    end)
+
+    # PENDING filter should return only missed_message group
+    result =
+      auth_query_gql_by(:grouped_list, user,
+        variables: %{"filter" => %{"isHsm" => true, "status" => "PENDING"}}
+      )
+
+    assert {:ok, query_data} = result
+    pending_groups = get_in(query_data, [:data, "groupedHsmTemplates"])
+    assert length(pending_groups) >= 1
+
+    shortcodes = Enum.map(pending_groups, & &1["shortcode"])
+    assert "missed_message" in shortcodes
   end
 
   test "session_template by id returns one session_template or nil", %{manager: user} do

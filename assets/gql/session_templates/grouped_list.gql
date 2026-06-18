@@ -1,0 +1,25 @@
+query groupedHsmTemplates($filter: SessionTemplateFilter, $opts: Opts) {
+  groupedHsmTemplates(filter: $filter, opts: $opts) {
+    shortcode
+    label
+    body
+    category
+    tag {
+      id
+      label
+    }
+    languageVariants {
+      id
+      bspId
+      language {
+        id
+        label
+      }
+      status
+      quality
+      reason
+      updatedAt
+      isActive
+    }
+  }
+}
