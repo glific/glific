@@ -5,7 +5,8 @@ defmodule GlificWeb.API.V1.SupersetController do
   alias Glific.Users.User
   use GlificWeb, :controller
 
-  @dashborad_id "71f4c8d9-f9c6-4b9d-9b28-80c550681b7f"
+  @dashboard_id "71f4c8d9-f9c6-4b9d-9b28-80c550681b7f"
+  @superset_url "https://moonshine.projecttech4dev.org/api/v1"
 
   @doc """
   Fetches a Superset embed token for the current user's organization.
@@ -39,7 +40,7 @@ defmodule GlificWeb.API.V1.SupersetController do
   end
 
   defp get_access_token(username, password) do
-    login_url = "https://kaapi.projecttech4dev.org/api/v1/security/login"
+    login_url = @superset_url <> "/security/login"
 
     payload = %{
       username: username,
@@ -54,7 +55,7 @@ defmodule GlificWeb.API.V1.SupersetController do
   end
 
   defp get_csrf_token(access_token) do
-    url = "https://kaapi.projecttech4dev.org/api/v1/security/csrf_token"
+    url = @superset_url <> "/security/csrf_token"
 
     client(access_token)
     |> Tesla.get(url)
@@ -62,15 +63,15 @@ defmodule GlificWeb.API.V1.SupersetController do
   end
 
   defp fetch_embed_token(_organization_id, access_token, csrf_token, cookie) do
-    url = "https://kaapi.projecttech4dev.org/api/v1/security/guest_token"
+    url = @superset_url <> "/security/guest_token"
 
     payload = %{
       user: %{
-        username: "anandu_test",
-        first_name: "anandu_test",
-        last_name: "anandu_test"
+        username: "glific-dev-embed",
+        first_name: "Glific",
+        last_name: "Dev"
       },
-      resources: [%{type: "dashboard", id: @dashborad_id}],
+      resources: [%{type: "dashboard", id: @dashboard_id}],
       # Uncomment this to enable fetching data of only the current user's org.
       # rls: [%{clause: "organization_id=#{organization_id}"}]
       rls: []
@@ -79,6 +80,7 @@ defmodule GlificWeb.API.V1.SupersetController do
     client(access_token, csrf_token, cookie)
     |> Tesla.post(url, payload)
     |> parse_response()
+    |> IO.inspect(label: "embed_token")
   end
 
   @spec parse_response(Tesla.Env.result()) :: {:ok, map()} | {:error, any()}
@@ -124,7 +126,7 @@ defmodule GlificWeb.API.V1.SupersetController do
       base ++
         [
           {"X-CSRFToken", csrf_token},
-          {"Referer", "https://kaapi.projecttech4dev.org/api/v1"},
+          {"Referer", @superset_url},
           {"cookie", session}
         ]
     else
