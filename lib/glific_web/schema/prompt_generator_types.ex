@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+  alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
 
   object :prompt_generation_result do
     field(:prompt_generation, :prompt_generation)
@@ -78,6 +78,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
     field :generate_prompt, :prompt_generation_result do
       arg(:input, non_null(:prompt_generator_input))
       middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:is_prompt_generator_enabled, "AI Prompt Generator"})
       resolve(&Resolvers.PromptGenerator.generate/3)
     end
   end

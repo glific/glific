@@ -104,6 +104,18 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
       assert prompt_generation["status"] == "in_progress"
     end
 
+    test "is rejected when the :is_prompt_generator_enabled flag is off for the org",
+         %{staff: user, organization_id: org_id} do
+      FunWithFlags.disable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
+
+      result =
+        auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
+
+      assert {:ok, query_data} = result
+      message = get_in(query_data, [:errors, Access.at(0), :message])
+      assert message =~ "not enabled"
+    end
+
     test "user with no authorized role is rejected",
          %{staff: user} do
       # Override the user's roles to an empty list — the Authorize middleware
@@ -149,7 +161,6 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
           inputs: %{"name" => "Test NGO"},
           status: :in_progress,
           request_id: "req_poll_001",
-          kaapi_job_id: "job_poll_001",
           organization_id: org_id
         })
         |> Repo.insert()
@@ -188,7 +199,6 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
           inputs: %{"name" => "Org A NGO"},
           status: :in_progress,
           request_id: "req_cross_org_001",
-          kaapi_job_id: "job_cross_org_001",
           organization_id: org_id
         })
         |> Repo.insert()
@@ -272,13 +282,13 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
 
       assert prompt_id != nil
 
-      # Step 2: look up the created row to get the kaapi_job_id
+      # Step 2: look up the created row to get its request_id (the callback correlation key)
       {:ok, request} =
         Repo.fetch(PromptGenerationRequest, String.to_integer(prompt_id),
           skip_organization_id: true
         )
 
-      assert request.kaapi_job_id == "job_pg_test"
+      assert is_binary(request.request_id)
 
       # Step 3: simulate the Kaapi callback (real shape, correlated by request_id)
       {:ok, _updated} =

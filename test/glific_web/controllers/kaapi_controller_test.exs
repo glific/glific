@@ -345,7 +345,6 @@ defmodule GlificWeb.KaapiControllerTest do
         inputs: %{"name" => "Test NGO"},
         status: :in_progress,
         request_id: "req_pg_ctrl_001",
-        kaapi_job_id: "job_pg_ctrl_001",
         organization_id: organization_id
       })
       |> Repo.insert()
