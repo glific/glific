@@ -472,4 +472,41 @@ defmodule Glific.PromptGeneratorTest do
       assert {:error, _reason} = PromptGenerator.handle_callback(%{"metadata" => %{}})
     end
   end
+
+  describe "latest_request/2" do
+    test "returns nil when user_id is nil", %{organization_id: org_id} do
+      assert PromptGenerator.latest_request(org_id, nil) == nil
+    end
+
+    test "returns the user's request and is scoped to that user", %{organization_id: org_id} do
+      user = Glific.Fixtures.user_fixture()
+      other_user = Glific.Fixtures.user_fixture()
+
+      {:ok, mine} =
+        %PromptGenerationRequest{}
+        |> PromptGenerationRequest.changeset(%{
+          inputs: %{"name" => "My NGO"},
+          status: :in_progress,
+          request_id: "req_mine",
+          organization_id: org_id,
+          user_id: user.id
+        })
+        |> Repo.insert()
+
+      {:ok, _theirs} =
+        %PromptGenerationRequest{}
+        |> PromptGenerationRequest.changeset(%{
+          inputs: %{"name" => "Other NGO"},
+          status: :in_progress,
+          request_id: "req_theirs",
+          organization_id: org_id,
+          user_id: other_user.id
+        })
+        |> Repo.insert()
+
+      latest = PromptGenerator.latest_request(org_id, user.id)
+      assert latest.request_id == mine.request_id
+      assert latest.inputs == %{"name" => "My NGO"}
+    end
+  end
 end

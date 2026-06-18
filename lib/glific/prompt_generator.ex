@@ -20,6 +20,8 @@ defmodule Glific.PromptGenerator do
   Kaapi sync ack is stored on the row for informational purposes only.
   """
 
+  import Ecto.Query
+
   alias Glific.{
     Partners,
     Repo
@@ -185,6 +187,24 @@ defmodule Glific.PromptGenerator do
     )
 
     {:error, "Unexpected prompt generation callback payload"}
+  end
+
+  @doc """
+  Returns the most recent prompt generation request for a user (or `nil`).
+
+  Used to pre-fill the wizard with the user's previous answers so they can tweak
+  rather than start from scratch. Scoped to the org + user.
+  """
+  @spec latest_request(non_neg_integer(), non_neg_integer() | nil) ::
+          PromptGenerationRequest.t() | nil
+  def latest_request(_org_id, nil), do: nil
+
+  def latest_request(org_id, user_id) do
+    PromptGenerationRequest
+    |> where([r], r.organization_id == ^org_id and r.user_id == ^user_id)
+    |> order_by([r], desc: r.inserted_at)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """
