@@ -770,21 +770,29 @@ defmodule Glific.Groups.WAGroups do
   @spec create_group_via_maytapi(non_neg_integer(), non_neg_integer(), map()) ::
           {:ok, WAGroup.t()} | {:error, any()}
   def create_group_via_maytapi(org_id, wa_managed_phone_id, attrs) do
+    numbers = attrs[:numbers] || []
+
     with {:ok, wa_managed_phone} <-
            Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
-         response <-
+         {:ok, group_data} <-
            ApiClient.create_group(org_id, wa_managed_phone.phone_id, %{
              name: attrs[:name],
-             numbers: attrs[:numbers] || []
+             numbers: numbers
            }),
-         :ok <- ApiClient.handle_maytapi_response(response),
-         {:ok, bsp_id} <- extract_created_group_id(response) do
-      maybe_create_group(%{
-        label: attrs[:name],
-        bsp_id: bsp_id,
-        organization_id: org_id,
-        wa_managed_phone_id: wa_managed_phone_id
-      })
+         {:ok, wa_group} <-
+           maybe_create_group(%{
+             label: attrs[:name],
+             bsp_id: group_data.bsp_id,
+             organization_id: org_id,
+             wa_managed_phone_id: wa_managed_phone_id
+           }) do
+      sync_contacts(
+        %{participants: group_data.participants, admins: group_data.admins},
+        wa_group.id,
+        org_id
+      )
+
+      {:ok, wa_group}
     else
       {:error, reason} ->
         Glific.log_error("Maytapi create_group failed: org=#{org_id} reason=#{inspect(reason)}")
@@ -865,19 +873,6 @@ defmodule Glific.Groups.WAGroups do
         {:error, reason}
     end
   end
-
-  # Maytapi's createGroup response shape (per docs): `{"success": true, "data": {"id": "120363...@g.us", ...}}`.
-  # Fail with a clear tuple if the body doesn't match — easier to grep than a KeyError.
-  @spec extract_created_group_id(Tesla.Env.result()) ::
-          {:ok, String.t()} | {:error, :invalid_create_group_response}
-  defp extract_created_group_id({:ok, %Tesla.Env{body: body}}) do
-    case Jason.decode(body) do
-      {:ok, %{"data" => %{"id" => id}}} when is_binary(id) -> {:ok, id}
-      _ -> {:error, :invalid_create_group_response}
-    end
-  end
-
-  defp extract_created_group_id(_), do: {:error, :invalid_create_group_response}
 
   @doc """
   Returns a WAGroup.t() as map

@@ -88,6 +88,66 @@ defmodule GlificWeb.Schema.WaGroupTest do
                })
     end
 
+    test "persists the members from the Maytapi response into contacts_wa_groups",
+         %{user: user} do
+      wa_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "success" => true,
+               "data" => %{
+                 "id" => "120363428775624359@g.us",
+                 "name" => "Group Title",
+                 "participants" => ["919425010449@c.us", "918657048984@c.us"],
+                 "admins" => ["918657048984@c.us"]
+               }
+             })
+         }}
+      end)
+
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "name" => "Group Title",
+              "waManagedPhoneId" => to_string(wa_phone.id),
+              "numbers" => ["919425010449"]
+            }
+          }
+        )
+
+      assert {:ok, _query_data} = result
+
+      assert {:ok, persisted} =
+               Repo.fetch_by(WAGroup, %{bsp_id: "120363428775624359@g.us"})
+
+      # Both participants from the response are now members of the group.
+      member_count =
+        ContactWAGroup
+        |> where([cwg], cwg.wa_group_id == ^persisted.id)
+        |> Repo.aggregate(:count)
+
+      assert member_count == 2
+
+      # The admin from the response is flagged is_admin: true.
+      admin_contact =
+        Repo.get_by!(Glific.Contacts.Contact, %{
+          phone: "918657048984",
+          organization_id: user.organization_id
+        })
+
+      assert %ContactWAGroup{is_admin: true} =
+               Repo.get_by!(ContactWAGroup, %{
+                 wa_group_id: persisted.id,
+                 contact_id: admin_contact.id
+               })
+    end
+
     test "surfaces Maytapi non-2xx as a GraphQL error and does not insert a wa_group",
          %{user: user} do
       wa_phone =

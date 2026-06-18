@@ -3,7 +3,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   Https API client to interact with Maytapi
   """
 
-  alias Glific.Partners
+  alias Glific.{Partners, SafeLog}
 
   @maytapi_url "https://api.maytapi.com/api"
 
@@ -22,14 +22,25 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
   @spec maytapi_get(String.t(), String.t()) :: Tesla.Env.result()
   def maytapi_get(url, token),
-    do: get(url, headers: headers(token))
+    do: client() |> Tesla.get(url, headers: headers(token)) |> log_on_failure(url)
+
+  # Group operations (createGroup, group/add, group/remove, setGroupSubject)
+  # trigger real WhatsApp actions on the device and can take well over the
+  # Hackney default 5s recv_timeout. Bump the read timeout so these don't
+  # time out before Maytapi responds.
+  @post_recv_timeout 60_000
 
   @doc """
   Making Tesla post call and adding api key in header
   """
   @spec maytapi_post(String.t(), any(), String.t()) :: Tesla.Env.result()
   def maytapi_post(url, payload, token) do
-    post(url, payload, headers: headers(token))
+    client()
+    |> Tesla.post(url, payload,
+      headers: headers(token),
+      opts: [adapter: [recv_timeout: @post_recv_timeout]]
+    )
+    |> log_on_failure(url)
   end
 
   @doc false
@@ -144,21 +155,26 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   end
 
   @doc """
-  Creates a new WhatsApp group from one of the org's managed phones.
+  Creates a new WhatsApp group from one of the org's managed phones and returns
+  the new group's `bsp_id` plus the participant/admin lists Maytapi echoes back.
 
   `payload` shape (per Maytapi docs):
       %{name: "Group name", numbers: ["91xxxxxxxxxx", ...]}
 
   The calling `phone_id` becomes the group creator/admin on WhatsApp.
   """
-  @spec create_group(non_neg_integer(), non_neg_integer(), map()) :: Tesla.Env.result()
+  @spec create_group(non_neg_integer(), non_neg_integer(), map()) ::
+          {:ok, %{bsp_id: String.t(), participants: [String.t()], admins: [String.t()]}}
+          | {:error, String.t()}
   def create_group(org_id, phone_id, payload) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/createGroup"
+
       maytapi_post(url, Jason.encode!(payload), token)
+      |> handle_create_group_response()
     end
   end
 
@@ -202,4 +218,47 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   def handle_maytapi_response({:ok, %Tesla.Env{body: body}}), do: {:error, inspect(body)}
   def handle_maytapi_response({:error, reason}), do: {:error, inspect(reason)}
+
+  @spec handle_create_group_response(Tesla.Env.result()) ::
+          {:ok, %{bsp_id: String.t(), participants: [String.t()], admins: [String.t()]}}
+          | {:error, String.t()}
+  defp handle_create_group_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, %{"success" => true, "data" => %{"id" => id} = data}} when is_binary(id) ->
+        {:ok,
+         %{
+           bsp_id: id,
+           participants: data["participants"] || [],
+           admins: data["admins"] || []
+         }}
+
+      {:ok, %{"success" => false, "message" => message}} ->
+        {:error, message}
+
+      _ ->
+        {:error, "Unexpected Maytapi create group response"}
+    end
+  end
+
+  defp handle_create_group_response({:ok, %Tesla.Env{body: body}}), do: {:error, inspect(body)}
+  defp handle_create_group_response({:error, reason}), do: {:error, inspect(reason)}
+
+  @spec client() :: Tesla.Client.t()
+  defp client, do: Tesla.client(Glific.get_tesla_retry_middleware())
+
+  @spec log_on_failure(Tesla.Env.result(), String.t()) :: Tesla.Env.result()
+  defp log_on_failure({:ok, %Tesla.Env{status: status}} = result, _url)
+       when status in 200..299,
+       do: result
+
+  defp log_on_failure({:ok, env} = result, url) do
+    Glific.log_error("Maytapi request failed (#{url}): #{SafeLog.safe_inspect(env)}")
+    result
+  end
+
+  defp log_on_failure({:error, reason} = result, url) do
+    Glific.log_error("Maytapi request failed (#{url}): #{SafeLog.safe_inspect(reason)}")
+    result
+  end
 end
