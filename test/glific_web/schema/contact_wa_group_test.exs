@@ -117,9 +117,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       %{method: :post} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            success: true
-          }
+          body: Jason.encode!(%{success: true})
         }
     end)
 
