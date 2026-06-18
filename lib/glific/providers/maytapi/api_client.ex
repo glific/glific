@@ -219,7 +219,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
        when status in 200..299 do
     case Jason.decode(body) do
       {:ok, %{"success" => true, "data" => %{"id" => id} = data}} when is_binary(id) ->
-        {:ok, %{bsp_id: id, participants: data["participants"] || [], admins: data["admins"] || []}}
+        {:ok,
+         %{bsp_id: id, participants: data["participants"] || [], admins: data["admins"] || []}}
 
       {:ok, %{"success" => false, "message" => message}} ->
         {:error, message}

@@ -318,5 +318,47 @@ defmodule GlificWeb.Schema.WaGroupTest do
       refute is_nil(query_data[:errors])
       assert Repo.reload!(wa_group).label != "New name"
     end
+
+    test "surfaces a Maytapi failure when renaming and keeps the old label", %{user: user} do
+      wa_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      wa_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: user.organization_id,
+          wa_managed_phone_id: wa_phone.id,
+          label: "Old name"
+        })
+
+      {:ok, _} =
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: wa_phone.contact_id,
+          wa_group_id: wa_group.id,
+          organization_id: user.organization_id,
+          is_admin: true
+        })
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: Jason.encode!(%{"success" => false, "message" => "rename not allowed"})
+         }}
+      end)
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "input" => %{
+              "id" => to_string(wa_group.id),
+              "name" => "New name"
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      refute is_nil(query_data[:errors])
+      assert Repo.reload!(wa_group).label == "Old name"
+    end
   end
 end

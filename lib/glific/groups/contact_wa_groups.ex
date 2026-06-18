@@ -197,8 +197,11 @@ defmodule Glific.Groups.ContactWAGroups do
          {:ok, removed} <- remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
       {:ok, %{added: added, removed: removed}}
     else
-      {:error, ["Resource not found"]} -> {:error, "Acting phone not found in this organization"}
-      {:error, message} -> {:error, message}
+      {:error, [_, "Resource not found"]} ->
+        {:error, "Acting phone not found in this organization"}
+
+      {:error, message} ->
+        {:error, message}
     end
   end
 
