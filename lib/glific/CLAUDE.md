@@ -86,6 +86,10 @@ end
   add a clause there rather than registering a new cron entry.
 - Rate-limited BSP sends use `ExRated.check_rate/3`; dynamic behavior uses
   `FunWithFlags.enabled?/2`.
+- **AppSignal Check-in (heartbeat monitoring)**: Wrap critical cron branches with
+  `Appsignal.CheckIn.cron("name", fn -> ... end)`. If the server is down when the scheduled
+  window fires, AppSignal detects the missing start+finish heartbeat and alerts. See
+  `MinuteWorker` stats branch (`"glific_stats_hourly"`) as the canonical example.
 
 ## Error handling & logging
 
@@ -105,13 +109,49 @@ end
 - Organization config is heavily cached — after changing partner/org data, expect to
   `Partners.fill_cache/1` (tests do this in setup).
 
+## Webhook framework (`flows/webhooks/`)
+
+A typed, instrumented framework wraps all flow-webhook nodes. Two directories:
+
+- **`flows/webhooks/core/`** — infrastructure (never touch for a new webhook):
+  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `ResultTranslator`, `Sync`/`Async`
+  macros, `Errors`
+- **`flows/webhooks/implementations/`** — per-webhook domain modules (one module per node)
+
+### Adding a new sync webhook
+
+```elixir
+defmodule Glific.Flows.Webhooks.MyWebhook do
+  use Glific.Flows.Webhooks.Sync, name: "my_webhook"
+
+  @impl true
+  def call(fields, _ctx) do
+    # return {:ok, map} or {:error, "reason"}
+  end
+end
+```
+
+Register it in `Registry` and add a delegation clause in `CommonWebhook`. The framework
+wires AppSignal telemetry (count + latency), `WebhookLog` management, and structured error
+reporting automatically — do **not** add those concerns to the implementation module.
+
+Use `Glific.Flows.Webhooks.Async` instead of `Sync` for webhooks that park the flow
+(e.g. Kaapi speech-to-text) and implement `handle_resume/2` as well.
+
+### Webhook log security
+
+Request headers are automatically scrubbed by `Glific.Flows.Webhook.HeaderRedactor` before
+being persisted to `webhook_logs` — credentials (Authorization, X-Api-Key, etc.) are
+redacted. Do not special-case credential fields in individual webhook modules.
+
 ## Large subsystems — read before touching
 
 These are old, dense, and pattern-divergent. Read the subtree and nearby tests **before**
 editing or "cleaning up":
 
-- `flows/` (34 modules) — the flow execution engine (FlowContext, actions, nodes, broadcast).
-  State machine; small changes have wide blast radius.
+- `flows/` (~40 modules) — the flow execution engine (FlowContext, actions, nodes, broadcast).
+  State machine; small changes have wide blast radius. Webhook nodes now go through
+  `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
 - `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.
