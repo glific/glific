@@ -4,6 +4,26 @@ mutation updateWaGroup($input: UpdateWaGroupInput!) {
       id
       label
       bspId
+      lastCommunicationAt
+      primaryPhone {
+        id
+        phone
+        label
+      }
+      phones {
+        id
+        isPrimary
+        isActive
+        waManagedPhone {
+          id
+          phone
+        }
+      }
+      contacts {
+        id
+        name
+        phone
+      }
     }
     errors {
       key

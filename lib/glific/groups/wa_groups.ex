@@ -857,12 +857,10 @@ defmodule Glific.Groups.WAGroups do
              organization_id: wa_group.organization_id
            }),
          :ok <-
-           ApiClient.handle_maytapi_response(
-             ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
-               conversation_id: wa_group.bsp_id,
-               subject: subject
-             })
-           ) do
+           ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
+             conversation_id: wa_group.bsp_id,
+             subject: subject
+           }) do
       update_wa_group(wa_group, %{label: subject})
     else
       {:error, reason} ->

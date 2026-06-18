@@ -148,9 +148,7 @@ defmodule Glific.Groups.ContactWAGroups do
       contact = Contacts.get_contact!(contact_id)
       payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-      case ApiClient.handle_maytapi_response(
-             ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id)
-           ) do
+      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
         :ok ->
           fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
           {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
@@ -175,10 +173,8 @@ defmodule Glific.Groups.ContactWAGroups do
   `%{"success" => false, "message" => "NOT_A_PARTICIPANT"}`), so we inspect the
   `success` field and stop with `{:error, message}` on the first failure.
 
-  `wa_managed_phone_id` is the acting phone. Callers must pass a phone whose
-  contact is a group admin (Maytapi only honours admin actions) — the caller
-  resolves this via `WAGroups.acting_phone/1`, so this function does not
-  re-verify admin status.
+  `wa_managed_phone_id` is the acting phone. Caller
+  resolves this via `WAGroups.acting_phone/1`.
 
   Returns `{:ok, %{added: n, removed: n}}` or `{:error, message}`.
   """
@@ -216,9 +212,7 @@ defmodule Glific.Groups.ContactWAGroups do
     phones = Enum.map(contact_ids, &Contacts.get_contact!(&1).phone)
     payload = %{conversation_id: wa_group.bsp_id, number: phones}
 
-    case ApiClient.handle_maytapi_response(
-           ApiClient.add_group_member(org_id, payload, acting_phone_id)
-         ) do
+    case ApiClient.add_group_member(org_id, payload, acting_phone_id) do
       :ok ->
         Enum.each(contact_ids, fn contact_id ->
           create_contact_wa_group(%{
@@ -245,9 +239,7 @@ defmodule Glific.Groups.ContactWAGroups do
     # /group/remove takes a single plain phone number (a string, not an array).
     payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-    case ApiClient.handle_maytapi_response(
-           ApiClient.remove_group_member(org_id, payload, acting_phone_id)
-         ) do
+    case ApiClient.remove_group_member(org_id, payload, acting_phone_id) do
       :ok ->
         delete_wa_group_contacts_by_ids(wa_group.id, [contact_id])
         {:ok, 1}

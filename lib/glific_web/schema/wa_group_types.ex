@@ -51,6 +51,11 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(dataloader(Repo, :wa_groups_phones))
     end
 
+    @desc "Contacts that are members of this WhatsApp group."
+    field :contacts, list_of(:contact) do
+      resolve(dataloader(Repo))
+    end
+
     field :groups, list_of(:group) do
       resolve(dataloader(Repo, use_parent: true))
     end

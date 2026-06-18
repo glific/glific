@@ -110,33 +110,40 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   end
 
   @doc """
-  Removes a member from given whatsapp group
+  Removes a member from given whatsapp group. Returns `:ok` or `{:error, message}`.
   """
-  @spec remove_group_member(non_neg_integer(), map(), non_neg_integer()) :: Tesla.Env.result()
+  @spec remove_group_member(non_neg_integer(), map(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
   def remove_group_member(org_id, payload, phone_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/remove"
+
       maytapi_post(url, Jason.encode!(payload), token)
+      |> handle_maytapi_response()
     end
   end
 
   @doc """
   Adds members to the given WhatsApp group. Same payload shape as
-  `remove_group_member/3`: a `number` array of plain phone numbers.
+  `remove_group_member/3`: a `number` array of plain phone numbers. Returns `:ok`
+  or `{:error, message}`.
 
   `payload` shape:
       %{conversation_id: "120363...@g.us", number: ["91xxxxxxxxxx", ...]}
   """
-  @spec add_group_member(non_neg_integer(), map(), non_neg_integer()) :: Tesla.Env.result()
+  @spec add_group_member(non_neg_integer(), map(), non_neg_integer()) ::
+          :ok | {:error, String.t()}
   def add_group_member(org_id, payload, phone_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/group/add"
+
       maytapi_post(url, Jason.encode!(payload), token)
+      |> handle_maytapi_response()
     end
   end
 
@@ -174,64 +181,45 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/createGroup"
 
       maytapi_post(url, Jason.encode!(payload), token)
-      |> handle_create_group_response()
+      |> handle_maytapi_response(:create)
     end
   end
 
   @doc """
-  Renames a WhatsApp group (sets its "subject" in WhatsApp terms).
+  Renames a WhatsApp group (sets its "subject" in WhatsApp terms). Returns `:ok`
+  or `{:error, message}`.
 
   `payload` shape:
       %{conversation_id: "120363...@g.us", subject: "New name"}
   """
-  @spec set_group_subject(non_neg_integer(), non_neg_integer(), map()) :: Tesla.Env.result()
+  @spec set_group_subject(non_neg_integer(), non_neg_integer(), map()) ::
+          :ok | {:error, String.t()}
   def set_group_subject(org_id, phone_id, payload) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
       token = secrets["token"]
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/setGroupSubject"
+
       maytapi_post(url, Jason.encode!(payload), token)
+      |> handle_maytapi_response()
     end
   end
 
-  @doc """
-  Handles a Maytapi group-operation response.
+  # Handles any Maytapi response. Maytapi answers HTTP 200 even on failure, with
+  # `%{"success" => false, "message" => "...", "code" => "..."}`, so a 2xx status
+  # alone is not enough — we decode the body and check `success`. The `:create`
+  # clause extracts the new group's data; the default clause just reports `:ok`.
+  # Non-2xx / transport / unexpected → `{:error, message}`.
+  @spec handle_maytapi_response(Tesla.Env.result(), :create | :default) ::
+          :ok | {:ok, map()} | {:error, String.t()}
+  defp handle_maytapi_response(response, type \\ :default)
 
-  Maytapi answers HTTP 200 even on failure, with
-  `%{"success" => false, "message" => "...", "code" => "..."}`, so a 2xx status
-  alone is not enough — we decode the body and check `success`.
-
-  Returns `:ok` on success, or `{:error, message}` with Maytapi's message (or a
-  generic message for non-2xx / transport / unexpected responses).
-  """
-  @spec handle_maytapi_response(Tesla.Env.result()) :: :ok | {:error, String.t()}
-  def handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}})
-      when status in 200..299 do
-    case Jason.decode(body) do
-      {:ok, %{"success" => true}} -> :ok
-      {:ok, %{"success" => false, "message" => message}} -> {:error, message}
-      {:ok, %{"success" => false}} -> {:error, "Maytapi request failed"}
-      _ -> {:error, "Unexpected Maytapi response"}
-    end
-  end
-
-  def handle_maytapi_response({:ok, %Tesla.Env{body: body}}), do: {:error, inspect(body)}
-  def handle_maytapi_response({:error, reason}), do: {:error, inspect(reason)}
-
-  @spec handle_create_group_response(Tesla.Env.result()) ::
-          {:ok, %{bsp_id: String.t(), participants: [String.t()], admins: [String.t()]}}
-          | {:error, String.t()}
-  defp handle_create_group_response({:ok, %Tesla.Env{status: status, body: body}})
+  defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, :create)
        when status in 200..299 do
     case Jason.decode(body) do
       {:ok, %{"success" => true, "data" => %{"id" => id} = data}} when is_binary(id) ->
-        {:ok,
-         %{
-           bsp_id: id,
-           participants: data["participants"] || [],
-           admins: data["admins"] || []
-         }}
+        {:ok, %{bsp_id: id, participants: data["participants"] || [], admins: data["admins"] || []}}
 
       {:ok, %{"success" => false, "message" => message}} ->
         {:error, message}
@@ -241,8 +229,18 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     end
   end
 
-  defp handle_create_group_response({:ok, %Tesla.Env{body: body}}), do: {:error, inspect(body)}
-  defp handle_create_group_response({:error, reason}), do: {:error, inspect(reason)}
+  defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, _type)
+       when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, %{"success" => true}} -> :ok
+      {:ok, %{"success" => false, "message" => message}} -> {:error, message}
+      {:ok, %{"success" => false}} -> {:error, "Maytapi request failed"}
+      _ -> {:error, "Unexpected Maytapi response"}
+    end
+  end
+
+  defp handle_maytapi_response({:ok, %Tesla.Env{body: body}}, _type), do: {:error, inspect(body)}
+  defp handle_maytapi_response({:error, reason}, _type), do: {:error, inspect(reason)}
 
   @spec client() :: Tesla.Client.t()
   defp client, do: Tesla.client(Glific.get_tesla_retry_middleware())
