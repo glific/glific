@@ -60,7 +60,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -164,7 +164,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -263,7 +263,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -311,18 +311,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
         })
 
       wa_group =
-        Fixtures.wa_group_fixture(%{
+        Fixtures.wa_group_with_primary_fixture(%{
           organization_id: user.organization_id,
           wa_managed_phone_id: first_phone.id
         })
-
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: first_phone.id,
-        organization_id: user.organization_id,
-        is_primary: true,
-        is_active: true
-      })
 
       Fixtures.wa_group_phone_fixture(%{
         wa_group_id: wa_group.id,

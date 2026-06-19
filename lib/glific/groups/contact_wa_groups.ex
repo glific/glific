@@ -139,14 +139,13 @@ defmodule Glific.Groups.ContactWAGroups do
   @spec remove_group_members(non_neg_integer(), non_neg_integer(), list()) ::
           integer()
   defp remove_group_members(org_id, wa_group_id, contact_ids) do
-    wa_group = WAGroups.get_wa_group!(wa_group_id)
-    wa_group = Repo.preload(wa_group, :wa_managed_phone)
+    wa_group = WAGroups.get_wa_group!(wa_group_id) |> Repo.preload(:primary_phone)
 
     Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
       contact = Contacts.get_contact!(contact_id)
       payload = %{conversation_id: wa_group.bsp_id, number: contact.phone <> "@c.us"}
 
-      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
+      case ApiClient.remove_group_member(org_id, payload, wa_group.primary_phone.phone_id) do
         {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
           fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
           {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)

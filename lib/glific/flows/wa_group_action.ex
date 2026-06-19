@@ -71,14 +71,13 @@ defmodule Glific.Flows.WAGroupAction do
 
     {type, media_id} = ContactAction.get_media_from_attachment(attachments, text, context, nil)
 
-    context = Repo.preload(context, [:wa_group, wa_group: :wa_managed_phone])
+    context = Repo.preload(context, :wa_group)
 
     attrs = %{
       uuid: action.node_uuid,
       body: body,
       type: type,
       media_id: media_id,
-      contact_id: context.wa_group.wa_managed_phone.contact_id,
       organization_id: organization_id,
       flow_label: flow_label,
       flow_id: context.flow_id,
@@ -88,9 +87,7 @@ defmodule Glific.Flows.WAGroupAction do
     }
 
     attrs
-    |> then(
-      &Message.create_and_send_wa_message(context.wa_group.wa_managed_phone, context.wa_group, &1)
-    )
+    |> then(&Message.create_and_send_wa_message(context.wa_group, &1))
     |> handle_message_result(context, messages, attrs)
   end
 
@@ -100,7 +97,15 @@ defmodule Glific.Flows.WAGroupAction do
           any(),
           any()
         ) :: {:ok, map(), any()}
-  defp handle_message_result(_result, context, _messages, _attrs) do
+  defp handle_message_result({:ok, _wa_message}, context, _messages, _attrs),
+    do: {:ok, context, []}
+
+  defp handle_message_result({:error, reason}, context, _messages, _attrs) do
+    Glific.log_error(
+      "Maytapi send failed (flow action): wa_group=#{inspect(context.wa_group_id)} reason=#{inspect(reason)}"
+    )
+
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "flow_action"})
     {:ok, context, []}
   end
 end

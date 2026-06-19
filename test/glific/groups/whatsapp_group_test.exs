@@ -776,5 +776,43 @@ defmodule Glific.Groups.WAGroupsTest do
       assert warning =~ "'loading'"
       assert warning =~ ctx.second_phone.phone
     end
+
+    test "next_active_member/2 returns the oldest active member (eligible by both wgp.is_active and Maytapi status)",
+         ctx do
+      # Setup has first_phone (primary, active) and second_phone (active).
+      # Excluding first_phone should give us second_phone.
+      assert phone = WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id])
+      assert phone.id == ctx.second_phone.id
+    end
+
+    test "next_active_member/2 skips members whose wa_groups_phones.is_active is false", ctx do
+      ctx.wa_group.id
+      |> membership(ctx.second_phone.id)
+      |> WAGroupPhone.changeset(%{is_active: false})
+      |> Repo.update!()
+
+      assert WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id]) == nil
+    end
+
+    test "next_active_member/2 skips members whose Maytapi status isn't 'active'", ctx do
+      ctx.second_phone
+      |> WAManagedPhone.changeset(%{status: "loading"})
+      |> Repo.update!()
+
+      assert WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id]) == nil
+    end
+
+    test "next_active_member/2 with no exclude returns the primary itself if it qualifies", ctx do
+      assert phone = WAGroups.next_active_member(ctx.wa_group.id)
+      assert phone.id == ctx.first_phone.id
+    end
+
+    test "next_active_member/2 returns nil when the group has no eligible members", ctx do
+      assert WAGroups.next_active_member(ctx.wa_group.id, [
+               ctx.first_phone.id,
+               ctx.second_phone.id
+             ]) ==
+               nil
+    end
   end
 end

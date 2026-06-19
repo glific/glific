@@ -5,6 +5,8 @@ defmodule Glific.Providers.Maytapi.Message do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Communications,
     Communications.GroupMessage,
@@ -12,18 +14,28 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WAGroup,
     Groups.WAGroupsCollection,
     Groups.WaGroupsCollections,
+    Providers.Maytapi.Sender,
     Repo,
-    WAGroup.WAManagedPhone,
     WAGroup.WAMessage,
     WAGroup.WaPoll,
     WAMessages
   }
 
-  @doc false
-  @spec create_and_send_wa_message(WAManagedPhone.t(), WAGroup.t(), map()) ::
+  @doc """
+  Pick the managed phone for `wa_group` via `Sender.pick_for_send/2` (so
+  primary-with-failover applies), record the outbound `wa_message`, and
+  dispatch it through Maytapi.
+
+  Returns `{:ok, %WAMessage{}}` on success, `{:error, :no_active_phones}`
+  when the group has no usable phone, `{:error, :promotion_failed}` when
+  a failover candidate was found but the primary swap could not be
+  persisted, or any error surfaced by the underlying create/send pipeline.
+  """
+  @spec create_and_send_wa_message(WAGroup.t(), map()) ::
           {:ok, WAMessage.t()} | {:error, any()}
-  def create_and_send_wa_message(wa_phone, wa_group, attrs) do
-    with {:ok, {attrs, poll}} <- add_poll_details(attrs),
+  def create_and_send_wa_message(%WAGroup{} = wa_group, attrs) do
+    with {:ok, wa_phone, _source} <- Sender.pick_for_send(wa_group),
+         {:ok, {attrs, poll}} <- add_poll_details(attrs),
          {:ok, message} <- create_wa_message(attrs, wa_phone, wa_group) do
       GroupMessage.send_message(message, %{
         wa_group_bsp_id: wa_group.bsp_id,
@@ -73,7 +85,7 @@ defmodule Glific.Providers.Maytapi.Message do
       WaGroupsCollections.list_wa_groups_collection(%{
         filter: %{group_id: group.id, organization_id: group.organization_id}
       })
-      |> Repo.preload([:wa_group])
+      |> Repo.preload(wa_group: :primary_phone)
 
     case wa_group_collections do
       [] ->
@@ -89,17 +101,14 @@ defmodule Glific.Providers.Maytapi.Message do
           fn wa_group_collection ->
             Repo.put_process_state(wa_group_collection.organization_id)
 
-            {:ok, wa_managed_phone} =
-              Repo.fetch_by(WAManagedPhone, %{
-                id: wa_group_collection.wa_group.wa_managed_phone_id,
-                organization_id: wa_group_collection.organization_id
-              })
+            result =
+              create_and_send_wa_message(
+                wa_group_collection.wa_group,
+                Map.delete(attrs, :group_id)
+              )
 
-            create_and_send_wa_message(
-              wa_managed_phone,
-              wa_group_collection.wa_group,
-              Map.delete(attrs, :group_id)
-            )
+            log_collection_send_failure(result, wa_group_collection, group)
+            result
           end,
           max_concurrency: 20,
           on_timeout: :kill_task
@@ -110,17 +119,40 @@ defmodule Glific.Providers.Maytapi.Message do
     end
   end
 
+  @spec log_collection_send_failure(any(), WAGroupsCollection.t(), Group.t()) :: :ok
+  defp log_collection_send_failure({:ok, _}, _wa_group_collection, _group), do: :ok
+
+  defp log_collection_send_failure(result, %{wa_group_id: wa_group_id}, %{
+         id: group_id,
+         organization_id: org_id
+       }) do
+    Glific.log_error(
+      "Maytapi send failed (collection): wa_group=#{inspect(wa_group_id)} group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
+    )
+
+    Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection"})
+    :ok
+  end
+
   @doc """
   Record a message sent to a group in the wa_message table.
   """
 
   @spec create_wa_group_message([WAGroupsCollection.t()], Group.t(), map()) :: any()
+  def create_wa_group_message(
+        [%{wa_group: %{primary_phone: nil} = wa_group} | _rest],
+        %{id: group_id, organization_id: org_id} = _group,
+        _attrs
+      ) do
+    Glific.log_error(
+      "Maytapi collection: skipping group-level wa_message row (no primary phone) wa_group=#{inspect(wa_group.id)} org=#{org_id} collection=#{inspect(group_id)}"
+    )
+
+    {:error, :no_primary_phone}
+  end
+
   def create_wa_group_message([wa_group_collection | _wa_groups], group, attrs) do
-    {:ok, wa_managed_phone} =
-      Repo.fetch_by(WAManagedPhone, %{
-        id: wa_group_collection.wa_group.wa_managed_phone_id,
-        organization_id: group.organization_id
-      })
+    wa_managed_phone = wa_group_collection.wa_group.primary_phone
 
     attrs
     |> Map.put_new(:type, :text)
@@ -140,6 +172,10 @@ defmodule Glific.Providers.Maytapi.Message do
         {:ok, wa_message}
 
       {:error, error} ->
+        Glific.log_error(
+          "Maytapi collection: group-level wa_message insert failed collection=#{inspect(group.id)} org=#{group.organization_id} error=#{inspect(error)}"
+        )
+
         {:error, error}
     end
   end
