@@ -1049,7 +1049,7 @@ defmodule Glific.BigQuery do
   @spec partition_filter(String.t(), String.t()) :: String.t()
   defp partition_filter(table, timezone) when table in @partitioned_tables,
     do:
-      "\n    AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+      "\n    AND {@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
 
   defp partition_filter(_table, _timezone), do: ""
 
