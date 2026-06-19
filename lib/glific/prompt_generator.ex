@@ -51,7 +51,7 @@ defmodule Glific.PromptGenerator do
 
   # Server-side meta-prompt — kept here so it can be tuned without a frontend release.
   # Structured, few-shot prompt so Kaapi returns a clean, sectioned WhatsApp system prompt.
-  # TODO (post-beta): move this into org config / DB so admins can edit it without a deploy.
+  # Post-beta: this should move into org config / DB so admins can edit it without a deploy.
   @meta_prompt ~S"""
   You are an expert prompt engineer helping non-profits in India build their first AI assistant on Glific, a WhatsApp chatbot platform.
 
