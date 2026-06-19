@@ -122,4 +122,36 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
       true -> %{message: inspect(body)}
     end
   end
+
+  @doc """
+  Classify a Maytapi response as a phone-level error (eligible for retry
+  via `Glific.Providers.Maytapi.Sender.pick_for_send/2` with the failed
+  phone excluded).
+
+  Returns true when:
+  - status is 5xx (server-side; likely the phone's Maytapi instance is
+    misbehaving), or
+  - status is 4xx and the response body's `message` mentions phone,
+    device, instance, or session — Maytapi surfaces phone-disconnect /
+    not-active errors this way.
+
+  Returns false for 2xx responses, malformed bodies, and 4xx errors that
+  look like client problems (bad payload, rate limit) — retrying with a
+  different phone wouldn't help those.
+  """
+  @spec phone_level_error?({:ok, Tesla.Env.t()} | term()) :: boolean()
+  def phone_level_error?({:ok, %Tesla.Env{status: status}}) when status in 500..599, do: true
+
+  def phone_level_error?({:ok, %Tesla.Env{status: status, body: body}})
+      when status in 400..499 do
+    case Jason.decode(body) do
+      {:ok, %{"message" => message}} when is_binary(message) ->
+        String.match?(String.downcase(message), ~r/phone|device|instance|session/)
+
+      _ ->
+        false
+    end
+  end
+
+  def phone_level_error?(_), do: false
 end

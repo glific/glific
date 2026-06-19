@@ -384,10 +384,12 @@ defmodule Glific.Flows.Webhook do
 
   @spec get_wa_group(FlowContext.t()) :: map()
   defp get_wa_group(%FlowContext{wa_group_id: wa_group_id} = context) when wa_group_id != nil do
+    wa_group = Glific.Repo.preload(context.wa_group, :primary_phone)
+
     %{
-      id: context.wa_group.id,
-      label: context.wa_group.label,
-      wa_managed_phone_id: context.wa_group.wa_managed_phone_id
+      id: wa_group.id,
+      label: wa_group.label,
+      wa_managed_phone_id: wa_group.primary_phone && wa_group.primary_phone.id
     }
   end
 
