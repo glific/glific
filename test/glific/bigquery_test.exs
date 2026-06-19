@@ -1,4 +1,5 @@
 defmodule Glific.BigQueryTest do
+  @moduledoc false
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -363,28 +364,35 @@ defmodule Glific.BigQueryTest do
 
     bodies = collect_insert_bodies()
 
-    # partitioned + clustered table
-    messages = fetch_table_body(bodies, "messages")
-    assert messages["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
-    assert messages["clustering"] == %{"fields" => ["contact_phone", "flow_id"]}
+    # Every partitioned table is MONTH-partitioned on inserted_at, clustered by its keys.
+    partitioned_tables = %{
+      "messages" => ["contact_phone", "flow_id"],
+      "flow_contexts" => ["contact_phone", "flow_id"],
+      "flow_results" => ["contact_phone", "name"],
+      "contact_histories" => ["phone", "event_type"],
+      "wa_messages" => ["wa_group_id", "contact_phone"],
+      "messages_media" => ["content_type"]
+    }
 
-    # partitioned table clustered by a single non-time key
-    media = fetch_table_body(bodies, "messages_media")
-    assert media["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
-    assert media["clustering"] == %{"fields" => ["content_type"]}
+    for {table, cluster_fields} <- partitioned_tables do
+      body = fetch_table_body(bodies, table)
+      assert body["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
+      assert body["clustering"] == %{"fields" => cluster_fields}
+    end
 
-    # fact table: clustered (leading inserted_at), not partitioned
+    # Unpartitioned fact table: clustered (leading inserted_at) but not partitioned.
     conversations = fetch_table_body(bodies, "message_conversations")
     refute Map.has_key?(conversations, "timePartitioning")
     assert conversations["clustering"] == %{"fields" => ["inserted_at", "phone"]}
 
-    # dimension table: neither partitioned nor clustered
+    # Dimension table: neither partitioned nor clustered.
     tags = fetch_table_body(bodies, "tags")
     refute Map.has_key?(tags, "timePartitioning")
     refute Map.has_key?(tags, "clustering")
   end
 
   # Drains the test mailbox of the JSON insert bodies captured by the mock.
+  @spec collect_insert_bodies(list()) :: list(map())
   defp collect_insert_bodies(acc \\ []) do
     receive do
       {:insert_body, body} -> collect_insert_bodies([Jason.decode!(body) | acc])
@@ -393,6 +401,7 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  @spec fetch_table_body(list(map()), String.t()) :: map() | nil
   defp fetch_table_body(bodies, table_id),
     do: Enum.find(bodies, &(get_in(&1, ["tableReference", "tableId"]) == table_id))
 
