@@ -406,7 +406,8 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "upserts an active membership for groups the phone is in", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
 
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
 
@@ -415,7 +416,9 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "deactivates memberships for groups no longer returned", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
 
@@ -425,12 +428,31 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "reactivates a previously inactive membership", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
       :ok = WAGroups.sync_wa_group_phones([], ctx.wa_managed_phone)
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == false
 
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
+    end
+
+    test "skips when Maytapi returns a bsp_id that has no matching wa_group row",
+         ctx do
+      orphan =
+        group_detail(
+          %{ctx.wa_group | bsp_id: "120363099999999999@g.us"},
+          ctx.wa_managed_phone,
+          ["#{ctx.wa_managed_phone.phone}@c.us"]
+        )
+
+      known =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
+      :ok = WAGroups.sync_wa_group_phones([orphan, known], ctx.wa_managed_phone)
+
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
     end
 

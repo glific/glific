@@ -201,6 +201,14 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   end
 
   test "sync contacts in wa groups", %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+      } ->
+        {:ok, %Tesla.Env{status: 200, body: "[]"}}
+    end)
+
     result = auth_query_gql_by(:sync, user)
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "syncWaGroupContacts", "message"])

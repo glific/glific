@@ -17,6 +17,7 @@ defmodule Glific.Groups.WAGroups do
     Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -73,14 +74,16 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Syncs groups and phones using maytapi API into Glific
   """
-  @spec sync_wa_groups(non_neg_integer()) :: :ok
+  @spec sync_wa_groups(non_neg_integer()) :: :ok | {:error, String.t()}
   def sync_wa_groups(org_id) do
-    wa_managed_phones =
-      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+    with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id) do
+      wa_managed_phones =
+        WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
-    Enum.each(wa_managed_phones, fn wa_managed_phone ->
-      do_sync_wa_groups(org_id, wa_managed_phone)
-    end)
+      Enum.each(wa_managed_phones, fn wa_managed_phone ->
+        do_sync_wa_groups(org_id, wa_managed_phone)
+      end)
+    end
   end
 
   @spec do_sync_wa_groups(non_neg_integer(), map()) :: list() | {:error, any()}
@@ -97,7 +100,7 @@ defmodule Glific.Groups.WAGroups do
         {:error, body}
 
       {:error, message} ->
-        {:error, inspect(message)}
+        {:error, SafeLog.safe_inspect(message)}
     end
   end
 
@@ -293,12 +296,7 @@ defmodule Glific.Groups.WAGroups do
   @spec sync_wa_group_phones(list(), WAManagedPhone.t()) :: :ok
   def sync_wa_group_phones(group_details, wa_managed_phone) do
     org_id = wa_managed_phone.organization_id
-
-    # Cross-phone reconciliation needs every other managed phone in the
-    # org so it can check each one against this group's participants list.
-    other_managed_phones =
-      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
-      |> Enum.reject(&(&1.id == wa_managed_phone.id))
+    all_managed_phones = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
     present_group_ids =
       Enum.flat_map(group_details, fn group ->
@@ -311,23 +309,7 @@ defmodule Glific.Groups.WAGroups do
             []
 
           wa_group ->
-            case ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
-              {:ok, _membership} ->
-                :ok
-
-              {:error, reason} ->
-                Logger.warning(
-                  "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
-                )
-            end
-
-            reconcile_other_managed_phones(
-              wa_group,
-              group.participants,
-              other_managed_phones,
-              org_id
-            )
-
+            reconcile_managed_phones(wa_group, group.participants, all_managed_phones, org_id)
             [wa_group.id]
         end
       end)
@@ -336,27 +318,33 @@ defmodule Glific.Groups.WAGroups do
     :ok
   end
 
-  # Use the participants list from one phone's view of the group to fix
-  # the membership rows of all OTHER managed phones in the same group:
-  # in participants → active, not in participants → inactive.
-  #
-  # Without this, a phone whose own sync is stale or skipped keeps a
-  # wrong `is_active` flag until its next successful sync.
-  @spec reconcile_other_managed_phones(
+  # For every managed phone in the org (including the one that called
+  # Maytapi): if the phone's number is in this group's `participants`
+  # list, upsert its membership as `is_active: true`; otherwise mark its
+  # existing membership `is_active: false`.
+  @spec reconcile_managed_phones(
           WAGroup.t(),
           [String.t()],
           [WAManagedPhone.t()],
           non_neg_integer()
         ) :: :ok
-  defp reconcile_other_managed_phones(wa_group, participants, other_managed_phones, org_id) do
+  defp reconcile_managed_phones(wa_group, participants, managed_phones, org_id) do
     participant_phones =
       participants
       |> Enum.map(&phone_number/1)
       |> MapSet.new()
 
-    Enum.each(other_managed_phones, fn managed_phone ->
+    Enum.each(managed_phones, fn managed_phone ->
       if MapSet.member?(participant_phones, managed_phone.phone) do
-        ensure_membership(wa_group.id, managed_phone.id, org_id, is_primary: false)
+        case ensure_membership(wa_group.id, managed_phone.id, org_id, is_primary: false) do
+          {:ok, _membership} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.warning(
+              "Could not upsert wa_groups_phones row for WA group #{wa_group.bsp_id} (phone #{managed_phone.phone_id}): #{SafeLog.safe_inspect(reason)}"
+            )
+        end
       else
         deactivate_one_membership(wa_group.id, managed_phone.id)
       end
@@ -762,7 +750,7 @@ defmodule Glific.Groups.WAGroups do
 
       {:error, error} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(error)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{SafeLog.safe_inspect(error)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}
