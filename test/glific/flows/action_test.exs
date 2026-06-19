@@ -1609,4 +1609,46 @@ defmodule Glific.Flows.ActionTest do
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
+
+  describe "validate/3 — deprecated Bhashini webhooks" do
+    test "flags speech_to_text_with_bhasini with a Critical migration error" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "speech_to_text_with_bhasini"
+      assert message =~ "speech_to_text"
+      assert message =~ "deprecated"
+    end
+
+    test "flags text_to_speech_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "text_to_speech_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "text_to_speech_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "flags nmt_tts_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "nmt_tts_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "nmt_tts_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "prepends the error onto the existing error list" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+      existing = [{Webhook, "some other error", "Warning"}]
+
+      assert [{Webhook, _msg, "Critical"}, {Webhook, "some other error", "Warning"}] =
+               Action.validate(action, existing, %{})
+    end
+
+    test "does not flag the new speech_to_text / text_to_speech webhooks" do
+      for url <- ["speech_to_text", "text_to_speech"] do
+        action = %Action{type: "call_webhook", url: url}
+        assert Action.validate(action, [], %{}) == []
+      end
+    end
+  end
 end

@@ -71,6 +71,15 @@ defmodule Glific.Flows.Action do
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
 
+  # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
+  # dropdown). Flows still referencing them must migrate to the new
+  # "speech_to_text" / "text_to_speech" nodes, so publishing them surfaces an error.
+  @deprecated_bhashini_webhooks %{
+    "speech_to_text_with_bhasini" => "speech_to_text",
+    "text_to_speech_with_bhasini" => "text_to_speech",
+    "nmt_tts_with_bhasini" => "text_to_speech"
+  }
+
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
   @template_type ["send_msg", "send_broadcast"]
@@ -541,6 +550,18 @@ defmodule Glific.Flows.Action do
     else
       check_the_next_node(errors, node, flow)
     end
+  end
+
+  def validate(%{type: "call_webhook", url: url}, errors, _flow)
+      when is_map_key(@deprecated_bhashini_webhooks, url) do
+    replacement = Map.fetch!(@deprecated_bhashini_webhooks, url)
+
+    [
+      {Webhook,
+       "The '#{url}' webhook is deprecated. Please migrate this node to the '#{replacement}' node before publishing.",
+       "Critical"}
+      | errors
+    ]
   end
 
   # default validate, do nothing
