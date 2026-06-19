@@ -2012,6 +2012,7 @@ defmodule Glific.PartnersTest do
   describe "fetch_partner_token" do
     setup do
       Glific.Caches.remove(0, ["partner_token"])
+      on_exit(fn -> Glific.Caches.remove(0, ["partner_token"]) end)
       :ok
     end
 
