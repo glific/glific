@@ -65,12 +65,6 @@ defmodule GlificWeb.Schema.PromptGeneratorTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.PromptGenerator.get/3)
     end
-
-    @desc "Fetch the current user's most recent prompt generation request (for pre-filling the wizard)"
-    field :latest_prompt_generation, :prompt_generation_result do
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.PromptGenerator.get_latest/3)
-    end
   end
 
   object :prompt_generator_mutations do

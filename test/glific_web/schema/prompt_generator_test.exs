@@ -21,7 +21,6 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/prompt_generator/create.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/prompt_generator/by_id.gql")
-  load_gql(:latest, GlificWeb.Schema, "assets/gql/prompt_generator/latest.gql")
 
   # ---------------------------------------------------------------------------
   # Setup helpers
@@ -217,48 +216,6 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
         get_in(query_data, [:data, "promptGeneration", "errors", Access.at(0), "message"])
 
       assert message == "Resource not found"
-    end
-  end
-
-  describe "latestPromptGeneration query" do
-    setup :enable_kaapi
-
-    test "returns the caller's most recent request with inputs (for pre-fill)",
-         %{staff: user, organization_id: org_id} do
-      {:ok, _older} =
-        %PromptGenerationRequest{}
-        |> PromptGenerationRequest.changeset(%{
-          inputs: %{"name" => "Older NGO"},
-          status: :ready,
-          request_id: "req_latest_old",
-          organization_id: org_id,
-          user_id: user.id
-        })
-        |> Repo.insert()
-
-      {:ok, _newer} =
-        %PromptGenerationRequest{}
-        |> PromptGenerationRequest.changeset(%{
-          inputs: %{"name" => "Newer NGO", "tone" => "Friendly"},
-          status: :in_progress,
-          request_id: "req_latest_new",
-          organization_id: org_id,
-          user_id: user.id
-        })
-        |> Repo.insert()
-
-      {:ok, query_data} = auth_query_gql_by(:latest, user, variables: %{})
-
-      pg = get_in(query_data, [:data, "latestPromptGeneration", "promptGeneration"])
-      # inputs is a flexible :json map (serialized as a JSON string by the scalar)
-      inputs = Jason.decode!(pg["inputs"])
-      assert inputs["name"] == "Newer NGO"
-      assert inputs["tone"] == "Friendly"
-    end
-
-    test "returns null prompt_generation when the user has no prior request", %{staff: user} do
-      {:ok, query_data} = auth_query_gql_by(:latest, user, variables: %{})
-      assert get_in(query_data, [:data, "latestPromptGeneration", "promptGeneration"]) == nil
     end
   end
 

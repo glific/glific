@@ -34,7 +34,7 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
          :ok <- validate_field_lengths(params),
          {:ok, request} <-
            Glific.PromptGenerator.generate_prompt(params, user.organization_id, user.id) do
-      {:ok, %{prompt_generation: to_graphql(request)}}
+      {:ok, %{prompt_generation: request}}
     end
   end
 
@@ -53,19 +53,8 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
              id: id,
              organization_id: user.organization_id
            }) do
-      {:ok, %{prompt_generation: to_graphql(request)}}
+      {:ok, %{prompt_generation: request}}
     end
-  end
-
-  @doc """
-  Fetches the caller's most recent prompt generation request, for pre-filling the
-  wizard with their previous answers. Returns `prompt_generation: nil` when the user
-  has no prior request.
-  """
-  @spec get_latest(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
-  def get_latest(_, _args, %{context: %{current_user: user}}) do
-    request = Glific.PromptGenerator.latest_request(user.organization_id, user.id)
-    {:ok, %{prompt_generation: request && to_graphql(request)}}
   end
 
   # ---------------------------------------------------------------------------
@@ -96,16 +85,5 @@ defmodule GlificWeb.Resolvers.PromptGenerator do
         {:error,
          "Field '#{field}' exceeds the maximum length of #{@max_field_length} characters."}
     end
-  end
-
-  @spec to_graphql(PromptGenerationRequest.t()) :: map()
-  defp to_graphql(request) do
-    %{
-      id: request.id,
-      status: to_string(request.status),
-      generated_prompt: request.generated_prompt,
-      error_message: request.error_message,
-      inputs: request.inputs
-    }
   end
 end
