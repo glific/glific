@@ -1,4 +1,5 @@
 defmodule Glific.BigQueryTest do
+  @moduledoc false
   use Glific.DataCase
   use Oban.Pro.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -152,7 +153,8 @@ defmodule Glific.BigQueryTest do
       ) AS rn
       FROM `test_dataset.messages` delta
       WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
-        'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+        'Asia/Kolkata')
+      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
   """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
@@ -184,6 +186,19 @@ defmodule Glific.BigQueryTest do
                %{conn: conn, project_id: "test_project", dataset_id: "test_dataset"},
                attrs.organization_id
              )
+  end
+
+  test "generate_duplicate_removal_query/3 omits the inserted_at filter for non-partitioned tables",
+       attrs do
+    query =
+      BigQuery.generate_duplicate_removal_query(
+        "contacts",
+        %{project_id: "test_project", dataset_id: "test_dataset"},
+        attrs.organization_id
+      )
+
+    assert query =~ "DELETE FROM `test_dataset.contacts`"
+    refute query =~ "INTERVAL 3 MONTH"
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
@@ -318,6 +333,77 @@ defmodule Glific.BigQueryTest do
 
     assert :ok == BigQuery.create_tables(conn, 1, "test_dataset", "test_table")
   end
+
+  test "create_tables/3 sets partitioning and clustering only where configured" do
+    test_pid = self()
+
+    Tesla.Mock.mock(fn %{method: :post} = env ->
+      send(test_pid, {:insert_body, env.body})
+
+      %Tesla.Env{
+        status: 200,
+        body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
+      }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert :ok == BigQuery.create_tables(conn, 1, "test_dataset", "test_table")
+
+    bodies = collect_insert_bodies()
+
+    # Every partitioned table is MONTH-partitioned on inserted_at, clustered by its keys.
+    partitioned_tables = %{
+      "messages" => ["contact_phone", "flow_id"],
+      "flow_contexts" => ["contact_phone", "flow_id"],
+      "flow_results" => ["contact_phone", "name"],
+      "contact_histories" => ["phone", "event_type"],
+      "wa_messages" => ["wa_group_id", "contact_phone"],
+      "messages_media" => ["content_type"]
+    }
+
+    for {table, cluster_fields} <- partitioned_tables do
+      body = fetch_table_body(bodies, table)
+      assert body["timePartitioning"] == %{"type" => "MONTH", "field" => "inserted_at"}
+      assert body["clustering"] == %{"fields" => cluster_fields}
+    end
+
+    # Unpartitioned fact table: clustered (leading inserted_at) but not partitioned.
+    conversations = fetch_table_body(bodies, "message_conversations")
+    refute Map.has_key?(conversations, "timePartitioning")
+    assert conversations["clustering"] == %{"fields" => ["inserted_at", "phone"]}
+
+    # Dimension table: neither partitioned nor clustered.
+    tags = fetch_table_body(bodies, "tags")
+    refute Map.has_key?(tags, "timePartitioning")
+    refute Map.has_key?(tags, "clustering")
+  end
+
+  # Drains the test mailbox of the JSON insert bodies captured by the mock.
+  @spec collect_insert_bodies(list()) :: list(map())
+  defp collect_insert_bodies(acc \\ []) do
+    receive do
+      {:insert_body, body} -> collect_insert_bodies([Jason.decode!(body) | acc])
+    after
+      0 -> acc
+    end
+  end
+
+  @spec fetch_table_body(list(map()), String.t()) :: map() | nil
+  defp fetch_table_body(bodies, table_id),
+    do: Enum.find(bodies, &(get_in(&1, ["tableReference", "tableId"]) == table_id))
 
   test "alter_tables/3 should throw error tables" do
     Tesla.Mock.mock(fn

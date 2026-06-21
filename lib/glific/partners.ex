@@ -595,6 +595,7 @@ defmodule Glific.Partners do
       |> Flags.set_copy_node_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
+      |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1452,7 +1453,9 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization),
       "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
       "superset_enabled" =>
-        FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id})
+        FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
+      "prompt_generator_enabled" =>
+        Flags.get_flag_enabled(:is_prompt_generator_enabled, organization)
     }
   end
 
