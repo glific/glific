@@ -206,8 +206,9 @@ search_repo_module =
 
 config :glific, Glific.Searches, repo_module: search_repo_module
 
-config :glific,
-  superset_username: env!("SUPERSET_USERNAME", :string, "superset_username")
-
-config :glific,
-  superset_password: env!("SUPERSET_PASSWORD", :string, "superset_password")
+config :glific, Glific.ThirdParty.Superset.ApiClient,
+  base_url: env!("SUPERSET_URL", :string, "https://moonshine.projecttech4dev.org/api/v1"),
+  dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "71f4c8d9-f9c6-4b9d-9b28-80c550681b7f"),
+  guest_username: env!("SUPERSET_GUEST_USERNAME", :string, "glific-dev-embed"),
+  username: env!("SUPERSET_USERNAME", :string, "superset_username"),
+  password: env!("SUPERSET_PASSWORD", :string, "superset_password")
