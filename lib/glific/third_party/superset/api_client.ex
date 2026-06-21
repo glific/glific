@@ -12,6 +12,8 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   `username`, `password`.
   """
 
+  require Logger
+
   @doc """
   Fetches a Superset guest embed token for the given organization.
 
@@ -92,7 +94,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   end
 
   defp parse_response(error) do
-    Glific.log_exception(%{message: "Superset API transport error: #{inspect(error)}"})
+    Logger.error("Superset API transport error: #{inspect(error)}")
     {:error, error}
   end
 

@@ -72,19 +72,12 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
 
     test "propagates transport error when network is unreachable",
          %{organization_id: organization_id} do
-      # NOTE: Glific.log_exception/1 has a pre-existing issue where passing a plain map
-      # to Appsignal.send_error/3 causes a FunctionClauseError in Exception.format_banner/3
-      # (even with appsignal active: false in test config). The transport-error path in
-      # parse_response/1 triggers log_exception, which then crashes. When this upstream
-      # bug is fixed, the expected return value should be {:error, {:error, :econnrefused}}.
       mock_global(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           {:error, :econnrefused}
       end)
 
-      assert_raise FunctionClauseError, fn ->
-        ApiClient.get_embed_token(organization_id)
-      end
+      assert {:error, {:error, :econnrefused}} = ApiClient.get_embed_token(organization_id)
     end
   end
 end
