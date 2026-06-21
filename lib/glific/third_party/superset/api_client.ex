@@ -66,6 +66,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
         last_name: "Dev"
       },
       resources: [%{type: "dashboard", id: superset_config(:dashboard_id)}],
+      # TODO: wire organization_id into RLS clause once Superset row-level security is enabled
       rls: []
     }
 
@@ -80,7 +81,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
     Appsignal.increment_counter("superset.embed_token.success", 1, %{})
 
     {_, cookie} =
-      Enum.find(headers, {nil, "random_cookie"}, fn header -> elem(header, 0) == "set-cookie" end)
+      Enum.find(headers, {nil, nil}, fn header -> elem(header, 0) == "set-cookie" end)
 
     {:ok, Map.put(body, :cookie, cookie)}
   end
@@ -91,8 +92,8 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   end
 
   defp parse_response(error) do
-    Glific.log_exception(error)
-    error
+    Glific.log_exception(%{message: "Superset API transport error: #{inspect(error)}"})
+    {:error, error}
   end
 
   @spec client(String.t() | nil, String.t() | nil, String.t() | nil) :: Tesla.Client.t()
@@ -132,6 +133,9 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
     end
   end
 
+  @spec superset_config() :: keyword()
   defp superset_config, do: Application.fetch_env!(:glific, __MODULE__)
+
+  @spec superset_config(atom()) :: any()
   defp superset_config(key), do: superset_config()[key]
 end
