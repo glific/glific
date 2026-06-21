@@ -2,6 +2,8 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
   use GlificWeb.ConnCase
   import Tesla.Mock
 
+  # Note: tests run synchronously (no async: true) because mock_global/1 mutates global state.
+
   alias Glific.Fixtures
   alias GlificWeb.{APIAuthPlug, Endpoint}
 
@@ -53,6 +55,8 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       assert response["token"] != ""
     end
 
+    # Note: this route is under the :api pipeline only (no RequireAuthenticated).
+    # The 401 is enforced by the controller's pattern match on current_user, not the router.
     test "returns 401 when no authorization header is provided", %{conn: conn} do
       conn = post(conn, "/api/v1/get-embed-token")
       response = json_response(conn, 401)
@@ -73,6 +77,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       conn = post(authed_conn, "/api/v1/get-embed-token")
       response = json_response(conn, 400)
       assert Map.has_key?(response, "error")
+      assert response["error"]["status"] == 400
     end
   end
 end

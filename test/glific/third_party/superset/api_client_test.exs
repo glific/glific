@@ -2,6 +2,8 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
   use Glific.DataCase
   import Tesla.Mock
 
+  # Note: tests run synchronously (no async: true) because mock_global/1 mutates global state.
+
   alias Glific.ThirdParty.Superset.ApiClient
 
   @base_url "https://moonshine.projecttech4dev.org/api/v1"
