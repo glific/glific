@@ -23,7 +23,7 @@ defmodule GlificWeb.API.V1.SupersetController do
       {:error, reason} ->
         conn
         |> put_status(:bad_request)
-        |> json(%{error: %{status: 400, message: reason}})
+        |> json(%{error: %{status: 400, message: inspect(reason)}})
     end
   end
 end

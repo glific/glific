@@ -6,6 +6,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
 
   alias Glific.ThirdParty.Superset.ApiClient
 
+  # Note: this URL must match SUPERSET_URL in the test environment (typically from config/.env.dev)
   @base_url "https://moonshine.projecttech4dev.org/api/v1"
 
   describe "get_embed_token/1" do

@@ -75,6 +75,8 @@ defmodule GlificWeb.Router do
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
+
+    # Auth enforced at controller level via current_user pattern match (no RequireAuthenticated in this scope)
     post("/get-embed-token", SupersetController, :embed_token)
   end
 
