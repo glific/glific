@@ -91,10 +91,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   end
 
   defp parse_response(error) do
-    Appsignal.send_error(error, [], fn span ->
-      Appsignal.Span.set_namespace(span, "superset")
-    end)
-
+    Glific.log_exception(error)
     error
   end
 
