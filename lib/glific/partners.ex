@@ -1450,7 +1450,9 @@ defmodule Glific.Partners do
         Flags.get_assistant_config_versions_enabled(organization),
       "gpt_vision_base64_enabled" =>
         Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization),
-      "copy_node_enabled" => Flags.get_copy_node_enabled(organization)
+      "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
+      "superset_enabled" =>
+        FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id})
     }
   end
 
