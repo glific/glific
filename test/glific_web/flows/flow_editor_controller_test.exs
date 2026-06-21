@@ -604,6 +604,5 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
       assert Glific.Repo.get!(Flows.FlowRevision, revision_id) != nil
     end
-
   end
 end
