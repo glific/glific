@@ -197,6 +197,9 @@ defmodule Glific.Partners.Organization do
 
     field(:high_trigger_tps_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field to conditionally enable the AI prompt generator (BETA) for an organization
+    field(:is_prompt_generator_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 
