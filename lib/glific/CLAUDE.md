@@ -100,6 +100,18 @@ end
   wrappers centralize Logger + AppSignal and suppress known-benign beneficiary errors
   (`ignore_error?/1`).
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
+- **Custom `defexception` pattern** — subsystems that need isolated AppSignal error-rate triggers
+  define a local `Error` module with a `:reason` field and explicit `message/1`:
+  ```elixir
+  defmodule MyModule.Error do
+    defexception [:message, :reason]
+    def message(%__MODULE__{} = e), do: "#{e.message} reason: #{e.reason}"
+  end
+  @appsignal_namespace "my_subsystem"
+  ```
+  Pass the namespace when logging: `Glific.log_exception(error, namespace: @appsignal_namespace)`.
+  This builds an isolated error-rate trigger in AppSignal per subsystem (e.g. `"prompt_generator"`).
+  See `Glific.PromptGenerator` and `Glific.Providers.Gupshup.PartnerAPI` for examples.
 
 ## Caching (Cachex, bucket `:glific_cache`)
 
@@ -144,6 +156,25 @@ Request headers are automatically scrubbed by `Glific.Flows.Webhook.HeaderRedact
 being persisted to `webhook_logs` — credentials (Authorization, X-Api-Key, etc.) are
 redacted. Do not special-case credential fields in individual webhook modules.
 
+## Async external-service callback pattern
+
+Used by `Glific.PromptGenerator` (Kaapi LLM) and similar integrations where an external
+service accepts a request and POSTs back later. The correlation key is a UUID we generate:
+
+1. Generate `request_id = Ecto.UUID.generate()` before calling the external service.
+2. Embed it in the outbound payload (e.g. `request_metadata.request_id`).
+3. Persist a row with `status: :in_progress` and the `request_id`.
+4. External service echoes the `request_id` in the async callback body — use it for lookup
+   via `Repo.fetch_by(Schema, %{request_id: request_id})`.
+5. **Terminal-state guard**: always short-circuit if the row is already in a terminal state
+   (`:ready` or `:failed`) to make callbacks idempotent:
+   ```elixir
+   defp apply_callback(%Schema{status: s} = row, _) when s in [:ready, :failed], do: {:ok, row}
+   ```
+6. Record AppSignal telemetry on each real transition (latency, success/failure count).
+
+The callback endpoint must return 200 even for unknown `request_id` (log + ignore).
+
 ## Large subsystems — read before touching
 
 These are old, dense, and pattern-divergent. Read the subtree and nearby tests **before**
@@ -154,7 +185,17 @@ editing or "cleaning up":
   `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
-- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.
+  `Glific.Providers.Gupshup.PartnerAPI` uses `GUPSHUP_PARTNER_CLIENT_SECRET` (app env
+  `:gupshup_partner_client_secret`) — not the ISV password — to fetch partner tokens.
+- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc. **BigQuery rule**:
+  table partitioning/clustering is set **only** in `create_table/2` (new org/table creation).
+  `alter_table/2` (schema evolution) must **never** set these — BigQuery cannot repartition an
+  existing table. New orgs get MONTH-partitioned + clustered tables; existing org tables are
+  intentionally untouched.
+- `prompt_generator.ex` / `prompt_generator/` — async Kaapi LLM-based WhatsApp chatbot
+  system-prompt generation. `PromptGenerationRequest` tracks status (`:in_progress` → `:ready` /
+  `:failed`). Uses the async callback correlation pattern above. Gated by the
+  `is_prompt_generator_enabled` feature flag (set per-org in `Glific.Flags`).
 - `partners.ex` / `partners/` — organizations, providers, credentials, billing. Central to
   multi-tenancy and caching.
 
