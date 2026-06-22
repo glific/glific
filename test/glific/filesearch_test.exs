@@ -152,7 +152,14 @@ defmodule Glific.FilesearchTest do
         }
       )
 
-    assert query_data.data["updateAssistant"]["assistant"]["temperature"] == 1.8
+    new_config_version =
+      AssistantConfigVersion
+      |> where([acv], acv.assistant_id == ^unified_assistant.id)
+      |> order_by([acv], desc: acv.version_number)
+      |> limit(1)
+      |> Repo.one()
+
+    assert get_in(new_config_version.settings, ["temperature"]) == 1.8
 
     assert %{"name" => "assistant2"} =
              query_data.data["updateAssistant"]["assistant"]
