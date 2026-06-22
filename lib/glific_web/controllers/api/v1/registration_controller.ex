@@ -147,8 +147,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
       _ ->
         with {:ok, _contact} <- optin_contact(organization_id, phone),
-             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+             {:ok, contact} <-
+               Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
@@ -163,8 +165,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+        with {:ok, contact} <-
+               Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
@@ -201,14 +205,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     hsm = Contacts.can_send_message_to?(contact, true)
     session = Contacts.can_send_message_to?(contact, false)
     elem(hsm, 0) == :ok || elem(session, 0) == :ok
-  end
-
-  @spec can_send_otp_to_phone?(integer, String.t()) :: {:ok, Contact.t()} | {:error, any} | false
-  defp can_send_otp_to_phone?(organization_id, phone) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
-         true <- can_send_message_to?(contact),
-         do: {:ok, contact}
   end
 
   @doc """
