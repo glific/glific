@@ -457,11 +457,14 @@ defmodule Glific.AssistantsTest do
 
       assert config_count == 2
 
-      {:ok, updated_assistant} =
-        Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
 
-      updated_assistant = Repo.preload(updated_assistant, :active_config_version)
-      assert updated_assistant.active_config_version.kaapi_version_number == 2
+      assert new_config_version.kaapi_version_number == 2
     end
 
     test "creates a new config version when temperature changes",
@@ -471,13 +474,11 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_temp", version: 2}}}
       end)
 
-      assert {:ok, result} =
+      assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  temperature: 0.5,
                  organization_id: organization_id
                })
-
-      assert result.temperature == 0.5
 
       config_count =
         AssistantConfigVersion
@@ -485,6 +486,15 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert get_in(new_config_version.settings, ["temperature"]) == 0.5
     end
 
     test "creates a new config version when model changes",
@@ -494,13 +504,11 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_model", version: 2}}}
       end)
 
-      assert {:ok, result} =
+      assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  model: "gpt-4o-mini",
                  organization_id: organization_id
                })
-
-      assert result.model == "gpt-4o-mini"
 
       config_count =
         AssistantConfigVersion
@@ -508,6 +516,15 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config_version.model == "gpt-4o-mini"
     end
 
     test "creates a new config version when instructions change",
@@ -517,13 +534,11 @@ defmodule Glific.AssistantsTest do
           %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_instructions", version: 2}}}
       end)
 
-      assert {:ok, result} =
+      assert {:ok, _result} =
                Assistants.update_assistant(assistant.id, %{
                  instructions: "You are a specialized assistant",
                  organization_id: organization_id
                })
-
-      assert result.instructions == "You are a specialized assistant"
 
       config_count =
         AssistantConfigVersion
@@ -531,6 +546,15 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config_version.prompt == "You are a specialized assistant"
     end
 
     test "creates a new config version when knowledge base changes",
@@ -682,8 +706,6 @@ defmodule Glific.AssistantsTest do
                })
 
       assert result.name == "Multi-Update Name"
-      assert result.model == "gpt-4o-mini"
-      assert result.temperature == 0.7
 
       config_count =
         AssistantConfigVersion
@@ -691,6 +713,16 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert new_config_version.model == "gpt-4o-mini"
+      assert get_in(new_config_version.settings, ["temperature"]) == 0.7
     end
 
     test "returns error when Kaapi API call fails",
@@ -794,13 +826,13 @@ defmodule Glific.AssistantsTest do
                  organization_id: organization_id
                })
 
-      # Verify bridge entry was created for the active config version
+      # KB is linked to v2 only — v1 (active config) must NOT have a bridge row
       bridge_count_after =
         "assistant_config_version_knowledge_base_versions"
         |> where([b], b.assistant_config_version_id == ^config_version.id)
         |> Repo.aggregate(:count, :id)
 
-      assert bridge_count_after == 1
+      assert bridge_count_after == 0
 
       # Verify a new config version was also created
       config_count =
@@ -809,6 +841,91 @@ defmodule Glific.AssistantsTest do
         |> Repo.aggregate(:count, :id)
 
       assert config_count == 2
+    end
+
+    test "does not link in_progress KB to v1 and defers Kaapi push until callback",
+         %{
+           organization_id: organization_id,
+           assistant: assistant,
+           config_version: v1_config_version
+         } do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "In-Progress KB for v2",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{"file_1" => %{"filename" => "doc.pdf"}},
+          status: :in_progress,
+          llm_service_id: "temporary-vs-bugtest123",
+          kaapi_job_id: "job_needs_active_config_link_fix",
+          size: 500
+        })
+
+      # No Tesla mock — any Kaapi call here would raise and fail the test,
+      # proving the deferred path is correctly taken.
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 name: assistant.name,
+                 instructions: v1_config_version.prompt,
+                 model: v1_config_version.model,
+                 temperature: get_in(v1_config_version.settings, ["temperature"]),
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      # v1 (active config) must NOT have the KB linked — the bug would give it a row here
+      v1_bridge_count =
+        "assistant_config_version_knowledge_base_versions"
+        |> where([b], b.assistant_config_version_id == ^v1_config_version.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert v1_bridge_count == 0
+
+      # v2 (new config) must be created and have the KB linked
+      v2_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> where([acv], acv.id != ^v1_config_version.id)
+        |> Repo.one()
+
+      refute is_nil(v2_config_version)
+      assert v2_config_version.status == :in_progress
+
+      v2_bridge_count =
+        "assistant_config_version_knowledge_base_versions"
+        |> where([b], b.assistant_config_version_id == ^v2_config_version.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert v2_bridge_count == 1
+
+      # Simulate Kaapi callback with the real vs-* ID
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cfg_id_123", version: 3}}}
+      end)
+
+      Assistants.handle_knowledge_base_callback(%{
+        "data" => %{
+          "job_id" => "job_needs_active_config_link_fix",
+          "status" => "SUCCESSFUL",
+          "collection" => %{"knowledge_base_id" => "vs-realid456"},
+          "error_message" => nil
+        }
+      })
+
+      # v2 should now be :ready with the Kaapi version number set
+      updated_v2 = Repo.get!(AssistantConfigVersion, v2_config_version.id)
+      assert updated_v2.status == :ready
+      assert updated_v2.kaapi_version_number == 3
+
+      # KB version should have the real llm_service_id
+      updated_kbv = Repo.get!(KnowledgeBaseVersion, kbv.id)
+      assert updated_kbv.llm_service_id == "vs-realid456"
     end
   end
 
@@ -1574,7 +1691,7 @@ defmodule Glific.AssistantsTest do
       assert result.status == "ready"
     end
 
-    test "callback after deferred update calls create_config_version and activates new config",
+    test "callback after deferred update calls create_config_version and marks config as ready",
          %{
            organization_id: organization_id,
            assistant: assistant,
@@ -1629,11 +1746,11 @@ defmodule Glific.AssistantsTest do
           }
         })
 
-      # After callback, active_config_version_id should be updated to new config
+      # active_config_version_id stays unchanged — explicit activation is required
       {:ok, post_callback_assistant} =
         Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
 
-      assert post_callback_assistant.active_config_version_id != original_config_version.id
+      assert post_callback_assistant.active_config_version_id == original_config_version.id
 
       # New config version should be :ready
       new_config =
@@ -2121,14 +2238,14 @@ defmodule Glific.AssistantsTest do
         })
 
       # New config version should be failed with real error
-      new_cv =
+      new_config_version =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> where([acv], acv.id != ^config_version.id)
         |> Repo.one()
 
-      assert new_cv.status == :failed
-      assert new_cv.failure_reason == failure_reason
+      assert new_config_version.status == :failed
+      assert new_config_version.failure_reason == failure_reason
 
       # Active config should still be the original ready version
       {:ok, post_fail} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
@@ -2151,7 +2268,7 @@ defmodule Glific.AssistantsTest do
 
       {:ok, fetched} = Assistants.get_assistant(assistant.id)
 
-      assert notification.entity["config_version_id"] == new_cv.id
+      assert notification.entity["config_version_id"] == new_config_version.id
 
       assert notification.message ==
                "Knowledge Base creation failed for assistant \"#{fetched.name}\". Reason: #{failure_reason}. Please try again."
@@ -2474,10 +2591,8 @@ defmodule Glific.AssistantsTest do
                })
 
       assert result.name == "Updated Assistant"
-      assert result.instructions == "You are a specialized assistant"
-      assert result.temperature == 0.5
 
-      # Verify new config version was created
+      # Verify new config version was created with updated values
       config_count =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
@@ -2485,15 +2600,16 @@ defmodule Glific.AssistantsTest do
 
       assert config_count == 2
 
-      # New config version should be ready
-      new_cv =
+      # New config version should be ready with the updated values
+      new_config_version =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> where([acv], acv.id != ^original_cv.id)
         |> Repo.one()
 
-      assert new_cv.status == :ready
-      assert new_cv.prompt == "You are a specialized assistant"
+      assert new_config_version.status == :ready
+      assert new_config_version.prompt == "You are a specialized assistant"
+      assert get_in(new_config_version.settings, ["temperature"]) == 0.5
 
       # get_assistant should show updated state
       {:ok, fetched} = Assistants.get_assistant(assistant.id)
@@ -2542,14 +2658,14 @@ defmodule Glific.AssistantsTest do
         })
 
       # New config version should be failed with real error
-      new_cv =
+      new_config_version =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> where([acv], acv.id != ^original_cv.id)
         |> Repo.one()
 
-      assert new_cv.status == :failed
-      assert new_cv.failure_reason == "Document processing failed: corrupt file"
+      assert new_config_version.status == :failed
+      assert new_config_version.failure_reason == "Document processing failed: corrupt file"
 
       # Active config should still be the original
       {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
@@ -2601,14 +2717,14 @@ defmodule Glific.AssistantsTest do
         })
 
       # New config version should be failed with Kaapi error
-      new_cv =
+      new_config_version =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> where([acv], acv.id != ^original_cv.id)
         |> Repo.one()
 
-      assert new_cv.status == :failed
-      assert new_cv.failure_reason =~ "Deferred Kaapi config"
+      assert new_config_version.status == :failed
+      assert new_config_version.failure_reason =~ "Deferred Kaapi config"
 
       # Active config should still be the original
       {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
@@ -2681,17 +2797,17 @@ defmodule Glific.AssistantsTest do
           }
         })
 
-      # After callback, active config should be the new one
+      # active_config_version_id stays unchanged — explicit activation is required
       {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-      assert post_callback.active_config_version_id != original_cv.id
+      assert post_callback.active_config_version_id == original_cv.id
 
-      new_cv =
+      new_config_version =
         AssistantConfigVersion
         |> where([acv], acv.assistant_id == ^assistant.id)
         |> where([acv], acv.id != ^original_cv.id)
         |> Repo.one()
 
-      assert new_cv.status == :ready
+      assert new_config_version.status == :ready
 
       # get_assistant should show final ready state
       {:ok, final_fetched} = Assistants.get_assistant(assistant.id)
@@ -2755,34 +2871,6 @@ defmodule Glific.AssistantsTest do
       )
     end
 
-    test "auto-sets active_config_version_id when flag is disabled",
-         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
-      FunWithFlags.disable(:assistant_config_versions_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_uuid_flag_off", version: 2}}}
-      end)
-
-      assert {:ok, _result} =
-               Assistants.update_assistant(assistant.id, %{
-                 name: "Flag Off Update",
-                 instructions: "Updated instructions",
-                 organization_id: organization_id
-               })
-
-      new_cv =
-        AssistantConfigVersion
-        |> where([acv], acv.assistant_id == ^assistant.id)
-        |> where([acv], acv.id != ^original_cv.id)
-        |> Repo.one()
-
-      {:ok, updated} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-      assert updated.active_config_version_id != original_cv.id
-      assert updated.active_config_version_id == new_cv.id
-    end
   end
 
   describe "assistant_config_versions_enabled flag — async path (deferred_create_new_version)" do
@@ -2839,58 +2927,5 @@ defmodule Glific.AssistantsTest do
       )
     end
 
-    test "auto-sets active_config_version_id on callback when flag is disabled",
-         %{organization_id: organization_id, assistant: assistant, config_version: original_cv} do
-      FunWithFlags.disable(:assistant_config_versions_enabled,
-        for_actor: %{organization_id: organization_id}
-      )
-
-      {:ok, new_kb} =
-        Assistants.create_knowledge_base(%{
-          name: "Async Flag Off KB",
-          organization_id: organization_id
-        })
-
-      {:ok, new_kbv} =
-        Assistants.create_knowledge_base_version(%{
-          knowledge_base_id: new_kb.id,
-          organization_id: organization_id,
-          files: %{"file_1" => %{"filename" => "doc.pdf"}},
-          status: :in_progress,
-          llm_service_id: "temporary-vs-async-flag-off",
-          size: 300,
-          kaapi_job_id: "job_async_flag_off"
-        })
-
-      assert {:ok, _} =
-               Assistants.update_assistant(assistant.id, %{
-                 knowledge_base_version_id: new_kbv.id,
-                 organization_id: organization_id
-               })
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 200, body: %{data: %{id: "kaapi_cv_flag_off", version: 2}}}
-      end)
-
-      Assistants.handle_knowledge_base_callback(%{
-        "data" => %{
-          "job_id" => "job_async_flag_off",
-          "status" => "SUCCESSFUL",
-          "collection" => %{"knowledge_base_id" => "vs_async_flag_off"},
-          "error_message" => nil
-        }
-      })
-
-      new_cv =
-        AssistantConfigVersion
-        |> where([acv], acv.assistant_id == ^assistant.id)
-        |> where([acv], acv.id != ^original_cv.id)
-        |> Repo.one()
-
-      {:ok, post_callback} = Repo.fetch(Assistant, assistant.id, skip_organization_id: true)
-      assert post_callback.active_config_version_id != original_cv.id
-      assert post_callback.active_config_version_id == new_cv.id
-    end
   end
 end
