@@ -780,30 +780,6 @@ defmodule Glific.Assistants do
   end
 
   # Links the KB to the existing active config version within the same Multi transaction.
-  # Needed when the active config had no KB link and a kb_version_id is provided,
-  # so the GET response shows the KB on the current active config.
-  @spec maybe_link_active_config(
-          Multi.t(),
-          Assistant.t(),
-          KnowledgeBaseVersion.t(),
-          non_neg_integer(),
-          boolean()
-        ) :: Multi.t()
-  defp maybe_link_active_config(multi, _assistant, _kb_version, _org_id, false), do: multi
-
-  defp maybe_link_active_config(multi, assistant, knowledge_base_version, organization_id, true) do
-    Multi.insert_all(
-      multi,
-      :link_active_config_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      build_knowledge_base_link(
-        assistant.active_config_version,
-        knowledge_base_version,
-        organization_id
-      )
-    )
-  end
-
   @spec build_assistant_changeset(map()) :: Ecto.Changeset.t()
   defp build_assistant_changeset(kaapi_config) do
     Assistant.changeset(%Assistant{}, %{
