@@ -1192,7 +1192,7 @@ defmodule Glific.Flows.FlowContext do
   @spec track_timeout_metrics(Flow.t(), FlowContext.t()) :: :ok
   defp track_timeout_metrics(flow, context) do
     webhook_url = async_webhook_url(flow, context)
-    Webhook.track_webhook_count(webhook_url, "failure")
+    Instrumentation.track_webhook_count(webhook_url, "failure")
   end
 
   # Async webhook node URLs — derived at compile time from the Registry so this list

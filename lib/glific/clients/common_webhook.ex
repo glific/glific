@@ -10,6 +10,7 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Flows.Webhooks.Dispatcher
+  alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
@@ -504,8 +505,8 @@ defmodule Glific.Clients.CommonWebhook do
 
   @spec record_webhook_metrics(String.t() | nil, String.t(), non_neg_integer()) :: :ok
   defp record_webhook_metrics(webhook_name, status, duration_ms) do
-    Webhook.track_webhook_count(webhook_name, status)
-    Webhook.track_webhook_latency(webhook_name, status, duration_ms)
+    Instrumentation.track_webhook_count(webhook_name, status)
+    Instrumentation.track_webhook_latency(webhook_name, status, duration_ms)
     :ok
   end
 

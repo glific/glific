@@ -170,7 +170,72 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
+  @doc """
+  Record the callback-phase telemetry for an async webhook: success/failure
+  count, end-to-end latency, and (on failure) a `flow_webhooks` report. This is
+  the callback-time counterpart of the execution-phase `around/3`.
+  """
+  @spec record_callback_outcome(map(), map()) :: :ok
+  def record_callback_outcome(result, response) do
+    status = if result["success"], do: "success", else: "failure"
+    track_webhook_count(response["webhook_name"], status)
+    track_kaapi_latency(response, status)
+    report_callback_failure(result, response)
+  end
+
+  @doc """
+  Increment a counter for a flow-webhook node outcome so success/failure ratios
+  can be computed per webhook node. `status` is "success" or "failure". Shared by
+  the sync, callback and timeout paths.
+  """
+  @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
+  def track_webhook_count(webhook_name, status) do
+    Appsignal.increment_counter("flow_webhook_count", 1, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
+  @doc """
+  Records end-to-end latency for a webhook node execution as an AppSignal
+  distribution (so p50/p95/p99 can be charted). Generic across all node types.
+  """
+  @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
+  def track_webhook_latency(webhook_name, status, duration_ms) do
+    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
+      webhook_name: webhook_name || "unknown",
+      status: status
+    })
+
+    :ok
+  end
+
   # --- private ----------------------------------------------------------------
+
+  # Latency for an async webhook callback (request dispatch -> callback arrival),
+  # derived from the request timestamp embedded in the callback metadata.
+  @spec track_kaapi_latency(map(), String.t()) :: :ok
+  defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
+       when is_integer(timestamp) do
+    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    duration_ms = (now - timestamp) / 1_000
+
+    case response["call_type"] do
+      nil ->
+        :ok
+
+      call_type ->
+        Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
+          call_type: call_type
+        })
+    end
+
+    track_webhook_latency(response["webhook_name"], status, duration_ms)
+  end
+
+  defp track_kaapi_latency(_response, _status), do: :ok
 
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
   defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do

@@ -104,34 +104,6 @@ defmodule Glific.Flows.Webhook do
   end
 
   @doc """
-  Increment a counter for a flow-webhook node outcome so success/failure ratios
-  can be computed per webhook node. `status` is "success" or "failure".
-  """
-  @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
-  def track_webhook_count(webhook_name, status) do
-    Appsignal.increment_counter("flow_webhook_count", 1, %{
-      webhook_name: webhook_name || "unknown",
-      status: status
-    })
-
-    :ok
-  end
-
-  @doc """
-  Records end-to-end latency for a webhook node execution as an AppSignal
-  distribution (so p50/p95/p99 can be charted). Generic across all node types
-  """
-  @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
-  def track_webhook_latency(webhook_name, status, duration_ms) do
-    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
-      webhook_name: webhook_name || "unknown",
-      status: status
-    })
-
-    :ok
-  end
-
-  @doc """
   Execute a webhook action, could be either get or post for now
   """
   @spec execute(Action.t(), FlowContext.t()) :: nil
@@ -602,7 +574,7 @@ defmodule Glific.Flows.Webhook do
 
     if response["webhook_log_id"], do: update_log(response["webhook_log_id"], log_message)
 
-    track_callback_outcome(result, response)
+    Instrumentation.record_callback_outcome(result, response)
 
     response_key = response["result_name"] || "response"
 
@@ -630,7 +602,7 @@ defmodule Glific.Flows.Webhook do
     if response["webhook_log_id"],
       do: update_log(response["webhook_log_id"], voice_response)
 
-    track_callback_outcome(result, response)
+    Instrumentation.record_callback_outcome(result, response)
 
     FlowContext.resume_contact_flow(
       contact,
@@ -735,38 +707,6 @@ defmodule Glific.Flows.Webhook do
         nil
     end
   end
-
-  @spec track_callback_outcome(map(), map()) :: :ok
-  defp track_callback_outcome(result, response) do
-    status = if result["success"], do: "success", else: "failure"
-    track_webhook_count(response["webhook_name"], status)
-    track_kaapi_latency(response, status)
-    # Routes callback failure reporting through the centralised Instrumentation module
-    # so all failure events share the same AppSignal namespace and tag shape.
-    Instrumentation.report_callback_failure(result, response)
-  end
-
-  # Records latency for an async webhook callback.
-  @spec track_kaapi_latency(map(), String.t()) :: :ok
-  defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
-       when is_integer(timestamp) do
-    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-    duration_ms = (now - timestamp) / 1_000
-
-    case response["call_type"] do
-      nil ->
-        :ok
-
-      call_type ->
-        Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
-          call_type: call_type
-        })
-    end
-
-    track_webhook_latency(response["webhook_name"], status, duration_ms)
-  end
-
-  defp track_kaapi_latency(_response, _status), do: :ok
 
   @spec validate_request(non_neg_integer(), map()) :: boolean()
   defp validate_request(_new_organization_id, fields) when map_size(fields) == 0,
