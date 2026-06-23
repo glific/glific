@@ -3,6 +3,7 @@ defmodule Glific.SheetsTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Ecto.Query
+  import ExUnit.CaptureLog
   import Mock
 
   alias Glific.{
@@ -1217,6 +1218,151 @@ defmodule Glific.SheetsTest do
     test "returns error when Google API is not active", %{organization_id: organization_id} do
       assert {:error, "Google API is not active"} =
                GoogleSheets.get_headers(organization_id, @spreadsheet_id)
+    end
+  end
+
+  describe "GoogleSheets.insert_row/3 error surfacing" do
+    test "insert_row/3 surfaces an actionable error and logs when the Sheets API is disabled",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                Jason.encode!(%{
+                  "error" => %{
+                    "code" => 403,
+                    "status" => "PERMISSION_DENIED",
+                    "message" =>
+                      "Google Sheets API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=123456789 then retry."
+                  }
+                })
+            }
+        end)
+
+        params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
+
+        log =
+          capture_log(fn ->
+            result = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+
+            assert {:error, %Tesla.Env{status: 403}} = result
+            refute match?({:ok, _result}, result)
+          end)
+
+        assert log =~ "console.developers.google.com"
+        assert log =~ "organization #{organization_id}"
+      end
+    end
+
+    test "insert_row/3 classifies a decoded JSON map error body as API-disabled", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 403,
+              body: %{
+                "error" => %{
+                  "code" => 403,
+                  "status" => "PERMISSION_DENIED",
+                  "message" =>
+                    "Google Sheets API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=123456789 then retry."
+                }
+              }
+            }
+        end)
+
+        params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
+
+        log =
+          capture_log(fn ->
+            result = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+
+            assert {:error, %Tesla.Env{status: 403}} = result
+            refute match?({:ok, _result}, result)
+          end)
+
+        assert log =~ "console.developers.google.com"
+        assert log =~ "organization #{organization_id}"
+      end
+    end
+
+    test "insert_row/3 surfaces non-disabled 403 errors without treating them as API-disabled",
+         %{organization_id: organization_id} do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 403,
+              body:
+                Jason.encode!(%{
+                  "error" => %{
+                    "code" => 403,
+                    "status" => "PERMISSION_DENIED",
+                    "message" => "The caller does not have permission"
+                  }
+                })
+            }
+        end)
+
+        params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
+
+        capture_log(fn ->
+          result = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+
+          assert match?({:error, _reason}, result)
+          refute match?({:ok, _result}, result)
+        end)
+      end
+    end
+
+    test "insert_row/3 returns {:ok, _} on a successful append", %{
+      organization_id: organization_id
+    } do
+      with_mock(Goth.Token, [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
+        setup_google_sheets_credential(organization_id)
+
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  spreadsheetId: @spreadsheet_id,
+                  updates: %{updatedRows: 1}
+                })
+            }
+        end)
+
+        params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
+
+        assert {:ok, _} = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+      end
     end
   end
 end
