@@ -81,7 +81,8 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       assert response["error"]["message"] == "Dashboard service is temporarily unavailable"
     end
 
-    test "includes RLS clause with organization_id in guest token request", %{conn: conn} do
+    test "includes RLS clause with the caller's organization_id in guest token request",
+         %{conn: conn} do
       test_pid = self()
 
       mock_global(fn
@@ -101,13 +102,20 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
           %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
       end)
 
-      authed_conn = build_authed_conn(conn)
+      # Create the user explicitly so we can assert the exact org_id in the RLS clause.
+      conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
+      user = Fixtures.user_fixture(%{roles: ["staff"]})
+      {conn_with_token, _user} = APIAuthPlug.create(conn, user, @pow_config)
+      access_token = conn_with_token.private[:api_access_token]
+      :timer.sleep(100)
+      authed_conn = Plug.Conn.put_req_header(conn, "authorization", access_token)
+
       post(authed_conn, "/api/v1/get-embed-token")
 
       assert_receive {:guest_token_body, body}
       decoded = Jason.decode!(body)
       assert [%{"clause" => clause}] = decoded["rls"]
-      assert clause =~ "organization_id ="
+      assert clause == "organization_id = #{user.organization_id}"
     end
   end
 end
