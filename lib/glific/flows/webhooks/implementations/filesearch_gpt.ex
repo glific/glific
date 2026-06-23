@@ -38,14 +38,4 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
       _ -> %{success: false, reason: "Kaapi is not active"}
     end
   end
-
-  @doc """
-  Standard callback handler: returns `{:ok, response}` (the parsed callback) unchanged so
-  it is merged into the flow context results by `FlowResumeController`.
-  """
-  @impl true
-  @spec handle_resume(map(), Behaviour.ctx()) :: {:ok | :error, map()}
-  def handle_resume(response, _ctx) do
-    {:ok, response}
-  end
 end

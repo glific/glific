@@ -20,9 +20,7 @@ defmodule Glific.Flows.Webhooks.Registry do
   ## webhook_name
 
   `name/0` (the node URL / registry key) equals the observability `webhook_name`
-  used in Kaapi `request_metadata` and AppSignal metrics. Use
-  `lookup_by_webhook_name/1` when you have a webhook_name from a Kaapi callback
-  and need the owning module (e.g. to run its `handle_resume/2`).
+  used in Kaapi `request_metadata` and AppSignal metrics.
   """
 
   alias Glific.Flows.Webhooks
@@ -78,26 +76,4 @@ defmodule Glific.Flows.Webhooks.Registry do
     |> Enum.filter(fn {_url, mod} -> mod.mode() == :async end)
     |> Enum.map(fn {url, _mod} -> url end)
   end
-
-  @doc """
-  Finds the async webhook module whose `name/0` matches the `webhook_name` from a
-  Kaapi callback payload (the two are the same string).
-
-  Used by `FlowResumeController` to route a Kaapi callback to the correct module's
-  `handle_resume/2`. Returns `nil` when the payload carries no `webhook_name` (the
-  STT/TTS/filesearch callbacks pass `nil`) or no async module matches — the caller
-  then uses the parsed response unchanged.
-  """
-  @spec lookup_by_webhook_name(term()) :: module() | nil
-  def lookup_by_webhook_name(webhook_name) when is_binary(webhook_name) do
-    case lookup(webhook_name) do
-      module when is_atom(module) and not is_nil(module) ->
-        if module.mode() == :async, do: module
-
-      _ ->
-        nil
-    end
-  end
-
-  def lookup_by_webhook_name(_webhook_name), do: nil
 end

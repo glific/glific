@@ -10,8 +10,7 @@ defmodule Glific.Flows.Webhooks.Behaviour do
 
   Authors should `use Glific.Flows.Webhooks.Sync` or `Glific.Flows.Webhooks.Async`
   rather than implementing this behaviour directly — the macros inject
-  `name/0` and `mode/0` and leave `call/2` (plus, for async, `handle_resume/2`)
-  for the author to write.
+  `name/0` and `mode/0` and leave `call/2` for the author to write.
   """
 
   alias Glific.Flows.{Action, FlowContext}
@@ -79,21 +78,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   """
   @callback call(fields :: map(), ctx :: ctx()) :: sync_result() | async_result()
 
-  @doc """
-  Async-only. Invoked from the flow_resume callback path to shape the **parsed**
-  Kaapi callback (`parse_callback_response/1` output) into the response map merged
-  into the flow context. `ctx` carries `:organization_id` and `:success` (the raw
-  callback success flag).
-
-  Most webhooks omit this and the flow_resume controller uses the parsed response
-  unchanged. Override for webhooks whose callback needs post-processing
-  (e.g. `voice-filesearch-gpt` runs NMT+TTS).
-  """
-  @callback handle_resume(response :: map(), ctx :: ctx()) ::
-              {:ok | :error, map()}
-
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
-  @optional_callbacks handle_resume: 2, wait_time_default: 0
+  @optional_callbacks wait_time_default: 0
 end

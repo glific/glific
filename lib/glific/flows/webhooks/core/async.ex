@@ -5,9 +5,8 @@ defmodule Glific.Flows.Webhooks.Async do
   `is_await_result: true` and are resumed by a callback to
   `flow_resume_controller`.
 
-  Authors write `call/2`. They may also override `handle_resume/2` to shape
-  the Kaapi callback payload (most webhooks rely on the default; voice LLM
-  overrides it for `voice_post_process`). They may override
+  Authors write `call/2`; the parsed callback is merged into the flow context by
+  `Glific.Flows.Webhook` when it resumes. They may also override
   `wait_time_default/0` if the default 60-second await window is wrong for
   that webhook.
 

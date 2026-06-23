@@ -63,24 +63,6 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert is_list(names)
       assert "geolocation" in names
     end
-
-    test "lookup_by_webhook_name/1 resolves the webhook name to its module" do
-      assert Registry.lookup_by_webhook_name("filesearch-gpt") ==
-               Glific.Flows.Webhooks.FilesearchGpt
-
-      assert Registry.lookup_by_webhook_name("speech_to_text") ==
-               Glific.Flows.Webhooks.SpeechToText
-    end
-
-    test "lookup_by_webhook_name/1 returns nil for an unknown name" do
-      assert Registry.lookup_by_webhook_name("nonexistent-name") == nil
-    end
-
-    # Regression: STT/TTS/filesearch callbacks carry no webhook_name, so the
-    # controller passes nil here. It must not raise (was a FunctionClauseError).
-    test "lookup_by_webhook_name/1 returns nil for nil instead of raising" do
-      assert Registry.lookup_by_webhook_name(nil) == nil
-    end
   end
 
   # --- Instrumentation.around/3 -----------------------------------------------

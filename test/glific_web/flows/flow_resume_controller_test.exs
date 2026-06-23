@@ -7,6 +7,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Fixtures,
     Flows.Flow,
     Flows.FlowContext,
+    Flows.Webhook,
     Flows.WebhookLog,
     Flows.Webhooks.Errors.SystemError,
     Repo,
@@ -644,12 +645,12 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
 
       # Call do_voice_flow_resume directly to verify the flow is NOT resumed
-      response = FlowResumeController.parse_callback_response(params)
+      response = Webhook.parse_callback_response(params)
 
       with_mock FlowContext,
         resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
         assert :ok =
-                 FlowResumeController.do_voice_flow_resume(
+                 Webhook.voice_resume(
                    organization_id,
                    params,
                    response
@@ -703,7 +704,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         })
 
       assert :ok =
-               FlowResumeController.do_voice_flow_resume(
+               Webhook.voice_resume(
                  organization_id,
                  %{"success" => false},
                  response
@@ -763,7 +764,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       {exception, tags} =
         capture_appsignal(fn ->
           assert :ok =
-                   FlowResumeController.do_voice_flow_resume(
+                   Webhook.voice_resume(
                      organization_id,
                      result,
                      response
@@ -865,7 +866,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       assert :ok =
-               FlowResumeController.do_flow_resume(
+               Webhook.resume(
                  organization_id,
                  %{"success" => true},
                  response
@@ -899,16 +900,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       assert :ok =
-               FlowResumeController.do_flow_resume(
+               Webhook.resume(
                  organization_id,
                  %{"success" => true},
                  response
                )
     end
 
-    test "do_flow_resume logs warning when resume_contact_flow returns an error", %{
-      conn: %{assigns: %{organization_id: organization_id}} = _conn
-    } do
+    test "do_flow_resume logs warning and reports to AppSignal when resume_contact_flow errors",
+         %{
+           conn: %{assigns: %{organization_id: organization_id}} = _conn
+         } do
       contact = Fixtures.contact_fixture()
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
@@ -932,19 +934,23 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "result_name" => "response"
       }
 
-      with_mock FlowContext, [:passthrough],
-        resume_contact_flow: fn _contact, _flow_id, _results, _message ->
-          {:error, "flow context not found"}
-        end do
-        assert :ok =
-                 FlowResumeController.do_flow_resume(
-                   organization_id,
-                   %{"success" => true},
-                   response
-                 )
+      {exception, tags} =
+        capture_appsignal(fn ->
+          with_mock FlowContext, [:passthrough],
+            resume_contact_flow: fn _contact, _flow_id, _results, _message ->
+              {:error, "flow context not found"}
+            end do
+            assert :ok = Webhook.resume(organization_id, %{"success" => true}, response)
+            assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+          end
+        end)
 
-        assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
-      end
+      assert %SystemError{} = exception
+      assert Exception.message(exception) == "Webhook resume failure"
+      assert tags.organization_id == organization_id
+      assert tags.flow_id == flow.id
+      assert tags.contact_id == contact.id
+      assert tags.reason == inspect("flow context not found")
     end
 
     test "run_supervised_task rescues exceptions and returns :ok" do

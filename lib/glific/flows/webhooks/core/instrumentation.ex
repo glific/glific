@@ -132,6 +132,28 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     |> Glific.log_exception(namespace: "flow_webhooks", tags: tags)
   end
 
+  @doc """
+  Resume-time failure report (the Kaapi callback arrived and validated, but
+  `FlowContext.resume_contact_flow/4` could not resume the parked flow — e.g.
+  the awaiting context was already gone). Same `flow_webhooks` namespace and
+  tag shape as the callback/timeout reporters.
+  """
+  @spec report_resume_failure(map(), any()) :: :ok
+  def report_resume_failure(response, reason) do
+    %Errors.SystemError{message: "Webhook resume failure"}
+    |> Glific.log_exception(
+      namespace: "flow_webhooks",
+      tags: %{
+        organization_id: response["organization_id"],
+        webhook_name: response["webhook_name"],
+        flow_id: response["flow_id"],
+        contact_id: response["contact_id"],
+        webhook_log_id: response["webhook_log_id"],
+        reason: inspect(reason)
+      }
+    )
+  end
+
   # --- private ----------------------------------------------------------------
 
   @spec maybe_report_webhook_failure(any(), String.t(), map()) :: :ok

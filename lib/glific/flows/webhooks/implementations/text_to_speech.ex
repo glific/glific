@@ -49,14 +49,4 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
         %{success: false, reason: reason}
     end
   end
-
-  @doc """
-  Standard callback handler: returns `{:ok, response}` so the response map is merged into
-  the flow context results by `FlowResumeController`.
-  """
-  @impl true
-  @spec handle_resume(map(), Behaviour.ctx()) :: {:ok | :error, map()}
-  def handle_resume(result, _ctx) do
-    {:ok, result}
-  end
 end

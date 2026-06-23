@@ -7,8 +7,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   `speech_to_text_with_bhasini` webhook), then fires the async Kaapi LLM request with a
   voice callback path so the answer is post-processed (NMT + TTS) before resuming the flow.
 
-  The Kaapi response arrives at `GlificWeb.Flows.FlowResumeController.voice_flow_resume/2`,
-  which runs `handle_resume/2` (voice post-processing) before resuming.
+  The Kaapi response arrives at `GlificWeb.Flows.FlowResumeController.voice_flow_resume/2`
+  and is post-processed (NMT + TTS via `CommonWebhook.voice_post_process/3`) by
+  `Glific.Flows.Webhook` before resuming.
   """
 
   use Glific.Flows.Webhooks.Async, name: "voice-filesearch-gpt"
@@ -100,19 +101,5 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       })
 
     KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
-  end
-
-  @doc """
-  Voice callback handler. Applies NMT + TTS (`CommonWebhook.voice_post_process/3`) to the
-  parsed Kaapi LLM `response`, producing `translated_text` + `media_url` for the voice reply.
-  `ctx` carries `organization_id` and `success` (the raw callback success flag).
-  """
-  @impl true
-  @spec handle_resume(map(), Behaviour.ctx()) :: {:ok | :error, map()}
-  def handle_resume(response, ctx) do
-    organization_id = Map.get(ctx, :organization_id)
-    success = Map.get(ctx, :success)
-    voice_response = CommonWebhook.voice_post_process(organization_id, success, response)
-    {:ok, voice_response}
   end
 end
