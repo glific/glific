@@ -80,7 +80,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
           {:error, :econnrefused}
       end)
 
-      assert {:error, {:error, :econnrefused}} = ApiClient.get_embed_token(organization_id)
+      assert {:error, :econnrefused} = ApiClient.get_embed_token(organization_id)
     end
   end
 end
