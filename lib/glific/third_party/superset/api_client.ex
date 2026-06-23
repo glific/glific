@@ -91,10 +91,10 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
        when status in 200..299 do
     Appsignal.increment_counter("superset.embed_token.success", 1, %{})
 
-    {_, cookie} =
-      Enum.find(headers, {nil, nil}, fn header -> elem(header, 0) == "set-cookie" end)
-
-    {:ok, Map.put(body, :cookie, cookie)}
+    case Enum.find(headers, fn {k, _} -> k == "set-cookie" end) do
+      {_, cookie} -> {:ok, Map.put(body, :cookie, cookie)}
+      nil -> {:ok, body}
+    end
   end
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}) do
@@ -111,16 +111,16 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
     {:error, %{status: status, body: body}}
   end
 
-  defp parse_response(error) do
+  defp parse_response({:error, reason}) do
     Glific.log_exception(
       %Error{
-        message: "Superset API transport error: #{inspect(error)}",
-        reason: error
+        message: "Superset API transport error: #{inspect(reason)}",
+        reason: reason
       },
       namespace: "superset"
     )
 
-    {:error, error}
+    {:error, reason}
   end
 
   @spec client(String.t() | nil, String.t() | nil, String.t() | nil) :: Tesla.Client.t()
