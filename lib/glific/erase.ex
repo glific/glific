@@ -4,6 +4,7 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
+  alias Glific.Assistants.Assistant
   alias Glific.Contacts.Contact
   alias Glific.Notifications
   alias Glific.Notifications.Notification
@@ -524,31 +525,211 @@ defmodule Glific.Erase do
   end
 
   @doc """
-  Deletes ALL data associated with an organization by calling the database function
-  `delete_organization_data`. This function dynamically discovers all tables with
-  an `organization_id` column and deletes matching rows, ensuring any new tables
-  added in the future are automatically covered.
+  Deletes ALL data associated with an organization.
+
+  Every org-scoped table is deleted explicitly, one at a time, in topological
+  foreign-key order (child tables before parents — see `org_data_deletion_order/0`),
+  so no FK constraint is violated and no superuser-only trigger toggling is needed.
+  The deletes run inside a single transaction, so any failure rolls the whole thing
+  back and the organization is never left half-deleted.
+
+  The organization row itself is preserved (soft-deleted via `delete_organization/1`);
+  this only erases its data. Refuses to run if the org has not been soft-deleted.
   """
   @spec delete_all_organization_data(non_neg_integer) :: :ok | {:error, any()}
   def delete_all_organization_data(organization_id) do
     Logger.info("Deleting all data for organization_id: #{organization_id}")
 
-    try do
-      Repo.query!("SELECT delete_organization_data(#{organization_id})", [],
-        timeout: 900_000,
-        skip_organization_id: true
-      )
-
+    # The guard is a read, so it runs outside the transaction. The mutations run
+    # inside it: any raised DB error aborts the function and Ecto rolls the whole
+    # transaction back automatically — no explicit `Repo.rollback/1` needed.
+    with :ok <- ensure_soft_deleted(organization_id),
+         {:ok, _result} <-
+           Repo.transaction(fn -> delete_org_data_in_order(organization_id) end,
+             timeout: 900_000
+           ) do
       Logger.info("Completed full data deletion for organization_id: #{organization_id}")
       :ok
-    rescue
-      error ->
-        Logger.error(
-          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+    end
+  rescue
+    error ->
+      Logger.error(
+        "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+      )
+
+      {:error, error}
+  end
+
+  @doc """
+  Topological deletion order for every table carrying an `organization_id`.
+
+  Each table is deleted before the tables it references via a NO ACTION / RESTRICT
+  foreign key (CASCADE / SET NULL foreign keys self-resolve regardless of order).
+  The ordering constraints that actually matter today are:
+
+    * `contacts_tags`, `messages_tags`, `templates_tags`, `flows`,
+      `interactive_templates`, `session_templates` -> before `tags`
+    * `ai_evaluations` -> before `golden_qas`
+    * `whatsapp_forms` -> before `whatsapp_form_revisions`
+
+  The two FK cycles (`organizations` <-> contacts/flows and
+  `assistants` <-> `assistant_config_versions`) are broken by `break_fk_cycles/1`.
+
+  This list is maintained by hand: when a new table with an `organization_id`
+  column is added, append it here to avoid drift against the live schema.
+  """
+  @spec org_data_deletion_order() :: [String.t()]
+  def org_data_deletion_order do
+    ~w(
+      ai_evaluations
+      ask_glific_conversations
+      assistant_config_version_knowledge_base_versions
+      assistant_config_versions
+      assistants
+      bigquery_jobs
+      billings
+      certificate_templates
+      consulting_hours
+      contact_histories
+      contacts
+      contacts_fields
+      contacts_groups
+      contacts_tags
+      contacts_wa_groups
+      credentials
+      extensions
+      flow_contexts
+      flow_counts
+      flow_labels
+      flow_results
+      flow_revisions
+      flow_roles
+      flows
+      gcs_jobs
+      golden_qas
+      group_roles
+      groups
+      intents
+      interactive_templates
+      invoices
+      issued_certificates
+      knowledge_base_versions
+      knowledge_bases
+      locations
+      mail_logs
+      message_broadcast_contacts
+      message_broadcasts
+      messages
+      messages_conversations
+      messages_media
+      messages_tags
+      notifications
+      openai_assistants
+      openai_vector_stores
+      organization_data
+      organization_eval_requests
+      profiles
+      prompt_generation_requests
+      registrations
+      role_permissions
+      roles
+      saas
+      saved_searches
+      session_templates
+      sheets
+      sheets_data
+      stats
+      tags
+      templates_tags
+      tickets
+      trackers
+      translate_logs
+      trigger_logs
+      trigger_roles
+      triggers
+      user_jobs
+      user_roles
+      users
+      users_groups
+      users_tokens
+      versions
+      wa_groups
+      wa_groups_collections
+      wa_groups_phones
+      wa_managed_phones
+      wa_messages
+      wa_polls
+      wa_reactions
+      webhook_logs
+      whatsapp_forms
+      whatsapp_form_revisions
+      whatsapp_forms_responses
+    )
+  end
+
+  @spec delete_org_data_in_order(non_neg_integer) :: :ok
+  defp delete_org_data_in_order(organization_id) do
+    break_fk_cycles(organization_id)
+
+    Enum.each(org_data_deletion_order(), fn table ->
+      %{num_rows: rows_deleted} =
+        Repo.query!("DELETE FROM #{table} WHERE organization_id = $1", [organization_id],
+          timeout: 300_000,
+          skip_organization_id: true
         )
 
-        {:error, error}
+      if rows_deleted > 0 do
+        Logger.info("Deleted #{rows_deleted} rows from #{table} for org #{organization_id}")
+      end
+    end)
+
+    :ok
+  end
+
+  # Guard: refuse to erase data for an org that has not been soft-deleted yet.
+  @spec ensure_soft_deleted(non_neg_integer) :: :ok | {:error, String.t()}
+  defp ensure_soft_deleted(organization_id) do
+    case Repo.fetch(Organization, organization_id,
+           skip_organization_id: true,
+           include_deleted: true
+         ) do
+      {:ok, %Organization{deleted_at: nil}} ->
+        {:error,
+         "Organization #{organization_id} has not been soft-deleted. Call delete_organization first."}
+
+      {:ok, %Organization{}} ->
+        :ok
+
+      {:error, _reason} ->
+        {:error, "Organization #{organization_id} not found"}
     end
+  end
+
+  # Break the FK cycles before the ordered deletes:
+  #   * The organizations row is kept, so clear its references into to-be-deleted
+  #     tables (contact_id, newcontact_flow_id, optin_flow_id).
+  #   * assistants.active_config_version_id is a NO ACTION FK to assistant_config_versions,
+  #     which is deleted *before* assistants, so the pointer must be nulled first.
+  #
+  # whatsapp_forms.revision_id (RESTRICT -> whatsapp_form_revisions) does NOT need
+  # nulling: whatsapp_forms is deleted *before* whatsapp_form_revisions, and deleting
+  # the referencing form is always allowed under RESTRICT. The revisions then go via
+  # the NOT NULL CASCADE on whatsapp_form_revisions.whatsapp_form_id.
+  @spec break_fk_cycles(non_neg_integer) :: :ok
+  defp break_fk_cycles(organization_id) do
+    Organization
+    |> where([organization], organization.id == ^organization_id)
+    |> Repo.update_all(
+      [set: [contact_id: nil, newcontact_flow_id: nil, optin_flow_id: nil]],
+      skip_organization_id: true,
+      include_deleted: true
+    )
+
+    Assistant
+    |> where([assistant], assistant.organization_id == ^organization_id)
+    |> Repo.update_all([set: [active_config_version_id: nil]], skip_organization_id: true)
+
+    :ok
   end
 
   @spec send_success_notification(Organization.t()) ::

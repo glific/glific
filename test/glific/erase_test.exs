@@ -579,4 +579,31 @@ defmodule Glific.EraseTest do
       assert Repo.get(AssistantConfigVersion, config_version.id) == nil
     end)
   end
+
+  test "delete_all_organization_data deletion order covers every org-scoped table" do
+    # Guards against schema drift: if a new table with an organization_id column is
+    # added without being appended to Erase.org_data_deletion_order/0, full org
+    # deletion would silently leave its rows behind.
+    %{rows: rows} =
+      Repo.query!(
+        """
+        SELECT table_name
+        FROM information_schema.columns
+        WHERE column_name = 'organization_id'
+          AND table_schema = 'public'
+          AND table_name != 'organizations'
+        """,
+        [],
+        skip_organization_id: true
+      )
+
+    schema_tables = MapSet.new(rows, fn [table] -> table end)
+    listed_tables = MapSet.new(Erase.org_data_deletion_order())
+
+    assert [] == MapSet.difference(schema_tables, listed_tables) |> Enum.sort(),
+           "org-scoped tables missing from Erase.org_data_deletion_order/0"
+
+    assert [] == MapSet.difference(listed_tables, schema_tables) |> Enum.sort(),
+           "Erase.org_data_deletion_order/0 lists tables that no longer exist"
+  end
 end
