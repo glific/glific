@@ -95,7 +95,8 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
             headers: [{"set-cookie", "session=abc123; Path=/"}]
           }
 
-        %{method: :post, url: url, body: body} when url == @base_url <> "/security/guest_token/" ->
+        %{method: :post, url: url, body: body}
+        when url == @base_url <> "/security/guest_token/" ->
           send(test_pid, {:guest_token_body, body})
           %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
       end)
