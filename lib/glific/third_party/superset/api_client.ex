@@ -14,6 +14,16 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   require Logger
 
+  defmodule Error do
+    @moduledoc """
+    Custom exception for Superset API failures.
+
+    Using a dedicated exception type groups all Superset errors under a single class in
+    AppSignal, keeping them isolated from generic RuntimeErrors and making alert routing easier.
+    """
+    defexception [:message, :status_code, :reason, :organization_id]
+  end
+
   @doc """
   Fetches a Superset guest embed token for the given organization.
 
@@ -60,7 +70,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   @spec fetch_embed_token(non_neg_integer(), String.t(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  defp fetch_embed_token(_organization_id, access_token, csrf_token, cookie) do
+  defp fetch_embed_token(organization_id, access_token, csrf_token, cookie) do
     payload = %{
       user: %{
         username: superset_config(:guest_username),
@@ -68,8 +78,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
         last_name: "Dev"
       },
       resources: [%{type: "dashboard", id: superset_config(:dashboard_id)}],
-      # TODO: wire organization_id into RLS clause once Superset row-level security is enabled
-      rls: []
+      rls: [%{clause: "organization_id = #{organization_id}"}]
     }
 
     client(access_token, csrf_token, cookie)
@@ -89,12 +98,28 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   end
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}) do
-    Appsignal.increment_counter("superset.embed_token.failure", 1, %{status: to_string(status)})
+    Glific.log_exception(
+      %Error{
+        message: "Superset API error: HTTP #{status}",
+        status_code: status,
+        reason: body
+      },
+      namespace: "superset",
+      tags: %{status: status}
+    )
+
     {:error, %{status: status, body: body}}
   end
 
   defp parse_response(error) do
-    Logger.error("Superset API transport error: #{inspect(error)}")
+    Glific.log_exception(
+      %Error{
+        message: "Superset API transport error: #{inspect(error)}",
+        reason: error
+      },
+      namespace: "superset"
+    )
+
     {:error, error}
   end
 

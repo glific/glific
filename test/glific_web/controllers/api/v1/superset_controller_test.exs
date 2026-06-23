@@ -63,7 +63,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       assert response["error"]["status"] == 401
     end
 
-    test "returns 400 with error when Superset login fails", %{conn: conn} do
+    test "returns 503 with a generic message when Superset login fails", %{conn: conn} do
       mock_global(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           %Tesla.Env{
@@ -75,9 +75,38 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
 
       authed_conn = build_authed_conn(conn)
       conn = post(authed_conn, "/api/v1/get-embed-token")
-      response = json_response(conn, 400)
+      response = json_response(conn, 503)
       assert Map.has_key?(response, "error")
-      assert response["error"]["status"] == 400
+      assert response["error"]["status"] == 503
+      assert response["error"]["message"] == "Dashboard service is temporarily unavailable"
+    end
+
+    test "includes RLS clause with organization_id in guest token request", %{conn: conn} do
+      test_pid = self()
+
+      mock_global(fn
+        %{method: :post, url: url} when url == @base_url <> "/security/login" ->
+          %Tesla.Env{status: 200, body: %{access_token: "test_token"}, headers: []}
+
+        %{method: :get, url: url} when url == @base_url <> "/security/csrf_token/" ->
+          %Tesla.Env{
+            status: 200,
+            body: %{result: "csrf123"},
+            headers: [{"set-cookie", "session=abc123; Path=/"}]
+          }
+
+        %{method: :post, url: url, body: body} when url == @base_url <> "/security/guest_token/" ->
+          send(test_pid, {:guest_token_body, body})
+          %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
+      end)
+
+      authed_conn = build_authed_conn(conn)
+      post(authed_conn, "/api/v1/get-embed-token")
+
+      assert_receive {:guest_token_body, body}
+      decoded = Jason.decode!(body)
+      assert [%{"clause" => clause}] = decoded["rls"]
+      assert clause =~ "organization_id ="
     end
   end
 end

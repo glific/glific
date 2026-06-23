@@ -79,4 +79,4 @@ config :glific, Glific.ThirdParty.Superset.ApiClient,
   username: "superset_username",
   password: "superset_password"
 
-  config :glific, gupshup_partner_client_secret: "test_client_secret"
+config :glific, gupshup_partner_client_secret: "test_client_secret"

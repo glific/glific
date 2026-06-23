@@ -20,10 +20,10 @@ defmodule GlificWeb.API.V1.SupersetController do
         |> put_status(:unauthorized)
         |> json(%{error: %{status: 401, message: "Authentication failure"}})
 
-      {:error, reason} ->
+      {:error, _reason} ->
         conn
-        |> put_status(:bad_request)
-        |> json(%{error: %{status: 400, message: inspect(reason)}})
+        |> put_status(:service_unavailable)
+        |> json(%{error: %{status: 503, message: "Dashboard service is temporarily unavailable"}})
     end
   end
 end
