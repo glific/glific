@@ -133,8 +133,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if credential do
       # Insert-only tables (see `ignore_updates_for_table/0`) are never re-synced, so they
       # don't accumulate the update-sourced duplicates the dedup query is built to remove.
+      ignore_tables = BigQuery.ignore_updates_for_table()
+
       list_of_table
-      |> Enum.reject(&(&1 in BigQuery.ignore_updates_for_table()))
+      |> Enum.reject(&(&1 in ignore_tables))
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
 
