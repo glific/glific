@@ -656,12 +656,6 @@ defmodule Glific.Flows.Webhook do
     |> Map.put("message", get_in(output, ["content", "value"]))
   end
 
-  # Old format from call_and_wait (/api/v1/responses):
-  def parse_callback_response(%{"data" => data}) do
-    response = data || %{}
-    Map.put(response, "thread_id", response["response_id"])
-  end
-
   # Fallback for unexpected formats
   def parse_callback_response(result) do
     Logger.warning(

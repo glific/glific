@@ -129,7 +129,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       expected_message = "Glific is an open-source messaging platform"
 
       params =
-        build_old_format_callback_params(
+        build_unified_callback_params(
           org_id,
           flow.id,
           contact.id,
@@ -184,7 +184,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert webhook_log != nil
 
       params =
-        build_old_format_callback_params(
+        build_unified_callback_params(
           org_id,
           flow.id,
           contact.id,
