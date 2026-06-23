@@ -131,11 +131,6 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec add_signature(map() | nil, non_neg_integer(), String.t()) :: map()
-  defp add_signature(headers, organization_id, body) do
-    Support.add_signature(headers, organization_id, body)
-  end
-
   @doc """
   Execute a webhook action, could be either get or post for now
   """
@@ -150,11 +145,6 @@ defmodule Glific.Flows.Webhook do
     end
 
     nil
-  end
-
-  @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
-  defp create_log(action, body, headers, context) do
-    Support.create_log(action, body, headers, context)
   end
 
   @doc """
@@ -226,19 +216,14 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(context, action_body) do
-    Support.create_body(context, action_body)
-  end
-
   # method can be either a get or a post. The do_oban function
   # does the right thing based on if it is a get or post
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
-    case create_body(context, action.body) do
+    case Support.create_body(context, action.body) do
       {:error, message} ->
         action
-        |> create_log(%{}, action.headers, context)
+        |> Support.create_log(%{}, action.headers, context)
         |> update_log(message)
 
       {map, body} ->
@@ -248,19 +233,13 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  # THis function will create a dynamic headers
-  @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
-  defp parse_header_and_url(action, context) do
-    Support.parse_header_and_url(action, context)
-  end
-
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
-    parsed_attrs = parse_header_and_url(action, context)
+    parsed_attrs = Support.parse_header_and_url(action, context)
 
-    headers = add_signature(parsed_attrs.header, context.organization_id, body)
+    headers = Support.add_signature(parsed_attrs.header, context.organization_id, body)
     action = Map.put(action, :url, parsed_attrs.url)
-    webhook_log = create_log(action, map, parsed_attrs.header, context)
+    webhook_log = Support.create_log(action, map, parsed_attrs.header, context)
 
     payload =
       %{

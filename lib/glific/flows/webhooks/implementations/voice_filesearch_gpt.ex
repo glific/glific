@@ -50,7 +50,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     stt_fields = Map.put(fields, "contact", %{"id" => fields["contact_id"]})
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    Glific.Metrics.increment("Voice Unified LLM Call", organization_id)
+    Glific.Metrics.increment("Voice Filesearch GPT", organization_id)
 
     case CommonWebhook.webhook("speech_to_text_with_bhasini", stt_fields) do
       %{success: true, asr_response_text: transcribed_text} ->

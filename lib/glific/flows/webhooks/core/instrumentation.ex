@@ -64,8 +64,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       result
     rescue
       exception ->
-        emit_latency(webhook_name, mode, start, :error)
-        track_metrics(webhook_name, nil)
+        track_latency(webhook_name, mode, start, :error)
+        track_status(webhook_name, nil)
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
         reraise exception, __STACKTRACE__
     end
@@ -74,9 +74,9 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
-    emit_latency(webhook_name, :sync, start, :ok)
-    track_metrics(webhook_name, result)
-    maybe_report_webhook_failure(result, webhook_name, ctx)
+    track_latency(webhook_name, :sync, start, :ok)
+    track_status(webhook_name, result)
+    maybe_report_failure(result, webhook_name, ctx)
   end
 
   # Async webhooks: a successful ack means the Kaapi request is in flight. The real
@@ -87,9 +87,9 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   defp record_outcome(:async, %{success: true}, _webhook_name, _start, _ctx), do: :ok
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
-    emit_latency(webhook_name, :async, start, :error)
-    track_metrics(webhook_name, result)
-    maybe_report_webhook_failure(result, webhook_name, ctx)
+    track_latency(webhook_name, :async, start, :error)
+    track_status(webhook_name, result)
+    maybe_report_failure(result, webhook_name, ctx)
   end
 
   @doc """
@@ -156,21 +156,21 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # --- private ----------------------------------------------------------------
 
-  @spec maybe_report_webhook_failure(any(), String.t(), map()) :: :ok
-  defp maybe_report_webhook_failure(%{success: false} = result, webhook_name, ctx) do
+  @spec maybe_report_failure(any(), String.t(), map()) :: :ok
+  defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     {status, reason} = extract_status_and_reason(result)
     report_webhook_failure(webhook_name, ctx, status, reason)
   end
 
   # nil / non-map results route to the flow's Failure category. Treat them as
   # failures here too so the centralised reporter mirrors legacy behaviour.
-  defp maybe_report_webhook_failure(result, webhook_name, ctx)
+  defp maybe_report_failure(result, webhook_name, ctx)
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: inspect(result)
     report_webhook_failure(webhook_name, ctx, nil, reason)
   end
 
-  defp maybe_report_webhook_failure(_result, _webhook_name, _ctx), do: :ok
+  defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
 
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
@@ -212,12 +212,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
-  @spec track_metrics(String.t(), any()) :: :ok
-  defp track_metrics(webhook_name, %{success: true}) do
+  @spec track_status(String.t(), any()) :: :ok
+  defp track_status(webhook_name, %{success: true}) do
     Metrics.increment(metric_event_name(webhook_name, "Success"))
   end
 
-  defp track_metrics(webhook_name, _) do
+  defp track_status(webhook_name, _) do
     Metrics.increment(metric_event_name(webhook_name, "Failure"))
   end
 
@@ -231,8 +231,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     "#{title} API #{outcome}"
   end
 
-  @spec emit_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok
-  defp emit_latency(webhook_name, mode, start_monotonic, outcome) do
+  @spec track_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok
+  defp track_latency(webhook_name, mode, start_monotonic, outcome) do
     duration_ms =
       System.monotonic_time()
       |> Kernel.-(start_monotonic)
