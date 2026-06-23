@@ -16,7 +16,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
   alias Glific.Clients.CommonWebhook
   alias Glific.Flows.Webhooks.Behaviour
-  alias Glific.Flows.Webhooks.Errors
+  alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
   alias Glific.ThirdParty.Kaapi
 
@@ -154,19 +154,14 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   defp nmt_tts(_organization_id, _success, text, _voice_fields), do: {text, nil}
 
   # success=true but empty body — the HTTP call succeeded (status 200), the content
-  # was just unusable. Reported under the flow_webhooks namespace like the other
-  # async-webhook failures (see Glific.Flows.Webhooks.Instrumentation).
+  # was just unusable. Reporting (SystemError + flow_webhooks namespace) is owned by
+  # the centralised Instrumentation module, like every other webhook failure.
   @spec report_empty_message(non_neg_integer()) :: :ok
   defp report_empty_message(organization_id) do
-    %Errors.SystemError{message: "Webhook system_error from #{name()}"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: organization_id,
-        webhook_name: name(),
-        http_status: 200,
-        reason: "Kaapi callback returned success=true but message was empty/nil"
-      }
-    )
+    Instrumentation.report_failure(name(), %{
+      organization_id: organization_id,
+      http_status: 200,
+      reason: "Kaapi callback returned success=true but message was empty/nil"
+    })
   end
 end

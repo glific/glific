@@ -612,7 +612,7 @@ defmodule Glific.Flows.Webhook do
       %{response_key => response},
       resume_message(result, response, organization_id)
     )
-    |> log_resume_error(response)
+    |> report_resume_error(response)
   end
 
   @spec resume_voice(non_neg_integer(), map(), map(), Contact.t()) :: :ok
@@ -632,22 +632,13 @@ defmodule Glific.Flows.Webhook do
 
     track_callback_outcome(result, response)
 
-    case FlowContext.resume_contact_flow(
-           contact,
-           response["flow_id"],
-           %{response_key => voice_response},
-           message
-         ) do
-      {:ok, _context, _messages} ->
-        :ok
-
-      {:error, reason} ->
-        Logger.warning(
-          "Voice flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{inspect(reason)}"
-        )
-
-        Instrumentation.report_resume_failure(response, reason)
-    end
+    FlowContext.resume_contact_flow(
+      contact,
+      response["flow_id"],
+      %{response_key => voice_response},
+      message
+    )
+    |> report_resume_error(response)
   end
 
   # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
@@ -662,16 +653,13 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec log_resume_error(tuple(), map()) :: :ok
-  defp log_resume_error({:ok, _context, _messages}, _response), do: :ok
+  # Resume failures are reported to AppSignal (flow_webhooks namespace) via
+  # Instrumentation, which already logs — so no separate Logger call here.
+  @spec report_resume_error(tuple(), map()) :: :ok
+  defp report_resume_error({:ok, _context, _messages}, _response), do: :ok
 
-  defp log_resume_error({:error, reason}, response) do
-    Logger.warning(
-      "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{inspect(reason)}"
-    )
-
-    Instrumentation.report_resume_failure(response, reason)
-  end
+  defp report_resume_error({:error, reason}, response),
+    do: Instrumentation.report_resume_failure(response, reason)
 
   @doc """
   Parse the raw Kaapi/external callback body into the internal response map

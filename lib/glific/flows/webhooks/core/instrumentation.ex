@@ -154,6 +154,22 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
+  @doc """
+  Report a webhook failure surfaced outside the dispatcher's automatic path —
+  e.g. an implementation module detecting a callback that succeeded at the HTTP
+  layer but returned an unusable body. Same `flow_webhooks` namespace and tag
+  shape as the callback/timeout/resume reporters; `:webhook_name` is filled in
+  from the first argument.
+  """
+  @spec report_failure(String.t(), tags()) :: :ok
+  def report_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
+    %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
+    |> Glific.log_exception(
+      namespace: "flow_webhooks",
+      tags: Map.put(tags, :webhook_name, webhook_name)
+    )
+  end
+
   # --- private ----------------------------------------------------------------
 
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
@@ -200,16 +216,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   @spec report_webhook_failure(String.t(), map(), integer() | nil, String.t() | nil) :: :ok
   defp report_webhook_failure(webhook_name, ctx, http_status, reason) do
-    %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: Map.get(ctx, :organization_id),
-        webhook_name: webhook_name,
-        http_status: http_status,
-        reason: reason
-      }
-    )
+    report_failure(webhook_name, %{
+      organization_id: Map.get(ctx, :organization_id),
+      http_status: http_status,
+      reason: reason
+    })
   end
 
   @spec track_status(String.t(), any()) :: :ok
