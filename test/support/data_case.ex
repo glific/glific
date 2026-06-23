@@ -43,6 +43,11 @@ defmodule Glific.DataCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
+    # Give each test its own slice of the org cache so concurrent async tests
+    # don't clobber each other's {0, {:organization, 1}} entries when one test
+    # calls create_credential/update_organization (which invalidates the cache).
+    Process.put(:glific_org_cache_ns, self())
+
     Repo.put_organization_id(1)
     Repo.put_current_user(Fixtures.user_fixture(%{name: "NGO Test Admin", roles: ["manager"]}))
 

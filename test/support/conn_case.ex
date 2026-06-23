@@ -57,6 +57,9 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
+    # Give each test its own slice of the org cache (same isolation as DataCase).
+    Process.put(:glific_org_cache_ns, self())
+
     organization_id = 1
     organization_id |> Partners.get_organization!() |> Partners.fill_cache()
 

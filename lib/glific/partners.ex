@@ -50,6 +50,13 @@ defmodule Glific.Partners do
   # by shortcode we do not have an organization id to retrieve it from.
   @global_organization_id 0
 
+  # Returns the namespace used as the first tuple element in all org cache keys.
+  # In tests, DataCase/ConnCase put the test process PID here so concurrent async
+  # tests each get their own isolated slice of the cache instead of all colliding
+  # on the same {0, {:organization, 1}} key.
+  @spec cache_org_ns() :: non_neg_integer() | pid()
+  defp cache_org_ns, do: Process.get(:glific_org_cache_ns, @global_organization_id)
+
   @doc """
   Returns the list of providers.
 
@@ -564,15 +571,21 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Given a minimal organization object, fill it up and store in cache. Making this
-  public so we can call from test harness and avoid SQL Sandbox issues
+  Fully populates an organization struct and writes it to the cache under both
+  its id and shortcode keys.
+
+  Called from test setup after operations that invalidate the cache (e.g.
+  `create_credential/1`, `update_organization/2`) to ensure subsequent calls to
+  `organization/1` see the updated state without an extra DB round-trip. The
+  production miss-path (`fetch_and_cache_organization/1`) handles lazy population
+  safely in the caller's process, so this function is not required for correctness.
   """
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
     organization = build_org_data(organization)
 
     Caches.set(
-      @global_organization_id,
+      cache_org_ns(),
       [{:organization, organization.id}, {:organization, organization.shortcode}],
       organization
     )
@@ -617,7 +630,7 @@ defmodule Glific.Partners do
   @spec organization(non_neg_integer | String.t()) ::
           Organization.t() | nil | {:error, String.t()}
   def organization(cache_key) do
-    case Caches.get(@global_organization_id, {:organization, cache_key}) do
+    case Caches.get(cache_org_ns(), {:organization, cache_key}) do
       {:ok, false} ->
         case fetch_and_cache_organization(cache_key) do
           {:ok, org_data} ->
@@ -648,7 +661,7 @@ defmodule Glific.Partners do
         Flags.init(org_data)
 
         Caches.set(
-          @global_organization_id,
+          cache_org_ns(),
           [{:organization, org_data.id}, {:organization, org_data.shortcode}],
           org_data
         )
@@ -1211,15 +1224,15 @@ defmodule Glific.Partners do
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
-    Caches.remove(@global_organization_id, ["organization_services"])
+    Caches.remove(cache_org_ns(), ["organization_services"])
 
     Caches.remove(
-      @global_organization_id,
+      cache_org_ns(),
       [{:organization, organization_id}, {:organization, shortcode}]
     )
 
     Caches.remove(
-      @global_organization_id,
+      cache_org_ns(),
       ["organization_services"]
     )
   end
@@ -1391,7 +1404,7 @@ defmodule Glific.Partners do
   """
   @spec get_organization_services :: map()
   def get_organization_services do
-    case Caches.get(@global_organization_id, "organization_services") do
+    case Caches.get(cache_org_ns(), "organization_services") do
       {:ok, false} ->
         fetch_and_cache_organization_services()
 
@@ -1414,7 +1427,7 @@ defmodule Glific.Partners do
       )
       |> combine_services()
 
-    Caches.set(@global_organization_id, "organization_services", services)
+    Caches.set(cache_org_ns(), "organization_services", services)
     services
   end
 

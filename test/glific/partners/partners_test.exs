@@ -772,11 +772,13 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization/1 should return data if key is a shortcode and cache it" do
-      global_organization_id = 0
+      # Use the per-test cache namespace set by DataCase (the test PID), not the
+      # hardcoded global 0, so this test's cache reads match Partners.organization/1.
+      cache_ns = Process.get(:glific_org_cache_ns, 0)
       organization = Fixtures.organization_fixture(%{shortcode: "new_org"})
 
       # remove organization data from cache which might be added by fixture
-      Caches.remove(global_organization_id, [
+      Caches.remove(cache_ns, [
         {:organization, organization.id},
         {:organization, organization.shortcode}
       ])
@@ -787,7 +789,7 @@ defmodule Glific.PartnersTest do
 
       # check whether organization is cached
       assert {:ok, %Partners.Organization{}} =
-               Caches.get(global_organization_id, {:organization, organization.shortcode})
+               Caches.get(cache_ns, {:organization, organization.shortcode})
 
       #  with wrong shortcode it returns an error
       assert {:error, _} = Partners.organization("wrong_shortcode")
