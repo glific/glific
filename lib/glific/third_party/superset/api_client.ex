@@ -98,9 +98,11 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   end
 
   defp parse_response({:ok, %Tesla.Env{status: status, body: body}}) do
+    upstream_msg = Map.get(body, :message, "no message returned")
+
     Glific.log_exception(
       %Error{
-        message: "Superset API error: HTTP #{status}",
+        message: "Superset API error: HTTP #{status} — #{upstream_msg}",
         status_code: status,
         reason: body
       },

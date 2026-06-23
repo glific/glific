@@ -23,7 +23,13 @@ defmodule GlificWeb.API.V1.SupersetController do
       {:error, _reason} ->
         conn
         |> put_status(:service_unavailable)
-        |> json(%{error: %{status: 503, message: "Dashboard service is temporarily unavailable"}})
+        |> json(%{
+          error: %{
+            status: 503,
+            message:
+              "Something went wrong loading the dashboard. Please retry, or contact support if the issue persists."
+          }
+        })
     end
   end
 end

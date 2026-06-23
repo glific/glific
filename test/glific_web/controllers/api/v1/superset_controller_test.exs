@@ -78,7 +78,8 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       response = json_response(conn, 503)
       assert Map.has_key?(response, "error")
       assert response["error"]["status"] == 503
-      assert response["error"]["message"] == "Dashboard service is temporarily unavailable"
+      assert response["error"]["message"] =~
+               "Please retry, or contact support if the issue persists."
     end
 
     test "includes RLS clause with the caller's organization_id in guest token request",
