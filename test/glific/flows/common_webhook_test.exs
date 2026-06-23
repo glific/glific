@@ -2011,36 +2011,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
-  test "reports SystemError when Kaapi callback says success=true but message is empty" do
-    organization_id = 1
-
-    response = %{
-      "message" => "",
-      "voice_post_process" => %{
-        "source_language" => "english",
-        "target_language" => "hindi"
-      },
-      "flow_id" => 1,
-      "contact_id" => 2,
-      "webhook_log_id" => 1
-    }
-
-    {exception, tags} =
-      capture_appsignal(fn ->
-        result = CommonWebhook.voice_post_process(organization_id, true, response)
-
-        assert result["translated_text"] == ""
-        assert is_nil(result["media_url"])
-      end)
-
-    assert %SystemError{} = exception
-    assert tags.webhook_name == "voice-filesearch-gpt"
-    # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
-    # HTTP layer, the body was just unusable.
-    assert tags.http_status == 200
-    assert tags.reason =~ "empty"
-  end
-
   describe "parse_via_chat_gpt / parse_via_gpt_vision failure reporting" do
     test "reports SystemError when parse_via_chat_gpt fails" do
       {exception, tags} =

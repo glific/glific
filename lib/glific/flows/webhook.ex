@@ -7,7 +7,6 @@ defmodule Glific.Flows.Webhook do
   require Logger
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts.Contact,
     GCS.GcsWorker,
     Messages,
@@ -16,7 +15,14 @@ defmodule Glific.Flows.Webhook do
   }
 
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
-  alias Glific.Flows.Webhooks.{Dispatcher, Instrumentation, Registry, Support}
+
+  alias Glific.Flows.Webhooks.{
+    Dispatcher,
+    Instrumentation,
+    Registry,
+    Support,
+    VoiceFilesearchGpt
+  }
 
   # Per-org rate limit for Kaapi STT/TTS dispatch (lifted from the former SttTtsWorker):
   # at most @rate_limit_max requests per org within @rate_limit_window_ms; over-limit jobs
@@ -640,7 +646,7 @@ defmodule Glific.Flows.Webhook do
         else: Messages.create_temp_message(organization_id, "Failure")
 
     voice_response =
-      CommonWebhook.voice_post_process(organization_id, result["success"], response)
+      VoiceFilesearchGpt.voice_post_process(organization_id, result["success"], response)
 
     if response["webhook_log_id"],
       do: update_log(response["webhook_log_id"], voice_response)

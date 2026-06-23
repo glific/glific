@@ -188,50 +188,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 
-  @doc """
-  Performs voice post-processing on a Kaapi LLM response: runs NMT+TTS to
-  translate and generate audio, then merges translated_text and media_url
-  into the response map.
-  """
-  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
-  def voice_post_process(organization_id, success, response) do
-    llm_response_text = response["message"] || ""
-    voice_fields = response["voice_post_process"] || %{}
-
-    tts_result =
-      cond do
-        success && llm_response_text != "" ->
-          do_nmt_tts_with_bhasini(%{
-            "text" => llm_response_text,
-            "organization_id" => organization_id,
-            "source_language" => voice_fields["source_language"],
-            "target_language" => voice_fields["target_language"],
-            "speech_engine" => voice_fields["speech_engine"] || ""
-          })
-
-        # Kaapi reported success but gave us no text to speak
-        # sending error code 200 since the call from kaapi is success
-        success ->
-          report_webhook_failure(
-            "voice-filesearch-gpt",
-            organization_id,
-            200,
-            "Kaapi callback returned success=true but message was empty/nil"
-          )
-
-          %{success: false, translated_text: "", media_url: nil}
-
-        true ->
-          %{success: false, translated_text: llm_response_text, media_url: nil}
-      end
-
-    translated_text = tts_result[:translated_text] || llm_response_text
-
-    response
-    |> Map.put("translated_text", translated_text)
-    |> Map.put("media_url", tts_result[:media_url])
-  end
-
   @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
   defp do_text_to_speech_with_bhasini(fields) do
     text = fields["text"]

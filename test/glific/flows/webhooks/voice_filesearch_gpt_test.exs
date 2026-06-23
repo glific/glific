@@ -3,6 +3,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Glific.WebhookTestHelpers
+  import Mock
 
   alias Glific.{
     Assistants.Assistant,
@@ -12,6 +13,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.SystemError,
+    Flows.Webhooks.VoiceFilesearchGpt,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -255,5 +258,79 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert log != nil
       assert log.error != nil
     end
+  end
+
+  describe "voice_post_process/3" do
+    test "reports SystemError when Kaapi callback says success=true but message is empty" do
+      organization_id = 1
+
+      response = %{
+        "message" => "",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "hindi"
+        },
+        "flow_id" => 1,
+        "contact_id" => 2,
+        "webhook_log_id" => 1
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = VoiceFilesearchGpt.voice_post_process(organization_id, true, response)
+
+          assert result["translated_text"] == ""
+          assert is_nil(result["media_url"])
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "voice-filesearch-gpt"
+      # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
+      # HTTP layer, the body was just unusable.
+      assert tags.http_status == 200
+      assert tags.reason =~ "empty"
+    end
+  end
+
+  # Runs `fun` with Appsignal.send_error and Appsignal.Span.set_sample_data
+  # mocked. Returns {exception, tags} captured from the production reporting call.
+  defp capture_appsignal(fun) do
+    test_pid = self()
+
+    with_mocks([
+      {Appsignal, [:passthrough],
+       [
+         send_error: fn ex, _stack, configurator ->
+           send(test_pid, {:appsignal_exception, ex})
+           configurator.(:fake_span)
+           :ok
+         end
+       ]},
+      {Appsignal.Span, [:passthrough],
+       [
+         set_sample_data: fn _span, key, value ->
+           send(test_pid, {:appsignal_tag, key, value})
+           :fake_span
+         end
+       ]}
+    ]) do
+      fun.()
+    end
+
+    exception =
+      receive do
+        {:appsignal_exception, ex} -> ex
+      after
+        100 -> flunk("Appsignal.send_error was not called")
+      end
+
+    tags =
+      receive do
+        {:appsignal_tag, "tags", t} -> t
+      after
+        100 -> %{}
+      end
+
+    {exception, tags}
   end
 end
