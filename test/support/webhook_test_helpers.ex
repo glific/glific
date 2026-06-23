@@ -25,14 +25,16 @@ defmodule Glific.WebhookTestHelpers do
   end
 
   defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
+    # Match the expected message anywhere in the contact's messages, not just the
+    # most recent one — a resumed flow may emit several messages, and messages
+    # sharing an inserted_at tick order non-deterministically.
+    Glific.Messages.list_messages(%{filter: %{contact_id: contact_id}})
+    |> Enum.find(&(&1.body == expected_body))
+    |> case do
+      %Message{} = msg ->
         msg
 
-      _ ->
+      nil ->
         Process.sleep(@await_interval_ms)
         await_flow_message(contact_id, expected_body, attempts - 1)
     end

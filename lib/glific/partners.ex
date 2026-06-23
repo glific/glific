@@ -592,8 +592,10 @@ defmodule Glific.Partners do
       |> Flags.set_interactive_re_response_enabled()
       |> Flags.set_is_ask_glific_enabled()
       |> Flags.set_is_whatsapp_forms_enabled()
+      |> Flags.set_copy_node_enabled()
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
+      |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1448,7 +1450,10 @@ defmodule Glific.Partners do
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
       "gpt_vision_base64_enabled" =>
-        Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization)
+        Flags.get_flag_enabled(:is_gpt_vision_base64_enabled, organization),
+      "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
+      "prompt_generator_enabled" =>
+        Flags.get_flag_enabled(:is_prompt_generator_enabled, organization)
     }
   end
 
