@@ -563,14 +563,24 @@ defmodule Glific.Erase do
   @doc """
   Topological deletion order for every table carrying an `organization_id`.
 
-  Each table is deleted before the tables it references via a NO ACTION / RESTRICT
-  foreign key (CASCADE / SET NULL foreign keys self-resolve regardless of order).
-  The ordering constraints that actually matter today are:
+  Each table is deleted before any table whose deletion it would otherwise block.
+  Most CASCADE / SET NULL foreign keys self-resolve regardless of order; only these
+  impose an ordering (child deleted before parent):
 
-    * `contacts_tags`, `messages_tags`, `templates_tags`, `flows`,
-      `interactive_templates`, `session_templates` -> before `tags`
-    * `ai_evaluations` -> before `golden_qas`
-    * `whatsapp_forms` -> before `whatsapp_form_revisions`
+    * NO ACTION / RESTRICT foreign keys — deleting the parent fails while a child
+      references it:
+        * `contacts_tags`, `messages_tags`, `templates_tags`, `flows`,
+          `interactive_templates`, `session_templates` -> before `tags`
+        * `ai_evaluations` -> before `golden_qas`
+        * `whatsapp_forms` -> before `whatsapp_form_revisions`
+    * SET NULL foreign keys on a NOT NULL column — the implicit `SET NULL` violates
+      the NOT NULL constraint, so the parent can never be cascaded away first:
+        * `whatsapp_form_revisions` -> before `users`
+
+  These constraints also propagate through CASCADE chains: deleting `contacts`
+  cascade-deletes `users` (via `users.contact_id`), so `whatsapp_form_revisions`
+  must also be deleted before `contacts`. That is why the `whatsapp_forms` cluster
+  sits just ahead of `contacts`/`users` near the end of the list.
 
   The two FK cycles (`organizations` <-> contacts/flows and
   `assistants` <-> `assistant_config_versions`) are broken by `break_fk_cycles/1`.
@@ -591,7 +601,6 @@ defmodule Glific.Erase do
       certificate_templates
       consulting_hours
       contact_histories
-      contacts
       contacts_fields
       contacts_groups
       contacts_tags
@@ -649,7 +658,6 @@ defmodule Glific.Erase do
       triggers
       user_jobs
       user_roles
-      users
       users_groups
       users_tokens
       versions
@@ -663,6 +671,8 @@ defmodule Glific.Erase do
       webhook_logs
       whatsapp_forms
       whatsapp_form_revisions
+      contacts
+      users
       whatsapp_forms_responses
     )
   end

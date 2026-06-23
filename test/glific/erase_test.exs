@@ -606,4 +606,30 @@ defmodule Glific.EraseTest do
     assert [] == MapSet.difference(listed_tables, schema_tables) |> Enum.sort(),
            "Erase.org_data_deletion_order/0 lists tables that no longer exist"
   end
+
+  test "delete_all_organization_data deletes whatsapp_form_revisions that reference a user",
+       %{organization_id: organization_id} do
+    # whatsapp_form_revisions.user_id is a NOT NULL column with an ON DELETE SET NULL
+    # FK to users, so the revision must be deleted before users — and before contacts,
+    # which cascade-deletes users. Regression test: full deletion previously failed
+    # here with a not-null violation when contacts/users were deleted first.
+    Fixtures.whatsapp_form_fixture()
+
+    {:ok, organization} = Repo.fetch(Organization, organization_id, skip_organization_id: true)
+    {:ok, _deleted} = Glific.Partners.delete_organization(organization)
+
+    assert :ok = Erase.delete_all_organization_data(organization_id)
+
+    assert 0 == count_for_org("whatsapp_form_revisions", organization_id)
+    assert 0 == count_for_org("users", organization_id)
+  end
+
+  defp count_for_org(table, organization_id) do
+    %{rows: [[count]]} =
+      Repo.query!("SELECT count(*) FROM #{table} WHERE organization_id = $1", [organization_id],
+        skip_organization_id: true
+      )
+
+    count
+  end
 end
