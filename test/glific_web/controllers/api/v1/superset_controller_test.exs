@@ -106,7 +106,10 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
           %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
       end)
 
-      post(api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]})), "/api/v1/get-embed-token")
+      post(
+        api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]})),
+        "/api/v1/get-embed-token"
+      )
 
       assert_receive {:guest_token_body, body}
       decoded = Jason.decode!(body)

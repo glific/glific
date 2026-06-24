@@ -2870,7 +2870,6 @@ defmodule Glific.AssistantsTest do
         for_actor: %{organization_id: organization_id}
       )
     end
-
   end
 
   describe "assistant_config_versions_enabled flag — async path (deferred_create_new_version)" do
@@ -2926,6 +2925,5 @@ defmodule Glific.AssistantsTest do
         for_actor: %{organization_id: organization_id}
       )
     end
-
   end
 end
