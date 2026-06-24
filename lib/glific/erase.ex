@@ -557,9 +557,11 @@ defmodule Glific.Erase do
     end
   rescue
     error ->
-      Logger.error(
-        "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}"
-      )
+      Glific.log_exception(%Error{
+        message:
+          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}",
+        reason: error
+      })
 
       {:error, error}
   end
