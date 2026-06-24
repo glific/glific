@@ -36,10 +36,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
-  # Path (appended to app_url) used to download WhatsApp Flow media by media id.
+  # Path (appended to app_url) used to download WhatsApp media by media id.
   # Final URL: <app_url><app_id><@flow_media_path><media_id>
-  # TODO: verify against Gupshup WhatsApp Flows media-retrieval docs.
-  @flow_media_path "/wa/media/"
+  # Returns the raw media bytes directly (one-step, no decryption).
+  @flow_media_path "/media/"
 
   @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
 
@@ -73,8 +73,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   The media id comes from a flow response, e.g.
   `%{"id" => 913256141793852, "file_name" => "x.jpg", "mime_type" => "image/jpeg"}`.
 
-  NOTE: confirm the exact Gupshup flow-media endpoint against their WhatsApp Flows
-  docs — `@flow_media_path` below is the only piece here that may need adjusting.
+  Calls `GET <app_url><app_id>/media/<media_id>` with the partner app token, which
+  returns the raw bytes directly (no second fetch, no decryption needed).
   """
   @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
           {:ok, binary()} | {:error, String.t()}
