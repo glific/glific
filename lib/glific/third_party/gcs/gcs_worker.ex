@@ -34,6 +34,9 @@ defmodule Glific.GCS.GcsWorker do
   @provider_shortcode "google_cloud_storage"
 
   @nightly_interval_hrs 20
+  # How long (in seconds) to snooze a job after a transient download timeout before
+  # Oban retries it. Downloading is idempotent so a bounded snooze+retry is safe.
+  @download_timeout_snooze_seconds 60
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
@@ -196,8 +199,8 @@ defmodule Glific.GCS.GcsWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
-  def perform(%Oban.Job{args: %{"media" => media}}) do
+  @spec perform(Oban.Job.t()) :: :ok | {:snooze, pos_integer()} | {:discard, String.t()}
+  def perform(%Oban.Job{args: %{"media" => media}, attempt: attempt, max_attempts: max_attempts}) do
     Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
 
     Repo.put_process_state(media["organization_id"])
@@ -228,8 +231,16 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-        add_message_media_error(media, error)
-        {:error, error}
+
+        # Downloading is idempotent — safe to retry. Snooze instead of returning
+        # {:error, _} so Oban does not raise Oban.PerformError and flood AppSignal.
+        # On the final attempt, discard the job so it stops looping.
+        if attempt < max_attempts do
+          {:snooze, @download_timeout_snooze_seconds}
+        else
+          add_message_media_error(media, error)
+          {:discard, error}
+        end
 
       {:error, error} ->
         error =
