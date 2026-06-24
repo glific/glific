@@ -31,7 +31,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-mix-cache
         with:
           path: deps
@@ -48,7 +48,7 @@ jobs:
           mix deps.get
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-build-cache
         with:
           path: _build
@@ -61,7 +61,7 @@ jobs:
         run: mix deps.compile
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: elixir-plt-cache
         with:
           path: priv/plts
@@ -96,13 +96,13 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -110,7 +110,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
 
       - name: Retrieve PLT Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -153,13 +153,13 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -199,13 +199,13 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Retrieve Mix Dependencies Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: deps
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
       - name: Retrieve Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
