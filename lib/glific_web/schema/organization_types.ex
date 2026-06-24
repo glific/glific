@@ -33,6 +33,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:ai_evaluations_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
     field(:copy_node_enabled, :boolean)
+    field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
   end
 

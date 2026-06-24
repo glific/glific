@@ -208,3 +208,12 @@ search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
 config :glific, Glific.Searches, repo_module: search_repo_module
+
+unless config_env() == :test do
+  config :glific, Glific.ThirdParty.Superset.ApiClient,
+    base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
+    dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),
+    guest_username: env!("SUPERSET_GUEST_USERNAME", :string, "this_is_not_a_username"),
+    username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
+    password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
+end

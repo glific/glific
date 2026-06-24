@@ -77,6 +77,12 @@ defmodule GlificWeb.Router do
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
 
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:api, :api_protected])
+
+    post("/get-embed-token", SupersetController, :embed_token)
+  end
+
   # Enables LiveDashboard only for development
   #
   # If you want to use the LiveDashboard in production, you should put
