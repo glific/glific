@@ -148,6 +148,59 @@ defmodule GlificWeb.Schema.WaGroupTest do
                })
     end
 
+    test "from CSV import_data: seeds createGroup with one phone and the bg job adds the rest",
+         %{user: user} do
+      org_id = user.organization_id
+      wa_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
+      # the acting admin is resolved via the managed phone's contact, so the
+      # createGroup admins list must carry that contact's phone
+      creator = Glific.Contacts.get_contact!(wa_phone.contact_id).phone
+
+      # createGroup is seeded with the first CSV phone; the creator is the admin.
+      Tesla.Mock.mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "success" => true,
+               "data" => %{
+                 "id" => "120363777888999000@g.us",
+                 "participants" => ["919900112233@c.us", "#{creator}@c.us"],
+                 "admins" => ["#{creator}@c.us"]
+               }
+             })
+         }}
+      end)
+
+      csv = "phone,name\n919900112233,Alice\n919900112244,Bob\n"
+
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "name" => "From CSV",
+              "waManagedPhoneId" => to_string(wa_phone.id),
+              "importData" => csv
+            }
+          }
+        )
+
+      assert {:ok, _query_data} = result
+      assert {:ok, group} = Repo.fetch_by(WAGroup, %{bsp_id: "120363777888999000@g.us"})
+
+      # run the enqueued enrichment/add job
+      Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+
+      for {phone, name} <- [{"919900112233", "Alice"}, {"919900112244", "Bob"}] do
+        assert {:ok, contact} =
+                 Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone, organization_id: org_id})
+
+        assert contact.name == name
+        assert Repo.get_by(ContactWAGroup, %{wa_group_id: group.id, contact_id: contact.id})
+      end
+    end
+
     test "surfaces Maytapi non-2xx as a GraphQL error and does not insert a wa_group",
          %{user: user} do
       wa_phone =
@@ -234,7 +287,8 @@ defmodule GlificWeb.Schema.WaGroupTest do
           wa_managed_phone_id: wa_phone.id
         })
 
-      contact_to_add = Fixtures.contact_fixture(%{organization_id: org_id})
+      # add by phone number — the contact may or may not already exist
+      add_phone = "919988776655"
       contact_to_remove = Fixtures.contact_fixture(%{organization_id: org_id})
 
       # The acting phone must be a group admin to add/remove participants.
@@ -263,7 +317,7 @@ defmodule GlificWeb.Schema.WaGroupTest do
           variables: %{
             "input" => %{
               "id" => to_string(wa_group.id),
-              "addContactIds" => [to_string(contact_to_add.id)],
+              "addPhones" => [add_phone],
               "removeContactId" => to_string(contact_to_remove.id)
             }
           }
@@ -274,14 +328,69 @@ defmodule GlificWeb.Schema.WaGroupTest do
       assert get_in(query_data, [:data, "updateWaGroup", "waGroup", "id"]) ==
                to_string(wa_group.id)
 
+      # the added phone got a contact created and linked to the group
+      assert {:ok, added_contact} =
+               Repo.fetch_by(Glific.Contacts.Contact, %{phone: add_phone, organization_id: org_id})
+
       member_ids =
         ContactWAGroup
         |> where([c], c.wa_group_id == ^wa_group.id)
         |> select([c], c.contact_id)
         |> Repo.all()
 
-      assert contact_to_add.id in member_ids
+      assert added_contact.id in member_ids
       refute contact_to_remove.id in member_ids
+    end
+
+    test "surfaces the rejected number as a result error when Maytapi fails the add",
+         %{user: user} do
+      org_id = user.organization_id
+      wa_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
+
+      wa_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: org_id,
+          wa_managed_phone_id: wa_phone.id
+        })
+
+      {:ok, _} =
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: wa_phone.contact_id,
+          wa_group_id: wa_group.id,
+          organization_id: org_id,
+          is_admin: true
+        })
+
+      # Maytapi answers HTTP 200 but rejects the number. The add must not be
+      # reported as a success.
+      Tesla.Mock.mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: Jason.encode!(%{"success" => false, "message" => "NOT_A_PARTICIPANT"})
+         }}
+      end)
+
+      add_phone = "919988776655"
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "input" => %{"id" => to_string(wa_group.id), "addPhones" => [add_phone]}
+          }
+        )
+
+      assert {:ok, query_data} = result
+      errors = get_in(query_data, [:data, "updateWaGroup", "errors"])
+      assert [%{"key" => ^add_phone, "message" => message}] = errors
+      assert message =~ "NOT_A_PARTICIPANT"
+
+      # the rejected number was not linked to the group
+      assert {:error, _} =
+               Repo.fetch_by(Glific.Contacts.Contact, %{
+                 phone: add_phone,
+                 organization_id: org_id
+               })
     end
 
     test "returns an error when no managed phone is a group admin", %{user: user} do

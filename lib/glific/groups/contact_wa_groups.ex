@@ -164,38 +164,48 @@ defmodule Glific.Groups.ContactWAGroups do
   Add and/or remove members of a WhatsApp group via Maytapi, using
   `wa_managed_phone_id` as the acting phone for every Maytapi call.
 
-  `add_contact_ids` are added in a single Maytapi `group/add` call (it accepts
-  an array of numbers); `remove_contact_id` is a single contact removed via
-  `group/remove` (which takes one number at a time). On success we insert/delete
-  the matching `contacts_wa_groups` rows.
+  `add_phones` is a list of plain phone numbers, each added with its own Maytapi
+  `group/add` call; each phone's contact is created on the fly when we don't already have it.
+  `remove_contact_id` is a single contact removed via `group/remove`.
+  On success we insert/delete the matching `contacts_wa_groups` rows.
 
   Maytapi answers HTTP 200 even on failure (e.g.
   `%{"success" => false, "message" => "NOT_A_PARTICIPANT"}`), so we inspect the
-  `success` field and stop with `{:error, message}` on the first failure.
+  `success` field. A failed *add* fails only that number — it's collected in the
+  returned `failed` map (`%{phone => message}`) so the caller can report it. A
+  failed *remove* stops with `{:error, message}`.
 
   `wa_managed_phone_id` is the acting phone. Caller
   resolves this via `WAGroups.acting_phone/1`.
 
-  Returns `{:ok, %{added: n, removed: n}}` or `{:error, message}`.
+  Returns `{:ok, %{added: n, removed: n, failed: %{phone => message}}}` or
+  `{:error, message}`.
   """
-  @spec modify_members(WAGroup.t(), non_neg_integer(), list(), non_neg_integer() | nil) ::
-          {:ok, %{added: non_neg_integer(), removed: non_neg_integer()}} | {:error, String.t()}
+  @spec modify_members(WAGroup.t(), non_neg_integer(), [String.t()], non_neg_integer() | nil) ::
+          {:ok,
+           %{
+             added: non_neg_integer(),
+             removed: non_neg_integer(),
+             failed: %{String.t() => String.t()}
+           }}
+          | {:error, String.t()}
   def modify_members(_wa_group, _wa_managed_phone_id, [], nil),
-    do: {:ok, %{added: 0, removed: 0}}
+    do: {:ok, %{added: 0, removed: 0, failed: %{}}}
 
   def modify_members(
         %WAGroup{} = wa_group,
         wa_managed_phone_id,
-        add_contact_ids,
+        add_phones,
         remove_contact_id
       ) do
     org_id = wa_group.organization_id
 
     with {:ok, %WAManagedPhone{phone_id: acting_phone_id}} <-
            Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id}),
-         {:ok, added} <- add_members(org_id, wa_group, acting_phone_id, add_contact_ids),
+         {:ok, %{added: added, failed: failed}} <-
+           add_members(org_id, wa_group, acting_phone_id, add_phones),
          {:ok, removed} <- remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
-      {:ok, %{added: added, removed: removed}}
+      {:ok, %{added: added, removed: removed, failed: failed}}
     else
       {:error, [_, "Resource not found"]} ->
         {:error, "Acting phone not found in this organization"}
@@ -205,32 +215,46 @@ defmodule Glific.Groups.ContactWAGroups do
     end
   end
 
-  @spec add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), list()) ::
-          {:ok, non_neg_integer()} | {:error, String.t()}
-  defp add_members(_org_id, _wa_group, _acting_phone_id, []), do: {:ok, 0}
+  @spec add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
+  defp add_members(_org_id, _wa_group, _acting_phone_id, []),
+    do: {:ok, %{added: 0, failed: %{}}}
 
-  defp add_members(org_id, wa_group, acting_phone_id, contact_ids) do
-    # /group/add takes a `number` array of plain phone numbers (no @c.us) and
-    # adds them all in a single call, so we batch every contact into one request.
-    phones = Enum.map(contact_ids, &Contacts.get_contact!(&1).phone)
-    payload = %{conversation_id: wa_group.bsp_id, number: phones}
+  defp add_members(org_id, wa_group, acting_phone_id, phones) do
+    result =
+      Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
+        payload = %{conversation_id: wa_group.bsp_id, number: [phone]}
 
-    case ApiClient.add_group_member(org_id, payload, acting_phone_id) do
-      :ok ->
-        Enum.each(contact_ids, fn contact_id ->
-          create_contact_wa_group(%{
-            contact_id: contact_id,
-            wa_group_id: wa_group.id,
-            organization_id: org_id,
-            is_admin: false
-          })
-        end)
+        case ApiClient.add_group_member(org_id, payload, acting_phone_id) do
+          :ok ->
+            link_phone_to_group(phone, wa_group, org_id)
+            %{acc | added: acc.added + 1}
 
-        {:ok, length(contact_ids)}
+          {:error, message} ->
+            %{acc | failed: Map.put(acc.failed, phone, message)}
+        end
+      end)
 
-      {:error, message} ->
-        {:error, message}
+    {:ok, result}
+  end
+
+  @spec link_phone_to_group(String.t(), WAGroup.t(), non_neg_integer()) :: :ok
+  defp link_phone_to_group(phone, wa_group, org_id) do
+    with {:ok, contact} <-
+           Contacts.maybe_create_contact(%{
+             phone: phone,
+             organization_id: org_id,
+             contact_type: "WA"
+           }) do
+      create_contact_wa_group(%{
+        contact_id: contact.id,
+        wa_group_id: wa_group.id,
+        organization_id: org_id,
+        is_admin: false
+      })
     end
+
+    :ok
   end
 
   @spec remove_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::

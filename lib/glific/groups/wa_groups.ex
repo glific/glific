@@ -13,6 +13,7 @@ defmodule Glific.Groups.WAGroups do
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupMemberImport,
     Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
@@ -759,6 +760,38 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
+  Provision a WhatsApp group for the `createWaGroup` mutation, with members
+  supplied either as explicit `numbers` (the dropdown) or a CSV `import_data`.
+
+  For a CSV, Maytapi's createGroup is seeded with just the first phone (it
+  rejects an empty list and gets slow with many), then a background job adds the
+  rest and creates the contacts (phone + optional name). `input` is the GraphQL
+  input map (`:wa_managed_phone_id`, `:name`, `:numbers`, `:import_data`).
+  """
+  @spec provision_wa_group(non_neg_integer(), map()) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  def provision_wa_group(org_id, %{wa_managed_phone_id: wa_managed_phone_id} = input) do
+    import_data = input[:import_data]
+
+    numbers =
+      if import_data,
+        do: import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1),
+        else: input[:numbers]
+
+    with {:ok, wa_group} <-
+           create_group_via_maytapi(org_id, wa_managed_phone_id, %{
+             name: input[:name],
+             numbers: numbers
+           }) do
+      if import_data do
+        WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data)
+      end
+
+      {:ok, wa_group}
+    end
+  end
+
+  @doc """
   Provision a new WhatsApp group via Maytapi from `wa_managed_phone_id`.
 
   Calls `ApiClient.create_group/3`; on success persists the new `wa_groups`
@@ -806,13 +839,17 @@ defmodule Glific.Groups.WAGroups do
   `acting_phone/1` (a managed number whose contact is a group admin), since Maytapi only honours actions from a group
   admin.
 
-  `attrs` (any subset): `%{name: "New name", add_contact_ids: [...],
-  remove_contact_id: id}`. Returns the (possibly renamed) `wa_group`, or
-  `{:error, reason}` when none of the org's numbers is an admin of the group.
-  Member add/remove is delegated to `ContactWAGroups.modify_members/4`.
+  `attrs` (any subset): `%{name: "New name", add_phones: ["91...", ...],
+  remove_contact_id: id}`. `add_phones` are plain phone numbers — their contacts
+  are created on the fly if missing, and each is added with its own Maytapi call
+  so one bad number doesn't fail the rest. Returns
+  `{:ok, wa_group, failed}` where `failed` is `%{phone => message}` for the
+  numbers Maytapi rejected, or `{:error, reason}` when none of the org's numbers
+  is an admin of the group (or a rename/remove fails). Member add/remove is
+  delegated to `ContactWAGroups.modify_members/4`.
   """
   @spec update_wa_group_via_maytapi(WAGroup.t(), map()) ::
-          {:ok, WAGroup.t()} | {:error, any()}
+          {:ok, WAGroup.t(), %{String.t() => String.t()}} | {:error, any()}
   def update_wa_group_via_maytapi(%WAGroup{} = wa_group, attrs) do
     case acting_phone(wa_group.id) do
       nil ->
@@ -821,14 +858,14 @@ defmodule Glific.Groups.WAGroups do
 
       %WAManagedPhone{id: wa_managed_phone_id} ->
         with {:ok, wa_group} <- maybe_update_subject(wa_group, wa_managed_phone_id, attrs[:name]),
-             {:ok, _counts} <-
+             {:ok, %{failed: failed}} <-
                ContactWAGroups.modify_members(
                  wa_group,
                  wa_managed_phone_id,
-                 attrs[:add_contact_ids] || [],
+                 attrs[:add_phones] || [],
                  attrs[:remove_contact_id]
                ) do
-          {:ok, wa_group}
+          {:ok, wa_group, failed}
         end
     end
   end

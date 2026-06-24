@@ -8,7 +8,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
   alias Glific.{
     Groups.ContactWAGroups,
     Groups.WAGroup,
+    Groups.WAGroupMemberImport,
     Groups.WAGroups,
+    Repo,
     WAGroup.WAManagedPhone
   }
 
@@ -130,14 +132,8 @@ defmodule GlificWeb.Resolvers.WaGroup do
   """
   @spec create_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
-  def create_wa_group(_, %{input: %{wa_managed_phone_id: wa_managed_phone_id} = input}, %{
-        context: %{current_user: user}
-      }) do
-    with {:ok, wa_group} <-
-           WAGroups.create_group_via_maytapi(user.organization_id, wa_managed_phone_id, %{
-             name: input[:name],
-             numbers: input[:numbers] || []
-           }) do
+  def create_wa_group(_, %{input: input}, %{context: %{current_user: user}}) do
+    with {:ok, wa_group} <- WAGroups.provision_wa_group(user.organization_id, input) do
       {:ok, %{wa_group: wa_group}}
     end
   end
@@ -154,9 +150,34 @@ defmodule GlificWeb.Resolvers.WaGroup do
       }) do
     with {:ok, wa_group} <-
            Glific.Repo.fetch_by(WAGroup, %{id: id, organization_id: user.organization_id}),
-         {:ok, updated} <-
+         {:ok, updated, failed} <-
            WAGroups.update_wa_group_via_maytapi(wa_group, input) do
-      {:ok, %{wa_group: updated}}
+      {:ok, %{wa_group: updated, errors: add_failure_errors(failed)}}
+    end
+  end
+
+  # Numbers Maytapi rejected (each added on its own call) are returned as result
+  # errors, so the UI surfaces the failure instead of reporting a partial/failed
+  # add as "added successfully".
+  @spec add_failure_errors(%{String.t() => String.t()}) :: [%{key: String.t(), message: String.t()}]
+  defp add_failure_errors(failed) do
+    Enum.map(failed, fn {phone, message} ->
+      %{key: phone, message: "#{phone} could not be added: #{message}"}
+    end)
+  end
+
+  @doc """
+  Bulk-add members to a WhatsApp group from a CSV of phone numbers. Runs in the
+  background (an Oban job per chunk); returns immediately. Admin-only.
+  """
+  @spec import_wa_group_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def import_wa_group_contacts(_, %{wa_group_id: wa_group_id, type: type, data: data}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: user.organization_id}) do
+      WAGroupMemberImport.import_members(user.organization_id, wa_group.id, [{type, data}])
     end
   end
 end

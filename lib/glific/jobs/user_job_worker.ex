@@ -31,12 +31,22 @@ defmodule Glific.Jobs.UserJobWorker do
   end
 
   defp create_completion_notification(user_job) do
+    {category, message} = completion_details(user_job.type)
+
     Notifications.create_notification(%{
-      category: "Contact Upload",
-      message: "Contact upload completed",
+      category: category,
+      message: message,
       severity: Notifications.types().info,
       organization_id: user_job.organization_id,
       entity: %{user_job_id: user_job.id}
     })
   end
+
+  # Category must match what the frontend notification list keys on to fetch the
+  # upload report (Contact Upload / WA Group Member Upload).
+  @spec completion_details(String.t()) :: {String.t(), String.t()}
+  defp completion_details("wa_group_member_import"),
+    do: {"WA Group Member Upload", "WhatsApp group member upload completed"}
+
+  defp completion_details(_), do: {"Contact Upload", "Contact upload completed"}
 end

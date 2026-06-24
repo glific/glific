@@ -30,6 +30,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # time out before Maytapi responds.
   @post_recv_timeout 60_000
 
+  # Maytapi's code for "the WhatsApp instance's lib isn't loaded yet" — a
+  # transient state for a few seconds after a restart/reconnect. Maytapi returns
+  # it as HTTP 200 with `success: false`, so the Tesla retry below inspects the
+  # body (not just the status) to catch and retry it.
+  @instance_not_ready_code "W05"
+  # HTTP statuses / transport reasons worth retrying (same set as the shared
+  # `Glific.get_tesla_retry_middleware/1`).
+  @retry_error_codes [429, 500, 501, 502, 503, 504]
+  @retry_reasons [:timeout, :connrefused, :nxdomain]
+
   @doc """
   Making Tesla post call and adding api key in header
   """
@@ -243,8 +253,29 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   defp handle_maytapi_response({:ok, %Tesla.Env{body: body}}, _type), do: {:error, inspect(body)}
   defp handle_maytapi_response({:error, reason}, _type), do: {:error, inspect(reason)}
 
+  # Tesla client with a retry that covers transient HTTP failures *and* Maytapi's
+  # "Lib not loaded" (W05), which comes back as HTTP 200 — hence `should_retry`
+  # inspects the body, not just the status.
   @spec client() :: Tesla.Client.t()
-  defp client, do: Tesla.client(Glific.get_tesla_retry_middleware())
+  defp client do
+    Tesla.client([
+      {Tesla.Middleware.Retry, delay: 3_000, max_retries: 2, should_retry: &retry_request?/3}
+    ])
+  end
+
+  @spec retry_request?(Tesla.Env.result(), Tesla.Env.t(), keyword()) :: boolean()
+  defp retry_request?({:ok, %{status: status}}, _env, _opts) when status in @retry_error_codes,
+    do: true
+
+  defp retry_request?({:ok, %{body: body}}, _env, _opts), do: instance_not_ready?(body)
+  defp retry_request?({:error, reason}, _env, _opts), do: reason in @retry_reasons
+  defp retry_request?(_result, _env, _opts), do: false
+
+  @spec instance_not_ready?(any()) :: boolean()
+  defp instance_not_ready?(body) when is_binary(body),
+    do: match?({:ok, %{"code" => @instance_not_ready_code}}, Jason.decode(body))
+
+  defp instance_not_ready?(_body), do: false
 
   @spec log_on_failure(Tesla.Env.result(), String.t()) :: Tesla.Env.result()
   defp log_on_failure({:ok, %Tesla.Env{status: status}} = result, _url)

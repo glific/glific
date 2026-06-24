@@ -102,4 +102,26 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
       assert {:error, _reason} = ApiClient.remove_group_member(org_id, @payload, @phone_id)
     end
   end
+
+  describe "instance-not-ready (W05) retry" do
+    test "retries the 'Lib not loaded' (W05) response and succeeds on a later attempt", %{
+      organization_id: org_id
+    } do
+      # W05 comes back as HTTP 200 with success:false, so the Tesla retry must
+      # inspect the body. First call is not-ready, the retry succeeds.
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        attempt = Agent.get_and_update(counter, &{&1, &1 + 1})
+
+        if attempt == 0,
+          do: ok_body(%{"success" => false, "code" => "W05", "message" => "Lib not loaded"}),
+          else: ok_body(%{"success" => true})
+      end)
+
+      payload = %{conversation_id: "120363@g.us", number: ["919425010449"]}
+      assert :ok == ApiClient.add_group_member(org_id, payload, @phone_id)
+      assert Agent.get(counter, & &1) >= 2
+    end
+  end
 end

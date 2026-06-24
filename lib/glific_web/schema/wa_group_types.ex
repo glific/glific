@@ -80,22 +80,29 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :fields, :json
   end
 
-  @desc "Input for createWaGroup. `numbers` are E.164 phone numbers without the +."
+  @desc """
+  Input for createWaGroup. `numbers` are E.164 phone numbers without the +.
+  Alternatively pass `importData` (a CSV with a `phone` column plus optional
+  `name`/`collection`/custom-field columns): its phones seed the group and a
+  background job enriches the contacts.
+  """
   input_object :create_wa_group_input do
     field :name, non_null(:string)
     field :wa_managed_phone_id, non_null(:id)
     field :numbers, list_of(:string)
+    field :import_data, :string
   end
 
   @desc """
   Input for updateWaGroup. Supply any subset: `name` renames the group,
-  `addContactIds` adds members in one call, `removeContactId` removes a single
-  member (Maytapi's group/remove takes one number at a time).
+  `addPhones` adds members by phone number in one call (their contacts are
+  created if missing), `removeContactId` removes a single member (Maytapi's
+  group/remove takes one number at a time).
   """
   input_object :update_wa_group_input do
     field :id, non_null(:id)
     field :name, :string
-    field :add_contact_ids, list_of(:id)
+    field :add_phones, list_of(:string)
     field :remove_contact_id, :id
   end
 
@@ -143,6 +150,15 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:input, non_null(:update_wa_group_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.WaGroup.update_wa_group/3)
+    end
+
+    @desc "Bulk-add members to a WhatsApp group from a CSV of phone numbers (a `phone` column). Processed in the background. Admin-only."
+    field :import_wa_group_contacts, :import_result do
+      arg(:wa_group_id, non_null(:id))
+      arg(:type, :import_contacts_type_enum)
+      arg(:data, non_null(:string))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.import_wa_group_contacts/3)
     end
   end
 end
