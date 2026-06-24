@@ -37,13 +37,13 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   """
   @spec get_embed_token(non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def get_embed_token(organization_id) do
+  def get_embed_token(_organization_id) do
     username = superset_config(:username)
     password = superset_config(:password)
 
     with {:ok, %{access_token: token}} <- get_access_token(username, password),
          {:ok, %{result: csrf_token, cookie: cookie}} <- get_csrf_token(token) do
-      fetch_embed_token(organization_id, token, csrf_token, cookie)
+      fetch_embed_token(token, csrf_token, cookie)
     end
   end
 
@@ -63,14 +63,15 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   @spec get_csrf_token(String.t()) :: {:ok, map()} | {:error, any()}
   defp get_csrf_token(access_token) do
-    client(access_token)
+    access_token
+    |> client()
     |> Tesla.get("/security/csrf_token/")
     |> parse_response()
   end
 
-  @spec fetch_embed_token(non_neg_integer(), String.t(), String.t(), String.t()) ::
+  @spec fetch_embed_token(String.t(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  defp fetch_embed_token(_organization_id, access_token, csrf_token, cookie) do
+  defp fetch_embed_token(access_token, csrf_token, cookie) do
     payload = %{
       user: %{
         username: superset_config(:guest_username),
@@ -79,12 +80,13 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
       },
       resources: [%{type: "dashboard", id: superset_config(:dashboard_id)}],
       # RLS temporarily disabled to allow org filtering via the Superset UI.
-      # Restore to `[%{clause: "organization_id = #{organization_id}"}]` once
-      # row-level security is enforced at the Superset dataset level.
+      # Restore by adding organization_id as a parameter and setting:
+      # rls: [%{clause: "organization_id = #{organization_id}"}]
       rls: []
     }
 
-    client(access_token, csrf_token, cookie)
+    access_token
+    |> client(csrf_token, cookie)
     |> Tesla.post("/security/guest_token/", payload)
     |> parse_response()
   end
