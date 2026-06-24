@@ -2,8 +2,6 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
   use Glific.DataCase
   import Tesla.Mock
 
-  # Note: tests run synchronously (no async: true) because mock_global/1 mutates global state.
-
   alias Glific.ThirdParty.Superset.ApiClient
 
   # Note: this URL must match SUPERSET_URL in the test environment (typically from config/.env.dev)
@@ -12,7 +10,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
   describe "get_embed_token/1" do
     test "returns {:ok, %{token: _}} when all three HTTP legs succeed",
          %{organization_id: organization_id} do
-      mock_global(fn
+      mock(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           %Tesla.Env{
             status: 200,
@@ -40,7 +38,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
 
     test "returns {:error, %{status: 401, body: _}} when login returns 401",
          %{organization_id: organization_id} do
-      mock_global(fn
+      mock(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           %Tesla.Env{
             status: 401,
@@ -54,7 +52,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
 
     test "returns {:error, %{status: 500, body: _}} when CSRF token fetch returns 500",
          %{organization_id: organization_id} do
-      mock_global(fn
+      mock(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           %Tesla.Env{
             status: 200,
@@ -75,7 +73,7 @@ defmodule Glific.ThirdParty.Superset.ApiClientTest do
 
     test "propagates transport error when network is unreachable",
          %{organization_id: organization_id} do
-      mock_global(fn
+      mock(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           {:error, :econnrefused}
       end)
