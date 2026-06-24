@@ -16,6 +16,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     Repo,
     WhatsappForms,
     WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse,
     WhatsappFormsResponses
   }
 
@@ -78,6 +79,11 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
     whatsapp_form = Repo.get(WhatsappForm, whatsapp_form_id)
 
+    # Download any uploaded media (PhotoPicker/DocumentPicker) to GCS and rewrite
+    # the response entries with their gcs_url, so both the persisted response and
+    # the Google Sheet carry the public URL instead of the raw WhatsApp media id.
+    payload = persist_response_media(payload, organization_id)
+
     case WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form) do
       {:ok, _} ->
         :ok
@@ -109,6 +115,26 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
     schedule_next_form_sync(remaining_forms, org_id)
     :ok
+  end
+
+  # Downloads uploaded form media to GCS, persists the rewritten response (with
+  # gcs_url) back to the DB row, and returns the payload with the updated response
+  # so the Google Sheet receives the public URL.
+  @spec persist_response_media(map(), non_neg_integer()) :: map()
+  defp persist_response_media(payload, organization_id) do
+    updated_response =
+      payload
+      |> Map.get("raw_response", %{})
+      |> WhatsappFormsResponses.save_response_media(organization_id)
+
+    with id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
+         %WhatsappFormResponse{} = response <- Repo.get(WhatsappFormResponse, id) do
+      response
+      |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
+      |> Repo.update()
+    end
+
+    Map.put(payload, "raw_response", updated_response)
   end
 
   @spec send_notification(non_neg_integer(), String.t(), String.t()) ::

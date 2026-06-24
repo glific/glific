@@ -36,6 +36,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
+  # Path (appended to app_url) used to download WhatsApp Flow media by media id.
+  # Final URL: <app_url><app_id><@flow_media_path><media_id>
+  # TODO: verify against Gupshup WhatsApp Flows media-retrieval docs.
+  @flow_media_path "/wa/media/"
 
   @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
 
@@ -59,6 +63,31 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       error ->
         {:error, "Error while getting the ratings. #{inspect(error)}"}
+    end
+  end
+
+  @doc """
+  Downloads WhatsApp Flow media (PhotoPicker / DocumentPicker uploads) by its
+  WhatsApp media id, returning the raw binary content.
+
+  The media id comes from a flow response, e.g.
+  `%{"id" => 913256141793852, "file_name" => "x.jpg", "mime_type" => "image/jpeg"}`.
+
+  NOTE: confirm the exact Gupshup flow-media endpoint against their WhatsApp Flows
+  docs — `@flow_media_path` below is the only piece here that may need adjusting.
+  """
+  @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
+          {:ok, binary()} | {:error, String.t()}
+  def download_flow_media(org_id, media_id) do
+    url = app_url!(org_id) <> @flow_media_path <> to_string(media_id)
+
+    get(url, headers: headers(:app_token, org_id: org_id))
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, body}
+
+      err ->
+        {:error, "flow media download failed for id #{media_id}: #{inspect(err)}"}
     end
   end
 

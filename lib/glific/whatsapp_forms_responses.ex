@@ -7,7 +7,9 @@ defmodule Glific.WhatsappFormsResponses do
   require Logger
 
   alias Glific.{
+    GCS.GcsWorker,
     Messages.Message,
+    Providers.Gupshup.PartnerAPI,
     Repo,
     Sheets,
     Sheets.GoogleSheets,
@@ -34,6 +36,7 @@ defmodule Glific.WhatsappFormsResponses do
              organization_id: attrs.organization_id
            }) do
       payload = %{
+        whatsapp_form_response_id: result.id,
         raw_response: result.raw_response,
         submitted_at: result.submitted_at,
         whatsapp_form_id: result.whatsapp_form_id,
@@ -117,6 +120,56 @@ defmodule Glific.WhatsappFormsResponses do
     {:ok, values}
   end
 
+  @doc """
+  Downloads any media uploaded through a WhatsApp form (PhotoPicker / DocumentPicker)
+  to GCS and rewrites each media entry in `raw_response` with its public `gcs_url`.
+
+  A media field is a list of maps shaped like
+  `%{"id" => 913.., "file_name" => "x.jpg", "mime_type" => "image/jpeg", "sha256" => ".."}`.
+  Non-media fields (strings, multi-select lists) are returned untouched. Any single
+  download/upload failure is logged and leaves that entry as-is, so one bad photo
+  never blocks the rest of the response.
+  """
+  @spec save_response_media(map(), non_neg_integer()) :: map()
+  def save_response_media(raw_response, organization_id) when is_map(raw_response) do
+    Map.new(raw_response, fn
+      {key, value} when is_list(value) ->
+        if media_list?(value),
+          do: {key, Enum.map(value, &save_one_media(&1, organization_id))},
+          else: {key, value}
+
+      kv ->
+        kv
+    end)
+  end
+
+  def save_response_media(raw_response, _organization_id), do: raw_response
+
+  @spec media_list?(list()) :: boolean()
+  defp media_list?([%{"id" => _, "mime_type" => _} | _]), do: true
+  defp media_list?(_), do: false
+
+  @spec save_one_media(map(), non_neg_integer()) :: map()
+  defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
+    remote = "whatsapp_forms/#{Date.utc_today()}/#{Ecto.UUID.generate()}-#{file_name}"
+    local = Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
+
+    with {:ok, bytes} <- PartnerAPI.download_flow_media(organization_id, id),
+         :ok <- File.write(local, bytes),
+         {:ok, %{url: gcs_url}} <- GcsWorker.upload_media(local, remote, organization_id) do
+      Map.put(media, "gcs_url", gcs_url)
+    else
+      error ->
+        Logger.error(
+          "Failed to save WhatsApp form media #{file_name} (id #{id}): #{inspect(error)}"
+        )
+
+        media
+    end
+  end
+
+  defp save_one_media(media, _organization_id), do: media
+
   @spec prepare_row_from_headers(map(), String.t()) ::
           {:ok, list(String.t())} | {:error, any()}
   defp prepare_row_from_headers(response, spreadsheet_id) do
@@ -137,9 +190,17 @@ defmodule Glific.WhatsappFormsResponses do
           value = Map.get(payload, header, "")
 
           cond do
-            is_list(value) -> Enum.join(value, ", ")
-            is_map(value) -> Jason.encode!(value)
-            true -> value
+            is_list(value) ->
+              Enum.map_join(value, ", ", fn
+                item when is_map(item) -> Jason.encode!(item)
+                item -> to_string(item)
+              end)
+
+            is_map(value) ->
+              Jason.encode!(value)
+
+            true ->
+              value
           end
         end)
 

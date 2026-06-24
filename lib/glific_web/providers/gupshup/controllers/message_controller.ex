@@ -5,6 +5,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Glific.{
     Communications,
     Providers.Gupshup
@@ -114,6 +116,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   """
   @spec whatsapp_form_response(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def whatsapp_form_response(conn, params) do
+    # TEMP DEBUG: capture the full Gupshup form-response webhook to inspect how
+    # PhotoPicker media is delivered (id vs url). Remove after capturing a sample.
+    Logger.info(
+      "FULL whatsapp_form_response webhook: #{inspect(params, limit: :infinity, printable_limit: :infinity)}"
+    )
+
     extract_message_from_webhook(params)
     |> Gupshup.Message.receive_whatsapp_form_response()
     |> update_message_params(%{organization_id: conn.assigns[:organization_id]})
