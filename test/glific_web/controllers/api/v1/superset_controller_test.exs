@@ -5,9 +5,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
   # Note: tests run synchronously (no async: true) because mock_global/1 mutates global state.
 
   alias Glific.Fixtures
-  alias GlificWeb.{APIAuthPlug, Endpoint}
 
-  @pow_config [otp_app: :glific]
   @base_url "https://moonshine.projecttech4dev.org/api/v1"
 
   defp mock_superset_success do
@@ -35,22 +33,12 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
     end)
   end
 
-  defp build_authed_conn(conn) do
-    conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
-    user = Fixtures.user_fixture(%{roles: ["staff"]})
-    {conn_with_token, _user} = APIAuthPlug.create(conn, user, @pow_config)
-    access_token = conn_with_token.private[:api_access_token]
-    # sleep briefly to allow Mnesia to propagate the session
-    :timer.sleep(100)
-    conn |> Plug.Conn.put_req_header("authorization", access_token)
-  end
-
   describe "POST /api/v1/get-embed-token" do
     test "returns 200 with a token when Superset API succeeds",
          %{conn: conn, organization_id: organization_id} do
       FunWithFlags.enable(:superset_enabled, for_actor: %{organization_id: organization_id})
       mock_superset_success()
-      authed_conn = build_authed_conn(conn)
+      authed_conn = api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]}))
       conn = post(authed_conn, "/api/v1/get-embed-token")
       response = json_response(conn, 200)
       assert is_binary(response["token"])
@@ -66,7 +54,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
     test "returns 403 when superset_enabled flag is off for the organization",
          %{conn: conn, organization_id: organization_id} do
       FunWithFlags.disable(:superset_enabled, for_actor: %{organization_id: organization_id})
-      authed_conn = build_authed_conn(conn)
+      authed_conn = api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]}))
       conn = post(authed_conn, "/api/v1/get-embed-token")
       response = json_response(conn, 403)
       assert response["error"]["status"] == 403
@@ -86,7 +74,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
           }
       end)
 
-      authed_conn = build_authed_conn(conn)
+      authed_conn = api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]}))
       conn = post(authed_conn, "/api/v1/get-embed-token")
       response = json_response(conn, 503)
       assert Map.has_key?(response, "error")
@@ -118,14 +106,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
           %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
       end)
 
-      conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
-      user = Fixtures.user_fixture(%{roles: ["staff"]})
-      {conn_with_token, _user} = APIAuthPlug.create(conn, user, @pow_config)
-      access_token = conn_with_token.private[:api_access_token]
-      :timer.sleep(100)
-      authed_conn = Plug.Conn.put_req_header(conn, "authorization", access_token)
-
-      post(authed_conn, "/api/v1/get-embed-token")
+      post(api_auth_conn(conn, Fixtures.user_fixture(%{roles: ["staff"]})), "/api/v1/get-embed-token")
 
       assert_receive {:guest_token_body, body}
       decoded = Jason.decode!(body)

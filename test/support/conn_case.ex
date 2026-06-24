@@ -25,6 +25,8 @@ defmodule GlificWeb.ConnCase do
     Repo
   }
 
+  alias GlificWeb.{APIAuthPlug, Endpoint}
+
   using do
     quote do
       # Import conveniences for testing with connections
@@ -108,5 +110,22 @@ defmodule GlificWeb.ConnCase do
     conn
     |> Phoenix.ConnTest.init_test_session(%{})
     |> Plug.Conn.put_session(:user_token, token)
+  end
+
+  @doc """
+  Authenticates `conn` for the Pow API pipeline (bearer token in Authorization header).
+
+  Use this for tests against endpoints under the `:api` pipeline. Unlike `log_in_user/2`,
+  which sets a browser session cookie, this creates a signed Pow bearer token and attaches
+  it as an `Authorization` header — the form `APIAuthPlug` expects.
+  """
+  @spec api_auth_conn(Plug.Conn.t(), Glific.Users.User.t()) :: Plug.Conn.t()
+  def api_auth_conn(conn, user) do
+    conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
+    {conn_with_token, _user} = APIAuthPlug.create(conn, user, otp_app: :glific)
+    access_token = conn_with_token.private[:api_access_token]
+    # Allow Mnesia a moment to propagate the session before the request fires.
+    :timer.sleep(100)
+    Plug.Conn.put_req_header(conn, "authorization", access_token)
   end
 end
