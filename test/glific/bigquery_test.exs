@@ -73,6 +73,30 @@ defmodule Glific.BigQueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
+  test "periodic_updates/1 skips dedup jobs for insert-only tables",
+       %{global_schema: global_schema} = attrs do
+    BigQueryWorker.periodic_updates(attrs.organization_id)
+
+    # Updatable tables still get a duplicate-removal job enqueued.
+    assert_enqueued(
+      worker: BigQueryWorker,
+      args: %{table: "contacts", remove_duplicates: true},
+      prefix: global_schema
+    )
+
+    # Insert-only tables (see BigQuery.ignore_updates_for_table/0) are never re-synced,
+    # so no dedup job should be enqueued for them.
+    for table <- BigQuery.ignore_updates_for_table() do
+      refute_enqueued(
+        worker: BigQueryWorker,
+        args: %{table: table, remove_duplicates: true},
+        prefix: global_schema
+      )
+    end
+
+    Oban.drain_queue(queue: :bigquery)
+  end
+
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
     BigQuery.handle_insert_query_response(
       {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
