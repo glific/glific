@@ -536,8 +536,12 @@ defmodule Glific.Erase do
   The organization row itself is preserved (soft-deleted via `delete_organization/1`);
   this only erases its data. Refuses to run if the org has not been soft-deleted.
   """
-  @spec delete_all_organization_data(non_neg_integer) :: :ok | {:error, any()}
+  @spec delete_all_organization_data(non_neg_integer | String.t()) :: :ok | {:error, any()}
   def delete_all_organization_data(organization_id) do
+    # Callers (e.g. the GraphQL resolver -> Oban job) may pass the id as a string.
+    # The ordered DELETEs bind it as a `bigint` query parameter, so coerce to an
+    # integer up front — Postgrex won't encode a string against a bigint column.
+    organization_id = Glific.parse_maybe_integer!(organization_id)
     Logger.info("Deleting all data for organization_id: #{organization_id}")
 
     # The guard is a read, so it runs outside the transaction. The mutations run
