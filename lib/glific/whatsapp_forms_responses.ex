@@ -213,8 +213,6 @@ defmodule Glific.WhatsappFormsResponses do
     end)
   end
 
-  defp media_field_values(_raw_response), do: %{}
-
   @spec merge_media_into_results(FlowContext.t(), map()) :: any()
   defp merge_media_into_results(%FlowContext{results: results} = context, media_values)
        when is_map(results) do
