@@ -76,7 +76,11 @@ defmodule GlificWeb.Router do
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
 
-    # Auth enforced at controller level via current_user pattern match (no RequireAuthenticated in this scope)
+  end
+
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:api, :api_protected])
+
     post("/get-embed-token", SupersetController, :embed_token)
   end
 

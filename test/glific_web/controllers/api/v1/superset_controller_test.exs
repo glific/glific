@@ -57,12 +57,10 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       assert response["token"] != ""
     end
 
-    # Note: this route is under the :api pipeline only (no RequireAuthenticated).
-    # The 401 is enforced by the controller's pattern match on current_user, not the router.
     test "returns 401 when no authorization header is provided", %{conn: conn} do
       conn = post(conn, "/api/v1/get-embed-token")
       response = json_response(conn, 401)
-      assert response["error"]["status"] == 401
+      assert response["error"]["code"] == 401
     end
 
     test "returns 403 when superset_enabled flag is off for the organization",

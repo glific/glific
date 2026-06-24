@@ -13,20 +13,18 @@ defmodule GlificWeb.API.V1.SupersetController do
   """
   @spec embed_token(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def embed_token(conn, _params) do
-    with %User{organization_id: org_id} <- conn.assigns[:current_user],
-         true <- FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: org_id}),
+    %User{organization_id: org_id} = conn.assigns[:current_user]
+
+    with true <- FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: org_id}),
          {:ok, %{token: token}} <- SupersetClient.get_embed_token(org_id) do
       json(conn, %{token: token})
     else
-      nil ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: %{status: 401, message: "Authentication failure"}})
-
       false ->
         conn
         |> put_status(:forbidden)
-        |> json(%{error: %{status: 403, message: "Superset is not enabled for your organization."}})
+        |> json(%{
+          error: %{status: 403, message: "Superset is not enabled for your organization."}
+        })
 
       {:error, _reason} ->
         conn
