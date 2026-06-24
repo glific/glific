@@ -615,6 +615,11 @@ defmodule Glific.EraseTest do
     # here with a not-null violation when contacts/users were deleted first.
     Fixtures.whatsapp_form_fixture()
 
+    # Prove the rows actually exist first, otherwise the post-delete assertions
+    # below would pass vacuously and the test would not exercise the FK ordering.
+    assert count_for_org("users", organization_id) > 0
+    assert count_for_org("whatsapp_form_revisions", organization_id) > 0
+
     {:ok, organization} = Repo.fetch(Organization, organization_id, skip_organization_id: true)
     {:ok, _deleted} = Glific.Partners.delete_organization(organization)
 
