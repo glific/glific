@@ -84,6 +84,10 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     # the Google Sheet carry the public URL instead of the raw WhatsApp media id.
     payload = persist_response_media(payload, organization_id)
 
+    # Inject the saved gcs_url(s) into the contact's active flow result variables,
+    # so a flow can read the photo URL after a short wait node.
+    WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
     case WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form) do
       {:ok, _} ->
         :ok

@@ -7,6 +7,7 @@ defmodule Glific.WhatsappFormsResponses do
   require Logger
 
   alias Glific.{
+    Flows.FlowContext,
     GCS.GcsWorker,
     Messages.Message,
     Providers.Gupshup.PartnerAPI,
@@ -169,6 +170,66 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   defp save_one_media(media, _organization_id), do: media
+
+  @doc """
+  Injects the saved media URLs (gcs_url) into the contact's active flow result
+  variables, so a flow can read e.g. `@results.<name>.photos` as the GCS URL after
+  a short wait node.
+
+  This runs in the async worker after the media has been uploaded to GCS. It finds
+  every active flow context for the contact and updates any result entry that holds
+  a media field (e.g. `photos`) with the comma-joined gcs_url(s). Fields whose upload
+  failed are skipped, so the flow keeps the original value rather than a bad URL.
+  """
+  @spec inject_media_into_flow_results(map()) :: :ok
+  def inject_media_into_flow_results(payload) do
+    media_values = media_field_values(Map.get(payload, "raw_response", %{}))
+
+    with false <- media_values == %{},
+         id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
+         %WhatsappFormResponse{contact_id: contact_id} <- Repo.get(WhatsappFormResponse, id) do
+      FlowContext
+      |> where([fc], fc.contact_id == ^contact_id and is_nil(fc.completed_at))
+      |> Repo.all()
+      |> Repo.preload(:flow)
+      |> Enum.each(&merge_media_into_results(&1, media_values))
+
+      :ok
+    else
+      _ -> :ok
+    end
+  end
+
+  # Builds %{field => "gcs_url1, gcs_url2"} for media fields that actually got a
+  # gcs_url. Fields with no successful upload are omitted (flow keeps old value).
+  @spec media_field_values(map()) :: map()
+  defp media_field_values(raw_response) when is_map(raw_response) do
+    raw_response
+    |> Enum.filter(fn {_key, value} ->
+      media_list?(value) and Enum.any?(value, &Map.has_key?(&1, "gcs_url"))
+    end)
+    |> Map.new(fn {key, value} ->
+      {key, Enum.map_join(value, ", ", fn item -> item["gcs_url"] || Jason.encode!(item) end)}
+    end)
+  end
+
+  defp media_field_values(_raw_response), do: %{}
+
+  @spec merge_media_into_results(FlowContext.t(), map()) :: any()
+  defp merge_media_into_results(%FlowContext{results: results} = context, media_values)
+       when is_map(results) do
+    updates =
+      results
+      |> Enum.filter(fn {_key, value} -> is_map(value) end)
+      |> Enum.reduce(%{}, fn {result_key, result_map}, acc ->
+        overlap = Map.take(media_values, Map.keys(result_map))
+        if overlap == %{}, do: acc, else: Map.put(acc, result_key, Map.merge(result_map, overlap))
+      end)
+
+    if updates != %{}, do: FlowContext.update_results(context, updates)
+  end
+
+  defp merge_media_into_results(_context, _media_values), do: :ok
 
   @spec prepare_row_from_headers(map(), String.t()) ::
           {:ok, list(String.t())} | {:error, any()}
