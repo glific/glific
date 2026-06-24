@@ -70,7 +70,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   @spec fetch_embed_token(non_neg_integer(), String.t(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  defp fetch_embed_token(organization_id, access_token, csrf_token, cookie) do
+  defp fetch_embed_token(_organization_id, access_token, csrf_token, cookie) do
     payload = %{
       user: %{
         username: superset_config(:guest_username),
@@ -78,7 +78,10 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
         last_name: "Dev"
       },
       resources: [%{type: "dashboard", id: superset_config(:dashboard_id)}],
-      rls: [%{clause: "organization_id = #{organization_id}"}]
+      # RLS temporarily disabled to allow org filtering via the Superset UI.
+      # Restore to `[%{clause: "organization_id = #{organization_id}"}]` once
+      # row-level security is enforced at the Superset dataset level.
+      rls: []
     }
 
     client(access_token, csrf_token, cookie)

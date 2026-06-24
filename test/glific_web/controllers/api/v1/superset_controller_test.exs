@@ -46,7 +46,9 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
   end
 
   describe "POST /api/v1/get-embed-token" do
-    test "returns 200 with a token when Superset API succeeds", %{conn: conn} do
+    test "returns 200 with a token when Superset API succeeds",
+         %{conn: conn, organization_id: organization_id} do
+      FunWithFlags.enable(:superset_enabled, for_actor: %{organization_id: organization_id})
       mock_superset_success()
       authed_conn = build_authed_conn(conn)
       conn = post(authed_conn, "/api/v1/get-embed-token")
@@ -63,7 +65,20 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
       assert response["error"]["status"] == 401
     end
 
-    test "returns 503 with a generic message when Superset login fails", %{conn: conn} do
+    test "returns 403 when superset_enabled flag is off for the organization",
+         %{conn: conn, organization_id: organization_id} do
+      FunWithFlags.disable(:superset_enabled, for_actor: %{organization_id: organization_id})
+      authed_conn = build_authed_conn(conn)
+      conn = post(authed_conn, "/api/v1/get-embed-token")
+      response = json_response(conn, 403)
+      assert response["error"]["status"] == 403
+      assert response["error"]["message"] =~ "not enabled"
+    end
+
+    test "returns 503 with a generic message when Superset login fails",
+         %{conn: conn, organization_id: organization_id} do
+      FunWithFlags.enable(:superset_enabled, for_actor: %{organization_id: organization_id})
+
       mock_global(fn
         %{method: :post, url: url} when url == @base_url <> "/security/login" ->
           %Tesla.Env{
@@ -83,8 +98,9 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
                "Please retry, or contact support if the issue persists."
     end
 
-    test "includes RLS clause with the caller's organization_id in guest token request",
-         %{conn: conn} do
+    test "sends an empty rls list in guest token request (UI-level org filtering active)",
+         %{conn: conn, organization_id: organization_id} do
+      FunWithFlags.enable(:superset_enabled, for_actor: %{organization_id: organization_id})
       test_pid = self()
 
       mock_global(fn
@@ -104,7 +120,6 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
           %Tesla.Env{status: 200, body: %{token: "embed_token_xyz"}, headers: []}
       end)
 
-      # Create the user explicitly so we can assert the exact org_id in the RLS clause.
       conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
       user = Fixtures.user_fixture(%{roles: ["staff"]})
       {conn_with_token, _user} = APIAuthPlug.create(conn, user, @pow_config)
@@ -116,8 +131,7 @@ defmodule GlificWeb.API.V1.SupersetControllerTest do
 
       assert_receive {:guest_token_body, body}
       decoded = Jason.decode!(body)
-      assert [%{"clause" => clause}] = decoded["rls"]
-      assert clause == "organization_id = #{user.organization_id}"
+      assert decoded["rls"] == []
     end
   end
 end
