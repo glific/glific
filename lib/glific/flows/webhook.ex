@@ -20,7 +20,7 @@ defmodule Glific.Flows.Webhook do
     Dispatcher,
     Instrumentation,
     Registry,
-    Support,
+    Request,
     VoiceFilesearchGpt
   }
 
@@ -192,10 +192,10 @@ defmodule Glific.Flows.Webhook do
   # does the right thing based on if it is a get or post
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
-    case Support.create_body(context, action.body) do
+    case Request.create_body(context, action.body) do
       {:error, message} ->
         action
-        |> Support.create_log(%{}, action.headers, context)
+        |> Request.create_log(%{}, action.headers, context)
         |> update_log(message)
 
       {map, body} ->
@@ -207,11 +207,11 @@ defmodule Glific.Flows.Webhook do
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
-    parsed_attrs = Support.parse_header_and_url(action, context)
+    parsed_attrs = Request.parse_header_and_url(action, context)
 
-    headers = Support.add_signature(parsed_attrs.header, context.organization_id, body)
+    headers = Request.add_signature(parsed_attrs.header, context.organization_id, body)
     action = Map.put(action, :url, parsed_attrs.url)
-    webhook_log = Support.create_log(action, map, parsed_attrs.header, context)
+    webhook_log = Request.create_log(action, map, parsed_attrs.header, context)
 
     payload =
       %{

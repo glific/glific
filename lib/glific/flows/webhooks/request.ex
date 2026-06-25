@@ -1,4 +1,4 @@
-defmodule Glific.Flows.Webhooks.Support do
+defmodule Glific.Flows.Webhooks.Request do
   @moduledoc """
   Shared request-building helpers for flow webhooks, used by `Glific.Flows.Webhook`
   when enqueuing a webhook node: creating the `WebhookLog` row, interpolating the
