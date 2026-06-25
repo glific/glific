@@ -411,6 +411,21 @@ defmodule Glific.WhatsappFormResponsesTest do
                raw_response
     end
 
+    test "treats a mixed list (media map + non-map) as non-media without crashing",
+         %{organization_id: organization_id} do
+      # only the head is a media map; media_list?/1 must validate every item so a
+      # later non-map entry doesn't crash Map.has_key?/2 downstream.
+      raw_response = %{
+        "photos" => [
+          %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"},
+          "x"
+        ]
+      }
+
+      assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+               raw_response
+    end
+
     test "leaves the media unchanged (no gcs_url) when the download fails",
          %{organization_id: organization_id} do
       with_mocks([

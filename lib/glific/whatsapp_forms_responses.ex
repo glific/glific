@@ -147,11 +147,18 @@ defmodule Glific.WhatsappFormsResponses do
 
   def save_response_media(raw_response, _organization_id), do: raw_response
 
-  # A media list is a list whose items carry the WhatsApp media fields we need to
-  # download them. Keep this aligned with save_one_media/2's download clause so a
-  # classified item is never silently skipped.
-  @spec media_list?(list()) :: boolean()
-  defp media_list?([%{"id" => _, "mime_type" => _, "file_name" => _} | _]), do: true
+  # A media list is a NON-EMPTY list where EVERY item carries the WhatsApp media
+  # fields we need to download it. Validating all items (not just the head) means a
+  # mixed list (e.g. [media_map, "x"]) is skipped rather than crashing downstream
+  # Map.has_key?/2 on a non-map. Keep these fields aligned with save_one_media/2.
+  @spec media_list?(term()) :: boolean()
+  defp media_list?([_ | _] = list) do
+    Enum.all?(list, fn
+      %{"id" => _, "mime_type" => _, "file_name" => _} -> true
+      _ -> false
+    end)
+  end
+
   defp media_list?(_), do: false
 
   @spec save_one_media(map(), non_neg_integer()) :: map()
