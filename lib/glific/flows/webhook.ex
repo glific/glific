@@ -674,7 +674,7 @@ defmodule Glific.Flows.Webhook do
        when is_binary(reason) do
     %{
       success: false,
-      message: reason,
+      message: nil,
       error_type: "tts_upload_failed",
       reason: reason,
       thread_id: response["thread_id"]
