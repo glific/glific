@@ -769,6 +769,60 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
     end
 
+    test "maybe_upload_tts_audio marks tts_upload_error when the audio upload fails" do
+      response = %{
+        "output_type" => "audio",
+        "message" => "!!!not_valid_base64!!!",
+        "organization_id" => "1"
+      }
+
+      result = Webhook.maybe_upload_tts_audio(response)
+
+      assert is_nil(result["message"])
+      assert result["tts_upload_error"] =~ "TTS audio upload failed"
+    end
+
+    test "resume records a failure on the webhook log when TTS audio upload failed", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature = Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      # The shape maybe_upload_tts_audio/1 produces after a failed GCS upload.
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "webhook_log_id" => webhook_log.id,
+        "result_name" => "response",
+        "message" => nil,
+        "tts_upload_error" =>
+          "TTS audio upload failed (GCS may not be enabled for this organization)"
+      }
+
+      with_mock FlowContext, [:passthrough],
+        resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
+        assert :ok = Webhook.resume(organization_id, %{"success" => true}, response)
+      end
+
+      updated_log = Repo.get!(WebhookLog, webhook_log.id)
+      assert updated_log.status_code == 400
+      assert updated_log.error =~ "GCS"
+    end
+
     test "flow_resume returns 200 for unexpected callback format (no data/metadata)", %{
       conn: conn
     } do
