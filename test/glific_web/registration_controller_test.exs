@@ -365,6 +365,81 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert contact.organization_id != org.id
     end
 
+    test "forget-password falls back to Glific when NGO contact is not deliverable and balance is low",
+         %{conn: conn} do
+      # Regression for glific/glific#4598: an org with no balance should still
+      # deliver the reset-password OTP from the prod Glific account, even when
+      # the contact cannot be messaged directly in the NGO org (e.g. opted out
+      # or outside the 24h window). Previously the deliverability check ran
+      # against the NGO-org contact *before* switching to Glific, so the flow
+      # aborted with "Cannot send the otp" and no OTP was sent.
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
+      receiver =
+        Fixtures.contact_fixture(%{
+          organization_id: org.id,
+          phone: "918456732452",
+          optin_time: nil,
+          optin_status: false,
+          bsp_status: :none
+        })
+
+      {:ok, _user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password,
+          "contact_id" => receiver.id,
+          "organization_id" => org.id
+        }
+        |> Users.create_user()
+
+      glific_org_id = Saas.organization_id()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":-1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+      end)
+
+      valid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => "false", "token" => "some_token"}
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == receiver.phone
+
+      # the fallback opts the contact into the Glific org and sends from there,
+      # so a contact for this phone now exists under the Glific org (scope the
+      # lookup explicitly since a separate NGO-org contact also exists)
+      assert {:ok, contact} =
+               Repo.fetch_by(Contacts.Contact, %{
+                 phone: receiver.phone,
+                 organization_id: glific_org_id
+               })
+
+      assert contact.organization_id == glific_org_id
+    end
+
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
       receiver = Fixtures.contact_fixture()
