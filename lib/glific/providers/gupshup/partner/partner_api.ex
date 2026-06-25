@@ -15,6 +15,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   use Publicist
   require Logger
 
+  alias Glific.SafeLog
   alias Plug.Conn.Query
   alias Tesla.Multipart
 
@@ -87,7 +88,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, body}
 
       err ->
-        {:error, "flow media download failed for id #{media_id}: #{inspect(err)}"}
+        {:error, "flow media download failed for id #{media_id}: #{SafeLog.safe_inspect(err)}"}
     end
   end
 

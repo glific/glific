@@ -12,6 +12,7 @@ defmodule Glific.WhatsappFormsResponses do
     Messages.Message,
     Providers.Gupshup.PartnerAPI,
     Repo,
+    SafeLog,
     Sheets,
     Sheets.GoogleSheets,
     WhatsappForms.WhatsappForm,
@@ -162,7 +163,7 @@ defmodule Glific.WhatsappFormsResponses do
     else
       error ->
         Logger.error(
-          "Failed to save WhatsApp form media #{file_name} (id #{id}): #{inspect(error)}"
+          "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
         )
 
         media

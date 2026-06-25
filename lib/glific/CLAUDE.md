@@ -99,6 +99,12 @@ end
   `Glific.log_error/2`. **Never call `Appsignal.send_error`/`Appsignal.error` directly** — the
   wrappers centralize Logger + AppSignal and suppress known-benign beneficiary errors
   (`ignore_error?/1`).
+- **Never `inspect/1` a `%Tesla.Env{}` (or any value that may hold one) into a log/error
+  string — use `Glific.SafeLog.safe_inspect/1` instead.** A Tesla.Env's `__client__` carries the
+  middleware chain, including live `Authorization: Bearer …` tokens; plain `inspect` leaks them
+  into logs. `safe_inspect/1` strips `__client__` and passes everything else through unchanged.
+  This applies to BSP/provider HTTP error paths (e.g. Gupshup partner API responses) where the
+  error term is the raw `{:ok|:error, Tesla.Env}` tuple.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
 
 ## Caching (Cachex, bucket `:glific_cache`)
