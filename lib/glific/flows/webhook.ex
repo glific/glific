@@ -730,10 +730,19 @@ defmodule Glific.Flows.Webhook do
       File.rm(mp3_file)
       {:ok, media_meta.url}
     else
-      error ->
+      # Surface the ACTUAL failure rather than assuming "GCS not enabled":
+      # Base.decode64 returns :error; GcsWorker.upload_media returns {:error, reason}
+      # where reason already describes the real cause (auth, accountDisabled, etc.,
+      # from handle_gcs_error/2).
+      :error ->
         File.rm(mp3_file)
-        Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
-        {:error, "TTS audio upload failed (GCS may not be enabled for this organization)"}
+        {:error, "TTS audio is not valid base64"}
+
+      {:error, reason} ->
+        File.rm(mp3_file)
+        message = if is_binary(reason), do: reason, else: inspect(reason)
+        Logger.error("Kaapi TTS upload failed: #{message}")
+        {:error, message}
     end
   end
 

@@ -779,7 +779,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       result = Webhook.maybe_upload_tts_audio(response)
 
       assert is_nil(result["message"])
-      assert result["tts_upload_error"] =~ "TTS audio upload failed"
+      assert result["tts_upload_error"] =~ "not valid base64"
     end
 
     test "resume records a failure on the webhook log when TTS audio upload failed", %{
