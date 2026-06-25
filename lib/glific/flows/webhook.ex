@@ -119,6 +119,12 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
+  # Update the webhook log only when there is one — async callbacks without a
+  # webhook_log_id (e.g. non-Kaapi resumes) simply skip the log write.
+  @spec maybe_update_log(non_neg_integer() | nil, map() | binary()) :: any()
+  defp maybe_update_log(nil, _message), do: :ok
+  defp maybe_update_log(webhook_log_id, message), do: update_log(webhook_log_id, message)
+
   @doc """
   Update a webhook log with the given message.
   """
@@ -572,7 +578,7 @@ defmodule Glific.Flows.Webhook do
       thread_id: response["thread_id"]
     }
 
-    if response["webhook_log_id"], do: update_log(response["webhook_log_id"], log_message)
+    maybe_update_log(response["webhook_log_id"], log_message)
 
     Instrumentation.record_callback_outcome(result, response)
 
@@ -601,8 +607,7 @@ defmodule Glific.Flows.Webhook do
         {Messages.create_temp_message(organization_id, "Failure"), response}
       end
 
-    if response["webhook_log_id"],
-      do: update_log(response["webhook_log_id"], voice_response)
+    maybe_update_log(response["webhook_log_id"], voice_response)
 
     Instrumentation.record_callback_outcome(result, response)
 
