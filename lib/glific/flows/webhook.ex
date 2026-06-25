@@ -516,7 +516,7 @@ defmodule Glific.Flows.Webhook do
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
-      resume_standard(organization_id, result, response, contact)
+      resume(organization_id, result, response, contact)
     end)
   end
 
@@ -529,7 +529,7 @@ defmodule Glific.Flows.Webhook do
   @spec voice_resume(non_neg_integer(), map(), map()) :: :ok
   def voice_resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Voice flow resume", fn contact ->
-      resume_voice(organization_id, result, response, contact)
+      resume_voice_filesearch_gpt(organization_id, result, response, contact)
     end)
   end
 
@@ -562,8 +562,8 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec resume_standard(non_neg_integer(), map(), map(), Contact.t()) :: :ok
-  defp resume_standard(organization_id, result, response, contact) do
+  @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  defp resume(organization_id, result, response, contact) do
     log_message = %{
       success: result["success"],
       message: response["message"] || result["error"],
@@ -587,17 +587,19 @@ defmodule Glific.Flows.Webhook do
     |> report_resume_error(response)
   end
 
-  @spec resume_voice(non_neg_integer(), map(), map(), Contact.t()) :: :ok
-  defp resume_voice(organization_id, result, response, contact) do
+  @spec resume_voice_filesearch_gpt(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  defp resume_voice_filesearch_gpt(organization_id, result, response, contact) do
     response_key = response["result_name"] || "response"
 
-    message =
-      if result["success"],
-        do: Messages.create_temp_message(organization_id, "Success"),
-        else: Messages.create_temp_message(organization_id, "Failure")
-
-    voice_response =
-      VoiceFilesearchGpt.voice_post_process(organization_id, result["success"], response)
+    # On failure the flow takes the Failure branch and there's nothing to speak,
+    # so skip the (NMT + TTS) post-processing entirely and resume with the raw callback.
+    {message, voice_response} =
+      if result["success"] do
+        {Messages.create_temp_message(organization_id, "Success"),
+         VoiceFilesearchGpt.voice_post_process(organization_id, response)}
+      else
+        {Messages.create_temp_message(organization_id, "Failure"), response}
+      end
 
     if response["webhook_log_id"],
       do: update_log(response["webhook_log_id"], voice_response)

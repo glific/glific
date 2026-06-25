@@ -277,7 +277,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          result = VoiceFilesearchGpt.voice_post_process(organization_id, true, response)
+          result = VoiceFilesearchGpt.voice_post_process(organization_id, response)
 
           assert result["translated_text"] == ""
           assert is_nil(result["media_url"])

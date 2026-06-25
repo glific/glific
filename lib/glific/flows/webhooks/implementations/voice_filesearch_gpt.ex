@@ -107,30 +107,29 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @doc """
   Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`
   (translate + generate audio), merging `translated_text` and `media_url` into the
-  response for the voice reply. `success` is the raw Kaapi callback success flag.
+  response for the voice reply.
 
-  Called by `Glific.Flows.Webhook` on the `/kaapi/voice_flow_resume` callback path.
+  Called by `Glific.Flows.Webhook` on the `/kaapi/voice_flow_resume` callback path
+  only when the callback succeeded — there's nothing to speak on a failure.
   """
-  @spec voice_post_process(non_neg_integer(), boolean(), map()) :: map()
-  def voice_post_process(organization_id, success, response) do
+  @spec voice_post_process(non_neg_integer(), map()) :: map()
+  def voice_post_process(organization_id, response) do
     llm_response_text = response["message"] || ""
     voice_fields = response["voice_post_process"] || %{}
 
     {translated_text, media_url} =
-      nmt_tts(organization_id, success, llm_response_text, voice_fields)
+      nmt_tts(organization_id, llm_response_text, voice_fields)
 
     response
     |> Map.put("translated_text", translated_text)
     |> Map.put("media_url", media_url)
   end
 
-  # Success + non-empty text: run NMT+TTS via the (still-`CommonWebhook`)
-  # `nmt_tts_with_bhasini` node. That public webhook normalizes failures to a bare
-  # string, so a map result means success; anything else falls back to the
-  # untranslated LLM text with no audio.
-  @spec nmt_tts(non_neg_integer(), boolean(), String.t(), map()) ::
-          {String.t(), String.t() | nil}
-  defp nmt_tts(organization_id, true, text, voice_fields) when text != "" do
+  # Non-empty text: run NMT+TTS via the (still-`CommonWebhook`) `nmt_tts_with_bhasini`
+  # node. That public webhook normalizes failures to a bare string, so a map result
+  # means success; anything else falls back to the untranslated LLM text with no audio.
+  @spec nmt_tts(non_neg_integer(), String.t(), map()) :: {String.t(), String.t() | nil}
+  defp nmt_tts(organization_id, text, voice_fields) when text != "" do
     CommonWebhook.webhook("nmt_tts_with_bhasini", %{
       "text" => text,
       "organization_id" => organization_id,
@@ -145,13 +144,10 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   end
 
   # Kaapi reported success but gave us no text to speak: report and resume with no audio.
-  defp nmt_tts(organization_id, true, _text, _voice_fields) do
+  defp nmt_tts(organization_id, _text, _voice_fields) do
     report_empty_message(organization_id)
     {"", nil}
   end
-
-  # Kaapi failed: resume with the (untranslated) LLM text and no audio.
-  defp nmt_tts(_organization_id, _success, text, _voice_fields), do: {text, nil}
 
   # success=true but empty body — the HTTP call succeeded (status 200), the content
   # was just unusable. Reporting (SystemError + flow_webhooks namespace) is owned by
