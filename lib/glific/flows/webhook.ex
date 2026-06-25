@@ -741,7 +741,6 @@ defmodule Glific.Flows.Webhook do
       {:error, reason} ->
         File.rm(mp3_file)
         message = if is_binary(reason), do: reason, else: inspect(reason)
-        Logger.error("Kaapi TTS upload failed: #{message}")
         {:error, message}
     end
   end
