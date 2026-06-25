@@ -1,108 +1,52 @@
 defmodule GlificWeb.Flows.FlowResumeController do
   @moduledoc """
-  The controller to process events received from 3rd party services to resume the flow
+  Receives callbacks from 3rd-party async webhooks (Kaapi STT/TTS, filesearch,
+  voice unified-LLM) and resumes the parked flow.
+
+  This controller is intentionally thin: it pulls the organization context off
+  the connection, parses/normalises the callback body, and hands the actual
+  resume work to `Glific.Flows.Webhook` — the inbound counterpart of the
+  webhook execute/perform path. All validation, logging, telemetry and flow
+  resumption live there.
   """
 
   use GlificWeb, :controller
   use Publicist
-  require Logger
 
-  alias Glific.{
-    Clients.CommonWebhook,
-    Contacts.Contact,
-    Flows.FlowContext,
-    Flows.Webhook,
-    GCS.GcsWorker,
-    Messages,
-    Partners,
-    Repo
-  }
+  alias Glific.Flows.Webhook
 
   @doc """
-  Implementation of resuming the flow after the flow was waiting for result from 3rd party service
+  Resume a flow after an async webhook (e.g. Kaapi STT/TTS) calls back.
   """
   @spec flow_resume(Plug.Conn.t(), map) :: Plug.Conn.t()
   def flow_resume(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
-    # uploading audio kept outside of task to avoid transferring large data between processes
+    # Parse + TTS upload run in the request process (not the supervised task) to
+    # avoid transferring large audio binaries between processes.
     # https://elixirmerge.com/p/the-impact-of-data-transfer-on-performance-in-elixirs-task-async
-    response = result |> parse_callback_response() |> maybe_upload_tts_audio()
+    response = result |> Webhook.parse_callback_response() |> Webhook.maybe_upload_tts_audio()
 
-    run_supervised(fn ->
-      do_flow_resume(organization_id, result, response)
-    end)
+    run_supervised(fn -> Webhook.resume(organization_id, result, response) end)
 
     json(conn, "")
   end
 
-  @spec do_flow_resume(non_neg_integer(), map(), map()) :: :ok
-  defp do_flow_resume(organization_id, result, response) do
-    Repo.put_process_state(organization_id)
-    organization = Partners.organization(organization_id)
-    response_key = response["result_name"] || "response"
+  @doc """
+  Callback for voice unified LLM calls. Resumes the flow after voice
+  post-processing (NMT + TTS) shapes the Kaapi response.
+  """
+  @spec voice_flow_resume(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def voice_flow_resume(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        result
+      ) do
+    response = Webhook.parse_callback_response(result)
 
-    log_message =
-      %{
-        success: result["success"],
-        message: response["message"] || result["error"],
-        error_type: result["error_type"],
-        reason: result["reason"],
-        thread_id: response["thread_id"]
-      }
+    run_supervised(fn -> Webhook.voice_resume(organization_id, result, response) end)
 
-    if response["webhook_log_id"], do: Webhook.update_log(response["webhook_log_id"], log_message)
-
-    message =
-      case {result["success"], response["webhook_log_id"]} do
-        {true, nil} ->
-          Messages.create_temp_message(organization_id, "No Response")
-
-        {true, _} ->
-          Messages.create_temp_message(organization_id, "Success")
-
-        {false, _} ->
-          Messages.create_temp_message(organization_id, "Failure")
-
-        _ ->
-          # Sending nil so that it remains compatible with other webhook responses
-          # (besides Kaapi) and falls back to the default behavior.
-          nil
-      end
-
-    track_callback_outcome(result, response)
-
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }),
-         {:ok, _context, _messages} <-
-           FlowContext.resume_contact_flow(
-             contact,
-             response["flow_id"],
-             %{response_key => response},
-             message
-           ) do
-      :ok
-    else
-      false ->
-        Logger.warning(
-          "Flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
-        )
-
-      {:error, reason = [_, "Resource not found"]} ->
-        Logger.warning("Flow resume contact lookup failed: #{inspect(reason)}")
-
-      {:error, reason} ->
-        Logger.warning(
-          "Flow resume failed for contact #{response["contact_id"]}, flow #{response["flow_id"]}: #{reason}"
-        )
-    end
-
-    :ok
+    json(conn, "")
   end
 
   @spec run_supervised((-> any())) :: :ok
@@ -132,266 +76,5 @@ defmodule GlificWeb.Flows.FlowResumeController do
     end
 
     :ok
-  end
-
-  # Reports a Kaapi callback whose result is a failure to AppSignal, so failed
-  # callbacks get ops visibility. The "no callback at all" timeout case is
-  # reported separately by FlowContext.handle_nil_message; this reports the
-  # callbacks that did arrive but came back as a failure.
-  @spec maybe_report_callback_failure(map(), map()) :: :ok
-  defp maybe_report_callback_failure(%{"success" => success} = result, response)
-       when success != true do
-    reason =
-      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
-
-    %Webhook.SystemError{message: "Webhook callback failure"}
-    |> Webhook.report_to_appsignal(%{
-      organization_id: response["organization_id"],
-      webhook_name: response["webhook_name"],
-      flow_id: response["flow_id"],
-      contact_id: response["contact_id"],
-      webhook_log_id: response["webhook_log_id"],
-      error_type: result["error_type"],
-      reason: reason
-    })
-  end
-
-  defp maybe_report_callback_failure(_result, _response), do: :ok
-
-  @doc """
-  Callback for voice unified LLM calls.
-  Receives the Kaapi LLM response, performs NMT+TTS (translate + generate audio),
-  then resumes the flow with translated_text + media_url.
-  """
-  @spec voice_flow_resume(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def voice_flow_resume(
-        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
-        result
-      ) do
-    response = parse_callback_response(result)
-
-    run_supervised(fn ->
-      do_voice_flow_resume(organization_id, result, response)
-    end)
-
-    json(conn, "")
-  end
-
-  @spec do_voice_flow_resume(non_neg_integer(), map(), map()) :: :ok
-  defp do_voice_flow_resume(organization_id, result, response) do
-    Repo.put_process_state(organization_id)
-    organization = Partners.organization(organization_id)
-    response_key = response["result_name"] || "response"
-
-    message =
-      if result["success"],
-        do: Messages.create_temp_message(organization_id, "Success"),
-        else: Messages.create_temp_message(organization_id, "Failure")
-
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }) do
-      voice_response =
-        CommonWebhook.voice_post_process(organization_id, result["success"], response)
-
-      if response["webhook_log_id"],
-        do: Webhook.update_log(response["webhook_log_id"], voice_response)
-
-      track_callback_outcome(result, response)
-
-      case FlowContext.resume_contact_flow(
-             contact,
-             response["flow_id"],
-             %{response_key => voice_response},
-             message
-           ) do
-        {:ok, _context, _messages} ->
-          :ok
-
-        {:error, reason} ->
-          Logger.warning(
-            "Voice flow resume failed for contact #{contact.id}, flow #{response["flow_id"]}: #{reason}"
-          )
-      end
-    else
-      false ->
-        Logger.warning(
-          "Voice flow resume validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
-        )
-
-      {:error, reason} ->
-        Logger.warning("Voice flow resume contact lookup failed: #{inspect(reason)}")
-    end
-
-    :ok
-  end
-
-  # New format from unified-llm-call (/api/v1/llm/call):
-  # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
-  # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
-  # For TTS (output type "audio"), "message" holds the raw base64 and "output_type" is set
-  # so that maybe_upload_tts_audio/1 can upload it to GCS and replace "message" with the media URL.
-  @spec parse_callback_response(map()) :: map()
-  defp parse_callback_response(%{"metadata" => metadata, "data" => data})
-       when is_map(metadata) and map_size(metadata) > 0 do
-    response_data = get_in(data || %{}, ["response"]) || %{}
-    output = get_in(response_data, ["output"]) || %{}
-    output_type = get_in(output, ["type"])
-    conversation_id = response_data["conversation_id"]
-
-    metadata
-    |> Map.put("thread_id", conversation_id)
-    |> Map.put("output_type", output_type)
-    |> Map.put("message", get_in(output, ["content", "value"]))
-  end
-
-  # Old format from call_and_wait (/api/v1/responses):
-  defp parse_callback_response(%{"data" => data}) do
-    response = data || %{}
-    Map.put(response, "thread_id", response["response_id"])
-  end
-
-  # Fallback for unexpected formats
-  defp parse_callback_response(result) do
-    Logger.warning(
-      "Unexpected callback response format received from Kaapi or external service: #{inspect(result)}"
-    )
-
-    %{}
-  end
-
-  @spec maybe_upload_tts_audio(map()) :: map()
-  defp maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
-    {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
-    media_url = upload_tts_audio(base64_audio, organization_id)
-
-    response
-    |> Map.put("message", media_url)
-  end
-
-  defp maybe_upload_tts_audio(response), do: response
-
-  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) :: String.t() | nil
-  defp upload_tts_audio(nil, _organization_id), do: nil
-
-  defp upload_tts_audio(base64_audio, organization_id) do
-    uuid = Ecto.UUID.generate()
-    remote_name = "Kaapi/outbound/#{uuid}.mp3"
-    mp3_file = Path.join(System.tmp_dir!(), "#{uuid}.mp3")
-
-    with {:ok, decoded_audio} <- Base.decode64(base64_audio),
-         :ok <- File.write(mp3_file, decoded_audio),
-         {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
-      File.rm(mp3_file)
-      media_meta.url
-    else
-      error ->
-        File.rm(mp3_file)
-        Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
-        nil
-    end
-  end
-
-  @spec track_callback_outcome(map(), map()) :: :ok
-  defp track_callback_outcome(result, response) do
-    status = if result["success"], do: "success", else: "failure"
-    Webhook.track_webhook_count(response["webhook_name"], status)
-    track_kaapi_latency(response, status)
-    maybe_report_callback_failure(result, response)
-  end
-
-  # Records latency for an async webhook callback.
-  @spec track_kaapi_latency(map(), String.t()) :: :ok
-  defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
-       when is_integer(timestamp) do
-    now = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-    duration_ms = (now - timestamp) / 1_000
-
-    case response["call_type"] do
-      nil ->
-        :ok
-
-      call_type ->
-        Appsignal.add_distribution_value("kaapi_llm_latency", duration_ms, %{
-          call_type: call_type
-        })
-    end
-
-    Webhook.track_webhook_latency(response["webhook_name"], status, duration_ms)
-  end
-
-  defp track_kaapi_latency(_response, _status), do: :ok
-
-  @spec validate_request(non_neg_integer(), map()) :: boolean()
-  defp validate_request(_new_organization_id, fields) when map_size(fields) == 0,
-    do: false
-
-  defp validate_request(new_organization_id, fields) do
-    if missing_callback_fields?(fields),
-      do: false,
-      else: do_validate_request(new_organization_id, fields)
-  end
-
-  @spec missing_callback_fields?(map()) :: boolean()
-  defp missing_callback_fields?(fields) do
-    Enum.any?(
-      ["organization_id", "flow_id", "contact_id", "timestamp", "signature"],
-      &is_nil(Map.get(fields, &1))
-    )
-  end
-
-  @spec do_validate_request(non_neg_integer(), map()) :: boolean()
-  defp do_validate_request(new_organization_id, fields) do
-    do_validate_signature(
-      new_organization_id,
-      fields["flow_id"],
-      fields["contact_id"],
-      fields["organization_id"],
-      fields["timestamp"],
-      fields["signature"]
-    )
-  end
-
-  @spec do_validate_signature(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          integer(),
-          String.t()
-        ) :: boolean()
-  defp do_validate_signature(
-         new_organization_id,
-         flow_id,
-         contact_id,
-         organization_id,
-         timestamp,
-         signature
-       ) do
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    new_signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        timestamp
-      )
-
-    new_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    cond do
-      new_organization_id != organization_id -> false
-      new_signature != signature -> false
-      new_timestamp > timestamp + 15 * 60 * 1_000_000 -> false
-      true -> true
-    end
   end
 end
