@@ -80,15 +80,19 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec download_flow_media(non_neg_integer(), String.t() | non_neg_integer()) ::
           {:ok, binary()} | {:error, String.t()}
   def download_flow_media(org_id, media_id) do
-    url = app_url!(org_id) <> @flow_media_path <> to_string(media_id)
+    # Use the non-bang app_url/1 so a missing/misconfigured app id returns
+    # {:error, ...} instead of raising — keeps this function's contract a pure
+    # tagged tuple (the caller treats it as a soft failure).
+    with {:ok, base_url} <- app_url(org_id) do
+      (base_url <> @flow_media_path <> to_string(media_id))
+      |> get(headers: headers(:app_token, org_id: org_id))
+      |> case do
+        {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+          {:ok, body}
 
-    get(url, headers: headers(:app_token, org_id: org_id))
-    |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, body}
-
-      err ->
-        {:error, "flow media download failed for id #{media_id}: #{SafeLog.safe_inspect(err)}"}
+        err ->
+          {:error, "flow media download failed for id #{media_id}: #{SafeLog.safe_inspect(err)}"}
+      end
     end
   end
 

@@ -124,21 +124,25 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   # Downloads uploaded form media to GCS, persists the rewritten response (with
   # gcs_url) back to the DB row, and returns the payload with the updated response
   # so the Google Sheet receives the public URL.
+  #
+  # Sources the raw_response from the persisted row (not the immutable Oban
+  # payload): on a retry the row already carries gcs_url, so save_response_media
+  # short-circuits and we never re-download / re-upload the same asset.
   @spec persist_response_media(map(), non_neg_integer()) :: map()
   defp persist_response_media(payload, organization_id) do
-    updated_response =
-      payload
-      |> Map.get("raw_response", %{})
-      |> WhatsappFormsResponses.save_response_media(organization_id)
-
     with id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
          %WhatsappFormResponse{} = response <- Repo.get(WhatsappFormResponse, id) do
+      updated_response =
+        WhatsappFormsResponses.save_response_media(response.raw_response, organization_id)
+
       response
       |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
       |> Repo.update()
-    end
 
-    Map.put(payload, "raw_response", updated_response)
+      Map.put(payload, "raw_response", updated_response)
+    else
+      _ -> payload
+    end
   end
 
   @spec send_notification(non_neg_integer(), String.t(), String.t()) ::

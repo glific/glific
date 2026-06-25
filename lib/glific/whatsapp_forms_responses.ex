@@ -152,8 +152,17 @@ defmodule Glific.WhatsappFormsResponses do
   defp media_list?(_), do: false
 
   @spec save_one_media(map(), non_neg_integer()) :: map()
+  # Already uploaded (e.g. on an Oban retry sourced from the persisted row) — skip
+  # the re-download/re-upload so the gcs_url stays stable and we don't burn the
+  # Gupshup media rate limit.
+  defp save_one_media(%{"gcs_url" => gcs_url} = media, _organization_id)
+       when is_binary(gcs_url),
+       do: media
+
   defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
-    remote = "whatsapp_forms/#{Date.utc_today()}/#{Ecto.UUID.generate()}-#{file_name}"
+    # Deterministic key (media id) so a retried upload overwrites the same object
+    # instead of orphaning the first one under a fresh UUID.
+    remote = "whatsapp_forms/#{organization_id}/#{id}-#{file_name}"
     local = Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
 
     with {:ok, bytes} <- PartnerAPI.download_flow_media(organization_id, id),
@@ -201,16 +210,17 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  # Builds %{field => "gcs_url1, gcs_url2"} for media fields that actually got a
-  # gcs_url. Fields with no successful upload are omitted (flow keeps old value).
+  # Builds %{field => "gcs_url1, gcs_url2"} only for media fields where EVERY item
+  # uploaded successfully. A partial failure omits the field entirely, so the flow
+  # keeps its original value rather than a mixed "url, {json}" string.
   @spec media_field_values(map()) :: map()
   defp media_field_values(raw_response) when is_map(raw_response) do
     raw_response
     |> Enum.filter(fn {_key, value} ->
-      media_list?(value) and Enum.any?(value, &Map.has_key?(&1, "gcs_url"))
+      media_list?(value) and Enum.all?(value, &Map.has_key?(&1, "gcs_url"))
     end)
     |> Map.new(fn {key, value} ->
-      {key, Enum.map_join(value, ", ", fn item -> item["gcs_url"] || Jason.encode!(item) end)}
+      {key, Enum.map_join(value, ", ", & &1["gcs_url"])}
     end)
   end
 

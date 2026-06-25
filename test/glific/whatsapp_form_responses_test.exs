@@ -437,6 +437,38 @@ defmodule Glific.WhatsappFormResponsesTest do
       assert WhatsappFormsResponses.save_response_media("not-a-map", organization_id) ==
                "not-a-map"
     end
+
+    test "skips re-download/re-upload for media that already has a gcs_url (retry-safe)",
+         %{organization_id: organization_id} do
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/NEW.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        already_saved = %{
+          "photos" => [
+            %{
+              "id" => 1,
+              "mime_type" => "image/jpeg",
+              "gcs_url" => "https://gcs.test/existing.jpg"
+            }
+          ]
+        }
+
+        result = WhatsappFormsResponses.save_response_media(already_saved, organization_id)
+
+        # gcs_url is preserved (not overwritten with the "NEW" url) ...
+        assert [%{"gcs_url" => "https://gcs.test/existing.jpg"}] = result["photos"]
+        # ... because the download/upload were never invoked
+        refute called(PartnerAPI.download_flow_media(:_, :_))
+        refute called(GcsWorker.upload_media(:_, :_, :_))
+      end
+    end
   end
 
   defp form_response_for(contact_id, whatsapp_form, organization_id) do
@@ -539,6 +571,33 @@ defmodule Glific.WhatsappFormResponsesTest do
 
       updated_context = Repo.get(FlowContext, flow_context.id)
       assert updated_context.results == %{"other" => %{"some_field" => "value"}}
+    end
+
+    test "leaves the result untouched when only some media uploads succeeded (partial failure)",
+         %{whatsapp_form: whatsapp_form, organization_id: organization_id} do
+      flow_context =
+        Fixtures.flow_context_fixture(%{
+          results: %{"orientation" => %{"photos" => "{\"id\":1}"}}
+        })
+
+      response = form_response_for(flow_context.contact_id, whatsapp_form, organization_id)
+
+      payload = %{
+        "whatsapp_form_response_id" => response.id,
+        "raw_response" => %{
+          "photos" => [
+            %{"id" => 1, "mime_type" => "image/jpeg", "gcs_url" => "https://gcs.test/a.jpg"},
+            # second photo failed to upload — no gcs_url
+            %{"id" => 2, "mime_type" => "image/jpeg"}
+          ]
+        }
+      }
+
+      assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
+      # all-or-nothing: photos is left as the original value, not a mixed "url, {json}"
+      updated_context = Repo.get(FlowContext, flow_context.id)
+      assert updated_context.results["orientation"]["photos"] == "{\"id\":1}"
     end
   end
 
