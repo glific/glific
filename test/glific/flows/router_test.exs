@@ -451,6 +451,77 @@ defmodule Glific.Flows.RouterTest do
     assert updated_context.results["form_result"]["single_choice"] == "Option_1"
   end
 
+  # Regression test for AppSignal incident #22:
+  # whatsapp_form_response list values that contain maps (e.g. media payloads with
+  # file_name/id/mime_type/sha256) previously crashed with Protocol.UndefinedError
+  # because Enum.join/2 cannot call String.Chars.to_string/1 on a Map.
+  test "router with whatsapp_form_response does not crash when list values contain maps" do
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "operand" => "@input.text",
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "form_result",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => []
+    }
+
+    {router, uuid_map} = Router.process(json, uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    # A WhatsApp form response where one field is a list of media maps
+    # (reproduces the Protocol.UndefinedError from incident #22)
+    media_map = %{
+      "file_name" => "4D569F7B-photo.jpg",
+      "id" => 864_939_859_557_108,
+      "mime_type" => "image/jpeg",
+      "sha256" => "abc123"
+    }
+
+    raw_response = %{
+      "flow_token" => "unused",
+      "media_field" => [media_map],
+      "text_field" => "some text"
+    }
+
+    message =
+      Messages.create_temp_message(
+        Fixtures.get_org_id(),
+        "form submitted",
+        type: :whatsapp_form_response,
+        whatsapp_form_response: %{raw_response: raw_response}
+      )
+
+    # This must not raise Protocol.UndefinedError
+    {:ok, _, _} = Router.execute(router, context, [message])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+
+    # The map element should be JSON-encoded and then joined into the string
+    media_json = Jason.encode!(media_map)
+    assert updated_context.results["form_result"]["media_field"] == media_json
+    # Non-list values are untouched
+    assert updated_context.results["form_result"]["text_field"] == "some text"
+  end
+
   test "router with split by groups" do
     flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()

@@ -391,7 +391,7 @@ defmodule Glific.Flows.Router do
           json =
             msg.whatsapp_form_response.raw_response
             |> Map.new(fn
-              {k, v} when is_list(v) -> {k, Enum.join(v, ", ")}
+              {k, v} when is_list(v) -> {k, v |> Enum.map(&stringify_value/1) |> Enum.join(", ")}
               {k, v} -> {k, v}
             end)
 
@@ -418,6 +418,13 @@ defmodule Glific.Flows.Router do
 
     FlowContext.update_results(context, results)
   end
+
+  # Coerce a value to a string for list-join operations.
+  # Maps are JSON-encoded to preserve their structure; everything else
+  # uses the standard String.Chars protocol.
+  @spec stringify_value(term()) :: String.t()
+  defp stringify_value(v) when is_map(v), do: Jason.encode!(v)
+  defp stringify_value(v), do: to_string(v)
 
   ## Format operand and replace @fields. to @contact.fields. so that system can parse it automatically.
   ## for other router operand we are handling everything in a same way.
