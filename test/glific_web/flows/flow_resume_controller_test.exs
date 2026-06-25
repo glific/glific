@@ -782,6 +782,25 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert result["tts_upload_error"] =~ "not valid base64"
     end
 
+    test "maybe_upload_tts_audio surfaces the real GcsWorker error (not a hardcoded GCS message)" do
+      gcs_error = "GCSWORKER: Error while uploading file to GCS (billing accountDisabled)"
+
+      response = %{
+        "output_type" => "audio",
+        "message" => Base.encode64("fake audio bytes"),
+        "organization_id" => "1"
+      }
+
+      with_mock Glific.GCS.GcsWorker, [:passthrough],
+        upload_media: fn _local, _remote, _org -> {:error, gcs_error} end do
+        result = Webhook.maybe_upload_tts_audio(response)
+
+        assert is_nil(result["message"])
+        # the actual GcsWorker reason is passed through, not assumed "GCS not enabled"
+        assert result["tts_upload_error"] == gcs_error
+      end
+    end
+
     test "resume records a failure on the webhook log when TTS audio upload failed", %{
       conn: %{assigns: %{organization_id: organization_id}} = _conn
     } do
