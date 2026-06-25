@@ -570,13 +570,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
-    log_message = %{
-      success: result["success"],
-      message: response["message"] || result["error"],
-      error_type: result["error_type"],
-      reason: result["reason"],
-      thread_id: response["thread_id"]
-    }
+    log_message = tts_aware_log_message(result, response)
 
     maybe_update_log(response["webhook_log_id"], log_message)
 
@@ -623,6 +617,13 @@ defmodule Glific.Flows.Webhook do
   # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
   # webhook responses (falls back to the default behavior).
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
+  # A failed TTS audio upload routes the flow to Failure even though Kaapi itself
+  # reported success — there's no usable audio to continue the Success branch with.
+  defp resume_message(_result, %{"tts_upload_error" => reason}, organization_id)
+       when is_binary(reason) do
+    Messages.create_temp_message(organization_id, "Failure")
+  end
+
   defp resume_message(result, response, organization_id) do
     case {result["success"], response["webhook_log_id"]} do
       {true, nil} -> Messages.create_temp_message(organization_id, "No Response")
@@ -672,6 +673,31 @@ defmodule Glific.Flows.Webhook do
     %{}
   end
 
+  # When the TTS audio upload failed (e.g. GCS not enabled), record the failure on the
+  # WebhookLog (success: false + reason) so it is visible to the user, instead of a silent
+  # success with a nil message. Otherwise build the normal log entry.
+  @spec tts_aware_log_message(map(), map()) :: map()
+  defp tts_aware_log_message(_result, %{"tts_upload_error" => reason} = response)
+       when is_binary(reason) do
+    %{
+      success: false,
+      message: nil,
+      error_type: "tts_upload_failed",
+      reason: reason,
+      thread_id: response["thread_id"]
+    }
+  end
+
+  defp tts_aware_log_message(result, response) do
+    %{
+      success: result["success"],
+      message: response["message"] || result["error"],
+      error_type: result["error_type"],
+      reason: result["reason"],
+      thread_id: response["thread_id"]
+    }
+  end
+
   @doc """
   Upload base64 TTS audio (when present) to GCS, replacing the inline payload
   with the media URL. Called from the request process so large binaries are not
@@ -680,16 +706,25 @@ defmodule Glific.Flows.Webhook do
   @spec maybe_upload_tts_audio(map()) :: map()
   def maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
     {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
-    media_url = upload_tts_audio(base64_audio, organization_id)
 
-    response
-    |> Map.put("message", media_url)
+    case upload_tts_audio(base64_audio, organization_id) do
+      {:ok, media_url} ->
+        Map.put(response, "message", media_url)
+
+      {:error, reason} ->
+        # Surface the failure (see tts_aware_log_message/2) rather than silently
+        # resuming with success=true and a nil message.
+        response
+        |> Map.put("message", nil)
+        |> Map.put("tts_upload_error", reason)
+    end
   end
 
   def maybe_upload_tts_audio(response), do: response
 
-  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) :: String.t() | nil
-  defp upload_tts_audio(nil, _organization_id), do: nil
+  @spec upload_tts_audio(String.t() | nil, non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp upload_tts_audio(nil, _organization_id), do: {:error, "No TTS audio content received"}
 
   defp upload_tts_audio(base64_audio, organization_id) do
     uuid = Ecto.UUID.generate()
@@ -700,12 +735,20 @@ defmodule Glific.Flows.Webhook do
          :ok <- File.write(mp3_file, decoded_audio),
          {:ok, media_meta} <- GcsWorker.upload_media(mp3_file, remote_name, organization_id) do
       File.rm(mp3_file)
-      media_meta.url
+      {:ok, media_meta.url}
     else
-      error ->
+      # Surface the ACTUAL failure rather than assuming "GCS not enabled":
+      # Base.decode64 returns :error; GcsWorker.upload_media returns {:error, reason}
+      # where reason already describes the real cause (auth, accountDisabled, etc.,
+      # from handle_gcs_error/2).
+      :error ->
         File.rm(mp3_file)
-        Logger.error("Kaapi TTS upload failed: #{inspect(error)}")
-        nil
+        {:error, "TTS audio is not valid base64"}
+
+      {:error, reason} ->
+        File.rm(mp3_file)
+        message = if is_binary(reason), do: reason, else: inspect(reason)
+        {:error, message}
     end
   end
 
