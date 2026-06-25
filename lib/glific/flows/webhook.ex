@@ -617,6 +617,13 @@ defmodule Glific.Flows.Webhook do
   # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
   # webhook responses (falls back to the default behavior).
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
+  # A failed TTS audio upload routes the flow to Failure even though Kaapi itself
+  # reported success — there's no usable audio to continue the Success branch with.
+  defp resume_message(_result, %{"tts_upload_error" => reason}, organization_id)
+       when is_binary(reason) do
+    Messages.create_temp_message(organization_id, "Failure")
+  end
+
   defp resume_message(result, response, organization_id) do
     case {result["success"], response["webhook_log_id"]} do
       {true, nil} -> Messages.create_temp_message(organization_id, "No Response")

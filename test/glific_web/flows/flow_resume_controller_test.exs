@@ -833,9 +833,16 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       with_mock FlowContext, [:passthrough],
-        resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
+        resume_contact_flow: fn _contact, _flow_id, _results, message ->
+          send(self(), {:resume_message, message})
+          {:ok, nil, []}
+        end do
         assert :ok = Webhook.resume(organization_id, %{"success" => true}, response)
       end
+
+      # Even though Kaapi reported success, a failed audio upload routes the flow
+      # to the Failure branch (not Success with an empty message).
+      assert_received {:resume_message, %{body: "Failure"}}
 
       updated_log = Repo.get!(WebhookLog, webhook_log.id)
       assert updated_log.status_code == 400
