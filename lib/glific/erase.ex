@@ -530,8 +530,12 @@ defmodule Glific.Erase do
   Every org-scoped table is deleted explicitly, one at a time, in topological
   foreign-key order (child tables before parents — see `org_data_deletion_order/0`),
   so no FK constraint is violated and no superuser-only trigger toggling is needed.
-  The deletes run inside a single transaction, so any failure rolls the whole thing
-  back and the organization is never left half-deleted.
+
+  The deletes are intentionally NOT wrapped in a single transaction: deleting a large
+  org would otherwise hold locks on many tables for a long time. Each per-table DELETE
+  is idempotent and ordered, so a failed run can simply be retried and will delete
+  whatever rows remain. A few tables are deliberately preserved — see
+  `org_data_preserved_tables/0`.
 
   The organization row itself is preserved (soft-deleted via `delete_organization/1`);
   this only erases its data. Refuses to run if the org has not been soft-deleted.
@@ -544,14 +548,8 @@ defmodule Glific.Erase do
     organization_id = Glific.parse_maybe_integer!(organization_id)
     Logger.info("Deleting all data for organization_id: #{organization_id}")
 
-    # The guard is a read, so it runs outside the transaction. The mutations run
-    # inside it: any raised DB error aborts the function and Ecto rolls the whole
-    # transaction back automatically — no explicit `Repo.rollback/1` needed.
-    with :ok <- ensure_soft_deleted(organization_id),
-         {:ok, _result} <-
-           Repo.transaction(fn -> delete_org_data_in_order(organization_id) end,
-             timeout: 900_000
-           ) do
+    with :ok <- ensure_soft_deleted(organization_id) do
+      delete_org_data_in_order(organization_id)
       Logger.info("Completed full data deletion for organization_id: #{organization_id}")
       :ok
     end
@@ -592,7 +590,8 @@ defmodule Glific.Erase do
   `assistants` <-> `assistant_config_versions`) are broken by `break_fk_cycles/1`.
 
   This list is maintained by hand: when a new table with an `organization_id`
-  column is added, append it here to avoid drift against the live schema.
+  column is added, append it here — or to `org_data_preserved_tables/0` if its rows
+  should survive org deletion — to avoid drift against the live schema.
   """
   @spec org_data_deletion_order() :: [String.t()]
   def org_data_deletion_order do
@@ -603,7 +602,6 @@ defmodule Glific.Erase do
       assistant_config_versions
       assistants
       bigquery_jobs
-      billings
       certificate_templates
       consulting_hours
       contact_histories
@@ -626,7 +624,6 @@ defmodule Glific.Erase do
       groups
       intents
       interactive_templates
-      invoices
       issued_certificates
       knowledge_base_versions
       knowledge_bases
@@ -653,11 +650,9 @@ defmodule Glific.Erase do
       session_templates
       sheets
       sheets_data
-      stats
       tags
       templates_tags
       tickets
-      trackers
       translate_logs
       trigger_logs
       trigger_roles
@@ -683,19 +678,52 @@ defmodule Glific.Erase do
     )
   end
 
+  @doc """
+  Org-scoped tables whose rows are deliberately KEPT when an organization is deleted.
+
+  These are preserved on purpose, not by omission:
+
+    * `stats`, `trackers` — analytics we retain past the org's lifetime.
+    * `invoices`, `billings` — financial records kept for billing/audit history.
+
+  All of them reference only `organizations` (which is itself preserved, soft-deleted),
+  so keeping them is FK-safe. Together with `org_data_deletion_order/0` this must cover
+  exactly every org-scoped table (the drift test in erase_test.exs enforces that).
+  """
+  @spec org_data_preserved_tables() :: [String.t()]
+  def org_data_preserved_tables do
+    ~w(
+      billings
+      invoices
+      stats
+      trackers
+    )
+  end
+
   @spec delete_org_data_in_order(non_neg_integer) :: :ok
   defp delete_org_data_in_order(organization_id) do
     break_fk_cycles(organization_id)
 
     Enum.each(org_data_deletion_order(), fn table ->
+      start_time = System.monotonic_time(:millisecond)
+
       %{num_rows: rows_deleted} =
         Repo.query!("DELETE FROM #{table} WHERE organization_id = $1", [organization_id],
           timeout: 300_000,
           skip_organization_id: true
         )
 
+      duration_ms = System.monotonic_time(:millisecond) - start_time
+
+      Appsignal.add_distribution_value("org_data_delete_table_duration_ms", duration_ms, %{
+        org_id: organization_id,
+        table: table
+      })
+
       if rows_deleted > 0 do
-        Logger.info("Deleted #{rows_deleted} rows from #{table} for org #{organization_id}")
+        Logger.info(
+          "Deleted #{rows_deleted} rows from #{table} for org #{organization_id} in #{duration_ms}ms"
+        )
       end
     end)
 

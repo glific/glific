@@ -580,10 +580,10 @@ defmodule Glific.EraseTest do
     end)
   end
 
-  test "delete_all_organization_data deletion order covers every org-scoped table" do
-    # Guards against schema drift: if a new table with an organization_id column is
-    # added without being appended to Erase.org_data_deletion_order/0, full org
-    # deletion would silently leave its rows behind.
+  test "deletion order + preserved tables cover every org-scoped table exactly once" do
+    # Guards against schema drift: every org-scoped table must be either deleted
+    # (org_data_deletion_order/0) or deliberately preserved (org_data_preserved_tables/0).
+    # A new table missing from both would silently leave its rows behind on org deletion.
     %{rows: rows} =
       Repo.query!(
         """
@@ -598,13 +598,18 @@ defmodule Glific.EraseTest do
       )
 
     schema_tables = MapSet.new(rows, fn [table] -> table end)
-    listed_tables = MapSet.new(Erase.org_data_deletion_order())
+    deleted_tables = MapSet.new(Erase.org_data_deletion_order())
+    preserved_tables = MapSet.new(Erase.org_data_preserved_tables())
+    accounted_tables = MapSet.union(deleted_tables, preserved_tables)
 
-    assert [] == MapSet.difference(schema_tables, listed_tables) |> Enum.sort(),
-           "org-scoped tables missing from Erase.org_data_deletion_order/0"
+    assert [] == MapSet.difference(schema_tables, accounted_tables) |> Enum.sort(),
+           "org-scoped tables missing from both Erase.org_data_deletion_order/0 and org_data_preserved_tables/0"
 
-    assert [] == MapSet.difference(listed_tables, schema_tables) |> Enum.sort(),
-           "Erase.org_data_deletion_order/0 lists tables that no longer exist"
+    assert [] == MapSet.difference(accounted_tables, schema_tables) |> Enum.sort(),
+           "Erase deletion/preserved lists reference tables that no longer exist"
+
+    assert [] == MapSet.intersection(deleted_tables, preserved_tables) |> Enum.sort(),
+           "a table appears in both Erase.org_data_deletion_order/0 and org_data_preserved_tables/0"
   end
 
   test "delete_all_organization_data deletes whatsapp_form_revisions that reference a user",
