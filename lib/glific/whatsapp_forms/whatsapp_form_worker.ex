@@ -128,6 +128,9 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
   # Sources the raw_response from the persisted row (not the immutable Oban
   # payload): on a retry the row already carries gcs_url, so save_response_media
   # short-circuits and we never re-download / re-upload the same asset.
+  #
+  # Threads contact_id (already loaded here) into the payload so the downstream
+  # inject_media_into_flow_results/1 doesn't have to re-fetch the response row.
   @spec persist_response_media(map(), non_neg_integer()) :: map()
   defp persist_response_media(payload, organization_id) do
     with id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
@@ -139,7 +142,9 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
       |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
       |> Repo.update()
 
-      Map.put(payload, "raw_response", updated_response)
+      payload
+      |> Map.put("raw_response", updated_response)
+      |> Map.put("contact_id", response.contact_id)
     else
       _ -> payload
     end

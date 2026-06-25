@@ -14,7 +14,6 @@ defmodule Glific.WhatsappFormResponsesTest do
     Seeds.SeedsDev,
     Templates,
     WhatsappForms.WhatsappForm,
-    WhatsappForms.WhatsappFormResponse,
     WhatsappForms.WhatsappFormWorker,
     WhatsappFormsResponses
   }
@@ -402,6 +401,16 @@ defmodule Glific.WhatsappFormResponsesTest do
       end
     end
 
+    test "does not classify a list as media when items lack file_name",
+         %{organization_id: organization_id} do
+      # media_list?/1 requires id + mime_type + file_name; without file_name the
+      # list is not treated as media, so it is left untouched (no download attempt).
+      raw_response = %{"photos" => [%{"id" => 999, "mime_type" => "image/jpeg"}]}
+
+      assert WhatsappFormsResponses.save_response_media(raw_response, organization_id) ==
+               raw_response
+    end
+
     test "leaves the media unchanged (no gcs_url) when the download fails",
          %{organization_id: organization_id} do
       with_mocks([
@@ -454,6 +463,7 @@ defmodule Glific.WhatsappFormResponsesTest do
           "photos" => [
             %{
               "id" => 1,
+              "file_name" => "existing.jpg",
               "mime_type" => "image/jpeg",
               "gcs_url" => "https://gcs.test/existing.jpg"
             }
@@ -471,31 +481,15 @@ defmodule Glific.WhatsappFormResponsesTest do
     end
   end
 
-  defp form_response_for(contact_id, whatsapp_form, organization_id) do
-    {:ok, response} =
-      %WhatsappFormResponse{}
-      |> WhatsappFormResponse.changeset(%{
-        raw_response: %{},
-        contact_id: contact_id,
-        whatsapp_form_id: whatsapp_form.id,
-        organization_id: organization_id,
-        submitted_at: DateTime.utc_now()
-      })
-      |> Repo.insert()
-
-    response
-  end
-
   describe "inject_media_into_flow_results/1" do
-    setup %{organization_id: organization_id} do
-      whatsapp_form =
-        Repo.get_by(WhatsappForm, %{meta_flow_id: "flow-8f91de44-b123-482e-bb52-77f1c3a78df0"})
+    @uploaded_photo %{
+      "id" => 1,
+      "file_name" => "x.jpg",
+      "mime_type" => "image/jpeg",
+      "gcs_url" => "https://gcs.test/x.jpg"
+    }
 
-      %{whatsapp_form: whatsapp_form, organization_id: organization_id}
-    end
-
-    test "injects the gcs_url into the contact's active flow result variable",
-         %{whatsapp_form: whatsapp_form, organization_id: organization_id} do
+    test "injects the gcs_url into the contact's active flow result variable" do
       flow_context =
         Fixtures.flow_context_fixture(%{
           results: %{
@@ -503,15 +497,10 @@ defmodule Glific.WhatsappFormResponsesTest do
           }
         })
 
-      response = form_response_for(flow_context.contact_id, whatsapp_form, organization_id)
-
+      # contact_id is threaded in by the worker; the helper does not re-fetch the row
       payload = %{
-        "whatsapp_form_response_id" => response.id,
-        "raw_response" => %{
-          "photos" => [
-            %{"id" => 1, "mime_type" => "image/jpeg", "gcs_url" => "https://gcs.test/x.jpg"}
-          ]
-        }
+        "contact_id" => flow_context.contact_id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
       }
 
       assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
@@ -523,18 +512,12 @@ defmodule Glific.WhatsappFormResponsesTest do
       assert updated_context.results["orientation"]["students_attended"] == "115"
     end
 
-    test "is a no-op (returns :ok) when the contact has no active flow context",
-         %{whatsapp_form: whatsapp_form, organization_id: organization_id} do
+    test "is a no-op (returns :ok) when the contact has no active flow context" do
       contact = Fixtures.contact_fixture()
-      response = form_response_for(contact.id, whatsapp_form, organization_id)
 
       payload = %{
-        "whatsapp_form_response_id" => response.id,
-        "raw_response" => %{
-          "photos" => [
-            %{"id" => 1, "mime_type" => "image/jpeg", "gcs_url" => "https://gcs.test/x.jpg"}
-          ]
-        }
+        "contact_id" => contact.id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
       }
 
       assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
@@ -542,29 +525,22 @@ defmodule Glific.WhatsappFormResponsesTest do
 
     test "is a no-op when the response has no media field" do
       payload = %{
-        "whatsapp_form_response_id" => 0,
+        "contact_id" => 0,
         "raw_response" => %{"students_attended" => "115"}
       }
 
       assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
     end
 
-    test "does not touch result entries that have no media field",
-         %{whatsapp_form: whatsapp_form, organization_id: organization_id} do
+    test "does not touch result entries that have no media field" do
       flow_context =
         Fixtures.flow_context_fixture(%{
           results: %{"other" => %{"some_field" => "value"}}
         })
 
-      response = form_response_for(flow_context.contact_id, whatsapp_form, organization_id)
-
       payload = %{
-        "whatsapp_form_response_id" => response.id,
-        "raw_response" => %{
-          "photos" => [
-            %{"id" => 1, "mime_type" => "image/jpeg", "gcs_url" => "https://gcs.test/x.jpg"}
-          ]
-        }
+        "contact_id" => flow_context.contact_id,
+        "raw_response" => %{"photos" => [@uploaded_photo]}
       }
 
       assert :ok = WhatsappFormsResponses.inject_media_into_flow_results(payload)
@@ -573,22 +549,24 @@ defmodule Glific.WhatsappFormResponsesTest do
       assert updated_context.results == %{"other" => %{"some_field" => "value"}}
     end
 
-    test "leaves the result untouched when only some media uploads succeeded (partial failure)",
-         %{whatsapp_form: whatsapp_form, organization_id: organization_id} do
+    test "leaves the result untouched when only some media uploads succeeded (partial failure)" do
       flow_context =
         Fixtures.flow_context_fixture(%{
           results: %{"orientation" => %{"photos" => "{\"id\":1}"}}
         })
 
-      response = form_response_for(flow_context.contact_id, whatsapp_form, organization_id)
-
       payload = %{
-        "whatsapp_form_response_id" => response.id,
+        "contact_id" => flow_context.contact_id,
         "raw_response" => %{
           "photos" => [
-            %{"id" => 1, "mime_type" => "image/jpeg", "gcs_url" => "https://gcs.test/a.jpg"},
+            %{
+              "id" => 1,
+              "file_name" => "a.jpg",
+              "mime_type" => "image/jpeg",
+              "gcs_url" => "https://gcs.test/a.jpg"
+            },
             # second photo failed to upload — no gcs_url
-            %{"id" => 2, "mime_type" => "image/jpeg"}
+            %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
           ]
         }
       }

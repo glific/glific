@@ -147,8 +147,11 @@ defmodule Glific.WhatsappFormsResponses do
 
   def save_response_media(raw_response, _organization_id), do: raw_response
 
+  # A media list is a list whose items carry the WhatsApp media fields we need to
+  # download them. Keep this aligned with save_one_media/2's download clause so a
+  # classified item is never silently skipped.
   @spec media_list?(list()) :: boolean()
-  defp media_list?([%{"id" => _, "mime_type" => _} | _]), do: true
+  defp media_list?([%{"id" => _, "mime_type" => _, "file_name" => _} | _]), do: true
   defp media_list?(_), do: false
 
   @spec save_one_media(map(), non_neg_integer()) :: map()
@@ -159,6 +162,8 @@ defmodule Glific.WhatsappFormsResponses do
        when is_binary(gcs_url),
        do: media
 
+  # Requires id + file_name — the same fields media_list?/1 classifies on, so every
+  # item treated as media here is actually downloadable (no silent skip).
   defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
     # Deterministic key (media id) so a retried upload overwrites the same object
     # instead of orphaning the first one under a fresh UUID.
@@ -171,6 +176,10 @@ defmodule Glific.WhatsappFormsResponses do
       Map.put(media, "gcs_url", gcs_url)
     else
       error ->
+        # upload_media/3 only removes the temp file on success, so clean it up here
+        # for the download/write-ok-but-upload-failed path (no-op if it never existed).
+        File.rm(local)
+
         Logger.error(
           "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
         )
@@ -195,9 +204,10 @@ defmodule Glific.WhatsappFormsResponses do
   def inject_media_into_flow_results(payload) do
     media_values = media_field_values(Map.get(payload, "raw_response", %{}))
 
+    # contact_id is threaded in by the worker's persist_response_media/2 (which
+    # already loaded the response row) so we don't re-fetch it here.
     with false <- media_values == %{},
-         id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
-         %WhatsappFormResponse{contact_id: contact_id} <- Repo.get(WhatsappFormResponse, id) do
+         contact_id when not is_nil(contact_id) <- Map.get(payload, "contact_id") do
       FlowContext
       |> where([fc], fc.contact_id == ^contact_id and is_nil(fc.completed_at))
       |> Repo.all()
