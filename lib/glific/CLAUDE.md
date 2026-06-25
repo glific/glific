@@ -99,6 +99,10 @@ end
   `Glific.log_error/2`. **Never call `Appsignal.send_error`/`Appsignal.error` directly** — the
   wrappers centralize Logger + AppSignal and suppress known-benign beneficiary errors
   (`ignore_error?/1`).
+- **Don't double-log.** `Glific.log_exception`/`Glific.log_error` already write to Logger *and*
+  AppSignal, so do **not** add a separate `Logger.warning/error` next to them for the same event —
+  it's redundant. Put any extra context into the AppSignal tags instead. A standalone `Logger`
+  call is only for events you are *not* also reporting to AppSignal.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
 
 ## Caching (Cachex, bucket `:glific_cache`)
