@@ -1211,7 +1211,8 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{contact: contact, fields: bhasini_stt_fields(contact.id)}
     end
 
-    test "emits SystemError with http_status tag on Gemini 4xx response", %{fields: fields} do
+    test "emits SystemError with http_status + flow_id/contact_id tags on Gemini 4xx response",
+         %{fields: fields, contact: contact} do
       Tesla.Mock.mock(fn
         %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
         %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
@@ -1232,6 +1233,9 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert tags.organization_id == 1
       assert tags.http_status == 401
       assert is_nil(tags.reason)
+      # flow_id/contact_id make the failure traceable back to a specific flow.
+      assert tags.flow_id == 42
+      assert tags.contact_id == contact.id
     end
 
     test "emits SystemError with reason tag when audio download fails", %{fields: fields} do
@@ -1418,6 +1422,10 @@ defmodule Glific.Flows.CommonWebhookTest do
     %{
       "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
       "organization_id" => 1,
+      # flow_id/contact_id are merged into a function webhook's fields by
+      # Glific.Flows.Webhook.perform/1 so failure reports can be traced to a flow.
+      "flow_id" => 42,
+      "contact_id" => contact_id,
       "contact" => %{"id" => to_string(contact_id)}
     }
   end
