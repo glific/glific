@@ -258,6 +258,109 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert log != nil
       assert log.error != nil
     end
+
+    # Stage 1 (STT) failure: Bhasini/Gemini speech-to-text fails (audio download 404),
+    # so VoiceFilesearchGpt.call returns %{success: false} WITHOUT making the Kaapi LLM
+    # call, and the flow wakes on the Failure branch.
+    test "STT failure - speech-to-text fails, no LLM call, flow records the error", %{
+      conn: %{assigns: %{organization_id: org_id}} = _conn
+    } do
+      _assistant = create_assistant(org_id)
+      contact = Fixtures.contact_fixture(%{organization_id: org_id})
+
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      flow_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: org_id,
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = build_action(contact.id)
+
+      # Audio download fails -> STT returns a failure -> no /api/v1/llm/call is made
+      # (no POST clause needed; a POST would raise Tesla.Mock and fail the test).
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      assert log != nil
+      assert log.error != nil
+    end
+
+    # Stage 2 (Kaapi LLM) failure (non-timeout): STT succeeds but the unified LLM call
+    # returns an API error (500); VoiceFilesearchGpt.call returns %{success: false} and
+    # the flow records the error.
+    test "Kaapi LLM API error - STT succeeds but LLM call returns 500, flow records the error",
+         %{conn: %{assigns: %{organization_id: org_id}} = _conn} do
+      _assistant = create_assistant(org_id)
+      contact = Fixtures.contact_fixture(%{organization_id: org_id})
+
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      flow_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: org_id,
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = build_action(contact.id)
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: url} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [%{content: %{parts: [%{text: Jason.encode!("test query")}]}}],
+                  usageMetadata: %{
+                    promptTokenCount: 5,
+                    candidatesTokenCount: 3,
+                    totalTokenCount: 8
+                  }
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              %Tesla.Env{status: 500, body: %{"error" => "internal server error"}}
+
+            true ->
+              %Tesla.Env{status: 500, body: %{}}
+          end
+      end)
+
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      assert log != nil
+      assert log.error != nil
+    end
   end
 
   describe "voice_post_process/3" do
@@ -289,6 +392,24 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       # HTTP layer, the body was just unusable.
       assert tags.http_status == 200
       assert tags.reason =~ "empty"
+    end
+
+    # Stage 3 (NMT+TTS) failure: a non-empty answer, but nmt_tts_with_bhasini fails
+    # (GCS not enabled for org 1 in test) — voice_post_process falls back to the
+    # untranslated text with no audio rather than crashing.
+    test "returns untranslated text and no audio when NMT+TTS fails (GCS disabled)" do
+      response = %{
+        "message" => "Hello there",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "hindi"
+        }
+      }
+
+      result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+      assert result["translated_text"] == "Hello there"
+      assert is_nil(result["media_url"])
     end
   end
 
