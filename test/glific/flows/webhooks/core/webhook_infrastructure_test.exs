@@ -171,12 +171,65 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # --- Dispatcher.dispatch_named/3 --------------------------------------------
+  # --- Instrumentation.around/3 (async webhooks) ------------------------------
+  # Async webhooks defer latency + success to callback time, so a successful ack
+  # records nothing; only a dispatch failure (which never reaches the callback) is
+  # recorded here.
 
-  describe "Dispatcher.dispatch_named/3" do
+  describe "Instrumentation.around/3 — async mode" do
+    test "a successful ack records nothing (deferred to callback)" do
+      result =
+        with_mocks([
+          {Appsignal, [:passthrough],
+           [
+             send_error: fn _ex, _stack, _conf -> flunk("should not report on async ack") end,
+             add_distribution_value: fn _name, _val, _tags ->
+               flunk("should not emit latency on async ack")
+             end
+           ]},
+          {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]}
+        ]) do
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
+            %{success: true}
+          end)
+        end
+
+      assert result == %{success: true}
+    end
+
+    test "a dispatch failure reports SystemError" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
+            %{success: false, reason: "boom"}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert exception.message =~ "stub_async_infra"
+      assert tags.organization_id == 7
+    end
+
+    test "an exception reports SystemError and reraises" do
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise RuntimeError, "async boom", fn ->
+            Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
+              raise RuntimeError, "async boom"
+            end)
+          end
+        end)
+
+      assert %Errors.SystemError{} = exception
+    end
+  end
+
+  # --- Dispatcher.dispatch/3 --------------------------------------------
+
+  describe "Dispatcher.dispatch/3" do
     test "raises ArgumentError for unknown webhook name" do
       assert_raise ArgumentError, fn ->
-        Dispatcher.dispatch_named("totally_unknown_webhook_xyz", %{})
+        Dispatcher.dispatch("totally_unknown_webhook_xyz", %{})
       end
     end
 
@@ -208,7 +261,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
         result =
-          Dispatcher.dispatch_named("geolocation", %{
+          Dispatcher.dispatch("geolocation", %{
             "lat" => "12.9716",
             "long" => "77.5946",
             "organization_id" => 1
@@ -240,7 +293,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
         result =
-          Dispatcher.dispatch_named("geolocation", %{
+          Dispatcher.dispatch("geolocation", %{
             "lat" => "0.0",
             "long" => "0.0",
             "organization_id" => 1
@@ -265,7 +318,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
            end
          ]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => 1})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => 1})
       end
     end
 
@@ -279,7 +332,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => "42"})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => "42"})
       end
     end
 
@@ -293,7 +346,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{})
+        Dispatcher.dispatch("stub_infra", %{})
       end
     end
 
@@ -307,7 +360,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]},
         {Registry, [:passthrough], [lookup!: fn _name -> StubWebhook end]}
       ]) do
-        Dispatcher.dispatch_named("stub_infra", %{"organization_id" => "not_a_number"})
+        Dispatcher.dispatch("stub_infra", %{"organization_id" => "not_a_number"})
       end
     end
   end
