@@ -707,7 +707,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.reason == "LLM provider timed out"
     end
 
-    test "returns 200 when TTS audio upload fails (bad base64)", %{
+    test "routes the flow to the Failure branch when TTS audio upload fails (bad base64)", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
       contact = Fixtures.contact_fixture()
@@ -767,6 +767,11 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
+
+      # End-to-end: the failed audio upload drives the flow to the Failure branch,
+      # which (in the call_and_wait flow) sends the "failure" message.
+      message = await_flow_message(contact.id, "failure")
+      assert message.body == "failure"
     end
 
     test "maybe_upload_tts_audio marks tts_upload_error when the audio upload fails" do
