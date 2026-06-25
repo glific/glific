@@ -21,7 +21,13 @@ defmodule Glific.Flows.Webhooks.Registry do
   alias Glific.Flows.Webhooks
 
   @webhooks %{
-    "geolocation" => Webhooks.Geolocation
+    "create_certificate" => Webhooks.CreateCertificate,
+    "detect_language" => Webhooks.DetectLanguage,
+    "geolocation" => Webhooks.Geolocation,
+    "nmt_tts_with_bhasini" => Webhooks.NmtTtsWithBhasini,
+    "send_wa_group_poll" => Webhooks.SendWaGroupPoll,
+    "speech_to_text_with_bhasini" => Webhooks.SpeechToTextWithBhasini,
+    "text_to_speech_with_bhasini" => Webhooks.TextToSpeechWithBhasini
   }
 
   @doc """
