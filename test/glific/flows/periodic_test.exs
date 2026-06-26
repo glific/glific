@@ -142,4 +142,19 @@ defmodule Glific.Flows.PeriodicTest do
     assert {state, false} == Periodic.periodic_flow(state, "monday", nil, monday)
     assert {state, false} == Periodic.periodic_flow(state, "wednesday", nil, monday)
   end
+
+  test "init_common_flow returns {state, false} when flow has no published revision (incident #4)",
+       %{organization_id: organization_id} = attrs do
+    # Simulate the production incident: a flow_id exists in flow_keywords_map but its
+    # published revision is missing, causing get_cached_flow to return {:error, _}.
+    # Before the fix, this triggered a MatchError crash; now it must return {state, false}.
+    message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
+    state = Periodic.map_flow_ids(%{organization_id: organization_id})
+
+    # Flow ID 0 does not exist in the database, so get_cached_flow will return {:error, _}.
+    nonexistent_flow_id = 0
+
+    assert {^state, false} =
+             Periodic.init_common_flow(state, nonexistent_flow_id, message)
+  end
 end
