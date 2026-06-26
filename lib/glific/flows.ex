@@ -1034,7 +1034,7 @@ defmodule Glific.Flows do
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
-           {cleaned_definition, assistant_node_uuids} <-
+           {cleaned_definition, assistant_node_uuids, invalid_sheet_node_uuids} <-
              clean_flow_definition(
                flow_revision["definition"],
                interactive_template_list,
@@ -1053,7 +1053,8 @@ defmodule Glific.Flows do
         %{
           flow_name: flow.name,
           status: "Successfully imported",
-          assistant_node_uuids: assistant_node_uuids
+          assistant_node_uuids: assistant_node_uuids,
+          invalid_sheet_node_uuids: invalid_sheet_node_uuids
         }
       else
         {:error, error} ->
@@ -1069,35 +1070,40 @@ defmodule Glific.Flows do
 
           Logger.error("Failed to import flow #{flow_name}: #{error_message}, #{inspect(errors)}")
 
-          %{flow_name: flow_name, status: error_message, assistant_node_uuids: []}
+          %{
+            flow_name: flow_name,
+            status: error_message,
+            assistant_node_uuids: [],
+            invalid_sheet_node_uuids: []
+          }
       end
     end)
   end
 
-  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: term()
+  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: {map(), list(), list()}
   defp clean_flow_definition(definition, interactive_template_list, organization_id) do
     flow_info = %{
       flow_uuid: definition["uuid"],
       flow_name: definition["name"]
     }
 
-    {nodes, assistant_node_uuids} =
+    {nodes, assistant_node_uuids, invalid_sheet_node_uuids} =
       definition
       |> Map.get("nodes", [])
       |> Enum.reduce(
-        {[], []},
-        fn node, {nodes_acc, uuids_acc} ->
-          {processed_nodes, node_uuids} =
+        {[], [], []},
+        fn node, {nodes_acc, assistant_acc, sheet_acc} ->
+          {processed_nodes, assistant_uuids, sheet_uuids} =
             process_node_actions(node, interactive_template_list, flow_info, organization_id)
 
-          {nodes_acc ++ processed_nodes, uuids_acc ++ node_uuids}
+          {nodes_acc ++ processed_nodes, assistant_acc ++ assistant_uuids, sheet_acc ++ sheet_uuids}
         end
       )
 
-    {put_in(definition, ["nodes"], nodes), assistant_node_uuids}
+    {put_in(definition, ["nodes"], nodes), assistant_node_uuids, invalid_sheet_node_uuids}
   end
 
-  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list()}
+  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list(), list()}
   defp process_node_actions(
          %{"actions" => actions} = node,
          _interactive_template_list,
@@ -1105,7 +1111,7 @@ defmodule Glific.Flows do
          _org_id
        )
        when actions == [],
-       do: {[node], []}
+       do: {[node], [], []}
 
   defp process_node_actions(
          %{"actions" => actions} = node,
@@ -1113,20 +1119,24 @@ defmodule Glific.Flows do
          flow_info,
          org_id
        ) do
-    {updated_actions, has_assistant?} =
-      Enum.reduce(actions, {[], false}, fn action, {actions_acc, has_assistant_acc} ->
+    {updated_actions, tags} =
+      Enum.reduce(actions, {[], MapSet.new()}, fn action, {actions_acc, tags_acc} ->
         case process_action(action, node, interactive_template_list, flow_info, org_id) do
           {:ok, updated_action} ->
-            {actions_acc ++ [updated_action], has_assistant_acc}
+            {actions_acc ++ [updated_action], tags_acc}
 
-          {:ok, updated_action, :assistant} ->
-            {actions_acc ++ [updated_action], true}
+          {:ok, updated_action, tag} ->
+            {actions_acc ++ [updated_action], MapSet.put(tags_acc, tag)}
         end
       end)
 
     updated_node = Map.put(node, "actions", updated_actions)
-    node_uuids = if has_assistant?, do: [node_label(node["uuid"])], else: []
-    {[updated_node], node_uuids}
+    label = node_label(node["uuid"])
+
+    assistant_uuids = if MapSet.member?(tags, :assistant), do: [label], else: []
+    invalid_sheet_uuids = if MapSet.member?(tags, :invalid_sheet), do: [label], else: []
+
+    {[updated_node], assistant_uuids, invalid_sheet_uuids}
   end
 
   # The flow editor labels each node with the last 4 chars of its UUID
@@ -1162,11 +1172,17 @@ defmodule Glific.Flows do
          _flow_info,
          _org_id
        ) do
-    sheet_url = action["url"]
-    sheet_name = action["name"]
-    sheet = get_or_create_sheet(sheet_url, sheet_name)
-    updated_action = Map.put(action, "sheet_id", sheet.id)
-    {:ok, updated_action}
+    case get_or_create_sheet(action["url"], action["name"]) do
+      {:ok, sheet} ->
+        {:ok, Map.put(action, "sheet_id", sheet.id)}
+
+      {:error, _reason} ->
+        # The sheet URL is invalid or not set up in this org. Import the action
+        # without a linked sheet_id (dropping any stale id from the source org) so
+        # the user can fix it manually, and tag the node so the import status can
+        # warn about it instead of crashing the whole import.
+        {:ok, Map.delete(action, "sheet_id"), :invalid_sheet}
+    end
   end
 
   defp process_action(
@@ -1231,6 +1247,8 @@ defmodule Glific.Flows do
     Map.has_key?(action, "templating") and template_uuid not in template_uuid_list
   end
 
+  @spec get_or_create_sheet(String.t() | nil, String.t() | nil) ::
+          {:ok, Sheet.t()} | {:error, any()}
   defp get_or_create_sheet(sheet_url, sheet_name) do
     current_user = Repo.get_current_user()
 
@@ -1242,11 +1260,10 @@ defmodule Glific.Flows do
 
     case Repo.fetch_by(Sheet, %{url: sheet_url}) do
       {:ok, sheet} ->
-        sheet
+        {:ok, sheet}
 
       {:error, _} ->
-        {:ok, sheet} = Sheets.create_sheet(attrs)
-        sheet
+        Sheets.create_sheet(attrs)
     end
   end
 

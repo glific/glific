@@ -914,6 +914,77 @@ defmodule GlificWeb.Schema.FlowTest do
     assert Enum.all?(imported_assistant_ids, &(&1 == ""))
   end
 
+  test "import flow with an invalid google sheet url does not crash and reports the node",
+       %{manager: user} do
+    sheet_node_uuid = "f23c5b9a-1111-2222-3333-44445555aaaa"
+    # No "type" key in the imported sheet action, so `Sheets.create_sheet/1` rejects it with
+    # `{:error, "Invalid sheet URL"}` rather than hitting the network.
+    sheet_url = "https://docs.google.com/spreadsheets/d/placeholder-invalid/edit"
+
+    import_data = %{
+      "flows" => [
+        %{
+          "keywords" => ["sheetimporttest"],
+          "definition" => %{
+            "name" => "Sheet Import Flow",
+            "uuid" => Ecto.UUID.generate(),
+            "nodes" => [
+              %{
+                "uuid" => sheet_node_uuid,
+                "actions" => [
+                  %{
+                    "type" => "link_google_sheet",
+                    "uuid" => Ecto.UUID.generate(),
+                    "name" => "My Sheet",
+                    "url" => sheet_url,
+                    "sheet_id" => 999
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "contact_field" => [],
+      "collections" => [],
+      "interactive_templates" => []
+    }
+
+    import_flow = Jason.encode!(import_data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    # The import succeeds instead of crashing with a MatchError.
+    assert import_status["flowName"] == "Sheet Import Flow"
+    assert import_status["status"] == "Successfully imported"
+
+    # The offending node is surfaced by its last-4 UUID label.
+    assert import_status["invalidSheetNodeUuids"] == [String.slice(sheet_node_uuid, -4..-1//1)]
+    assert import_status["assistantNodeUuids"] == []
+
+    # The flow is saved without a linked sheet_id so the user can fix it manually.
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Sheet Import Flow", organization_id: user.organization_id})
+
+    revision =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^flow.id)
+      |> order_by([fr], desc: fr.inserted_at)
+      |> limit(1)
+      |> Repo.one!()
+
+    sheet_action =
+      revision.definition
+      |> Map.fetch!("nodes")
+      |> hd()
+      |> Map.fetch!("actions")
+      |> hd()
+
+    refute Map.has_key?(sheet_action, "sheet_id")
+  end
+
   test "terminate inactive flows", attrs do
     {:ok, context} =
       FlowContext.create_flow_context(%{
