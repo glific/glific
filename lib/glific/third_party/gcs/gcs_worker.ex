@@ -28,7 +28,8 @@ defmodule Glific.GCS.GcsWorker do
     Messages.MessageMedia,
     Partners,
     Repo,
-    RepoReplica
+    RepoReplica,
+    SafeLog
   }
 
   @provider_shortcode "google_cloud_storage"
@@ -268,7 +269,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         error =
-          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{SafeLog.safe_inspect(error)}"
 
         Logger.info(error)
         {:error, error}
@@ -438,10 +439,18 @@ defmodule Glific.GCS.GcsWorker do
         File.write!(path, body)
         {:ok, path}
 
-      # A 4xx from the media host means the file is gone / the media id is invalid
-      # or expired — permanent, so signal the caller to stop retrying it.
-      {:ok, %Tesla.Env{status: status} = _env} when status in 400..499 ->
+      # Only these statuses mean the media itself is invalid/expired/gone on the
+      # provider — permanent, so signal the caller to stop retrying it. Other 4xx
+      # (401/403 auth, 408 timeout, 429 rate-limit) are transient and fall through
+      # to the catch-all below so they get retried.
+      {:ok, %Tesla.Env{status: status} = _env} when status in [400, 404, 410] ->
         {:error, :invalid_media_id}
+
+      # Any other non-2xx (401/403 auth, 408 timeout, 429 rate-limit, 5xx, …) is
+      # transient — return the bare env so the caller retries and so safe_inspect/1
+      # can strip its credentials when logging (it only sanitizes a raw %Tesla.Env{}).
+      {:ok, %Tesla.Env{} = env} ->
+        {:error, env}
 
       {:error, :timeout} ->
         {:error, :timeout}

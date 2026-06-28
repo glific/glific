@@ -1,4 +1,9 @@
 defmodule Glific.GcsWorkerTest do
+  @moduledoc """
+  Tests for the GCS media sync worker: queuing inbound media within the 7-day
+  provider TTL, the incremental vs unsynced sweep phases, and marking permanently
+  failed media so it is excluded from future sweeps.
+  """
   use GlificWeb.ConnCase
   use Oban.Pro.Testing, repo: Glific.Repo
   import Mock
