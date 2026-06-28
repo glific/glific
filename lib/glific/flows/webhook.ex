@@ -168,7 +168,7 @@ defmodule Glific.Flows.Webhook do
       cond do
         is_binary(reason) -> reason
         is_nil(reason) -> "Webhook failure"
-        true -> inspect(reason)
+        true -> Glific.SafeLog.safe_inspect(reason)
       end
 
     attrs = %{response_json: result, status_code: 400, error: error}

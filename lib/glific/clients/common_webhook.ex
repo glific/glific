@@ -529,7 +529,7 @@ defmodule Glific.Clients.CommonWebhook do
         {nil, status}
 
       other ->
-        {nil, inspect(other)}
+        {nil, SafeLog.safe_inspect(other)}
     end
   end
 

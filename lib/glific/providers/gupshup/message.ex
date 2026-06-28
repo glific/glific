@@ -125,7 +125,7 @@ defmodule Glific.Providers.Gupshup.Message do
     # sometime the gupshup payload has a blank payload
     # or maybe a simulator or some test code
     if payload["sender"]["phone"] in [nil, ""] do
-      error = "Phone number is blank, #{inspect(payload)}"
+      error = "Phone number is blank, #{Glific.SafeLog.safe_inspect(payload)}"
       Glific.log_error(error)
       raise(RuntimeError, message: error)
     end

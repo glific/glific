@@ -54,12 +54,12 @@ defmodule Glific.ERP do
 
         extracted_message = Map.get(decoded_message, "message")
 
-        Logger.error("Failed to fetch organization: #{inspect(body)}")
+        Logger.error("Failed to fetch organization: #{Glific.SafeLog.safe_inspect(body)}")
         {:error, "#{extracted_message}"}
 
       {:error, reason} ->
-        Logger.error("Unexpected response: body: #{inspect(reason)}")
-        {:error, "Unexpected response from ERP due to #{inspect(reason)}"}
+        Logger.error("Unexpected response: body: #{Glific.SafeLog.safe_inspect(reason)}")
+        {:error, "Unexpected response from ERP due to #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -106,11 +106,11 @@ defmodule Glific.ERP do
         end
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        Logger.error("Failed to update organization: #{inspect(body)}")
+        Logger.error("Failed to update organization: #{Glific.SafeLog.safe_inspect(body)}")
         {:error, "Failed to update organization due to: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error updating organization: #{inspect(reason)}")
+        Logger.error("Error updating organization: #{Glific.SafeLog.safe_inspect(reason)}")
         {:error, "Error while updating organization"}
     end
   end
@@ -157,7 +157,7 @@ defmodule Glific.ERP do
         false
 
       {:error, reason} ->
-        Logger.error("Error checking address existence: #{inspect(reason)}")
+        Logger.error("Error checking address existence: #{Glific.SafeLog.safe_inspect(reason)}")
         false
     end
   end
@@ -210,11 +210,11 @@ defmodule Glific.ERP do
         {:ok, response_body}
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        Logger.error("Failed to create contact: #{inspect(body)}")
+        Logger.error("Failed to create contact: #{Glific.SafeLog.safe_inspect(body)}")
         {:error, "Failed to create contact: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error creating contact: #{inspect(reason)}")
+        Logger.error("Error creating contact: #{Glific.SafeLog.safe_inspect(reason)}")
         {:error, "Error creating contact"}
     end
   end
@@ -240,11 +240,11 @@ defmodule Glific.ERP do
         {:ok, response_body}
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        Logger.error("Failed to create address: #{inspect(body)}")
+        Logger.error("Failed to create address: #{Glific.SafeLog.safe_inspect(body)}")
         {:error, "Failed to create address: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error creating address: #{inspect(reason)}")
+        Logger.error("Error creating address: #{Glific.SafeLog.safe_inspect(reason)}")
         {:error, "Error creating address"}
     end
   end
@@ -256,11 +256,11 @@ defmodule Glific.ERP do
         {:ok, response_body}
 
       {:ok, %Tesla.Env{status: _status, body: body}} ->
-        Logger.error("Failed to update address: #{inspect(body)}")
+        Logger.error("Failed to update address: #{Glific.SafeLog.safe_inspect(body)}")
         {:error, "Failed to update address: #{body.exception}"}
 
       {:error, reason} ->
-        Logger.error("Error updating address: #{inspect(reason)}")
+        Logger.error("Error updating address: #{Glific.SafeLog.safe_inspect(reason)}")
         {:error, "Error updating address"}
     end
   end

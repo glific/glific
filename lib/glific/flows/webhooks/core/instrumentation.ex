@@ -247,7 +247,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # failures here too so the centralised reporter mirrors legacy behaviour.
   defp maybe_report_failure(result, webhook_name, ctx)
        when is_nil(result) or not is_map(result) do
-    reason = if is_binary(result), do: result, else: inspect(result)
+    reason = if is_binary(result), do: result, else: Glific.SafeLog.safe_inspect(result)
     report_webhook_failure(webhook_name, ctx, nil, reason)
   end
 
@@ -275,7 +275,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
         {nil, error}
 
       other ->
-        {nil, inspect(other)}
+        {nil, Glific.SafeLog.safe_inspect(other)}
     end
   end
 

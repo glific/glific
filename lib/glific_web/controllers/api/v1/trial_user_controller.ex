@@ -59,14 +59,16 @@ defmodule GlificWeb.API.V1.TrialUsersController do
         |> json(%{success: false, error: error_message})
 
       {:error, :email_send_failed, reason} ->
-        Logger.error("Failed to send OTP email. Reason: #{inspect(reason)}")
+        Logger.error("Failed to send OTP email. Reason: #{Glific.SafeLog.safe_inspect(reason)}")
 
         conn
         |> put_status(500)
         |> json(%{success: false, error: "Failed to send OTP email"})
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        Logger.error("Failed to create trial account. Errors: #{inspect(changeset.errors)}")
+        Logger.error(
+          "Failed to create trial account. Errors: #{Glific.SafeLog.safe_inspect(changeset.errors)}"
+        )
 
         conn
         |> put_status(400)

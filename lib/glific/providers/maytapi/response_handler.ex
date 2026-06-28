@@ -40,12 +40,12 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.info(
-      "Error calling API Client for org_id: #{message["organization_id"]} error: #{inspect(error)}"
+      "Error calling API Client for org_id: #{message["organization_id"]} error: #{Glific.SafeLog.safe_inspect(error)}"
     )
 
     default_error =
       Jason.decode!(@default_tesla_error)
-      |> put_in(["error"], inspect(error))
+      |> put_in(["error"], Glific.SafeLog.safe_inspect(error))
 
     handle_error_response(%{body: Jason.encode!(default_error)}, message)
   end
@@ -119,7 +119,7 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
     cond do
       is_binary(body) -> %{message: body}
       is_map(body) -> body
-      true -> %{message: inspect(body)}
+      true -> %{message: Glific.SafeLog.safe_inspect(body)}
     end
   end
 end

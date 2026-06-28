@@ -315,7 +315,7 @@ defmodule Glific.Filesearch do
         {:ok, assistant}
 
       {:error, _, err, _} ->
-        Logger.error("Error on importing assistant due to #{inspect(err)}")
+        Logger.error("Error on importing assistant due to #{Glific.SafeLog.safe_inspect(err)}")
         {:error, "Error on importing assistant"}
     end
   end

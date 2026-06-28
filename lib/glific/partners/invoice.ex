@@ -142,7 +142,7 @@ defmodule Glific.Partners.Invoice do
         {:error, error} ->
           {:error,
            dgettext("errors", "Error occurred while finalizing setup invoice: %{error}",
-             error: inspect(error)
+             error: Glific.SafeLog.safe_inspect(error)
            )}
       end
     else
@@ -299,7 +299,7 @@ defmodule Glific.Partners.Invoice do
                "errors",
                "Error occurred while updating status for %{invoice_id}: %{error}",
                invoice_id: invoice_id,
-               error: inspect(error)
+               error: Glific.SafeLog.safe_inspect(error)
              )}
         end
 
