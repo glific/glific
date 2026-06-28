@@ -971,7 +971,7 @@ defmodule GlificWeb.Schema.FlowTest do
     revision =
       FlowRevision
       |> where([fr], fr.flow_id == ^flow.id)
-      |> order_by([fr], desc: fr.inserted_at)
+      |> order_by([fr], desc: fr.inserted_at, desc: fr.id)
       |> limit(1)
       |> Repo.one!()
 

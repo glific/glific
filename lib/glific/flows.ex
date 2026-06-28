@@ -1169,18 +1169,22 @@ defmodule Glific.Flows do
          %{"type" => "link_google_sheet"} = action,
          _node,
          _interactive_template_list,
-         _flow_info,
+         flow_info,
          _org_id
        ) do
     case get_or_create_sheet(action["url"], action["name"]) do
       {:ok, sheet} ->
         {:ok, Map.put(action, "sheet_id", sheet.id)}
 
-      {:error, _reason} ->
-        # The sheet URL is invalid or not set up in this org. Import the action
-        # without a linked sheet_id (dropping any stale id from the source org) so
-        # the user can fix it manually, and tag the node so the import status can
-        # warn about it instead of crashing the whole import.
+      {:error, reason} ->
+        # We always import the action without a linked sheet_id (dropping any stale
+        # id from the source org) and tag the node so the import status can warn the
+        # user, instead of crashing the whole import. But we still surface *why* the
+        # sheet could not be linked: a plain "Invalid sheet URL" is expected user input
+        # (benign), whereas anything else (missing credentials, 403/no access, network)
+        # is an integration failure that should reach AppSignal so it isn't silently
+        # swallowed. See get_or_create_sheet/2 and Sheets.create_sheet/1.
+        log_sheet_link_failure(reason, action["url"], flow_info)
         {:ok, Map.delete(action, "sheet_id"), :invalid_sheet}
     end
   end
@@ -1224,6 +1228,27 @@ defmodule Glific.Flows do
 
   defp process_action(action, _node, _interactive_template_list, _flow_info, _org_id),
     do: {:ok, action}
+
+  # "Invalid sheet URL" is expected user input (placeholder/invalid url) — log it
+  # for visibility but don't page anyone via AppSignal. Any other reason is an
+  # integration failure (missing credentials, no edit/read access, network) and
+  # must surface to AppSignal so it isn't silently degraded to a blank import.
+  @spec log_sheet_link_failure(any(), String.t() | nil, map()) :: :ok
+  defp log_sheet_link_failure("Invalid sheet URL" = reason, url, flow_info) do
+    Logger.info(
+      "Skipping Google Sheet link for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{reason}, url: #{inspect(url)}"
+    )
+
+    :ok
+  end
+
+  defp log_sheet_link_failure(reason, url, flow_info) do
+    Glific.log_error(
+      "Failed to link Google Sheet during import for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{inspect(reason)}, url: #{inspect(url)}"
+    )
+
+    :ok
+  end
 
   @spec clear_assistant_id(map()) :: {:ok, map()} | :no_assistant
   defp clear_assistant_id(action) do
