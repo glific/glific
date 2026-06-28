@@ -116,9 +116,22 @@ defmodule Glific.GcsWorkerTest do
         })
         |> Repo.update()
 
+      # Older than the 7-day provider TTL — must be excluded (would have been
+      # included under the previous 30-day window).
+      _m3 =
+        Fixtures.message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+        |> Ecto.Changeset.change(%{
+          inserted_at: DateTime.add(DateTime.utc_now(), -10, :day) |> DateTime.truncate(:second),
+          updated_at: DateTime.add(DateTime.utc_now(), -10, :day) |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+
       assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "incremental"})
       assert_enqueued(worker: GcsWorker, prefix: "global")
 
+      # Only m2 (2 days old) is within the 7-day TTL, so exactly one job is queued.
       # We are only concerned about how many jobs queued, since else we have to
       # mock a lot to get this to success.
       assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
@@ -224,13 +237,13 @@ defmodule Glific.GcsWorkerTest do
       assert %{success: 0, failure: 4, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
 
-      # Tests for adding gcs_error for message_media
-      [media_id | _] = media_ids
-      media = %{"id" => media_id.id, "sync_phase" => "unsynced"}
-      assert {1, _} = GcsWorker.add_message_media_error(media, "GCSWORKER failed")
+      # A permanently-failed media (e.g. invalid/expired media id) gets a gcs_error
+      # set regardless of phase, which removes it from all future sweeps.
+      [media | _] = media_ids
+      assert {1, _} = GcsWorker.mark_invalid_media(%{"id" => media.id}, "GCSWORKER failed")
 
-      media = %{"id" => media_id.id, "sync_phase" => "incremental"}
-      assert is_nil(GcsWorker.add_message_media_error(media, "GCSWORKER failed"))
+      assert %Glific.Messages.MessageMedia{gcs_error: "GCSWORKER failed"} =
+               Repo.get(Glific.Messages.MessageMedia, media.id)
 
       assert :ok = GCS.send_internal_media_sync_report()
 

@@ -120,8 +120,11 @@ defmodule Glific.GCS do
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
     |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
-    # handling gupshup 30 day file expiry
-    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
+    # Meta/Gupshup expire media after 7 days, so anything older is already gone on
+    # the provider side — don't bother trying to sync it.
+    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '7 day'"))
+    # Skip media we've already permanently failed on (e.g. invalid/expired media id)
+    |> where([m, _msg], is_nil(m.gcs_error))
     |> order_by([m], [m.inserted_at, m.id])
   end
 

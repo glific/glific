@@ -40,16 +40,23 @@ defmodule Glific.GCS.GcsWorker do
   """
   @spec perform_periodic(non_neg_integer, map()) :: :ok
   def perform_periodic(organization_id, %{phase: phase}) do
+    if gcs_enabled?(organization_id) do
+      jobs(organization_id, phase)
+    end
+
+    :ok
+  end
+
+  # GCS is usable for an org only when the credential exists and we can mint a goth
+  # token. Checked both before queuing (perform_periodic) and before each upload
+  # (perform/1), since credentials may be revoked after jobs are already queued.
+  @spec gcs_enabled?(non_neg_integer) :: boolean()
+  defp gcs_enabled?(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services[@provider_shortcode]
     goth_token = Partners.get_goth_token(organization_id, @provider_shortcode)
 
-    if is_nil(credential) || is_nil(goth_token) do
-      :ok
-    else
-      jobs(organization_id, phase)
-      :ok
-    end
+    not (is_nil(credential) || is_nil(goth_token))
   end
 
   @spec jobs(non_neg_integer, String.t()) :: :ok
@@ -73,9 +80,9 @@ defmodule Glific.GCS.GcsWorker do
 
     limit = files_per_minute_count()
 
-    # Gupshup expires files older than 30 days, so we have to make sure
-    # the we try to sync medias which are not older than last 30 days to prevent
-    # rate-limiting errors from gupshup.
+    # Meta/Gupshup expire files after 7 days, so we only try to sync medias which
+    # are not older than the last 7 days to prevent invalid-media / rate-limiting
+    # errors from the provider.
 
     data =
       MessageMedia
@@ -83,7 +90,9 @@ defmodule Glific.GCS.GcsWorker do
       |> where([m], m.organization_id == ^organization_id and m.id >= ^message_media_id)
       |> where([m], m.flow == :inbound)
       |> where([m], is_nil(m.gcs_url))
-      |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
+      # Skip media we've already permanently failed on (e.g. invalid/expired media id)
+      |> where([m], is_nil(m.gcs_error))
+      |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '7 day'"))
       |> order_by([m], asc: m.id)
       |> limit(^limit)
       |> check_phase(organization_id, phase)
@@ -202,6 +211,22 @@ defmodule Glific.GCS.GcsWorker do
 
     Repo.put_process_state(media["organization_id"])
     RepoReplica.put_process_state(media["organization_id"])
+
+    # Credentials may have been revoked/disabled after this job was queued, so
+    # re-check before doing any work and discard rather than fail noisily.
+    if gcs_enabled?(media["organization_id"]) do
+      do_perform(media)
+    else
+      error =
+        "GCSWORKER: GCS not enabled for org_id: #{media["organization_id"]}, discarding media_id: #{media["id"]}"
+
+      Logger.info(error)
+      {:discard, error}
+    end
+  end
+
+  @spec do_perform(map()) :: :ok | {:error, String.t()} | {:discard, String.t()}
+  defp do_perform(media) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 
@@ -223,12 +248,22 @@ defmodule Glific.GCS.GcsWorker do
         uploading_to_gcs(local_name, media)
         :ok
 
+      {:error, :invalid_media_id} ->
+        # The provider (Meta/Gupshup) no longer has this file (e.g. 4xx / invalid
+        # media id). It can never succeed, so record the failure and discard so the
+        # next sweep skips it instead of retrying for the rest of the TTL window.
+        error =
+          "GCSWORKER: Invalid/expired media id on provider for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+
+        Logger.info(error)
+        mark_invalid_media(media, error)
+        {:discard, error}
+
       {:error, :timeout} ->
         error =
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-        add_message_media_error(media, error)
         {:error, error}
 
       {:error, error} ->
@@ -236,8 +271,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
 
         Logger.info(error)
-        add_message_media_error(media, error)
-        {:discard, error}
+        {:error, error}
     end
   end
 
@@ -253,7 +287,6 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         handle_gcs_error(media["organization_id"], error)
-        |> then(&add_message_media_error(media, &1))
     end
 
     :ok
@@ -405,6 +438,11 @@ defmodule Glific.GCS.GcsWorker do
         File.write!(path, body)
         {:ok, path}
 
+      # A 4xx from the media host means the file is gone / the media id is invalid
+      # or expired — permanent, so signal the caller to stop retrying it.
+      {:ok, %Tesla.Env{status: status} = _env} when status in 400..499 ->
+        {:error, :invalid_media_id}
+
       {:error, :timeout} ->
         {:error, :timeout}
 
@@ -416,20 +454,18 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
-  # Updates the message_media with the gcs sync error
-
-  # We are only adding error reason to messages_media table on unsynced phase
-  # Since the incremental phase runs every min during peak hrs + It becomes critical
-  # to log only when the media sync fails even on unsynced phase
-  @spec add_message_media_error(map(), String.t()) :: {non_neg_integer(), nil | [term()]} | nil
-  defp add_message_media_error(%{"sync_phase" => "unsynced"} = media, error) do
+  # Records a permanent sync failure (e.g. invalid/expired media id) on the
+  # message_media row. Unlike transient errors (timeouts, GCS hiccups) which we let
+  # the next sweep retry, a non-nil gcs_error removes the media from all future
+  # sweeps — regardless of phase — so we don't keep retrying a file that can never
+  # succeed for the rest of its TTL window.
+  @spec mark_invalid_media(map(), String.t()) :: {non_neg_integer(), nil | [term()]}
+  defp mark_invalid_media(media, error) do
     MessageMedia
     |> where([mm], mm.id == ^media["id"])
     |> update([mm], set: [gcs_error: ^error])
     |> Repo.update_all([])
   end
-
-  defp add_message_media_error(_media, _error), do: nil
 
   # For unsynced phase, every night we start syncing the media from the oldest
   # unsynced media_id, so that we make sure we don't skip unsynced files at all
