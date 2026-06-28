@@ -1,5 +1,20 @@
 defmodule GlificCredo.Checks.NoRawInspect do
-  @moduledoc false
+  @moduledoc """
+  Custom Credo check that forbids raw `inspect/1,2` in non-test production code.
+
+  Raw `inspect/1` and `inspect/2` write the *full* term to logs and error
+  strings, which can leak sensitive runtime state (auth tokens, phone numbers,
+  the live `Authorization: Bearer …` header carried in a `%Tesla.Env{}`, …).
+  Code must use `Glific.SafeLog.safe_inspect/1` instead, which behaves like
+  `inspect/1` for ordinary terms but strips those sensitive fields first.
+
+  The check walks each source file's AST and flags both the bare `inspect(...)`
+  and the fully-qualified `Kernel.inspect(...)` call forms. Test files and any
+  module listed in the `:excluded_modules` param (by default `Glific.SafeLog`,
+  the wrapper itself) are exempt.
+
+  See the [Credo guide on adding checks](https://credo.hexdocs.pm/adding_checks.html).
+  """
 
   use Credo.Check,
     id: "GL1001",
@@ -30,6 +45,7 @@ defmodule GlificCredo.Checks.NoRawInspect do
 
   @doc false
   @impl true
+  @spec run(Credo.SourceFile.t(), Keyword.t()) :: [Credo.Issue.t()]
   def run(%SourceFile{} = source_file, params) do
     excluded_modules = Params.get(params, :excluded_modules, __MODULE__)
 
