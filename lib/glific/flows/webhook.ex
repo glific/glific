@@ -11,7 +11,8 @@ defmodule Glific.Flows.Webhook do
     GCS.GcsWorker,
     Messages,
     Partners,
-    Repo
+    Repo,
+    SafeLog
   }
 
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
@@ -283,7 +284,9 @@ defmodule Glific.Flows.Webhook do
       # Report via the centralized wrapper (not Appsignal directly). The webhook name is
       # safe to log; the request payload is omitted to avoid leaking user data.
       Glific.log_exception(error)
-      {:error, "Calling webhook function #{inspect(function)} threw: #{Exception.message(error)}"}
+
+      {:error,
+       "Calling webhook function #{SafeLog.safe_inspect(function)} threw: #{Exception.message(error)}"}
   end
 
   # Routes a function-type webhook to the central Dispatcher when it is registered (sync or
@@ -366,7 +369,7 @@ defmodule Glific.Flows.Webhook do
             nil
 
           {:error, error_message} ->
-            update_log(webhook_log_id, inspect(error_message))
+            update_log(webhook_log_id, SafeLog.safe_inspect(error_message))
             nil
         end
 
@@ -562,7 +565,7 @@ defmodule Glific.Flows.Webhook do
         )
 
       {:error, reason} ->
-        Logger.warning("#{label} contact lookup failed: #{inspect(reason)}")
+        Logger.warning("#{label} contact lookup failed: #{SafeLog.safe_inspect(reason)}")
     end
 
     :ok
@@ -667,7 +670,7 @@ defmodule Glific.Flows.Webhook do
   # Fallback for unexpected formats
   def parse_callback_response(result) do
     Logger.warning(
-      "Unexpected callback response format received from Kaapi or external service: #{inspect(result)}"
+      "Unexpected callback response format received from Kaapi or external service: #{SafeLog.safe_inspect(result)}"
     )
 
     %{}
@@ -747,7 +750,7 @@ defmodule Glific.Flows.Webhook do
 
       {:error, reason} ->
         File.rm(mp3_file)
-        message = if is_binary(reason), do: reason, else: inspect(reason)
+        message = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
         {:error, message}
     end
   end

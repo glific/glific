@@ -11,6 +11,7 @@ defmodule Glific.Erase do
   alias Glific.Partners
   alias Glific.Partners.Organization
   alias Glific.Repo
+  alias Glific.SafeLog
   require Logger
 
   use Oban.Worker,
@@ -558,7 +559,7 @@ defmodule Glific.Erase do
     error ->
       Glific.log_exception(%Error{
         message:
-          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}",
+          "Full data deletion failed for org_id=#{organization_id}, reason=#{SafeLog.safe_inspect(error)}",
         reason: error
       })
 

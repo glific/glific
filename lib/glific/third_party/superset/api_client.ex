@@ -14,6 +14,8 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   require Logger
 
+  alias Glific.SafeLog
+
   defmodule Error do
     @moduledoc """
     Custom exception for Superset API failures.
@@ -121,7 +123,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
   defp parse_response({:error, reason}) do
     Glific.log_exception(
       %Error{
-        message: "Superset API transport error: #{inspect(reason)}",
+        message: "Superset API transport error: #{SafeLog.safe_inspect(reason)}",
         reason: reason
       },
       namespace: "superset"

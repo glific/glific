@@ -23,6 +23,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   alias Glific.Flows.Webhooks.Errors
   alias Glific.Metrics
+  alias Glific.SafeLog
 
   require Logger
 
@@ -149,7 +150,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
         flow_id: response["flow_id"],
         contact_id: response["contact_id"],
         webhook_log_id: response["webhook_log_id"],
-        reason: inspect(reason)
+        reason: SafeLog.safe_inspect(reason)
       }
     )
   end
