@@ -139,15 +139,6 @@ config :glific,
   gigalixir_app_name: env!("GIGALIXIR_APP_NAME", :string!, "This is not a secret")
 
 config :glific,
-  bhasini_user_id: env!("BHASINI_USER_ID", :string!, "This is not a secret")
-
-config :glific,
-  bhasini_ulca_api_key: env!("BHASINI_ULCA_API_KEY", :string!, "This is not a secret")
-
-config :glific,
-  bhasini_inference_key: env!("BHASINI_INFERENCE_KEY", :string!, "This is not a secret")
-
-config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,

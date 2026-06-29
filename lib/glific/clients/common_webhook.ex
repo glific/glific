@@ -3,7 +3,6 @@ defmodule Glific.Clients.CommonWebhook do
   Common webhooks which we can call with any clients.
   """
 
-  alias Glific.ASR.Bhasini
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Flows.Webhook
@@ -74,16 +73,6 @@ defmodule Glific.Clients.CommonWebhook do
           error
       end
     end)
-  end
-
-  def webhook("detect_language", fields) do
-    speech = fields["speech"]
-    org_id = parse_org_id(fields)
-
-    with_failure_reporting("detect_language", webhook_meta(org_id, fields), fn ->
-      Bhasini.detect_language(speech)
-    end)
-    |> normalize_failure()
   end
 
   def webhook("get_buttons", fields) do
@@ -328,24 +317,6 @@ defmodule Glific.Clients.CommonWebhook do
         reraise exception, __STACKTRACE__
     end
   end
-
-  # FUNCTION webhooks signal Failure to the flow by returning a non-map (see
-  # Glific.Flows.Webhook.handle/3, which keys off is_map). Convert a
-  # %{success: false} result into a bare error string so the flow routes to the
-  # Failure category; pass anything else (success maps, already-bare strings)
-  # through unchanged.
-  @spec normalize_failure(map() | String.t()) :: map() | String.t()
-  defp normalize_failure(%{success: false} = result) do
-    cond do
-      is_binary(result[:reason]) -> result[:reason]
-      is_binary(result[:error]) -> result[:error]
-      is_binary(result[:asr_response_text]) -> result[:asr_response_text]
-      is_binary(result[:detected_language]) -> result[:detected_language]
-      true -> "Webhook execution failed"
-    end
-  end
-
-  defp normalize_failure(result), do: result
 
   @spec record_webhook_outcome(any(), String.t(), map(), non_neg_integer()) ::
           :ok
