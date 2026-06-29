@@ -206,7 +206,22 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
         method: :get,
         url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
       } ->
-        {:ok, %Tesla.Env{status: 200, body: "[]"}}
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             ~s([{"id":242,"number":"918454812345","status":"active","type":"whatsapp","name":""}])
+         }}
+
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/getGroups"
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: ~s({"count":0,"data":[],"limit":500,"success":true,"total":0})
+         }}
     end)
 
     result = auth_query_gql_by(:sync, user)
