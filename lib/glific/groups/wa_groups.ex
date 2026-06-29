@@ -77,11 +77,15 @@ defmodule Glific.Groups.WAGroups do
   """
   @spec sync_wa_groups(non_neg_integer()) :: :ok | {:error, String.t()}
   def sync_wa_groups(org_id) do
+    # Refresh the phones from Maytapi first (insert new + update existing
+    # status), then only pull groups from phones that are active — a
+    # disconnected/expired phone can't serve the getGroups call (Maytapi returns
+    # "scan a phone into the instance first" and the sync would otherwise fail).
     with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id) do
-      wa_managed_phones =
-        WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
-
-      Enum.each(wa_managed_phones, fn wa_managed_phone ->
+      %{organization_id: org_id}
+      |> WAManagedPhones.list_wa_managed_phones()
+      |> Enum.filter(fn wa_managed_phone -> wa_managed_phone.status == "active" end)
+      |> Enum.each(fn wa_managed_phone ->
         do_sync_wa_groups(org_id, wa_managed_phone)
       end)
     end
