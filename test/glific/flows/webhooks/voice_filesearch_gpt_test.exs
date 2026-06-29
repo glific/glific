@@ -17,7 +17,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Webhooks.VoiceFilesearchGpt,
     Partners,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    ThirdParty.Gemini
   }
 
   setup do
@@ -69,6 +70,31 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       |> Repo.update()
 
     assistant
+  end
+
+  # voice_post_process's NMT path is gated on the org having GCS enabled
+  # (organization.services["google_cloud_storage"]). Create that credential and
+  # refresh the org cache so the in-test org reports GCS on. The DB change is
+  # sandboxed per test, so this never leaks into the "GCS disabled" test.
+  defp enable_gcs(organization_id) do
+    {:ok, _credential} =
+      Partners.create_credential(%{
+        organization_id: organization_id,
+        shortcode: "google_cloud_storage",
+        secrets: %{
+          "bucket" => "mock-bucket-name",
+          "service_account" =>
+            Jason.encode!(%{
+              project_id: "DEFAULT PROJECT ID",
+              private_key_id: "DEFAULT API KEY",
+              client_email: "DEFAULT CLIENT EMAIL",
+              private_key: "DEFAULT PRIVATE KEY"
+            })
+        },
+        is_active: true
+      })
+
+    Partners.get_organization!(organization_id) |> Partners.fill_cache()
   end
 
   # Voice-specific callback format: includes voice_post_process metadata
@@ -194,9 +220,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     end
 
     # Timeout: the outbound Kaapi LLM call times out in the worker.
-    # STT (Bhasini/Gemini) succeeds but the LLM call returns {:error, :timeout}, so
+    # Gemini STT succeeds but the LLM call returns {:error, :timeout}, so
     # VoiceFilesearchGpt.call returns %{success: false} and the webhook log records the error.
-    test "timeout - Bhasini STT succeeds but Kaapi LLM times out, webhook log records error", %{
+    test "timeout - Gemini STT succeeds but Kaapi LLM times out, webhook log records error", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn
     } do
       _assistant = create_assistant(org_id)
@@ -220,7 +246,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
       action = build_action(contact.id)
 
-      # Bhasini STT (Gemini) succeeds; Kaapi LLM times out
+      # Gemini STT succeeds; Kaapi LLM times out
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
           %Tesla.Env{status: 200, body: "fake-audio-bytes"}
@@ -259,7 +285,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert log.error != nil
     end
 
-    # Stage 1 (STT) failure: Bhasini/Gemini speech-to-text fails (audio download 404),
+    # Stage 1 (STT) failure: Gemini speech-to-text fails (audio download 404),
     # so VoiceFilesearchGpt.call returns %{success: false} WITHOUT making the Kaapi LLM
     # call, and the flow wakes on the Failure branch.
     test "STT failure - speech-to-text fails, no LLM call, flow records the error", %{
@@ -410,6 +436,104 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
       assert result["translated_text"] == "Hello there"
       assert is_nil(result["media_url"])
+    end
+
+    # Stage 3 (NMT+TTS) success: source != target, GCS enabled, supported languages —
+    # Gemini.nmt_text_to_speech translates + generates audio; voice_post_process merges
+    # the translated_text + media_url into the response.
+    test "NMT+TTS success: translates and merges translated_text + media_url" do
+      enable_gcs(1)
+      media_url = "https://storage.googleapis.com/mock-bucket/Gemini/outbound/voice.mp3"
+
+      response = %{
+        "message" => "Hello there",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "hindi"
+        }
+      }
+
+      with_mock(Gemini, [:passthrough],
+        nmt_text_to_speech: fn _org, _text, "english", "hindi", _opts ->
+          %{success: true, translated_text: "नमस्ते", media_url: media_url}
+        end
+      ) do
+        result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+        assert result["translated_text"] == "नमस्ते"
+        assert result["media_url"] == media_url
+      end
+    end
+
+    # Stage 3 same source/target language: no translation, plain TTS of the answer.
+    # tts_only routes a non-English same-language pair to Gemini.text_to_speech.
+    test "same source/target language: TTS only (no translation), returns audio" do
+      media_url = "https://storage.googleapis.com/mock-bucket/Gemini/outbound/tts.mp3"
+
+      response = %{
+        "message" => "Namaste doctor",
+        "voice_post_process" => %{
+          "source_language" => "hindi",
+          "target_language" => "hindi"
+        }
+      }
+
+      with_mock(Gemini, [:passthrough],
+        text_to_speech: fn _org, text ->
+          %{success: true, media_url: media_url, translated_text: text}
+        end
+      ) do
+        result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+        # same language -> text spoken as-is, no translation
+        assert result["translated_text"] == "Namaste doctor"
+        assert result["media_url"] == media_url
+      end
+    end
+
+    # Stage 3 unsupported language: GCS is on, but the target isn't a Gemini-supported
+    # language, so the valid_language? guard fails before any API call and we fall back
+    # to the untranslated text with no audio.
+    test "unsupported target language: no audio, falls back to untranslated text" do
+      enable_gcs(1)
+
+      response = %{
+        "message" => "Hello there",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "klingon"
+        }
+      }
+
+      result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+      assert result["translated_text"] == "Hello there"
+      assert is_nil(result["media_url"])
+    end
+
+    # Stage 3 both languages blank (the node body default): "" == "" -> same-language
+    # path -> plain TTS, no translation.
+    test "both languages blank: defaults to TTS only (no translation)" do
+      media_url = "https://storage.googleapis.com/mock-bucket/Gemini/outbound/blank.mp3"
+
+      response = %{
+        "message" => "Hello there",
+        "voice_post_process" => %{
+          "source_language" => "",
+          "target_language" => ""
+        }
+      }
+
+      with_mock(Gemini, [:passthrough],
+        text_to_speech: fn _org, text ->
+          %{success: true, media_url: media_url, translated_text: text}
+        end
+      ) do
+        result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+        assert result["translated_text"] == "Hello there"
+        assert result["media_url"] == media_url
+      end
     end
   end
 
