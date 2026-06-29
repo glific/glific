@@ -32,14 +32,24 @@ defmodule Glific.Groups.WAGroupsTest do
     :ok
   end
 
-  test "sync_wa_groups/1 syncs groups using Maytapi API", attrs do
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body:
-          "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Expenses\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
-      }
+  defp mock_maytapi(groups_body) do
+    Tesla.Mock.mock(fn
+      %{url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            ~s([{"id":242,"number":"9829627508","status":"active","type":"whatsapp","name":""}])
+        }
+
+      _env ->
+        %Tesla.Env{status: 200, body: groups_body}
     end)
+  end
+
+  test "sync_wa_groups/1 syncs groups using Maytapi API", attrs do
+    mock_maytapi(
+      "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Expenses\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
+    )
 
     assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
 
@@ -54,13 +64,9 @@ defmodule Glific.Groups.WAGroupsTest do
     assert group.bsp_id == "120363218884368888@g.us"
 
     # when we try to enter redundant groups again.
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body:
-          "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Expenses\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368889@g.us\",\"name\":\"Movie PlanB\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\", \"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
-      }
-    end)
+    mock_maytapi(
+      "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"Expenses\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"Movie Plan\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368889@g.us\",\"name\":\"Movie PlanB\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\", \"name\":\"Developer Group\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
+    )
 
     assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
     assert {:ok, group} = Repo.fetch_by(WAGroup, %{label: "Expenses"})
@@ -117,13 +123,9 @@ defmodule Glific.Groups.WAGroupsTest do
   end
 
   test "sync_wa_groups/1 syncs groups for empty group label", attrs do
-    Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{
-        status: 200,
-        body:
-          "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"marketing\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"admin group\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
-      }
-    end)
+    mock_maytapi(
+      "{\"count\":79,\"data\":[{\"admins\":[\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363213149844251@g.us\",\"name\":\"marketing\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\",\"917834811115@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363203450035277@g.us\",\"name\":\"admin group\",\"participants\":[\"917834811116@c.us\",\"917834811115@c.us\",\"917834811114@c.us\"]},{\"admins\":[\"917834811114@c.us\"],\"config\":{\"disappear\":false,\"edit\":\"all\",\"send\":\"all\"},\"id\":\"120363218884368888@g.us\",\"name\":\"\",\"participants\":[\"917834811114@c.us\"]}],\"limit\":500,\"success\":true,\"total\":79}"
+    )
 
     assert :ok == WAGroups.sync_wa_groups(attrs.organization_id)
 
@@ -406,7 +408,8 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "upserts an active membership for groups the phone is in", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
 
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
 
@@ -415,7 +418,9 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "deactivates memberships for groups no longer returned", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
 
@@ -425,12 +430,31 @@ defmodule Glific.Groups.WAGroupsTest do
     end
 
     test "reactivates a previously inactive membership", ctx do
-      group = group_detail(ctx.wa_group, ctx.wa_managed_phone, [])
+      group =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
       :ok = WAGroups.sync_wa_group_phones([], ctx.wa_managed_phone)
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == false
 
       :ok = WAGroups.sync_wa_group_phones([group], ctx.wa_managed_phone)
+      assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
+    end
+
+    test "skips when Maytapi returns a bsp_id that has no matching wa_group row",
+         ctx do
+      orphan =
+        group_detail(
+          %{ctx.wa_group | bsp_id: "120363099999999999@g.us"},
+          ctx.wa_managed_phone,
+          ["#{ctx.wa_managed_phone.phone}@c.us"]
+        )
+
+      known =
+        group_detail(ctx.wa_group, ctx.wa_managed_phone, ["#{ctx.wa_managed_phone.phone}@c.us"])
+
+      :ok = WAGroups.sync_wa_group_phones([orphan, known], ctx.wa_managed_phone)
+
       assert membership(ctx.wa_group.id, ctx.wa_managed_phone.id).is_active == true
     end
 
@@ -753,6 +777,44 @@ defmodule Glific.Groups.WAGroupsTest do
       assert is_binary(warning)
       assert warning =~ "'loading'"
       assert warning =~ ctx.second_phone.phone
+    end
+
+    test "next_active_member/2 returns the oldest active member (eligible by both wgp.is_active and Maytapi status)",
+         ctx do
+      # Setup has first_phone (primary, active) and second_phone (active).
+      # Excluding first_phone should give us second_phone.
+      assert phone = WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id])
+      assert phone.id == ctx.second_phone.id
+    end
+
+    test "next_active_member/2 skips members whose wa_groups_phones.is_active is false", ctx do
+      ctx.wa_group.id
+      |> membership(ctx.second_phone.id)
+      |> WAGroupPhone.changeset(%{is_active: false})
+      |> Repo.update!()
+
+      assert WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id]) == nil
+    end
+
+    test "next_active_member/2 skips members whose Maytapi status isn't 'active'", ctx do
+      ctx.second_phone
+      |> WAManagedPhone.changeset(%{status: "loading"})
+      |> Repo.update!()
+
+      assert WAGroups.next_active_member(ctx.wa_group.id, [ctx.first_phone.id]) == nil
+    end
+
+    test "next_active_member/2 with no exclude returns the primary itself if it qualifies", ctx do
+      assert phone = WAGroups.next_active_member(ctx.wa_group.id)
+      assert phone.id == ctx.first_phone.id
+    end
+
+    test "next_active_member/2 returns nil when the group has no eligible members", ctx do
+      assert WAGroups.next_active_member(ctx.wa_group.id, [
+               ctx.first_phone.id,
+               ctx.second_phone.id
+             ]) ==
+               nil
     end
   end
 end

@@ -18,6 +18,7 @@ defmodule Glific.Groups.WAGroups do
     Groups.WAGroupsCollection,
     Providers.Maytapi.ApiClient,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -74,14 +75,16 @@ defmodule Glific.Groups.WAGroups do
   @doc """
   Syncs groups and phones using maytapi API into Glific
   """
-  @spec sync_wa_groups(non_neg_integer()) :: :ok
+  @spec sync_wa_groups(non_neg_integer()) :: :ok | {:error, String.t()}
   def sync_wa_groups(org_id) do
-    wa_managed_phones =
-      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
+    with :ok <- WAManagedPhones.fetch_wa_managed_phones(org_id) do
+      wa_managed_phones =
+        WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
-    Enum.each(wa_managed_phones, fn wa_managed_phone ->
-      do_sync_wa_groups(org_id, wa_managed_phone)
-    end)
+      Enum.each(wa_managed_phones, fn wa_managed_phone ->
+        do_sync_wa_groups(org_id, wa_managed_phone)
+      end)
+    end
   end
 
   @spec do_sync_wa_groups(non_neg_integer(), map()) :: list() | {:error, any()}
@@ -98,7 +101,7 @@ defmodule Glific.Groups.WAGroups do
         {:error, body}
 
       {:error, message} ->
-        {:error, inspect(message)}
+        {:error, SafeLog.safe_inspect(message)}
     end
   end
 
@@ -294,12 +297,7 @@ defmodule Glific.Groups.WAGroups do
   @spec sync_wa_group_phones(list(), WAManagedPhone.t()) :: :ok
   def sync_wa_group_phones(group_details, wa_managed_phone) do
     org_id = wa_managed_phone.organization_id
-
-    # Cross-phone reconciliation needs every other managed phone in the
-    # org so it can check each one against this group's participants list.
-    other_managed_phones =
-      WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
-      |> Enum.reject(&(&1.id == wa_managed_phone.id))
+    all_managed_phones = WAManagedPhones.list_wa_managed_phones(%{organization_id: org_id})
 
     present_group_ids =
       Enum.flat_map(group_details, fn group ->
@@ -312,23 +310,7 @@ defmodule Glific.Groups.WAGroups do
             []
 
           wa_group ->
-            case ensure_membership(wa_group.id, wa_managed_phone.id, org_id, is_primary: false) do
-              {:ok, _membership} ->
-                :ok
-
-              {:error, reason} ->
-                Logger.warning(
-                  "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
-                )
-            end
-
-            reconcile_other_managed_phones(
-              wa_group,
-              group.participants,
-              other_managed_phones,
-              org_id
-            )
-
+            reconcile_managed_phones(wa_group, group.participants, all_managed_phones, org_id)
             [wa_group.id]
         end
       end)
@@ -337,27 +319,33 @@ defmodule Glific.Groups.WAGroups do
     :ok
   end
 
-  # Use the participants list from one phone's view of the group to fix
-  # the membership rows of all OTHER managed phones in the same group:
-  # in participants → active, not in participants → inactive.
-  #
-  # Without this, a phone whose own sync is stale or skipped keeps a
-  # wrong `is_active` flag until its next successful sync.
-  @spec reconcile_other_managed_phones(
+  # For every managed phone in the org (including the one that called
+  # Maytapi): if the phone's number is in this group's `participants`
+  # list, upsert its membership as `is_active: true`; otherwise mark its
+  # existing membership `is_active: false`.
+  @spec reconcile_managed_phones(
           WAGroup.t(),
           [String.t()],
           [WAManagedPhone.t()],
           non_neg_integer()
         ) :: :ok
-  defp reconcile_other_managed_phones(wa_group, participants, other_managed_phones, org_id) do
+  defp reconcile_managed_phones(wa_group, participants, managed_phones, org_id) do
     participant_phones =
       participants
       |> Enum.map(&phone_number/1)
       |> MapSet.new()
 
-    Enum.each(other_managed_phones, fn managed_phone ->
+    Enum.each(managed_phones, fn managed_phone ->
       if MapSet.member?(participant_phones, managed_phone.phone) do
-        ensure_membership(wa_group.id, managed_phone.id, org_id, is_primary: false)
+        case ensure_membership(wa_group.id, managed_phone.id, org_id, is_primary: false) do
+          {:ok, _membership} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.warning(
+              "Could not upsert wa_groups_phones row for WA group #{wa_group.bsp_id} (phone #{managed_phone.phone_id}): #{SafeLog.safe_inspect(reason)}"
+            )
+        end
       else
         deactivate_one_membership(wa_group.id, managed_phone.id)
       end
@@ -370,10 +358,10 @@ defmodule Glific.Groups.WAGroups do
   defp deactivate_one_membership(wa_group_id, wa_managed_phone_id) do
     WAGroupPhone
     |> where(
-      [wgp],
-      wgp.wa_group_id == ^wa_group_id and
-        wgp.wa_managed_phone_id == ^wa_managed_phone_id and
-        wgp.is_active == true
+      [wa_group_phone],
+      wa_group_phone.wa_group_id == ^wa_group_id and
+        wa_group_phone.wa_managed_phone_id == ^wa_managed_phone_id and
+        wa_group_phone.is_active == true
     )
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
@@ -419,6 +407,66 @@ defmodule Glific.Groups.WAGroups do
       nil -> nil
       wa_group_phone -> Repo.preload(wa_group_phone, :wa_managed_phone).wa_managed_phone
     end
+  end
+
+  @doc """
+  Return the oldest active membership's managed phone for a group.
+
+  `exclude` is a list of `wa_managed_phone_id`s to skip while selecting the
+  candidate — the failover path passes the phone(s) it has already tried
+  (e.g. the unhealthy primary, or a phone that just errored on send) so the
+  same phone isn't picked again. Pass `[]` to consider every member.
+
+  "Active" here means BOTH `wa_groups_phones.is_active == true` AND
+  `wa_managed_phones.status == "active"`.
+
+  Used by `Glific.Providers.Maytapi.Sender.pick_for_send/2` as the *strict*
+  failover candidate when the current primary is unhealthy. Returns `nil`
+  when no eligible member exists.
+  """
+  @spec next_active_member(non_neg_integer(), [non_neg_integer()]) ::
+          WAManagedPhone.t() | nil
+  def next_active_member(wa_group_id, exclude \\ []) do
+    next_member_query(wa_group_id, exclude)
+    |> where([_wa_group_phone, wa_managed_phone], wa_managed_phone.status == "active")
+    |> Repo.one()
+  end
+
+  @doc """
+  Return the oldest active membership's managed phone for a group, ignoring
+  the Maytapi `WAManagedPhone.status`. Caller is opting in to "best-effort"
+  selection — used by `Glific.Providers.Maytapi.Sender` as a relaxed
+  fallback when no Maytapi-active phone exists for the group; the cached
+  status might be stale and trying a phone is better than refusing the
+  send outright. Returns `nil` when the group has no membership rows with
+  `wa_groups_phones.is_active == true` (either no memberships at all, or
+  every membership is inactive).
+  """
+  @spec next_member(non_neg_integer(), [non_neg_integer()]) ::
+          WAManagedPhone.t() | nil
+  def next_member(wa_group_id, exclude \\ []) do
+    next_member_query(wa_group_id, exclude)
+    |> Repo.one()
+  end
+
+  @spec next_member_query(non_neg_integer(), [non_neg_integer()]) :: Ecto.Query.t()
+  defp next_member_query(wa_group_id, exclude) do
+    WAGroupPhone
+    |> join(:inner, [wa_group_phone], wa_managed_phone in WAManagedPhone,
+      on: wa_managed_phone.id == wa_group_phone.wa_managed_phone_id
+    )
+    |> where(
+      [wa_group_phone, _wa_managed_phone],
+      wa_group_phone.wa_group_id == ^wa_group_id and
+        wa_group_phone.is_active == true and
+        wa_group_phone.wa_managed_phone_id not in ^exclude
+    )
+    |> order_by([wa_group_phone, _wa_managed_phone],
+      asc: wa_group_phone.inserted_at,
+      asc: wa_group_phone.id
+    )
+    |> limit(1)
+    |> select([_wa_group_phone, wa_managed_phone], wa_managed_phone)
   end
 
   @doc """
@@ -548,10 +596,10 @@ defmodule Glific.Groups.WAGroups do
   defp deactivate_missing_memberships(wa_managed_phone, present_group_ids) do
     WAGroupPhone
     |> where(
-      [wgp],
-      wgp.wa_managed_phone_id == ^wa_managed_phone.id and
-        wgp.wa_group_id not in ^present_group_ids and
-        wgp.is_active == true
+      [wa_group_phone],
+      wa_group_phone.wa_managed_phone_id == ^wa_managed_phone.id and
+        wa_group_phone.wa_group_id not in ^present_group_ids and
+        wa_group_phone.is_active == true
     )
     |> Repo.update_all(set: [is_active: false, updated_at: DateTime.utc_now()])
 
@@ -734,7 +782,7 @@ defmodule Glific.Groups.WAGroups do
 
       {:error, error} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(error)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{SafeLog.safe_inspect(error)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}

@@ -64,6 +64,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   def sync_wa_group_contacts(_, _, %{context: %{current_user: user}}) do
     case WAGroups.sync_wa_groups(user.organization_id) do
       :ok -> {:ok, %{message: "successfully synced"}}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -106,6 +107,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
 
     case WAGroups.set_primary_phone(wa_group_id, wa_managed_phone_id) do
       {:ok, result} ->
+        Appsignal.increment_counter("glific.maytapi.primary_changed", 1, %{source: "manual"})
         {:ok, result}
 
       {:error, :membership_not_found} ->

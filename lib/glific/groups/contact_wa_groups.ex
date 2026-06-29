@@ -141,8 +141,7 @@ defmodule Glific.Groups.ContactWAGroups do
   @spec remove_group_members(non_neg_integer(), non_neg_integer(), list()) ::
           integer()
   defp remove_group_members(org_id, wa_group_id, contact_ids) do
-    wa_group = WAGroups.get_wa_group!(wa_group_id)
-    wa_group = Repo.preload(wa_group, :wa_managed_phone)
+    wa_group = WAGroups.get_wa_group!(wa_group_id) |> Repo.preload(:primary_phone)
 
     Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
       contact = Contacts.get_contact!(contact_id)
