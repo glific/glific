@@ -180,18 +180,18 @@ defmodule Glific.WAManagedPhones do
          {:ok, response} <- Jason.decode(body),
          {:ok, wa_managed_phones} <- validate_response(response) do
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
-        insert_wa_managed_phone(wa_managed_phone, org_id, secrets["product_id"])
+        upsert_wa_managed_phone(wa_managed_phone, org_id, secrets["product_id"])
       end)
 
-      :ok
+      ensure_active_phone(wa_managed_phones)
     else
       {:error, error} -> {:error, error}
     end
   end
 
-  @spec insert_wa_managed_phone(map(), non_neg_integer(), String.t()) :: {:ok, String.t()}
-  defp insert_wa_managed_phone(wa_managed_phone, org_id, product_id) do
-    phone = wa_managed_phone["number"]
+  @spec upsert_wa_managed_phone(map(), non_neg_integer(), String.t()) :: {:ok, String.t()}
+  defp upsert_wa_managed_phone(%{"number" => phone} = wa_managed_phone, org_id, product_id)
+       when is_binary(phone) and phone != "" do
     status = wa_managed_phone["status"]
 
     params = %{
@@ -203,30 +203,50 @@ defmodule Glific.WAManagedPhones do
       contact_type: "WA"
     }
 
-    with {:ok, contact} <- Contacts.maybe_create_contact(params),
-         nil <- Repo.get_by(WAManagedPhone, %{phone: phone, organization_id: org_id}) do
-      Map.merge(params, %{contact_id: contact.id, status: status})
-      |> create_wa_managed_phone()
+    with {:ok, contact} <- Contacts.maybe_create_contact(params) do
+      case Repo.get_by(WAManagedPhone, %{phone: phone, organization_id: org_id}) do
+        nil ->
+          params
+          |> Map.merge(%{contact_id: contact.id, status: status})
+          |> create_wa_managed_phone()
+
+        %WAManagedPhone{} = existing ->
+          update_wa_managed_phone(existing, %{status: status})
+      end
     end
 
     {:ok, "success"}
   end
 
-  @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
-  defp validate_response(wa_managed_phones) when is_list(wa_managed_phones) do
-    wa_managed_phones
-    |> Enum.filter(fn wa_managed_phone -> wa_managed_phone["status"] == "active" end)
-    |> has_any_phones()
+  # Logged-out phone: known phone_id, no number (Maytapi returns "idle"). Can't
+  # create a contact without a number, so just refresh the existing row's status.
+  defp upsert_wa_managed_phone(%{"id" => phone_id, "status" => status}, _org_id, _product_id)
+       when not is_nil(phone_id) do
+    case get_wa_managed_phone(phone_id) do
+      %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
+      nil -> :ok
+    end
+
+    {:ok, "success"}
   end
+
+  defp upsert_wa_managed_phone(_wa_managed_phone, _org_id, _product_id), do: {:ok, "skipped"}
+
+  @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
+  defp validate_response(wa_managed_phones) when is_list(wa_managed_phones),
+    do: {:ok, wa_managed_phones}
 
   defp validate_response(%{"message" => message, "success" => false}),
     do: {:error, message}
 
   defp validate_response(_), do: {:error, "Something went wrong"}
 
-  @spec has_any_phones(list()) :: {:ok, list()} | {:error, String.t()}
-  defp has_any_phones([]), do: {:error, "No active phones available"}
-  defp has_any_phones(wa_managed_phones), do: {:ok, wa_managed_phones}
+  @spec ensure_active_phone(list()) :: :ok | {:error, String.t()}
+  defp ensure_active_phone(wa_managed_phones) do
+    if Enum.any?(wa_managed_phones, &(&1["status"] == "active")),
+      do: :ok,
+      else: {:error, "No active phones available"}
+  end
 
   @doc """
   add the phone status
