@@ -19,7 +19,7 @@ defmodule GlificCredo.Checks.NoRawInspect do
   use Credo.Check,
     id: "GL1001",
     base_priority: :high,
-    category: :warning,
+    category: :error,
     param_defaults: [excluded_modules: ["Glific.SafeLog"]],
     explanations: [
       check: """
