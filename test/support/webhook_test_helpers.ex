@@ -25,14 +25,16 @@ defmodule Glific.WebhookTestHelpers do
   end
 
   defp await_flow_message(contact_id, expected_body, attempts) do
-    case Glific.Messages.list_messages(%{
-           filter: %{contact_id: contact_id},
-           opts: %{limit: 1, order: :desc}
-         }) do
-      [%{body: ^expected_body} = msg | _] ->
+    # Match the expected message anywhere in the contact's messages, not just the
+    # most recent one — a resumed flow may emit several messages, and messages
+    # sharing an inserted_at tick order non-deterministically.
+    Glific.Messages.list_messages(%{filter: %{contact_id: contact_id}})
+    |> Enum.find(&(&1.body == expected_body))
+    |> case do
+      %Message{} = msg ->
         msg
 
-      _ ->
+      nil ->
         Process.sleep(@await_interval_ms)
         await_flow_message(contact_id, expected_body, attempts - 1)
     end
@@ -150,61 +152,6 @@ defmodule Glific.WebhookTestHelpers do
         }
       },
       "metadata" => metadata,
-      "success" => success
-    }
-  end
-
-  @doc """
-  Callback params in the old Kaapi Responses API format (data.message, data.contact_id, etc.).
-  Used by call_and_wait and filesearch_gpt tests.
-  """
-  @spec build_old_format_callback_params(
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          boolean(),
-          String.t()
-        ) :: map()
-  def build_old_format_callback_params(
-        organization_id,
-        flow_id,
-        contact_id,
-        webhook_log_id,
-        success,
-        message
-      ) do
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-    signature_payload = %{
-      "organization_id" => organization_id,
-      "flow_id" => flow_id,
-      "contact_id" => contact_id,
-      "timestamp" => timestamp
-    }
-
-    signature =
-      Glific.signature(
-        organization_id,
-        Jason.encode!(signature_payload),
-        timestamp
-      )
-
-    %{
-      "data" => %{
-        "callback" =>
-          "https://api.glific.com/webhook/flow_resume?organization_id=#{organization_id}",
-        "contact_id" => contact_id,
-        "flow_id" => flow_id,
-        "message" => message,
-        "organization_id" => organization_id,
-        "response_id" => "resp_#{System.unique_integer([:positive])}",
-        "signature" => signature,
-        "status" => if(success, do: "success", else: "failure"),
-        "timestamp" => timestamp,
-        "webhook_log_id" => webhook_log_id,
-        "result_name" => "filesearch"
-      },
       "success" => success
     }
   end

@@ -167,6 +167,9 @@ config :glific,
 config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
 
+config :glific,
+  gupshup_partner_client_secret: env!("GUPSHUP_PARTNER_CLIENT_SECRET", :string!, "")
+
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
   max_msg_rows_to_delete: env!("MAX_MSG_ROWS_TO_DELETE", :integer, 2_000_000)
@@ -205,3 +208,12 @@ search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
 config :glific, Glific.Searches, repo_module: search_repo_module
+
+unless config_env() == :test do
+  config :glific, Glific.ThirdParty.Superset.ApiClient,
+    base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
+    dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),
+    guest_username: env!("SUPERSET_GUEST_USERNAME", :string, "this_is_not_a_username"),
+    username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
+    password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
+end

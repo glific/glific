@@ -7,8 +7,9 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Fixtures,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhook.SystemError,
+    Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.SystemError,
     Repo,
     Seeds.SeedsDev
   }
@@ -23,84 +24,6 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
   @ai_response "Glific is an open-source, two-way messaging platform designed for nonprofits to scale their outreach via WhatsApp. It helps organizations automate conversations, manage contacts, and measure impact, all in one centralized tool"
 
   describe "flow_resume_routes" do
-    test "resumes an existing flow on receiving webhook event with success response", %{
-      conn: %{assigns: %{organization_id: organization_id}} = conn
-    } do
-      contact = Fixtures.contact_fixture()
-      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
-
-      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-
-      flow =
-        Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
-
-      [node | _tail] = flow.nodes
-
-      signature_payload = %{
-        "organization_id" => organization_id,
-        "flow_id" => flow.id,
-        "contact_id" => contact.id,
-        "timestamp" => timestamp
-      }
-
-      signature =
-        Glific.signature(
-          organization_id,
-          Jason.encode!(signature_payload),
-          signature_payload["timestamp"]
-        )
-
-      params = %{
-        "data" => %{
-          "callback" =>
-            "https://api.glific.glific.com/webhook/flow_resume?organization_id=1&flow_id=16&contact_id=16&timestamp=1753377554424136&signature=97075c37cbcd0b97dc7a18d754656770d0613d1869f0ed500c041c7e01c20d2f",
-          "chunks" => [],
-          "contact_id" => contact.id,
-          "diagnostics" => %{
-            "input_tokens" => 27,
-            "model" => "gpt-4o-2024-08-06",
-            "output_tokens" => 343,
-            "total_tokens" => 370
-          },
-          "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
-          "flow_id" => flow.id,
-          "message" => @ai_response,
-          "organization_id" => organization_id,
-          "response_id" => "resp_68826b142198819881bce999ccd87a750d0635d313bf2c6f",
-          "signature" => signature,
-          "status" => "success",
-          "timestamp" => timestamp,
-          "webhook_log_id" => webhook_log.id,
-          "result_name" => "filesearch"
-        },
-        "success" => true
-      }
-
-      wait_time = 60
-
-      {:ok, _context} =
-        FlowContext.create_flow_context(%{
-          contact_id: contact.id,
-          flow_id: flow.id,
-          flow_uuid: flow.uuid,
-          uuid_map: %{},
-          organization_id: organization_id,
-          wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
-          is_await_result: true,
-          node_uuid: node.uuid
-        })
-
-      conn =
-        conn
-        |> post("/webhook/flow_resume", params)
-
-      assert json_response(conn, 200) == ""
-
-      # once a response is received the flow moves to next node i.e. send the message which is @results.response.message
-      message = await_flow_message(contact.id, @ai_response)
-      assert message.body == @ai_response
-    end
-
     test "resumes an existing flow on receiving webhook event with failure response", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
@@ -130,15 +53,18 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       params = %{
         "data" => %{
-          "callback" =>
-            "https://api.glific.glific.com/webhook/flow_resume?organization_id=1&flow_id=16&contact_id=16&timestamp=1753377554424136&signature=97075c37cbcd0b97dc7a18d754656770d0613d1869f0ed500c041c7e01c20d2f",
-          "contact_id" => contact.id,
-          "endpoint" => "http://0.0.0.0:8000/api/v1/responses",
-          "flow_id" => flow.id,
-          "message" => "Kaapi error: response generation failed",
+          "response" => %{
+            "output" => %{
+              "type" => "text",
+              "content" => %{"value" => "Kaapi error: response generation failed"}
+            }
+          }
+        },
+        "metadata" => %{
           "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
           "signature" => signature,
-          "status" => "failure",
           "timestamp" => timestamp,
           "webhook_log_id" => webhook_log.id,
           "result_name" => "filesearch"
@@ -644,12 +570,12 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
 
       # Call do_voice_flow_resume directly to verify the flow is NOT resumed
-      response = FlowResumeController.parse_callback_response(params)
+      response = Webhook.parse_callback_response(params)
 
       with_mock FlowContext,
         resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
         assert :ok =
-                 FlowResumeController.do_voice_flow_resume(
+                 Webhook.voice_resume(
                    organization_id,
                    params,
                    response
@@ -703,7 +629,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         })
 
       assert :ok =
-               FlowResumeController.do_voice_flow_resume(
+               Webhook.voice_resume(
                  organization_id,
                  %{"success" => false},
                  response
@@ -739,7 +665,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "webhook_log_id" => webhook_log.id,
         "result_name" => "result",
         "message" => "Voice answer",
-        "webhook_name" => "unified-voice-llm-call"
+        "webhook_name" => "voice-filesearch-gpt"
       }
 
       result = %{
@@ -763,7 +689,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       {exception, tags} =
         capture_appsignal(fn ->
           assert :ok =
-                   FlowResumeController.do_voice_flow_resume(
+                   Webhook.voice_resume(
                      organization_id,
                      result,
                      response
@@ -773,7 +699,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert %SystemError{} = exception
       assert Exception.message(exception) == "Webhook callback failure"
       assert tags.organization_id == organization_id
-      assert tags.webhook_name == "unified-voice-llm-call"
+      assert tags.webhook_name == "voice-filesearch-gpt"
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
@@ -781,7 +707,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.reason == "LLM provider timed out"
     end
 
-    test "returns 200 when TTS audio upload fails (bad base64)", %{
+    test "routes the flow to the Failure branch when TTS audio upload fails (bad base64)", %{
       conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
       contact = Fixtures.contact_fixture()
@@ -841,6 +767,91 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
+
+      # End-to-end: the failed audio upload drives the flow to the Failure branch,
+      # which (in the call_and_wait flow) sends the "failure" message.
+      message = await_flow_message(contact.id, "failure")
+      assert message.body == "failure"
+    end
+
+    test "maybe_upload_tts_audio marks tts_upload_error when the audio upload fails" do
+      response = %{
+        "output_type" => "audio",
+        "message" => "!!!not_valid_base64!!!",
+        "organization_id" => "1"
+      }
+
+      result = Webhook.maybe_upload_tts_audio(response)
+
+      assert is_nil(result["message"])
+      assert result["tts_upload_error"] =~ "not valid base64"
+    end
+
+    test "maybe_upload_tts_audio surfaces the real GcsWorker error (not a hardcoded GCS message)" do
+      gcs_error = "GCSWORKER: Error while uploading file to GCS (billing accountDisabled)"
+
+      response = %{
+        "output_type" => "audio",
+        "message" => Base.encode64("fake audio bytes"),
+        "organization_id" => "1"
+      }
+
+      with_mock Glific.GCS.GcsWorker, [:passthrough],
+        upload_media: fn _local, _remote, _org -> {:error, gcs_error} end do
+        result = Webhook.maybe_upload_tts_audio(response)
+
+        assert is_nil(result["message"])
+        # the actual GcsWorker reason is passed through, not assumed "GCS not enabled"
+        assert result["tts_upload_error"] == gcs_error
+      end
+    end
+
+    test "resume records a failure on the webhook log when TTS audio upload failed", %{
+      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      signature_payload = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      signature = Glific.signature(organization_id, Jason.encode!(signature_payload), timestamp)
+
+      # The shape maybe_upload_tts_audio/1 produces after a failed GCS upload.
+      response = %{
+        "organization_id" => organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "signature" => signature,
+        "timestamp" => timestamp,
+        "webhook_log_id" => webhook_log.id,
+        "result_name" => "response",
+        "message" => nil,
+        "tts_upload_error" =>
+          "TTS audio upload failed (GCS may not be enabled for this organization)"
+      }
+
+      with_mock FlowContext, [:passthrough],
+        resume_contact_flow: fn _contact, _flow_id, _results, message ->
+          send(self(), {:resume_message, message})
+          {:ok, nil, []}
+        end do
+        assert :ok = Webhook.resume(organization_id, %{"success" => true}, response)
+      end
+
+      # Even though Kaapi reported success, a failed audio upload routes the flow
+      # to the Failure branch (not Success with an empty message).
+      assert_received {:resume_message, %{body: "Failure"}}
+
+      updated_log = Repo.get!(WebhookLog, webhook_log.id)
+      assert updated_log.status_code == 400
+      assert updated_log.error =~ "GCS"
     end
 
     test "flow_resume returns 200 for unexpected callback format (no data/metadata)", %{
@@ -865,7 +876,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       assert :ok =
-               FlowResumeController.do_flow_resume(
+               Webhook.resume(
                  organization_id,
                  %{"success" => true},
                  response
@@ -899,16 +910,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       }
 
       assert :ok =
-               FlowResumeController.do_flow_resume(
+               Webhook.resume(
                  organization_id,
                  %{"success" => true},
                  response
                )
     end
 
-    test "do_flow_resume logs warning when resume_contact_flow returns an error", %{
-      conn: %{assigns: %{organization_id: organization_id}} = _conn
-    } do
+    test "do_flow_resume logs warning and reports to AppSignal when resume_contact_flow errors",
+         %{
+           conn: %{assigns: %{organization_id: organization_id}} = _conn
+         } do
       contact = Fixtures.contact_fixture()
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
@@ -932,19 +944,23 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "result_name" => "response"
       }
 
-      with_mock FlowContext, [:passthrough],
-        resume_contact_flow: fn _contact, _flow_id, _results, _message ->
-          {:error, "flow context not found"}
-        end do
-        assert :ok =
-                 FlowResumeController.do_flow_resume(
-                   organization_id,
-                   %{"success" => true},
-                   response
-                 )
+      {exception, tags} =
+        capture_appsignal(fn ->
+          with_mock FlowContext, [:passthrough],
+            resume_contact_flow: fn _contact, _flow_id, _results, _message ->
+              {:error, "flow context not found"}
+            end do
+            assert :ok = Webhook.resume(organization_id, %{"success" => true}, response)
+            assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+          end
+        end)
 
-        assert called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
-      end
+      assert %SystemError{} = exception
+      assert Exception.message(exception) == "Webhook resume failure"
+      assert tags.organization_id == organization_id
+      assert tags.flow_id == flow.id
+      assert tags.contact_id == contact.id
+      assert tags.reason == inspect("flow context not found")
     end
 
     test "run_supervised_task rescues exceptions and returns :ok" do

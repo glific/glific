@@ -77,7 +77,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(org_id) do
     if BigQuery.active?(org_id) do
-      Logger.info("Found bigquery credentials for org_id: #{org_id}")
+      Logger.debug("Found bigquery credentials for org_id: #{org_id}")
       RepoReplica.put_process_state(org_id)
 
       Jobs.get_bigquery_jobs(org_id)
@@ -131,7 +131,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
 
     if credential do
+      # Insert-only tables (see `ignore_updates_for_table/0`) are never re-synced, so they
+      # don't accumulate the update-sourced duplicates the dedup query is built to remove.
+      ignore_tables = BigQuery.ignore_updates_for_table()
+
       list_of_table
+      |> Enum.reject(&(&1 in ignore_tables))
       |> Enum.each(&init_removal_job(&1, organization_id))
     end
 
@@ -176,7 +181,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       ) do
     Repo.put_process_state(organization_id)
     RepoReplica.put_process_state(organization_id)
-    Logger.info("removing duplicates for org_id: #{organization_id} table: #{table}")
+    Logger.debug("removing duplicates for org_id: #{organization_id} table: #{table}")
     BigQuery.make_job_to_remove_duplicate(table, organization_id)
     :ok
   end
@@ -204,7 +209,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
   defp insert_max_id(table_name, table_id, organization_id) do
-    Logger.info("Checking for bigquery job for org_id: #{organization_id} table: #{table_name}")
+    Logger.debug("Checking for bigquery job for org_id: #{organization_id} table: #{table_name}")
 
     max_id =
       BigQuery.get_table_struct(table_name)
@@ -221,7 +226,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
   defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
-    Logger.info(
+    Logger.debug(
       "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
 
@@ -314,7 +319,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
        do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -335,7 +340,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("contacts_wa_groups", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching contacts_wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -366,7 +371,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("flow_labels", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -395,7 +400,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("contacts_fields", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -425,7 +430,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("groups", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -458,7 +463,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("tags", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -489,7 +494,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("trial_users", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching trial users data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -521,7 +526,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("saved_searches", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching saved_searches data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -552,7 +557,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("speed_sends", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -588,7 +593,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("wa_groups", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -620,7 +625,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("wa_groups_phones", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching wa_groups_phones data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -651,7 +656,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("interactive_templates", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -685,7 +690,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("wa_groups_collections", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching wa_groups_collections data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -716,7 +721,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("wa_reactions", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching wa_reactions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -747,7 +752,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("whatsapp_forms", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "Fetching whatsapp_forms data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -779,7 +784,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("whatsapp_forms_responses", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "Fetching whatsapp_forms_responses data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -813,7 +818,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("certificate_templates", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching certificate_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -844,7 +849,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("issued_certificates", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching issued_certificates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -876,7 +881,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("message_broadcast_contacts", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -907,7 +912,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("message_broadcasts", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching message_broadcasts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -944,7 +949,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("contacts", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -998,7 +1003,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("contacts_groups", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching contacts_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1031,7 +1036,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("profiles", organization_id, attrs) do
     # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
-    Logger.info(
+    Logger.debug(
       "fetching profiles data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1073,7 +1078,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("contact_histories", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching contact_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1105,7 +1110,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("message_conversations", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1138,7 +1143,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("flows", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching flows data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1171,7 +1176,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1208,7 +1213,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("flow_counts", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching flow_counts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1241,7 +1246,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("messages_media", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching messages_media data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1252,7 +1257,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("flow_contexts", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching flow_contexts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1302,7 +1307,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("tickets", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1341,7 +1346,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("wa_messages", organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1385,7 +1390,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
-    Logger.info(
+    Logger.debug(
       "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1443,7 +1448,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data(tracker, organization_id, attrs)
        when tracker in ["trackers", "trackers_all"] do
-    Logger.info(
+    Logger.debug(
       "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
     )
 
@@ -1616,7 +1621,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp make_job(data, table, organization_id, attrs) do
-    Logger.info(
+    Logger.debug(
       "making a new job for org_id: #{organization_id} table: #{table} to send on bigquery with max id: #{inspect(attrs)}"
     )
 

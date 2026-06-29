@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation generatePrompt($input: PromptGeneratorInput!) {
+  generatePrompt(input: $input) {
+    ...PromptGenerationFields
+
+    ...ErrorFields
+  }
+}
