@@ -77,6 +77,12 @@ defmodule GlificWeb.Router do
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
   end
 
+  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
+    pipe_through([:api, :api_protected])
+
+    post("/get-embed-token", SupersetController, :embed_token)
+  end
+
   # Enables LiveDashboard only for development
   #
   # If you want to use the LiveDashboard in production, you should put
@@ -128,6 +134,7 @@ defmodule GlificWeb.Router do
   # Special routes for Kaapi Callbacks. All callbacks from Kaapi should be handled here.
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
+    post("/prompt_generation", KaapiController, :prompt_generation_callback)
     post("/voice_flow_resume", Flows.FlowResumeController, :voice_flow_resume)
   end
 

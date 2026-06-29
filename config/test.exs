@@ -71,3 +71,12 @@ config :glific,
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test
 
 config :glific, open_ai: "sk-test_api_key"
+
+config :glific, Glific.ThirdParty.Superset.ApiClient,
+  base_url: "https://moonshine.projecttech4dev.org/api/v1",
+  dashboard_id: "71f4c8d9-f9c6-4b9d-9b28-80c550681b7f",
+  guest_username: "glific-dev-embed",
+  username: "superset_username",
+  password: "superset_password"
+
+config :glific, gupshup_partner_client_secret: "test_client_secret"

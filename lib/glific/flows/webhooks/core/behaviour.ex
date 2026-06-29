@@ -10,8 +10,7 @@ defmodule Glific.Flows.Webhooks.Behaviour do
 
   Authors should `use Glific.Flows.Webhooks.Sync` or `Glific.Flows.Webhooks.Async`
   rather than implementing this behaviour directly — the macros inject
-  `name/0` and `mode/0` and leave `call/2` (plus, for async, `handle_resume/2`)
-  for the author to write.
+  `name/0` and `mode/0` and leave `call/2` for the author to write.
   """
 
   alias Glific.Flows.{Action, FlowContext}
@@ -50,8 +49,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @type sync_result :: map() | nil | String.t() | {:ok, term()} | {:error, String.t()}
 
   @typedoc """
-  Return shape for asynchronous webhooks (Kaapi STT/TTS, unified-llm-call,
-  unified-voice-llm-call). `{:wait, ctx, []}` parks the flow context;
+  Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt,
+  voice-filesearch-gpt). `{:wait, ctx, []}` parks the flow context;
   `{:ok, ctx, [msg]}` is the immediate-failure branch (e.g. missing Kaapi
   creds, body decode error) where the flow continues with a Failure message
   without ever entering the await state.
@@ -79,17 +78,8 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   """
   @callback call(fields :: map(), ctx :: ctx()) :: sync_result() | async_result()
 
-  @doc """
-  Async-only. Invoked from the flow_resume callback path to shape the Kaapi
-  callback payload into the response map merged into the flow context.
-  Defaults to the standard do_flow_resume behaviour. Override for webhooks
-  whose callback needs post-processing (e.g. `unified-voice-llm-call`).
-  """
-  @callback handle_resume(callback :: map(), ctx :: ctx()) ::
-              {:ok | :error, map()}
-
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
-  @optional_callbacks handle_resume: 2, wait_time_default: 0
+  @optional_callbacks wait_time_default: 0
 end

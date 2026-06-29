@@ -37,6 +37,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  alias Glific.Flows.Webhooks.Registry, as: WebhooksRegistry
+
   require Logger
 
   @contact_profile %{
@@ -70,6 +72,15 @@ defmodule Glific.Flows.Action do
   @required_fields_interactive_template [:name | @required_field_common]
   @required_fields_set_results [:name, :category, :value | @required_field_common]
   @required_fields_set_wa_group_field [:value, :field | @required_field_common]
+
+  # Deprecated Bhashini FUNCTION webhooks (removed from the flow-editor webhook
+  # dropdown). Flows still referencing them must migrate to the new
+  # "speech_to_text" / "text_to_speech" nodes, so publishing them surfaces an error.
+  @deprecated_bhashini_webhooks %{
+    "speech_to_text_with_bhasini" => "speech_to_text",
+    "text_to_speech_with_bhasini" => "text_to_speech",
+    "nmt_tts_with_bhasini" => "text_to_speech"
+  }
 
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
@@ -543,6 +554,18 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def validate(%{type: "call_webhook", url: url}, errors, _flow)
+      when is_map_key(@deprecated_bhashini_webhooks, url) do
+    replacement = Map.fetch!(@deprecated_bhashini_webhooks, url)
+
+    [
+      {Webhook,
+       "The '#{url}' webhook is deprecated. Please migrate this node to the '#{replacement}' node before publishing.",
+       "Critical"}
+      | errors
+    ]
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -640,39 +663,12 @@ defmodule Glific.Flows.Action do
     {:ok, context, [message]}
   end
 
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "speech_to_text"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_kaapi_stt(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "text_to_speech"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_kaapi_tts(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "voice-filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_unified_voice_filesearch(action, context)
-  end
-
-  def execute(
-        %{type: "call_webhook", method: "FUNCTION", url: "filesearch-gpt"} = action,
-        context,
-        []
-      ) do
-    Webhook.execute_unified_filesearch(action, context)
-  end
-
   def execute(%{type: "call_webhook"} = action, context, []) do
+    # Park BEFORE enqueuing the Oban job. The job's worker may fail the dispatch and call
+    # wakeup_one to resume the flow; if that ran before the await-state write committed, the
+    # stale park write would re-park an already-resumed flow. Committing the await state first
+    # closes that race.
+    context = park_async_webhook(action, context)
     Webhook.execute(action, context)
     {:wait, context, []}
   end
@@ -1035,6 +1031,36 @@ defmodule Glific.Flows.Action do
   end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  # Async webhooks (STT/TTS/filesearch) park the flow at this node and are resumed by a
+  # Kaapi callback to FlowResumeController, which finds the parked context via
+  # FlowContext.await_context (is_await_result == true). So we must put the context into
+  # the await state here; wakeup_at also arms the timeout fallback if no callback arrives.
+  # Plain webhooks resume via the Oban worker's wakeup_one and don't need this.
+  @spec park_async_webhook(Action.t(), FlowContext.t()) :: FlowContext.t()
+  defp park_async_webhook(%{url: url} = action, context) do
+    case WebhooksRegistry.lookup(url) do
+      module when is_atom(module) and not is_nil(module) ->
+        if module.mode() == :async,
+          do: do_park(action, context, module.wait_time_default()),
+          else: context
+
+      _ ->
+        context
+    end
+  end
+
+  @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
+  defp do_park(action, context, default_wait_time) do
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{
+        wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || default_wait_time),
+        is_background_flow: context.flow.is_background,
+        is_await_result: true
+      })
+
+    context
+  end
+
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
 
   defp add_flow_label(%{last_message: last_message}, flow_label) do

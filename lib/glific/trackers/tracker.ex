@@ -42,5 +42,6 @@ defmodule Glific.Trackers.Tracker do
     tracker
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:date, :period, :organization_id])
   end
 end
