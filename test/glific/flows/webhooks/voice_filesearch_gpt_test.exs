@@ -74,8 +74,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
   # voice_post_process's NMT path is gated on the org having GCS enabled
   # (organization.services["google_cloud_storage"]). Create that credential and
-  # refresh the org cache so the in-test org reports GCS on. The DB change is
-  # sandboxed per test, so this never leaks into the "GCS disabled" test.
+  # refresh the org cache so the in-test org reports GCS on. The DB row is rolled
+  # back by the SQL sandbox, but the Partners org cache is a *global* Cachex store
+  # that isn't — so clear it on_exit to keep the "GCS disabled" cases order-independent.
   defp enable_gcs(organization_id) do
     {:ok, _credential} =
       Partners.create_credential(%{
@@ -94,7 +95,12 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         is_active: true
       })
 
-    Partners.get_organization!(organization_id) |> Partners.fill_cache()
+    organization = Partners.get_organization!(organization_id)
+    Partners.fill_cache(organization)
+
+    on_exit(fn ->
+      Partners.remove_organization_cache(organization_id, organization.shortcode)
+    end)
   end
 
   # Voice-specific callback format: includes voice_post_process metadata
