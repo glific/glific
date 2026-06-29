@@ -91,8 +91,6 @@ defmodule Glific.GCS.GcsWorker do
       |> where([m], m.organization_id == ^organization_id and m.id >= ^message_media_id)
       |> where([m], m.flow == :inbound)
       |> where([m], is_nil(m.gcs_url))
-      # Skip media we've already permanently failed on (e.g. invalid/expired media id)
-      |> where([m], is_nil(m.gcs_error))
       |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '7 day'"))
       |> order_by([m], asc: m.id)
       |> limit(^limit)
@@ -213,17 +211,7 @@ defmodule Glific.GCS.GcsWorker do
     Repo.put_process_state(media["organization_id"])
     RepoReplica.put_process_state(media["organization_id"])
 
-    # Credentials may have been revoked/disabled after this job was queued, so
-    # re-check before doing any work and discard rather than fail noisily.
-    if gcs_enabled?(media["organization_id"]) do
-      do_perform(media)
-    else
-      error =
-        "GCSWORKER: GCS not enabled for org_id: #{media["organization_id"]}, discarding media_id: #{media["id"]}"
-
-      Logger.info(error)
-      {:discard, error}
-    end
+    do_perform(media)
   end
 
   @spec do_perform(map()) :: :ok | {:error, String.t()} | {:discard, String.t()}
