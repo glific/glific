@@ -394,7 +394,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert tags.reason =~ "empty"
     end
 
-    # Stage 3 (NMT+TTS) failure: a non-empty answer, but nmt_tts_with_bhasini fails
+    # Stage 3 (NMT+TTS) failure: a non-empty answer, but the Gemini NMT+TTS step fails
     # (GCS not enabled for org 1 in test) — voice_post_process falls back to the
     # untranslated text with no audio rather than crashing.
     test "returns untranslated text and no audio when NMT+TTS fails (GCS disabled)" do

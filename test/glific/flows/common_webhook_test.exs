@@ -1205,164 +1205,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     end
   end
 
-  describe "speech_to_text_with_bhasini failure reporting" do
-    setup do
-      contact = Fixtures.contact_fixture()
-      %{contact: contact, fields: bhasini_stt_fields(contact.id)}
-    end
-
-    test "emits SystemError with http_status + flow_id/contact_id tags on Gemini 4xx response",
-         %{fields: fields, contact: contact} do
-      Tesla.Mock.mock(fn
-        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
-        %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
-      end)
-
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-          assert is_binary(result)
-        end)
-
-      assert %SystemError{} = exception
-
-      assert Exception.message(exception) ==
-               "Webhook system_error from speech_to_text_with_bhasini"
-
-      assert tags.webhook_name == "speech_to_text_with_bhasini"
-      assert tags.organization_id == 1
-      assert tags.http_status == 401
-      assert is_nil(tags.reason)
-      # flow_id/contact_id make the failure traceable back to a specific flow.
-      assert tags.flow_id == 42
-      assert tags.contact_id == contact.id
-    end
-
-    test "emits SystemError with reason tag when audio download fails", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :get} -> %Tesla.Env{status: 404, body: ""}
-      end)
-
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-          assert result == "File download failed"
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.reason == "File download failed"
-      assert is_nil(tags.http_status)
-    end
-
-    test "does not call AppSignal on successful Gemini response", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
-
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [%{content: %{parts: [%{text: ~s("transcribed text")}]}}],
-              usageMetadata: %{totalTokenCount: 10}
-            }
-          }
-      end)
-
-      test_pid = self()
-
-      with_mocks([
-        {Appsignal, [:passthrough],
-         [
-           send_error: fn _ex, _stack, _fn ->
-             send(test_pid, :appsignal_called)
-             :ok
-           end
-         ]}
-      ]) do
-        result = CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-        assert result.success == true
-      end
-
-      refute_received :appsignal_called
-    end
-
-    test "rescue path reports SystemError and reraises on unexpected exception", %{
-      fields: fields
-    } do
-      # Gemini returns 200 with a `text` field that isn't valid JSON.
-      # ApiClient's success branch does Jason.decode!(text), which raises.
-      # The try/rescue in CommonWebhook must catch, report, and reraise.
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
-
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              candidates: [%{content: %{parts: [%{text: "not valid json {{{"}]}}],
-              usageMetadata: %{totalTokenCount: 1}
-            }
-          }
-      end)
-
-      {exception, _tags} =
-        capture_appsignal(fn ->
-          assert_raise Jason.DecodeError, fn ->
-            CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-          end
-        end)
-
-      assert %SystemError{} = exception
-    end
-  end
-
-  describe "text_to_speech_with_bhasini failure reporting" do
-    setup do
-      contact = Fixtures.contact_fixture()
-      %{contact: contact, fields: bhasini_tts_fields(contact.id)}
-    end
-
-    test "emits SystemError with http_status tag on Gemini 4xx response", %{fields: fields} do
-      Tesla.Mock.mock(fn
-        %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
-      end)
-
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
-          assert is_binary(result)
-        end)
-
-      assert %SystemError{} = exception
-
-      assert Exception.message(exception) ==
-               "Webhook system_error from text_to_speech_with_bhasini"
-
-      assert tags.webhook_name == "text_to_speech_with_bhasini"
-      assert tags.organization_id == 1
-      assert tags.http_status == 401
-    end
-
-    test "emits SystemError on OpenAI TTS failure (speech_engine = open_ai)", %{fields: fields} do
-      fields = Map.put(fields, "speech_engine", "open_ai")
-
-      Tesla.Mock.mock(fn %{method: :post} ->
-        %Tesla.Env{status: 401, body: %{}}
-      end)
-
-      {exception, tags} =
-        capture_appsignal(fn ->
-          CommonWebhook.webhook("text_to_speech_with_bhasini", fields)
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "text_to_speech_with_bhasini"
-      assert tags.organization_id == 1
-    end
-  end
-
   # Runs `fun` with Appsignal.send_error and Appsignal.Span.set_sample_data
   # mocked. Returns {exception, tags} captured from the production code's
   # reporting call.
@@ -1416,27 +1258,6 @@ defmodule Glific.Flows.CommonWebhookTest do
     after
       0 -> last
     end
-  end
-
-  defp bhasini_stt_fields(contact_id) do
-    %{
-      "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
-      "organization_id" => 1,
-      # flow_id/contact_id are merged into a function webhook's fields by
-      # Glific.Flows.Webhook.perform/1 so failure reports can be traced to a flow.
-      "flow_id" => 42,
-      "contact_id" => contact_id,
-      "contact" => %{"id" => to_string(contact_id)}
-    }
-  end
-
-  defp bhasini_tts_fields(contact_id) do
-    %{
-      "text" => "Hello world",
-      "organization_id" => "1",
-      "contact" => %{"id" => to_string(contact_id)},
-      "speech_engine" => "bhashini"
-    }
   end
 
   defp stt_fields(contact_id) do
@@ -1933,7 +1754,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert payload.query.input == "Transcribed audio"
     end
 
-    test "returns structured failure (no CaseClauseError) when Bhasini rejects the URL" do
+    test "returns structured failure (no CaseClauseError) when the audio URL is invalid" do
       organization_id = 1
       contact = Fixtures.contact_fixture()
 
@@ -1942,7 +1763,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "flow_id" => 1,
         "contact_id" => contact.id,
         "assistant_id" => "asst_voice_bad_url",
-        # http (not https) → Bhasini.validate_params returns {:error, "Media URL is invalid"}
+        # http (not https) → validate_media returns {:error, "Media URL is invalid"}
         "speech" => "http://example.com/audio.ogg",
         "source_language" => "english",
         "target_language" => "hindi",
@@ -1950,23 +1771,13 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "result"
       }
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result =
-            VoiceFilesearchGpt.call(fields, %{})
+      result = VoiceFilesearchGpt.call(fields, %{})
 
-          assert result == %{success: false, reason: "Media URL is invalid"}
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text_with_bhasini"
-      assert tags.reason == "Media URL is invalid"
-      assert is_nil(tags.http_status)
+      assert result == %{success: false, reason: "Media URL is invalid"}
     end
 
-    # NOTE: voice-filesearch-gpt is async — the bhasini STT step still reports its own
-    # failures (see the test above), but a failure in the LLM dispatch only produces a
-    # failure RESULT here. That failure is reported by Instrumentation.around_async/3
+    # NOTE: voice-filesearch-gpt is async — a failure in the LLM dispatch produces a
+    # failure RESULT here, reported by the async instrumentation when the worker runs
     # (covered in webhook_infrastructure_test.exs).
     test "returns failure result under voice-filesearch-gpt when LLM dispatch fails" do
       organization_id = 1
