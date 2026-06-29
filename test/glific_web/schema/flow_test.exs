@@ -985,6 +985,82 @@ defmodule GlificWeb.Schema.FlowTest do
     refute Map.has_key?(sheet_action, "sheet_id")
   end
 
+  test "import flow with a valid google sheet url links the existing sheet",
+       %{manager: user} do
+    sheet_node_uuid = "a1b2c3d4-5555-6666-7777-88889999bbbb"
+
+    # A sheet with this url already exists in the org, so `get_or_create_sheet/2`
+    # resolves it via `Repo.fetch_by/2` (the happy path) instead of hitting the network.
+    existing_sheet = Fixtures.sheet_fixture(%{organization_id: user.organization_id})
+
+    import_data = %{
+      "flows" => [
+        %{
+          "keywords" => ["validsheetimporttest"],
+          "definition" => %{
+            "name" => "Valid Sheet Import Flow",
+            "uuid" => Ecto.UUID.generate(),
+            "nodes" => [
+              %{
+                "uuid" => sheet_node_uuid,
+                "actions" => [
+                  %{
+                    "type" => "link_google_sheet",
+                    "uuid" => Ecto.UUID.generate(),
+                    "name" => existing_sheet.label,
+                    "url" => existing_sheet.url,
+                    # A stale sheet_id from the source org that must be replaced with
+                    # the resolved sheet's real id.
+                    "sheet_id" => 999
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "contact_field" => [],
+      "collections" => [],
+      "interactive_templates" => []
+    }
+
+    import_flow = Jason.encode!(import_data)
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+
+    import_status = get_in(query_data, [:data, "importFlow", "status", Access.at(0)])
+
+    assert import_status["flowName"] == "Valid Sheet Import Flow"
+    assert import_status["status"] == "Successfully imported"
+
+    # The node is not flagged because the sheet linked successfully.
+    assert import_status["invalidSheetNodeUuids"] == []
+    assert import_status["assistantNodeUuids"] == []
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{
+        name: "Valid Sheet Import Flow",
+        organization_id: user.organization_id
+      })
+
+    revision =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^flow.id)
+      |> order_by([fr], desc: fr.inserted_at, desc: fr.id)
+      |> limit(1)
+      |> Repo.one!()
+
+    sheet_action =
+      revision.definition
+      |> Map.fetch!("nodes")
+      |> hd()
+      |> Map.fetch!("actions")
+      |> hd()
+
+    # The stale sheet_id is replaced with the resolved sheet's real id.
+    assert sheet_action["sheet_id"] == existing_sheet.id
+  end
+
   test "terminate inactive flows", attrs do
     {:ok, context} =
       FlowContext.create_flow_context(%{
