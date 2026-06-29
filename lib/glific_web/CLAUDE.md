@@ -129,7 +129,11 @@ Every query/mutation a test exercises needs a matching file under `assets/gql/<e
 
 ## REST controllers, plugs, providers
 
-- `controllers/` — Pow auth, provider webhook receivers, media/upload, misc REST.
+- `controllers/` — Pow auth, provider webhook receivers, media/upload, misc REST (e.g.
+  `api/v1/superset_controller.ex` for the Superset embed-token endpoint). Utility REST
+  controllers that are gated per-org use `FunWithFlags.enabled?(:flag, for: %{organization_id:
+  org_id})` and return `403` when the flag is off, `503` on upstream failure — raw upstream
+  error details must never reach the client.
 - `plugs/` — `APIAuthPlug` (token extraction/validation), rate limiting, tenant resolution.
 - `providers/` (under `glific_web`) — inbound webhook routing for Gupshup/Maytapi; actual
   message handling delegates into `Glific.Providers.*`.
