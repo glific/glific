@@ -256,10 +256,24 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # Tesla client with a retry that covers transient HTTP failures *and* Maytapi's
   # "Lib not loaded" (W05), which comes back as HTTP 200 — hence `should_retry`
   # inspects the body, not just the status.
+  #
+  # `Tesla.Middleware.Retry` backs off exponentially: the nth retry waits
+  # `min(max_delay, delay * 2 ^ (n - 1))` ms, plus jitter. W05 can take 30s+ to
+  # clear after an instance reconnect, so we give it 5 attempts and let the delay
+  # grow toward `max_delay` (2s → 4s → 8s → 16s → 30s, capped).
+  @retry_delay 2_000
+  @retry_max_delay 30_000
+  @retry_max_retries 5
+
   @spec client() :: Tesla.Client.t()
   defp client do
     Tesla.client([
-      {Tesla.Middleware.Retry, delay: 3_000, max_retries: 2, should_retry: &retry_request?/3}
+      {Tesla.Middleware.Retry,
+       delay: @retry_delay,
+       max_delay: @retry_max_delay,
+       max_retries: @retry_max_retries,
+       jitter_factor: 0.2,
+       should_retry: &retry_request?/3}
     ])
   end
 
