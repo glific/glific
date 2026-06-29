@@ -1096,7 +1096,8 @@ defmodule Glific.Flows do
           {processed_nodes, assistant_uuids, sheet_uuids} =
             process_node_actions(node, interactive_template_list, flow_info, organization_id)
 
-          {nodes_acc ++ processed_nodes, assistant_acc ++ assistant_uuids, sheet_acc ++ sheet_uuids}
+          {nodes_acc ++ processed_nodes, assistant_acc ++ assistant_uuids,
+           sheet_acc ++ sheet_uuids}
         end
       )
 
@@ -1119,22 +1120,25 @@ defmodule Glific.Flows do
          flow_info,
          org_id
        ) do
-    {updated_actions, tags} =
-      Enum.reduce(actions, {[], MapSet.new()}, fn action, {actions_acc, tags_acc} ->
+    {updated_actions, has_assistant?, has_invalid_sheet?} =
+      Enum.reduce(actions, {[], false, false}, fn action, {acc, assistant?, invalid_sheet?} ->
         case process_action(action, node, interactive_template_list, flow_info, org_id) do
           {:ok, updated_action} ->
-            {actions_acc ++ [updated_action], tags_acc}
+            {acc ++ [updated_action], assistant?, invalid_sheet?}
 
-          {:ok, updated_action, tag} ->
-            {actions_acc ++ [updated_action], MapSet.put(tags_acc, tag)}
+          {:ok, updated_action, :assistant} ->
+            {acc ++ [updated_action], true, invalid_sheet?}
+
+          {:ok, updated_action, :invalid_sheet} ->
+            {acc ++ [updated_action], assistant?, true}
         end
       end)
 
     updated_node = Map.put(node, "actions", updated_actions)
     label = node_label(node["uuid"])
 
-    assistant_uuids = if MapSet.member?(tags, :assistant), do: [label], else: []
-    invalid_sheet_uuids = if MapSet.member?(tags, :invalid_sheet), do: [label], else: []
+    assistant_uuids = if has_assistant?, do: [label], else: []
+    invalid_sheet_uuids = if has_invalid_sheet?, do: [label], else: []
 
     {[updated_node], assistant_uuids, invalid_sheet_uuids}
   end
