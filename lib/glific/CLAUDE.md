@@ -40,15 +40,15 @@ Mirror `Glific.Tags.Tag` — the cleanest reference implementation:
 Mirror `Glific.Tags`. The context is the **only** public boundary — schemas are never called
 directly from the web layer. Use the `Repo` helper functions instead of hand-writing queries:
 
-| Function | Naming contract |
-|----------|-----------------|
-| `list_<entities>(args)` | `Repo.list_filter(args, Entity, &Repo.opts_with_label/2, &Repo.filter_with/2)` |
-| `count_<entities>(args)` | `Repo.count_filter(args, Entity, &Repo.filter_with/2)` |
-| `get_<entity>!(id)` | raises (`Repo.get!`) |
-| `fetch_<entity>(id)` / `fetch_by(...)` | returns `{:ok, e}` / `{:error, ["Resource not found"]}` |
-| `create_<entity>(attrs)` | `%Entity{} \|> Entity.changeset(attrs) \|> Repo.insert()` |
-| `update_<entity>(e, attrs)` | `... \|> Repo.update()` |
-| `delete_<entity>(e)` | `Repo.delete(e)` |
+| Function                               | Naming contract                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| `list_<entities>(args)`                | `Repo.list_filter(args, Entity, &Repo.opts_with_label/2, &Repo.filter_with/2)` |
+| `count_<entities>(args)`               | `Repo.count_filter(args, Entity, &Repo.filter_with/2)`                         |
+| `get_<entity>!(id)`                    | raises (`Repo.get!`)                                                           |
+| `fetch_<entity>(id)` / `fetch_by(...)` | returns `{:ok, e}` / `{:error, ["Resource not found"]}`                        |
+| `create_<entity>(attrs)`               | `%Entity{} \|> Entity.changeset(attrs) \|> Repo.insert()`                      |
+| `update_<entity>(e, attrs)`            | `... \|> Repo.update()`                                                        |
+| `delete_<entity>(e)`                   | `Repo.delete(e)`                                                               |
 
 `Repo.list_filter/5` and `Repo.filter_with/2` already understand the standard `%{filter: ..., opts: %{order, limit, offset}}` shape. Custom filters get a private `filter_with/2` clause that pattern-matches the extra keys and falls through to `super` — grep `defp filter_with` in any context (e.g. `Glific.Contacts`) for the pattern.
 
@@ -99,7 +99,18 @@ end
   `Glific.log_error/2`. **Never call `Appsignal.send_error`/`Appsignal.error` directly** — the
   wrappers centralize Logger + AppSignal and suppress known-benign beneficiary errors
   (`ignore_error?/1`).
+- **Don't double-log.** `Glific.log_exception`/`Glific.log_error` already write to Logger _and_
+  AppSignal, so do **not** add a separate `Logger.warning/error` next to them for the same event —
+  it's redundant. Put any extra context into the AppSignal tags instead. A standalone `Logger`
+  call is only for events you are _not_ also reporting to AppSignal.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
+
+- **Never `inspect/1` a `%Tesla.Env{}` (or any value that may hold one) into a log/error
+  string — use `Glific.SafeLog.safe_inspect/1` instead.** A Tesla.Env's `__client__` carries the
+  middleware chain, including live `Authorization: Bearer …` tokens; plain `inspect` leaks them
+  into logs. `safe_inspect/1` strips `__client__` and passes everything else through unchanged.
+  This applies to BSP/provider HTTP error paths (e.g. Gupshup partner API responses) where the
+  error term is the raw `{:ok|:error, Tesla.Env}` tuple.
 
 ## Caching (Cachex, bucket `:glific_cache`)
 

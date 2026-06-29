@@ -61,3 +61,6 @@ template-asset*
 
 # Claude worktrees
 .claude/worktrees/
+
+# Claude agent scratch memory (not source — lives in the local memory store)
+.claude/agent-memory/

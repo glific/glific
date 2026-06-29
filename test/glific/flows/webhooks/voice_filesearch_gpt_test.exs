@@ -3,6 +3,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   import Glific.WebhookTestHelpers
+  import Mock
 
   alias Glific.{
     Assistants.Assistant,
@@ -11,8 +12,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Action,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.SystemError,
+    Flows.Webhooks.VoiceFilesearchGpt,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -124,6 +126,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
   defp build_action(contact_id) do
     %Action{
+      type: "call_webhook",
       method: "FUNCTION",
       url: "voice-filesearch-gpt",
       headers: %{"Content-Type" => "application/json"},
@@ -190,10 +193,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert message.body == "failure"
     end
 
-    # Timeout: the outbound Kaapi LLM call times out during webhook execution.
-    # STT (Bhasini/Gemini) succeeds but the LLM call itself returns {:error, :timeout}.
-    # execute_unified_voice_filesearch should return {:ok, ...} (not {:wait, ...})
-    # and the webhook log should record the error.
+    # Timeout: the outbound Kaapi LLM call times out in the worker.
+    # STT (Bhasini/Gemini) succeeds but the LLM call returns {:error, :timeout}, so
+    # VoiceFilesearchGpt.call returns %{success: false} and the webhook log records the error.
     test "timeout - Bhasini STT succeeds but Kaapi LLM times out, webhook log records error", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn
     } do
@@ -248,15 +250,208 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           end
       end)
 
-      # When Kaapi LLM times out, execute_unified_voice_filesearch returns
-      # {:ok, context, [failure_message]} (failure branch, NOT await)
-      result = Webhook.execute_unified_voice_filesearch(action, context)
-      assert match?({:ok, _, _}, result)
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
 
-      # The webhook log created inside unified_llm_and_wait should record the timeout error
+      # The webhook log created in do_oban should record the timeout error
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.error != nil
     end
+
+    # Stage 1 (STT) failure: Bhasini/Gemini speech-to-text fails (audio download 404),
+    # so VoiceFilesearchGpt.call returns %{success: false} WITHOUT making the Kaapi LLM
+    # call, and the flow wakes on the Failure branch.
+    test "STT failure - speech-to-text fails, no LLM call, flow records the error", %{
+      conn: %{assigns: %{organization_id: org_id}} = _conn
+    } do
+      _assistant = create_assistant(org_id)
+      contact = Fixtures.contact_fixture(%{organization_id: org_id})
+
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      flow_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: org_id,
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = build_action(contact.id)
+
+      # Audio download fails -> STT returns a failure -> no /api/v1/llm/call is made
+      # (no POST clause needed; a POST would raise Tesla.Mock and fail the test).
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      assert log != nil
+      assert log.error != nil
+    end
+
+    # Stage 2 (Kaapi LLM) failure (non-timeout): STT succeeds but the unified LLM call
+    # returns an API error (500); VoiceFilesearchGpt.call returns %{success: false} and
+    # the flow records the error.
+    test "Kaapi LLM API error - STT succeeds but LLM call returns 500, flow records the error",
+         %{conn: %{assigns: %{organization_id: org_id}} = _conn} do
+      _assistant = create_assistant(org_id)
+      contact = Fixtures.contact_fixture(%{organization_id: org_id})
+
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      flow_attrs = %{
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        contact_id: contact.id,
+        organization_id: org_id,
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: DateTime.add(DateTime.utc_now(), 60)
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(flow_attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = build_action(contact.id)
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: url} ->
+          cond do
+            String.contains?(url, "generativelanguage.googleapis.com") ->
+              %Tesla.Env{
+                status: 200,
+                body: %{
+                  candidates: [%{content: %{parts: [%{text: Jason.encode!("test query")}]}}],
+                  usageMetadata: %{
+                    promptTokenCount: 5,
+                    candidatesTokenCount: 3,
+                    totalTokenCount: 8
+                  }
+                }
+              }
+
+            String.contains?(url, "/api/v1/llm/call") ->
+              %Tesla.Env{status: 500, body: %{"error" => "internal server error"}}
+
+            true ->
+              %Tesla.Env{status: 500, body: %{}}
+          end
+      end)
+
+      assert {:wait, _parked, []} = Action.execute(action, context, [])
+      Oban.drain_queue(queue: :gpt_webhook_queue)
+
+      log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
+      assert log != nil
+      assert log.error != nil
+    end
+  end
+
+  describe "voice_post_process/3" do
+    test "reports SystemError when Kaapi callback says success=true but message is empty" do
+      organization_id = 1
+
+      response = %{
+        "message" => "",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "hindi"
+        },
+        "flow_id" => 1,
+        "contact_id" => 2,
+        "webhook_log_id" => 1
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = VoiceFilesearchGpt.voice_post_process(organization_id, response)
+
+          assert result["translated_text"] == ""
+          assert is_nil(result["media_url"])
+        end)
+
+      assert %SystemError{} = exception
+      assert tags.webhook_name == "voice-filesearch-gpt"
+      # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
+      # HTTP layer, the body was just unusable.
+      assert tags.http_status == 200
+      assert tags.reason =~ "empty"
+    end
+
+    # Stage 3 (NMT+TTS) failure: a non-empty answer, but nmt_tts_with_bhasini fails
+    # (GCS not enabled for org 1 in test) — voice_post_process falls back to the
+    # untranslated text with no audio rather than crashing.
+    test "returns untranslated text and no audio when NMT+TTS fails (GCS disabled)" do
+      response = %{
+        "message" => "Hello there",
+        "voice_post_process" => %{
+          "source_language" => "english",
+          "target_language" => "hindi"
+        }
+      }
+
+      result = VoiceFilesearchGpt.voice_post_process(1, response)
+
+      assert result["translated_text"] == "Hello there"
+      assert is_nil(result["media_url"])
+    end
+  end
+
+  # Runs `fun` with Appsignal.send_error and Appsignal.Span.set_sample_data
+  # mocked. Returns {exception, tags} captured from the production reporting call.
+  defp capture_appsignal(fun) do
+    test_pid = self()
+
+    with_mocks([
+      {Appsignal, [:passthrough],
+       [
+         send_error: fn ex, _stack, configurator ->
+           send(test_pid, {:appsignal_exception, ex})
+           configurator.(:fake_span)
+           :ok
+         end
+       ]},
+      {Appsignal.Span, [:passthrough],
+       [
+         set_sample_data: fn _span, key, value ->
+           send(test_pid, {:appsignal_tag, key, value})
+           :fake_span
+         end
+       ]}
+    ]) do
+      fun.()
+    end
+
+    exception =
+      receive do
+        {:appsignal_exception, ex} -> ex
+      after
+        100 -> flunk("Appsignal.send_error was not called")
+      end
+
+    tags =
+      receive do
+        {:appsignal_tag, "tags", t} -> t
+      after
+        100 -> %{}
+      end
+
+    {exception, tags}
   end
 end

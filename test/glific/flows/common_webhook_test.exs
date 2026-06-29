@@ -9,6 +9,10 @@ defmodule Glific.Flows.CommonWebhookTest do
     Clients.CommonWebhook,
     Fixtures,
     Flows.Webhook.SystemError,
+    Flows.Webhooks.FilesearchGpt,
+    Flows.Webhooks.SpeechToText,
+    Flows.Webhooks.TextToSpeech,
+    Flows.Webhooks.VoiceFilesearchGpt,
     Messages,
     Partners,
     Partners.Provider,
@@ -1045,7 +1049,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == true
     end
 
@@ -1081,7 +1085,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
       end)
 
-      result = CommonWebhook.webhook("speech_to_text", fields, [])
+      result = SpeechToText.call(fields, %{})
       assert result.success == true
     end
 
@@ -1100,12 +1104,15 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("speech_to_text", Map.put(fields, "output_language", "english"), [])
+        SpeechToText.call(Map.put(fields, "output_language", "english"), %{})
 
       assert result.success == true
     end
 
-    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+    # NOTE: speech_to_text is an async webhook — SpeechToText.call only computes the
+    # failure RESULT here; AppSignal reporting happens in Instrumentation.around/3 when the
+    # generic Webhook worker dispatches it (covered in webhook_infrastructure_test.exs).
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
       fields: fields
     } do
       Tesla.Mock.mock(fn
@@ -1116,51 +1123,29 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result.success == false
-          assert result.error_type == "kaapi_logical_failure"
-          assert result.reason == "boom"
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.http_status == 200
+      result = SpeechToText.call(fields, %{})
+      assert result.success == false
+      assert result.error_type == "kaapi_logical_failure"
+      assert result.reason == "boom"
     end
 
-    test "reports SystemError on a Kaapi 5xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.http_status == 503
+      result = SpeechToText.call(fields, %{})
+      assert result.success == false
     end
 
-    test "rejects empty speech URL without calling Kaapi and reports SystemError", %{
+    test "rejects empty speech URL without calling Kaapi", %{
       fields: fields
     } do
       fields = Map.put(fields, "speech", "")
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("speech_to_text", fields, [])
-          assert result == %{success: false, reason: "Media URL is invalid"}
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "speech_to_text"
-      assert tags.reason == "Media URL is invalid"
-      assert is_nil(tags.http_status)
+      result = SpeechToText.call(fields, %{})
+      assert result == %{success: false, reason: "Media URL is invalid"}
     end
   end
 
@@ -1186,7 +1171,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
       end)
 
-      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      result = TextToSpeech.call(fields, %{})
       assert result.success == true
     end
 
@@ -1217,7 +1202,7 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
       end)
 
-      result = CommonWebhook.webhook("text_to_speech", fields, [])
+      result = TextToSpeech.call(fields, %{})
       assert result.success == true
     end
   end
@@ -1228,7 +1213,8 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{contact: contact, fields: bhasini_stt_fields(contact.id)}
     end
 
-    test "emits SystemError with http_status tag on Gemini 4xx response", %{fields: fields} do
+    test "emits SystemError with http_status + flow_id/contact_id tags on Gemini 4xx response",
+         %{fields: fields, contact: contact} do
       Tesla.Mock.mock(fn
         %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
         %{method: :post} -> %Tesla.Env{status: 401, body: %{}}
@@ -1249,6 +1235,9 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert tags.organization_id == 1
       assert tags.http_status == 401
       assert is_nil(tags.reason)
+      # flow_id/contact_id make the failure traceable back to a specific flow.
+      assert tags.flow_id == 42
+      assert tags.contact_id == contact.id
     end
 
     test "emits SystemError with reason tag when audio download fails", %{fields: fields} do
@@ -1435,6 +1424,10 @@ defmodule Glific.Flows.CommonWebhookTest do
     %{
       "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
       "organization_id" => 1,
+      # flow_id/contact_id are merged into a function webhook's fields by
+      # Glific.Flows.Webhook.perform/1 so failure reports can be traced to a flow.
+      "flow_id" => 42,
+      "contact_id" => contact_id,
       "contact" => %{"id" => to_string(contact_id)}
     }
   end
@@ -1459,24 +1452,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
   end
 
-  describe "call_and_wait" do
-    test "returns a clean failure (no crash) when the X-API-KEY header is missing" do
-      fields = %{
-        "question" => "Tell me a joke",
-        "assistant_id" => "asst_123",
-        "organization_id" => "1",
-        "flow_id" => "1",
-        "contact_id" => "2",
-        "webhook_log_id" => 1,
-        "result_name" => "filesearch"
-      }
-
-      assert "Missing Kaapi API key" =
-               CommonWebhook.webhook("call_and_wait", fields, [])
-    end
-  end
-
-  describe "unified-llm-call lookup_kaapi_config" do
+  describe "filesearch-gpt lookup_kaapi_config" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1501,8 +1477,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] == "assistant_id is required"
@@ -1519,8 +1494,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Assistant not found"
@@ -1569,8 +1543,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Kaapi version number not found"
@@ -1617,15 +1590,18 @@ defmodule Glific.Flows.CommonWebhookTest do
         "result_name" => "response"
       }
 
-      headers = [{"X-API-KEY", "sk_test_key"}]
-      result = CommonWebhook.webhook("unified-llm-call", fields, headers)
+      result = FilesearchGpt.call(fields, %{})
 
       assert result[:success] == false
       assert result[:reason] =~ "Assistant is still being set up"
     end
   end
 
-  describe "unified-llm-call failure reporting" do
+  # NOTE: filesearch-gpt is an async webhook — CommonWebhook only computes the
+  # failure RESULT here. AppSignal reporting now happens in the framework's
+  # Instrumentation.around_async/3 when AsyncSupport returns an immediate-failure
+  # tuple (covered in webhook_infrastructure_test.exs).
+  describe "filesearch-gpt failure result" do
     setup do
       {:ok, _credential} =
         Partners.create_credential(%{
@@ -1653,39 +1629,25 @@ defmodule Glific.Flows.CommonWebhookTest do
       %{fields: fields}
     end
 
-    test "reports SystemError with http_status on a Kaapi 4xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 4xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 400
+      result = FilesearchGpt.call(fields, %{})
+      assert result.success == false
     end
 
-    test "reports SystemError with http_status on a Kaapi 5xx response", %{fields: fields} do
+    test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
       Tesla.Mock.mock(fn
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 503
+      result = FilesearchGpt.call(fields, %{})
+      assert result.success == false
     end
 
-    test "reports SystemError when Kaapi returns 200 with a success:false body", %{
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
       fields: fields
     } do
       Tesla.Mock.mock(fn
@@ -1693,17 +1655,10 @@ defmodule Glific.Flows.CommonWebhookTest do
           %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result = CommonWebhook.webhook("unified-llm-call", fields, unified_llm_headers())
-          assert result.success == false
-          assert result.error_type == "kaapi_logical_failure"
-          assert result.reason == "boom"
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-llm-call"
-      assert tags.http_status == 200
+      result = FilesearchGpt.call(fields, %{})
+      assert result.success == false
+      assert result.error_type == "kaapi_logical_failure"
+      assert result.reason == "boom"
     end
   end
 
@@ -1756,11 +1711,21 @@ defmodule Glific.Flows.CommonWebhookTest do
     {assistant, config_version}
   end
 
-  defp unified_llm_headers do
-    [{"X-API-KEY", "test-api-key"}]
-  end
+  describe "voice-filesearch-gpt webhook" do
+    setup do
+      {:ok, _credential} =
+        Partners.create_credential(%{
+          organization_id: 1,
+          shortcode: "kaapi",
+          keys: %{},
+          secrets: %{"api_key" => "sk_test_key"},
+          is_active: true
+        })
 
-  describe "unified-voice-llm-call webhook" do
+      Partners.get_organization!(1) |> Partners.fill_cache()
+      :ok
+    end
+
     test "does STT then calls unified LLM with voice callback path" do
       organization_id = 1
       assistant_display_id = "asst_voice_test"
@@ -1822,7 +1787,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result.success == true
 
@@ -1890,7 +1855,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result == %{success: false, reason: "File download failed"}
     end
@@ -1954,7 +1919,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       end)
 
       result =
-        CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+        VoiceFilesearchGpt.call(fields, %{})
 
       assert result.success == true
 
@@ -1990,7 +1955,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result =
-            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+            VoiceFilesearchGpt.call(fields, %{})
 
           assert result == %{success: false, reason: "Media URL is invalid"}
         end)
@@ -2001,7 +1966,11 @@ defmodule Glific.Flows.CommonWebhookTest do
       assert is_nil(tags.http_status)
     end
 
-    test "reports SystemError under unified-voice-llm-call when LLM dispatch fails" do
+    # NOTE: voice-filesearch-gpt is async — the bhasini STT step still reports its own
+    # failures (see the test above), but a failure in the LLM dispatch only produces a
+    # failure RESULT here. That failure is reported by Instrumentation.around_async/3
+    # (covered in webhook_infrastructure_test.exs).
+    test "returns failure result under voice-filesearch-gpt when LLM dispatch fails" do
       organization_id = 1
       assistant_display_id = "asst_voice_llm_fail"
       create_assistant_with_config(organization_id, assistant_display_id: assistant_display_id)
@@ -2045,49 +2014,11 @@ defmodule Glific.Flows.CommonWebhookTest do
           end
       end)
 
-      {exception, tags} =
-        capture_appsignal(fn ->
-          result =
-            CommonWebhook.webhook("unified-voice-llm-call", fields, unified_llm_headers())
+      result = VoiceFilesearchGpt.call(fields, %{})
 
-          assert result.success == false
-          assert result.http_status == 503
-        end)
-
-      assert %SystemError{} = exception
-      assert tags.webhook_name == "unified-voice-llm-call"
-      assert tags.http_status == 503
+      assert result.success == false
+      assert result.http_status == 503
     end
-  end
-
-  test "reports SystemError when Kaapi callback says success=true but message is empty" do
-    organization_id = 1
-
-    response = %{
-      "message" => "",
-      "voice_post_process" => %{
-        "source_language" => "english",
-        "target_language" => "hindi"
-      },
-      "flow_id" => 1,
-      "contact_id" => 2,
-      "webhook_log_id" => 1
-    }
-
-    {exception, tags} =
-      capture_appsignal(fn ->
-        result = CommonWebhook.voice_post_process(organization_id, true, response)
-
-        assert result["translated_text"] == ""
-        assert is_nil(result["media_url"])
-      end)
-
-    assert %SystemError{} = exception
-    assert tags.webhook_name == "unified-voice-llm-call"
-    # 200 distinguishes this from a 5xx/timeout — the call succeeded at the
-    # HTTP layer, the body was just unusable.
-    assert tags.http_status == 200
-    assert tags.reason =~ "empty"
   end
 
   describe "parse_via_chat_gpt / parse_via_gpt_vision failure reporting" do

@@ -16,6 +16,7 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
     Repo,
     WhatsappForms,
     WhatsappForms.WhatsappForm,
+    WhatsappForms.WhatsappFormResponse,
     WhatsappFormsResponses
   }
 
@@ -78,6 +79,15 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
     whatsapp_form = Repo.get(WhatsappForm, whatsapp_form_id)
 
+    # Download any uploaded media (PhotoPicker/DocumentPicker) to GCS and rewrite
+    # the response entries with their gcs_url, so both the persisted response and
+    # the Google Sheet carry the public URL instead of the raw WhatsApp media id.
+    payload = persist_response_media(payload, organization_id)
+
+    # Inject the saved gcs_url(s) into the contact's active flow result variables,
+    # so a flow can read the photo URL after a short wait node.
+    WhatsappFormsResponses.inject_media_into_flow_results(payload)
+
     case WhatsappFormsResponses.write_to_google_sheet(payload, whatsapp_form) do
       {:ok, _} ->
         :ok
@@ -109,6 +119,35 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
 
     schedule_next_form_sync(remaining_forms, org_id)
     :ok
+  end
+
+  # Downloads uploaded form media to GCS, persists the rewritten response (with
+  # gcs_url) back to the DB row, and returns the payload with the updated response
+  # so the Google Sheet receives the public URL.
+  #
+  # Sources the raw_response from the persisted row (not the immutable Oban
+  # payload): on a retry the row already carries gcs_url, so save_response_media
+  # short-circuits and we never re-download / re-upload the same asset.
+  #
+  # Threads contact_id (already loaded here) into the payload so the downstream
+  # inject_media_into_flow_results/1 doesn't have to re-fetch the response row.
+  @spec persist_response_media(map(), non_neg_integer()) :: map()
+  defp persist_response_media(payload, organization_id) do
+    with id when not is_nil(id) <- Map.get(payload, "whatsapp_form_response_id"),
+         %WhatsappFormResponse{} = response <- Repo.get(WhatsappFormResponse, id) do
+      updated_response =
+        WhatsappFormsResponses.save_response_media(response.raw_response, organization_id)
+
+      response
+      |> WhatsappFormResponse.changeset(%{raw_response: updated_response})
+      |> Repo.update()
+
+      payload
+      |> Map.put("raw_response", updated_response)
+      |> Map.put("contact_id", response.contact_id)
+    else
+      _ -> payload
+    end
   end
 
   @spec send_notification(non_neg_integer(), String.t(), String.t()) ::
