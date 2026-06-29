@@ -165,7 +165,7 @@ editing or "cleaning up":
   `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
-- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.
+- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, Superset, etc.
 - `partners.ex` / `partners/` — organizations, providers, credentials, billing. Central to
   multi-tenancy and caching.
 

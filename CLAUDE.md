@@ -5,7 +5,7 @@ An open source two-way communication platform for the social sector (WhatsApp-ba
 ## Tech Stack
 
 - **Elixir** ~> 1.18.3 / **Phoenix** 1.7 / **PostgreSQL** 15
-- **GraphQL API** via Absinthe (primary API) + REST endpoints for auth & webhooks
+- **GraphQL API** via Absinthe (primary API) + REST endpoints for auth, webhooks & utility integrations (e.g. Superset embed token)
 - **Background Jobs**: Oban with 11+ specialized queues
 - **Deployment**: Gigalixir, CI/CD via GitHub Actions
 - **Monitoring**: AppSignal for APM, ExCoveralls for test coverage
@@ -74,6 +74,13 @@ auto-injects org scoping from the process dictionary. Set context with
 `Repo.put_organization_id/1`; use `skip_organization_id: true` only for deliberate cross-org
 paths. **Oban workers and resolver by-id lookups have extra rules** — see
 `lib/glific/CLAUDE.md` and `lib/glific_web/CLAUDE.md`.
+
+**Schema maintenance invariant**: When adding a new org-scoped table (any migration that includes
+an `organization_id` column), also add the table name to `Glific.Erase.org_data_deletion_order/0`
+in `lib/glific/erase.ex`. A CI drift test asserts the list covers every live `organization_id`
+table — missing entries fail the test suite. FK cycles (`organizations` ↔ contacts/flows,
+`assistants` ↔ `assistant_config_versions`) are pre-broken by `Erase.break_fk_cycles/1` before
+the ordered deletes run; cyclic FK columns must be nulled there too.
 
 ## Admin Scripts
 
