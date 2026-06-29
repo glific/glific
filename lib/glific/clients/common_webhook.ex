@@ -20,9 +20,6 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
-  alias Glific.ThirdParty.Kaapi
-  alias Glific.ThirdParty.Kaapi.ApiClient
-  alias Glific.WAGroup.WAManagedPhone
   alias Glific.WAGroup.WaPoll
 
   require Logger
