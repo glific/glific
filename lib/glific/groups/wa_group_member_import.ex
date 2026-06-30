@@ -97,18 +97,22 @@ defmodule Glific.Groups.WAGroupMemberImport do
 
   @spec fetch_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
   defp fetch_data_as_string(opts) do
+    file_path = Keyword.get(opts, :file_path, nil)
+    url = Keyword.get(opts, :url, nil)
+    data = Keyword.get(opts, :data, nil)
+
     cond do
-      opts[:file_path] ->
-        opts[:file_path] |> Path.expand() |> File.stream!()
+      file_path != nil ->
+        file_path |> Path.expand() |> File.stream!()
 
-      opts[:url] ->
-        {:ok, response} = Tesla.get(opts[:url])
+      url != nil ->
+        {:ok, response} = Tesla.get(url)
         {:ok, stream} = StringIO.open(response.body)
-        IO.binstream(stream, :line)
+        stream |> IO.binstream(:line)
 
-      opts[:data] ->
-        {:ok, stream} = StringIO.open(opts[:data])
-        IO.binstream(stream, :line)
+      data != nil ->
+        {:ok, stream} = StringIO.open(data)
+        stream |> IO.binstream(:line)
     end
   end
 

@@ -823,7 +823,11 @@ defmodule Glific.Groups.WAGroups do
   @spec provision_wa_group(non_neg_integer(), map()) ::
           {:ok, WAGroup.t()} | {:error, any()}
   def provision_wa_group(org_id, %{wa_managed_phone_id: wa_managed_phone_id} = input) do
-    import_data = input[:import_data]
+    import_data =
+      case input[:import_data] do
+        data when is_binary(data) -> if String.trim(data) == "", do: nil, else: data
+        _ -> nil
+      end
 
     numbers =
       if import_data,
@@ -880,7 +884,10 @@ defmodule Glific.Groups.WAGroups do
       {:ok, wa_group}
     else
       {:error, reason} ->
-        Glific.log_error("Maytapi create_group failed: org=#{org_id} reason=#{inspect(reason)}")
+        Glific.log_error(
+          "Maytapi create_group failed: org=#{org_id} reason=#{SafeLog.safe_inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -954,7 +961,7 @@ defmodule Glific.Groups.WAGroups do
     else
       {:error, reason} ->
         Glific.log_error(
-          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{inspect(reason)}"
+          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}

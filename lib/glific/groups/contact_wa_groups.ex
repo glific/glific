@@ -147,7 +147,7 @@ defmodule Glific.Groups.ContactWAGroups do
       contact = Contacts.get_contact!(contact_id)
       payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
+      case ApiClient.remove_group_member(org_id, payload, wa_group.primary_phone.phone_id) do
         :ok ->
           fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
           {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
@@ -226,8 +226,25 @@ defmodule Glific.Groups.ContactWAGroups do
 
         case ApiClient.add_group_member(org_id, payload, acting_phone_id) do
           :ok ->
-            link_phone_to_group(phone, wa_group, org_id)
-            %{acc | added: acc.added + 1}
+            case link_phone_to_group(phone, wa_group, org_id) do
+              {:ok, _} ->
+                %{acc | added: acc.added + 1}
+
+              {:error, reason} ->
+                Glific.log_error(
+                  "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{inspect(reason)}"
+                )
+
+                %{
+                  acc
+                  | failed:
+                      Map.put(
+                        acc.failed,
+                        phone,
+                        "Added on WhatsApp but could not be linked in Glific"
+                      )
+                }
+            end
 
           {:error, message} ->
             %{acc | failed: Map.put(acc.failed, phone, message)}
@@ -237,7 +254,8 @@ defmodule Glific.Groups.ContactWAGroups do
     {:ok, result}
   end
 
-  @spec link_phone_to_group(String.t(), WAGroup.t(), non_neg_integer()) :: :ok
+  @spec link_phone_to_group(String.t(), WAGroup.t(), non_neg_integer()) ::
+          {:ok, any()} | {:error, any()}
   defp link_phone_to_group(phone, wa_group, org_id) do
     with {:ok, contact} <-
            Contacts.maybe_create_contact(%{
@@ -252,8 +270,6 @@ defmodule Glific.Groups.ContactWAGroups do
         is_admin: false
       })
     end
-
-    :ok
   end
 
   @spec remove_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::
