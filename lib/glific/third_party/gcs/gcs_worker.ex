@@ -259,11 +259,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         error =
-<<<<<<< HEAD
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{SafeLog.safe_inspect(error)}"
-=======
-          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{Glific.SafeLog.safe_inspect(error)}"
->>>>>>> origin/master
 
         Logger.info(error)
         {:error, error}
