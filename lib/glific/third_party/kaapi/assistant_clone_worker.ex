@@ -85,7 +85,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       {:error, reason} ->
         last_attempt? = attempt >= max_attempts
         handle_clone_failure(assistant_id, organization_id, reason, last_attempt?)
-        {:error, inspect(reason)}
+        {:error, Glific.SafeLog.safe_inspect(reason)}
     end
   end
 
@@ -160,14 +160,14 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         last_attempt? = attempt >= max_attempts
         handle_clone_failure(assistant_id, organization_id, reason, last_attempt?)
         cleanup_temp_files(organization_id)
-        {:error, inspect(reason)}
+        {:error, Glific.SafeLog.safe_inspect(reason)}
     end
   end
 
   @spec handle_clone_failure(non_neg_integer(), non_neg_integer(), any(), boolean()) :: :ok
   defp handle_clone_failure(assistant_id, organization_id, reason, last_attempt?) do
     Logger.error(
-      "AssistantCloneWorker: Failed to clone assistant #{assistant_id} for org #{organization_id}: #{inspect(reason)}"
+      "AssistantCloneWorker: Failed to clone assistant #{assistant_id} for org #{organization_id}: #{Glific.SafeLog.safe_inspect(reason)}"
     )
 
     if last_attempt? do
@@ -178,7 +178,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       send_clone_notification(
         organization_id,
-        "Assistant cloning failed: #{inspect(reason)}",
+        "Assistant cloning failed: #{Glific.SafeLog.safe_inspect(reason)}",
         :warning
       )
     end
@@ -304,10 +304,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         end
 
       {:ok, %{status: status, body: body}} ->
-        {:error, "Failed to list vector store files (HTTP #{status}): #{inspect(body)}"}
+        {:error,
+         "Failed to list vector store files (HTTP #{status}): #{Glific.SafeLog.safe_inspect(body)}"}
 
       {:error, reason} ->
-        {:error, "Request error listing files: #{inspect(reason)}"}
+        {:error, "Request error listing files: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -353,12 +354,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       {:ok, %{status: status, body: body}} ->
         # Handle the error case when file download fails
-        Logger.error("FAILED (metadata HTTP #{status}): #{inspect(body)}")
+        Logger.error("FAILED (metadata HTTP #{status}): #{Glific.SafeLog.safe_inspect(body)}")
         :error
 
       {:error, reason} ->
         # Handle the error case when file download fails
-        Logger.error("FAILED (metadata request error): #{inspect(reason)}")
+        Logger.error("FAILED (metadata request error): #{Glific.SafeLog.safe_inspect(reason)}")
         :error
     end
   end
@@ -385,12 +386,12 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       {:ok, %{status: status, body: body}} ->
         # Handle the error case when file save fails
-        Logger.error("FAILED (content HTTP #{status}): #{inspect(body)}")
+        Logger.error("FAILED (content HTTP #{status}): #{Glific.SafeLog.safe_inspect(body)}")
         :error
 
       {:error, reason} ->
         # Handle the error case when file save fails
-        Logger.error("FAILED (content request error): #{inspect(reason)}")
+        Logger.error("FAILED (content request error): #{Glific.SafeLog.safe_inspect(reason)}")
         :error
     end
   end
@@ -420,7 +421,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
           {:error, reason} ->
             Logger.error(
-              "FAILED (upload document error for #{assistant_name}): #{inspect(reason)}"
+              "FAILED (upload document error for #{assistant_name}): #{Glific.SafeLog.safe_inspect(reason)}"
             )
 
             {:error, filename}
@@ -511,10 +512,10 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       {:error, reason} ->
         Logger.error(
-          "AssistantCloneWorker: Failed to get collection status for #{collection_job_id}: #{inspect(reason)}"
+          "AssistantCloneWorker: Failed to get collection status for #{collection_job_id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
-        {:error, inspect(reason)}
+        {:error, Glific.SafeLog.safe_inspect(reason)}
     end
   end
 

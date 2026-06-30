@@ -85,7 +85,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
 
       {:error, failed_step, reason, _changes} ->
         Logger.error(
-          "Trial account allocation failed at #{failed_step}, reason: #{inspect(reason)}"
+          "Trial account allocation failed at #{failed_step}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         conn

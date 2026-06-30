@@ -132,7 +132,7 @@ defmodule Glific.Certificates.Certificate do
     else
       {:error, reason} ->
         File.rm(temp_path)
-        {:error, "#{inspect(reason)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(reason)}"}
 
       {:ok, %Tesla.Env{status: status}} when status != 200 ->
         {:error, "Failed to download thumbnail url"}

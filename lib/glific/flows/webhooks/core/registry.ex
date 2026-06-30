@@ -47,7 +47,7 @@ defmodule Glific.Flows.Webhooks.Registry do
   @spec lookup!(String.t()) :: module()
   def lookup!(name) do
     case lookup(name) do
-      nil -> raise ArgumentError, "no webhook registered for #{inspect(name)}"
+      nil -> raise ArgumentError, "no webhook registered for #{Glific.SafeLog.safe_inspect(name)}"
       module -> module
     end
   end

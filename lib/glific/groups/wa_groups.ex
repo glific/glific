@@ -189,7 +189,7 @@ defmodule Glific.Groups.WAGroups do
 
         {:error, changeset} ->
           Logger.warning(
-            "Skipping participant #{phone}: could not resolve contact: #{inspect(changeset.errors)}"
+            "Skipping participant #{phone}: could not resolve contact: #{SafeLog.safe_inspect(changeset.errors)}"
           )
 
           acc
@@ -743,7 +743,7 @@ defmodule Glific.Groups.WAGroups do
 
       {:ok, %Tesla.Env{body: body}} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(body)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{SafeLog.safe_inspect(body)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}

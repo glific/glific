@@ -87,7 +87,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
         "Org #{id} onboarded successfully"
 
       {:error, error} ->
-        "Org #{id} onboarding failed: #{inspect(error)}"
+        "Org #{id} onboarding failed: #{Glific.SafeLog.safe_inspect(error)}"
     end
   end
 
@@ -168,7 +168,7 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
 
       {:exit, reason} ->
         Logger.error(
-          "KAAPI_MIGRATION_EXIT: Organization update exited with reason: #{inspect(reason)}"
+          "KAAPI_MIGRATION_EXIT: Organization update exited with reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
@@ -178,16 +178,22 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
   @spec update_org_google_key(map()) :: String.t()
   defp update_org_google_key(%{id: id}) do
     case Kaapi.update_google_api_key(id) do
-      {:ok, _} -> "Org #{id} google_api_key updated successfully"
-      {:error, error} -> "Org #{id} google_api_key update failed: #{inspect(error)}"
+      {:ok, _} ->
+        "Org #{id} google_api_key updated successfully"
+
+      {:error, error} ->
+        "Org #{id} google_api_key update failed: #{Glific.SafeLog.safe_inspect(error)}"
     end
   end
 
   @spec update_org_openai_key(map()) :: String.t()
   defp update_org_openai_key(%{id: id}) do
     case Kaapi.update_openai_api_key(id) do
-      {:ok, _} -> "Org #{id} openai_api_key updated successfully"
-      {:error, error} -> "Org #{id} openai_api_key update failed: #{inspect(error)}"
+      {:ok, _} ->
+        "Org #{id} openai_api_key updated successfully"
+
+      {:error, error} ->
+        "Org #{id} openai_api_key update failed: #{Glific.SafeLog.safe_inspect(error)}"
     end
   end
 
@@ -224,16 +230,16 @@ defmodule Glific.ThirdParty.Kaapi.Migration do
     )
     |> Enum.each(fn
       {:ok, {:ok, result}} ->
-        Logger.info("Imported assistant: #{inspect(result)}")
+        Logger.info("Imported assistant: #{Glific.SafeLog.safe_inspect(result)}")
 
       {:ok, {:error, :invalid_row}} ->
         Logger.error("Invalid CSV row")
 
       {:ok, {:error, reason}} ->
-        Logger.error("Import failed: #{inspect(reason)}")
+        Logger.error("Import failed: #{Glific.SafeLog.safe_inspect(reason)}")
 
       {:exit, reason} ->
-        Logger.error("Task crashed: #{inspect(reason)}")
+        Logger.error("Task crashed: #{Glific.SafeLog.safe_inspect(reason)}")
     end)
 
     :ok
