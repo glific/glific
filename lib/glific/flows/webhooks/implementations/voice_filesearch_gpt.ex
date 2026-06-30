@@ -17,7 +17,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
   alias Glific.Flows.Webhooks.Behaviour
   alias Glific.Flows.Webhooks.Instrumentation
-  alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
+  alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
   alias Glific.ThirdParty.Gemini
@@ -32,7 +32,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   def call(fields, _ctx) do
     # Check Kaapi creds before running STT — no point transcribing if the LLM call can't
     # be made. The STT step itself uses Gemini, not the Kaapi API key.
-    with {:ok, {organization_id, flow_id, contact_id}} <- KaapiSupport.parse_flow_fields(fields),
+    with {:ok, {organization_id, flow_id, contact_id}} <- KaapiWebhook.parse_flow_fields(fields),
          {:ok, %{"api_key" => api_key}} when is_binary(api_key) <-
            Kaapi.fetch_kaapi_creds(organization_id) do
       run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key)
@@ -69,9 +69,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   # failure short-circuits the pipeline so the async webhook surfaces it on the Failure branch.
   @spec transcribe(any(), non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
   defp transcribe(speech, organization_id) do
-    with :ok <- KaapiSupport.validate_media(speech) do
-      Glific.Metrics.increment("Gemini STT Call", organization_id)
-
+    with :ok <- KaapiWebhook.validate_media(speech) do
       case Gemini.speech_to_text(speech, organization_id) do
         %{success: true, asr_response_text: transcribed_text} ->
           {:ok, transcribed_text}
@@ -92,7 +90,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         ) :: map()
   defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, voice_start_timestamp) do
     {callback_url, request_metadata} =
-      KaapiSupport.build_flow_resume_metadata(
+      KaapiWebhook.build_flow_resume_metadata(
         organization_id,
         flow_id,
         contact_id,
@@ -112,7 +110,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         }
       })
 
-    KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
+    KaapiWebhook.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
   end
 
   @doc """
