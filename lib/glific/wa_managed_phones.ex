@@ -67,7 +67,7 @@ defmodule Glific.WAManagedPhones do
       ** nil
 
   """
-  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t()
+  @spec get_wa_managed_phone(non_neg_integer()) :: WAManagedPhone.t() | nil
   def get_wa_managed_phone(phone_id) do
     from(p in WAManagedPhone,
       where: p.phone_id == ^phone_id
