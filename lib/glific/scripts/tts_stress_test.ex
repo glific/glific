@@ -198,13 +198,13 @@ defmodule Glific.Scripts.TtsStressTest do
     Enum.each(results, fn
       {:ok, {i, {%{success: true}, ms}}} -> IO.puts("  [#{i}] ✓ #{ms} ms")
       {:ok, {i, {result, ms}}} -> IO.puts("  [#{i}] ✗ #{ms} ms  #{inspect_result(result)}")
-      {:exit, reason} -> IO.puts("  [?] crashed: #{inspect(reason)}")
+      {:exit, reason} -> IO.puts("  [?] crashed: #{Glific.SafeLog.safe_inspect(reason)}")
     end)
   end
 
   defp inspect_result(%{success: true, media_url: url}), do: "media_url=#{url}"
-  defp inspect_result(%{success: false} = r), do: "FAILED: #{inspect(r)}"
-  defp inspect_result(other), do: inspect(other)
+  defp inspect_result(%{success: false} = r), do: "FAILED: #{Glific.SafeLog.safe_inspect(r)}"
+  defp inspect_result(other), do: Glific.SafeLog.safe_inspect(other)
 
   defp memory_mb, do: :erlang.memory(:total) / (1024 * 1024)
 

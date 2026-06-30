@@ -121,7 +121,7 @@ defmodule Glific.Communications.Message do
     cond do
       is_binary(body) -> %{message: body}
       is_map(body) -> body
-      true -> %{message: inspect(body)}
+      true -> %{message: Glific.SafeLog.safe_inspect(body)}
     end
   end
 
@@ -175,7 +175,7 @@ defmodule Glific.Communications.Message do
         process_errors(message, errors, errors["payload"]["payload"]["code"])
 
       error ->
-        Logger.error("Could not update message status: #{inspect(error)}")
+        Logger.error("Could not update message status: #{Glific.SafeLog.safe_inspect(error)}")
     end
   end
 
@@ -346,7 +346,10 @@ defmodule Glific.Communications.Message do
         |> process_message()
 
       {:error, reason} ->
-        Logger.error("Failed to create WhatsApp form response: #{inspect(reason)}")
+        Logger.error(
+          "Failed to create WhatsApp form response: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -397,7 +400,7 @@ defmodule Glific.Communications.Message do
 
   @spec error(String.t(), any(), any(), list() | nil, boolean()) :: nil
   defp error(error, e, r \\ nil, stacktrace \\ nil, send_to_appsignal \\ true) do
-    error = error <> ": #{inspect(e)}, #{inspect(r)}"
+    error = error <> ": #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
     Logger.error(error)
 
     stacktrace =

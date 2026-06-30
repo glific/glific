@@ -66,7 +66,7 @@ defmodule Glific.Clients.Atecf do
   end
 
   defp parse_api_response({:ok, %{body: body, status: _status}}) do
-    {:error, "Error due to #{inspect(body)}"}
+    {:error, "Error due to #{Glific.SafeLog.safe_inspect(body)}"}
   end
 
   defp parse_api_response({:error, _}) do

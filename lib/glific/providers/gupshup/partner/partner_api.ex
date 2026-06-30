@@ -63,7 +63,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
          }}
 
       error ->
-        {:error, "Error while getting the ratings. #{inspect(error)}"}
+        {:error, "Error while getting the ratings. #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -218,7 +218,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:error, decoded_body["message"]}
 
       unmatched_response ->
-        Logger.error("#{inspect(unmatched_response)}")
+        Logger.error("#{Glific.SafeLog.safe_inspect(unmatched_response)}")
         {:error, "Something went wrong, not able to submit the template for approval."}
     end
   end
@@ -263,8 +263,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, file_name}
 
       {:error, err} ->
-        Logger.error("Error downloading file due to #{inspect(err)}")
-        {:error, "#{inspect(err)}"}
+        Logger.error("Error downloading file due to #{Glific.SafeLog.safe_inspect(err)}")
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -421,7 +421,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, %{partner_app_token: app_token}}
 
       {:error, error} ->
-        {:error, "Could not fetch the partner app token #{inspect(error)}"}
+        {:error, "Could not fetch the partner app token #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -438,7 +438,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       error ->
         # in case we cant find the app token, log an error, but return a empty list so we proceed
-        Logger.error("Could not fetch partner app token: #{inspect(error)}")
+        Logger.error("Could not fetch partner app token: #{Glific.SafeLog.safe_inspect(error)}")
         []
     end
   end
@@ -485,7 +485,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, Jason.decode!(body)}
 
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -500,7 +500,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, Jason.decode!(body)}
 
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -514,7 +514,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, Jason.decode!(body)}
 
       err ->
-        {:error, "#{inspect(err)}"}
+        {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 

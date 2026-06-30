@@ -339,7 +339,7 @@ defmodule Glific.Sheets do
           {:cont, {:ok, [row | acc]}}
 
         {:error, err}, _ ->
-          err_string = inspect(err)
+          err_string = safe_inspect(err)
 
           # This is because we currently don't parse Tesla sheet download errors and instead let the code flow into
           # CSV.decode() which causes errors because then the contet is html which is not csv compatible.
@@ -395,7 +395,7 @@ defmodule Glific.Sheets do
   @spec error_reason_to_string(term()) :: String.t()
   defp error_reason_to_string(msg) when is_binary(msg), do: msg
   defp error_reason_to_string(%Ecto.Changeset{} = cs), do: generate_error_message(cs)
-  defp error_reason_to_string(other), do: inspect(other)
+  defp error_reason_to_string(other), do: safe_inspect(other)
 
   @spec validate_headers([map()]) :: {:ok, true} | {:error, String.t()}
   defp validate_headers([]), do: {:error, "Unknown error or empty content"}
