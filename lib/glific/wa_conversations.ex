@@ -20,7 +20,7 @@ defmodule Glific.WAConversations do
     |> WAMessages.list_conversations()
   rescue
     ex ->
-      Logger.error("Search threw a Error: #{inspect(ex)}")
+      Logger.error("Search threw a Error: #{Glific.SafeLog.safe_inspect(ex)}")
       []
   end
 

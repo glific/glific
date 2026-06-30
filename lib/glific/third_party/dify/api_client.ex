@@ -119,13 +119,13 @@ defmodule Glific.Dify.ApiClient do
   end
 
   defp parse_response({:ok, %Req.Response{status: status, body: body}}) do
-    Logger.error("Dify API error: #{inspect(body)} with status #{status}")
-    {:error, "Dify API error (#{status}): #{inspect(body)}"}
+    Logger.error("Dify API error: #{Glific.SafeLog.safe_inspect(body)} with status #{status}")
+    {:error, "Dify API error (#{status}): #{Glific.SafeLog.safe_inspect(body)}"}
   end
 
   defp parse_response({:error, reason}) do
-    Logger.error("HTTP error calling Dify: #{inspect(reason)}")
-    {:error, "HTTP error calling Dify: #{inspect(reason)}"}
+    Logger.error("HTTP error calling Dify: #{Glific.SafeLog.safe_inspect(reason)}")
+    {:error, "HTTP error calling Dify: #{Glific.SafeLog.safe_inspect(reason)}"}
   end
 
   @spec dify_api_key() :: String.t()

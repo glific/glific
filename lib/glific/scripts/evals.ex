@@ -76,7 +76,7 @@ defmodule Glific.Scripts.Evals do
         IO.puts("✓ Langfuse credentials inserted successfully")
 
       {:error, reason} ->
-        IO.puts("✗ Failed: #{inspect(reason)}")
+        IO.puts("✗ Failed: #{Glific.SafeLog.safe_inspect(reason)}")
         raise "Aborting: Langfuse credential insert failed"
     end
   end
@@ -92,7 +92,7 @@ defmodule Glific.Scripts.Evals do
         Notifications.send_eval_access_approved(organization)
 
       {:error, changeset} ->
-        IO.puts("✗ Failed: #{inspect(changeset.errors)}")
+        IO.puts("✗ Failed: #{Glific.SafeLog.safe_inspect(changeset.errors)}")
     end
   end
 end

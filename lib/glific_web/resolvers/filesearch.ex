@@ -66,7 +66,10 @@ defmodule GlificWeb.Resolvers.Filesearch do
         {:ok, %{assistant: assistant}}
 
       error ->
-        Logger.error("update_assistant failed: id=#{id}, error=#{inspect(error)}")
+        Logger.error(
+          "update_assistant failed: id=#{id}, error=#{Glific.SafeLog.safe_inspect(error)}"
+        )
+
         error
     end
   end

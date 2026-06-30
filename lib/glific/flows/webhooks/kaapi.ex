@@ -13,6 +13,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   alias Glific.Assistants.Assistant
   alias Glific.Partners
   alias Glific.Repo
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
 
@@ -107,7 +108,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
         %{success: false, reason: reason}
 
       {:error, reason} ->
-        %{success: false, reason: inspect(reason)}
+        %{success: false, reason: SafeLog.safe_inspect(reason)}
     end
   end
 

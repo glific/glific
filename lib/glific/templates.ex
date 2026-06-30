@@ -271,7 +271,10 @@ defmodule Glific.Templates do
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
-    Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
+    Logger.info(
+      "Submitting template for approval with attrs as #{Glific.SafeLog.safe_inspect(attrs)}"
+    )
+
     bsp_module = Provider.bsp_module(attrs.organization_id, :template)
     bsp_module.submit_for_approval(attrs)
   end
@@ -390,7 +393,7 @@ defmodule Glific.Templates do
     res = bsp_module.update_hsm_templates(organization_id)
 
     Logger.info(
-      "Templates has been sync for org id: #{organization_id} with response: #{inspect(res)}"
+      "Templates has been sync for org id: #{organization_id} with response: #{Glific.SafeLog.safe_inspect(res)}"
     )
 
     res
@@ -543,7 +546,7 @@ defmodule Glific.Templates do
 
       {:error, error} ->
         Logger.error(
-          "Error adding new Session Template: #{inspect(error)} and attrs #{inspect(attrs)}"
+          "Error adding new Session Template: #{Glific.SafeLog.safe_inspect(error)} and attrs #{Glific.SafeLog.safe_inspect(attrs)}"
         )
     end
 
@@ -588,7 +591,7 @@ defmodule Glific.Templates do
         {:error, "No buttons found in containerMeta"}
 
       {:error, reason} ->
-        {:error, "Failed to decode containerMeta: #{inspect(reason)}"}
+        {:error, "Failed to decode containerMeta: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 

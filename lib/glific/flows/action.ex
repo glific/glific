@@ -727,7 +727,7 @@ defmodule Glific.Flows.Action do
   def execute(action, %{wa_group_id: wa_group_id} = context, messages)
       when wa_group_id != nil do
     Logger.error(
-      "Unsupported action type: for flow_id #{inspect(context.flow_id)} wa_group_id #{inspect(context.wa_group_id)} and the message is #{inspect(messages)}"
+      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} wa_group_id #{Glific.SafeLog.safe_inspect(context.wa_group_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
@@ -823,7 +823,7 @@ defmodule Glific.Flows.Action do
             {FlowContext.reset_one_context(context,
                source: "enter_flow",
                event_meta: %{
-                 "action" => "#{inspect(action)}",
+                 "action" => "#{Glific.SafeLog.safe_inspect(action)}",
                  "current_flow_uuid" => context.flow_uuid,
                  "new_flow" => flow_uuid
                }
@@ -920,7 +920,9 @@ defmodule Glific.Flows.Action do
                 })
 
             _ ->
-              Logger.error("Could not parse action groups: #{inspect(action)}")
+              Logger.error(
+                "Could not parse action groups: #{Glific.SafeLog.safe_inspect(action)}"
+              )
           end
 
           []
@@ -1024,7 +1026,7 @@ defmodule Glific.Flows.Action do
 
   def execute(action, context, messages) do
     Logger.error(
-      "Unsupported action type: for flow_id #{inspect(context.flow_id)} contact_id #{inspect(context.contact_id)} and the message is #{inspect(messages)}"
+      "Unsupported action type: for flow_id #{Glific.SafeLog.safe_inspect(context.flow_id)} contact_id #{Glific.SafeLog.safe_inspect(context.contact_id)} and the message is #{Glific.SafeLog.safe_inspect(messages)}"
     )
 
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
