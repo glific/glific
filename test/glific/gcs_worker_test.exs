@@ -15,6 +15,7 @@ defmodule Glific.GcsWorkerTest do
     GCS.GcsWorker,
     Jobs,
     Mails.MailLog,
+    Messages.MessageMedia,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -91,27 +92,33 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
-  test "perform_periodic/2, queuing only media_ids not older than a month", attrs do
-    with_mock(
-      Goth.Token,
-      [],
-      fetch: fn _url ->
-        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
-      end
-    ) do
+  test "perform_periodic/2, queuing only media_ids not older than 7 days", attrs do
+    Tesla.Mock.mock(fn %{method: :get} ->
+      %Tesla.Env{status: 200, body: "fake-media-bytes"}
+    end)
+
+    with_mocks([
+      {Goth.Token, [],
+       [
+         fetch: fn _url ->
+           {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+         end
+       ]},
+      {Waffle.Storage.Google.CloudStorage, [],
+       [
+         put: fn _, _, _ ->
+           {:ok,
+            %{
+              id: "mock-bucket/1/remote.png",
+              generation: "1",
+              selfLink: "https://www.googleapis.com/storage/v1/b/mock-bucket/o/remote.png"
+            }}
+         end
+       ]}
+    ]) do
       GCS.insert_gcs_jobs(attrs.organization_id)
 
-      _m1 =
-        Fixtures.message_media_fixture(%{
-          organization_id: attrs.organization_id
-        })
-        |> Ecto.Changeset.change(%{
-          inserted_at: DateTime.add(DateTime.utc_now(), -31, :day) |> DateTime.truncate(:second),
-          updated_at: DateTime.add(DateTime.utc_now(), -31, :day) |> DateTime.truncate(:second)
-        })
-        |> Repo.update()
-
-      _m2 =
+      media =
         Fixtures.message_media_fixture(%{
           organization_id: attrs.organization_id
         })
@@ -119,28 +126,16 @@ defmodule Glific.GcsWorkerTest do
           inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second),
           updated_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
         })
-        |> Repo.update()
-
-      # Older than the 7-day provider TTL — must be excluded (would have been
-      # included under the previous 30-day window).
-      _m3 =
-        Fixtures.message_media_fixture(%{
-          organization_id: attrs.organization_id
-        })
-        |> Ecto.Changeset.change(%{
-          inserted_at: DateTime.add(DateTime.utc_now(), -10, :day) |> DateTime.truncate(:second),
-          updated_at: DateTime.add(DateTime.utc_now(), -10, :day) |> DateTime.truncate(:second)
-        })
-        |> Repo.update()
+        |> Repo.update!()
 
       assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "incremental"})
       assert_enqueued(worker: GcsWorker, prefix: "global")
 
-      # Only m2 (2 days old) is within the 7-day TTL, so exactly one job is queued.
-      # We are only concerned about how many jobs queued, since else we have to
-      # mock a lot to get this to success.
-      assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
+
+      assert %MessageMedia{gcs_url: gcs_url} = Repo.get!(MessageMedia, media.id)
+      assert gcs_url =~ "storage.googleapis.com"
     end
   end
 
