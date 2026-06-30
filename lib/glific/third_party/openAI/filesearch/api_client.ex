@@ -286,12 +286,15 @@ defmodule Glific.OpenAI.Filesearch.ApiClient do
   end
 
   defp parse_response({:ok, %{body: resp_body, status: status}}) do
-    Logger.error("Filesearch api error due to #{inspect(resp_body)} with status #{status}")
+    Logger.error(
+      "Filesearch api error due to #{Glific.SafeLog.safe_inspect(resp_body)} with status #{status}"
+    )
+
     {:error, "#{resp_body.error.message}"}
   end
 
   defp parse_response({:error, message}) do
-    Logger.error("Filesearch api error due to #{inspect(message)}")
+    Logger.error("Filesearch api error due to #{Glific.SafeLog.safe_inspect(message)}")
     {:error, "OpenAI api failed"}
   end
 end

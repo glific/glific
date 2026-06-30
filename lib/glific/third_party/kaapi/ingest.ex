@@ -59,7 +59,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
 
         {:exit, reason} ->
           Logger.error(
-            "KAAPI_SYNC_EXIT: Organization sync exited with reason: #{inspect(reason)}"
+            "KAAPI_SYNC_EXIT: Organization sync exited with reason: #{Glific.SafeLog.safe_inspect(reason)}"
           )
 
           {:error, reason}
@@ -121,7 +121,7 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         Kaapi.ingest_ai_assistant(organization_id, assistant_id)
 
       {:error, changeset} ->
-        {:error, "Failed to update assistant, #{inspect(changeset)}"}
+        {:error, "Failed to update assistant, #{Glific.SafeLog.safe_inspect(changeset)}"}
     end
   end
 
@@ -156,14 +156,14 @@ defmodule Glific.ThirdParty.Kaapi.Ingest do
         case check_and_process_assistant(organization_id, assistant) do
           {:ok, result} ->
             Logger.info(
-              "KAAPI_ASSISTANT_SUCCESS: Successfully processed assistant id: #{assistant.assistant_id} org: #{organization_id}. Response: #{inspect(result)}"
+              "KAAPI_ASSISTANT_SUCCESS: Successfully processed assistant id: #{assistant.assistant_id} org: #{organization_id}. Response: #{Glific.SafeLog.safe_inspect(result)}"
             )
 
             {:ok, result}
 
           {:error, reason} ->
             Logger.error(
-              "KAAPI_ASSISTANT_ERROR: Failed to process assistant id: #{assistant.assistant_id}  org: #{organization_id}. Reason: #{inspect(reason)}"
+              "KAAPI_ASSISTANT_ERROR: Failed to process assistant id: #{assistant.assistant_id}  org: #{organization_id}. Reason: #{Glific.SafeLog.safe_inspect(reason)}"
             )
 
             {:error, reason}

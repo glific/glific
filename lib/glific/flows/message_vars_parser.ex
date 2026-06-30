@@ -55,7 +55,7 @@ defmodule Glific.Flows.MessageVarParser do
 
   # since this is a list we need to convert that into a string.
   defp bound("@contact.in_groups", binding) do
-    "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
+    "#{Glific.SafeLog.safe_inspect(get_in(binding, ["contact", "in_groups"]))}"
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do

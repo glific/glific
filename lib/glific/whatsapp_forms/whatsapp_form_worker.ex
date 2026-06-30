@@ -93,7 +93,9 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
         :ok
 
       {:error, reason} ->
-        Logger.error("Failed to write WhatsApp form response to Google Sheet: #{inspect(reason)}")
+        Logger.error(
+          "Failed to write WhatsApp form response to Google Sheet: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
 
         {:error, reason}
     end
@@ -114,7 +116,9 @@ defmodule Glific.WhatsappForms.WhatsappFormWorker do
       Logger.info("[WORKER] Form #{current_form["id"]} synced successfully")
     else
       {:error, reason} ->
-        Logger.error("Failed to process form #{current_form["id"]}: #{inspect(reason)}")
+        Logger.error(
+          "Failed to process form #{current_form["id"]}: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
     end
 
     schedule_next_form_sync(remaining_forms, org_id)

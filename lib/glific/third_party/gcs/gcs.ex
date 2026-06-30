@@ -219,7 +219,7 @@ defmodule Glific.GCS do
 
           {:error, error} ->
             Logger.error(
-              "Failed to enable bucket logging for bucket: #{bucket_name}. Error: #{inspect(error)}"
+              "Failed to enable bucket logging for bucket: #{bucket_name}. Error: #{Glific.SafeLog.safe_inspect(error)}"
             )
 
             {:error, error}
@@ -242,7 +242,9 @@ defmodule Glific.GCS do
              category: "media_sync_report",
              organization_id: Saas.organization_id()
            }) do
-      Logger.error("Sending gcs media sync report failed due to #{inspect(err)}")
+      Logger.error(
+        "Sending gcs media sync report failed due to #{Glific.SafeLog.safe_inspect(err)}"
+      )
     end
 
     :ok

@@ -216,7 +216,7 @@ defmodule Glific.Saas.Queries do
         do_create_organization(result, params, org_name, customer_name, is_trial)
 
       {:error, error_message} ->
-        error(inspect(error_message), result, :global)
+        error(Glific.SafeLog.safe_inspect(error_message), result, :global)
     end
   end
 
@@ -262,7 +262,7 @@ defmodule Glific.Saas.Queries do
         |> Map.put_new(:erp_page_id, erp_page_id)
 
       {:error, errors} ->
-        error(inspect(errors), result, :global)
+        error(Glific.SafeLog.safe_inspect(errors), result, :global)
     end
   end
 
@@ -306,7 +306,7 @@ defmodule Glific.Saas.Queries do
         |> Map.put(:contact, contact)
 
       {:error, errors} ->
-        error(inspect(errors), result, :global)
+        error(Glific.SafeLog.safe_inspect(errors), result, :global)
     end
   end
 
@@ -338,7 +338,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
-        error(inspect(errors), result, :global)
+        error(Glific.SafeLog.safe_inspect(errors), result, :global)
     end
   end
 
@@ -509,7 +509,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :registration_id, id)
 
       {:error, errors} ->
-        error(inspect(errors), result, :registration)
+        error(Glific.SafeLog.safe_inspect(errors), result, :registration)
     end
   end
 

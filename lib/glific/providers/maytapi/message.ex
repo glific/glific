@@ -224,7 +224,7 @@ defmodule Glific.Providers.Maytapi.Message do
   # or maybe a simulator or some test code
   @spec validate_phone_number(String.t(), map()) :: :ok | RuntimeError
   defp validate_phone_number(phone, payload) when phone in [nil, ""] do
-    error = "Phone number is blank, #{inspect(payload)}"
+    error = "Phone number is blank, #{Glific.SafeLog.safe_inspect(payload)}"
     Glific.log_error(error)
     raise(RuntimeError, message: error)
   end
