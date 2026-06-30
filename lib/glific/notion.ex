@@ -321,8 +321,8 @@ defmodule Glific.Notion do
   end
 
   defp parse_response({:ok, %{body: resp_body}}) do
-    {:error, inspect(resp_body)}
+    {:error, Glific.SafeLog.safe_inspect(resp_body)}
   end
 
-  defp parse_response({:error, message}), do: {:error, inspect(message)}
+  defp parse_response({:error, message}), do: {:error, Glific.SafeLog.safe_inspect(message)}
 end

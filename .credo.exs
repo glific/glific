@@ -41,7 +41,7 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: [],
+      requires: ["./.credo/checks/no_raw_inspect.ex"],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
@@ -159,7 +159,14 @@
           {Credo.Check.Warning.UnusedRegexOperation, []},
           {Credo.Check.Warning.UnusedStringOperation, []},
           {Credo.Check.Warning.UnusedTupleOperation, []},
-          {Credo.Check.Warning.UnsafeExec, []}
+          {Credo.Check.Warning.UnsafeExec, []},
+
+          #
+          ## Custom Checks (see .credo/checks/)
+          #
+          # Forbid raw `inspect/1,2`; use `Glific.SafeLog.safe_inspect/1` so
+          # credentials and other P2 data are never written to logs.
+          {GlificCredo.Checks.NoRawInspect, []}
         ],
         disabled: [
           #

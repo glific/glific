@@ -156,11 +156,11 @@ defmodule Glific.Providers.Maytapi.WAWorker do
         )
 
       {:error, reason} ->
-        Logger.error("WhatsApp group data sync failed: #{inspect(reason)}")
+        Logger.error("WhatsApp group data sync failed: #{Glific.SafeLog.safe_inspect(reason)}")
 
         send_notification(
           org_id,
-          "WhatsApp group data sync failed: #{inspect(reason)}",
+          "WhatsApp group data sync failed: #{Glific.SafeLog.safe_inspect(reason)}",
           Notifications.types().critical
         )
     end

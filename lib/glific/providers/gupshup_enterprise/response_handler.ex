@@ -47,7 +47,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
   def handle_response(error, message) do
     # Adding log when API Client fails
     Logger.info(
-      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+      "Error calling API Client for org_id: #{message.organization_id} error: #{Glific.SafeLog.safe_inspect(error)}"
     )
 
     %{body: "{\"details\":\"Error sending message due to network issues or Gupshup Outage\"}"}

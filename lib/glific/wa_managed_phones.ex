@@ -280,7 +280,7 @@ defmodule Glific.WAManagedPhones do
         {:error, "Phone ID not found"}
 
       {:error, changeset} ->
-        {:error, "Failed to update status: #{inspect(changeset.errors)}"}
+        {:error, "Failed to update status: #{Glific.SafeLog.safe_inspect(changeset.errors)}"}
     end
   end
 end

@@ -387,11 +387,13 @@ defmodule Glific.Assistants do
         |> Repo.update()
 
         Glific.log_exception(%Error{
-          message: "Kaapi config creation failed for assistant. Reason: #{inspect(error)}",
-          reason: inspect(error)
+          message:
+            "Kaapi config creation failed for assistant. Reason: #{Glific.SafeLog.safe_inspect(error)}",
+          reason: Glific.SafeLog.safe_inspect(error)
         })
 
-        {:error, "Kaapi config creation failed for assistant, Reason: #{inspect(error)}"}
+        {:error,
+         "Kaapi config creation failed for assistant, Reason: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -645,13 +647,14 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Kaapi config version creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Kaapi config version creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Kaapi config version creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
@@ -670,7 +673,10 @@ defmodule Glific.Assistants do
         {:error, changeset}
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
-        Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
+        Logger.error(
+          "Failed at #{failed_operation}: #{Glific.SafeLog.safe_inspect(failed_value)}"
+        )
+
         {:error, kaapi_error_message(failed_value)}
     end
   end
@@ -881,7 +887,7 @@ defmodule Glific.Assistants do
         {:error, reason}
 
       {:error, reason} ->
-        {:error, "File upload failed: #{inspect(reason)}"}
+        {:error, "File upload failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -943,8 +949,8 @@ defmodule Glific.Assistants do
 
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Create knowledge base failed. Reason: #{inspect(error)}",
-          reason: inspect(error)
+          message: "Create knowledge base failed. Reason: #{Glific.SafeLog.safe_inspect(error)}",
+          reason: Glific.SafeLog.safe_inspect(error)
         })
 
         {:error, "Failed to create knowledge base"}
@@ -985,7 +991,7 @@ defmodule Glific.Assistants do
 
     with {:error, reason} <- Repo.delete(knowledge_base_version) do
       Logger.error(
-        "Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}"
+        "Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
       )
     end
 
@@ -994,7 +1000,7 @@ defmodule Glific.Assistants do
 
       with {:error, reason} <- Repo.delete(knowledge_base) do
         Logger.error(
-          "Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}"
+          "Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
       end
     end
@@ -1139,17 +1145,18 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
-        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+        {:error, "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -1173,17 +1180,18 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
-        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+        {:error, "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -1393,7 +1401,7 @@ defmodule Glific.Assistants do
         :ok
 
       {:error, reason} ->
-        {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
+        {:error, "Failed to delete assistant from Kaapi: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 end
