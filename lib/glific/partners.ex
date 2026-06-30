@@ -852,7 +852,7 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      "Error occurred while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      "Error occurred while executing cron handler for organizations. Error: #{Glific.SafeLog.safe_inspect(err)}, handler: #{Glific.SafeLog.safe_inspect(handler)}, handler_args: #{Glific.SafeLog.safe_inspect(handler_args)}"
       |> Glific.log_error()
   end
 
@@ -1146,7 +1146,10 @@ defmodule Glific.Partners do
         {:ok, credential}
 
       {:error, reason} ->
-        Logger.error("Failed to enqueue credential update job: #{inspect(reason)}")
+        Logger.error(
+          "Failed to enqueue credential update job: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
         {:error, "Failed to sync WhatsApp data to Glific. Please reach out to Glific Support"}
     end
   end
@@ -1265,10 +1268,15 @@ defmodule Glific.Partners do
 
         {:error, error} ->
           Logger.info(
-            "Error fetching token for: #{provider_shortcode}, error: #{inspect(error)}, org_id: #{organization_id}"
+            "Error fetching token for: #{provider_shortcode}, error: #{Glific.SafeLog.safe_inspect(error)}, org_id: #{organization_id}"
           )
 
-          handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
+          handle_token_error(
+            organization_id,
+            provider_shortcode,
+            "#{Glific.SafeLog.safe_inspect(error)}"
+          )
+
           {:ignore, nil}
       end
     end
@@ -1288,7 +1296,7 @@ defmodule Glific.Partners do
   end
 
   defp handle_token_error(_organization_id, _provider_shortcode, error),
-    do: raise("Error fetching goth token' #{inspect(error)}")
+    do: raise("Error fetching goth token' #{Glific.SafeLog.safe_inspect(error)}")
 
   @doc """
   Disable a specific credential for the organization

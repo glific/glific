@@ -59,7 +59,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
       {:error, reason} ->
         {:error,
-         "Could not connect to the geocoding service (#{inspect(reason)}). Check your network connection and try again."}
+         "Could not connect to the geocoding service (#{Glific.SafeLog.safe_inspect(reason)}). Check your network connection and try again."}
     end
   end
 

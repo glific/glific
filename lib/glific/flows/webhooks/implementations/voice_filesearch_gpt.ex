@@ -18,6 +18,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   alias Glific.Flows.Webhooks.Behaviour
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Kaapi
 
   @doc """
@@ -67,7 +68,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         %{success: false, reason: reason}
 
       other ->
-        %{success: false, reason: inspect(other)}
+        %{success: false, reason: SafeLog.safe_inspect(other)}
     end
   end
 

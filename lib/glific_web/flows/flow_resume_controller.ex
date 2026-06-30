@@ -59,7 +59,8 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
       {:error, reason} ->
         Glific.log_exception(%RuntimeError{
-          message: "Failed to start flow_resume supervised task: #{inspect(reason)}"
+          message:
+            "Failed to start flow_resume supervised task: #{Glific.SafeLog.safe_inspect(reason)}"
         })
 
         :ok

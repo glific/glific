@@ -63,7 +63,7 @@ defmodule Glific.Flows.Templating do
   @spec do_process_template(nil | String.t(), map(), map()) ::
           {nil, map()} | {Templating.t(), map()}
   defp do_process_template(nil, json, uuid_map) do
-    Logger.error("UUID is nil, skipping templating. #{inspect(json)}")
+    Logger.error("UUID is nil, skipping templating. #{Glific.SafeLog.safe_inspect(json)}")
     create_flow_template_notification("Template expression is null in the flow", json, uuid_map)
   end
 
@@ -85,7 +85,7 @@ defmodule Glific.Flows.Templating do
 
       error ->
         Logger.error(
-          "Template not found, skipping templating. #{inspect(json)} and error #{inspect(error)}"
+          "Template not found, skipping templating. #{Glific.SafeLog.safe_inspect(json)} and error #{Glific.SafeLog.safe_inspect(error)}"
         )
 
         create_flow_template_notification(
@@ -136,7 +136,7 @@ defmodule Glific.Flows.Templating do
 
       {:error, error} ->
         Logger.error(
-          "Error parsing json string  #{inspect(json_string)} with error: #{inspect(error)}"
+          "Error parsing json string  #{Glific.SafeLog.safe_inspect(json_string)} with error: #{Glific.SafeLog.safe_inspect(error)}"
         )
 
         nil

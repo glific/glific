@@ -228,7 +228,7 @@ defmodule Glific.Bhasini do
         %{success: false, reason: body}
 
       error ->
-        Logger.info("Error from Bhashini: #{inspect(error)}")
+        Logger.info("Error from Bhashini: #{Glific.SafeLog.safe_inspect(error)}")
         %{success: false, reason: "could not fetch data"}
     end
   end

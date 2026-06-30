@@ -293,7 +293,7 @@ defmodule Glific.Flows.Router do
 
     msg =
       context.organization_id
-      |> Messages.create_temp_message("#{inspect(contact.in_groups)}",
+      |> Messages.create_temp_message("#{Glific.SafeLog.safe_inspect(contact.in_groups)}",
         extra: %{contact_groups: contact.in_groups}
       )
 
@@ -347,7 +347,7 @@ defmodule Glific.Flows.Router do
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
   defp update_context_results(context, key, _msg, _) when key in ["", nil] do
-    Logger.info("invalid results key for context: #{inspect(context)}")
+    Logger.info("invalid results key for context: #{Glific.SafeLog.safe_inspect(context)}")
     context
   end
 
