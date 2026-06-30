@@ -159,7 +159,7 @@ defmodule Glific.Saas.ConsultingHour do
     |> parse_delimiter(:content)
     |> Map.values()
     |> Enum.reduce("", fn key, acc ->
-      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+      acc <> if is_binary(key), do: "#{key},", else: "#{Glific.SafeLog.safe_inspect(key)},"
     end)
   end
 

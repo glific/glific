@@ -549,7 +549,7 @@ defmodule Glific.Flows do
   defp load_flow_cache(cache_key) do
     {organization_id, {key, value, status}} = cache_key
     Repo.put_organization_id(organization_id)
-    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
+    Logger.info("Loading flow cache: #{organization_id}, #{Glific.SafeLog.safe_inspect(key)}")
     args = make_args(key, value)
 
     flow = Flow.get_loaded_flow(organization_id, status, args)
@@ -572,7 +572,10 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key) do
     case Caches.fetch(organization_id, key, &load_flow_cache/1) do
       {:error, error} ->
-        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{inspect(error)}")
+        Logger.info(
+          "Failed to retrieve flow, #{Glific.SafeLog.safe_inspect(key)}, #{Glific.SafeLog.safe_inspect(error)}"
+        )
+
         {:error, error}
 
       {_, flow} ->
@@ -627,7 +630,7 @@ defmodule Glific.Flows do
 
       # we had an error saving to the DB
       elem(result, 0) == :error ->
-        Logger.info("Error while publishing the flow. #{inspect(result)}")
+        Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
         result
 
       # We had an error validating the flow
@@ -882,7 +885,8 @@ defmodule Glific.Flows do
     case Caches.fetch(organization_id, "flow_keywords_map", &load_flow_keywords_map/1) do
       {:error, error} ->
         raise(ArgumentError,
-          message: "Failed to retrieve flow_keywords_map, #{inspect(organization_id)}, #{error}"
+          message:
+            "Failed to retrieve flow_keywords_map, #{Glific.SafeLog.safe_inspect(organization_id)}, #{error}"
         )
 
       {_, value} ->
@@ -1068,7 +1072,9 @@ defmodule Glific.Flows do
               _ -> "Something went wrong"
             end
 
-          Logger.error("Failed to import flow #{flow_name}: #{error_message}, #{inspect(errors)}")
+          Logger.error(
+            "Failed to import flow #{flow_name}: #{error_message}, #{Glific.SafeLog.safe_inspect(errors)}"
+          )
 
           %{
             flow_name: flow_name,

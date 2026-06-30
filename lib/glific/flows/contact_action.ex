@@ -422,7 +422,8 @@ defmodule Glific.Flows.ContactAction do
         do: "Error sending message",
         else: prefix
 
-    message = "#{prefix}, resetting context: #{inspect(error)}, #{inspect(attrs)}"
+    message =
+      "#{prefix}, resetting context: #{Glific.SafeLog.safe_inspect(error)}, #{Glific.SafeLog.safe_inspect(attrs)}"
 
     # returning for now, but resetting the context
     context = FlowContext.reset_all_contexts(context, message)

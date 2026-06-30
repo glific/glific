@@ -49,7 +49,7 @@ defmodule Glific.Flows.ContactSetting do
         Map.put(context, :contact, contact)
 
       [] ->
-        raise("Error! No language found with label #{inspect(language)}")
+        raise("Error! No language found with label #{Glific.SafeLog.safe_inspect(language)}")
     end
   end
 

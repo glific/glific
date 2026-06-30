@@ -71,7 +71,7 @@ defmodule Glific.GoogleTranslate.Translate do
       {:ok, combined_texts}
     else
       {_status, response} ->
-        {:error, "Invalid response #{inspect(response)}"}
+        {:error, "Invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 
