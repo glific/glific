@@ -161,7 +161,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
   # Numbers Maytapi rejected (each added on its own call) are returned as result
   # errors, so the UI surfaces the failure instead of reporting a partial/failed
   # add as "added successfully".
-  @spec add_failure_errors(%{String.t() => String.t()}) :: [%{key: String.t(), message: String.t()}]
+  @spec add_failure_errors(%{String.t() => String.t()}) :: [
+          %{key: String.t(), message: String.t()}
+        ]
   defp add_failure_errors(failed) do
     Enum.map(failed, fn {phone, message} ->
       %{key: phone, message: "#{phone} could not be added: #{message}"}
