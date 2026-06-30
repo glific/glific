@@ -82,9 +82,7 @@ defmodule Glific.Flows.Webhook do
     "filesearch-gpt",
     "voice-filesearch-gpt",
     "speech_to_text",
-    "text_to_speech",
-    "speech_to_text_with_bhasini",
-    "nmt_tts_with_bhasini"
+    "text_to_speech"
   ]
 
   @doc """
@@ -163,8 +161,8 @@ defmodule Glific.Flows.Webhook do
       Map.get(result, :reason) || Map.get(result, :error) || Map.get(result, :message)
 
     # reason can be a non-binary term (e.g. a decoded JSON map from a Tesla 500
-    # body — see lib/glific/third_party/bhasini/bhasini.ex). to_string/1 would
-    # raise on those; inspect/1 produces a safe string for any term.
+    # body). to_string/1 would raise on those; inspect/1 produces a safe string
+    # for any term.
     error =
       cond do
         is_binary(reason) -> reason
@@ -488,18 +486,10 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp create_oban_changeset(%{url: url} = payload) when url in @non_unique_urls do
-    opts = [
+    __MODULE__.new(payload,
       queue: :gpt_webhook_queue,
       unique: nil
-    ]
-
-    # Bhasini tts API is performing badly for a long-time, so keeping the priority low, so other jobs can run
-    # But this priorty will be bumped every 5 mins to avoid starvation
-    if url == "nmt_tts_with_bhasini" do
-      __MODULE__.new(payload, Keyword.merge(opts, priority: 2))
-    else
-      __MODULE__.new(payload, opts)
-    end
+    )
   end
 
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
