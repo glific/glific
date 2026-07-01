@@ -1978,6 +1978,27 @@ defmodule Glific.PartnersTest do
       end
     end
 
+    test "returns ok even when GCS callback fails (sync will re-disable on next attempt)",
+         %{organization_id: organization_id} do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id,
+          is_active: false
+        })
+        |> Repo.insert()
+
+      with_mock(Glific.GCS, [:passthrough],
+        refresh_gcs_setup: fn _org_id -> {:error, "GCS permission denied"} end
+      ) do
+        assert :ok = Partners.enable_credential(organization_id, "google_cloud_storage")
+      end
+    end
+
     test "returns error for an invalid shortcode",
          %{organization_id: organization_id} do
       assert {:error, _} = Partners.enable_credential(organization_id, "nonexistent_provider")

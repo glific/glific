@@ -30,11 +30,23 @@ defmodule Glific.Mails.SyncDisabledMail do
       })
 
       Enum.each(bq_orgs, fn %{id: org_id} ->
-        Partners.enable_credential(org_id, "bigquery")
+        try do
+          Partners.enable_credential(org_id, "bigquery")
+        rescue
+          err ->
+            Glific.log_error("Failed to re-enable bigquery for org #{org_id}: #{inspect(err)}")
+        end
       end)
 
       Enum.each(gcs_orgs, fn %{id: org_id} ->
-        Partners.enable_credential(org_id, "google_cloud_storage")
+        try do
+          Partners.enable_credential(org_id, "google_cloud_storage")
+        rescue
+          err ->
+            Glific.log_error(
+              "Failed to re-enable google_cloud_storage for org #{org_id}: #{inspect(err)}"
+            )
+        end
       end)
     end
 
