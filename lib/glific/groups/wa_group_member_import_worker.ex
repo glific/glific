@@ -110,24 +110,24 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
   defp add_to_wa_group(_org_id, _wa_group_id, []), do: %{}
 
   defp add_to_wa_group(org_id, wa_group_id, phones) do
-    case phones -- existing_member_phones(wa_group_id) do
+    new_phones = phones -- existing_member_phones(wa_group_id)
+
+    with [_ | _] <- new_phones,
+         {:ok, %{failed: failed}} <-
+           WAGroups.add_members_to_group(org_id, wa_group_id, new_phones) do
+      report_failed_adds(wa_group_id, failed)
+    else
       [] ->
         %{}
 
-      new_phones ->
-        case WAGroups.add_members_to_group(org_id, wa_group_id, new_phones) do
-          {:ok, %{failed: failed}} ->
-            report_failed_adds(wa_group_id, failed)
+      {:error, reason} ->
+        Glific.log_error(
+          "WA group member import: add to group failed — wa_group=#{wa_group_id} reason=#{SafeLog.safe_inspect(reason)}"
+        )
 
-          {:error, reason} ->
-            Glific.log_error(
-              "WA group member import: add to group failed — wa_group=#{wa_group_id} reason=#{SafeLog.safe_inspect(reason)}"
-            )
-
-            Map.new(new_phones, fn phone ->
-              {phone, "Could not be added to the WhatsApp group"}
-            end)
-        end
+        Map.new(new_phones, fn phone ->
+          {phone, "Could not be added to the WhatsApp group"}
+        end)
     end
   end
 

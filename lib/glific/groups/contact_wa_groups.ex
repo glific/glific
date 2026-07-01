@@ -233,36 +233,36 @@ defmodule Glific.Groups.ContactWAGroups do
   defp do_add_members(org_id, wa_group, acting_phone_id, phones) do
     result =
       Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
-        payload = %{conversation_id: wa_group.bsp_id, number: [phone]}
-
-        case ApiClient.add_group_member(org_id, payload, acting_phone_id) do
-          :ok ->
-            case link_phone_to_group(phone, wa_group, org_id) do
-              {:ok, _} ->
-                %{acc | added: acc.added + 1}
-
-              {:error, reason} ->
-                Glific.log_error(
-                  "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{SafeLog.safe_inspect(reason)}"
-                )
-
-                %{
-                  acc
-                  | failed:
-                      Map.put(
-                        acc.failed,
-                        phone,
-                        "Added on WhatsApp but could not be linked in Glific"
-                      )
-                }
-            end
-
-          {:error, message} ->
-            %{acc | failed: Map.put(acc.failed, phone, message)}
+        case add_member(org_id, wa_group, acting_phone_id, phone) do
+          :ok -> %{acc | added: acc.added + 1}
+          {:error, message} -> %{acc | failed: Map.put(acc.failed, phone, message)}
         end
       end)
 
     {:ok, result}
+  end
+
+  @spec add_member(non_neg_integer(), WAGroup.t(), non_neg_integer(), String.t()) ::
+          :ok | {:error, String.t()}
+  defp add_member(org_id, wa_group, acting_phone_id, phone) do
+    payload = %{conversation_id: wa_group.bsp_id, number: [phone]}
+
+    with :ok <- ApiClient.add_group_member(org_id, payload, acting_phone_id),
+         {:ok, _} <- link_phone_to_group(phone, wa_group, org_id) do
+      :ok
+    else
+      # add_group_member failed on Maytapi — surface its human-readable string error
+      {:error, message} when is_binary(message) ->
+        {:error, message}
+
+      # Maytapi add succeeded but the local link failed
+      {:error, reason} ->
+        Glific.log_error(
+          "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{SafeLog.safe_inspect(reason)}"
+        )
+
+        {:error, "Added on WhatsApp but could not be linked in Glific"}
+    end
   end
 
   @spec link_phone_to_group(String.t(), WAGroup.t(), non_neg_integer()) ::
