@@ -135,8 +135,8 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
     end
   end
 
-  # Map each Maytapi-rejected number to a clear, member-scoped status for the
-  # report (the raw reasons are logged for debugging).
+  # Surface each Maytapi-rejected number's own error in the report (`failed` is
+  # already `%{phone => maytapi_message}`); also log the batch for debugging.
   @spec report_failed_adds(non_neg_integer(), %{String.t() => String.t()}) :: map()
   defp report_failed_adds(_wa_group_id, failed) when failed == %{}, do: %{}
 
@@ -145,9 +145,7 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
       "WA group member import: some numbers could not be added — wa_group=#{wa_group_id} failures=#{SafeLog.safe_inspect(failed)}"
     )
 
-    Map.new(failed, fn {phone, _message} ->
-      {phone, "Could not be added to the WhatsApp group"}
-    end)
+    failed
   end
 
   @spec existing_member_phones(non_neg_integer()) :: [String.t()]

@@ -158,18 +158,6 @@ defmodule GlificWeb.Resolvers.WaGroup do
     end
   end
 
-  # Numbers Maytapi rejected (each added on its own call) are returned as result
-  # errors, so the UI surfaces the failure instead of reporting a partial/failed
-  # add as "added successfully".
-  @spec add_failure_errors(%{String.t() => String.t()}) :: [
-          %{key: String.t(), message: String.t()}
-        ]
-  defp add_failure_errors(failed) do
-    Enum.map(failed, fn {phone, message} ->
-      %{key: phone, message: "#{phone} could not be added: #{message}"}
-    end)
-  end
-
   @doc """
   Bulk-add members to a WhatsApp group from a CSV of phone numbers. Runs in the
   background (an Oban job per chunk); returns immediately. Admin-only.
@@ -183,5 +171,17 @@ defmodule GlificWeb.Resolvers.WaGroup do
            Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: user.organization_id}) do
       WAGroupMemberImport.import_members(user.organization_id, wa_group.id, [{type, data}])
     end
+  end
+
+  # Numbers Maytapi rejected (each added on its own call) are returned as result
+  # errors, so the UI surfaces the failure instead of reporting a partial/failed
+  # add as "added successfully".
+  @spec add_failure_errors(%{String.t() => String.t()}) :: [
+          %{key: String.t(), message: String.t()}
+        ]
+  defp add_failure_errors(failed) do
+    Enum.map(failed, fn {phone, message} ->
+      %{key: phone, message: "#{phone} could not be added: #{message}"}
+    end)
   end
 end

@@ -109,9 +109,9 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
 
     refute contact.id in member_ids(wa_group.id)
 
-    # a batch add failure is recorded with a clear, member-scoped status (the
-    # raw Maytapi reason is logged, not stamped into each member row)
+    # each failed number is recorded against the job with the actual Maytapi
+    # error returned for that number
     user_job = Repo.get_by(UserJob, type: "wa_group_member_import")
-    assert user_job.errors["errors"]["919900112233"] == "Could not be added to the WhatsApp group"
+    assert user_job.errors["errors"]["919900112233"] == "ADD_FAILED"
   end
 end

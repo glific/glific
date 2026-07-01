@@ -812,37 +812,28 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Provision a WhatsApp group for the `createWaGroup` mutation, with members
-  supplied either as explicit `numbers` (the dropdown) or a CSV `import_data`.
+  Provision a WhatsApp group for the `createWaGroup` mutation. Members are
+  supplied via a CSV `import_data`.
 
-  For a CSV, Maytapi's createGroup is seeded with just the first phone (it
-  rejects an empty list and gets slow with many), then a background job adds the
-  rest and creates the contacts (phone + optional name). `input` is the GraphQL
-  input map (`:wa_managed_phone_id`, `:name`, `:numbers`, `:import_data`).
+  Maytapi's createGroup is seeded with just the first phone (it rejects an empty
+  list and gets slow with many), then a background job adds the rest and creates
+  the contacts (phone + optional name). `input` is the GraphQL input map
+  (`:wa_managed_phone_id`, `:name`, `:import_data`).
   """
   @spec provision_wa_group(non_neg_integer(), map()) ::
           {:ok, WAGroup.t()} | {:error, any()}
-  def provision_wa_group(org_id, %{wa_managed_phone_id: wa_managed_phone_id} = input) do
-    import_data =
-      case input[:import_data] do
-        data when is_binary(data) -> if String.trim(data) == "", do: nil, else: data
-        _ -> nil
-      end
-
-    numbers =
-      if import_data,
-        do: import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1),
-        else: input[:numbers]
+  def provision_wa_group(org_id, %{
+        wa_managed_phone_id: wa_managed_phone_id,
+        name: name,
+        import_data: import_data
+      }) do
+    # Seed createGroup with the CSV's first phone (Maytapi rejects an empty list),
+    # then a background job adds the rest and creates the contacts.
+    numbers = import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1)
 
     with {:ok, wa_group} <-
-           create_group_via_maytapi(org_id, wa_managed_phone_id, %{
-             name: input[:name],
-             numbers: numbers
-           }) do
-      if import_data do
-        WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data)
-      end
-
+           create_group_via_maytapi(org_id, wa_managed_phone_id, %{name: name, numbers: numbers}) do
+      WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data)
       {:ok, wa_group}
     end
   end
@@ -862,7 +853,7 @@ defmodule Glific.Groups.WAGroups do
     numbers = attrs[:numbers] || []
 
     with {:ok, wa_managed_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
+           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id}),
          {:ok, group_data} <-
            ApiClient.create_group(org_id, wa_managed_phone.phone_id, %{
              name: attrs[:name],

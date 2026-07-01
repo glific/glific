@@ -81,28 +81,24 @@ defmodule GlificWeb.Schema.WaGroupTypes do
   end
 
   @desc """
-  Input for createWaGroup. `numbers` are E.164 phone numbers without the +.
-  Alternatively pass `importData` (a CSV with a `phone` column plus an optional
-  `name` column): its phones seed the group and a background job enriches the
-  contacts.
+  Input for createWaGroup. Members are supplied via `importData` (a CSV with a
+  `phone` column plus an optional `name` column): its phones seed the group and a
+  background job enriches the contacts.
   """
   input_object :create_wa_group_input do
     field :name, non_null(:string)
     field :wa_managed_phone_id, non_null(:id)
-    field :numbers, list_of(:string)
-    field :import_data, :string
+    field :import_data, non_null(:string)
   end
 
   @desc """
   Input for updateWaGroup. Supply any subset: `name` renames the group,
-  `addPhones` adds members by phone number in one call (their contacts are
-  created if missing), `removeContactId` removes a single member (Maytapi's
-  group/remove takes one number at a time).
+  `removeContactId` removes a single member (Maytapi's group/remove takes one
+  number at a time). Members are added via a CSV import (`importWaGroupContacts`).
   """
   input_object :update_wa_group_input do
     field :id, non_null(:id)
     field :name, :string
-    field :add_phones, list_of(:string)
     field :remove_contact_id, :id
   end
 
