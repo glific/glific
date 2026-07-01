@@ -158,6 +158,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
+  # Neutral response used by the forgot-password (non-registration) flow so that the API never
+  # discloses whether an account exists for a given phone number (prevents account enumeration).
+  @otp_neutral_message "If you have an account, you will receive an OTP to confirm"
+
   defp handle_non_registration_otp(conn, organization_id, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
@@ -168,14 +172,15 @@ defmodule GlificWeb.API.V1.RegistrationController do
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
              true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
-          json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
+          json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
         else
           _ ->
             send_otp_error(conn, "Cannot send the otp to #{phone}")
         end
 
       {:error, _} ->
-        send_otp_error(conn, "Account with phone number #{phone} does not exist")
+        # Do not reveal that the account is missing; return the same neutral response.
+        json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
     end
   end
 

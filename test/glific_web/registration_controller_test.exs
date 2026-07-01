@@ -190,7 +190,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "Account with phone number #{phone} already exists"
     end
 
-    test "send otp to the non existing contact should get an error message", %{conn: conn} do
+    test "send otp to a non existing contact should not disclose that the account is missing",
+         %{conn: conn} do
       phone = "912345375758"
 
       invalid_params = %{
@@ -199,10 +200,10 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
-      assert json = json_response(conn, 400)
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Account with phone number #{phone} does not exist"
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
     test "Handle errors while sending otp when registration is false", %{conn: conn} do
@@ -472,7 +473,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn =
         post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
-      assert _json = json_response(conn, 200)
+      assert json = json_response(conn, 200)
+
+      # Same neutral message as the non-existing case so account existence is not disclosed
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
     test "send otp when Gupshup is not active", %{conn: conn} do
