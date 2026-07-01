@@ -257,6 +257,7 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
+        add_message_media_error(media, error)
         {:error, error}
 
       {:error, error} ->
