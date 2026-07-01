@@ -141,9 +141,9 @@ defmodule GlificWeb.Resolvers.WaGroup do
   end
 
   @doc """
-  Update a WhatsApp group via Maytapi: rename and/or add/remove members in one
-  call. Admin-only. Any subset of `name` / `add_contact_ids` /
-  `remove_contact_id` may be supplied.
+  Update a WhatsApp group via Maytapi: rename it and/or remove a member.
+  Admin-only. Any subset of `name` / `remove_contact_id` may be supplied.
+  Adding members is done via `importWaGroupContacts` (CSV).
   """
   @spec update_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}

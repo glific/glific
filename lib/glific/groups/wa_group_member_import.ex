@@ -41,12 +41,20 @@ defmodule Glific.Groups.WAGroupMemberImport do
   Returns `{:ok, %{status: ...}}` immediately — progress and per-row errors are
   tracked on the created `UserJob` (surfaced via the upload report).
   """
-  @spec import_members(non_neg_integer(), non_neg_integer(), Keyword.t()) :: {:ok, map()}
+  @spec import_members(non_neg_integer(), non_neg_integer(), Keyword.t()) ::
+          {:ok, map()} | {:error, String.t()}
   def import_members(org_id, wa_group_id, opts) do
-    if length(opts) > 1 do
-      raise "Please specify only one of: file_path, url or data"
-    end
+    case Keyword.take(opts, [:file_path, :url, :data]) do
+      [{_source, value}] when value not in [nil, ""] ->
+        run_import(org_id, wa_group_id, opts)
 
+      _ ->
+        {:error, "Please specify exactly one of: file_path, url or data"}
+    end
+  end
+
+  @spec run_import(non_neg_integer(), non_neg_integer(), Keyword.t()) :: {:ok, map()}
+  defp run_import(org_id, wa_group_id, opts) do
     user_job =
       UserJob.create_user_job(%{
         status: "pending",

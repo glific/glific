@@ -200,18 +200,17 @@ defmodule Glific.Groups.ContactWAGroups do
       ) do
     org_id = wa_group.organization_id
 
-    with {:ok, %WAManagedPhone{phone_id: acting_phone_id}} <-
-           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id}),
-         {:ok, %{added: added, failed: failed}} <-
-           add_members(org_id, wa_group, acting_phone_id, add_phones),
-         {:ok, removed} <- remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
-      {:ok, %{added: added, removed: removed, failed: failed}}
-    else
-      {:error, [_, "Resource not found"]} ->
+    case Repo.get_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}) do
+      nil ->
         {:error, "Acting phone not found in this organization"}
 
-      {:error, message} ->
-        {:error, message}
+      %WAManagedPhone{phone_id: acting_phone_id} ->
+        with {:ok, %{added: added, failed: failed}} <-
+               add_members(org_id, wa_group, acting_phone_id, add_phones),
+             {:ok, removed} <-
+               remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
+          {:ok, %{added: added, removed: removed, failed: failed}}
+        end
     end
   end
 

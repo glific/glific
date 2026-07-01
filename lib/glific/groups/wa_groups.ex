@@ -853,7 +853,7 @@ defmodule Glific.Groups.WAGroups do
     numbers = attrs[:numbers] || []
 
     with {:ok, wa_managed_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id}),
+           Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
          {:ok, group_data} <-
            ApiClient.create_group(org_id, wa_managed_phone.phone_id, %{
              name: attrs[:name],

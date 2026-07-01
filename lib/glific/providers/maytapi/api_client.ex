@@ -35,10 +35,6 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # it as HTTP 200 with `success: false`, so the Tesla retry below inspects the
   # body (not just the status) to catch and retry it.
   @instance_not_ready_code "W05"
-  # HTTP statuses / transport reasons worth retrying (same set as the shared
-  # `Glific.get_tesla_retry_middleware/1`).
-  @retry_error_codes [429, 500, 501, 502, 503, 504]
-  @retry_reasons [:timeout, :connrefused, :nxdomain]
 
   @doc """
   Making Tesla post call and adding api key in header
@@ -256,37 +252,30 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   defp handle_maytapi_response({:error, reason}, _type),
     do: {:error, SafeLog.safe_inspect(reason)}
 
-  # Tesla client with a retry that covers transient HTTP failures *and* Maytapi's
-  # "Lib not loaded" (W05), which comes back as HTTP 200 — hence `should_retry`
-  # inspects the body, not just the status.
-  #
-  # `Tesla.Middleware.Retry` backs off exponentially: the nth retry waits
-  # `min(max_delay, delay * 2 ^ (n - 1))` ms, plus jitter. W05 can take 30s+ to
-  # clear after an instance reconnect, so we give it 5 attempts and let the delay
-  # grow toward `max_delay` (2s → 4s → 8s → 16s → 30s, capped).
   @retry_delay 2_000
-  @retry_max_delay 30_000
-  @retry_max_retries 5
+  @retry_max_delay 8_000
+  @retry_max_retries 3
 
   @spec client() :: Tesla.Client.t()
   defp client do
-    Tesla.client([
-      {Tesla.Middleware.Retry,
-       delay: @retry_delay,
-       max_delay: @retry_max_delay,
-       max_retries: @retry_max_retries,
-       jitter_factor: 0.2,
-       should_retry: &retry_request?/3}
-    ])
+    [{Tesla.Middleware.Retry, base_opts}] =
+      Glific.get_tesla_retry_middleware(%{delay: @retry_delay, max_retries: @retry_max_retries})
+
+    standard_retry? = Keyword.fetch!(base_opts, :should_retry)
+
+    opts =
+      base_opts
+      |> Keyword.merge(max_delay: @retry_max_delay, jitter_factor: 0.2)
+      |> Keyword.put(:should_retry, fn result, env, opts ->
+        standard_retry?.(result, env, opts) or maytapi_lib_not_loaded?(result)
+      end)
+
+    Tesla.client([{Tesla.Middleware.Retry, opts}])
   end
 
-  @spec retry_request?(Tesla.Env.result(), Tesla.Env.t(), keyword()) :: boolean()
-  defp retry_request?({:ok, %{status: status}}, _env, _opts) when status in @retry_error_codes,
-    do: true
-
-  defp retry_request?({:ok, %{body: body}}, _env, _opts), do: instance_not_ready?(body)
-  defp retry_request?({:error, reason}, _env, _opts), do: reason in @retry_reasons
-  defp retry_request?(_result, _env, _opts), do: false
+  @spec maytapi_lib_not_loaded?(Tesla.Env.result()) :: boolean()
+  defp maytapi_lib_not_loaded?({:ok, %{body: body}}), do: instance_not_ready?(body)
+  defp maytapi_lib_not_loaded?(_result), do: false
 
   @spec instance_not_ready?(any()) :: boolean()
   defp instance_not_ready?(body) when is_binary(body),

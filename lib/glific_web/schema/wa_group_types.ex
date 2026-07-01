@@ -141,7 +141,7 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(&Resolvers.WaGroup.create_wa_group/3)
     end
 
-    @desc "Update a WhatsApp group via Maytapi: rename and/or add/remove members in one call. Admin-only."
+    @desc "Update a WhatsApp group via Maytapi"
     field :update_wa_group, :wa_group_result do
       arg(:input, non_null(:update_wa_group_input))
       middleware(Authorize, :admin)
