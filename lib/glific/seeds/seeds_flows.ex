@@ -202,6 +202,20 @@ defmodule Glific.Seeds.SeedsFlows do
     Enum.each(organizations, &import_flow_for_organization(&1, import_flow, flow_file))
   end
 
+  @doc """
+  Import a single template flow file for one organization (import + mark as
+  template + publish + tag), reusing the exact same path as onboarding seeding.
+  Used by `Glific.Flows.BhashiniWebhookBackfill` to re-seed the STT/TTS templates.
+  """
+  @spec import_template_flow(Organization.t(), String.t()) :: :ok
+  def import_template_flow(organization, flow_file) do
+    full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
+    {:ok, file_content} = File.read(full_file_path)
+    {:ok, import_flow} = Jason.decode(file_content)
+
+    import_flow_for_organization(organization, import_flow, flow_file)
+  end
+
   @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
   defp import_flow_for_organization(organization, import_flow, flow_file) do
     Repo.put_organization_id(organization.id)
