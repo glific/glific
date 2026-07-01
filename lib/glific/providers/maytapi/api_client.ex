@@ -250,8 +250,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     end
   end
 
-  defp handle_maytapi_response({:ok, %Tesla.Env{body: body}}, _type), do: {:error, inspect(body)}
-  defp handle_maytapi_response({:error, reason}, _type), do: {:error, inspect(reason)}
+  defp handle_maytapi_response({:ok, %Tesla.Env{body: body}}, _type),
+    do: {:error, SafeLog.safe_inspect(body)}
+
+  defp handle_maytapi_response({:error, reason}, _type),
+    do: {:error, SafeLog.safe_inspect(reason)}
 
   # Tesla client with a retry that covers transient HTTP failures *and* Maytapi's
   # "Lib not loaded" (W05), which comes back as HTTP 200 — hence `should_retry`

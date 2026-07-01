@@ -11,6 +11,7 @@ defmodule Glific.Groups.ContactWAGroups do
     Groups.WAGroups,
     Providers.Maytapi.ApiClient,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone
   }
 
@@ -232,7 +233,7 @@ defmodule Glific.Groups.ContactWAGroups do
 
               {:error, reason} ->
                 Glific.log_error(
-                  "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{inspect(reason)}"
+                  "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{SafeLog.safe_inspect(reason)}"
                 )
 
                 %{
