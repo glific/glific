@@ -190,29 +190,38 @@ defmodule Glific.WAManagedPhones do
   end
 
   @spec upsert_wa_managed_phone(map(), non_neg_integer(), String.t()) :: {:ok, String.t()}
-  defp upsert_wa_managed_phone(%{"number" => phone} = wa_managed_phone, org_id, product_id)
-       when is_binary(phone) and phone != "" do
-    status = wa_managed_phone["status"]
+  defp upsert_wa_managed_phone(attrs, org_id, product_id) do
+    case attrs["number"] do
+      phone when is_binary(phone) and phone != "" ->
+        upsert_connected_phone(attrs, phone, org_id, product_id)
+
+      _ ->
+        refresh_logged_out_phone(attrs)
+    end
+  end
+
+  @spec upsert_connected_phone(map(), String.t(), non_neg_integer(), String.t()) ::
+          {:ok, String.t()}
+  defp upsert_connected_phone(attrs, phone, org_id, product_id) do
+    status = attrs["status"]
 
     params = %{
-      label: wa_managed_phone["name"],
+      label: attrs["name"],
       phone: phone,
-      phone_id: wa_managed_phone["id"],
+      phone_id: attrs["id"],
       product_id: product_id,
       organization_id: org_id,
       contact_type: "WA"
     }
 
-    with {:ok, contact} <- Contacts.maybe_create_contact(params) do
-      case Repo.get_by(WAManagedPhone, %{phone: phone, organization_id: org_id}) do
-        nil ->
-          params
-          |> Map.merge(%{contact_id: contact.id, status: status})
-          |> create_wa_managed_phone()
-
-        %WAManagedPhone{} = existing ->
-          update_wa_managed_phone(existing, %{status: status})
-      end
+    with {:ok, contact} <- Contacts.maybe_create_contact(params),
+         nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
+      params
+      |> Map.merge(%{contact_id: contact.id, status: status})
+      |> create_wa_managed_phone()
+    else
+      %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
+      {:error, _reason} = error -> error
     end
 
     {:ok, "success"}
@@ -220,7 +229,8 @@ defmodule Glific.WAManagedPhones do
 
   # Logged-out phone: known phone_id, no number (Maytapi returns "idle"). Can't
   # create a contact without a number, so just refresh the existing row's status.
-  defp upsert_wa_managed_phone(%{"id" => phone_id, "status" => status}, _org_id, _product_id)
+  @spec refresh_logged_out_phone(map()) :: {:ok, String.t()}
+  defp refresh_logged_out_phone(%{"id" => phone_id, "status" => status})
        when not is_nil(phone_id) do
     case get_wa_managed_phone(phone_id) do
       %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
@@ -230,7 +240,7 @@ defmodule Glific.WAManagedPhones do
     {:ok, "success"}
   end
 
-  defp upsert_wa_managed_phone(_wa_managed_phone, _org_id, _product_id), do: {:ok, "skipped"}
+  defp refresh_logged_out_phone(_attrs), do: {:ok, "skipped"}
 
   @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
   defp validate_response(wa_managed_phones) when is_list(wa_managed_phones),
