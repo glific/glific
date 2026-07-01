@@ -215,7 +215,9 @@ defmodule Glific.GCS.GcsWorker do
       |> Map.put("remote_name", remote_name)
       |> Map.put("local_name", local_name)
 
-    Logger.info("GCSWORKER: Performing gcs media with details for media id: #{inspect(media)}")
+    Logger.info(
+      "GCSWORKER: Performing gcs media with details for media id: #{Glific.SafeLog.safe_inspect(media)}"
+    )
 
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
@@ -233,7 +235,7 @@ defmodule Glific.GCS.GcsWorker do
 
       {:error, error} ->
         error =
-          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}"
+          "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{Glific.SafeLog.safe_inspect(error)}"
 
         Logger.info(error)
         add_message_media_error(media, error)
@@ -275,7 +277,9 @@ defmodule Glific.GCS.GcsWorker do
           )
         end
 
-        error = "GCSWORKER: Error while uploading file to GCS #{inspect(error)}"
+        error =
+          "GCSWORKER: Error while uploading file to GCS #{Glific.SafeLog.safe_inspect(error)}"
+
         Logger.info(error)
 
         error
@@ -284,7 +288,7 @@ defmodule Glific.GCS.GcsWorker do
         {_, stacktrace} = Process.info(self(), :current_stacktrace)
 
         error =
-          "GCSWORKER: Error while uploading file to GCS #{inspect(error)} stacktrace: #{inspect(stacktrace)}"
+          "GCSWORKER: Error while uploading file to GCS #{Glific.SafeLog.safe_inspect(error)} stacktrace: #{Glific.SafeLog.safe_inspect(stacktrace)}"
 
         Logger.info(error)
 
@@ -352,7 +356,7 @@ defmodule Glific.GCS.GcsWorker do
     # auth fails) — catch it so callers always get a tagged tuple, never a crash.
     exception ->
       Logger.error(
-        "GCSWORKER: upload crashed for org_id=#{organization_id}: #{inspect(exception)}"
+        "GCSWORKER: upload crashed for org_id=#{organization_id}: #{Glific.SafeLog.safe_inspect(exception)}"
       )
 
       {:error, "GCSWORKER: upload failed — #{Exception.message(exception)}"}

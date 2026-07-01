@@ -57,7 +57,7 @@ defmodule GlificWeb.Resolvers.Media do
     response
     |> case do
       {:ok, %{url: url} = _} -> {:ok, url}
-      error -> {:error, "Something went wrong #{inspect(error)}"}
+      error -> {:error, "Something went wrong #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 end

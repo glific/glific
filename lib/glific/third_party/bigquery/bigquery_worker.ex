@@ -53,6 +53,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Profiles.Profile,
     Repo,
     RepoReplica,
+    SafeLog,
     Searches.SavedSearch,
     Stats.Stat,
     Tags.Tag,
@@ -320,7 +321,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("messages", organization_id, attrs) do
     Logger.debug(
-      "fetching messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching messages data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("messages", organization_id, attrs)
@@ -341,7 +342,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contacts_wa_groups", organization_id, attrs) do
     Logger.debug(
-      "fetching contacts_wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching contacts_wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("contacts_wa_groups", organization_id, attrs)
@@ -372,7 +373,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_labels", organization_id, attrs) do
     Logger.debug(
-      "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching flow_labels data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("flow_labels", organization_id, attrs)
@@ -401,7 +402,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contacts_fields", organization_id, attrs) do
     Logger.debug(
-      "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching contacts_fields data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("contacts_fields", organization_id, attrs)
@@ -431,7 +432,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("groups", organization_id, attrs) do
     Logger.debug(
-      "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching groups data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("groups", organization_id, attrs)
@@ -464,7 +465,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("tags", organization_id, attrs) do
     Logger.debug(
-      "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching tags data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("tags", organization_id, attrs)
@@ -495,7 +496,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("trial_users", organization_id, attrs) do
     Logger.debug(
-      "fetching trial users data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching trial users data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("trial_users", organization_id, attrs)
@@ -527,7 +528,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("saved_searches", organization_id, attrs) do
     Logger.debug(
-      "fetching saved_searches data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching saved_searches data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("saved_searches", organization_id, attrs)
@@ -558,7 +559,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("speed_sends", organization_id, attrs) do
     Logger.debug(
-      "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching speed_sends data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("speed_sends", organization_id, attrs)
@@ -594,7 +595,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("wa_groups", organization_id, attrs) do
     Logger.debug(
-      "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching wa_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("wa_groups", organization_id, attrs)
@@ -626,7 +627,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("wa_groups_phones", organization_id, attrs) do
     Logger.debug(
-      "fetching wa_groups_phones data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching wa_groups_phones data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("wa_groups_phones", organization_id, attrs)
@@ -657,7 +658,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("interactive_templates", organization_id, attrs) do
     Logger.debug(
-      "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching interactive_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("interactive_templates", organization_id, attrs)
@@ -691,7 +692,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("wa_groups_collections", organization_id, attrs) do
     Logger.debug(
-      "fetching wa_groups_collections data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching wa_groups_collections data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("wa_groups_collections", organization_id, attrs)
@@ -722,7 +723,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("wa_reactions", organization_id, attrs) do
     Logger.debug(
-      "fetching wa_reactions data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching wa_reactions data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("wa_reactions", organization_id, attrs)
@@ -753,7 +754,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("whatsapp_forms", organization_id, attrs) do
     Logger.debug(
-      "Fetching whatsapp_forms data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "Fetching whatsapp_forms data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("whatsapp_forms", organization_id, attrs)
@@ -785,7 +786,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("whatsapp_forms_responses", organization_id, attrs) do
     Logger.debug(
-      "Fetching whatsapp_forms_responses data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "Fetching whatsapp_forms_responses data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("whatsapp_forms_responses", organization_id, attrs)
@@ -819,7 +820,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("certificate_templates", organization_id, attrs) do
     Logger.debug(
-      "fetching certificate_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching certificate_templates data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("certificate_templates", organization_id, attrs)
@@ -850,7 +851,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("issued_certificates", organization_id, attrs) do
     Logger.debug(
-      "fetching issued_certificates data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching issued_certificates data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("issued_certificates", organization_id, attrs)
@@ -882,7 +883,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_broadcast_contacts", organization_id, attrs) do
     Logger.debug(
-      "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching message_broadcast_contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("message_broadcast_contacts", organization_id, attrs)
@@ -913,7 +914,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_broadcasts", organization_id, attrs) do
     Logger.debug(
-      "fetching message_broadcasts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching message_broadcasts data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("message_broadcasts", organization_id, attrs)
@@ -950,7 +951,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contacts", organization_id, attrs) do
     Logger.debug(
-      "fetching contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching contacts data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("contacts", organization_id, attrs)
@@ -1004,7 +1005,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contacts_groups", organization_id, attrs) do
     Logger.debug(
-      "fetching contacts_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching contacts_groups data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("contacts_groups", organization_id, attrs)
@@ -1037,7 +1038,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp queue_table_data("profiles", organization_id, attrs) do
     # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
     Logger.debug(
-      "fetching profiles data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching profiles data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("profiles", organization_id, attrs)
@@ -1079,7 +1080,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("contact_histories", organization_id, attrs) do
     Logger.debug(
-      "fetching contact_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching contact_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("contact_histories", organization_id, attrs)
@@ -1111,7 +1112,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("message_conversations", organization_id, attrs) do
     Logger.debug(
-      "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("message_conversations", organization_id, attrs)
@@ -1144,7 +1145,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flows", organization_id, attrs) do
     Logger.debug(
-      "fetching flows data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching flows data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("flows", organization_id, attrs)
@@ -1177,7 +1178,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_results", organization_id, attrs) do
     Logger.debug(
-      "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching flow_results data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("flow_results", organization_id, attrs)
@@ -1214,7 +1215,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_counts", organization_id, attrs) do
     Logger.debug(
-      "fetching flow_counts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching flow_counts data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("flow_counts", organization_id, attrs)
@@ -1247,7 +1248,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("messages_media", organization_id, attrs) do
     Logger.debug(
-      "fetching messages_media data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching messages_media data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("messages_media", organization_id, attrs)
@@ -1258,7 +1259,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_contexts", organization_id, attrs) do
     Logger.debug(
-      "fetching flow_contexts data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching flow_contexts data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("flow_contexts", organization_id, attrs)
@@ -1308,7 +1309,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("tickets", organization_id, attrs) do
     Logger.debug(
-      "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching tickets data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("tickets", organization_id, attrs)
@@ -1347,7 +1348,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("wa_messages", organization_id, attrs) do
     Logger.debug(
-      "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching wa_messages data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     fetch_data("wa_messages", organization_id, attrs)
@@ -1391,7 +1392,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.debug(
-      "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching #{stat} data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     stat_atom =
@@ -1449,7 +1450,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp queue_table_data(tracker, organization_id, attrs)
        when tracker in ["trackers", "trackers_all"] do
     Logger.debug(
-      "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{inspect(attrs)}"
+      "fetching #{tracker} data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
     )
 
     tracker_atom =
@@ -1622,7 +1623,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp make_job(data, table, organization_id, attrs) do
     Logger.debug(
-      "making a new job for org_id: #{organization_id} table: #{table} to send on bigquery with max id: #{inspect(attrs)}"
+      "making a new job for org_id: #{organization_id} table: #{table} to send on bigquery with max id: #{SafeLog.safe_inspect(attrs)}"
     )
 
     table = Atom.to_string(table)

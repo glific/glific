@@ -958,7 +958,7 @@ defmodule Glific.Flows.FlowContext do
       event_meta: %{
         context_id: context.id,
         flow_id: context.flow_id,
-        message: "#{inspect(message)}"
+        message: "#{Glific.SafeLog.safe_inspect(message)}"
       }
     )
 

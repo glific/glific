@@ -318,7 +318,7 @@ defmodule Glific.Searches do
 
   def search(%{filter: %{search_group: true, group_label: group_label}} = args, _count) do
     Logger.info(
-      "Searches.Search/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+      "Searches.Search/2 with : args: #{Glific.SafeLog.safe_inspect(args)} group label: #{Glific.SafeLog.safe_inspect(group_label)}"
     )
 
     ConversationsGroup.list_conversations(
@@ -329,7 +329,7 @@ defmodule Glific.Searches do
   end
 
   def search(%{filter: %{search_group: true}} = args, _count) do
-    Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
+    Logger.info("Searches.Search/2 with : args: #{Glific.SafeLog.safe_inspect(args)}")
 
     ConversationsGroup.list_conversations(
       group_ids(args),
@@ -341,7 +341,7 @@ defmodule Glific.Searches do
   # codebeat:disable[ABC]
   def search(args, count) do
     # save the search if needed
-    Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
+    Logger.info("Searches.Search/2 with : args: #{Glific.SafeLog.safe_inspect(args)}")
     do_save_search(args)
 
     args =
@@ -412,7 +412,7 @@ defmodule Glific.Searches do
   @spec wa_search(map()) :: [WAConversation.t()]
   def wa_search(%{filter: %{search_group: true, group_label: group_label}} = args) do
     Logger.info(
-      "Searches.WASearch/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+      "Searches.WASearch/2 with : args: #{Glific.SafeLog.safe_inspect(args)} group label: #{Glific.SafeLog.safe_inspect(group_label)}"
     )
 
     ConversationsGroup.wa_list_conversations(
@@ -423,7 +423,7 @@ defmodule Glific.Searches do
   end
 
   def wa_search(%{filter: %{search_group: true}} = args) do
-    Logger.info("Searches.WASearch/2 with : args: #{inspect(args)}")
+    Logger.info("Searches.WASearch/2 with : args: #{Glific.SafeLog.safe_inspect(args)}")
 
     ConversationsGroup.wa_list_conversations(
       group_ids(args),
@@ -433,7 +433,7 @@ defmodule Glific.Searches do
   end
 
   def wa_search(args) do
-    Logger.info("Searches.wa_Search/1 with : args: #{inspect(args)}")
+    Logger.info("Searches.wa_Search/1 with : args: #{Glific.SafeLog.safe_inspect(args)}")
 
     wa_group_ids =
       case filter_groups_of_organization(args.filter) do

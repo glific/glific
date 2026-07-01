@@ -371,7 +371,7 @@ defmodule Glific.Providers.Gupshup.Template do
         {:ok, res}
 
       {:error, error} ->
-        Logger.error("Error while deleting the template. #{inspect(error)}")
+        Logger.error("Error while deleting the template. #{Glific.SafeLog.safe_inspect(error)}")
         {:error, error}
     end
   end
