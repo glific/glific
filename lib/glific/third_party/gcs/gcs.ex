@@ -25,6 +25,19 @@ defmodule Glific.GCS do
 
   @endpoint "https://storage.googleapis.com/storage/v1/b"
 
+  # Distinctive marker stored in message_media.gcs_error for a *permanent* provider
+  # failure (invalid/expired media id). base_query/1 skips only rows whose gcs_error
+  # matches this — other (transient) errors are recorded on the row for visibility
+  # but stay eligible for retry. Kept as a shared constant so the writer (GcsWorker)
+  # and the reader (base_query) can never drift apart.
+  @invalid_media_error "Invalid/expired media id on provider"
+
+  @doc """
+  The gcs_error marker used to permanently skip media the provider no longer has.
+  """
+  @spec invalid_media_error() :: String.t()
+  def invalid_media_error, do: @invalid_media_error
+
   @doc """
   Fetch token for GCS
   """
@@ -122,8 +135,11 @@ defmodule Glific.GCS do
     |> where([m, _msg], m.flow == :inbound)
     # Meta/Gupshup expire media after 7 days, so anything older is already gone on
     |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '7 day'"))
-    # Skip media we've already permanently failed on (e.g. invalid/expired media id)
-    |> where([m, _msg], is_nil(m.gcs_error))
+    # Skip only media that permanently failed on the provider (invalid/expired media
+    # id), matched by the gcs_error marker. Transient errors are still recorded on the
+    # row for visibility but remain eligible for retry. coalesce/2 maps a NULL gcs_error
+    # (the healthy, not-yet-synced case) to "" so it never matches and stays eligible.
+    |> where([m, _msg], not ilike(coalesce(m.gcs_error, ^""), ^"%#{@invalid_media_error}%"))
     |> order_by([m], [m.inserted_at, m.id])
   end
 

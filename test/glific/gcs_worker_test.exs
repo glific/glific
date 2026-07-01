@@ -237,10 +237,9 @@ defmodule Glific.GcsWorkerTest do
       assert %{success: 0, failure: 4, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
 
-      # A permanently-failed media (e.g. invalid/expired media id) gets a gcs_error
-      # set regardless of phase, which removes it from all future sweeps.
+      # A sync failure records its reason on the message_media row via gcs_error.
       [media | _] = media_ids
-      assert {1, _} = GcsWorker.mark_invalid_media(%{"id" => media.id}, "GCSWORKER failed")
+      assert {1, _} = GcsWorker.add_message_media_error(%{"id" => media.id}, "GCSWORKER failed")
 
       assert %Glific.Messages.MessageMedia{gcs_error: "GCSWORKER failed"} =
                Repo.get(Glific.Messages.MessageMedia, media.id)
@@ -255,5 +254,40 @@ defmodule Glific.GcsWorkerTest do
       # We ignore CCing support for this
       refute String.contains?(content["data"], ["support@glific.org"])
     end
+  end
+
+  test "base_query/1 skips only media permanently failed with the invalid-media marker",
+       attrs do
+    org_id = attrs.organization_id
+
+    # No error — healthy, not-yet-synced media (gcs_error is NULL).
+    healthy = Fixtures.message_media_fixture(%{organization_id: org_id})
+
+    # A transient failure reason recorded for visibility — must stay eligible for retry.
+    transient =
+      Fixtures.message_media_fixture(%{organization_id: org_id})
+      |> Ecto.Changeset.change(%{
+        gcs_error: "GCSWORKER: GCS Upload failed for org_id: #{org_id}, media_id: 0"
+      })
+      |> Repo.update!()
+
+    # A permanent failure carrying the invalid-media marker — must be skipped for good.
+    permanent =
+      Fixtures.message_media_fixture(%{organization_id: org_id})
+      |> Ecto.Changeset.change(%{
+        gcs_error: "GCSWORKER: #{GCS.invalid_media_error()} for org_id: #{org_id}, media_id: 0"
+      })
+      |> Repo.update!()
+
+    eligible_ids =
+      GCS.base_query(org_id)
+      |> select([m], m.id)
+      |> Repo.all()
+
+    # NULL gcs_error (via coalesce) and transient errors remain eligible; only the
+    # invalid-media marker is excluded by the `not ilike(coalesce(...))` filter.
+    assert healthy.id in eligible_ids
+    assert transient.id in eligible_ids
+    refute permanent.id in eligible_ids
   end
 end

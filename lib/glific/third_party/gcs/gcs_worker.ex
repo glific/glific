@@ -243,11 +243,13 @@ defmodule Glific.GCS.GcsWorker do
         # The provider (Meta/Gupshup) no longer has this file (e.g. 4xx / invalid
         # media id). It can never succeed, so record the failure and discard so the
         # next sweep skips it instead of retrying for the rest of the TTL window.
+        # The message embeds GCS.invalid_media_error/0 so base_query/1 can match and
+        # permanently skip it.
         error =
-          "GCSWORKER: Invalid/expired media id on provider for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
+          "GCSWORKER: #{GCS.invalid_media_error()} for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
         Logger.info(error)
-        mark_invalid_media(media, error)
+        add_message_media_error(media, error)
         {:discard, error}
 
       {:error, :timeout} ->
@@ -262,7 +264,10 @@ defmodule Glific.GCS.GcsWorker do
           "GCSWORKER: GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{SafeLog.safe_inspect(error)}"
 
         Logger.info(error)
-        {:error, error}
+        # Record the reason on the row for visibility. It does not carry the invalid-media
+        # marker, so base_query/1 keeps it eligible for retry on the next unsynced sweep.
+        add_message_media_error(media, error)
+        {:discard, error}
     end
   end
 
@@ -277,7 +282,11 @@ defmodule Glific.GCS.GcsWorker do
         File.rm(local_name)
 
       {:error, error} ->
+        # Record the reason on the row for visibility. This is a transient GCS-side
+        # failure (it does not carry the invalid-media marker), so base_query/1 will
+        # still retry it on the next sweep.
         handle_gcs_error(media["organization_id"], error)
+        |> then(&add_message_media_error(media, &1))
     end
 
     :ok
@@ -455,13 +464,13 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
-  # Records a permanent sync failure (e.g. invalid/expired media id) on the
-  # message_media row. Unlike transient errors (timeouts, GCS hiccups) which we let
-  # the next sweep retry, a non-nil gcs_error removes the media from all future
-  # sweeps — regardless of phase — so we don't keep retrying a file that can never
-  # succeed for the rest of its TTL window.
-  @spec mark_invalid_media(map(), String.t()) :: {non_neg_integer(), nil | [term()]}
-  defp mark_invalid_media(media, error) do
+  # Records the sync-failure reason on the message_media row for visibility. Whether
+  # the media is then permanently skipped or retried is decided by GCS.base_query/1:
+  # only errors carrying the GCS.invalid_media_error/0 marker (invalid/expired media
+  # id on the provider) are skipped for good; transient errors are recorded here but
+  # stay eligible for retry on the next sweep.
+  @spec add_message_media_error(map(), String.t()) :: {non_neg_integer(), nil | [term()]}
+  defp add_message_media_error(media, error) do
     MessageMedia
     |> where([mm], mm.id == ^media["id"])
     |> update([mm], set: [gcs_error: ^error])
