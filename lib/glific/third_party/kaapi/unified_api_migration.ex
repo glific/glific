@@ -54,7 +54,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         Map.update(acc, :skipped, 1, &(&1 + 1))
 
       {:ok, {:error, reason}}, acc ->
-        Logger.error("Assistant Migration failed: #{inspect(reason)}")
+        Logger.error("Assistant Migration failed: #{Glific.SafeLog.safe_inspect(reason)}")
         Map.update(acc, :failure, 1, &(&1 + 1))
 
       {:exit, :timeout}, acc ->
@@ -62,7 +62,10 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
         Map.update(acc, :failure, 1, &(&1 + 1))
 
       {:exit, reason}, acc ->
-        Logger.error("Assistant Migration: Exited with reason: #{inspect(reason)}")
+        Logger.error(
+          "Assistant Migration: Exited with reason: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
         Map.update(acc, :failure, 1, &(&1 + 1))
     end)
   end
@@ -113,7 +116,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
       {:error, reason} ->
         Logger.error(
-          "Kaapi config creation failed for assistant #{openai_assistant.id}: #{inspect(reason)}"
+          "Kaapi config creation failed for assistant #{openai_assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
@@ -209,10 +212,11 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
   defp handle_transaction_result({:error, failed_operation, failed_value, _}, openai_assistant) do
     Logger.error(
-      "Assistant creation failed at #{failed_operation} for assistant #{openai_assistant.id}: #{inspect(failed_value)}"
+      "Assistant creation failed at #{failed_operation} for assistant #{openai_assistant.id}: #{Glific.SafeLog.safe_inspect(failed_value)}"
     )
 
-    {:error, "Assistant creation Failed at #{failed_operation}: #{inspect(failed_value)}"}
+    {:error,
+     "Assistant creation Failed at #{failed_operation}: #{Glific.SafeLog.safe_inspect(failed_value)}"}
   end
 
   @spec get_vector_store_ids(VectorStore.t() | nil) :: list(String.t())
@@ -328,7 +332,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to create knowledge base for #{vector_store.vector_store_id}: #{inspect(reason)}"
+          "Failed to create knowledge base for #{vector_store.vector_store_id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
@@ -353,7 +357,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to create knowledge base version for #{vector_store.vector_store_id}: #{inspect(reason)}"
+          "Failed to create knowledge base version for #{vector_store.vector_store_id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}
@@ -374,7 +378,7 @@ defmodule Glific.ThirdParty.Kaapi.UnifiedApiMigration do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to update knowledge base version for #{vector_store.vector_store_id}: #{inspect(reason)}"
+          "Failed to update knowledge base version for #{vector_store.vector_store_id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}

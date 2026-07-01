@@ -379,7 +379,7 @@ defmodule Glific.BigQuery do
         end
 
       _ ->
-        raise("Error while sync data with bigquery. #{inspect(response)}")
+        raise("Error while sync data with bigquery. #{safe_inspect(response)}")
     end
   end
 
@@ -931,21 +931,21 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
-        raise("BigQuery Insert Error for table #{table} with res: #{inspect(res)}")
+        raise("BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}")
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{safe_inspect(res)}"
         )
 
       last_updated_at not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
 
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{inspect(res)}"
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{safe_inspect(res)}"
         )
 
       true ->
@@ -959,7 +959,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{safe_inspect(response)}"
     )
 
     {error, message} = bigquery_error_status(response)
@@ -977,10 +977,10 @@ defmodule Glific.BigQuery do
         )
 
       "TIMEOUT" ->
-        Logger.info("Timeout while inserting the data. #{inspect(response)}")
+        Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{inspect(response)}")
+        raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
     end
   end
 
@@ -996,7 +996,7 @@ defmodule Glific.BigQuery do
         if is_atom(response) do
           {"TIMEOUT", "TIMEOUT"}
         else
-          Logger.info("Bigquery status error #{inspect(response)}")
+          Logger.info("Bigquery status error #{safe_inspect(response)}")
           {:unknown, "UNKNOWN ERROR"}
         end
     end
@@ -1064,7 +1064,7 @@ defmodule Glific.BigQuery do
   ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
     )
   end
 
@@ -1109,7 +1109,7 @@ defmodule Glific.BigQuery do
 
         error ->
           Logger.error(
-            "Error while syncing registration details for org_id: #{organization_id} #{inspect(error)}"
+            "Error while syncing registration details for org_id: #{organization_id} #{safe_inspect(error)}"
           )
 
           "Error while syncing details"

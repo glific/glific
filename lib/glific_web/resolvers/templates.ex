@@ -151,7 +151,7 @@ defmodule GlificWeb.Resolvers.Templates do
 
       {:error, reason} ->
         error_message =
-          "Failed to queue HSM sync job for organization #{organization_id}: #{inspect(reason)}"
+          "Failed to queue HSM sync job for organization #{organization_id}: #{Glific.SafeLog.safe_inspect(reason)}"
 
         Logger.error(error_message)
         {:error, error_message}

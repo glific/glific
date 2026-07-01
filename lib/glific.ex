@@ -214,7 +214,7 @@ defmodule Glific do
   @spec stacktrace :: String.t()
   def stacktrace do
     {_, stacktrace} = Process.info(self(), :current_stacktrace)
-    inspect(stacktrace)
+    Glific.SafeLog.safe_inspect(stacktrace)
   end
 
   @not_allowed ["Repo.", "IO.", "File.", "Code."]
@@ -460,7 +460,7 @@ defmodule Glific do
 
       {_status, response} ->
         Logger.info("Invalid response verifying Google Captcha: #{response}")
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 

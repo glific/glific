@@ -97,7 +97,7 @@ defmodule Glific.Groups.WAGroups do
         {:error, body}
 
       {:error, message} ->
-        {:error, inspect(message)}
+        {:error, Glific.SafeLog.safe_inspect(message)}
     end
   end
 
@@ -186,7 +186,7 @@ defmodule Glific.Groups.WAGroups do
 
         {:error, changeset} ->
           Logger.warning(
-            "Skipping participant #{phone}: could not resolve contact: #{inspect(changeset.errors)}"
+            "Skipping participant #{phone}: could not resolve contact: #{Glific.SafeLog.safe_inspect(changeset.errors)}"
           )
 
           acc
@@ -317,7 +317,7 @@ defmodule Glific.Groups.WAGroups do
 
               {:error, reason} ->
                 Logger.warning(
-                  "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{inspect(reason)}"
+                  "Could not upsert wa_groups_phones row for WA group #{group.bsp_id} (phone #{wa_managed_phone.phone_id}): #{Glific.SafeLog.safe_inspect(reason)}"
                 )
             end
 
@@ -695,14 +695,14 @@ defmodule Glific.Groups.WAGroups do
 
       {:ok, %Tesla.Env{body: body}} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(body)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{Glific.SafeLog.safe_inspect(body)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}
 
       {:error, error} ->
         Logger.error(
-          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{inspect(error)}"
+          "Failed to set maytapi webhook for #{org_details.shortcode} due to #{Glific.SafeLog.safe_inspect(error)}"
         )
 
         {:error, "Failed to set maytapi webhook. Try Again"}

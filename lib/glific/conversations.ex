@@ -23,7 +23,7 @@ defmodule Glific.Conversations do
     |> Messages.list_conversations(count)
   rescue
     ex ->
-      Logger.error("Search threw a Error: #{inspect(ex)}")
+      Logger.error("Search threw a Error: #{Glific.SafeLog.safe_inspect(ex)}")
       []
   end
 

@@ -11,6 +11,7 @@ defmodule Glific.Erase do
   alias Glific.Partners
   alias Glific.Partners.Organization
   alias Glific.Repo
+  alias Glific.SafeLog
   require Logger
 
   use Oban.Worker,
@@ -142,10 +143,10 @@ defmodule Glific.Erase do
 
       {:error, reason} ->
         Logger.error(
-          "Failed to delete organization ID: #{organization_id}, reason: #{inspect(reason)}"
+          "Failed to delete organization ID: #{organization_id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
-        send_failure_notification(organization_id, inspect(reason))
+        send_failure_notification(organization_id, Glific.SafeLog.safe_inspect(reason))
         {:error, reason}
     end
   end
@@ -410,7 +411,7 @@ defmodule Glific.Erase do
         |> Repo.query!([], timeout: 400_000, skip_organization_id: true)
       rescue
         err ->
-          Logger.error("Messages purge timed out due to #{inspect(err)}")
+          Logger.error("Messages purge timed out due to #{Glific.SafeLog.safe_inspect(err)}")
           %{num_rows: 0}
       end
 
@@ -517,7 +518,8 @@ defmodule Glific.Erase do
     rescue
       error ->
         Glific.log_exception(%Error{
-          message: "Trial cleanup failed for org_id=#{organization_id}, reason=#{inspect(error)}"
+          message:
+            "Trial cleanup failed for org_id=#{organization_id}, reason=#{Glific.SafeLog.safe_inspect(error)}"
         })
 
         {:error, error}
@@ -557,7 +559,7 @@ defmodule Glific.Erase do
     error ->
       Glific.log_exception(%Error{
         message:
-          "Full data deletion failed for org_id=#{organization_id}, reason=#{inspect(error)}",
+          "Full data deletion failed for org_id=#{organization_id}, reason=#{SafeLog.safe_inspect(error)}",
         reason: error
       })
 

@@ -331,7 +331,7 @@ defmodule Glific.Clients.CommonWebhook do
   # failures here too
   defp record_webhook_outcome(result, webhook_name, meta, duration_ms)
        when is_nil(result) or not is_map(result) do
-    reason = if is_binary(result), do: result, else: inspect(result)
+    reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
     report_webhook_failure(webhook_name, meta, nil, reason)
     record_webhook_metrics(webhook_name, "failure", duration_ms)
   end
@@ -367,7 +367,7 @@ defmodule Glific.Clients.CommonWebhook do
         {nil, status}
 
       other ->
-        {nil, inspect(other)}
+        {nil, SafeLog.safe_inspect(other)}
     end
   end
 
