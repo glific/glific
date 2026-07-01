@@ -126,13 +126,14 @@ defmodule GlificWeb.Schema.WaGroupTest do
       assert {:ok, persisted} =
                Repo.fetch_by(WAGroup, %{bsp_id: "120363428775624359@g.us"})
 
-      # Both participants from the response are now members of the group.
+      # Both participants from the response, plus the creating number (added
+      # explicitly, since this response deliberately omits it from participants).
       member_count =
         ContactWAGroup
         |> where([cwg], cwg.wa_group_id == ^persisted.id)
         |> Repo.aggregate(:count)
 
-      assert member_count == 2
+      assert member_count == 3
 
       # The admin from the response is flagged is_admin: true.
       admin_contact =
@@ -145,6 +146,14 @@ defmodule GlificWeb.Schema.WaGroupTest do
                Repo.get_by!(ContactWAGroup, %{
                  wa_group_id: persisted.id,
                  contact_id: admin_contact.id
+               })
+
+      # The creator is marked admin even though the response didn't echo it —
+      # this is what keeps the create→import handoff working (acting_phone/1).
+      assert %ContactWAGroup{is_admin: true} =
+               Repo.get_by!(ContactWAGroup, %{
+                 wa_group_id: persisted.id,
+                 contact_id: wa_phone.contact_id
                })
     end
 
@@ -199,6 +208,57 @@ defmodule GlificWeb.Schema.WaGroupTest do
         assert contact.name == name
         assert Repo.get_by(ContactWAGroup, %{wa_group_id: group.id, contact_id: contact.id})
       end
+    end
+
+    test "create→import handoff works even when createGroup omits the creator from admins",
+         %{user: user} do
+      org_id = user.organization_id
+      wa_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
+
+      # createGroup echoes NO admins/participants — the import must still resolve
+      # an acting admin, because create_group_via_maytapi marks the creator
+      # explicitly rather than trusting the echo.
+      Tesla.Mock.mock(fn %{method: :post} ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             Jason.encode!(%{
+               "success" => true,
+               "data" => %{
+                 "id" => "120363111222333444@g.us",
+                 "participants" => [],
+                 "admins" => []
+               }
+             })
+         }}
+      end)
+
+      result =
+        auth_query_gql_by(:create, user,
+          variables: %{
+            "input" => %{
+              "name" => "No echo",
+              "waManagedPhoneId" => to_string(wa_phone.id),
+              "importData" => "phone\n919900112255\n"
+            }
+          }
+        )
+
+      assert {:ok, _query_data} = result
+      assert {:ok, group} = Repo.fetch_by(WAGroup, %{bsp_id: "120363111222333444@g.us"})
+
+      # the creator was marked admin despite the empty echo, so acting_phone/1
+      # resolves and the enrichment job adds the member
+      Oban.drain_queue(queue: :wa_group, with_scheduled: true)
+
+      assert {:ok, contact} =
+               Repo.fetch_by(Glific.Contacts.Contact, %{
+                 phone: "919900112255",
+                 organization_id: org_id
+               })
+
+      assert Repo.get_by(ContactWAGroup, %{wa_group_id: group.id, contact_id: contact.id})
     end
 
     test "surfaces Maytapi non-2xx as a GraphQL error and does not insert a wa_group",

@@ -15,13 +15,15 @@ defmodule Glific.Groups.WAGroupMemberImport do
   }
 
   @chunk_size 100
+  @chunk_stagger_seconds 2
 
   @doc """
-  Extracts the phone numbers from a CSV string (its `phone` column). Used by the
-  create flow to seed Maytapi's `createGroup` (which rejects an empty list)
-  before the enrichment job runs.
+  Lazily extracts the phone numbers from a CSV string (its `phone` column) as a
+  `Stream`. Used by the create flow to seed Maytapi's `createGroup` (which
+  rejects an empty list) — it only needs the first phone, so the stream lets
+  `Enum.take(1)` stop after the first row instead of parsing the whole file.
   """
-  @spec extract_phones(String.t()) :: [String.t()]
+  @spec extract_phones(String.t()) :: Enumerable.t()
   def extract_phones(data) do
     data
     |> decode_csv()
@@ -29,7 +31,6 @@ defmodule Glific.Groups.WAGroupMemberImport do
       {:ok, %{"phone" => phone}} when phone not in [nil, ""] -> [phone]
       _ -> []
     end)
-    |> Enum.to_list()
   end
 
   @doc """
@@ -53,40 +54,48 @@ defmodule Glific.Groups.WAGroupMemberImport do
     end
   end
 
-  @spec run_import(non_neg_integer(), non_neg_integer(), Keyword.t()) :: {:ok, map()}
+  @spec run_import(non_neg_integer(), non_neg_integer(), Keyword.t()) ::
+          {:ok, map()} | {:error, String.t()}
   defp run_import(org_id, wa_group_id, opts) do
-    user_job =
-      UserJob.create_user_job(%{
-        status: "pending",
-        type: "wa_group_member_import",
-        total_tasks: 0,
-        tasks_done: 0,
-        organization_id: org_id,
-        errors: %{}
-      })
+    # Resolve the source first so a failed download doesn't leave an orphan job.
+    with {:ok, stream} <- fetch_data_as_string(opts) do
+      user_job =
+        UserJob.create_user_job(%{
+          status: "pending",
+          type: "wa_group_member_import",
+          total_tasks: 0,
+          tasks_done: 0,
+          organization_id: org_id,
+          errors: %{}
+        })
 
-    create_notification(org_id, user_job.id)
+      create_notification(org_id, user_job.id)
 
-    params = %{"organization_id" => org_id, "wa_group_id" => wa_group_id}
+      params = %{"organization_id" => org_id, "wa_group_id" => wa_group_id}
 
-    total_chunks =
-      opts
-      |> fetch_data_as_string()
-      |> decode_csv()
-      |> Stream.flat_map(fn
-        {:ok, row} -> [Map.take(row, ["phone", "name"])]
-        _ -> []
-      end)
-      |> Stream.chunk_every(@chunk_size)
-      |> Stream.with_index()
-      |> Enum.map(fn {chunk, index} ->
-        WAGroupMemberImportWorker.make_job(chunk, params, user_job.id, index * 2)
-      end)
-      |> Enum.count()
+      total_chunks =
+        stream
+        |> decode_csv()
+        |> Stream.flat_map(fn
+          {:ok, row} -> [Map.take(row, ["phone", "name"])]
+          _ -> []
+        end)
+        |> Stream.chunk_every(@chunk_size)
+        |> Stream.with_index()
+        |> Enum.map(fn {chunk, index} ->
+          WAGroupMemberImportWorker.make_job(
+            chunk,
+            params,
+            user_job.id,
+            index * @chunk_stagger_seconds
+          )
+        end)
+        |> Enum.count()
 
-    UserJob.update_user_job(user_job, %{total_tasks: total_chunks, all_tasks_created: true})
+      UserJob.update_user_job(user_job, %{total_tasks: total_chunks, all_tasks_created: true})
 
-    {:ok, %{status: "WA group member import is in progress"}}
+      {:ok, %{status: "WA group member import is in progress"}}
+    end
   end
 
   # Decode a CSV (raw string or line stream) into a stream of `{:ok, row}` /
@@ -103,25 +112,33 @@ defmodule Glific.Groups.WAGroupMemberImport do
   defp decode_csv(stream),
     do: CSV.decode(stream, headers: true, field_transform: &String.trim/1)
 
-  @spec fetch_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
+  @spec fetch_data_as_string(Keyword.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
   defp fetch_data_as_string(opts) do
-    file_path = Keyword.get(opts, :file_path, nil)
-    url = Keyword.get(opts, :url, nil)
-    data = Keyword.get(opts, :data, nil)
+    file_path = Keyword.get(opts, :file_path)
+    url = Keyword.get(opts, :url)
+    data = Keyword.get(opts, :data)
 
     cond do
-      file_path != nil ->
-        file_path |> Path.expand() |> File.stream!()
-
-      url != nil ->
-        {:ok, response} = Tesla.get(url)
-        {:ok, stream} = StringIO.open(response.body)
-        stream |> IO.binstream(:line)
-
-      data != nil ->
-        {:ok, stream} = StringIO.open(data)
-        stream |> IO.binstream(:line)
+      file_path != nil -> {:ok, file_path |> Path.expand() |> File.stream!()}
+      url != nil -> fetch_url(url)
+      data != nil -> {:ok, string_stream(data)}
     end
+  end
+
+  # Download the CSV, handling failures instead of raising — this runs
+  # synchronously from the resolver, so a flaky URL must not become a 500.
+  @spec fetch_url(String.t()) :: {:ok, Enumerable.t()} | {:error, String.t()}
+  defp fetch_url(url) do
+    case Tesla.get(url) do
+      {:ok, %Tesla.Env{status: 200, body: body}} -> {:ok, string_stream(body)}
+      _ -> {:error, "Could not download the member CSV from the given URL."}
+    end
+  end
+
+  @spec string_stream(String.t()) :: Enumerable.t()
+  defp string_stream(data) do
+    {:ok, stream} = StringIO.open(data)
+    IO.binstream(stream, :line)
   end
 
   @spec create_notification(non_neg_integer(), non_neg_integer()) ::

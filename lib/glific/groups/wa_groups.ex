@@ -833,7 +833,16 @@ defmodule Glific.Groups.WAGroups do
 
     with {:ok, wa_group} <-
            create_group_via_maytapi(org_id, wa_managed_phone_id, %{name: name, numbers: numbers}) do
-      WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data)
+      case WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Glific.log_error(
+            "createWaGroup: group #{wa_group.id} created but member import did not start: #{SafeLog.safe_inspect(reason)}"
+          )
+      end
+
       {:ok, wa_group}
     end
   end
@@ -872,6 +881,8 @@ defmodule Glific.Groups.WAGroups do
         org_id
       )
 
+      ensure_creator_admin(wa_group.id, wa_managed_phone.contact_id, org_id)
+
       {:ok, wa_group}
     else
       {:error, reason} ->
@@ -881,6 +892,29 @@ defmodule Glific.Groups.WAGroups do
 
         {:error, reason}
     end
+  end
+
+  @spec ensure_creator_admin(non_neg_integer(), non_neg_integer() | nil, non_neg_integer()) :: :ok
+  defp ensure_creator_admin(_wa_group_id, nil, _org_id), do: :ok
+
+  defp ensure_creator_admin(wa_group_id, contact_id, org_id) do
+    case Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group_id, contact_id: contact_id}) do
+      %ContactWAGroup{is_admin: true} ->
+        :ok
+
+      %ContactWAGroup{} = existing ->
+        existing |> Ecto.Changeset.change(is_admin: true) |> Repo.update()
+
+      nil ->
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: contact_id,
+          wa_group_id: wa_group_id,
+          organization_id: org_id,
+          is_admin: true
+        })
+    end
+
+    :ok
   end
 
   @doc """

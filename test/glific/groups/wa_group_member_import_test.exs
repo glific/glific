@@ -93,7 +93,7 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
       {:ok,
        %Tesla.Env{
          status: 200,
-         body: Jason.encode!(%{"success" => false, "message" => "ADD_FAILED"})
+         body: Jason.encode!(%{"success" => false, "message" => "NOT_ON_WHATSAPP"})
        }}
     end)
 
@@ -109,9 +109,9 @@ defmodule Glific.Groups.WAGroupMemberImportTest do
 
     refute contact.id in member_ids(wa_group.id)
 
-    # each failed number is recorded against the job with the actual Maytapi
-    # error returned for that number
+    # each failed number is recorded against the job with a user-facing message
+    # mapped from the Maytapi error
     user_job = Repo.get_by(UserJob, type: "wa_group_member_import")
-    assert user_job.errors["errors"]["919900112233"] == "ADD_FAILED"
+    assert user_job.errors["errors"]["919900112233"] == "This number isn't on WhatsApp."
   end
 end

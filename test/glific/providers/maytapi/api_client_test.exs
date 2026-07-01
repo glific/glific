@@ -6,6 +6,7 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
   alias Glific.Seeds.SeedsDev
 
   @phone_id 242
+  @generic_error "WhatsApp couldn't complete this action right now. Please try again in a moment."
 
   setup do
     organization = SeedsDev.seed_organizations()
@@ -73,10 +74,17 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
       assert :ok == ApiClient.remove_group_member(org_id, @payload, @phone_id)
     end
 
-    test "returns the Maytapi message on an application failure", %{organization_id: org_id} do
+    test "maps a known Maytapi failure to a readable message", %{organization_id: org_id} do
       mock_post(ok_body(%{"success" => false, "message" => "NOT_A_PARTICIPANT"}))
 
-      assert {:error, "NOT_A_PARTICIPANT"} ==
+      assert {:error, "That contact isn't a participant in this WhatsApp group."} ==
+               ApiClient.remove_group_member(org_id, @payload, @phone_id)
+    end
+
+    test "falls back to a generic message for an unrecognised failure", %{organization_id: org_id} do
+      mock_post(ok_body(%{"success" => false, "message" => "SOME_OBSCURE_CODE"}))
+
+      assert {:error, @generic_error} ==
                ApiClient.remove_group_member(org_id, @payload, @phone_id)
     end
 
@@ -85,14 +93,14 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
     } do
       mock_post(ok_body(%{"success" => false}))
 
-      assert {:error, "Maytapi request failed"} ==
+      assert {:error, @generic_error} ==
                ApiClient.remove_group_member(org_id, @payload, @phone_id)
     end
 
     test "returns a generic error on an unexpected response", %{organization_id: org_id} do
       mock_post(ok_body(%{"unexpected" => "shape"}))
 
-      assert {:error, "Unexpected Maytapi response"} ==
+      assert {:error, @generic_error} ==
                ApiClient.remove_group_member(org_id, @payload, @phone_id)
     end
 

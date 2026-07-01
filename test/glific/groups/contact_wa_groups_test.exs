@@ -10,6 +10,8 @@ defmodule Glific.Groups.ContactWAGroupsTest do
     Seeds.SeedsDev
   }
 
+  @generic_error "WhatsApp couldn't complete this action right now. Please try again in a moment."
+
   setup do
     organization = SeedsDev.seed_organizations()
 
@@ -84,8 +86,9 @@ defmodule Glific.Groups.ContactWAGroupsTest do
          }}
       end)
 
-      # a bad number fails only itself: it lands in `failed`, the call still succeeds
-      assert {:ok, %{added: 0, failed: %{"919900112233" => "ADD_FAILED"}}} =
+      # a bad number fails only itself: it lands in `failed` (with a user-facing
+      # message), the call still succeeds
+      assert {:ok, %{added: 0, failed: %{"919900112233" => @generic_error}}} =
                ContactWAGroups.add_members(wa_group, phone.id, ["919900112233"])
 
       refute Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id})
@@ -108,7 +111,7 @@ defmodule Glific.Groups.ContactWAGroupsTest do
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(response)}}
       end)
 
-      assert {:ok, %{added: 1, failed: %{"919900110000" => "NOT_ON_WHATSAPP"}}} =
+      assert {:ok, %{added: 1, failed: %{"919900110000" => "This number isn't on WhatsApp."}}} =
                ContactWAGroups.add_members(wa_group, phone.id, ["919900112233", "919900110000"])
 
       # the good number got a contact + membership; the bad one did not
@@ -174,7 +177,7 @@ defmodule Glific.Groups.ContactWAGroupsTest do
           organization_id: org_id
         })
 
-      assert {:error, "REMOVE_FAILED"} =
+      assert {:error, @generic_error} =
                ContactWAGroups.remove_member(wa_group, phone.id, to_remove.id)
     end
   end
