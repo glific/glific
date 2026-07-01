@@ -91,17 +91,6 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :import_data, non_null(:string)
   end
 
-  @desc """
-  Input for updateWaGroup. Supply any subset: `name` renames the group,
-  `removeContactId` removes a single member (Maytapi's group/remove takes one
-  number at a time). Members are added via a CSV import (`importWaGroupContacts`).
-  """
-  input_object :update_wa_group_input do
-    field :id, non_null(:id)
-    field :name, :string
-    field :remove_contact_id, :id
-  end
-
   object :wa_group_queries do
     @desc "get the details of one wa group"
     field :wa_group, :wa_group_result do
@@ -141,11 +130,12 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(&Resolvers.WaGroup.create_wa_group/3)
     end
 
-    @desc "Update a WhatsApp group via Maytapi"
-    field :update_wa_group, :wa_group_result do
-      arg(:input, non_null(:update_wa_group_input))
+    @desc "Remove a contact from a WhatsApp group via Maytapi (group/remove). Admin-only."
+    field :remove_wa_group_contact, :wa_group_result do
+      arg(:wa_group_id, non_null(:id))
+      arg(:contact_id, non_null(:id))
       middleware(Authorize, :admin)
-      resolve(&Resolvers.WaGroup.update_wa_group/3)
+      resolve(&Resolvers.WaGroup.remove_wa_group_contact/3)
     end
 
     @desc "Bulk-add members to a WhatsApp group from a CSV of phone numbers (a `phone` column). Processed in the background. Admin-only."

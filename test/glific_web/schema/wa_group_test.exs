@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.WaGroupTest do
   end
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/wa_groups/create.gql")
-  load_gql(:update, GlificWeb.Schema, "assets/gql/wa_groups/update.gql")
+  load_gql(:remove_contact, GlificWeb.Schema, "assets/gql/wa_groups/remove_contact.gql")
 
   describe "createWaGroup" do
     test "provisions a wa_group via Maytapi and seeds an is_primary membership for the creator",
@@ -233,50 +233,7 @@ defmodule GlificWeb.Schema.WaGroupTest do
     end
   end
 
-  describe "updateWaGroup" do
-    test "renames an existing wa_group via Maytapi and updates the local label",
-         %{user: user} do
-      wa_phone =
-        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
-
-      wa_group =
-        Fixtures.wa_group_fixture(%{
-          organization_id: user.organization_id,
-          wa_managed_phone_id: wa_phone.id,
-          label: "Old name"
-        })
-
-      # The acting phone is resolved server-side: it must be a managed phone
-      # whose contact is a group admin.
-      {:ok, _} =
-        ContactWAGroups.create_contact_wa_group(%{
-          contact_id: wa_phone.contact_id,
-          wa_group_id: wa_group.id,
-          organization_id: user.organization_id,
-          is_admin: true
-        })
-
-      Tesla.Mock.mock(fn %{method: :post} ->
-        {:ok, %Tesla.Env{status: 200, body: Jason.encode!(%{"success" => true})}}
-      end)
-
-      result =
-        auth_query_gql_by(:update, user,
-          variables: %{
-            "input" => %{
-              "id" => to_string(wa_group.id),
-              "name" => "New name"
-            }
-          }
-        )
-
-      assert {:ok, query_data} = result
-      returned = get_in(query_data, [:data, "updateWaGroup", "waGroup"])
-      assert returned["label"] == "New name"
-
-      assert Repo.reload!(wa_group).label == "New name"
-    end
-
+  describe "removeWaGroupContact" do
     test "removes a member via Maytapi", %{user: user} do
       org_id = user.organization_id
       wa_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
@@ -311,18 +268,16 @@ defmodule GlificWeb.Schema.WaGroupTest do
       end)
 
       result =
-        auth_query_gql_by(:update, user,
+        auth_query_gql_by(:remove_contact, user,
           variables: %{
-            "input" => %{
-              "id" => to_string(wa_group.id),
-              "removeContactId" => to_string(contact_to_remove.id)
-            }
+            "waGroupId" => to_string(wa_group.id),
+            "contactId" => to_string(contact_to_remove.id)
           }
         )
 
       assert {:ok, query_data} = result
 
-      assert get_in(query_data, [:data, "updateWaGroup", "waGroup", "id"]) ==
+      assert get_in(query_data, [:data, "removeWaGroupContact", "waGroup", "id"]) ==
                to_string(wa_group.id)
 
       member_ids =
@@ -344,6 +299,8 @@ defmodule GlificWeb.Schema.WaGroupTest do
           wa_managed_phone_id: wa_phone.id
         })
 
+      contact_to_remove = Fixtures.contact_fixture(%{organization_id: org_id})
+
       # The managed phone's contact is a member but NOT an admin, so no acting
       # phone can be resolved.
       {:ok, _} =
@@ -354,61 +311,80 @@ defmodule GlificWeb.Schema.WaGroupTest do
           is_admin: false
         })
 
+      {:ok, _} =
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: contact_to_remove.id,
+          wa_group_id: wa_group.id,
+          organization_id: org_id
+        })
+
       result =
-        auth_query_gql_by(:update, user,
+        auth_query_gql_by(:remove_contact, user,
           variables: %{
-            "input" => %{
-              "id" => to_string(wa_group.id),
-              "name" => "New name"
-            }
+            "waGroupId" => to_string(wa_group.id),
+            "contactId" => to_string(contact_to_remove.id)
           }
         )
 
       assert {:ok, query_data} = result
       refute is_nil(query_data[:errors])
-      assert Repo.reload!(wa_group).label != "New name"
+      # the membership is untouched because the removal never reached Maytapi
+      assert Repo.get_by(ContactWAGroup, %{
+               wa_group_id: wa_group.id,
+               contact_id: contact_to_remove.id
+             })
     end
 
-    test "surfaces a Maytapi failure when renaming and keeps the old label", %{user: user} do
-      wa_phone =
-        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+    test "surfaces a Maytapi failure when removing and keeps the membership", %{user: user} do
+      org_id = user.organization_id
+      wa_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: org_id})
 
       wa_group =
         Fixtures.wa_group_fixture(%{
-          organization_id: user.organization_id,
-          wa_managed_phone_id: wa_phone.id,
-          label: "Old name"
+          organization_id: org_id,
+          wa_managed_phone_id: wa_phone.id
         })
+
+      contact_to_remove = Fixtures.contact_fixture(%{organization_id: org_id})
 
       {:ok, _} =
         ContactWAGroups.create_contact_wa_group(%{
           contact_id: wa_phone.contact_id,
           wa_group_id: wa_group.id,
-          organization_id: user.organization_id,
+          organization_id: org_id,
           is_admin: true
+        })
+
+      {:ok, _} =
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: contact_to_remove.id,
+          wa_group_id: wa_group.id,
+          organization_id: org_id
         })
 
       Tesla.Mock.mock(fn %{method: :post} ->
         {:ok,
          %Tesla.Env{
            status: 200,
-           body: Jason.encode!(%{"success" => false, "message" => "rename not allowed"})
+           body: Jason.encode!(%{"success" => false, "message" => "NOT_A_PARTICIPANT"})
          }}
       end)
 
       result =
-        auth_query_gql_by(:update, user,
+        auth_query_gql_by(:remove_contact, user,
           variables: %{
-            "input" => %{
-              "id" => to_string(wa_group.id),
-              "name" => "New name"
-            }
+            "waGroupId" => to_string(wa_group.id),
+            "contactId" => to_string(contact_to_remove.id)
           }
         )
 
       assert {:ok, query_data} = result
       refute is_nil(query_data[:errors])
-      assert Repo.reload!(wa_group).label == "Old name"
+
+      assert Repo.get_by(ContactWAGroup, %{
+               wa_group_id: wa_group.id,
+               contact_id: contact_to_remove.id
+             })
     end
   end
 end

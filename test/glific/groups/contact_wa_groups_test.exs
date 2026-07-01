@@ -41,8 +41,8 @@ defmodule Glific.Groups.ContactWAGroupsTest do
     end)
   end
 
-  describe "modify_members/4" do
-    test "adds members by phone (creating the contact) when only phones are given", %{
+  describe "add_members/3" do
+    test "adds members by phone (creating the contact)", %{
       wa_group: wa_group,
       wa_managed_phone: phone,
       organization_id: org_id
@@ -50,8 +50,8 @@ defmodule Glific.Groups.ContactWAGroupsTest do
       mock_success()
       add_phone = "919900112233"
 
-      assert {:ok, %{added: 1, removed: 0, failed: %{}}} =
-               ContactWAGroups.modify_members(wa_group, phone.id, [add_phone], nil)
+      assert {:ok, %{added: 1, failed: %{}}} =
+               ContactWAGroups.add_members(wa_group, phone.id, [add_phone])
 
       assert {:ok, contact} =
                Glific.Repo.fetch_by(Glific.Contacts.Contact, %{
@@ -62,35 +62,14 @@ defmodule Glific.Groups.ContactWAGroupsTest do
       assert Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id, contact_id: contact.id})
     end
 
-    test "removes a member when only a remove id is given", %{
-      wa_group: wa_group,
-      wa_managed_phone: phone,
-      organization_id: org_id
-    } do
-      mock_success()
-      contact = Fixtures.contact_fixture(%{organization_id: org_id})
-
-      {:ok, _} =
-        ContactWAGroups.create_contact_wa_group(%{
-          contact_id: contact.id,
-          wa_group_id: wa_group.id,
-          organization_id: org_id
-        })
-
-      assert {:ok, %{added: 0, removed: 1, failed: %{}}} =
-               ContactWAGroups.modify_members(wa_group, phone.id, [], contact.id)
-
-      refute Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id, contact_id: contact.id})
+    test "is a no-op when no phones are given", %{wa_group: wa_group, wa_managed_phone: phone} do
+      assert {:ok, %{added: 0, failed: %{}}} =
+               ContactWAGroups.add_members(wa_group, phone.id, [])
     end
 
-    test "returns an error when the acting phone is not found", %{
-      wa_group: wa_group,
-      organization_id: org_id
-    } do
-      contact = Fixtures.contact_fixture(%{organization_id: org_id})
-
+    test "returns an error when the acting phone is not found", %{wa_group: wa_group} do
       assert {:error, "Acting phone not found in this organization"} =
-               ContactWAGroups.modify_members(wa_group, 0, [contact.id], nil)
+               ContactWAGroups.add_members(wa_group, 0, ["919900112233"])
     end
 
     test "records the failed number (not a hard error) when an add fails on Maytapi", %{
@@ -106,8 +85,8 @@ defmodule Glific.Groups.ContactWAGroupsTest do
       end)
 
       # a bad number fails only itself: it lands in `failed`, the call still succeeds
-      assert {:ok, %{added: 0, removed: 0, failed: %{"919900112233" => "ADD_FAILED"}}} =
-               ContactWAGroups.modify_members(wa_group, phone.id, ["919900112233"], nil)
+      assert {:ok, %{added: 0, failed: %{"919900112233" => "ADD_FAILED"}}} =
+               ContactWAGroups.add_members(wa_group, phone.id, ["919900112233"])
 
       refute Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id})
     end
@@ -129,13 +108,8 @@ defmodule Glific.Groups.ContactWAGroupsTest do
         {:ok, %Tesla.Env{status: 200, body: Jason.encode!(response)}}
       end)
 
-      assert {:ok, %{added: 1, removed: 0, failed: %{"919900110000" => "NOT_ON_WHATSAPP"}}} =
-               ContactWAGroups.modify_members(
-                 wa_group,
-                 phone.id,
-                 ["919900112233", "919900110000"],
-                 nil
-               )
+      assert {:ok, %{added: 1, failed: %{"919900110000" => "NOT_ON_WHATSAPP"}}} =
+               ContactWAGroups.add_members(wa_group, phone.id, ["919900112233", "919900110000"])
 
       # the good number got a contact + membership; the bad one did not
       assert {:ok, good} =
@@ -147,13 +121,41 @@ defmodule Glific.Groups.ContactWAGroupsTest do
       assert Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id, contact_id: good.id})
       assert {:error, _} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: "919900110000"})
     end
+  end
+
+  describe "remove_member/3" do
+    test "removes a member", %{
+      wa_group: wa_group,
+      wa_managed_phone: phone,
+      organization_id: org_id
+    } do
+      mock_success()
+      contact = Fixtures.contact_fixture(%{organization_id: org_id})
+
+      {:ok, _} =
+        ContactWAGroups.create_contact_wa_group(%{
+          contact_id: contact.id,
+          wa_group_id: wa_group.id,
+          organization_id: org_id
+        })
+
+      assert {:ok, 1} = ContactWAGroups.remove_member(wa_group, phone.id, contact.id)
+
+      refute Repo.get_by(ContactWAGroup, %{wa_group_id: wa_group.id, contact_id: contact.id})
+    end
+
+    test "is a no-op when no contact id is given", %{
+      wa_group: wa_group,
+      wa_managed_phone: phone
+    } do
+      assert {:ok, 0} = ContactWAGroups.remove_member(wa_group, phone.id, nil)
+    end
 
     test "propagates the error when removing a member fails on Maytapi", %{
       wa_group: wa_group,
       wa_managed_phone: phone,
       organization_id: org_id
     } do
-      # add succeeds, remove fails — exercises the remove-failure branch
       Tesla.Mock.mock(fn %{method: :post, url: url} ->
         body =
           if String.contains?(url, "group/remove"),
@@ -173,7 +175,7 @@ defmodule Glific.Groups.ContactWAGroupsTest do
         })
 
       assert {:error, "REMOVE_FAILED"} =
-               ContactWAGroups.modify_members(wa_group, phone.id, ["919900112233"], to_remove.id)
+               ContactWAGroups.remove_member(wa_group, phone.id, to_remove.id)
     end
   end
 end

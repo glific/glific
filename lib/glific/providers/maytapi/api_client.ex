@@ -24,7 +24,7 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   def maytapi_get(url, token),
     do: client() |> Tesla.get(url, headers: headers(token)) |> log_on_failure(url)
 
-  # Group operations (createGroup, group/add, group/remove, setGroupSubject)
+  # Group operations (createGroup, group/add, group/remove)
   # trigger real WhatsApp actions on the device and can take well over the
   # Hackney default 5s recv_timeout. Bump the read timeout so these don't
   # time out before Maytapi responds.
@@ -188,27 +188,6 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       maytapi_post(url, Jason.encode!(payload), token)
       |> handle_maytapi_response(:create)
-    end
-  end
-
-  @doc """
-  Renames a WhatsApp group (sets its "subject" in WhatsApp terms). Returns `:ok`
-  or `{:error, message}`.
-
-  `payload` shape:
-      %{conversation_id: "120363...@g.us", subject: "New name"}
-  """
-  @spec set_group_subject(non_neg_integer(), non_neg_integer(), map()) ::
-          :ok | {:error, String.t()}
-  def set_group_subject(org_id, phone_id, payload) do
-    with {:ok, secrets} <- fetch_credentials(org_id) do
-      product_id = secrets["product_id"]
-      token = secrets["token"]
-
-      url = @maytapi_url <> "/#{product_id}/#{phone_id}/setGroupSubject"
-
-      maytapi_post(url, Jason.encode!(payload), token)
-      |> handle_maytapi_response()
     end
   end
 

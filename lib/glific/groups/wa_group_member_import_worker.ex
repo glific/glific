@@ -20,7 +20,6 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
     Contacts,
     Contacts.Contact,
     Groups.ContactWAGroup,
-    Groups.WAGroup,
     Groups.WAGroups,
     Jobs.UserJob,
     Repo,
@@ -50,7 +49,7 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
 
     {contact_errors, valid_phones} = upsert_contacts(contacts, org_id)
 
-    add_errors = add_to_wa_group(wa_group_id, valid_phones)
+    add_errors = add_to_wa_group(org_id, wa_group_id, valid_phones)
 
     record_errors(user_job_id, Map.merge(contact_errors, add_errors))
 
@@ -107,22 +106,19 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
   # those per-number failures come back in `failed` and are recorded against the
   # job. A `{:error, _}` here is instead structural (e.g. no admin phone usable),
   # which fails every pending number, so we stamp all of them.
-  @spec add_to_wa_group(non_neg_integer(), [String.t()]) :: map()
-  defp add_to_wa_group(_wa_group_id, []), do: %{}
+  @spec add_to_wa_group(non_neg_integer(), non_neg_integer(), [String.t()]) :: map()
+  defp add_to_wa_group(_org_id, _wa_group_id, []), do: %{}
 
-  defp add_to_wa_group(wa_group_id, phones) do
+  defp add_to_wa_group(org_id, wa_group_id, phones) do
     case phones -- existing_member_phones(wa_group_id) do
       [] ->
         %{}
 
       new_phones ->
-        # The worker's process-state org (set in perform/1) scopes this lookup.
-        with {:ok, wa_group} <-
-               Repo.fetch_by(WAGroup, %{id: wa_group_id}),
-             {:ok, _wa_group, failed} <-
-               WAGroups.update_wa_group_via_maytapi(wa_group, %{add_phones: new_phones}) do
-          report_failed_adds(wa_group_id, failed)
-        else
+        case WAGroups.add_members_to_group(org_id, wa_group_id, new_phones) do
+          {:ok, %{failed: failed}} ->
+            report_failed_adds(wa_group_id, failed)
+
           {:error, reason} ->
             Glific.log_error(
               "WA group member import: add to group failed — wa_group=#{wa_group_id} reason=#{SafeLog.safe_inspect(reason)}"

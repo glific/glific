@@ -8,9 +8,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   alias Glific.{
     Groups.ContactWAGroups,
     Groups.WAGroup,
-    Groups.WAGroupMemberImport,
     Groups.WAGroups,
-    Repo,
     WAGroup.WAManagedPhone
   }
 
@@ -141,20 +139,20 @@ defmodule GlificWeb.Resolvers.WaGroup do
   end
 
   @doc """
-  Update a WhatsApp group via Maytapi: rename it and/or remove a member.
-  Admin-only. Any subset of `name` / `remove_contact_id` may be supplied.
+  Remove a contact from a WhatsApp group via Maytapi (`group/remove`). Admin-only.
   Adding members is done via `importWaGroupContacts` (CSV).
   """
-  @spec update_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
-  def update_wa_group(_, %{input: %{id: id} = input}, %{
+  @spec remove_wa_group_contact(
+          Absinthe.Resolution.t(),
+          %{wa_group_id: any(), contact_id: any()},
+          %{context: map()}
+        ) :: {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def remove_wa_group_contact(_, %{wa_group_id: wa_group_id, contact_id: contact_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, wa_group} <-
-           Glific.Repo.fetch_by(WAGroup, %{id: id, organization_id: user.organization_id}),
-         {:ok, updated, failed} <-
-           WAGroups.update_wa_group_via_maytapi(wa_group, input) do
-      {:ok, %{wa_group: updated, errors: add_failure_errors(failed)}}
+    with {:ok, updated} <-
+           WAGroups.remove_wa_group_contact(user.organization_id, wa_group_id, contact_id) do
+      {:ok, %{wa_group: updated}}
     end
   end
 
@@ -167,21 +165,6 @@ defmodule GlificWeb.Resolvers.WaGroup do
   def import_wa_group_contacts(_, %{wa_group_id: wa_group_id, type: type, data: data}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, wa_group} <-
-           Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: user.organization_id}) do
-      WAGroupMemberImport.import_members(user.organization_id, wa_group.id, [{type, data}])
-    end
-  end
-
-  # Numbers Maytapi rejected (each added on its own call) are returned as result
-  # errors, so the UI surfaces the failure instead of reporting a partial/failed
-  # add as "added successfully".
-  @spec add_failure_errors(%{String.t() => String.t()}) :: [
-          %{key: String.t(), message: String.t()}
-        ]
-  defp add_failure_errors(failed) do
-    Enum.map(failed, fn {phone, message} ->
-      %{key: phone, message: "#{phone} could not be added: #{message}"}
-    end)
+    WAGroups.import_wa_group_contacts(user.organization_id, wa_group_id, type, data)
   end
 end

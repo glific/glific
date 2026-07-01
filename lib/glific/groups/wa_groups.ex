@@ -4,8 +4,6 @@ defmodule Glific.Groups.WAGroups do
   """
   import Ecto.Query, warn: false
 
-  import Ecto.Query, warn: false
-
   require Logger
 
   alias Glific.{
@@ -22,6 +20,8 @@ defmodule Glific.Groups.WAGroups do
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
+
+  @no_admin_error "None of your WhatsApp numbers is an admin of this group, so it can't be managed from Glific. Add one of your numbers as a group admin on WhatsApp first."
 
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -884,78 +884,67 @@ defmodule Glific.Groups.WAGroups do
   end
 
   @doc """
-  Update a WhatsApp group via Maytapi in one call: optionally rename it and/or
-  add/remove members. The acting phone is resolved via
-  `acting_phone/1` (a managed number whose contact is a group admin), since Maytapi only honours actions from a group
+  Fetch a WhatsApp group by id (scoped to `org_id`) and remove `contact_id` from
+  it via Maytapi (`group/remove`). Entry point for the `removeWaGroupContact`
+  mutation. The acting phone is resolved via `acting_phone/1` (a managed number
+  whose contact is a group admin), since Maytapi only honours actions from a group
   admin.
 
-  `attrs` (any subset): `%{name: "New name", add_phones: ["91...", ...],
-  remove_contact_id: id}`. `add_phones` are plain phone numbers — their contacts
-  are created on the fly if missing, and each is added with its own Maytapi call
-  so one bad number doesn't fail the rest. Returns
-  `{:ok, wa_group, failed}` where `failed` is `%{phone => message}` for the
-  numbers Maytapi rejected, or `{:error, reason}` when none of the org's numbers
-  is an admin of the group (or a rename/remove fails). Member add/remove is
-  delegated to `ContactWAGroups.modify_members/4`.
+  Returns `{:ok, wa_group}`, or `{:error, reason}` when the group is not found,
+  none of the org's numbers is an admin of the group, or Maytapi rejects the
+  removal. The removal itself is delegated to `ContactWAGroups.remove_member/3`.
   """
-  @spec update_wa_group_via_maytapi(WAGroup.t(), map()) ::
-          {:ok, WAGroup.t(), %{String.t() => String.t()}} | {:error, any()}
-  def update_wa_group_via_maytapi(%WAGroup{} = wa_group, attrs) do
-    case acting_phone(wa_group.id) do
-      nil ->
-        {:error,
-         "None of your WhatsApp numbers is an admin of this group, so it can't be managed from Glific. Add one of your numbers as a group admin on WhatsApp first."}
-
-      %WAManagedPhone{id: wa_managed_phone_id} ->
-        with {:ok, wa_group} <- maybe_update_subject(wa_group, wa_managed_phone_id, attrs[:name]),
-             {:ok, %{failed: failed}} <-
-               ContactWAGroups.modify_members(
-                 wa_group,
-                 wa_managed_phone_id,
-                 attrs[:add_phones] || [],
-                 attrs[:remove_contact_id]
-               ) do
-          {:ok, wa_group, failed}
-        end
+  @spec remove_wa_group_contact(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, WAGroup.t()} | {:error, any()}
+  def remove_wa_group_contact(org_id, wa_group_id, contact_id) do
+    with {:ok, %WAGroup{} = wa_group} <-
+           Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: org_id}),
+         %WAManagedPhone{id: wa_managed_phone_id} <- acting_phone(wa_group.id),
+         {:ok, _removed} <-
+           ContactWAGroups.remove_member(wa_group, wa_managed_phone_id, contact_id) do
+      {:ok, wa_group}
+    else
+      nil -> {:error, @no_admin_error}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  @spec maybe_update_subject(WAGroup.t(), non_neg_integer(), String.t() | nil) ::
-          {:ok, WAGroup.t()} | {:error, any()}
-  defp maybe_update_subject(wa_group, _wa_managed_phone_id, name) when name in [nil, ""],
-    do: {:ok, wa_group}
+  @doc """
+  Fetch a WhatsApp group by id (scoped to `org_id`) and add `phones` to it via
+  Maytapi. Entry point for the background CSV member import
+  (`WAGroupMemberImportWorker`) — adding members is never a foreground/GraphQL
+  action. The acting phone is resolved via `acting_phone/1`, then each phone is
+  added with its own Maytapi call (so one bad number doesn't fail the rest) and
+  its contact is created on the fly if missing.
 
-  defp maybe_update_subject(wa_group, wa_managed_phone_id, name),
-    do: update_group_subject(wa_group, wa_managed_phone_id, name)
+  Returns `{:ok, %{added: n, failed: %{phone => message}}}` where `failed` holds
+  the numbers Maytapi rejected, or `{:error, reason}` when the group is not found
+  or none of the org's numbers is an admin of the group.
+  """
+  @spec add_members_to_group(non_neg_integer(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
+          | {:error, any()}
+  def add_members_to_group(org_id, wa_group_id, phones) do
+    with {:ok, %WAGroup{} = wa_group} <-
+           Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: org_id}),
+         %WAManagedPhone{id: wa_managed_phone_id} <- acting_phone(wa_group.id) do
+      ContactWAGroups.add_members(wa_group, wa_managed_phone_id, phones)
+    else
+      nil -> {:error, @no_admin_error}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   @doc """
-  Rename a WhatsApp group via Maytapi (sets its subject in WhatsApp terms),
-  acting as `wa_managed_phone_id`.
-
-  On success updates `wa_groups.label` so Glific stays in sync without waiting
-  for the next periodic sync.
+  Fetch a WhatsApp group by id (scoped to `org_id`) and bulk-import members from
+  a CSV. Entry point for the `importWaGroupContacts` mutation.
   """
-  @spec update_group_subject(WAGroup.t(), non_neg_integer(), String.t()) ::
-          {:ok, WAGroup.t()} | {:error, any()}
-  def update_group_subject(%WAGroup{} = wa_group, wa_managed_phone_id, subject) do
-    with {:ok, wa_managed_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{
-             id: wa_managed_phone_id,
-             organization_id: wa_group.organization_id
-           }),
-         :ok <-
-           ApiClient.set_group_subject(wa_group.organization_id, wa_managed_phone.phone_id, %{
-             conversation_id: wa_group.bsp_id,
-             subject: subject
-           }) do
-      update_wa_group(wa_group, %{label: subject})
-    else
-      {:error, reason} ->
-        Glific.log_error(
-          "Maytapi set_group_subject failed: wa_group=#{wa_group.id} org=#{wa_group.organization_id} reason=#{SafeLog.safe_inspect(reason)}"
-        )
-
-        {:error, reason}
+  @spec import_wa_group_contacts(non_neg_integer(), non_neg_integer(), atom(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  def import_wa_group_contacts(org_id, wa_group_id, type, data) do
+    with {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{id: wa_group_id, organization_id: org_id}) do
+      WAGroupMemberImport.import_members(org_id, wa_group.id, [{type, data}])
     end
   end
 

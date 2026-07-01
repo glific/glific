@@ -161,65 +161,76 @@ defmodule Glific.Groups.ContactWAGroups do
   end
 
   @doc """
-  Add and/or remove members of a WhatsApp group via Maytapi, using
-  `wa_managed_phone_id` as the acting phone for every Maytapi call.
+  Add `phones` to a WhatsApp group via Maytapi, using `wa_managed_phone_id` as
+  the acting phone for every Maytapi call. This is the entry point for the
+  background CSV member import (`WAGroupMemberImportWorker`) — adding members is
+  never a foreground/GraphQL action.
 
-  `add_phones` is a list of plain phone numbers, each added with its own Maytapi
-  `group/add` call; each phone's contact is created on the fly when we don't already have it.
-  `remove_contact_id` is a single contact removed via `group/remove`.
-  On success we insert/delete the matching `contacts_wa_groups` rows.
+  Each phone is added with its own Maytapi `group/add` call, and its contact is
+  created on the fly when we don't already have it; on success we insert the
+  matching `contacts_wa_groups` row.
 
   Maytapi answers HTTP 200 even on failure (e.g.
   `%{"success" => false, "message" => "NOT_A_PARTICIPANT"}`), so we inspect the
-  `success` field. A failed *add* fails only that number — it's collected in the
-  returned `failed` map (`%{phone => message}`) so the caller can report it. A
-  failed *remove* stops with `{:error, message}`.
+  `success` field. A failed add fails only that number — it's collected in the
+  returned `failed` map (`%{phone => message}`) so the caller can report it.
 
-  `wa_managed_phone_id` is the acting phone. Caller
-  resolves this via `WAGroups.acting_phone/1`.
+  `wa_managed_phone_id` is the acting phone; the caller resolves it via
+  `WAGroups.acting_phone/1`.
 
-  Returns `{:ok, %{added: n, removed: n, failed: %{phone => message}}}` or
-  `{:error, message}`.
+  Returns `{:ok, %{added: n, failed: %{phone => message}}}`, or
+  `{:error, message}` when the acting phone isn't in this organization.
   """
-  @spec modify_members(WAGroup.t(), non_neg_integer(), [String.t()], non_neg_integer() | nil) ::
-          {:ok,
-           %{
-             added: non_neg_integer(),
-             removed: non_neg_integer(),
-             failed: %{String.t() => String.t()}
-           }}
+  @spec add_members(WAGroup.t(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
           | {:error, String.t()}
-  def modify_members(_wa_group, _wa_managed_phone_id, [], nil),
-    do: {:ok, %{added: 0, removed: 0, failed: %{}}}
+  def add_members(_wa_group, _wa_managed_phone_id, []),
+    do: {:ok, %{added: 0, failed: %{}}}
 
-  def modify_members(
-        %WAGroup{} = wa_group,
-        wa_managed_phone_id,
-        add_phones,
-        remove_contact_id
-      ) do
-    org_id = wa_group.organization_id
-
-    case Repo.get_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}) do
-      nil ->
-        {:error, "Acting phone not found in this organization"}
-
-      %WAManagedPhone{phone_id: acting_phone_id} ->
-        with {:ok, %{added: added, failed: failed}} <-
-               add_members(org_id, wa_group, acting_phone_id, add_phones),
-             {:ok, removed} <-
-               remove_members(org_id, wa_group, acting_phone_id, remove_contact_id) do
-          {:ok, %{added: added, removed: removed, failed: failed}}
-        end
+  def add_members(%WAGroup{} = wa_group, wa_managed_phone_id, phones) do
+    with {:ok, acting_phone_id} <- acting_phone_id(wa_group, wa_managed_phone_id) do
+      do_add_members(wa_group.organization_id, wa_group, acting_phone_id, phones)
     end
   end
 
-  @spec add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), [String.t()]) ::
-          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
-  defp add_members(_org_id, _wa_group, _acting_phone_id, []),
-    do: {:ok, %{added: 0, failed: %{}}}
+  @doc """
+  Remove the contact `remove_contact_id` from a WhatsApp group via Maytapi, using
+  `wa_managed_phone_id` as the acting phone. This is the member action driven by
+  the `updateWaGroup` mutation.
 
-  defp add_members(org_id, wa_group, acting_phone_id, phones) do
+  On success the matching `contacts_wa_groups` row is deleted. A failed remove
+  stops with `{:error, message}`; a `nil` contact id is a no-op.
+
+  Returns `{:ok, count}`, or `{:error, message}` when the acting phone isn't in
+  this organization or Maytapi rejects the removal.
+  """
+  @spec remove_member(WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  def remove_member(_wa_group, _wa_managed_phone_id, nil), do: {:ok, 0}
+
+  def remove_member(%WAGroup{} = wa_group, wa_managed_phone_id, contact_id) do
+    with {:ok, acting_phone_id} <- acting_phone_id(wa_group, wa_managed_phone_id) do
+      do_remove_member(wa_group.organization_id, wa_group, acting_phone_id, contact_id)
+    end
+  end
+
+  # Resolve the acting managed phone (scoped to the group's org) to its Maytapi
+  # `phone_id`, which every group/add and group/remove call is issued from.
+  @spec acting_phone_id(WAGroup.t(), non_neg_integer()) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp acting_phone_id(wa_group, wa_managed_phone_id) do
+    case Repo.get_by(WAManagedPhone, %{
+           id: wa_managed_phone_id,
+           organization_id: wa_group.organization_id
+         }) do
+      nil -> {:error, "Acting phone not found in this organization"}
+      %WAManagedPhone{phone_id: acting_phone_id} -> {:ok, acting_phone_id}
+    end
+  end
+
+  @spec do_add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
+  defp do_add_members(org_id, wa_group, acting_phone_id, phones) do
     result =
       Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
         payload = %{conversation_id: wa_group.bsp_id, number: [phone]}
@@ -272,11 +283,9 @@ defmodule Glific.Groups.ContactWAGroups do
     end
   end
 
-  @spec remove_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::
+  @spec do_remove_member(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer()) ::
           {:ok, non_neg_integer()} | {:error, String.t()}
-  defp remove_members(_org_id, _wa_group, _acting_phone_id, nil), do: {:ok, 0}
-
-  defp remove_members(org_id, wa_group, acting_phone_id, contact_id) do
+  defp do_remove_member(org_id, wa_group, acting_phone_id, contact_id) do
     contact = Contacts.get_contact!(contact_id)
     # /group/remove takes a single plain phone number (a string, not an array).
     payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
