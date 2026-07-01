@@ -205,7 +205,7 @@ defmodule Glific.Flows.BhashiniWebhookBackfillTest do
     test "backfills a persisted flow_revision referencing a deprecated webhook", %{
       organization_id: organization_id
     } do
-      flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id, is_template: true})
       [user | _] = Users.list_users(%{filter: %{organization_id: organization_id}})
 
       {:ok, flow_revision} =
@@ -232,7 +232,7 @@ defmodule Glific.Flows.BhashiniWebhookBackfillTest do
     end
 
     test "is a no-op (already applied) when re-run", %{organization_id: organization_id} do
-      flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id, is_template: true})
       [user | _] = Users.list_users(%{filter: %{organization_id: organization_id}})
 
       {:ok, flow_revision} =
@@ -258,7 +258,7 @@ defmodule Glific.Flows.BhashiniWebhookBackfillTest do
 
     test "terminates when a revision matches the pattern but has nothing to rewrite",
          %{organization_id: organization_id} do
-      flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id, is_template: true})
       [user | _] = Users.list_users(%{filter: %{organization_id: organization_id}})
 
       # Deprecated webhook name appears only in a sticky-note body (no call_webhook
@@ -290,6 +290,33 @@ defmodule Glific.Flows.BhashiniWebhookBackfillTest do
       # unchanged (nothing to rewrite), and crucially the run returned instead of hanging
       reloaded = Repo.get!(FlowRevision, flow_revision.id)
       assert reloaded.definition == stuck_definition
+    end
+
+    test "does NOT touch a non-template flow that references a deprecated webhook",
+         %{organization_id: organization_id} do
+      # Scope is template flows only: the deprecation was announced long ago and no
+      # org uses the Bhashini webhooks in their own custom flows, so a non-template
+      # flow referencing one must be left untouched.
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id, is_template: false})
+      [user | _] = Users.list_users(%{filter: %{organization_id: organization_id}})
+
+      {:ok, flow_revision} =
+        %FlowRevision{}
+        |> FlowRevision.changeset(%{
+          definition: @fixture_definition,
+          flow_id: flow.id,
+          organization_id: organization_id,
+          user_id: user.id,
+          revision_number: 0,
+          status: "draft"
+        })
+        |> Repo.insert()
+
+      assert :ok = BhashiniWebhookBackfill.run()
+
+      reloaded = Repo.get!(FlowRevision, flow_revision.id)
+      assert reloaded.definition == @fixture_definition
+      assert Jason.encode!(reloaded.definition) =~ "_with_bhasini"
     end
   end
 end

@@ -6,8 +6,14 @@ defmodule Glific.Flows.BhashiniWebhookBackfill do
   replacements (`speech_to_text`, `text_to_speech`). Publishing a flow that still
   references a deprecated webhook raises a "Critical" validation error (see
   `Glific.Flows.Action`'s `@deprecated_bhashini_webhooks` / `validate/3`); this
-  backfill lets already-imported/customized flows publish cleanly again without
-  requiring every organization to hand-edit their flow.
+  backfill lets the already-imported "Speech to Text" / "Text to Speech" templates
+  publish cleanly again without requiring each organization to hand-edit them.
+
+  Scope: **template flows only** (`flows.is_template = true`). The deprecation was
+  announced months ago and no organization uses the Bhashini webhooks in their own
+  custom flows, so the only flows that need fixing are the shipped STT/TTS
+  templates every org imported at onboarding. Custom flows are deliberately not
+  touched.
 
   Run from the `20260701000000_backfill_deprecated_bhashini_webhooks.exs`
   migration via `run/0`.
@@ -50,7 +56,7 @@ defmodule Glific.Flows.BhashiniWebhookBackfill do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Flows.FlowRevision, Repo}
+  alias Glific.{Flows.Flow, Flows.FlowRevision, Repo}
 
   @deprecated_webhooks %{
     "speech_to_text_with_bhasini" => {"speech_to_text", :stt},
@@ -95,6 +101,9 @@ defmodule Glific.Flows.BhashiniWebhookBackfill do
 
     query =
       from(fr in FlowRevision,
+        join: flow in Flow,
+        on: flow.id == fr.flow_id,
+        where: flow.is_template == true,
         where: fr.id > ^min_id,
         where: fr.status in ["draft", "published"],
         where: fragment("?::text ~ ?", fr.definition, ^pattern),
