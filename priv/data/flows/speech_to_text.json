@@ -1,0 +1,445 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "c689481a-5ffd-4afc-9981-6b222a33d227"
+                ],
+                "uuid": "c689481a-5ffd-4afc-9981-6b222a33d227",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "7fb4af4c-c011-41a7-8ab6-b7f81df61ed0",
+                        "exits": [
+                            {
+                                "uuid": "4d081715-18a5-41d7-9462-f4d776cdd8fb",
+                                "destination_uuid": "f880291a-f453-4f2b-b145-6dc059d24da0"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3",
+                                "type": "send_msg",
+                                "text": "Record and share a voice note in the language of your choice.\n\nThis demo will transcribe it to text using Kaapi speech-to-text.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "9de431cb-0699-46c2-9964-ee8a2d34996f",
+                        "exits": [
+                            {
+                                "uuid": "51050910-bcb4-4993-bff6-ecbeaa63fd8d",
+                                "destination_uuid": "7fb4af4c-c011-41a7-8ab6-b7f81df61ed0"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4",
+                                "type": "send_msg",
+                                "text": "Please send a voice note only.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "f880291a-f453-4f2b-b145-6dc059d24da0",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "voicenote",
+                            "operand": "@input.text",
+                            "default_category_uuid": "6dc3cd4e-87c4-46d5-bafb-973d9ecec99e",
+                            "categories": [
+                                {
+                                    "uuid": "c273f371-48de-48ce-aab4-678183b4d7f1",
+                                    "name": "Has Audio",
+                                    "exit_uuid": "1603fdb5-90d9-4181-8ff4-024266717065"
+                                },
+                                {
+                                    "uuid": "6dc3cd4e-87c4-46d5-bafb-973d9ecec99e",
+                                    "name": "Other",
+                                    "exit_uuid": "1071c3c1-c3a2-4083-bd3b-7458955f973d"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "096005c0-3ce6-4610-9b5b-5c3911ba1ab5",
+                                    "type": "has_audio",
+                                    "category_uuid": "c273f371-48de-48ce-aab4-678183b4d7f1",
+                                    "arguments": []
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "1603fdb5-90d9-4181-8ff4-024266717065",
+                                "destination_uuid": "82c9b02f-be63-4897-857d-de82479cd831"
+                            },
+                            {
+                                "uuid": "1071c3c1-c3a2-4083-bd3b-7458955f973d",
+                                "destination_uuid": "9de431cb-0699-46c2-9964-ee8a2d34996f"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "82c9b02f-be63-4897-857d-de82479cd831",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.voicetotext.category",
+                            "default_category_uuid": "fb7d41f8-af71-475f-adf8-441d4091318b",
+                            "categories": [
+                                {
+                                    "uuid": "81306e72-9c2e-4ced-a4ed-c53a19f7f3c1",
+                                    "name": "Success",
+                                    "exit_uuid": "0c49e03d-715d-4c07-8f0a-2f5b9f14bbe6"
+                                },
+                                {
+                                    "uuid": "fb7d41f8-af71-475f-adf8-441d4091318b",
+                                    "name": "Failure",
+                                    "exit_uuid": "def85bb8-7e8f-49fd-bac1-c92f503e3625"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "b37971ed-7489-4308-b486-0184a6eeeed2",
+                                    "type": "has_only_text",
+                                    "category_uuid": "81306e72-9c2e-4ced-a4ed-c53a19f7f3c1",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "0c49e03d-715d-4c07-8f0a-2f5b9f14bbe6",
+                                "destination_uuid": "18b16a5a-877e-40d0-8ee2-3a72b78164c7"
+                            },
+                            {
+                                "uuid": "def85bb8-7e8f-49fd-bac1-c92f503e3625",
+                                "destination_uuid": "608598bb-cc1e-4367-9f12-9a6b3dd47187"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "252848ff-915f-459b-ab4c-4d4c4007db8e",
+                                "url": "speech_to_text",
+                                "type": "call_webhook",
+                                "result_name": "voicetotext",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n \"speech\": \"@results.voicenote.input\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "608598bb-cc1e-4367-9f12-9a6b3dd47187",
+                        "exits": [
+                            {
+                                "uuid": "af919035-974c-413b-8a95-99366e78a5d7",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db",
+                                "type": "send_msg",
+                                "text": "Sorry, we could not transcribe your voice note. Please try again.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "18b16a5a-877e-40d0-8ee2-3a72b78164c7",
+                        "exits": [
+                            {
+                                "uuid": "38452e44-1466-4dfc-8f1a-05a9c6ff4af7",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "6690483b-df72-42db-acd8-fe22e9c5f496",
+                                "type": "send_msg",
+                                "text": "Here's what we heard:",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            },
+                            {
+                                "uuid": "e87507a5-7d35-4288-a120-febebdace834",
+                                "type": "send_msg",
+                                "text": "@results.voicetotext.message",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "Speech to Text",
+                "localization": {
+                    "hi": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "अपनी पसंद की भाषा में एक वॉइस नोट रिकॉर्ड करें और साझा करें।\n\nयह डेमो Kaapi स्पीच-टू-टेक्स्ट का उपयोग करके इसे टेक्स्ट में बदल देगा।"
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "कृपया केवल एक वॉइस नोट भेजें।"
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "क्षमा करें, हम आपके वॉइस नोट को ट्रांसक्राइब नहीं कर पाए। कृपया पुनः प्रयास करें।"
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "आपने यह कहा:"
+                            ]
+                        }
+                    },
+                    "ta": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "உங்கள் விருப்பமான மொழியில் ஒரு குரல் குறிப்பை பதிவு செய்து பகிரவும்.\n\nஇந்த டெமோ Kaapi பேச்சு-க்கு-உரை மூலம் அதை உரையாக மாற்றும்."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "தயவுசெய்து ஒரு குரல் குறிப்பை மட்டும் அனுப்பவும்."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "மன்னிக்கவும், உங்கள் குரல் குறிப்பை படியெடுக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "நீங்கள் சொன்னது:"
+                            ]
+                        }
+                    },
+                    "mr": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "तुमच्या आवडीच्या भाषेत व्हॉइस नोट रेकॉर्ड करा आणि शेअर करा.\n\nहे डेमो Kaapi स्पीच-टू-टेक्स्ट वापरून त्याचे मजकुरात रूपांतर करेल."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "कृपया फक्त व्हॉइस नोट पाठवा."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "क्षमस्व, आम्ही तुमची व्हॉइस नोट ट्रान्सक्राइब करू शकलो नाही. कृपया पुन्हा प्रयत्न करा."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "तुम्ही असे म्हटले:"
+                            ]
+                        }
+                    },
+                    "kn": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "ನಿಮ್ಮ ಆಯ್ಕೆಯ ಭಾಷೆಯಲ್ಲಿ ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಿ ಹಂಚಿಕೊಳ್ಳಿ.\n\nಈ ಡೆಮೊ Kaapi ಸ್ಪೀಚ್-ಟು-ಟೆಕ್ಸ್ಟ್ ಬಳಸಿ ಅದನ್ನು ಪಠ್ಯಕ್ಕೆ ಪರಿವರ್ತಿಸುತ್ತದೆ."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "ದಯವಿಟ್ಟು ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ಮಾತ್ರ ಕಳುಹಿಸಿ."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "ಕ್ಷಮಿಸಿ, ನಿಮ್ಮ ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ಪ್ರತಿಲಿಪಿ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "ನೀವು ಹೇಳಿದ್ದು:"
+                            ]
+                        }
+                    },
+                    "gu": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "તમારી પસંદગીની ભાષામાં વૉઇસ નોટ રેકોર્ડ કરો અને શેર કરો.\n\nઆ ડેમો Kaapi સ્પીચ-ટુ-ટેક્સ્ટનો ઉપયોગ કરીને તેને ટેક્સ્ટમાં રૂપાંતરિત કરશે."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "કૃપા કરીને ફક્ત વૉઇસ નોટ મોકલો."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "માફ કરશો, અમે તમારી વૉઇસ નોટને ટ્રાન્સક્રાઇબ કરી શક્યા નથી. કૃપા કરીને ફરી પ્રયાસ કરો."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "તમે આ કહ્યું:"
+                            ]
+                        }
+                    },
+                    "bn": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "আপনার পছন্দের ভাষায় একটি ভয়েস নোট রেকর্ড করুন এবং শেয়ার করুন।\n\nএই ডেমো Kaapi স্পিচ-টু-টেক্সট ব্যবহার করে এটিকে টেক্সটে রূপান্তর করবে।"
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "অনুগ্রহ করে শুধুমাত্র একটি ভয়েস নোট পাঠান।"
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "দুঃখিত, আমরা আপনার ভয়েস নোট ট্রান্সক্রাইব করতে পারিনি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "আপনি যা বলেছেন:"
+                            ]
+                        }
+                    },
+                    "es": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "Graba y comparte una nota de voz en el idioma que elijas.\n\nEsta demostración la transcribirá a texto usando Kaapi speech-to-text."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "Por favor, envía únicamente una nota de voz."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "Lo sentimos, no pudimos transcribir tu nota de voz. Por favor, inténtalo de nuevo."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "Esto es lo que dijiste:"
+                            ]
+                        }
+                    },
+                    "en": {
+                        "00dea693-b6fd-4b6a-b54f-0ebf8a52e6b3": {
+                            "text": [
+                                "Record and share a voice note in the language of your choice.\n\nThis demo will transcribe it to text using Kaapi speech-to-text."
+                            ]
+                        },
+                        "0d4b8652-95c1-4faa-be3a-e334f9ff6bc4": {
+                            "text": [
+                                "Please send a voice note only."
+                            ]
+                        },
+                        "fcc23989-e0cb-4650-8ca4-c0c6c78ff7db": {
+                            "text": [
+                                "Sorry, we could not transcribe your voice note. Please try again."
+                            ]
+                        },
+                        "6690483b-df72-42db-acd8-fe22e9c5f496": {
+                            "text": [
+                                "Here's what we heard:"
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "acabe5b5-60e6-4577-805d-caeaff15772f": {
+                            "title": "Speech to Text",
+                            "position": {
+                                "top": 160,
+                                "right": null,
+                                "left": 1020,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "This node calls the 'speech_to_text' async webhook. Kaapi transcribes the voice note and posts the transcription back to /webhook/flow_resume. The transcribed text lands in @results.voicetotext.message."
+                        }
+                    },
+                    "nodes": {
+                        "7fb4af4c-c011-41a7-8ab6-b7f81df61ed0": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 0,
+                                "left": 0
+                            }
+                        },
+                        "9de431cb-0699-46c2-9964-ee8a2d34996f": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 240,
+                                "left": 300
+                            }
+                        },
+                        "f880291a-f453-4f2b-b145-6dc059d24da0": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 420,
+                                "left": 40
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "82c9b02f-be63-4897-857d-de82479cd831": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 280,
+                                "left": 680
+                            },
+                            "config": {}
+                        },
+                        "608598bb-cc1e-4367-9f12-9a6b3dd47187": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 520,
+                                "left": 1140
+                            }
+                        },
+                        "18b16a5a-877e-40d0-8ee2-3a72b78164c7": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 680,
+                                "left": 380
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": []
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}

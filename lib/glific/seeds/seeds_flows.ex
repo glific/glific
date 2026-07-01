@@ -185,7 +185,9 @@ defmodule Glific.Seeds.SeedsFlows do
       "ticketing_help.json",
       "consent_optin.json",
       "filesearch_GPT_textandvoice.json",
-      "direct_with_GPT.json"
+      "direct_with_GPT.json",
+      "speech_to_text.json",
+      "text_to_speech.json"
     ]
 
     Enum.each(flow_files, &process_flow_file(&1, organizations))
@@ -213,7 +215,9 @@ defmodule Glific.Seeds.SeedsFlows do
       "other_options.json" => "Other",
       "consent_optin.json" => "Optin",
       "filesearch_GPT_textandvoice.json" => "GPT filesearch",
-      "direct_with_GPT.json" => "GPT direct"
+      "direct_with_GPT.json" => "GPT direct",
+      "speech_to_text.json" => "Speech to Text",
+      "text_to_speech.json" => "Text to Speech"
     }
 
     with [flow_data] <- Flows.import_flow(import_flow, organization.id),
