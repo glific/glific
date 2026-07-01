@@ -22,6 +22,19 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :errors, list_of(:input_error)
   end
 
+  @desc "Result of setPrimaryPhoneForCollection. The bulk update runs in the background; poll `waGroupCollectionPrimaryReport` with `userJobId` for the skipped-groups CSV."
+  object :set_primary_phone_collection_result do
+    field :status, :string
+    field :user_job_id, :id
+    field :errors, list_of(:input_error)
+  end
+
+  @desc "CSV report of groups skipped during a collection primary-phone update (`Group,Reason`). `error` is set when the job isn't finished or doesn't exist."
+  object :wa_group_collection_report do
+    field :csv_rows, :string
+    field :error, :string
+  end
+
   @desc "Membership row linking a WAManagedPhone to a WAGroup. Exactly one row per group has `isPrimary: true`."
   object :wa_group_phone do
     field :id, :id
@@ -96,6 +109,13 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
     end
+
+    @desc "Fetch the skipped-groups CSV for a completed collection primary-phone job. Admin-only."
+    field :wa_group_collection_primary_report, :wa_group_collection_report do
+      arg(:user_job_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.collection_primary_phone_report/3)
+    end
   end
 
   object :wa_group_mutations do
@@ -105,6 +125,14 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:wa_managed_phone_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.WaGroup.set_primary_phone/3)
+    end
+
+    @desc "Set one managed phone as primary across every WhatsApp group in a collection. Runs in the background; returns a userJobId to poll for the skip report. Admin-only."
+    field :set_primary_phone_for_collection, :set_primary_phone_collection_result do
+      arg(:collection_id, non_null(:id))
+      arg(:wa_managed_phone_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.set_primary_phone_for_collection/3)
     end
   end
 end

@@ -5,6 +5,7 @@ defmodule Glific.Jobs.UserJobWorker do
   require Logger
 
   alias Glific.{
+    Groups.CollectionPrimaryPhone,
     Jobs.UserJob,
     Notifications,
     Repo
@@ -31,12 +32,25 @@ defmodule Glific.Jobs.UserJobWorker do
   end
 
   defp create_completion_notification(user_job) do
+    {category, message} = completion_details(user_job.type)
+
     Notifications.create_notification(%{
-      category: "Contact Upload",
-      message: "Contact upload completed",
+      category: category,
+      message: message,
       severity: Notifications.types().info,
       organization_id: user_job.organization_id,
       entity: %{user_job_id: user_job.id}
     })
+  end
+
+  # The category + message shown to the admin when a job completes, per job type.
+  @spec completion_details(String.t() | nil) :: {String.t(), String.t()}
+  defp completion_details(type) do
+    if type == CollectionPrimaryPhone.job_type() do
+      {"Collection Primary Phone",
+       "Setting the primary phone across the collection has completed."}
+    else
+      {"Contact Upload", "Contact upload completed"}
+    end
   end
 end
