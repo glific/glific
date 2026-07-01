@@ -13,8 +13,9 @@ defmodule Glific.Mails.SyncDisabledMail do
   @internal_team_mail "glific-ops@projecttech4dev.org"
 
   @doc """
-  Fetches disabled-credential orgs for both BigQuery and GCS and sends the
-  report email only when at least one list is non-empty.
+  Fetches disabled-credential orgs for both BigQuery and GCS, sends the report
+  email when at least one list is non-empty, then attempts to auto re-enable each
+  disabled credential so syncs can resume without manual intervention.
   """
   @spec send_if_any() :: :ok
   def send_if_any do
@@ -27,6 +28,14 @@ defmodule Glific.Mails.SyncDisabledMail do
         category: "sync_disabled_report",
         organization_id: Saas.organization_id()
       })
+
+      Enum.each(bq_orgs, fn %{id: org_id} ->
+        Partners.enable_credential(org_id, "bigquery")
+      end)
+
+      Enum.each(gcs_orgs, fn %{id: org_id} ->
+        Partners.enable_credential(org_id, "google_cloud_storage")
+      end)
     end
 
     :ok
@@ -62,7 +71,8 @@ defmodule Glific.Mails.SyncDisabledMail do
     <body style="font-family: Arial, sans-serif;">
       <h2>Weekly Sync-Disabled Report</h2>
       <p>The following organizations have their BigQuery or GCS credentials disabled.
-         Their syncs will remain paused until the credential is manually re-enabled.</p>
+         An automatic re-enable attempt will be made for each org. If re-enable fails,
+         the org will remain disabled and appear in the next weekly report.</p>
 
       <h3>BigQuery — Disabled Credentials (#{length(bq_orgs)} org(s))</h3>
       #{table(bq_orgs)}
