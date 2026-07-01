@@ -7,6 +7,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Ecto.Changeset
   alias PasswordlessAuth
   alias Plug.Conn
@@ -26,6 +28,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Users,
     Users.User
   }
+
+  # Neutral response used by the forgot-password (non-registration) flow so that the API never
+  # discloses whether an account exists for a given phone number (prevents account enumeration).
+  @otp_neutral_message "If you have an account, you will receive an OTP to confirm"
 
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
@@ -158,10 +164,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  # Neutral response used by the forgot-password (non-registration) flow so that the API never
-  # discloses whether an account exists for a given phone number (prevents account enumeration).
-  @otp_neutral_message "If you have an account, you will receive an OTP to confirm"
-
   defp handle_non_registration_otp(conn, organization_id, phone) do
     existing_user = Repo.fetch_by(User, %{phone: phone})
 
@@ -172,16 +174,22 @@ defmodule GlificWeb.API.V1.RegistrationController do
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
              true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
-          json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
+          :ok
         else
-          _ ->
-            send_otp_error(conn, "Cannot send the otp to #{phone}")
+          error ->
+            # Do not surface delivery failures to the client either; a distinguishable response
+            # here would still let a caller enumerate accounts. Log internally instead.
+            Logger.error("Failed to send forgot-password OTP to #{phone}: #{inspect(error)}")
         end
 
       {:error, _} ->
-        # Do not reveal that the account is missing; return the same neutral response.
-        json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
+        # Account does not exist; fall through to the same neutral response.
+        :ok
     end
+
+    # Always return the same neutral response regardless of the branch above so the API never
+    # discloses whether an account exists for the given phone number.
+    json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
   end
 
   @doc false

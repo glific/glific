@@ -206,7 +206,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "If you have an account, you will receive an OTP to confirm"
     end
 
-    test "Handle errors while sending otp when registration is false", %{conn: conn} do
+    test "OTP delivery failure when registration is false is not disclosed to the caller",
+         %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(
@@ -224,10 +225,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
-      assert json = json_response(conn, 400)
+      # Even when delivery fails for an existing account, the response must match the
+      # account-missing case so account existence cannot be enumerated.
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Cannot send the otp to #{receiver.phone}"
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
