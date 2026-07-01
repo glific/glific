@@ -1,0 +1,317 @@
+{
+    "interactive_templates": [],
+    "flows": [
+        {
+            "definition": {
+                "vars": [
+                    "ad116f9f-2f7a-4fe9-97a8-93fc8f8a988f"
+                ],
+                "uuid": "ad116f9f-2f7a-4fe9-97a8-93fc8f8a988f",
+                "type": "messaging",
+                "spec_version": "13.2.0",
+                "nodes": [
+                    {
+                        "uuid": "321f3167-510a-4469-82e0-9a51dea14488",
+                        "exits": [
+                            {
+                                "uuid": "4f786aaa-1198-47de-8c71-415988af267c",
+                                "destination_uuid": "464cbbd2-e26e-4dbb-ad44-d1322b307bbf"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "c95c4d52-703f-4334-b3f1-98d466268b56",
+                                "type": "send_msg",
+                                "text": "Send a text message and get it back as a voice note.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "464cbbd2-e26e-4dbb-ad44-d1322b307bbf",
+                        "router": {
+                            "wait": {
+                                "type": "msg"
+                            },
+                            "type": "switch",
+                            "result_name": "text_query",
+                            "operand": "@input.text",
+                            "default_category_uuid": "c9fb03b7-a84f-40b2-a23e-5729cdccf38f",
+                            "categories": [
+                                {
+                                    "uuid": "c9fb03b7-a84f-40b2-a23e-5729cdccf38f",
+                                    "name": "All Responses",
+                                    "exit_uuid": "2d594629-d07f-40b2-879d-8c69bf005ea4"
+                                }
+                            ],
+                            "cases": []
+                        },
+                        "exits": [
+                            {
+                                "uuid": "2d594629-d07f-40b2-879d-8c69bf005ea4",
+                                "destination_uuid": "1d5657a3-dcc7-4f3a-bf8a-b6060a24b8ee"
+                            }
+                        ],
+                        "actions": []
+                    },
+                    {
+                        "uuid": "1d5657a3-dcc7-4f3a-bf8a-b6060a24b8ee",
+                        "router": {
+                            "type": "switch",
+                            "operand": "@results.tts.category",
+                            "default_category_uuid": "181cc881-f758-49bc-9145-e49f833c8868",
+                            "categories": [
+                                {
+                                    "uuid": "f4da5c7f-b4c9-456c-9670-7dc3a70010c2",
+                                    "name": "Success",
+                                    "exit_uuid": "c5744b68-1496-4178-b872-d1f3a6dfdd8f"
+                                },
+                                {
+                                    "uuid": "181cc881-f758-49bc-9145-e49f833c8868",
+                                    "name": "Failure",
+                                    "exit_uuid": "ff95a004-e2cb-4537-a3ff-6348ce2f37d5"
+                                }
+                            ],
+                            "cases": [
+                                {
+                                    "uuid": "6f6c51d5-8107-4655-8d9a-e3c544de5a1b",
+                                    "type": "has_only_text",
+                                    "category_uuid": "f4da5c7f-b4c9-456c-9670-7dc3a70010c2",
+                                    "arguments": [
+                                        "Success"
+                                    ]
+                                }
+                            ]
+                        },
+                        "exits": [
+                            {
+                                "uuid": "c5744b68-1496-4178-b872-d1f3a6dfdd8f",
+                                "destination_uuid": "2b3d07d5-1c9f-43ff-8359-ee15a8e6a2a4"
+                            },
+                            {
+                                "uuid": "ff95a004-e2cb-4537-a3ff-6348ce2f37d5",
+                                "destination_uuid": "9647878d-bbf4-4050-9849-b951a721bc77"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "1606ba85-ed94-463d-9faa-48fd33df2b38",
+                                "url": "text_to_speech",
+                                "type": "call_webhook",
+                                "result_name": "tts",
+                                "method": "FUNCTION",
+                                "headers": {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json"
+                                },
+                                "body": "{\n \"text\": \"@results.text_query\"\n}"
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "2b3d07d5-1c9f-43ff-8359-ee15a8e6a2a4",
+                        "exits": [
+                            {
+                                "uuid": "473a5f39-da46-44e2-a611-b6cbcafa6267",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "1e3a82ed-7d9e-432b-be29-74eb3d65661e",
+                                "type": "send_msg",
+                                "text": "",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": [
+                                    "expression:@results.tts.message"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "uuid": "9647878d-bbf4-4050-9849-b951a721bc77",
+                        "exits": [
+                            {
+                                "uuid": "5559ab1c-8728-482d-a968-5795af0483c5",
+                                "destination_uuid": null
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "uuid": "b6fee2c0-132d-435c-88f4-62f2d19c96d8",
+                                "type": "send_msg",
+                                "text": "Sorry, we could not generate the voice note. Please try again.",
+                                "quick_replies": [],
+                                "labels": [],
+                                "attachments": []
+                            }
+                        ]
+                    }
+                ],
+                "name": "Text to Speech",
+                "localization": {
+                    "hi": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "एक टेक्स्ट संदेश भेजें और उसे वॉइस नोट के रूप में वापस पाएं।"
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "क्षमा करें, हम वॉइस नोट नहीं बना सके। कृपया पुनः प्रयास करें।"
+                            ]
+                        }
+                    },
+                    "ta": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "ஒரு உரை செய்தியை அனுப்பி அதை குரல் குறிப்பாகப் பெறுங்கள்."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "மன்னிக்கவும், குரல் குறிப்பை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
+                            ]
+                        }
+                    },
+                    "mr": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "एक मजकूर संदेश पाठवा आणि तो व्हॉइस नोट म्हणून परत मिळवा."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "क्षमस्व, आम्ही व्हॉइस नोट तयार करू शकलो नाही. कृपया पुन्हा प्रयत्न करा."
+                            ]
+                        }
+                    },
+                    "kn": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "ಪಠ್ಯ ಸಂದೇಶವನ್ನು ಕಳುಹಿಸಿ ಮತ್ತು ಅದನ್ನು ಧ್ವನಿ ಟಿಪ್ಪಣಿಯಾಗಿ ಹಿಂಪಡೆಯಿರಿ."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "ಕ್ಷಮಿಸಿ, ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+                            ]
+                        }
+                    },
+                    "gu": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "એક ટેક્સ્ટ સંદેશ મોકલો અને તેને વૉઇસ નોટ તરીકે પાછો મેળવો."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "માફ કરશો, અમે વૉઇસ નોટ બનાવી શક્યા નથી. કૃપા કરીને ફરી પ્રયાસ કરો."
+                            ]
+                        }
+                    },
+                    "bn": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "একটি টেক্সট বার্তা পাঠান এবং এটি ভয়েস নোট হিসাবে ফেরত পান।"
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "দুঃখিত, আমরা ভয়েস নোট তৈরি করতে পারিনি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+                            ]
+                        }
+                    },
+                    "es": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "Envía un mensaje de texto y recíbelo como una nota de voz."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "Lo sentimos, no pudimos generar la nota de voz. Por favor, inténtalo de nuevo."
+                            ]
+                        }
+                    },
+                    "en": {
+                        "c95c4d52-703f-4334-b3f1-98d466268b56": {
+                            "text": [
+                                "Send a text message and get it back as a voice note."
+                            ]
+                        },
+                        "b6fee2c0-132d-435c-88f4-62f2d19c96d8": {
+                            "text": [
+                                "Sorry, we could not generate the voice note. Please try again."
+                            ]
+                        }
+                    }
+                },
+                "language": "base",
+                "expire_after_minutes": 10080,
+                "_ui": {
+                    "stickies": {
+                        "80d37aba-cf40-457b-a691-02e145508095": {
+                            "title": "Text to Speech",
+                            "position": {
+                                "top": 360,
+                                "right": null,
+                                "left": 660,
+                                "bottom": null
+                            },
+                            "color": "yellow",
+                            "body": "This node calls the 'text_to_speech' async webhook. Unlike the old Bhashini flow, this does NOT translate the text first — it speaks back exactly what was sent. Kaapi generates the audio and posts the media URL back to /webhook/flow_resume; it lands in @results.tts.message."
+                        }
+                    },
+                    "nodes": {
+                        "321f3167-510a-4469-82e0-9a51dea14488": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 20,
+                                "left": 20
+                            }
+                        },
+                        "464cbbd2-e26e-4dbb-ad44-d1322b307bbf": {
+                            "type": "wait_for_response",
+                            "position": {
+                                "top": 280,
+                                "left": 140
+                            },
+                            "config": {
+                                "cases": {}
+                            }
+                        },
+                        "1d5657a3-dcc7-4f3a-bf8a-b6060a24b8ee": {
+                            "type": "split_by_webhook",
+                            "position": {
+                                "top": 360,
+                                "left": 440
+                            },
+                            "config": {}
+                        },
+                        "2b3d07d5-1c9f-43ff-8359-ee15a8e6a2a4": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 260
+                            }
+                        },
+                        "9647878d-bbf4-4050-9849-b951a721bc77": {
+                            "type": "execute_actions",
+                            "position": {
+                                "top": 580,
+                                "left": 880
+                            }
+                        }
+                    }
+                }
+            },
+            "keywords": []
+        }
+    ],
+    "contact_field": [],
+    "collections": []
+}
