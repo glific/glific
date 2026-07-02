@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.WaGroup do
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.{
+    Groups.CollectionPrimaryPhone,
     Groups.ContactWAGroups,
     Groups.WAGroup,
     Groups.WAGroups,
@@ -166,5 +167,37 @@ defmodule GlificWeb.Resolvers.WaGroup do
         context: %{current_user: user}
       }) do
     WAGroups.import_wa_group_contacts(user.organization_id, wa_group_id, type, data)
+  end
+
+  @doc """
+  Set one managed phone as primary across every WhatsApp group in a collection.
+  Runs in the background; returns a `userJobId` to poll for the skip report.
+  Admin-only.
+  """
+  @spec set_primary_phone_for_collection(
+          Absinthe.Resolution.t(),
+          %{collection_id: integer, wa_managed_phone_id: integer},
+          %{context: map()}
+        ) :: {:ok, map()} | {:error, any}
+  def set_primary_phone_for_collection(
+        _,
+        %{collection_id: collection_id, wa_managed_phone_id: wa_managed_phone_id},
+        %{context: %{current_user: user}}
+      ) do
+    CollectionPrimaryPhone.set_primary_phone_for_collection(
+      user.organization_id,
+      collection_id,
+      wa_managed_phone_id
+    )
+  end
+
+  @doc """
+  Fetch the skipped-groups CSV report for a completed collection primary-phone
+  job. Admin-only.
+  """
+  @spec collection_primary_phone_report(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any}
+  def collection_primary_phone_report(_, params, %{context: %{current_user: user}}) do
+    CollectionPrimaryPhone.get_report(user.organization_id, params)
   end
 end
