@@ -244,19 +244,28 @@ defmodule Glific.Seeds.SeedsFlows do
       update_flow_revision(flow.id)
 
       tag_name = Map.get(@flow_tag_map, flow_file)
-
-      if tag_name do
-        tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
-        Flows.update_flow(flow, %{tag_id: tag_id})
-      end
-
-      {:ok, flow}
+      maybe_tag_flow(flow, tag_name, organization, flow_file)
     else
       [%{status: status}] ->
         log_import_failure(organization.id, flow_file, status)
 
       _ ->
         log_import_failure(organization.id, flow_file, "unknown error")
+    end
+  end
+
+  # Applies the template tag (if any) and returns the fully-updated flow.
+  # Propagates a tag-update failure instead of silently returning success.
+  @spec maybe_tag_flow(Flow.t(), String.t() | nil, Organization.t(), String.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  defp maybe_tag_flow(flow, nil, _organization, _flow_file), do: {:ok, flow}
+
+  defp maybe_tag_flow(flow, tag_name, organization, flow_file) do
+    tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
+
+    case Flows.update_flow(flow, %{tag_id: tag_id}) do
+      {:ok, updated_flow} -> {:ok, updated_flow}
+      {:error, _changeset} -> log_import_failure(organization.id, flow_file, "tag update failed")
     end
   end
 
