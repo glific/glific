@@ -1312,7 +1312,7 @@ defmodule Glific.Partners do
         Credential
         |> where([c], c.provider_id == ^provider.id)
         |> where([c], c.organization_id == ^organization_id)
-        |> Repo.update_all(set: [is_active: false])
+        |> Repo.update_all([set: [is_active: false]], skip_organization_id: true)
 
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
