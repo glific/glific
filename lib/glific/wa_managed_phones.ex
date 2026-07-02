@@ -10,6 +10,7 @@ defmodule Glific.WAManagedPhones do
     Notifications,
     Providers.Maytapi.ApiClient,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone
   }
 
@@ -214,17 +215,18 @@ defmodule Glific.WAManagedPhones do
       contact_type: "WA"
     }
 
-    with {:ok, contact} <- Contacts.maybe_create_contact(params),
-         nil <- Repo.get_by(WAManagedPhone, %{phone: phone}) do
-      params
-      |> Map.merge(%{contact_id: contact.id, status: status})
-      |> create_wa_managed_phone()
-    else
-      %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
-      {:error, _reason} = error -> error
-    end
+    result =
+      with {:ok, contact} <- Contacts.maybe_create_contact(params),
+           nil <- Repo.get_by(WAManagedPhone, %{phone: phone, organization_id: org_id}) do
+        params
+        |> Map.merge(%{contact_id: contact.id, status: status})
+        |> create_wa_managed_phone()
+      else
+        %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
+        {:error, _reason} = error -> error
+      end
 
-    {:ok, "success"}
+    log_upsert_error(result, phone, org_id)
   end
 
   # Logged-out phone: known phone_id, no number (Maytapi returns "idle"). Can't
@@ -233,14 +235,29 @@ defmodule Glific.WAManagedPhones do
   defp refresh_logged_out_phone(%{"id" => phone_id, "status" => status})
        when not is_nil(phone_id) do
     case get_wa_managed_phone(phone_id) do
-      %WAManagedPhone{} = existing -> update_wa_managed_phone(existing, %{status: status})
-      nil -> :ok
+      %WAManagedPhone{} = existing ->
+        existing
+        |> update_wa_managed_phone(%{status: status})
+        |> log_upsert_error(existing.phone, existing.organization_id)
+
+      nil ->
+        {:ok, "success"}
     end
+  end
+
+  defp refresh_logged_out_phone(_attrs), do: {:ok, "skipped"}
+
+  @spec log_upsert_error({:ok, any()} | {:error, any()}, String.t(), non_neg_integer()) ::
+          {:ok, String.t()}
+  defp log_upsert_error({:error, error}, phone, org_id) do
+    Glific.log_error(
+      "Failed to sync Maytapi phone #{phone} for org #{org_id}: #{SafeLog.safe_inspect(error)}"
+    )
 
     {:ok, "success"}
   end
 
-  defp refresh_logged_out_phone(_attrs), do: {:ok, "skipped"}
+  defp log_upsert_error(_result, _phone, _org_id), do: {:ok, "success"}
 
   @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
   defp validate_response(wa_managed_phones) when is_list(wa_managed_phones),
