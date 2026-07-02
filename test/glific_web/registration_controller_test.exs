@@ -161,6 +161,31 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
 
+    test "send_otp is rate limited to one request per IP within the window", %{conn: conn} do
+      rate_limit_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
+      original_config = Application.get_env(:glific, :otp_rate_limit)
+      Application.put_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+      ExRated.delete_bucket(rate_limit_key)
+
+      on_exit(fn ->
+        Application.put_env(:glific, :otp_rate_limit, original_config)
+        ExRated.delete_bucket(rate_limit_key)
+      end)
+
+      valid_params = %{
+        "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
+      }
+
+      first = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json_response(first, 200)
+
+      second = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json = json_response(second, 429)
+
+      assert get_in(json, ["error", "message"]) ==
+               "An OTP was just sent. Please try again in 30 seconds."
+    end
+
     test "send otp to invalid contact", %{conn: conn} do
       phone = nil
 

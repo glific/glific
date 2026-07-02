@@ -132,15 +132,36 @@ defmodule GlificWeb.API.V1.RegistrationController do
         conn,
         %{"user" => %{"phone" => phone, "registration" => registration}} = _user_params
       ) do
-    organization_id = conn.assigns[:organization_id]
-    build_context(organization_id)
+    case check_otp_rate_limit(conn) do
+      :ok ->
+        organization_id = conn.assigns[:organization_id]
+        build_context(organization_id)
 
-    case registration do
-      "true" ->
-        handle_registration_otp(conn, organization_id, phone)
+        case registration do
+          "true" ->
+            handle_registration_otp(conn, organization_id, phone)
 
-      "false" ->
-        handle_non_registration_otp(conn, organization_id, phone)
+          "false" ->
+            handle_non_registration_otp(conn, organization_id, phone)
+        end
+
+      {:error, message} ->
+        conn
+        |> put_status(429)
+        |> json(%{error: %{status: 429, message: message}})
+    end
+  end
+
+  # Allow at most `count` OTP requests per client IP within `scale_ms` (configurable; production
+  # defaults to one request per 30 seconds) to prevent OTP spamming.
+  @spec check_otp_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
+  defp check_otp_rate_limit(conn) do
+    config = Application.get_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+    key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
+
+    case ExRated.check_rate(key, config[:scale_ms], config[:count]) do
+      {:ok, _count} -> :ok
+      {:error, _limit} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
     end
   end
 

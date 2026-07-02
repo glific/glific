@@ -207,6 +207,9 @@ config :ex_audit,
     DateTime
   ]
 
+# Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
+config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
