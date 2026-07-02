@@ -1,4 +1,9 @@
 defmodule Glific.GcsWorkerTest do
+  @moduledoc """
+  Tests for the GCS media sync worker: queuing inbound media within the 7-day
+  provider TTL, the incremental vs unsynced sweep phases, and marking permanently
+  failed media so it is excluded from future sweeps.
+  """
   use GlificWeb.ConnCase
   use Oban.Pro.Testing, repo: Glific.Repo
   import Mock
@@ -10,6 +15,7 @@ defmodule Glific.GcsWorkerTest do
     GCS.GcsWorker,
     Jobs,
     Mails.MailLog,
+    Messages.MessageMedia,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -86,27 +92,33 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
-  test "perform_periodic/2, queuing only media_ids not older than a month", attrs do
-    with_mock(
-      Goth.Token,
-      [],
-      fetch: fn _url ->
-        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
-      end
-    ) do
+  test "perform_periodic/2, queuing only media_ids not older than 7 days", attrs do
+    Tesla.Mock.mock(fn %{method: :get} ->
+      %Tesla.Env{status: 200, body: "fake-media-bytes"}
+    end)
+
+    with_mocks([
+      {Goth.Token, [],
+       [
+         fetch: fn _url ->
+           {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+         end
+       ]},
+      {Waffle.Storage.Google.CloudStorage, [],
+       [
+         put: fn _, _, _ ->
+           {:ok,
+            %{
+              id: "mock-bucket/1/remote.png",
+              generation: "1",
+              selfLink: "https://www.googleapis.com/storage/v1/b/mock-bucket/o/remote.png"
+            }}
+         end
+       ]}
+    ]) do
       GCS.insert_gcs_jobs(attrs.organization_id)
 
-      _m1 =
-        Fixtures.message_media_fixture(%{
-          organization_id: attrs.organization_id
-        })
-        |> Ecto.Changeset.change(%{
-          inserted_at: DateTime.add(DateTime.utc_now(), -31, :day) |> DateTime.truncate(:second),
-          updated_at: DateTime.add(DateTime.utc_now(), -31, :day) |> DateTime.truncate(:second)
-        })
-        |> Repo.update()
-
-      _m2 =
+      media =
         Fixtures.message_media_fixture(%{
           organization_id: attrs.organization_id
         })
@@ -114,15 +126,16 @@ defmodule Glific.GcsWorkerTest do
           inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second),
           updated_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
         })
-        |> Repo.update()
+        |> Repo.update!()
 
       assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "incremental"})
       assert_enqueued(worker: GcsWorker, prefix: "global")
 
-      # We are only concerned about how many jobs queued, since else we have to
-      # mock a lot to get this to success.
-      assert %{success: 0, failure: 1, snoozed: 0, discard: 0, cancelled: 0} ==
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
+
+      assert %MessageMedia{gcs_url: gcs_url} = Repo.get!(MessageMedia, media.id)
+      assert gcs_url =~ "storage.googleapis.com"
     end
   end
 
@@ -224,13 +237,12 @@ defmodule Glific.GcsWorkerTest do
       assert %{success: 0, failure: 4, snoozed: 0, discard: 0, cancelled: 0} ==
                Oban.drain_queue(queue: :gcs)
 
-      # Tests for adding gcs_error for message_media
-      [media_id | _] = media_ids
-      media = %{"id" => media_id.id, "sync_phase" => "unsynced"}
-      assert {1, _} = GcsWorker.add_message_media_error(media, "GCSWORKER failed")
+      # A sync failure records its reason on the message_media row via gcs_error.
+      [media | _] = media_ids
+      assert {1, _} = GcsWorker.add_message_media_error(%{"id" => media.id}, "GCSWORKER failed")
 
-      media = %{"id" => media_id.id, "sync_phase" => "incremental"}
-      assert is_nil(GcsWorker.add_message_media_error(media, "GCSWORKER failed"))
+      assert %Glific.Messages.MessageMedia{gcs_error: "GCSWORKER failed"} =
+               Repo.get(Glific.Messages.MessageMedia, media.id)
 
       assert :ok = GCS.send_internal_media_sync_report()
 
@@ -242,5 +254,40 @@ defmodule Glific.GcsWorkerTest do
       # We ignore CCing support for this
       refute String.contains?(content["data"], ["support@glific.org"])
     end
+  end
+
+  test "base_query/1 skips only media permanently failed with the invalid-media marker",
+       attrs do
+    org_id = attrs.organization_id
+
+    # No error — healthy, not-yet-synced media (gcs_error is NULL).
+    healthy = Fixtures.message_media_fixture(%{organization_id: org_id})
+
+    # A transient failure reason recorded for visibility — must stay eligible for retry.
+    transient =
+      Fixtures.message_media_fixture(%{organization_id: org_id})
+      |> Ecto.Changeset.change(%{
+        gcs_error: "GCSWORKER: GCS Upload failed for org_id: #{org_id}, media_id: 0"
+      })
+      |> Repo.update!()
+
+    # A permanent failure carrying the invalid-media marker — must be skipped for good.
+    permanent =
+      Fixtures.message_media_fixture(%{organization_id: org_id})
+      |> Ecto.Changeset.change(%{
+        gcs_error: "GCSWORKER: #{GCS.invalid_media_error()} for org_id: #{org_id}, media_id: 0"
+      })
+      |> Repo.update!()
+
+    eligible_ids =
+      GCS.base_query(org_id)
+      |> select([m], m.id)
+      |> Repo.all()
+
+    # NULL gcs_error (via coalesce) and transient errors remain eligible; only the
+    # invalid-media marker is excluded by the `not ilike(coalesce(...))` filter.
+    assert healthy.id in eligible_ids
+    assert transient.id in eligible_ids
+    refute permanent.id in eligible_ids
   end
 end

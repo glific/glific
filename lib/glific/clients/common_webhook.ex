@@ -6,19 +6,16 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.ASR.Bhasini
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
-  alias Glific.Contacts
   alias Glific.Flows.Webhook
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Flows.Webhooks.Dispatcher
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
-  alias Glific.Partners
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
   alias Glific.Providers.Maytapi
   alias Glific.Repo
   alias Glific.SafeLog
-  alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.GoogleSlide.Slide
   alias Glific.WAGroup.WaPoll
 
@@ -30,19 +27,6 @@ defmodule Glific.Clients.CommonWebhook do
   """
   @spec webhook(String.t(), map(), list()) :: map() | String.t()
   def webhook(function, fields, _headers), do: webhook(function, fields)
-
-  def webhook("speech_to_text_with_bhasini", fields) do
-    fields
-    |> do_speech_to_text_with_bhasini()
-    |> normalize_failure()
-  end
-
-  # Uses Gemini/Bhasini/OpenAI for TTS via Bhasini flow nodes.
-  def webhook("text_to_speech_with_bhasini", fields) do
-    fields
-    |> do_text_to_speech_with_bhasini()
-    |> normalize_failure()
-  end
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -89,12 +73,6 @@ defmodule Glific.Clients.CommonWebhook do
           error
       end
     end)
-  end
-
-  def webhook("nmt_tts_with_bhasini", fields) do
-    fields
-    |> do_nmt_tts_with_bhasini()
-    |> normalize_failure()
   end
 
   def webhook("detect_language", fields) do
@@ -182,117 +160,6 @@ defmodule Glific.Clients.CommonWebhook do
   end
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
-
-  @spec do_text_to_speech_with_bhasini(map()) :: map() | String.t()
-  defp do_text_to_speech_with_bhasini(fields) do
-    text = fields["text"]
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
-    contact = Contacts.preload_contact_language(contact_id)
-    source_language = contact.language.label |> String.downcase()
-    speech_engine = Map.get(fields, "speech_engine", "")
-
-    with_failure_reporting("text_to_speech_with_bhasini", webhook_meta(org_id, fields), fn ->
-      cond do
-        speech_engine == "open_ai" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        speech_engine == "bhashini" ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-
-        source_language == "english" ->
-          ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-        true ->
-          Glific.Metrics.increment("Gemini TTS Call", org_id)
-          Gemini.text_to_speech(org_id, text)
-      end
-    end)
-  end
-
-  # Spec includes `{:error, _}` defensively so the voice-filesearch-gpt call
-  # site can keep an error-tuple match (even if Gemini.speech_to_text doesn't
-  # currently surface one) without Dialyzer flagging the clause as unreachable.
-  @spec do_speech_to_text_with_bhasini(map()) :: map() | String.t() | {:error, any()}
-  defp do_speech_to_text_with_bhasini(fields) do
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-
-    with_failure_reporting("speech_to_text_with_bhasini", webhook_meta(org_id, fields), fn ->
-      case Bhasini.validate_params(fields) do
-        {:ok, contact} ->
-          Glific.Metrics.increment("Gemini STT Call", contact.organization_id)
-          Gemini.speech_to_text(fields["speech"], contact.organization_id)
-
-        {:error, error} ->
-          %{success: false, asr_response_text: error}
-      end
-    end)
-  end
-
-  @spec do_nmt_tts_with_bhasini(map()) :: map() | String.t()
-  defp do_nmt_tts_with_bhasini(fields) do
-    text = fields["text"]
-    {:ok, org_id} = fields["organization_id"] |> Glific.parse_maybe_integer()
-    source_language = normalize_language(fields["source_language"])
-    target_language = normalize_language(fields["target_language"])
-    speech_engine = Map.get(fields, "speech_engine", "")
-
-    with_failure_reporting("nmt_tts_with_bhasini", webhook_meta(org_id, fields), fn ->
-      if source_language == target_language do
-        handle_tts_only(source_language, org_id, text, speech_engine)
-      else
-        gemini_nmt_tts_call(source_language, target_language, org_id, text,
-          speech_engine: speech_engine
-        )
-      end
-    end)
-  end
-
-  @spec gemini_nmt_tts_call(
-          String.t(),
-          String.t(),
-          non_neg_integer(),
-          String.t(),
-          Keyword.t()
-        ) :: map()
-  defp gemini_nmt_tts_call(source_language, target_language, org_id, text, opts) do
-    organization = Partners.organization(org_id)
-    services = organization.services["google_cloud_storage"]
-
-    with false <- is_nil(services),
-         true <- Gemini.valid_language?(source_language, target_language) do
-      Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
-      Gemini.nmt_text_to_speech(org_id, text, source_language, target_language, opts)
-    else
-      true ->
-        %{success: false, reason: "GCS is disabled"}
-
-      false ->
-        %{success: false, reason: "Language not supported in Gemini"}
-    end
-  end
-
-  @spec normalize_language(String.t() | nil) :: String.t() | nil
-  defp normalize_language(nil), do: ""
-  defp normalize_language(language), do: String.downcase(language)
-
-  @spec handle_tts_only(String.t(), non_neg_integer(), String.t(), String.t()) ::
-          map() | String.t()
-  defp handle_tts_only(language, org_id, text, speech_engine) do
-    cond do
-      speech_engine == "bhashini" ->
-        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
-
-      speech_engine == "open_ai" || language == "english" ->
-        ChatGPT.text_to_speech_with_open_ai(org_id, text)
-
-      true ->
-        Glific.Metrics.increment("Gemini NMT TTS Call", org_id)
-        Gemini.text_to_speech(org_id, text)
-    end
-  end
 
   defp parse_response_format(%{"response_format" => response_format} = fields) do
     case response_format do

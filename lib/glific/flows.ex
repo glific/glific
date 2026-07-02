@@ -1038,7 +1038,7 @@ defmodule Glific.Flows do
                keywords: flow_revision["keywords"],
                organization_id: organization_id
              }),
-           {cleaned_definition, assistant_node_uuids} <-
+           {cleaned_definition, assistant_node_uuids, invalid_sheet_node_uuids} <-
              clean_flow_definition(
                flow_revision["definition"],
                interactive_template_list,
@@ -1057,7 +1057,8 @@ defmodule Glific.Flows do
         %{
           flow_name: flow.name,
           status: "Successfully imported",
-          assistant_node_uuids: assistant_node_uuids
+          assistant_node_uuids: assistant_node_uuids,
+          invalid_sheet_node_uuids: invalid_sheet_node_uuids
         }
       else
         {:error, error} ->
@@ -1075,35 +1076,41 @@ defmodule Glific.Flows do
             "Failed to import flow #{flow_name}: #{error_message}, #{Glific.SafeLog.safe_inspect(errors)}"
           )
 
-          %{flow_name: flow_name, status: error_message, assistant_node_uuids: []}
+          %{
+            flow_name: flow_name,
+            status: error_message,
+            assistant_node_uuids: [],
+            invalid_sheet_node_uuids: []
+          }
       end
     end)
   end
 
-  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: term()
+  @spec clean_flow_definition(map(), list(), non_neg_integer()) :: {map(), list(), list()}
   defp clean_flow_definition(definition, interactive_template_list, organization_id) do
     flow_info = %{
       flow_uuid: definition["uuid"],
       flow_name: definition["name"]
     }
 
-    {nodes, assistant_node_uuids} =
+    {nodes, assistant_node_uuids, invalid_sheet_node_uuids} =
       definition
       |> Map.get("nodes", [])
       |> Enum.reduce(
-        {[], []},
-        fn node, {nodes_acc, uuids_acc} ->
-          {processed_nodes, node_uuids} =
+        {[], [], []},
+        fn node, {nodes_acc, assistant_acc, sheet_acc} ->
+          {processed_nodes, assistant_uuids, sheet_uuids} =
             process_node_actions(node, interactive_template_list, flow_info, organization_id)
 
-          {nodes_acc ++ processed_nodes, uuids_acc ++ node_uuids}
+          {nodes_acc ++ processed_nodes, assistant_acc ++ assistant_uuids,
+           sheet_acc ++ sheet_uuids}
         end
       )
 
-    {put_in(definition, ["nodes"], nodes), assistant_node_uuids}
+    {put_in(definition, ["nodes"], nodes), assistant_node_uuids, invalid_sheet_node_uuids}
   end
 
-  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list()}
+  @spec process_node_actions(map(), list(), map(), non_neg_integer()) :: {list(), list(), list()}
   defp process_node_actions(
          %{"actions" => actions} = node,
          _interactive_template_list,
@@ -1111,7 +1118,7 @@ defmodule Glific.Flows do
          _org_id
        )
        when actions == [],
-       do: {[node], []}
+       do: {[node], [], []}
 
   defp process_node_actions(
          %{"actions" => actions} = node,
@@ -1119,20 +1126,27 @@ defmodule Glific.Flows do
          flow_info,
          org_id
        ) do
-    {updated_actions, has_assistant?} =
-      Enum.reduce(actions, {[], false}, fn action, {actions_acc, has_assistant_acc} ->
+    {updated_actions, has_assistant?, has_invalid_sheet?} =
+      Enum.reduce(actions, {[], false, false}, fn action, {acc, assistant?, invalid_sheet?} ->
         case process_action(action, node, interactive_template_list, flow_info, org_id) do
           {:ok, updated_action} ->
-            {actions_acc ++ [updated_action], has_assistant_acc}
+            {acc ++ [updated_action], assistant?, invalid_sheet?}
 
           {:ok, updated_action, :assistant} ->
-            {actions_acc ++ [updated_action], true}
+            {acc ++ [updated_action], true, invalid_sheet?}
+
+          {:ok, updated_action, :invalid_sheet} ->
+            {acc ++ [updated_action], assistant?, true}
         end
       end)
 
     updated_node = Map.put(node, "actions", updated_actions)
-    node_uuids = if has_assistant?, do: [node_label(node["uuid"])], else: []
-    {[updated_node], node_uuids}
+    label = node_label(node["uuid"])
+
+    assistant_uuids = if has_assistant?, do: [label], else: []
+    invalid_sheet_uuids = if has_invalid_sheet?, do: [label], else: []
+
+    {[updated_node], assistant_uuids, invalid_sheet_uuids}
   end
 
   # The flow editor labels each node with the last 4 chars of its UUID
@@ -1165,14 +1179,24 @@ defmodule Glific.Flows do
          %{"type" => "link_google_sheet"} = action,
          _node,
          _interactive_template_list,
-         _flow_info,
+         flow_info,
          _org_id
        ) do
-    sheet_url = action["url"]
-    sheet_name = action["name"]
-    sheet = get_or_create_sheet(sheet_url, sheet_name)
-    updated_action = Map.put(action, "sheet_id", sheet.id)
-    {:ok, updated_action}
+    case get_or_create_sheet(action["url"], action["name"]) do
+      {:ok, sheet} ->
+        {:ok, Map.put(action, "sheet_id", sheet.id)}
+
+      {:error, reason} ->
+        # We always import the action without a linked sheet_id (dropping any stale
+        # id from the source org) and tag the node so the import status can warn the
+        # user, instead of crashing the whole import. But we still surface *why* the
+        # sheet could not be linked: a plain "Invalid sheet URL" is expected user input
+        # (benign), whereas anything else (missing credentials, 403/no access, network)
+        # is an integration failure that should reach AppSignal so it isn't silently
+        # swallowed. See get_or_create_sheet/2 and Sheets.create_sheet/1.
+        log_sheet_link_failure(reason, action["url"], flow_info)
+        {:ok, Map.delete(action, "sheet_id"), :invalid_sheet}
+    end
   end
 
   defp process_action(
@@ -1215,6 +1239,27 @@ defmodule Glific.Flows do
   defp process_action(action, _node, _interactive_template_list, _flow_info, _org_id),
     do: {:ok, action}
 
+  # "Invalid sheet URL" is expected user input (placeholder/invalid url) — log it
+  # for visibility but don't page anyone via AppSignal. Any other reason is an
+  # integration failure (missing credentials, no edit/read access, network) and
+  # must surface to AppSignal so it isn't silently degraded to a blank import.
+  @spec log_sheet_link_failure(any(), String.t() | nil, map()) :: :ok
+  defp log_sheet_link_failure("Invalid sheet URL" = reason, url, flow_info) do
+    Logger.info(
+      "Skipping Google Sheet link for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{reason}, url: #{inspect(url)}"
+    )
+
+    :ok
+  end
+
+  defp log_sheet_link_failure(reason, url, flow_info) do
+    Glific.log_error(
+      "Failed to link Google Sheet during import for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{inspect(reason)}, url: #{inspect(url)}"
+    )
+
+    :ok
+  end
+
   @spec clear_assistant_id(map()) :: {:ok, map()} | :no_assistant
   defp clear_assistant_id(action) do
     with body when is_binary(body) <- action["body"],
@@ -1237,6 +1282,8 @@ defmodule Glific.Flows do
     Map.has_key?(action, "templating") and template_uuid not in template_uuid_list
   end
 
+  @spec get_or_create_sheet(String.t() | nil, String.t() | nil) ::
+          {:ok, Sheet.t()} | {:error, any()}
   defp get_or_create_sheet(sheet_url, sheet_name) do
     current_user = Repo.get_current_user()
 
@@ -1248,11 +1295,10 @@ defmodule Glific.Flows do
 
     case Repo.fetch_by(Sheet, %{url: sheet_url}) do
       {:ok, sheet} ->
-        sheet
+        {:ok, sheet}
 
       {:error, _} ->
-        {:ok, sheet} = Sheets.create_sheet(attrs)
-        sheet
+        Sheets.create_sheet(attrs)
     end
   end
 
