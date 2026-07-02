@@ -185,7 +185,9 @@ defmodule Glific.Seeds.SeedsFlows do
       "ticketing_help.json",
       "consent_optin.json",
       "filesearch_GPT_textandvoice.json",
-      "direct_with_GPT.json"
+      "direct_with_GPT.json",
+      "speech_to_text.json",
+      "text_to_speech.json"
     ]
 
     Enum.each(flow_files, &process_flow_file(&1, organizations))
@@ -200,44 +202,80 @@ defmodule Glific.Seeds.SeedsFlows do
     Enum.each(organizations, &import_flow_for_organization(&1, import_flow, flow_file))
   end
 
-  @spec import_flow_for_organization(Organization.t(), map(), String.t()) :: :ok
+  @doc """
+  Import a single template flow file for one organization (import + mark as
+  template + publish + tag), reusing the exact same path as onboarding seeding.
+  Used by `Glific.Scripts.BhashiniTemplateMigration` to re-seed the STT/TTS
+  templates.
+  """
+  @spec import_template_flow(Organization.t(), String.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def import_template_flow(organization, flow_file) do
+    full_file_path = Path.join(:code.priv_dir(:glific), "data/flows/" <> flow_file)
+    {:ok, file_content} = File.read(full_file_path)
+    {:ok, import_flow} = Jason.decode(file_content)
+
+    import_flow_for_organization(organization, import_flow, flow_file)
+  end
+
+  @flow_tag_map %{
+    "consent_optout.json" => "Optout",
+    "GPT_Vision.json" => "GPT",
+    "clear_variable.json" => "Clear",
+    "geolocation.json" => "Location",
+    "ticketing_help.json" => "Help",
+    "other_options.json" => "Other",
+    "consent_optin.json" => "Optin",
+    "filesearch_GPT_textandvoice.json" => "GPT filesearch",
+    "direct_with_GPT.json" => "GPT direct",
+    "speech_to_text.json" => "Speech to Text",
+    "text_to_speech.json" => "Text to Speech"
+  }
+
+  @spec import_flow_for_organization(Organization.t(), map(), String.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
   defp import_flow_for_organization(organization, import_flow, flow_file) do
     Repo.put_organization_id(organization.id)
 
-    flow_tag_map = %{
-      "consent_optout.json" => "Optout",
-      "GPT_Vision.json" => "GPT",
-      "clear_variable.json" => "Clear",
-      "geolocation.json" => "Location",
-      "ticketing_help.json" => "Help",
-      "other_options.json" => "Other",
-      "consent_optin.json" => "Optin",
-      "filesearch_GPT_textandvoice.json" => "GPT filesearch",
-      "direct_with_GPT.json" => "GPT direct"
-    }
-
-    with [flow_data] <- Flows.import_flow(import_flow, organization.id),
+    with [%{status: "Successfully imported"} = flow_data] <-
+           Flows.import_flow(import_flow, organization.id),
          {:ok, flow} <- Repo.fetch_by(Flow, %{name: flow_data.flow_name}) do
-      update_flow_as_template(flow)
+      flow = update_flow_as_template(flow)
       update_flow_revision(flow.id)
 
-      tag_name = Map.get(flow_tag_map, flow_file)
-
-      if tag_name do
-        tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
-        Flows.update_flow(flow, %{tag_id: tag_id})
-      end
+      tag_name = Map.get(@flow_tag_map, flow_file)
+      maybe_tag_flow(flow, tag_name, organization, flow_file)
     else
+      [%{status: status}] ->
+        log_import_failure(organization.id, flow_file, status)
+
       _ ->
-        Logger.error(
-          "Flow import failed for organization: #{organization.id}, flow name: #{flow_file}"
-        )
-
-        {:error,
-         "Error importing flow for organization: #{organization.id}, flow name: #{flow_file}"}
+        log_import_failure(organization.id, flow_file, "unknown error")
     end
+  end
 
-    :ok
+  # Applies the template tag (if any) and returns the fully-updated flow.
+  # Propagates a tag-update failure instead of silently returning success.
+  @spec maybe_tag_flow(Flow.t(), String.t() | nil, Organization.t(), String.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  defp maybe_tag_flow(flow, nil, _organization, _flow_file), do: {:ok, flow}
+
+  defp maybe_tag_flow(flow, tag_name, organization, flow_file) do
+    tag_id = get_or_create_tag(tag_name, organization.id, organization.default_language_id)
+
+    case Flows.update_flow(flow, %{tag_id: tag_id}) do
+      {:ok, updated_flow} -> {:ok, updated_flow}
+      {:error, _changeset} -> log_import_failure(organization.id, flow_file, "tag update failed")
+    end
+  end
+
+  @spec log_import_failure(non_neg_integer(), String.t(), String.t()) :: {:error, String.t()}
+  defp log_import_failure(organization_id, flow_file, reason) do
+    Logger.error(
+      "Flow import failed for organization: #{organization_id}, flow name: #{flow_file}, reason: #{reason}"
+    )
+
+    {:error, "Error importing flow for organization: #{organization_id}, flow name: #{flow_file}"}
   end
 
   @spec update_flow_as_template(Flow.t()) :: Flow.t()
