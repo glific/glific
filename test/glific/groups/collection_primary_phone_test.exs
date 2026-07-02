@@ -160,6 +160,41 @@ defmodule Glific.Groups.CollectionPrimaryPhoneTest do
                  phone.id
                )
     end
+
+    test "errors when the phone does not exist", context do
+      %{organization_id: organization_id, collection: collection} = context
+      group_in_collection(context, %{is_active: true, is_primary: false})
+
+      assert {:error, "The selected WhatsApp phone was not found."} =
+               CollectionPrimaryPhone.set_primary_phone_for_collection(
+                 organization_id,
+                 collection.id,
+                 0
+               )
+    end
+
+    test "does not act on another organization's phone (tenant isolation)", context do
+      %{organization_id: organization_id, collection: collection} = context
+      group_in_collection(context, %{is_active: true, is_primary: false})
+
+      other_org = Fixtures.organization_fixture()
+      Repo.put_organization_id(other_org.id)
+
+      other_phone =
+        %{organization_id: other_org.id}
+        |> Fixtures.wa_managed_phone_fixture()
+        |> set_status("active")
+
+      Repo.put_organization_id(organization_id)
+
+      # the org-scoped lookup means org 1 can't drive another org's phone
+      assert {:error, "The selected WhatsApp phone was not found."} =
+               CollectionPrimaryPhone.set_primary_phone_for_collection(
+                 organization_id,
+                 collection.id,
+                 other_phone.id
+               )
+    end
   end
 
   describe "get_report/2" do
@@ -176,6 +211,39 @@ defmodule Glific.Groups.CollectionPrimaryPhoneTest do
 
       assert csv_rows =~ "Group,Reason"
       assert csv_rows =~ "#{inactive.label} (##{inactive.id}),member_inactive"
+    end
+
+    test "escapes group labels containing commas in the CSV", context do
+      %{organization_id: organization_id, phone: phone, collection: collection} = context
+
+      suffix = System.unique_integer([:positive])
+
+      comma_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: organization_id,
+          wa_managed_phone_id: phone.id,
+          label: "Delhi, Zone A",
+          bsp_id: "12036#{suffix}@g.us"
+        })
+
+      {:ok, _} =
+        WaGroupsCollections.create_wa_groups_collection(%{
+          group_id: collection.id,
+          wa_group_id: comma_group.id,
+          organization_id: organization_id
+        })
+
+      # a valid member group so the job actually enqueues; comma_group has no
+      # membership → skipped as not_a_member and lands in the report
+      group_in_collection(context, %{is_active: true, is_primary: false})
+
+      user_job_id = run(organization_id, collection, phone)
+
+      assert {:ok, %{csv_rows: csv_rows}} =
+               CollectionPrimaryPhone.get_report(organization_id, %{user_job_id: user_job_id})
+
+      # the comma-containing label is quoted, so the row keeps exactly two columns
+      assert csv_rows =~ "\"Delhi, Zone A (##{comma_group.id})\",not_a_member"
     end
 
     test "reports in-progress before the job finishes", %{organization_id: organization_id} do

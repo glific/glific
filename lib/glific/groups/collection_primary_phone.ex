@@ -47,28 +47,10 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
   @spec set_primary_phone_for_collection(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           {:ok, %{status: String.t(), user_job_id: non_neg_integer()}} | {:error, String.t()}
   def set_primary_phone_for_collection(org_id, collection_id, wa_managed_phone_id) do
-    with {:ok, _phone} <- validate_phone(wa_managed_phone_id),
-         group_ids when group_ids != [] <- collection_wa_group_ids(collection_id),
-         true <- member_of_any?(wa_managed_phone_id, group_ids) do
-      user_job =
-        UserJob.create_user_job(%{
-          status: "pending",
-          type: @job_type,
-          total_tasks: 1,
-          tasks_done: 0,
-          all_tasks_created: false,
-          organization_id: org_id,
-          errors: %{}
-        })
-
-      CollectionPrimaryPhoneWorker.make_job(org_id, collection_id, wa_managed_phone_id, user_job.id)
-      UserJob.update_user_job(user_job, %{all_tasks_created: true})
-
-      {:ok,
-       %{
-         status: "Setting the primary phone across the collection has started in the background.",
-         user_job_id: user_job.id
-       }}
+    with {:ok, _phone} <- validate_phone(org_id, wa_managed_phone_id),
+         wa_group_ids when wa_group_ids != [] <- collection_wa_group_ids(org_id, collection_id),
+         true <- member_of_any?(org_id, wa_managed_phone_id, wa_group_ids) do
+      enqueue(org_id, collection_id, wa_managed_phone_id)
     else
       {:error, reason} ->
         {:error, reason}
@@ -82,6 +64,49 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
     end
   end
 
+  # Create the tracking UserJob and enqueue the worker. If the enqueue (or the
+  # follow-up flag update) fails, mark the job failed so it doesn't hang "pending"
+  # forever and surface the error instead of falsely reporting "started".
+  @spec enqueue(non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, %{status: String.t(), user_job_id: non_neg_integer()}} | {:error, String.t()}
+  defp enqueue(org_id, collection_id, wa_managed_phone_id) do
+    user_job =
+      UserJob.create_user_job(%{
+        status: "pending",
+        type: @job_type,
+        total_tasks: 1,
+        tasks_done: 0,
+        all_tasks_created: false,
+        organization_id: org_id,
+        errors: %{}
+      })
+
+    with {:ok, _job} <-
+           CollectionPrimaryPhoneWorker.make_job(
+             org_id,
+             collection_id,
+             wa_managed_phone_id,
+             user_job.id
+           ),
+         {:ok, _user_job} <- UserJob.update_user_job(user_job, %{all_tasks_created: true}) do
+      {:ok,
+       %{
+         status:
+           "Setting the primary phone across the collection id #{collection_id} has started in the background.",
+         user_job_id: user_job.id
+       }}
+    else
+      error ->
+        UserJob.update_user_job(user_job, %{status: "failed", all_tasks_created: true})
+
+        Glific.log_error(
+          "Collection primary-phone: could not start job for collection #{collection_id}: #{inspect(error)}"
+        )
+
+        {:error, "Could not start the collection primary-phone update. Please try again."}
+    end
+  end
+
   @doc """
   Runs the bulk promotion for one collection. Called by
   `CollectionPrimaryPhoneWorker`. Iterates the collection's WhatsApp groups,
@@ -89,12 +114,12 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
   a reason each) against `user_job_id`.
   """
   @spec process(non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
-  def process(_org_id, collection_id, wa_managed_phone_id, user_job_id) do
-    phone_healthy? = phone_healthy?(wa_managed_phone_id)
+  def process(org_id, collection_id, wa_managed_phone_id, user_job_id) do
+    phone_healthy? = phone_healthy?(org_id, wa_managed_phone_id)
 
     {skipped, promoted} =
       collection_id
-      |> collection_wa_groups()
+      |> collection_wa_groups(org_id)
       |> Enum.reduce({%{}, 0}, fn {wa_group_id, label}, {skips, promoted} ->
         case classify_and_promote(wa_group_id, wa_managed_phone_id, phone_healthy?) do
           :promoted -> {skips, promoted + 1}
@@ -126,9 +151,9 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
         skipped = user_job.errors["errors"] || %{}
 
         csv_rows =
-          Enum.reduce(skipped, "Group,Reason", fn {group, reason}, acc ->
-            acc <> "\r\n#{group},#{reason}"
-          end)
+          [["Group", "Reason"] | Enum.map(skipped, fn {group, reason} -> [group, reason] end)]
+          |> CSV.encode()
+          |> Enum.join()
 
         {:ok, %{csv_rows: csv_rows}}
 
@@ -140,49 +165,47 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
     end
   end
 
-  # ---- internals ------------------------------------------------------------
-
-  @spec validate_phone(non_neg_integer()) :: {:ok, WAManagedPhone.t()} | {:error, String.t()}
-  defp validate_phone(wa_managed_phone_id) do
-    case Repo.get(WAManagedPhone, wa_managed_phone_id) do
+  @spec validate_phone(non_neg_integer(), non_neg_integer()) ::
+          {:ok, WAManagedPhone.t()} | {:error, String.t()}
+  defp validate_phone(org_id, wa_managed_phone_id) do
+    case Repo.get_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}) do
       nil -> {:error, "The selected WhatsApp phone was not found."}
       phone -> {:ok, phone}
     end
   end
 
-  # A phone is "healthy" only when Maytapi reports it as active; any other status
-  # (disconnected / banned / expired / loading …) means we can't safely promote it.
-  @spec phone_healthy?(non_neg_integer()) :: boolean()
-  defp phone_healthy?(wa_managed_phone_id) do
-    case Repo.get(WAManagedPhone, wa_managed_phone_id) do
+  @spec phone_healthy?(non_neg_integer(), non_neg_integer()) :: boolean()
+  defp phone_healthy?(org_id, wa_managed_phone_id) do
+    case Repo.get_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}) do
       %WAManagedPhone{status: "active"} -> true
       _ -> false
     end
   end
 
-  @spec collection_wa_group_ids(non_neg_integer()) :: [non_neg_integer()]
-  defp collection_wa_group_ids(collection_id) do
-    WAGroupsCollection
-    |> where([wgc], wgc.group_id == ^collection_id)
-    |> select([wgc], wgc.wa_group_id)
-    |> Repo.all()
+  @spec collection_wa_group_ids(non_neg_integer(), non_neg_integer()) :: [non_neg_integer()]
+  defp collection_wa_group_ids(org_id, collection_id) do
+    collection_id
+    |> collection_wa_groups(org_id)
+    |> Enum.map(fn {wa_group_id, _label} -> wa_group_id end)
   end
 
-  @spec collection_wa_groups(non_neg_integer()) :: [{non_neg_integer(), String.t() | nil}]
-  defp collection_wa_groups(collection_id) do
+  @spec collection_wa_groups(non_neg_integer(), non_neg_integer()) ::
+          [{non_neg_integer(), String.t() | nil}]
+  defp collection_wa_groups(collection_id, org_id) do
     WAGroupsCollection
-    |> where([wgc], wgc.group_id == ^collection_id)
+    |> where([wgc], wgc.group_id == ^collection_id and wgc.organization_id == ^org_id)
     |> join(:inner, [wgc], wg in WAGroup, on: wg.id == wgc.wa_group_id)
     |> select([_wgc, wg], {wg.id, wg.label})
     |> Repo.all()
   end
 
-  @spec member_of_any?(non_neg_integer(), [non_neg_integer()]) :: boolean()
-  defp member_of_any?(wa_managed_phone_id, wa_group_ids) do
+  @spec member_of_any?(non_neg_integer(), non_neg_integer(), [non_neg_integer()]) :: boolean()
+  defp member_of_any?(org_id, wa_managed_phone_id, wa_group_ids) do
     WAGroupPhone
     |> where(
       [wgp],
-      wgp.wa_managed_phone_id == ^wa_managed_phone_id and wgp.wa_group_id in ^wa_group_ids
+      wgp.organization_id == ^org_id and wgp.wa_managed_phone_id == ^wa_managed_phone_id and
+        wgp.wa_group_id in ^wa_group_ids
     )
     |> Repo.exists?()
   end
@@ -214,7 +237,8 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
 
   @spec promote(non_neg_integer(), non_neg_integer(), boolean()) ::
           :promoted | {:skipped, String.t()}
-  defp promote(_wa_group_id, _wa_managed_phone_id, false), do: {:skipped, "phone_status_unhealthy"}
+  defp promote(_wa_group_id, _wa_managed_phone_id, false),
+    do: {:skipped, "phone_status_unhealthy"}
 
   defp promote(wa_group_id, wa_managed_phone_id, true) do
     case WAGroups.set_primary_phone(wa_group_id, wa_managed_phone_id) do

@@ -26,9 +26,16 @@ defmodule Glific.Jobs.UserJobWorker do
         |> Repo.update!()
 
         create_completion_notification(user_job)
-        Glific.Metrics.increment("Contact upload success")
+        Glific.Metrics.increment(success_metric(user_job.type))
       end
     end)
+  end
+
+  @spec success_metric(String.t() | nil) :: String.t()
+  defp success_metric(type) do
+    if type == CollectionPrimaryPhone.job_type(),
+      do: "Collection primary phone success",
+      else: "Contact upload success"
   end
 
   defp create_completion_notification(user_job) do
