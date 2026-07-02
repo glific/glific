@@ -55,12 +55,14 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     "assets/gql/wa_groups/with_phones.gql"
   )
 
+  load_gql(:import_members, GlificWeb.Schema, "assets/gql/wa_groups/import.gql")
+
   test "create wa group contacts", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -89,7 +91,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -117,9 +119,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       %{method: :post} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            success: true
-          }
+          body: Jason.encode!(%{success: true})
         }
     end)
 
@@ -164,7 +164,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -201,6 +201,29 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
   end
 
   test "sync contacts in wa groups", %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/listPhones"
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body:
+             ~s([{"id":242,"number":"918454812345","status":"active","type":"whatsapp","name":""}])
+         }}
+
+      %{
+        method: :get,
+        url: "https://api.maytapi.com/api/3fa22108-f464-41e5-81d9-d8a298854430/242/getGroups"
+      } ->
+        {:ok,
+         %Tesla.Env{
+           status: 200,
+           body: ~s({"count":0,"data":[],"limit":500,"success":true,"total":0})
+         }}
+    end)
+
     result = auth_query_gql_by(:sync, user)
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "syncWaGroupContacts", "message"])
@@ -255,7 +278,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
 
     wa_group =
-      Fixtures.wa_group_fixture(%{
+      Fixtures.wa_group_with_primary_fixture(%{
         organization_id: user.organization_id,
         wa_managed_phone_id: wa_managed_phone.id
       })
@@ -303,18 +326,10 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
         })
 
       wa_group =
-        Fixtures.wa_group_fixture(%{
+        Fixtures.wa_group_with_primary_fixture(%{
           organization_id: user.organization_id,
           wa_managed_phone_id: first_phone.id
         })
-
-      Fixtures.wa_group_phone_fixture(%{
-        wa_group_id: wa_group.id,
-        wa_managed_phone_id: first_phone.id,
-        organization_id: user.organization_id,
-        is_primary: true,
-        is_active: true
-      })
 
       Fixtures.wa_group_phone_fixture(%{
         wa_group_id: wa_group.id,
@@ -491,6 +506,72 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       assert {:ok, query_data} = result
       [error] = query_data[:errors]
       assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+  end
+
+  describe "importWaGroupContacts" do
+    setup %{glific_admin: user} do
+      wa_managed_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      wa_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: user.organization_id,
+          wa_managed_phone_id: wa_managed_phone.id
+        })
+
+      %{wa_group: wa_group}
+    end
+
+    test "an admin kicks off a background CSV import", %{glific_admin: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert is_nil(query_data[:errors])
+      status = get_in(query_data, [:data, "importWaGroupContacts", "status"])
+      assert status =~ "in progress"
+    end
+
+    test "is rejected for a non-admin", %{staff: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      [error] = query_data[:errors]
+      assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+
+    test "rejects a wa_group the caller's org does not own", %{
+      glific_admin: user,
+      wa_group: wa_group
+    } do
+      # the org-scoped by-id lookup must reject an id outside the caller's org
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id + 1_000_000),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      errors = get_in(query_data, [:data, "importWaGroupContacts", "errors"])
+      assert [%{"message" => message} | _] = errors
+      assert message =~ "Resource not found"
     end
   end
 end
