@@ -2,10 +2,9 @@ defmodule Glific.Scripts.BhashiniTemplateMigrationTest do
   @moduledoc """
   Tests for the Bhashini template migration admin script. For every org that
   still has a deprecated Bhashini "Speech to Text" / "Text to Speech"
-  *template* flow (as parsed from its current, `revision_number == 0`,
-  definition), it imports the new Kaapi-based templates and only then
-  deletes the deprecated flow. Template flows only — custom flows are left
-  untouched.
+  *template* flow (matched by its seeded flow name), it imports the new
+  Kaapi-based templates and only then deletes the deprecated flow. Template
+  flows only — custom flows are left untouched.
   """
   use Glific.DataCase, async: false
 
@@ -120,8 +119,8 @@ defmodule Glific.Scripts.BhashiniTemplateMigrationTest do
     end
 
     test "leaves a non-deprecated template flow untouched", %{organization_id: organization_id} do
-      # A template flow whose current revision is the plain default definition
-      # (no call_webhook node at all) — never matches the deprecated pattern.
+      # A template flow whose name is not one of the deprecated Bhashini template
+      # names — never matched, so it is left untouched.
       other_template =
         Fixtures.flow_fixture(%{
           organization_id: organization_id,

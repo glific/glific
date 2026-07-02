@@ -25,15 +25,14 @@ defmodule Glific.Scripts.BhashiniTemplateMigration do
       # Migrate every affected organization:
       Glific.Scripts.BhashiniTemplateMigration.run()
 
-  ## Scope: template flows only
+  ## Scope: the two shipped Bhashini template flows, matched by name
 
-  Only flows with `is_template == true` are inspected. A flow is considered
-  deprecated when its **current** revision (`revision_number == 0`) has a
-  node whose action is `"type" => "call_webhook"` with `"url"` in the
-  deprecated list (`speech_to_text_with_bhasini`, `text_to_speech_with_bhasini`,
-  `nmt_tts_with_bhasini`) — parsed from the decoded JSON definition, never
-  matched with a raw text/regex search, and never against historical
-  revisions. Custom (non-template) flows are never touched.
+  Only flows with `is_template == true` whose name is one of the two seeded
+  Bhashini templates (`Bhashini_speech_to_text`, `Bhashini_TextToSpeech`) are
+  targeted. Those are the only flows that ever used the Bhashini webhooks — no
+  other template (nor any custom flow) references them — so matching the seeded
+  flow name is enough and there is no need to parse every template's revision.
+  Custom (non-template) flows are never touched.
 
   ## Safety
 
@@ -50,7 +49,6 @@ defmodule Glific.Scripts.BhashiniTemplateMigration do
   alias Glific.{
     Flows,
     Flows.Flow,
-    Flows.FlowRevision,
     Partners,
     Partners.Organization,
     Repo,
@@ -58,11 +56,11 @@ defmodule Glific.Scripts.BhashiniTemplateMigration do
     Users.User
   }
 
-  @deprecated_webhook_urls [
-    "speech_to_text_with_bhasini",
-    "text_to_speech_with_bhasini",
-    "nmt_tts_with_bhasini"
-  ]
+  # The two template flows that shipped with the deprecated Bhashini webhooks,
+  # matched by their exact seeded flow name. These are the only flows that ever
+  # used Bhashini (verified against every template JSON in priv/data/flows), so
+  # matching the name is sufficient and avoids parsing every template's revision.
+  @deprecated_flow_names ["Bhashini_speech_to_text", "Bhashini_TextToSpeech"]
 
   # New template file -> the flow name it imports as (used for the
   # is_template-scoped idempotency guard).
@@ -232,15 +230,9 @@ defmodule Glific.Scripts.BhashiniTemplateMigration do
     organization_id = Keyword.get(opts, :organization_id)
 
     Flow
-    |> where([flow], flow.is_template == true)
+    |> where([flow], flow.is_template == true and flow.name in @deprecated_flow_names)
     |> filter_organization(organization_id)
-    |> join(:inner, [flow], fr in FlowRevision,
-      on: fr.flow_id == flow.id and fr.revision_number == 0
-    )
-    |> select([flow, fr], {flow, fr.definition})
     |> Repo.all(skip_organization_id: true)
-    |> Enum.filter(fn {_flow, definition} -> deprecated_webhook?(definition) end)
-    |> Enum.map(fn {flow, _definition} -> flow end)
   end
 
   @spec filter_organization(Ecto.Query.t(), pos_integer() | nil) :: Ecto.Query.t()
@@ -248,18 +240,4 @@ defmodule Glific.Scripts.BhashiniTemplateMigration do
 
   defp filter_organization(query, organization_id),
     do: where(query, [flow], flow.organization_id == ^organization_id)
-
-  @spec deprecated_webhook?(map()) :: boolean()
-  defp deprecated_webhook?(definition) do
-    definition
-    |> Map.get("nodes", [])
-    |> Enum.flat_map(&Map.get(&1, "actions", []))
-    |> Enum.any?(&deprecated_webhook_action?/1)
-  end
-
-  @spec deprecated_webhook_action?(map()) :: boolean()
-  defp deprecated_webhook_action?(%{"type" => "call_webhook", "url" => url}),
-    do: url in @deprecated_webhook_urls
-
-  defp deprecated_webhook_action?(_action), do: false
 end
