@@ -126,4 +126,45 @@ defmodule GlificWeb.Resolvers.WaGroup do
         {:error, changeset}
     end
   end
+
+  @doc """
+  Provision a new WhatsApp group via Maytapi. Admin-only.
+  """
+  @spec create_wa_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def create_wa_group(_, %{input: input}, %{context: %{current_user: user}}) do
+    with {:ok, wa_group} <- WAGroups.provision_wa_group(user.organization_id, input) do
+      {:ok, %{wa_group: wa_group}}
+    end
+  end
+
+  @doc """
+  Remove a contact from a WhatsApp group via Maytapi (`group/remove`). Admin-only.
+  Adding members is done via `importWaGroupContacts` (CSV).
+  """
+  @spec remove_wa_group_contact(
+          Absinthe.Resolution.t(),
+          %{wa_group_id: any(), contact_id: any()},
+          %{context: map()}
+        ) :: {:ok, %{wa_group: WAGroup.t()}} | {:error, any()}
+  def remove_wa_group_contact(_, %{wa_group_id: wa_group_id, contact_id: contact_id}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, updated} <-
+           WAGroups.remove_wa_group_contact(user.organization_id, wa_group_id, contact_id) do
+      {:ok, %{wa_group: updated}}
+    end
+  end
+
+  @doc """
+  Bulk-add members to a WhatsApp group from a CSV of phone numbers. Runs in the
+  background (an Oban job per chunk); returns immediately. Admin-only.
+  """
+  @spec import_wa_group_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def import_wa_group_contacts(_, %{wa_group_id: wa_group_id, type: type, data: data}, %{
+        context: %{current_user: user}
+      }) do
+    WAGroups.import_wa_group_contacts(user.organization_id, wa_group_id, type, data)
+  end
 end

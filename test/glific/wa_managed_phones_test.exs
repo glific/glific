@@ -177,6 +177,81 @@ defmodule Glific.WAManagedPhonesTest do
       assert {:error, "Product id is wrong! Please check your Account information."} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
     end
+
+    test "fetch_wa_managed_phones/1 updates an existing phone's status in place instead of duplicating it",
+         attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      # first sync: the phone comes in active and a row is created
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            ~s([{"id":43090,"number":"918979120220","status":"active","type":"whatsapp","name":""}])
+        }
+      end)
+
+      assert :ok == WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+      assert {:ok, created} = WAManagedPhones.fetch_by_phone("918979120220")
+      assert created.status == "active"
+
+      # second sync: the same phone is now loading, alongside a new active phone
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            ~s([{"id":43090,"number":"918979120220","status":"loading","type":"whatsapp","name":""},{"id":43091,"number":"918888888888","status":"active","type":"whatsapp","name":""}])
+        }
+      end)
+
+      assert :ok == WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+
+      # existing row updated in place (same id, new status), new phone created
+      assert {:ok, updated} = WAManagedPhones.fetch_by_phone("918979120220")
+      assert updated.id == created.id
+      assert updated.status == "loading"
+      assert {:ok, _new_phone} = WAManagedPhones.fetch_by_phone("918888888888")
+    end
+
+    test "fetch_wa_managed_phones/1 refreshes a logged-out phone's status (id + status, no number)",
+         attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      existing = wa_managed_phone_fixture(%{organization_id: attrs.organization_id})
+
+      # Maytapi reports the phone as logged out: only its id + status, no number.
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body: ~s([{"id":#{existing.phone_id},"status":"disabled","type":"whatsapp"}])
+        }
+      end)
+
+      # no active phone in the payload → the overall no-active error is returned,
+      # but the logged-out phone's status is still refreshed
+      assert {:error, "No active phones available"} ==
+               WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+
+      assert WAManagedPhones.get_wa_managed_phone(existing.phone_id).status == "disabled"
+    end
   end
 
   test "status/2 webhook should update the status on wa_managed_phone", %{

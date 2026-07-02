@@ -55,6 +55,8 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
     "assets/gql/wa_groups/with_phones.gql"
   )
 
+  load_gql(:import_members, GlificWeb.Schema, "assets/gql/wa_groups/import.gql")
+
   test "create wa group contacts", %{user: user} do
     wa_managed_phone =
       Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
@@ -117,9 +119,7 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       %{method: :post} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            success: true
-          }
+          body: Jason.encode!(%{success: true})
         }
     end)
 
@@ -506,6 +506,72 @@ defmodule GlificWeb.Schema.ContactWaGroupTest do
       assert {:ok, query_data} = result
       [error] = query_data[:errors]
       assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+  end
+
+  describe "importWaGroupContacts" do
+    setup %{glific_admin: user} do
+      wa_managed_phone =
+        Fixtures.wa_managed_phone_fixture(%{organization_id: user.organization_id})
+
+      wa_group =
+        Fixtures.wa_group_fixture(%{
+          organization_id: user.organization_id,
+          wa_managed_phone_id: wa_managed_phone.id
+        })
+
+      %{wa_group: wa_group}
+    end
+
+    test "an admin kicks off a background CSV import", %{glific_admin: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert is_nil(query_data[:errors])
+      status = get_in(query_data, [:data, "importWaGroupContacts", "status"])
+      assert status =~ "in progress"
+    end
+
+    test "is rejected for a non-admin", %{staff: user, wa_group: wa_group} do
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      [error] = query_data[:errors]
+      assert error.message =~ "Unauthorized" or error.message =~ "permission"
+    end
+
+    test "rejects a wa_group the caller's org does not own", %{
+      glific_admin: user,
+      wa_group: wa_group
+    } do
+      # the org-scoped by-id lookup must reject an id outside the caller's org
+      result =
+        auth_query_gql_by(:import_members, user,
+          variables: %{
+            "waGroupId" => to_string(wa_group.id + 1_000_000),
+            "type" => "DATA",
+            "data" => "phone\n919900112233\n"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      errors = get_in(query_data, [:data, "importWaGroupContacts", "errors"])
+      assert [%{"message" => message} | _] = errors
+      assert message =~ "Resource not found"
     end
   end
 end
