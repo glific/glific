@@ -56,6 +56,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     "assets/gql/organizations/list_organization_status.gql"
   )
 
+  load_gql(:reset, GlificWeb.Schema, "assets/gql/organizations/reset.gql")
+
   test "organizations field returns list of organizations", %{user: user} do
     {:ok, user} =
       Glific.Users.update_user(user, %{
@@ -161,11 +163,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
 
+    # the client-supplied id is ignored; the caller's own organization is always
+    # returned, so a bogus id does not produce a "Resource not found" error
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "organization", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    organization = get_in(query_data, [:data, "organization", "organization", "name"])
+    assert organization == name
   end
 
   test "staff organization test", %{staff: user} do
@@ -178,11 +182,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
 
+    # the client-supplied id is ignored; the caller's own organization is always
+    # returned, so a bogus id does not produce a "Resource not found" error
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "organization", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    organization = get_in(query_data, [:data, "organization", "organization", "name"])
+    assert organization == name
   end
 
   test "organization without id returns current user's organization", %{user: user} do
@@ -193,7 +199,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization_id == to_string(user.organization_id)
   end
 
-  test "create an organization and test possible scenarios and errors", %{user: user} do
+  test "create an organization and test possible scenarios and errors", %{
+    glific_admin: user
+  } do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
@@ -285,7 +293,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
-  test "delete organization inactive organization", %{user: user} do
+  test "delete organization inactive organization", %{glific_admin: user} do
     organization = Fixtures.organization_fixture(%{is_active: false})
 
     result =
@@ -428,7 +436,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone != invalid_phone
   end
 
-  test "update an organization and test possible scenarios and errors", %{user: user} do
+  test "update an organization and test possible scenarios and errors", %{
+    user: user,
+    glific_admin: glific_admin_user
+  } do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
@@ -482,7 +493,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message =~ "is invalid"
 
     # create a temp organization with a new name
-    auth_query_gql_by(:create, user,
+    auth_query_gql_by(:create, glific_admin_user,
       variables: %{
         "input" => %{
           "name" => name,
@@ -681,7 +692,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert get_in(out_of_office, ["enabled_days", Access.at(1), "enabled"]) == false
   end
 
-  test "delete an organization queues a background job", %{user: user} do
+  test "delete an organization queues a background job", %{glific_admin: user} do
     organization = Fixtures.organization_fixture(%{status: :ready_to_delete})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => organization.id})
@@ -707,22 +718,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "Resource not found"
   end
 
-  test "delete an organization test data", %{user: user} do
-    organization = Fixtures.organization_fixture()
-
-    # sometime This is causing a deadlock issue so we need to fix this
-    result = auth_query_gql_by(:delete_test, user, variables: %{"id" => organization.id})
-    assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:data, "deleteOrganizationTestData", "errors"]) == nil
-
+  test "delete an organization test data ignores client id and uses the caller's own org",
+       %{glific_admin: user} do
+    # a non-existent / foreign id is ignored; the resolver always targets the
+    # caller's own organization, so this succeeds instead of "Resource not found"
     result = auth_query_gql_by(:delete_test, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
-    message =
-      get_in(query_data, [:data, "deleteOrganizationTestData", "errors", Access.at(0), "message"])
-
-    assert message == "Resource not found"
+    assert get_in(query_data, [:data, "deleteOrganizationTestData", "errors"]) == nil
   end
 
   test "attachments enabled returns false by default, but true when we have GCS credential", %{
@@ -751,5 +754,204 @@ defmodule GlificWeb.Schema.OrganizationTest do
     statuses = get_in(query_data, [:data, "organizationStatus"])
     assert statuses != []
     assert length(statuses) == length(OrganizationStatus.__enum_map__())
+  end
+
+  describe "authorization boundary for organization mutations raised to glific_admin" do
+    test "create_organization rejects admin, manager, and staff roles, but allows glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } do
+      language_locale = "en"
+      {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
+
+      provider_name = "Gupshup Enterprise"
+      {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
+
+      variables = %{
+        "input" => %{
+          "name" => "Glific Admin Only Org",
+          "shortcode" => "glific_admin_only_org",
+          "email" => "glific_admin_only_org@glific.org",
+          "bsp_id" => bsp_provider.id,
+          "default_language_id" => language.id,
+          "active_language_ids" => [language.id]
+        }
+      }
+
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} = auth_query_gql_by(:create, rejected_user, variables: variables)
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      {:ok, query_data} = auth_query_gql_by(:create, glific_admin_user, variables: variables)
+      assert get_in(query_data, [:errors]) == nil
+
+      organization = get_in(query_data, [:data, "createOrganization", "organization"])
+      assert organization["name"] == "Glific Admin Only Org"
+    end
+
+    test "delete_organization rejects admin, manager, and staff roles, but allows glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } do
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:delete, rejected_user, variables: %{"id" => 999_999_999})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      {:ok, query_data} =
+        auth_query_gql_by(:delete, glific_admin_user, variables: %{"id" => 999_999_999})
+
+      assert get_in(query_data, [:errors]) == nil
+
+      message =
+        get_in(query_data, [:data, "deleteOrganization", "errors", Access.at(0), "message"])
+
+      assert message == "Resource not found"
+    end
+
+    test "delete_organization_test_data rejects admin, manager, and staff roles, but allows glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } do
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:delete_test, rejected_user, variables: %{"id" => 999_999_999})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      {:ok, query_data} =
+        auth_query_gql_by(:delete_test, glific_admin_user, variables: %{"id" => 999_999_999})
+
+      # gate cleared (no Unauthorized) and the client id is ignored, so the
+      # mutation operates on the caller's own org and succeeds
+      assert get_in(query_data, [:errors]) == nil
+      assert get_in(query_data, [:data, "deleteOrganizationTestData", "errors"]) == nil
+    end
+
+    test "delete_inactive_organization rejects admin, manager, and staff roles, but allows glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } do
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:delete_onboarded, rejected_user,
+            variables: %{"deleteOrganizationId" => 999_999_999, "isConfirmed" => false}
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      # is_confirmed: false short-circuits before touching the database, so this
+      # only asserts that the glific_admin role clears the authorization gate
+      {:ok, query_data} =
+        auth_query_gql_by(:delete_onboarded, glific_admin_user,
+          variables: %{"deleteOrganizationId" => 999_999_999, "isConfirmed" => false}
+        )
+
+      [error] = get_in(query_data, [:errors])
+      assert error.message == "Cannot delete organization"
+    end
+
+    test "reset_organization rejects admin, manager, and staff roles, but allows glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } do
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:reset, rejected_user,
+            variables: %{"resetOrganizationId" => 999_999_999, "isConfirmed" => false}
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      # is_confirmed: false short-circuits before touching the database, so this
+      # only asserts that the glific_admin role clears the authorization gate
+      {:ok, query_data} =
+        auth_query_gql_by(:reset, glific_admin_user,
+          variables: %{"resetOrganizationId" => 999_999_999, "isConfirmed" => false}
+        )
+
+      [error] = get_in(query_data, [:errors])
+      assert error.message == "Cannot reset organization data"
+    end
+  end
+
+  describe "tenant isolation for organization query and update_organization mutation" do
+    test "organization query ignores client-supplied id and always returns the caller's own organization",
+         %{staff: user} do
+      other_organization = Fixtures.organization_fixture()
+
+      result = auth_query_gql_by(:by_id, user, variables: %{"id" => other_organization.id})
+      assert {:ok, query_data} = result
+
+      returned_organization_id =
+        get_in(query_data, [:data, "organization", "organization", "id"])
+
+      assert returned_organization_id == to_string(user.organization_id)
+      refute returned_organization_id == to_string(other_organization.id)
+
+      result = auth_query_gql_by(:by_id, user)
+      assert {:ok, query_data} = result
+
+      returned_organization_id_without_arg =
+        get_in(query_data, [:data, "organization", "organization", "id"])
+
+      assert returned_organization_id_without_arg == to_string(user.organization_id)
+    end
+
+    test "update_organization ignores client-supplied id and only updates the caller's own organization",
+         %{user: user} do
+      other_organization = Fixtures.organization_fixture()
+      new_name = "Caller Organization Renamed"
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "id" => other_organization.id,
+            "input" => %{"name" => new_name}
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+      assert updated_organization["name"] == new_name
+      assert updated_organization["id"] == to_string(user.organization_id)
+
+      {:ok, reloaded_own_organization} =
+        Repo.fetch(Organization, user.organization_id, skip_organization_id: true)
+
+      assert reloaded_own_organization.name == new_name
+
+      {:ok, reloaded_other_organization} =
+        Repo.fetch(Organization, other_organization.id, skip_organization_id: true)
+
+      refute reloaded_other_organization.name == new_name
+    end
   end
 end
