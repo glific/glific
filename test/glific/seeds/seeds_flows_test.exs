@@ -22,7 +22,9 @@ defmodule Glific.Seeds.SeedsFlowsTest do
 
   alias Glific.Flows
   alias Glific.Flows.Flow
+  alias Glific.Partners
   alias Glific.Repo
+  alias Glific.Seeds.SeedsFlows
 
   @deprecated_bhashini_webhooks [
     "speech_to_text_with_bhasini",
@@ -61,6 +63,32 @@ defmodule Glific.Seeds.SeedsFlowsTest do
 
         refute Enum.any?(errors, fn {_module, _message, severity} -> severity == "Critical" end),
                "expected no Critical validation errors for #{flow_name}, got: #{inspect(errors)}"
+      end
+    end
+  end
+
+  describe "import_template_flow/2" do
+    # `SeedsFlows.add_template_flows/1` fans this out to every template file
+    # for every organization; exercising it per-file here (rather than the
+    # full flow_files list) sidesteps the unrelated clear_variable.json /
+    # "Clear_Variables flow" name collision noted in the moduledoc above,
+    # while still covering exactly the code path add_template_flows/1 uses.
+    for template_file <- @template_files do
+      test "imports #{template_file} and marks it as a template",
+           %{organization_id: organization_id} do
+        template_file = unquote(template_file)
+        flow_name = Map.fetch!(@template_flow_names, template_file)
+        organization = Partners.organization(organization_id)
+
+        assert {:ok, flow} = SeedsFlows.import_template_flow(organization, template_file)
+
+        assert flow.name == flow_name
+        assert flow.is_template
+
+        {:ok, reloaded} =
+          Repo.fetch_by(Flow, %{name: flow_name, organization_id: organization_id})
+
+        assert reloaded.is_template
       end
     end
   end
