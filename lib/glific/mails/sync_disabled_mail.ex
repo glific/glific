@@ -34,7 +34,7 @@ defmodule Glific.Mails.SyncDisabledMail do
           Partners.enable_credential(org_id, "bigquery")
         rescue
           err ->
-            Glific.log_error("Failed to re-enable bigquery for org #{org_id}: #{inspect(err)}")
+            Glific.log_exception(err, tags: %{organization_id: org_id, shortcode: "bigquery"})
         end
       end)
 
@@ -43,8 +43,8 @@ defmodule Glific.Mails.SyncDisabledMail do
           Partners.enable_credential(org_id, "google_cloud_storage")
         rescue
           err ->
-            Glific.log_error(
-              "Failed to re-enable google_cloud_storage for org #{org_id}: #{inspect(err)}"
+            Glific.log_exception(err,
+              tags: %{organization_id: org_id, shortcode: "google_cloud_storage"}
             )
         end
       end)
