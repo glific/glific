@@ -53,11 +53,16 @@ defmodule Glific.Jobs.UserJobWorker do
   # The category + message shown to the admin when a job completes, per job type.
   @spec completion_details(String.t() | nil) :: {String.t(), String.t()}
   defp completion_details(type) do
-    if type == CollectionPrimaryPhone.job_type() do
-      {"Collection Primary Phone",
-       "Setting the primary phone across the collection has completed."}
-    else
-      {"Contact Upload", "Contact upload completed"}
+    cond do
+      type == CollectionPrimaryPhone.job_type() ->
+        {"Collection Primary Phone",
+         "Setting the primary phone across the collection has completed."}
+
+      type == "wa_group_member_import" ->
+        {"WA Group Member Upload", "WhatsApp group member upload completed"}
+
+      true ->
+        {"Contact Upload", "Contact upload completed"}
     end
   end
 end
