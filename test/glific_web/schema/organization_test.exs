@@ -341,12 +341,16 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert contact.phone == valid_phone
   end
 
-  test "updating phone fails if NGO Main Account does not exist", %{user: user} do
+  test "updating phone fails if NGO Main Account does not exist", %{} do
     organization = Fixtures.organization_fixture()
     valid_phone = "917905556238"
 
+    # Use an admin user belonging to the fixture organization so the resolver
+    # targets that org (not the default org-1 user's org).
+    fixture_user = Fixtures.user_fixture(%{organization_id: organization.id, roles: ["admin"]})
+
     result =
-      auth_query_gql_by(:update, user,
+      auth_query_gql_by(:update, fixture_user,
         variables: %{
           "id" => organization.id,
           "input" => %{
