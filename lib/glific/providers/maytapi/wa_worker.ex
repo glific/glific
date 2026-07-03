@@ -198,6 +198,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   def perform_periodic(org_id) do
     WAGroups.sync_wa_groups(org_id)
 
+    WAManagedPhones.reconcile_wa_managed_phone_statuses(org_id)
+
     Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
     :ok
   end

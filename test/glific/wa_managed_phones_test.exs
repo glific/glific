@@ -293,7 +293,7 @@ defmodule Glific.WAManagedPhonesTest do
     assert WAManagedPhones.status(new_status, phone_id) == {:error, "Phone ID not found"}
   end
 
-  test "status/2 should create a notification when status is not 'active' or loading", %{
+  test "status/2 warns on a transition into a disconnected state and stamps the check time", %{
     organization_id: organization_id
   } do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
@@ -301,15 +301,130 @@ defmodule Glific.WAManagedPhonesTest do
     new_status = "qr-screen"
     phone_id = wa_managed_phone.phone_id
 
-    {:ok, _updated_phone} = WAManagedPhones.status(new_status, phone_id)
+    {:ok, updated_phone} = WAManagedPhones.status(new_status, phone_id)
+    assert updated_phone.last_status_checked_at != nil
 
-    {:ok, notification} =
-      Repo.fetch_by(Notification, %{
-        organization_id: organization_id
-      })
+    {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
 
     assert notification.message ==
-             "Cannot send messages. WhatsApp phone 9829627508 is not connected with Maytapi. Current status: qr-screen"
+             "WhatsApp phone 9829627508 is disconnected (status: qr-screen). Reconnect it from Settings to resume messaging."
+
+    assert notification.severity == "Warning"
+  end
+
+  test "status/2 does not re-notify when the phone stays in the same bad state", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    {:ok, _} = WAManagedPhones.status("qr-screen", wa_managed_phone.phone_id)
+    {:ok, _} = WAManagedPhones.status("qr-screen", wa_managed_phone.phone_id)
+
+    # only the transition into the bad state alerts, not every repeat
+    # (Repo auto-scopes to the org in context)
+    assert length(Repo.all(Notification)) == 1
+  end
+
+  test "status/2 raises a critical alert when the phone is suspended by WhatsApp", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    {:ok, _} = WAManagedPhones.status("banned", wa_managed_phone.phone_id)
+
+    {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
+    assert notification.severity == "Critical"
+    assert notification.message =~ "suspended by WhatsApp"
+  end
+
+  test "reconcile_wa_managed_phone_statuses/1 polls Maytapi and alerts on transitions", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: ~s([{"id":#{wa_managed_phone.phone_id},"number":"9829627508","status":"disabled"}])
+      }
+    end)
+
+    assert :ok == WAManagedPhones.reconcile_wa_managed_phone_statuses(organization_id)
+
+    assert WAManagedPhones.get_wa_managed_phone(wa_managed_phone.phone_id).status == "disabled"
+    {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
+    assert notification.severity == "Warning"
+  end
+
+  test "fetch_phone_screen/2 returns the QR payload for an admin", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{status: 200, body: ~s({"success":true,"data":"data:image/png;base64,QQ=="})}
+    end)
+
+    assert {:ok, %{code: "data:image/png;base64,QQ==", expires_at: %DateTime{}}} =
+             WAManagedPhones.fetch_phone_screen(organization_id, wa_managed_phone.id)
+  end
+
+  test "fetch_phone_screen/2 surfaces a Maytapi failure message", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{status: 200, body: ~s({"success":false,"message":"Phone is not connected"})}
+    end)
+
+    assert {:error, "Phone is not connected"} =
+             WAManagedPhones.fetch_phone_screen(organization_id, wa_managed_phone.id)
+  end
+
+  test "reconnect_wa_managed_phone/2 logs the phone out to trigger a fresh QR", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+
+    Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: ~s({"success":true})} end)
+
+    assert {:ok, %WAManagedPhone{id: id}} =
+             WAManagedPhones.reconnect_wa_managed_phone(organization_id, wa_managed_phone.id)
+
+    assert id == wa_managed_phone.id
   end
 
   test "status/2 shouldn't create a notification when status is 'active' or loading", %{

@@ -105,6 +105,86 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   end
 
   @doc """
+  Fetches the current screen for a phone. When the phone is on the WhatsApp login
+  screen (status `qr-screen`), this contains the QR code to rescan — the surface
+  we expose so admins can reconnect a disconnected phone from Glific.
+
+  Returns `{:ok, qr_payload}` (a data-url / base64 image or Maytapi screen string)
+  or `{:error, message}`; the raw HTTP/Tesla layer is handled here so callers never
+  touch it.
+  """
+  @spec fetch_phone_screen(non_neg_integer(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def fetch_phone_screen(org_id, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/screen"
+
+      maytapi_get(url, token)
+      |> handle_screen_response()
+    end
+  end
+
+  @doc """
+  Logs a phone out of its WhatsApp session so Maytapi shows a fresh QR to relink.
+  Returns `:ok` or `{:error, message}`.
+  """
+  @spec logout_phone(non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}
+  def logout_phone(org_id, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/logout"
+
+      maytapi_post(url, "{}", token)
+      |> handle_maytapi_response()
+    end
+  end
+
+  # Extracts the QR/screen payload from Maytapi's `screen` response. Tolerant of
+  # the likely shapes since the endpoint isn't verified for our plan; falls back
+  # to treating a non-JSON body as raw PNG bytes.
+  @spec handle_screen_response(Tesla.Env.result()) :: {:ok, String.t()} | {:error, String.t()}
+  defp handle_screen_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, %{"success" => false, "message" => message}} when is_binary(message) ->
+        {:error, message}
+
+      {:ok, %{"success" => false}} ->
+        {:error, @generic_error}
+
+      {:ok, %{"data" => data}} when is_binary(data) ->
+        {:ok, data}
+
+      {:ok, %{"screen" => screen}} when is_binary(screen) ->
+        {:ok, screen}
+
+      {:ok, %{"url" => url}} when is_binary(url) ->
+        {:ok, url}
+
+      {:ok, _other} ->
+        {:error, "The WhatsApp login screen isn't available yet. Try again shortly."}
+
+      {:error, _} ->
+        {:ok, "data:image/png;base64," <> Base.encode64(body)}
+    end
+  end
+
+  defp handle_screen_response({:ok, %Tesla.Env{body: body}}) do
+    Glific.log_error("Maytapi screen non-2xx response: #{SafeLog.safe_inspect(body)}")
+    {:error, @generic_error}
+  end
+
+  defp handle_screen_response({:error, reason}) do
+    Glific.log_error("Maytapi screen request error: #{SafeLog.safe_inspect(reason)}")
+    {:error, @generic_error}
+  end
+
+  @doc """
   Sending message to contact
   """
   @spec send_message(non_neg_integer(), map(), non_neg_integer()) :: Tesla.Env.result()
