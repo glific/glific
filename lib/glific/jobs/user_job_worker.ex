@@ -5,6 +5,7 @@ defmodule Glific.Jobs.UserJobWorker do
   require Logger
 
   alias Glific.{
+    Groups.CollectionPrimaryPhone,
     Jobs.UserJob,
     Notifications,
     Repo
@@ -25,9 +26,16 @@ defmodule Glific.Jobs.UserJobWorker do
         |> Repo.update!()
 
         create_completion_notification(user_job)
-        Glific.Metrics.increment("Contact upload success")
+        Glific.Metrics.increment(success_metric(user_job.type))
       end
     end)
+  end
+
+  @spec success_metric(String.t() | nil) :: String.t()
+  defp success_metric(type) do
+    if type == CollectionPrimaryPhone.job_type(),
+      do: "Collection primary phone success",
+      else: "Contact upload success"
   end
 
   defp create_completion_notification(user_job) do
@@ -42,11 +50,19 @@ defmodule Glific.Jobs.UserJobWorker do
     })
   end
 
-  # Category must match what the frontend notification list keys on to fetch the
-  # upload report (Contact Upload / WA Group Member Upload).
-  @spec completion_details(String.t()) :: {String.t(), String.t()}
-  defp completion_details("wa_group_member_import"),
-    do: {"WA Group Member Upload", "WhatsApp group member upload completed"}
+  # The category + message shown to the admin when a job completes, per job type.
+  @spec completion_details(String.t() | nil) :: {String.t(), String.t()}
+  defp completion_details(type) do
+    cond do
+      type == CollectionPrimaryPhone.job_type() ->
+        {"Collection Primary Phone",
+         "Setting the primary phone across the collection has completed."}
 
-  defp completion_details(_), do: {"Contact Upload", "Contact upload completed"}
+      type == "wa_group_member_import" ->
+        {"WA Group Member Upload", "WhatsApp group member upload completed"}
+
+      true ->
+        {"Contact Upload", "Contact upload completed"}
+    end
+  end
 end
