@@ -156,10 +156,13 @@ defmodule GlificWeb.API.V1.RegistrationController do
   # defaults to one request per 30 seconds) to prevent OTP spamming.
   @spec check_otp_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
   defp check_otp_rate_limit(conn) do
-    config = Application.get_env(:glific, :otp_rate_limit)
+    # Fall back to sane defaults so a missing/partial config never crashes the OTP endpoint.
+    config = Application.get_env(:glific, :otp_rate_limit, [])
+    scale_ms = Keyword.get(config, :scale_ms, 30_000)
+    count = Keyword.get(config, :count, 1)
     key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
 
-    case ExRated.check_rate(key, config[:scale_ms], config[:count]) do
+    case ExRated.check_rate(key, scale_ms, count) do
       {:ok, _count} -> :ok
       {:error, _limit} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
     end
