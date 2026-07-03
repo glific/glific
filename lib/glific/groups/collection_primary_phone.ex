@@ -13,7 +13,7 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
   """
 
   require Logger
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Groups.CollectionPrimaryPhoneWorker,
@@ -23,6 +23,7 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
     Groups.WAGroupsCollection,
     Jobs.UserJob,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone
   }
 
@@ -100,7 +101,7 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
         UserJob.update_user_job(user_job, %{status: "failed", all_tasks_created: true})
 
         Glific.log_error(
-          "Collection primary-phone: could not start job for collection #{collection_id}: #{inspect(error)}"
+          "Collection primary-phone: could not start job for collection #{collection_id}: #{SafeLog.safe_inspect(error)}"
         )
 
         {:error, "Could not start the collection primary-phone update. Please try again."}
@@ -265,12 +266,18 @@ defmodule Glific.Groups.CollectionPrimaryPhone do
 
   @spec record_result(non_neg_integer(), map()) :: :ok
   defp record_result(user_job_id, skipped) do
-    user_job = Repo.get!(UserJob, user_job_id)
+    case Repo.fetch_by(UserJob, %{id: user_job_id}) do
+      {:ok, user_job} ->
+        UserJob.update_user_job(user_job, %{
+          tasks_done: user_job.total_tasks,
+          errors: %{"errors" => skipped}
+        })
 
-    UserJob.update_user_job(user_job, %{
-      tasks_done: user_job.total_tasks,
-      errors: %{"errors" => skipped}
-    })
+      {:error, _reason} ->
+        Glific.log_error(
+          "Collection primary-phone: user_job #{user_job_id} not found while recording result"
+        )
+    end
 
     :ok
   end
