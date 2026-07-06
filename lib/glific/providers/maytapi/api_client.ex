@@ -23,7 +23,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   @spec maytapi_get(String.t(), String.t()) :: Tesla.Env.result()
   def maytapi_get(url, token),
     do:
-      client(:read)
+      :read
+      |> client()
       |> Tesla.get(url, headers: headers(token))
       |> log_on_failure(url)
 
@@ -125,7 +126,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/screen"
 
-      maytapi_get(url, token)
+      url
+      |> maytapi_get(token)
       |> handle_screen_response()
     end
   end
@@ -142,7 +144,8 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/logout"
 
-      maytapi_post(url, "{}", token)
+      url
+      |> maytapi_post(Jason.encode!(%{}), token)
       |> handle_maytapi_response()
     end
   end
