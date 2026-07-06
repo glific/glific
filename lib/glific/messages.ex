@@ -629,7 +629,7 @@ defmodule Glific.Messages do
 
       {:error, error} ->
         {:error,
-         "Not able to fetch the template with id #{template_id}. ERROR: #{inspect(error)}"}
+         "Not able to fetch the template with id #{template_id}. ERROR: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 

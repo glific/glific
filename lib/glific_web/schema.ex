@@ -59,6 +59,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WAGroupsCollectionTypes)
   import_types(__MODULE__.WaGroupTypes)
   import_types(__MODULE__.AssistantTypes)
+  import_types(__MODULE__.PromptGeneratorTypes)
   import_types(__MODULE__.AIEvaluationTypes)
   import_types(__MODULE__.WaPollTypes)
   import_types(__MODULE__.CertificateTypes)
@@ -145,6 +146,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ai_evaluation_queries)
 
     import_fields(:ask_glific_queries)
+
+    import_fields(:prompt_generator_queries)
   end
 
   mutation do
@@ -210,6 +213,8 @@ defmodule GlificWeb.Schema do
 
     import_fields(:contact_wa_group_mutations)
 
+    import_fields(:wa_group_mutations)
+
     import_fields(:wa_groups_collection_mutations)
 
     import_fields(:filesearch_mutations)
@@ -225,6 +230,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ai_evaluation_mutations)
 
     import_fields(:ask_glific_mutations)
+
+    import_fields(:prompt_generator_mutations)
   end
 
   subscription do

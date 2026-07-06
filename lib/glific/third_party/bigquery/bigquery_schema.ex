@@ -585,6 +585,69 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for wa_groups_phones table
+  """
+  @spec wa_groups_phones_schema :: list()
+  def wa_groups_phones_schema do
+    [
+      %{
+        description: "Unique ID generated for each WA Group Phone membership",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the WA Group this membership belongs to",
+        name: "wa_group_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "ID of the WA Managed Phone linked to this group",
+        name: "wa_managed_phone_id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Whether this phone is the primary sender for the group",
+        name: "is_primary",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether this phone is currently active in the group",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for group table
   """
   @spec group_schema :: list()
@@ -2484,6 +2547,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Poll content",
         name: "poll_content",
         type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the WA Managed Phone used to send or receive this message",
+        name: "wa_phone_id",
+        type: "INTEGER",
         mode: "NULLABLE"
       }
     ]

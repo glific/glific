@@ -43,7 +43,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
-    Logger.info("Performing job: #{inspect(job)}")
+    Logger.info("Performing job: #{Glific.SafeLog.safe_inspect(job)}")
     services = Partners.get_organization_services()
     perform(args, services)
   end
@@ -93,7 +93,9 @@ defmodule Glific.Jobs.MinuteWorker do
         )
 
       "stats" ->
-        Stats.generate_stats([], false)
+        Appsignal.CheckIn.cron("glific_stats_hourly", fn ->
+          Stats.generate_stats([], false)
+        end)
     end
 
     :ok

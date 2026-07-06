@@ -32,10 +32,6 @@ defmodule Glific.Clients.Lahi do
   """
 
   @spec webhook(String.t(), map()) :: map()
-  def webhook("speech_to_text_with_bhasini", fields),
-    do: CommonWebhook.webhook("speech_to_text_with_bhasini", fields)
-
-  @spec webhook(String.t(), map()) :: map()
   def webhook("speech_to_text", fields), do: CommonWebhook.webhook("speech_to_text", fields)
   def webhook(_, _fields), do: %{}
 end

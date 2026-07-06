@@ -40,15 +40,15 @@ Mirror `Glific.Tags.Tag` — the cleanest reference implementation:
 Mirror `Glific.Tags`. The context is the **only** public boundary — schemas are never called
 directly from the web layer. Use the `Repo` helper functions instead of hand-writing queries:
 
-| Function | Naming contract |
-|----------|-----------------|
-| `list_<entities>(args)` | `Repo.list_filter(args, Entity, &Repo.opts_with_label/2, &Repo.filter_with/2)` |
-| `count_<entities>(args)` | `Repo.count_filter(args, Entity, &Repo.filter_with/2)` |
-| `get_<entity>!(id)` | raises (`Repo.get!`) |
-| `fetch_<entity>(id)` / `fetch_by(...)` | returns `{:ok, e}` / `{:error, ["Resource not found"]}` |
-| `create_<entity>(attrs)` | `%Entity{} \|> Entity.changeset(attrs) \|> Repo.insert()` |
-| `update_<entity>(e, attrs)` | `... \|> Repo.update()` |
-| `delete_<entity>(e)` | `Repo.delete(e)` |
+| Function                               | Naming contract                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| `list_<entities>(args)`                | `Repo.list_filter(args, Entity, &Repo.opts_with_label/2, &Repo.filter_with/2)` |
+| `count_<entities>(args)`               | `Repo.count_filter(args, Entity, &Repo.filter_with/2)`                         |
+| `get_<entity>!(id)`                    | raises (`Repo.get!`)                                                           |
+| `fetch_<entity>(id)` / `fetch_by(...)` | returns `{:ok, e}` / `{:error, ["Resource not found"]}`                        |
+| `create_<entity>(attrs)`               | `%Entity{} \|> Entity.changeset(attrs) \|> Repo.insert()`                      |
+| `update_<entity>(e, attrs)`            | `... \|> Repo.update()`                                                        |
+| `delete_<entity>(e)`                   | `Repo.delete(e)`                                                               |
 
 `Repo.list_filter/5` and `Repo.filter_with/2` already understand the standard `%{filter: ..., opts: %{order, limit, offset}}` shape. Custom filters get a private `filter_with/2` clause that pattern-matches the extra keys and falls through to `super` — grep `defp filter_with` in any context (e.g. `Glific.Contacts`) for the pattern.
 
@@ -86,6 +86,10 @@ end
   add a clause there rather than registering a new cron entry.
 - Rate-limited BSP sends use `ExRated.check_rate/3`; dynamic behavior uses
   `FunWithFlags.enabled?/2`.
+- **AppSignal Check-in (heartbeat monitoring)**: Wrap critical cron branches with
+  `Appsignal.CheckIn.cron("name", fn -> ... end)`. If the server is down when the scheduled
+  window fires, AppSignal detects the missing start+finish heartbeat and alerts. See
+  `MinuteWorker` stats branch (`"glific_stats_hourly"`) as the canonical example.
 
 ## Error handling & logging
 
@@ -95,7 +99,18 @@ end
   `Glific.log_error/2`. **Never call `Appsignal.send_error`/`Appsignal.error` directly** — the
   wrappers centralize Logger + AppSignal and suppress known-benign beneficiary errors
   (`ignore_error?/1`).
+- **Don't double-log.** `Glific.log_exception`/`Glific.log_error` already write to Logger _and_
+  AppSignal, so do **not** add a separate `Logger.warning/error` next to them for the same event —
+  it's redundant. Put any extra context into the AppSignal tags instead. A standalone `Logger`
+  call is only for events you are _not_ also reporting to AppSignal.
 - Bang functions raise; non-bang return tagged tuples. Don't mix the two contracts in one fn.
+
+- **Never `inspect/1` a `%Tesla.Env{}` (or any value that may hold one) into a log/error
+  string — use `Glific.SafeLog.safe_inspect/1` instead.** A Tesla.Env's `__client__` carries the
+  middleware chain, including live `Authorization: Bearer …` tokens; plain `inspect` leaks them
+  into logs. `safe_inspect/1` strips `__client__` and passes everything else through unchanged.
+  This applies to BSP/provider HTTP error paths (e.g. Gupshup partner API responses) where the
+  error term is the raw `{:ok|:error, Tesla.Env}` tuple.
 
 ## Caching (Cachex, bucket `:glific_cache`)
 
@@ -105,13 +120,49 @@ end
 - Organization config is heavily cached — after changing partner/org data, expect to
   `Partners.fill_cache/1` (tests do this in setup).
 
+## Webhook framework (`flows/webhooks/`)
+
+A typed, instrumented framework wraps all flow-webhook nodes. Two directories:
+
+- **`flows/webhooks/core/`** — infrastructure (never touch for a new webhook):
+  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `ResultTranslator`, `Sync`/`Async`
+  macros, `Errors`
+- **`flows/webhooks/implementations/`** — per-webhook domain modules (one module per node)
+
+### Adding a new sync webhook
+
+```elixir
+defmodule Glific.Flows.Webhooks.MyWebhook do
+  use Glific.Flows.Webhooks.Sync, name: "my_webhook"
+
+  @impl true
+  def call(fields, _ctx) do
+    # return {:ok, map} or {:error, "reason"}
+  end
+end
+```
+
+Register it in `Registry` and add a delegation clause in `CommonWebhook`. The framework
+wires AppSignal telemetry (count + latency), `WebhookLog` management, and structured error
+reporting automatically — do **not** add those concerns to the implementation module.
+
+Use `Glific.Flows.Webhooks.Async` instead of `Sync` for webhooks that park the flow
+(e.g. Kaapi speech-to-text) and implement `handle_resume/2` as well.
+
+### Webhook log security
+
+Request headers are automatically scrubbed by `Glific.Flows.Webhook.HeaderRedactor` before
+being persisted to `webhook_logs` — credentials (Authorization, X-Api-Key, etc.) are
+redacted. Do not special-case credential fields in individual webhook modules.
+
 ## Large subsystems — read before touching
 
 These are old, dense, and pattern-divergent. Read the subtree and nearby tests **before**
 editing or "cleaning up":
 
-- `flows/` (34 modules) — the flow execution engine (FlowContext, actions, nodes, broadcast).
-  State machine; small changes have wide blast radius.
+- `flows/` (~40 modules) — the flow execution engine (FlowContext, actions, nodes, broadcast).
+  State machine; small changes have wide blast radius. Webhook nodes now go through
+  `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
 - `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.

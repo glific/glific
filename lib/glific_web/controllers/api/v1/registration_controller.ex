@@ -7,6 +7,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Ecto.Changeset
   alias PasswordlessAuth
   alias Plug.Conn
@@ -26,6 +28,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Users,
     Users.User
   }
+
+  # Neutral response used by the forgot-password (non-registration) flow so that the API never
+  # discloses whether an account exists for a given phone number (prevents account enumeration).
+  @otp_neutral_message "If you have an account, you will receive an OTP to confirm"
 
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
@@ -126,15 +132,39 @@ defmodule GlificWeb.API.V1.RegistrationController do
         conn,
         %{"user" => %{"phone" => phone, "registration" => registration}} = _user_params
       ) do
-    organization_id = conn.assigns[:organization_id]
-    build_context(organization_id)
+    case check_otp_rate_limit(conn) do
+      :ok ->
+        organization_id = conn.assigns[:organization_id]
+        build_context(organization_id)
 
-    case registration do
-      "true" ->
-        handle_registration_otp(conn, organization_id, phone)
+        case registration do
+          "true" ->
+            handle_registration_otp(conn, organization_id, phone)
 
-      "false" ->
-        handle_non_registration_otp(conn, organization_id, phone)
+          "false" ->
+            handle_non_registration_otp(conn, organization_id, phone)
+        end
+
+      {:error, message} ->
+        conn
+        |> put_status(429)
+        |> json(%{error: %{status: 429, message: message}})
+    end
+  end
+
+  # Allow at most `count` OTP requests per client IP within `scale_ms` (configurable; production
+  # defaults to one request per 30 seconds) to prevent OTP spamming.
+  @spec check_otp_rate_limit(Conn.t()) :: :ok | {:error, String.t()}
+  defp check_otp_rate_limit(conn) do
+    # Fall back to sane defaults so a missing/partial config never crashes the OTP endpoint.
+    config = Application.get_env(:glific, :otp_rate_limit, [])
+    scale_ms = Keyword.get(config, :scale_ms, 30_000)
+    count = Keyword.get(config, :count, 1)
+    key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
+
+    case ExRated.check_rate(key, scale_ms, count) do
+      {:ok, _count} -> :ok
+      {:error, _limit} -> {:error, "An OTP was just sent. Please try again in 30 seconds."}
     end
   end
 
@@ -146,9 +176,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
         send_otp_error(conn, "Account with phone number #{phone} already exists")
 
       _ ->
-        with {:ok, _contact} <- optin_contact(organization_id, phone),
-             {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+        with {:ok, contact} <- optin_contact(organization_id, phone),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
           json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
         else
@@ -163,18 +193,27 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     case existing_user do
       {:ok, _user} ->
-        with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+        with {:ok, contact} <-
+               Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
              {:ok, otp_contact} <- maybe_switch_to_glific_contact(contact),
+             true <- can_send_message_to?(otp_contact),
              {:ok, _otp} <- create_and_send_verification_code(otp_contact) do
-          json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
+          :ok
         else
-          _ ->
-            send_otp_error(conn, "Cannot send the otp to #{phone}")
+          error ->
+            # Do not surface delivery failures to the client either; a distinguishable response
+            # here would still let a caller enumerate accounts. Log internally instead.
+            Logger.error("Failed to send forgot-password OTP to #{phone}: #{inspect(error)}")
         end
 
       {:error, _} ->
-        send_otp_error(conn, "Account with phone number #{phone} does not exist")
+        # Account does not exist; fall through to the same neutral response.
+        :ok
     end
+
+    # Always return the same neutral response regardless of the branch above so the API never
+    # discloses whether an account exists for the given phone number.
+    json(conn, %{data: %{phone: phone, message: @otp_neutral_message}})
   end
 
   @doc false
@@ -201,14 +240,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
     hsm = Contacts.can_send_message_to?(contact, true)
     session = Contacts.can_send_message_to?(contact, false)
     elem(hsm, 0) == :ok || elem(session, 0) == :ok
-  end
-
-  @spec can_send_otp_to_phone?(integer, String.t()) :: {:ok, Contact.t()} | {:error, any} | false
-  defp can_send_otp_to_phone?(organization_id, phone) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
-         true <- can_send_message_to?(contact),
-         do: {:ok, contact}
   end
 
   @doc """

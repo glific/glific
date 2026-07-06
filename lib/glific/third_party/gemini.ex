@@ -48,7 +48,8 @@ defmodule Glific.ThirdParty.Gemini do
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map() | String.t()
   def speech_to_text(audio_url, organization_id) do
-    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+    with {:ok, encoded_audio, _content_type} <-
+           GupshupClient.download_media_content(audio_url, organization_id),
          %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
       Metrics.increment("Gemini STT Success", organization_id)
 
@@ -135,7 +136,7 @@ defmodule Glific.ThirdParty.Gemini do
 
       error ->
         Metrics.increment("Gemini NMT TTS Failure", organization_id)
-        Logger.error("Google Translate Error: #{inspect(error)}")
+        Logger.error("Google Translate Error: #{SafeLog.safe_inspect(error)}")
         %{success: false, media_url: nil, translated_text: text}
     end
   end

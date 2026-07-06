@@ -5,6 +5,8 @@ defmodule GlificWeb.KaapiControllerTest do
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Partners
+  alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.Repo
 
   describe "create_knowledge_base_version/2" do
@@ -225,7 +227,7 @@ defmodule GlificWeb.KaapiControllerTest do
 
     test "does not update already failed knowledge base version",
          %{conn: conn, knowledge_base_version: knowledge_base_version} do
-      {:ok, _} =
+      {:ok, failed_version} =
         Assistants.update_knowledge_base_version(knowledge_base_version, %{status: :failed})
 
       params = %{
@@ -246,8 +248,108 @@ defmodule GlificWeb.KaapiControllerTest do
         Repo.fetch(KnowledgeBaseVersion, knowledge_base_version.id, skip_organization_id: true)
 
       assert updated.status == :failed
-      assert updated.updated_at == knowledge_base_version.updated_at
+      assert updated.updated_at == failed_version.updated_at
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # prompt_generation_callback/2
+  # ---------------------------------------------------------------------------
+
+  describe "prompt_generation_callback/2" do
+    setup :setup_prompt_generation
+
+    test "returns 200 and flips row to :ready on a successful callback",
+         %{conn: conn, prompt_generation_request: request} do
+      params = %{
+        "success" => true,
+        "data" => %{
+          "response" => %{
+            "output" => %{
+              "type" => "text",
+              "content" => %{"format" => "text", "value" => "Generated prompt text from LLM."}
+            }
+          }
+        },
+        "error" => nil,
+        "errors" => nil,
+        "metadata" => %{"request_id" => request.request_id}
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+
+      assert response(conn, 200) == ""
+
+      {:ok, updated} =
+        Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
+
+      assert updated.status == :ready
+      assert updated.generated_prompt == "Generated prompt text from LLM."
+    end
+
+    test "returns 200 and flips row to :failed on a failed callback",
+         %{conn: conn, prompt_generation_request: request} do
+      params = %{
+        "success" => false,
+        "data" => nil,
+        "error" => "LLM processing failed",
+        "errors" => nil,
+        "metadata" => %{"request_id" => request.request_id}
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+
+      assert response(conn, 200) == ""
+
+      {:ok, updated} =
+        Repo.fetch(PromptGenerationRequest, request.id, skip_organization_id: true)
+
+      assert updated.status == :failed
+      assert updated.error_message == "LLM processing failed"
+    end
+
+    test "returns 200 when the request_id is not found",
+         %{conn: conn} do
+      params = %{
+        "success" => true,
+        "data" => %{"response" => %{"output" => %{"content" => %{"value" => "some text"}}}},
+        "metadata" => %{"request_id" => "nonexistent_req_pg"}
+      }
+
+      conn = post(conn, "/kaapi/prompt_generation", params)
+      assert response(conn, 200) == ""
+    end
+  end
+
+  defp setup_prompt_generation(%{organization_id: organization_id}) do
+    {:ok, credential} =
+      Partners.create_credential(%{
+        organization_id: organization_id,
+        shortcode: "kaapi",
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"}
+      })
+
+    {:ok, _credential} =
+      Partners.update_credential(credential, %{
+        keys: %{},
+        secrets: %{"api_key" => "sk_test_key"},
+        is_active: true,
+        organization_id: organization_id,
+        shortcode: "kaapi"
+      })
+
+    {:ok, request} =
+      %PromptGenerationRequest{}
+      |> PromptGenerationRequest.changeset(%{
+        inputs: %{"name" => "Test NGO"},
+        status: :in_progress,
+        request_id: "req_pg_ctrl_001",
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    %{prompt_generation_request: request, organization_id: organization_id}
   end
 
   defp setup_knowledge_base(%{organization_id: organization_id}) do

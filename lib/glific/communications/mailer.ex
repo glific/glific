@@ -27,7 +27,7 @@ defmodule Glific.Communications.Mailer do
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:swoosh, _action, event], _measurement, meta, _config)
       when event in [:exception] do
-    Logger.error("Error while sending the mail: #{inspect(meta)}")
+    Logger.error("Error while sending the mail: #{Glific.SafeLog.safe_inspect(meta)}")
   end
 
   def handle_event(_, _, _, _), do: nil
@@ -136,7 +136,7 @@ defmodule Glific.Communications.Mailer do
         category: category,
         organization_id: organization_id,
         status: "sent",
-        content: %{data: "#{inspect(Map.from_struct(mail))}"}
+        content: %{data: "#{Glific.SafeLog.safe_inspect(Map.from_struct(mail))}"}
       }
       |> MailLog.create_mail_log()
 
@@ -153,8 +153,8 @@ defmodule Glific.Communications.Mailer do
         category: category,
         organization_id: organization_id,
         status: "error",
-        content: %{data: "#{inspect(Map.from_struct(mail))}"},
-        error: "error while sending the mail. #{inspect(error)}"
+        content: %{data: "#{Glific.SafeLog.safe_inspect(Map.from_struct(mail))}"},
+        error: "error while sending the mail. #{Glific.SafeLog.safe_inspect(error)}"
       }
       |> MailLog.create_mail_log()
 

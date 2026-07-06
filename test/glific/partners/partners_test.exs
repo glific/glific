@@ -1925,6 +1925,86 @@ defmodule Glific.PartnersTest do
     end
   end
 
+  describe "enable_credential/2" do
+    test "re-enables a disabled bigquery credential and triggers BQ sync",
+         %{organization_id: organization_id} do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{"service_account" => Jason.encode!(%{"project_id" => "test"})},
+          provider_id: provider.id,
+          organization_id: organization_id,
+          is_active: false
+        })
+        |> Repo.insert()
+
+      with_mock(Glific.BigQuery, [:passthrough],
+        sync_schema_with_bigquery: fn _org_id -> {:ok, "Refreshing Bigquery Schema"} end
+      ) do
+        assert :ok = Partners.enable_credential(organization_id, "bigquery")
+
+        {:ok, credential} =
+          Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: organization_id})
+
+        assert credential.is_active == true
+      end
+    end
+
+    test "re-disables credential when BQ sync callback fails",
+         %{organization_id: organization_id} do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{"service_account" => Jason.encode!(%{"project_id" => "test"})},
+          provider_id: provider.id,
+          organization_id: organization_id,
+          is_active: false
+        })
+        |> Repo.insert()
+
+      with_mock(Glific.BigQuery, [:passthrough],
+        sync_schema_with_bigquery: fn _org_id -> {:error, "BQ permission denied"} end
+      ) do
+        assert :ok = Partners.enable_credential(organization_id, "bigquery")
+
+        {:ok, credential} =
+          Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: organization_id})
+
+        assert credential.is_active == false
+      end
+    end
+
+    test "returns ok even when GCS callback fails (sync will re-disable on next attempt)",
+         %{organization_id: organization_id} do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+      {:ok, _} =
+        %Credential{}
+        |> Credential.changeset(%{
+          secrets: %{},
+          provider_id: provider.id,
+          organization_id: organization_id,
+          is_active: false
+        })
+        |> Repo.insert()
+
+      with_mock(Glific.GCS, [:passthrough],
+        refresh_gcs_setup: fn _org_id -> {:error, "GCS permission denied"} end
+      ) do
+        assert :ok = Partners.enable_credential(organization_id, "google_cloud_storage")
+      end
+    end
+
+    test "returns error for an invalid shortcode",
+         %{organization_id: organization_id} do
+      assert {:error, _} = Partners.enable_credential(organization_id, "nonexistent_provider")
+    end
+  end
+
   describe "get_resource_local_path/2" do
     test "successfull file download to local" do
       Tesla.Mock.mock(fn
@@ -2006,6 +2086,66 @@ defmodule Glific.PartnersTest do
 
       assert {:ok, %{"message" => "Success", "status" => "error"}} =
                PartnerAPI.apply_for_template(1, %{elementName: "trial"})
+    end
+  end
+
+  describe "fetch_partner_token" do
+    setup do
+      Glific.Caches.remove(0, ["partner_token"])
+      on_exit(fn -> Glific.Caches.remove(0, ["partner_token"]) end)
+      :ok
+    end
+
+    test "successfully fetches and caches the partner token" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => "test_partner_token_123"})
+          }
+      end)
+
+      assert {:ok, %{partner_token: "test_partner_token_123"}} = PartnerAPI.fetch_partner_token()
+
+      assert {:ok, "test_partner_token_123"} =
+               Glific.Caches.get(0, "partner_token", refresh_cache: false)
+    end
+
+    test "returns error when client_secret is nil" do
+      original = Application.get_env(:glific, :gupshup_partner_client_secret)
+      on_exit(fn -> Application.put_env(:glific, :gupshup_partner_client_secret, original) end)
+      Application.put_env(:glific, :gupshup_partner_client_secret, nil)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error when client_secret is empty string" do
+      original = Application.get_env(:glific, :gupshup_partner_client_secret)
+      on_exit(fn -> Application.put_env(:glific, :gupshup_partner_client_secret, original) end)
+      Application.put_env(:glific, :gupshup_partner_client_secret, "")
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error on non-200 HTTP response" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          %Tesla.Env{
+            status: 401,
+            body: Jason.encode!(%{"message" => "Unauthorized"})
+          }
+      end)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
+    end
+
+    test "returns error on HTTP network failure" do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://partner.gupshup.io/partner/account/login"} ->
+          {:error, :econnrefused}
+      end)
+
+      assert {:error, "Could not fetch the partner token"} = PartnerAPI.fetch_partner_token()
     end
   end
 

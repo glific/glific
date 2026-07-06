@@ -351,7 +351,8 @@ defmodule Glific.ThirdParty.Kaapi do
   """
   @spec speech_to_text(String.t(), String.t(), map(), non_neg_integer(), map()) :: map()
   def speech_to_text(audio_url, callback_url, request_metadata, organization_id, opts \\ %{}) do
-    with {:ok, encoded_audio} <- GupshupClient.download_media_content(audio_url, organization_id),
+    with {:ok, encoded_audio, _content_type} <-
+           GupshupClient.download_media_content(audio_url, organization_id),
          {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          payload = stt_payload(encoded_audio, callback_url, request_metadata, opts),
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
@@ -382,6 +383,46 @@ defmodule Glific.ThirdParty.Kaapi do
     else
       error ->
         handle_kaapi_error(error, organization_id, "TTS", "service_unavailable")
+    end
+  end
+
+  @doc """
+  Initiates async LLM prompt generation via Kaapi unified LLM API.
+
+  Receives an already-built payload (from `Glific.PromptGenerator.build_llm_payload/3`)
+  and dispatches it to Kaapi. On success, extracts and returns `{:ok, %{job_id: job_id}}`
+  for the caller to persist. On failure, logs the exception and returns `{:error, reason}`.
+
+  ## Parameters
+
+    - `payload` — the LLM call envelope built by `Glific.PromptGenerator.build_llm_payload/3`.
+    - `organization_id` — used to look up the Kaapi API key via `fetch_kaapi_creds/1`.
+  """
+  @spec generate_prompt(map(), non_neg_integer()) ::
+          {:ok, %{job_id: String.t()}} | {:error, any()}
+  def generate_prompt(payload, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
+      case body do
+        %{data: %{job_id: job_id}} when is_binary(job_id) ->
+          {:ok, %{job_id: job_id}}
+
+        other ->
+          Glific.log_exception(%Error{
+            message:
+              "Kaapi generate_prompt returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
+          })
+
+          {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
+      end
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi generate_prompt failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+        })
+
+        {:error, reason}
     end
   end
 
