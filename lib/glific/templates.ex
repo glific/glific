@@ -147,11 +147,13 @@ defmodule Glific.Templates do
         do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
         else: attrs
 
-    # the label (title) is derived from shortcode + language rather than taken from the
-    # caller, since a language-specific submission can be rejected by Meta and the org
-    # then needs to resubmit the same shortcode+language without hitting the
-    # [:label, :language_id, :organization_id] unique constraint.
-    attrs = Map.put(attrs, :label, generate_unique_label(attrs))
+    # callers that don't have their own title UI (e.g. HSMV2) send an empty label and
+    # expect us to name it; callers that already collect a title (e.g. the older HSM
+    # page) keep full control of their label, so we only fill it in when it's blank.
+    # Deriving from shortcode + language also means a language-specific submission that
+    # gets rejected by Meta can be resubmitted under the same shortcode+language without
+    # hitting the [:label, :language_id, :organization_id] unique constraint.
+    attrs = Map.put(attrs, :label, resolve_label(attrs))
 
     with :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
@@ -163,12 +165,17 @@ defmodule Glific.Templates do
   def create_session_template(attrs),
     do: do_create_session_template(attrs)
 
-  @spec generate_unique_label(map()) :: String.t()
+  @spec resolve_label(map()) :: String.t() | nil
+  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: label
+  defp resolve_label(attrs), do: generate_unique_label(attrs)
+
+  @spec generate_unique_label(map()) :: String.t() | nil
   defp generate_unique_label(%{
          shortcode: shortcode,
          language_id: language_id,
          organization_id: organization_id
-       }) do
+       })
+       when is_binary(shortcode) and shortcode != "" do
     locale = Settings.get_language!(language_id).locale
     make_unique_label("#{shortcode}_#{locale}", organization_id)
   end
