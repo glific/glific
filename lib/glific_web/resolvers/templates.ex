@@ -47,8 +47,6 @@ defmodule GlificWeb.Resolvers.Templates do
   @spec create_session_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_session_template(_, %{input: params}, _) do
-    IO.inspect(params, label: "create_session_template params")
-
     with {:ok, session_template} <- Templates.create_session_template(params) do
       {:ok, %{session_template: session_template}}
     end
