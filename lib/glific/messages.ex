@@ -850,8 +850,6 @@ defmodule Glific.Messages do
       |> where([mm], mm.url == ^attrs.url)
       |> add_caption(caption)
       |> where([mm], mm.organization_id == ^attrs.organization_id)
-      # deterministic pick when duplicate (url, caption, org) rows exist
-      |> order_by([mm], asc: mm.id)
       |> limit(1)
       |> Repo.one()
 
