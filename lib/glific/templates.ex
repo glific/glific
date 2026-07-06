@@ -17,6 +17,7 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings,
     Tags.Tag,
     Templates.SessionTemplate
   }
@@ -146,6 +147,12 @@ defmodule Glific.Templates do
         do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
         else: attrs
 
+    # the label (title) is derived from shortcode + language rather than taken from the
+    # caller, since a language-specific submission can be rejected by Meta and the org
+    # then needs to resubmit the same shortcode+language without hitting the
+    # [:label, :language_id, :organization_id] unique constraint.
+    attrs = Map.put(attrs, :label, generate_unique_label(attrs))
+
     with :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
          :ok <- validate_template_length(attrs) do
@@ -155,6 +162,32 @@ defmodule Glific.Templates do
 
   def create_session_template(attrs),
     do: do_create_session_template(attrs)
+
+  @spec generate_unique_label(map()) :: String.t()
+  defp generate_unique_label(%{
+         shortcode: shortcode,
+         language_id: language_id,
+         organization_id: organization_id
+       }) do
+    locale = Settings.get_language!(language_id).locale
+    make_unique_label("#{shortcode}_#{locale}", organization_id)
+  end
+
+  defp generate_unique_label(attrs), do: Map.get(attrs, :label)
+
+  @spec make_unique_label(String.t(), non_neg_integer(), non_neg_integer() | nil) :: String.t()
+  defp make_unique_label(base_label, organization_id, suffix \\ nil) do
+    candidate = if suffix, do: "#{base_label}_#{suffix}", else: base_label
+
+    query =
+      from(t in SessionTemplate,
+        where: t.label == ^candidate and t.organization_id == ^organization_id
+      )
+
+    if Repo.exists?(query),
+      do: make_unique_label(base_label, organization_id, (suffix || 1) + 1),
+      else: candidate
+  end
 
   @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
   defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
