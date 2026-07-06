@@ -32,6 +32,7 @@ includes:
   - user_group
   - flows
   - import
+  - sheets
   - saas
   - types
   - scalars
