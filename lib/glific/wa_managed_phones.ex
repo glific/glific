@@ -15,7 +15,7 @@ defmodule Glific.WAManagedPhones do
   }
 
   @healthy_statuses ["active", "loading"]
-  @screen_ttl_seconds 20
+  @screen_ttl_seconds 15
 
   @doc """
   Returns the list of wa_managed_phones.
@@ -397,7 +397,7 @@ defmodule Glific.WAManagedPhones do
     if severity == Notifications.types().critical do
       "WhatsApp phone #{phone} appears suspended by WhatsApp (status: #{status}). Messaging is blocked until it is restored."
     else
-      "WhatsApp phone #{phone} is disconnected (status: #{status}). Reconnect it from Settings to resume messaging."
+      "WhatsApp phone #{phone} is disconnected (status: #{status}). Reconnect it from the WhatsApp Phones page to resume messaging."
     end
   end
 

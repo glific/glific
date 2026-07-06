@@ -144,17 +144,19 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/#{phone_id}/logout"
 
+      # logout takes no parameters. This client has no JSON middleware (see
+      # `client/1`), so bodies are always pre-encoded strings — send an empty one.
       url
-      |> maytapi_post(Jason.encode!(%{}), token)
+      |> maytapi_post("{}", token)
       |> handle_maytapi_response()
     end
   end
 
-  # Maytapi's `screen` endpoint returns the raw PNG bytes of the phone's current
-  # screen (the QR image when it's on the login screen) on success. But like the
-  # rest of Maytapi it signals real errors as HTTP 200 + {"success": false} JSON,
-  # so only Base64 a body that actually is a PNG — otherwise surface the error
-  # rather than handing back a bogus data-url QR.
+  # On success the `screen` endpoint returns the raw PNG bytes of the phone's
+  # current screen (the QR image when it's on the login screen). On failure it
+  # returns a JSON error body (still HTTP 200). So only a body that is actually a
+  # PNG is Base64-encoded into a data-url; anything else is treated as an error
+  # (`screen_error/1`) rather than handed back as a bogus QR image.
   @spec handle_screen_response(Tesla.Env.result()) :: {:ok, String.t()} | {:error, String.t()}
   defp handle_screen_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do

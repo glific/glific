@@ -307,7 +307,7 @@ defmodule Glific.WAManagedPhonesTest do
     {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
 
     assert notification.message ==
-             "WhatsApp phone 9829627508 is disconnected (status: qr-screen). Reconnect it from Settings to resume messaging."
+             "WhatsApp phone 9829627508 is disconnected (status: qr-screen). Reconnect it from the WhatsApp Phones page to resume messaging."
 
     assert notification.severity == "Warning"
   end
