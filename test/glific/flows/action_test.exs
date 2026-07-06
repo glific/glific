@@ -2,7 +2,6 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Groups.WAGroups
   alias Glific.Messages
   use Glific.DataCase
-  import Mock
 
   alias Glific.{
     Contacts.Contact,
@@ -1528,38 +1527,6 @@ defmodule Glific.Flows.ActionTest do
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
   end
 
-  test "execute voice-filesearch-gpt action routes to unified voice webhook",
-       attrs do
-    Partners.organization(attrs.organization_id)
-
-    contact = Repo.get_by(Contact, %{name: "Default receiver"})
-
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
-
-    action = %Action{
-      type: "call_webhook",
-      method: "FUNCTION",
-      url: "voice-filesearch-gpt",
-      headers: %{"Accept" => "application/json"},
-      body:
-        Jason.encode!(%{
-          "speech" => "https://example.com/audio.ogg",
-          "assistant_id" => "asst_123"
-        }),
-      result_name: "llm",
-      node_uuid: "Test UUID"
-    }
-
-    with_mock Webhook,
-      execute_unified_voice_filesearch: fn _action, _context -> {:wait, context, []} end do
-      result = Action.execute(action, context, [])
-      assert {:wait, ^context, []} = result
-      assert called(Webhook.execute_unified_voice_filesearch(action, context))
-    end
-  end
-
   test "execute a wa group unsupported action",
        _attrs do
     [wa_group | _] = WAGroups.list_wa_groups(%{filter: %{limit: 1}})
@@ -1576,5 +1543,96 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     assert_raise(UndefinedFunctionError, fn -> Action.execute(action, context, message_stream) end)
+  end
+
+  describe "call_webhook await state (park_async_webhook)" do
+    setup %{organization_id: org_id} do
+      contact = Repo.get_by(Contact, %{name: "Default receiver"})
+      flow = Flow.get_loaded_flow(org_id, "published", %{keyword: "call_and_wait"})
+      [node | _] = flow.nodes
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: org_id,
+          node_uuid: node.uuid
+        })
+
+      %{context: Repo.preload(context, [:contact, :flow])}
+    end
+
+    test "an async webhook parks the flow with is_await_result + wakeup_at", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "FUNCTION",
+        url: "filesearch-gpt",
+        headers: %{"Content-Type" => "application/json"},
+        body: Jason.encode!(%{"question" => "hi", "assistant_id" => "asst_1"}),
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == true
+      assert parked.wakeup_at != nil
+    end
+
+    test "a regular (non-async) webhook does not set is_await_result", %{context: context} do
+      action = %Action{
+        type: "call_webhook",
+        method: "POST",
+        url: "https://example.com/hook",
+        headers: %{"Content-Type" => "application/json"},
+        body: "{}",
+        result_name: "r"
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      assert parked.is_await_result == false
+    end
+  end
+
+  describe "validate/3 — deprecated Bhashini webhooks" do
+    test "flags speech_to_text_with_bhasini with a Critical migration error" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "speech_to_text_with_bhasini"
+      assert message =~ "speech_to_text"
+      assert message =~ "deprecated"
+    end
+
+    test "flags text_to_speech_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "text_to_speech_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "text_to_speech_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "flags nmt_tts_with_bhasini and recommends the text_to_speech node" do
+      action = %Action{type: "call_webhook", url: "nmt_tts_with_bhasini"}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "nmt_tts_with_bhasini"
+      assert message =~ "text_to_speech"
+    end
+
+    test "prepends the error onto the existing error list" do
+      action = %Action{type: "call_webhook", url: "speech_to_text_with_bhasini"}
+      existing = [{Webhook, "some other error", "Warning"}]
+
+      assert [{Webhook, _msg, "Critical"}, {Webhook, "some other error", "Warning"}] =
+               Action.validate(action, existing, %{})
+    end
+
+    test "does not flag the new speech_to_text / text_to_speech webhooks" do
+      for url <- ["speech_to_text", "text_to_speech"] do
+        action = %Action{type: "call_webhook", url: url}
+        assert Action.validate(action, [], %{}) == []
+      end
+    end
   end
 end

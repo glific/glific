@@ -189,7 +189,7 @@ defmodule GlificWeb.Resolvers.Flows do
     do: %{key: hd(error), message: hd(tl(error))}
 
   defp make_error(error),
-    do: %{key: "Database Error", message: inspect(error)}
+    do: %{key: "Database Error", message: Glific.SafeLog.safe_inspect(error)}
 
   @doc """
   Start a flow for a contact

@@ -1,6 +1,25 @@
 defmodule Glific.BigQuery do
   @moduledoc """
-  Glific BigQuery Dataset and table creation
+  Glific BigQuery Dataset and table creation.
+
+  ## Partitioning & clustering (issue #5169)
+
+  New tables are created with BigQuery partitioning/clustering for cheaper queries:
+
+    * **Partitioning** — `MONTH` time-unit partitioning on `inserted_at` for the heavy,
+      time-series tables in `@partitioned_tables` (`messages`, `flow_contexts`,
+      `flow_results`, `contact_histories`, `wa_messages`, `messages_media`). A sandbox cost experiment
+      showed `MONTH` prunes recent-window dashboard queries far better than `YEAR` for
+      large orgs and is never worse.
+    * **Clustering** — per-table keys from `@cluster_fields` (fact, link and `contacts`
+      tables). Partitioned tables cluster by entity keys only; unpartitioned fact tables
+      lead with `inserted_at` for time-range pruning. Each org has its own dataset, so
+      there is no `organization_id` column to cluster on.
+
+  Both are set **only** in `create_table/2` (the insert path). BigQuery cannot add
+  partitioning to an existing table, and inserts against existing tables short-circuit
+  with `ALREADY_EXISTS`, so existing orgs' tables are left untouched. `alter_table/2`
+  (used for schema/column evolution) deliberately does not set these.
   """
 
   require Logger
@@ -27,6 +46,7 @@ defmodule Glific.BigQuery do
     Groups.ContactWAGroup,
     Groups.Group,
     Groups.WAGroup,
+    Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Jobs,
     Messages.Message,
@@ -86,12 +106,53 @@ defmodule Glific.BigQuery do
     "trackers" => :trackers_schema,
     "wa_groups" => :wa_group_schema,
     "wa_groups_collections" => :wa_groups_collection_schema,
+    "wa_groups_phones" => :wa_groups_phones_schema,
     "wa_messages" => :wa_message_schema,
     "wa_reactions" => :wa_reactions_schema,
     "whatsapp_forms" => :whatsapp_form_schema,
     "whatsapp_forms_responses" => :whatsapp_form_response_schema,
     "certificate_templates" => :certificate_templates_schema,
     "issued_certificates" => :issued_certificates_schema
+  }
+
+  # Tables created with BigQuery time-unit partitioning (MONTH on `inserted_at`).
+  # See issue #5169 — a sandbox cost experiment showed MONTH prunes recent-window
+  # dashboard queries far better than YEAR for our heavy orgs, and is never worse.
+  # Only applied at table creation (`create_table/2`); BigQuery cannot repartition
+  # existing tables, so existing orgs are left untouched.
+  @partitioned_tables ~w(messages flow_contexts flow_results contact_histories wa_messages messages_media)
+  @partition_field "inserted_at"
+  @partition_type "MONTH"
+
+  # Per-table clustering keys (highest-selectivity first, max 4). Each org has its
+  # own dataset, so there is no `organization_id` column to cluster on. Partitioned
+  # tables cluster by entity keys only (time is the partition); unpartitioned fact
+  # tables lead with `inserted_at` for time-range pruning; link tables lead with the
+  # parent key. Dimension/config tables are intentionally absent (no measurable win).
+  @cluster_fields %{
+    "messages" => ["contact_phone", "flow_id"],
+    "flow_contexts" => ["contact_phone", "flow_id"],
+    "flow_results" => ["contact_phone", "name"],
+    "contact_histories" => ["phone", "event_type"],
+    "wa_messages" => ["wa_group_id", "contact_phone"],
+    "message_conversations" => ["inserted_at", "phone"],
+    "messages_media" => ["content_type"],
+    "message_broadcasts" => ["inserted_at", "flow_id"],
+    "message_broadcast_contacts" => ["inserted_at", "phone"],
+    "wa_reactions" => ["inserted_at", "phone"],
+    "flow_counts" => ["inserted_at", "flow_uuid"],
+    "tickets" => ["inserted_at", "contact_phone"],
+    "whatsapp_forms_responses" => ["inserted_at", "contact_phone"],
+    "issued_certificates" => ["inserted_at", "phone"],
+    "contacts" => ["phone"],
+    "contacts_groups" => ["group_id", "contact_id"],
+    "contacts_wa_groups" => ["group_id", "phone"],
+    "wa_groups_phones" => ["wa_group_id"],
+    "wa_groups_collections" => ["collection_id", "group_id"],
+    "stats" => ["date", "period"],
+    "stats_all" => ["date", "period"],
+    "trackers" => ["date", "period"],
+    "trackers_all" => ["date", "period"]
   }
 
   @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
@@ -231,6 +292,7 @@ defmodule Glific.BigQuery do
     "trackers_all" => Tracker,
     "wa_groups" => WAGroup,
     "wa_groups_collections" => WAGroupsCollection,
+    "wa_groups_phones" => WAGroupPhone,
     "wa_messages" => WAMessage,
     "wa_reactions" => WaReaction,
     "whatsapp_forms" => WhatsappForm,
@@ -317,7 +379,7 @@ defmodule Glific.BigQuery do
         end
 
       _ ->
-        raise("Error while sync data with bigquery. #{inspect(response)}")
+        raise("Error while sync data with bigquery. #{safe_inspect(response)}")
     end
   end
 
@@ -677,24 +739,39 @@ defmodule Glific.BigQuery do
          schema,
          %{conn: conn, dataset_id: dataset_id, project_id: project_id, table_id: table_id} = _cred
        ) do
-    Tables.bigquery_tables_insert(
-      conn,
-      project_id,
-      dataset_id,
-      [
-        body: %{
-          tableReference: %{
-            datasetId: dataset_id,
-            projectId: project_id,
-            tableId: table_id
-          },
-          schema: %{
-            fields: schema
-          }
+    body =
+      %{
+        tableReference: %{
+          datasetId: dataset_id,
+          projectId: project_id,
+          tableId: table_id
+        },
+        schema: %{
+          fields: schema
         }
-      ],
-      []
-    )
+      }
+      |> maybe_add_partitioning(table_id)
+      |> maybe_add_clustering(table_id)
+
+    Tables.bigquery_tables_insert(conn, project_id, dataset_id, [body: body], [])
+  end
+
+  # Adds MONTH time-partitioning on `inserted_at` for the configured tables. Only
+  # honoured by BigQuery when the table is created fresh; inserts against existing
+  # tables short-circuit with ALREADY_EXISTS, so existing orgs stay unpartitioned.
+  @spec maybe_add_partitioning(map(), String.t()) :: map()
+  defp maybe_add_partitioning(body, table_id) when table_id in @partitioned_tables,
+    do: Map.put(body, :timePartitioning, %{type: @partition_type, field: @partition_field})
+
+  defp maybe_add_partitioning(body, _table_id), do: body
+
+  # Adds clustering for tables present in @cluster_fields; a no-op otherwise.
+  @spec maybe_add_clustering(map(), String.t()) :: map()
+  defp maybe_add_clustering(body, table_id) do
+    case Map.get(@cluster_fields, table_id) do
+      [_ | _] = fields -> Map.put(body, :clustering, %{fields: fields})
+      _ -> body
+    end
   end
 
   @spec alter_table(list(), map()) ::
@@ -854,21 +931,21 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
-        raise("BigQuery Insert Error for table #{table} with res: #{inspect(res)}")
+        raise("BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}")
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, max_id: #{max_id}, res: #{safe_inspect(res)}"
         )
 
       last_updated_at not in [nil, 0] ->
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
 
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{inspect(res)}"
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{safe_inspect(res)}"
         )
 
       true ->
@@ -882,7 +959,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{safe_inspect(response)}"
     )
 
     {error, message} = bigquery_error_status(response)
@@ -900,10 +977,10 @@ defmodule Glific.BigQuery do
         )
 
       "TIMEOUT" ->
-        Logger.info("Timeout while inserting the data. #{inspect(response)}")
+        Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{inspect(response)}")
+        raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
     end
   end
 
@@ -919,7 +996,7 @@ defmodule Glific.BigQuery do
         if is_atom(response) do
           {"TIMEOUT", "TIMEOUT"}
         else
-          Logger.info("Bigquery status error #{inspect(response)}")
+          Logger.info("Bigquery status error #{safe_inspect(response)}")
           {:unknown, "UNKNOWN ERROR"}
         end
     end
@@ -961,9 +1038,20 @@ defmodule Glific.BigQuery do
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta
         WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
-          '#{timezone}')) a WHERE a.rn <> 1 ORDER BY id);
+          '#{timezone}')#{partition_filter(table, timezone)}) a WHERE a.rn <> 1 ORDER BY id);
     """
   end
+
+  # For MONTH-partitioned tables, also bound the dedup scan by `inserted_at` (the
+  # partition key) so BigQuery prunes to recent partitions instead of full-scanning.
+  # These are transactional tables whose `updated_at` stays close to creation, so
+  # duplicates (from re-syncs of recently-updated rows) fall inside a 3-month window.
+  @spec partition_filter(String.t(), String.t()) :: String.t()
+  defp partition_filter(table, timezone) when table in @partitioned_tables,
+    do:
+      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+
+  defp partition_filter(_table, _timezone), do: ""
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok
@@ -976,7 +1064,7 @@ defmodule Glific.BigQuery do
   ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
     )
   end
 
@@ -1021,7 +1109,7 @@ defmodule Glific.BigQuery do
 
         error ->
           Logger.error(
-            "Error while syncing registration details for org_id: #{organization_id} #{inspect(error)}"
+            "Error while syncing registration details for org_id: #{organization_id} #{safe_inspect(error)}"
           )
 
           "Error while syncing details"

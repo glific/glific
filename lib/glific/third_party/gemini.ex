@@ -136,7 +136,7 @@ defmodule Glific.ThirdParty.Gemini do
 
       error ->
         Metrics.increment("Gemini NMT TTS Failure", organization_id)
-        Logger.error("Google Translate Error: #{inspect(error)}")
+        Logger.error("Google Translate Error: #{SafeLog.safe_inspect(error)}")
         %{success: false, media_url: nil, translated_text: text}
     end
   end

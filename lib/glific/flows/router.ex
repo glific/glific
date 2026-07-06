@@ -293,7 +293,7 @@ defmodule Glific.Flows.Router do
 
     msg =
       context.organization_id
-      |> Messages.create_temp_message("#{inspect(contact.in_groups)}",
+      |> Messages.create_temp_message("#{Glific.SafeLog.safe_inspect(contact.in_groups)}",
         extra: %{contact_groups: contact.in_groups}
       )
 
@@ -347,7 +347,7 @@ defmodule Glific.Flows.Router do
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
   defp update_context_results(context, key, _msg, _) when key in ["", nil] do
-    Logger.info("invalid results key for context: #{inspect(context)}")
+    Logger.info("invalid results key for context: #{Glific.SafeLog.safe_inspect(context)}")
     context
   end
 
@@ -391,7 +391,7 @@ defmodule Glific.Flows.Router do
           json =
             msg.whatsapp_form_response.raw_response
             |> Map.new(fn
-              {k, v} when is_list(v) -> {k, Enum.join(v, ", ")}
+              {k, v} when is_list(v) -> {k, stringify_form_value(v)}
               {k, v} -> {k, v}
             end)
 
@@ -428,5 +428,17 @@ defmodule Glific.Flows.Router do
     if String.starts_with?(operand, "@fields."),
       do: String.replace(operand, "fields.", "contact.fields.", global: false),
       else: operand
+  end
+
+  # Flattens a WhatsApp-form response list value into a string.
+  # Plain values (multi-select dropdowns) join as before; map elements
+  # (e.g. PhotoPicker / DocumentPicker media objects) are JSON-encoded so
+  # Enum.join no longer crashes on a list of maps.
+  @spec stringify_form_value(list()) :: String.t()
+  defp stringify_form_value(list) when is_list(list) do
+    Enum.map_join(list, ", ", fn
+      item when is_map(item) -> Jason.encode!(item)
+      item -> to_string(item)
+    end)
   end
 end

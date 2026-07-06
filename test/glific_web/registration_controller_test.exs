@@ -161,6 +161,31 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
 
+    test "send_otp is rate limited to one request per IP within the window", %{conn: conn} do
+      rate_limit_key = "send_otp:#{GlificWeb.Tenants.remote_ip(conn)}"
+      original_config = Application.get_env(:glific, :otp_rate_limit)
+      Application.put_env(:glific, :otp_rate_limit, scale_ms: 30_000, count: 1)
+      ExRated.delete_bucket(rate_limit_key)
+
+      on_exit(fn ->
+        Application.put_env(:glific, :otp_rate_limit, original_config)
+        ExRated.delete_bucket(rate_limit_key)
+      end)
+
+      valid_params = %{
+        "user" => %{"phone" => "918456732456", "registration" => "true", "token" => "some_token"}
+      }
+
+      first = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json_response(first, 200)
+
+      second = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      assert json = json_response(second, 429)
+
+      assert get_in(json, ["error", "message"]) ==
+               "An OTP was just sent. Please try again in 30 seconds."
+    end
+
     test "send otp to invalid contact", %{conn: conn} do
       phone = nil
 
@@ -190,7 +215,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "Account with phone number #{phone} already exists"
     end
 
-    test "send otp to the non existing contact should get an error message", %{conn: conn} do
+    test "send otp to a non existing contact should not disclose that the account is missing",
+         %{conn: conn} do
       phone = "912345375758"
 
       invalid_params = %{
@@ -199,13 +225,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
-      assert json = json_response(conn, 400)
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Account with phone number #{phone} does not exist"
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
-    test "Handle errors while sending otp when registration is false", %{conn: conn} do
+    test "OTP delivery failure when registration is false is not disclosed to the caller",
+         %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(
@@ -223,10 +250,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp), invalid_params)
 
-      assert json = json_response(conn, 400)
+      # Even when delivery fails for an existing account, the response must match the
+      # account-missing case so account existence cannot be enumerated.
+      assert json = json_response(conn, 200)
 
-      assert get_in(json, ["error", "message"]) ==
-               "Cannot send the otp to #{receiver.phone}"
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
     test "send otp to optout contact will optin the contact again", %{conn: conn} do
@@ -365,6 +394,81 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert contact.organization_id != org.id
     end
 
+    test "forget-password falls back to Glific when NGO contact is not deliverable and balance is low",
+         %{conn: conn} do
+      # Regression for glific/glific#4598: an org with no balance should still
+      # deliver the reset-password OTP from the prod Glific account, even when
+      # the contact cannot be messaged directly in the NGO org (e.g. opted out
+      # or outside the 24h window). Previously the deliverability check ran
+      # against the NGO-org contact *before* switching to Glific, so the flow
+      # aborted with "Cannot send the otp" and no OTP was sent.
+      org = Fixtures.organization_fixture(%{shortcode: "neworg"})
+
+      conn = assign(conn, :organization_id, org.id)
+
+      receiver =
+        Fixtures.contact_fixture(%{
+          organization_id: org.id,
+          phone: "918456732452",
+          optin_time: nil,
+          optin_status: false,
+          bsp_status: :none
+        })
+
+      {:ok, _user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password,
+          "contact_id" => receiver.id,
+          "organization_id" => org.id
+        }
+        |> Users.create_user()
+
+      glific_org_id = Saas.organization_id()
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            body:
+              "{\n  \"success\": true,\n  \"challenge_ts\": \"2023-01-09T04:58:39Z\",\n  \"hostname\": \"glific.test\",\n  \"score\": 0.9,\n  \"action\": \"register\"\n}",
+            status: 200
+          }
+
+        %{method: :get, url: url} = env ->
+          if String.contains?(url, "/wallet/balance") do
+            %Tesla.Env{
+              status: 200,
+              body:
+                "{\"status\":\"success\",\"walletResponse\":{\"currency\":\"USD\",\"currentBalance\":-1.787,\"overDraftLimit\":-20.0}}"
+            }
+          else
+            env
+          end
+      end)
+
+      valid_params = %{
+        "user" => %{"phone" => receiver.phone, "registration" => "false", "token" => "some_token"}
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == receiver.phone
+
+      # the fallback opts the contact into the Glific org and sends from there,
+      # so a contact for this phone now exists under the Glific org (scope the
+      # lookup explicitly since a separate NGO-org contact also exists)
+      assert {:ok, contact} =
+               Repo.fetch_by(Contacts.Contact, %{
+                 phone: receiver.phone,
+                 organization_id: glific_org_id
+               })
+
+      assert contact.organization_id == glific_org_id
+    end
+
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
       receiver = Fixtures.contact_fixture()
@@ -397,7 +501,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn =
         post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
-      assert _json = json_response(conn, 200)
+      assert json = json_response(conn, 200)
+
+      # Same neutral message as the non-existing case so account existence is not disclosed
+      assert get_in(json, ["data", "message"]) ==
+               "If you have an account, you will receive an OTP to confirm"
     end
 
     test "send otp when Gupshup is not active", %{conn: conn} do

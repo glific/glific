@@ -508,6 +508,22 @@ defmodule Glific.Flags do
     )
   end
 
+  @doc """
+  Get copy node value for organization flag
+  """
+  @spec get_copy_node_enabled(map()) :: boolean
+  def get_copy_node_enabled(organization) do
+    FunWithFlags.enabled?(:is_copy_node_enabled, for: %{organization_id: organization.id})
+  end
+
+  @doc """
+  Set fun_with_flag toggle for copy node for an organization
+  """
+  @spec set_copy_node_enabled(map()) :: map()
+  def set_copy_node_enabled(organization) do
+    Map.put(organization, :is_copy_node_enabled, get_copy_node_enabled(organization))
+  end
+
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
@@ -528,9 +544,11 @@ defmodule Glific.Flags do
       :is_interactive_re_response_enabled,
       :is_ask_glific_enabled,
       :is_whatsapp_forms_enabled,
+      :is_copy_node_enabled,
       :high_trigger_tps_enabled,
       :ai_evaluations,
-      :is_gpt_vision_base64_enabled
+      :is_gpt_vision_base64_enabled,
+      :is_prompt_generator_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

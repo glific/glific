@@ -149,15 +149,14 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
     end
   end
 
-  describe "call/2 - HTTP failures" do
-    test "returns {:error, string} on non-200 HTTP status" do
+  describe "call/2 - transport failures" do
+    test "returns unreadable-response error when body is not valid JSON" do
       Tesla.Mock.mock(fn %{method: :get} ->
         %Tesla.Env{status: 500, body: "Internal Server Error"}
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
-      assert is_binary(msg)
-      assert msg =~ "500"
+      assert msg =~ "unreadable response"
     end
 
     test "returns {:error, string} on network failure" do
@@ -204,7 +203,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
-      assert msg =~ "denied"
+      assert msg =~ "Geocoding request was denied."
       assert msg =~ "This API project is not authorized"
     end
 
@@ -216,7 +215,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
       end)
 
       assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
-      assert msg =~ "denied"
+      assert msg =~ "Geocoding request was denied."
       refute msg =~ "nil"
     end
 

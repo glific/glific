@@ -125,7 +125,7 @@ defmodule Glific.OpenAI.ChatGPT do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => []} = body}} ->
-        {:error, "Got empty response #{inspect(body)}"}
+        {:error, "Got empty response #{Glific.SafeLog.safe_inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
         case hd(choices)["message"]["content"] do
@@ -134,14 +134,14 @@ defmodule Glific.OpenAI.ChatGPT do
         end
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:error, "Got different response #{inspect(body)}"}
+        {:error, "Got different response #{Glific.SafeLog.safe_inspect(body)}"}
 
       {_status, %Tesla.Env{status: status, body: error}} when status in 400..499 ->
         error_message = get_in(error, ["error", "message"])
         {:error, error_message}
 
       {_status, response} ->
-        {:error, "Invalid response #{inspect(response)}"}
+        {:error, "Invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 

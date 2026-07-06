@@ -112,13 +112,13 @@ defmodule Glific.AIEvaluationsTest do
       %{config_version: config_version}
     end
 
-    test "marks processing evaluation older than 6 hours as failed", %{
+    test "marks processing evaluation older than 24 hours as failed", %{
       organization_id: organization_id,
       config_version: config_version
     } do
       evaluation =
         create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> backdate_evaluation(7)
+        |> backdate_evaluation(25)
 
       notification_count =
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
@@ -145,11 +145,11 @@ defmodule Glific.AIEvaluationsTest do
     } do
       completed =
         create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> backdate_evaluation(7)
+        |> backdate_evaluation(25)
 
       failed =
         create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> backdate_evaluation(7)
+        |> backdate_evaluation(25)
 
       AIEvaluations.poll_and_update(organization_id)
 

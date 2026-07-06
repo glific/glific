@@ -360,12 +360,18 @@ defmodule Glific.WhatsappForms do
         if String.contains?(body, "Duplicate component tag") do
           :ok
         else
-          Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(body)}")
+          Logger.error(
+            "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(body)}"
+          )
+
           {:error, body}
         end
 
       {:error, error} ->
-        Logger.error("Failed to set subscription for org #{organization_id}: #{inspect(error)}")
+        Logger.error(
+          "Failed to set subscription for org #{organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
+        )
+
         {:error, error}
 
       # Any other count (not 1) means it's not the first form
@@ -410,7 +416,10 @@ defmodule Glific.WhatsappForms do
         {:ok, Map.put(attrs, :sheet_id, sheet.id)}
 
       {:error, reason} ->
-        Logger.error("Failed to create Google Sheet for WhatsApp form: #{inspect(reason)}")
+        Logger.error(
+          "Failed to create Google Sheet for WhatsApp form: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -430,13 +439,16 @@ defmodule Glific.WhatsappForms do
             {:ok, Map.put(attrs, :sheet_id, updated_sheet.id)}
 
           {:error, reason} ->
-            Logger.error("Failed to update Google Sheet for WhatsApp form: #{inspect(reason)}")
+            Logger.error(
+              "Failed to update Google Sheet for WhatsApp form: #{Glific.SafeLog.safe_inspect(reason)}"
+            )
+
             {:error, reason}
         end
 
       {:error, reason} ->
         Logger.error(
-          "Failed to fetch existing Google Sheet for WhatsApp form: #{inspect(reason)}"
+          "Failed to fetch existing Google Sheet for WhatsApp form: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         {:error, reason}

@@ -300,7 +300,7 @@ defmodule Glific.Saas.Onboard do
 
         error ->
           Glific.log_error(
-            "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(org.id)}"
+            "Error sending new partner onboarded email #{Glific.SafeLog.safe_inspect(error)} for org: #{Glific.SafeLog.safe_inspect(org.id)}"
           )
       end
     end
@@ -353,7 +353,7 @@ defmodule Glific.Saas.Onboard do
         {:ok, "User was successfully updated"}
 
       err ->
-        {:error, "Error updating password due to #{inspect(err)}"}
+        {:error, "Error updating password due to #{Glific.SafeLog.safe_inspect(err)}"}
     end
   end
 
@@ -372,7 +372,7 @@ defmodule Glific.Saas.Onboard do
 
       error ->
         Glific.log_error(
-          "Error sending submission confirmation email #{inspect(error)} for org: #{org.id}"
+          "Error sending submission confirmation email #{Glific.SafeLog.safe_inspect(error)} for org: #{org.id}"
         )
     end
   end
@@ -394,7 +394,7 @@ defmodule Glific.Saas.Onboard do
 
       error ->
         Glific.log_error(
-          "Error sending NGO reachout query email #{inspect(error)} for org: #{inspect(org.id)}"
+          "Error sending NGO reachout query email #{Glific.SafeLog.safe_inspect(error)} for org: #{Glific.SafeLog.safe_inspect(org.id)}"
         )
     end
 

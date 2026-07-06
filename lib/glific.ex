@@ -214,7 +214,7 @@ defmodule Glific do
   @spec stacktrace :: String.t()
   def stacktrace do
     {_, stacktrace} = Process.info(self(), :current_stacktrace)
-    inspect(stacktrace)
+    Glific.SafeLog.safe_inspect(stacktrace)
   end
 
   @not_allowed ["Repo.", "IO.", "File.", "Code."]
@@ -460,7 +460,7 @@ defmodule Glific do
 
       {_status, response} ->
         Logger.info("Invalid response verifying Google Captcha: #{response}")
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "invalid response #{Glific.SafeLog.safe_inspect(response)}"}
     end
   end
 
@@ -532,18 +532,6 @@ defmodule Glific do
   @spec get_google_translate_key() :: String.t()
   def get_google_translate_key do
     Application.get_env(:glific, :google_translate)
-  end
-
-  @doc """
-  Get Bhashini keys
-  """
-  @spec get_bhashini_keys() :: map()
-  def get_bhashini_keys do
-    %{
-      user_id: Application.get_env(:glific, :bhasini_user_id),
-      ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key),
-      inference_key: Application.get_env(:glific, :bhasini_inference_key)
-    }
   end
 
   @doc """

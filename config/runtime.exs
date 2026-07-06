@@ -139,15 +139,6 @@ config :glific,
   gigalixir_app_name: env!("GIGALIXIR_APP_NAME", :string!, "This is not a secret")
 
 config :glific,
-  bhasini_user_id: env!("BHASINI_USER_ID", :string!, "This is not a secret")
-
-config :glific,
-  bhasini_ulca_api_key: env!("BHASINI_ULCA_API_KEY", :string!, "This is not a secret")
-
-config :glific,
-  bhasini_inference_key: env!("BHASINI_INFERENCE_KEY", :string!, "This is not a secret")
-
-config :glific,
   google_maps_api_key: env!("GOOGLE_MAPS_API_KEY", :string!, "This is not a secret")
 
 config :glific,
@@ -166,6 +157,9 @@ config :glific,
 
 config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
+
+config :glific,
+  gupshup_partner_client_secret: env!("GUPSHUP_PARTNER_CLIENT_SECRET", :string!, "")
 
 config :glific, Glific.Erase,
   msg_delete_batch_size: env!("MSG_DELETE_BATCH_SIZE", :integer, 100_000),
@@ -205,3 +199,12 @@ search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 
 config :glific, Glific.Searches, repo_module: search_repo_module
+
+unless config_env() == :test do
+  config :glific, Glific.ThirdParty.Superset.ApiClient,
+    base_url: env!("SUPERSET_URL", :string, "https://not-configured.invalid/api/v1"),
+    dashboard_id: env!("SUPERSET_DASHBOARD_ID", :string, "this_is_not_a_dashboard_id"),
+    guest_username: env!("SUPERSET_GUEST_USERNAME", :string, "this_is_not_a_username"),
+    username: env!("SUPERSET_USERNAME", :string, "this_is_not_a_username"),
+    password: env!("SUPERSET_PASSWORD", :string, "this_is_not_a_password")
+end

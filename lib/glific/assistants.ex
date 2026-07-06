@@ -13,7 +13,6 @@ defmodule Glific.Assistants do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
-  alias Glific.Flags
   alias Glific.Metrics
   alias Glific.Notifications
   alias Glific.Partners
@@ -388,11 +387,13 @@ defmodule Glific.Assistants do
         |> Repo.update()
 
         Glific.log_exception(%Error{
-          message: "Kaapi config creation failed for assistant. Reason: #{inspect(error)}",
-          reason: inspect(error)
+          message:
+            "Kaapi config creation failed for assistant. Reason: #{Glific.SafeLog.safe_inspect(error)}",
+          reason: Glific.SafeLog.safe_inspect(error)
         })
 
-        {:error, "Kaapi config creation failed for assistant, Reason: #{inspect(error)}"}
+        {:error,
+         "Kaapi config creation failed for assistant, Reason: #{Glific.SafeLog.safe_inspect(error)}"}
     end
   end
 
@@ -519,34 +520,22 @@ defmodule Glific.Assistants do
   @spec do_update_assistant_config(Assistant.t(), map(), KnowledgeBaseVersion.t() | nil) ::
           {:ok, map()} | {:error, any()}
   defp do_update_assistant_config(assistant, user_params, knowledge_base_version) do
-    previous_knowledge_base_version =
-      List.first(assistant.active_config_version.knowledge_base_versions)
-
-    needs_active_config_link =
-      is_nil(previous_knowledge_base_version) and
-        not is_nil(user_params[:knowledge_base_version_id])
-
-    previous_kb_id = kb_id(previous_knowledge_base_version)
-    new_kb_id = kb_id(knowledge_base_version)
-
-    knowledge_base_changed =
-      previous_kb_id != nil and new_kb_id != nil and previous_kb_id != new_kb_id
-
     {:ok, config_params} = build_kaapi_config(user_params, knowledge_base_version)
 
-    with true <-
-           knowledge_base_changed and knowledge_base_version.status != :completed,
-         {:ok, _config_version} <-
-           deferred_update_transaction(assistant, config_params, knowledge_base_version) do
-      format_assistant_result(assistant)
+    kb_in_progress =
+      not is_nil(knowledge_base_version) and knowledge_base_version.status != :completed
+
+    with true <- kb_in_progress,
+         {:ok, updated_assistant, _config_version} <-
+           update_assistant_transaction(assistant, config_params, knowledge_base_version) do
+      format_assistant_result(updated_assistant)
     else
       false ->
         with {:ok, updated_assistant, config_version} <-
                update_assistant_transaction(
                  assistant,
                  config_params,
-                 knowledge_base_version,
-                 needs_active_config_link
+                 knowledge_base_version
                ),
              {:ok, _} <-
                create_kaapi_config_version(updated_assistant, config_version, config_params) do
@@ -616,49 +605,10 @@ defmodule Glific.Assistants do
   @spec update_assistant_transaction(
           Assistant.t(),
           map(),
-          KnowledgeBaseVersion.t() | nil,
-          boolean()
+          KnowledgeBaseVersion.t() | nil
         ) ::
           {:ok, Assistant.t(), AssistantConfigVersion.t()} | {:error, any()}
-  defp update_assistant_transaction(
-         assistant,
-         kaapi_config,
-         knowledge_base_version,
-         needs_active_config_link
-       ) do
-    Multi.new()
-    |> maybe_link_active_config(
-      assistant,
-      knowledge_base_version,
-      kaapi_config.organization_id,
-      needs_active_config_link
-    )
-    |> Multi.insert(
-      :config_version,
-      build_config_version_changeset(assistant, kaapi_config, knowledge_base_version)
-    )
-    |> maybe_link_knowledge_base(knowledge_base_version, kaapi_config.organization_id)
-    |> Multi.update(:updated_assistant, fn %{
-                                             config_version: config_version
-                                           } ->
-      organization = Partners.organization(kaapi_config.organization_id)
-
-      attrs =
-        if Flags.get_assistant_config_versions_enabled(organization) do
-          %{name: kaapi_config.name}
-        else
-          %{name: kaapi_config.name, active_config_version_id: config_version.id}
-        end
-
-      Assistant.changeset(assistant, attrs)
-    end)
-    |> Repo.transaction()
-    |> handle_update_transaction_result()
-  end
-
-  @spec deferred_update_transaction(Assistant.t(), map(), KnowledgeBaseVersion.t()) ::
-          {:ok, AssistantConfigVersion.t()} | {:error, any()}
-  defp deferred_update_transaction(assistant, kaapi_config, knowledge_base_version) do
+  defp update_assistant_transaction(assistant, kaapi_config, knowledge_base_version) do
     Multi.new()
     |> Multi.insert(
       :config_version,
@@ -669,10 +619,7 @@ defmodule Glific.Assistants do
       Assistant.changeset(assistant, %{name: kaapi_config.name})
     end)
     |> Repo.transaction()
-    |> case do
-      {:ok, %{config_version: config_version}} -> {:ok, config_version}
-      {:error, _failed, changeset, _} -> {:error, changeset}
-    end
+    |> handle_update_transaction_result()
   end
 
   @spec create_kaapi_config_version(Assistant.t(), AssistantConfigVersion.t(), map()) ::
@@ -700,13 +647,14 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Kaapi config version creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Kaapi config version creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Kaapi config version creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
@@ -725,7 +673,10 @@ defmodule Glific.Assistants do
         {:error, changeset}
 
       {:error, failed_operation, failed_value, _changes_so_far} ->
-        Logger.error("Failed at #{failed_operation}: #{inspect(failed_value)}")
+        Logger.error(
+          "Failed at #{failed_operation}: #{Glific.SafeLog.safe_inspect(failed_value)}"
+        )
+
         {:error, kaapi_error_message(failed_value)}
     end
   end
@@ -835,30 +786,6 @@ defmodule Glific.Assistants do
   end
 
   # Links the KB to the existing active config version within the same Multi transaction.
-  # Needed when the active config had no KB link and a kb_version_id is provided,
-  # so the GET response shows the KB on the current active config.
-  @spec maybe_link_active_config(
-          Multi.t(),
-          Assistant.t(),
-          KnowledgeBaseVersion.t(),
-          non_neg_integer(),
-          boolean()
-        ) :: Multi.t()
-  defp maybe_link_active_config(multi, _assistant, _kb_version, _org_id, false), do: multi
-
-  defp maybe_link_active_config(multi, assistant, knowledge_base_version, organization_id, true) do
-    Multi.insert_all(
-      multi,
-      :link_active_config_knowledge_base,
-      "assistant_config_version_knowledge_base_versions",
-      build_knowledge_base_link(
-        assistant.active_config_version,
-        knowledge_base_version,
-        organization_id
-      )
-    )
-  end
-
   @spec build_assistant_changeset(map()) :: Ecto.Changeset.t()
   defp build_assistant_changeset(kaapi_config) do
     Assistant.changeset(%Assistant{}, %{
@@ -960,7 +887,7 @@ defmodule Glific.Assistants do
         {:error, reason}
 
       {:error, reason} ->
-        {:error, "File upload failed: #{inspect(reason)}"}
+        {:error, "File upload failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -1022,8 +949,8 @@ defmodule Glific.Assistants do
 
       {:error, error} ->
         Glific.log_exception(%Error{
-          message: "Create knowledge base failed. Reason: #{inspect(error)}",
-          reason: inspect(error)
+          message: "Create knowledge base failed. Reason: #{Glific.SafeLog.safe_inspect(error)}",
+          reason: Glific.SafeLog.safe_inspect(error)
         })
 
         {:error, "Failed to create knowledge base"}
@@ -1064,7 +991,7 @@ defmodule Glific.Assistants do
 
     with {:error, reason} <- Repo.delete(knowledge_base_version) do
       Logger.error(
-        "Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{inspect(reason)}"
+        "Failed to delete orphaned KnowledgeBaseVersion ID: #{knowledge_base_version.id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
       )
     end
 
@@ -1073,7 +1000,7 @@ defmodule Glific.Assistants do
 
       with {:error, reason} <- Repo.delete(knowledge_base) do
         Logger.error(
-          "Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{inspect(reason)}"
+          "Failed to delete orphaned KnowledgeBase ID: #{knowledge_base.id}, reason: #{Glific.SafeLog.safe_inspect(reason)}"
         )
       end
     end
@@ -1218,17 +1145,18 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Deferred Kaapi config creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
-        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+        {:error, "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -1243,14 +1171,6 @@ defmodule Glific.Assistants do
       {:ok, kaapi_response} ->
         kaapi_version_number = kaapi_response.data.version
 
-        organization = Partners.organization(assistant.organization_id)
-
-        unless Flags.get_assistant_config_versions_enabled(organization) do
-          assistant
-          |> Assistant.changeset(%{active_config_version_id: config_version.id})
-          |> Repo.update()
-        end
-
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :ready,
@@ -1260,17 +1180,18 @@ defmodule Glific.Assistants do
 
       {:error, reason} ->
         Logger.error(
-          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{inspect(reason)}"
+          "Deferred Kaapi config version creation failed for assistant #{assistant.id}: #{Glific.SafeLog.safe_inspect(reason)}"
         )
 
         config_version
         |> AssistantConfigVersion.changeset(%{
           status: :failed,
-          failure_reason: "Deferred Kaapi config creation failed: #{inspect(reason)}"
+          failure_reason:
+            "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"
         })
         |> Repo.update()
 
-        {:error, "Deferred Kaapi config creation failed: #{inspect(reason)}"}
+        {:error, "Deferred Kaapi config creation failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 
@@ -1480,7 +1401,7 @@ defmodule Glific.Assistants do
         :ok
 
       {:error, reason} ->
-        {:error, "Failed to delete assistant from Kaapi: #{inspect(reason)}"}
+        {:error, "Failed to delete assistant from Kaapi: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
 end

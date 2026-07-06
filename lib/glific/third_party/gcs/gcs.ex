@@ -25,6 +25,19 @@ defmodule Glific.GCS do
 
   @endpoint "https://storage.googleapis.com/storage/v1/b"
 
+  # Distinctive marker stored in message_media.gcs_error for a *permanent* provider
+  # failure (invalid/expired media id). base_query/1 skips only rows whose gcs_error
+  # matches this — other (transient) errors are recorded on the row for visibility
+  # but stay eligible for retry. Kept as a shared constant so the writer (GcsWorker)
+  # and the reader (base_query) can never drift apart.
+  @invalid_media_error "Invalid/expired media id on provider"
+
+  @doc """
+  The gcs_error marker used to permanently skip media the provider no longer has.
+  """
+  @spec invalid_media_error() :: String.t()
+  def invalid_media_error, do: @invalid_media_error
+
   @doc """
   Fetch token for GCS
   """
@@ -120,8 +133,13 @@ defmodule Glific.GCS do
     |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
     |> where([m, _msg], m.organization_id == ^organization_id)
     |> where([m, _msg], m.flow == :inbound)
-    # handling gupshup 30 day file expiry
-    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '30 day'"))
+    # Meta/Gupshup expire media after 7 days, so anything older is already gone on
+    |> where([m], m.inserted_at > fragment("NOW() - INTERVAL '7 day'"))
+    # Skip only media that permanently failed on the provider (invalid/expired media
+    # id), matched by the gcs_error marker. Transient errors are still recorded on the
+    # row for visibility but remain eligible for retry. coalesce/2 maps a NULL gcs_error
+    # (the healthy, not-yet-synced case) to "" so it never matches and stays eligible.
+    |> where([m, _msg], not ilike(coalesce(m.gcs_error, ^""), ^"%#{@invalid_media_error}%"))
     |> order_by([m], [m.inserted_at, m.id])
   end
 
@@ -217,7 +235,7 @@ defmodule Glific.GCS do
 
           {:error, error} ->
             Logger.error(
-              "Failed to enable bucket logging for bucket: #{bucket_name}. Error: #{inspect(error)}"
+              "Failed to enable bucket logging for bucket: #{bucket_name}. Error: #{Glific.SafeLog.safe_inspect(error)}"
             )
 
             {:error, error}
@@ -240,7 +258,9 @@ defmodule Glific.GCS do
              category: "media_sync_report",
              organization_id: Saas.organization_id()
            }) do
-      Logger.error("Sending gcs media sync report failed due to #{inspect(err)}")
+      Logger.error(
+        "Sending gcs media sync report failed due to #{Glific.SafeLog.safe_inspect(err)}"
+      )
     end
 
     :ok
