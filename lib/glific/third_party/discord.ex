@@ -14,17 +14,22 @@ defmodule Glific.ThirdParty.Discord do
 
   The `embed` map follows the Discord embed object structure:
   https://discord.com/developers/docs/resources/message#embed-object
+
+  Defaults to the `:discord_webhook_url` config. Pass `webhook_config_key` to
+  post to a different webhook (e.g. `:discord_deployment_webhook_url`).
   """
-  @spec post_embed(map()) :: :ok | {:error, String.t()}
-  def post_embed(embed) when is_map(embed) do
-    do_post(%{embeds: [embed]})
+  @spec post_embed(map(), atom()) :: :ok | {:error, String.t()}
+  def post_embed(embed, webhook_config_key \\ :discord_webhook_url)
+
+  def post_embed(embed, webhook_config_key) when is_map(embed) do
+    do_post(%{embeds: [embed]}, webhook_config_key)
   end
 
-  def post_embed(_), do: {:error, "Discord embed must be a map"}
+  def post_embed(_, _), do: {:error, "Discord embed must be a map"}
 
-  @spec do_post(map()) :: :ok | {:error, String.t()}
-  defp do_post(payload) do
-    webhook_url = Application.get_env(:glific, :discord_webhook_url)
+  @spec do_post(map(), atom()) :: :ok | {:error, String.t()}
+  defp do_post(payload, webhook_config_key) do
+    webhook_url = Application.get_env(:glific, webhook_config_key)
 
     if is_nil(webhook_url) or webhook_url == "" do
       Logger.warning("Discord webhook URL not configured; skipping Discord notification")

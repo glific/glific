@@ -6,6 +6,7 @@ defmodule Glific.Application do
   use Application
 
   alias Glific.Communications.Mailer
+  alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
   def start(_type, _args) do
     children = [
@@ -25,6 +26,10 @@ defmodule Glific.Application do
 
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
+
+      # Notify Discord once the Endpoint above is accepting connections, i.e. this
+      # revision has become healthy per Gigalixir's rolling deployment health check
+      {Task, &notify_deployment_healthy/0},
 
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
@@ -116,6 +121,13 @@ defmodule Glific.Application do
 
   defp oban_config do
     Application.get_env(:glific, Oban)
+  end
+
+  @spec notify_deployment_healthy() :: :ok | {:error, String.t()}
+  defp notify_deployment_healthy do
+    if Application.get_env(:glific, :environment) != :test,
+      do: DiscordNotifications.send_deployment_healthy(),
+      else: :ok
   end
 
   defp attach_oban_telemetry_event do

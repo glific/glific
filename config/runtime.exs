@@ -193,7 +193,8 @@ config :glific, Glific.ThirdParty.Gemini.ApiClient,
 config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
   api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
-  discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
+  discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil),
+  discord_deployment_webhook_url: env!("DISCORD_DEPLOYMENT_WEBHOOK_URL", :string, nil)
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)

@@ -56,4 +56,34 @@ defmodule Glific.ThirdParty.Discord.Notifications do
 
     Discord.post_embed(embed)
   end
+
+  @doc """
+  Sends a Discord embed notifying Glific developers that a deployment's new
+  revision has become healthy (i.e. the Endpoint has started accepting
+  connections). Called once from the supervisor tree right after
+  `GlificWeb.Endpoint` starts, per Gigalixir's recommended zero-downtime
+  rollout pattern: a revision that never becomes healthy never reaches this
+  code, so this only ever reports success — failed rollouts still need to be
+  watched via `gigalixir ps` or log drains.
+  """
+  @spec send_deployment_healthy() :: :ok | {:error, String.t()}
+  def send_deployment_healthy do
+    app_name = Application.get_env(:glific, :gigalixir_app_name)
+    environment = Application.get_env(:glific, :environment)
+
+    embed = %{
+      title: "🚀 Deployment Healthy",
+      description: "A new revision has passed health checks and is now serving traffic.",
+      color: 0x57F287,
+      fields: [
+        %{name: "🏷️ App", value: to_string(app_name), inline: true},
+        %{name: "🌎 Environment", value: to_string(environment), inline: true},
+        %{name: "🖥️ Node", value: to_string(node()), inline: false}
+      ],
+      footer: %{text: "Gigalixir rolling deployment"},
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    Discord.post_embed(embed, :discord_deployment_webhook_url)
+  end
 end
