@@ -833,15 +833,17 @@ defmodule Glific.Messages do
     if has_no_errors, do: do_create_message_media(changeset, attrs), else: {:error, changeset}
   end
 
+  # Dedup media by (url, organization_id) only. We previously also matched on
+  # caption, but indexing the full caption text overflowed the btree row-size
+  # limit and crashed inbound media inserts on long captions (glific#5319).
+  # Same url within an org now reuses the existing media row regardless of
+  # caption; the message keeps its own body, so no message text is lost.
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
-    caption = Map.get(attrs, :caption, nil)
-
     message_media =
       MessageMedia
       |> where([mm], mm.url == ^attrs.url)
-      |> add_caption(caption)
       |> where([mm], mm.organization_id == ^attrs.organization_id)
       |> limit(1)
       |> Repo.one()
@@ -850,13 +852,6 @@ defmodule Glific.Messages do
       %MessageMedia{} = message_media -> {:ok, message_media}
       nil -> Repo.insert(changeset)
     end
-  end
-
-  defp add_caption(query, caption) when is_nil(caption), do: query
-
-  defp add_caption(query, caption) do
-    query
-    |> where([mm], mm.caption == ^caption)
   end
 
   @doc """

@@ -1461,20 +1461,30 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
       assert message_media.url == "some url"
+    end
 
-      assert {:ok, %MessageMedia{} = message_media} =
+    test "create_message_media/1 dedups by (url, organization_id) regardless of caption",
+         attrs do
+      assert {:ok, %MessageMedia{} = first_media} =
+               Messages.create_message_media(
+                 @valid_attrs
+                 |> Map.merge(%{organization_id: attrs.organization_id})
+               )
+
+      # Same url in the same org but a different caption reuses the existing
+      # row instead of inserting a new one (glific#5319).
+      assert {:ok, %MessageMedia{} = reused_media} =
                Messages.create_message_media(
                  @valid_attrs
                  |> Map.merge(%{
                    organization_id: attrs.organization_id,
-                   caption: "updated caption"
+                   caption: "a different caption"
                  })
                )
 
-      assert message_media.caption == "updated caption"
-      assert message_media.source_url == "some source_url"
-      assert message_media.thumbnail == "some thumbnail"
-      assert message_media.url == "some url"
+      assert reused_media.id == first_media.id
+      assert reused_media.caption == "some caption"
+      assert Messages.count_messages_media() == 1
     end
 
     test "create_message_media/1 with invalid data returns error changeset", attrs do
