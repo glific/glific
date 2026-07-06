@@ -971,29 +971,17 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     end
   end
 
-  @await_flow_message_attempts 50
+  @await_flow_message_attempts 100
   @await_flow_message_interval_ms 100
 
+  # Poll for the actual outcome (the resumed flow's message) rather than the global
+  # Glific.TaskSupervisor child count. The old count_children/1 wait was flaky: it is a
+  # shared, app-wide supervisor, so an unrelated in-flight task (or a slow resume under
+  # CI load) left `active` > 0 and the wait timed out even though this flow resumed fine.
+  # `Webhook.resume/4` updates the webhook_log before it sends the message, so the message
+  # appearing is a reliable signal that the resume completed.
   defp await_flow_message(contact_id, expected_body) do
-    await_flow_resume_tasks()
     await_flow_message(contact_id, expected_body, @await_flow_message_attempts)
-  end
-
-  defp await_flow_resume_tasks(attempts \\ 50)
-
-  defp await_flow_resume_tasks(0) do
-    flunk("Timed out waiting for flow resume background task")
-  end
-
-  defp await_flow_resume_tasks(attempts) do
-    case Supervisor.count_children(Glific.TaskSupervisor) do
-      %{active: 0} ->
-        :ok
-
-      _ ->
-        Process.sleep(@await_flow_message_interval_ms)
-        await_flow_resume_tasks(attempts - 1)
-    end
   end
 
   defp await_flow_message(contact_id, expected_body, 0) do
