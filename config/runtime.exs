@@ -194,7 +194,11 @@ config :glific,
   base_domain: env!("GLIFIC_BASE_DOMAIN", :string, "glific.com"),
   api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil),
-  discord_deployment_webhook_url: env!("DISCORD_DEPLOYMENT_WEBHOOK_URL", :string, nil)
+  discord_deployment_webhook_url: env!("DISCORD_DEPLOYMENT_WEBHOOK_URL", :string, nil),
+  # Auto-injected by Gigalixir on every deploy (https://docs.gigalixir.com/config) —
+  gigalixir_release_app_name: env!("GIGALIXIR__APP_NAME", :string, nil),
+  gigalixir_release_sha: env!("GIGALIXIR__RELEASE_SHA", :string, nil),
+  gigalixir_release_version: env!("GIGALIXIR__RELEASE_VERSION", :string, nil)
 
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)

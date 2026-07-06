@@ -74,6 +74,8 @@ defmodule Glific.ThirdParty.Discord.Notifications do
       color: 0x57F287,
       fields: [
         %{name: "🏷️ App", value: app_name(), inline: true},
+        %{name: "🔀 SHA", value: release_sha(), inline: true},
+        %{name: "🔖 Release", value: release_version(), inline: true},
         %{name: "🖥️ Node", value: to_string(node()), inline: false}
       ],
       footer: %{text: "Gigalixir rolling deployment"},
@@ -83,16 +85,27 @@ defmodule Glific.ThirdParty.Discord.Notifications do
     Discord.post_embed(embed, :discord_deployment_webhook_url)
   end
 
-  # `:gigalixir_app_name`/`:environment` app config are both compile-time constants
-  # baked into the release and don't distinguish e.g. staging from production —
-  # every Gigalixir app builds with MIX_ENV=prod. The node name, which Gigalixir
-  # itself sets per-app for libcluster (e.g. "glific-staging@10.56.21.128"), is the
-  # one value here that reliably reflects which app actually deployed.
+  # Note: `GIGALIXIR_APP_NAME` (single underscore) is a *different*, reserved
+  # variable Gigalixir uses internally for the release binary name (always
+  # "prod" for this app) — do not confuse it with `GIGALIXIR__APP_NAME` below.
+
   @spec app_name() :: String.t()
-  defp app_name do
-    node()
-    |> to_string()
-    |> String.split("@")
-    |> List.first()
+  defp app_name, do: env_or_fallback(:gigalixir_release_app_name, &node_name/0)
+
+  @spec release_sha() :: String.t()
+  defp release_sha, do: env_or_fallback(:gigalixir_release_sha, fn -> "unknown" end)
+
+  @spec release_version() :: String.t()
+  defp release_version, do: env_or_fallback(:gigalixir_release_version, fn -> "unknown" end)
+
+  @spec env_or_fallback(atom(), (-> String.t())) :: String.t()
+  defp env_or_fallback(config_key, fallback) do
+    case Application.get_env(:glific, config_key) do
+      value when is_binary(value) and value != "" -> value
+      _ -> fallback.()
+    end
   end
+
+  @spec node_name() :: String.t()
+  defp node_name, do: node() |> to_string() |> String.split("@") |> List.first()
 end
