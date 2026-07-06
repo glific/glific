@@ -93,6 +93,11 @@ end
   Do **not** trust that `prepare_query` alone is enough for mutations/reads keyed by a
   client-supplied id — always pass `organization_id` explicitly. Omitting it is a tenant-isolation
   bug (an attacker passes another org's id).
+- **Organization-level endpoints ignore any client-supplied `id` outright** — resolvers like
+  `organization`, `update_organization`, `delete_organization_test_data` derive the target
+  solely from `current_user.organization_id`; the `id` arg (if still present for API
+  compatibility) is never read. There is no "other org's id" to re-scope against if the argument
+  is never trusted in the first place.
 
 ### 3. Wire into `schema.ex` (BOTH steps, or the field won't exist)
 
@@ -113,6 +118,10 @@ Role hierarchy (high→low): `glific_admin > admin > manager > staff > none`. Co
 - **Reads** (`field`, `list`, `count`): `middleware(Authorize, :staff)`
 - **Writes** (create/update/delete): `middleware(Authorize, :manager)`
 - Admin/SaaS-only operations: `:admin` / `:glific_admin`. Open endpoints: `:any`.
+- **Full org lifecycle mutations require `:glific_admin`, not `:admin`** — `create_organization`,
+  `delete_organization`, `delete_organization_test_data`, `delete_inactive_organization`,
+  `reset_organization`. `:admin` is scoped to staff of a single org; these operations act across
+  tenants and are SaaS-operator-only.
 
 Other per-field middleware: `AddOrganization` (injects org context), `RequireFeatureFlag`
 (gates by `FunWithFlags`), `SafeResolution` (wraps resolvers so an unexpected raise becomes a

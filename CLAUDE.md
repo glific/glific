@@ -95,6 +95,9 @@ paths. **Oban workers and resolver by-id lookups have extra rules** — see
 
 - **Formatter**: `mix format` (imports from `:ecto`, `:ecto_sql`, `:phoenix`)
 - **Linter**: Credo (non-strict locally; `--strict` in CI)
+- **Custom Credo checks** (`.credo/checks/`): e.g. `GlificCredo.Checks.NoRawInspect` (`GL1001`)
+  forbids raw `inspect/1,2` in non-test `lib/` code — use `Glific.SafeLog.safe_inspect/1`
+  instead so credentials (e.g. a `%Tesla.Env{}`'s live bearer token) never leak into logs.
 - **Type checking**: Dialyzer (PLTs in `priv/plts/`)
 - **CI**: `MIX_ENV=test mix check` — Credo + Dialyzer + Doctor + Format + compile with
   warnings-as-errors

@@ -110,7 +110,9 @@ end
   middleware chain, including live `Authorization: Bearer …` tokens; plain `inspect` leaks them
   into logs. `safe_inspect/1` strips `__client__` and passes everything else through unchanged.
   This applies to BSP/provider HTTP error paths (e.g. Gupshup partner API responses) where the
-  error term is the raw `{:ok|:error, Tesla.Env}` tuple.
+  error term is the raw `{:ok|:error, Tesla.Env}` tuple. Enforced by a custom Credo check
+  (`GlificCredo.Checks.NoRawInspect`, `GL1001`, in `.credo/checks/`) — `mix credo --strict`
+  fails on any raw `inspect/1,2` call in non-test `lib/` code.
 
 ## Caching (Cachex, bucket `:glific_cache`)
 
