@@ -39,13 +39,13 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
 
   """
   @spec get_embed_token(non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  def get_embed_token(_organization_id) do
+  def get_embed_token(organization_id) do
     username = superset_config(:username)
     password = superset_config(:password)
 
     with {:ok, %{access_token: token}} <- get_access_token(username, password),
          {:ok, %{result: csrf_token, cookie: cookie}} <- get_csrf_token(token) do
-      fetch_embed_token(token, csrf_token, cookie)
+      fetch_embed_token(token, csrf_token, cookie, organization_id)
     end
   end
 
@@ -71,9 +71,9 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
     |> parse_response()
   end
 
-  @spec fetch_embed_token(String.t(), String.t(), String.t()) ::
+  @spec fetch_embed_token(String.t(), String.t(), String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
-  defp fetch_embed_token(access_token, csrf_token, cookie) do
+  defp fetch_embed_token(access_token, csrf_token, cookie, organization_id) do
     payload = %{
       user: %{
         username: superset_config(:guest_username),
@@ -81,10 +81,7 @@ defmodule Glific.ThirdParty.Superset.ApiClient do
         last_name: "Dev"
       },
       resources: [%{type: "dashboard", id: superset_config(:dashboard_id)}],
-      # RLS temporarily disabled to allow org filtering via the Superset UI.
-      # Restore by adding organization_id as a parameter and setting:
-      # rls: [%{clause: "organization_id = #{organization_id}"}]
-      rls: []
+      rls: [%{clause: "organization_id = #{organization_id}"}]
     }
 
     access_token
