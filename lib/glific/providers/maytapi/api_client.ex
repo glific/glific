@@ -22,7 +22,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
   @spec maytapi_get(String.t(), String.t()) :: Tesla.Env.result()
   def maytapi_get(url, token),
-    do: client(:read) |> Tesla.get(url, headers: headers(token)) |> log_on_failure(url)
+    do:
+      client(:read)
+      |> Tesla.get(url, headers: headers(token))
+      |> log_on_failure(url)
 
   # Group operations (createGroup, group/add, group/remove)
   # trigger real WhatsApp actions on the device and can take well over the
@@ -106,12 +109,12 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
   @doc """
   Fetches the current screen for a phone. When the phone is on the WhatsApp login
-  screen (status `qr-screen`), this contains the QR code to rescan — the surface
-  we expose so admins can reconnect a disconnected phone from Glific.
+  screen (status `qr-screen`), this is the QR image to rescan — the surface we
+  expose so admins can reconnect a disconnected phone from Glific.
 
-  Returns `{:ok, qr_payload}` (a data-url / base64 image or Maytapi screen string)
-  or `{:error, message}`; the raw HTTP/Tesla layer is handled here so callers never
-  touch it.
+  Maytapi returns the screen as raw PNG bytes, so this returns `{:ok, data_url}`
+  (a `data:image/png;base64,...` string the frontend can render) or
+  `{:error, message}`; the raw HTTP/Tesla layer is handled here.
   """
   @spec fetch_phone_screen(non_neg_integer(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -144,33 +147,18 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     end
   end
 
-  # Extracts the QR/screen payload from Maytapi's `screen` response. Tolerant of
-  # the likely shapes since the endpoint isn't verified for our plan; falls back
-  # to treating a non-JSON body as raw PNG bytes.
+  # Maytapi's `screen` endpoint returns the raw PNG bytes of the phone's current
+  # screen (the QR image when it's on the login screen) on success. But like the
+  # rest of Maytapi it signals real errors as HTTP 200 + {"success": false} JSON,
+  # so only Base64 a body that actually is a PNG — otherwise surface the error
+  # rather than handing back a bogus data-url QR.
   @spec handle_screen_response(Tesla.Env.result()) :: {:ok, String.t()} | {:error, String.t()}
   defp handle_screen_response({:ok, %Tesla.Env{status: status, body: body}})
        when status in 200..299 do
-    case Jason.decode(body) do
-      {:ok, %{"success" => false, "message" => message}} when is_binary(message) ->
-        {:error, message}
-
-      {:ok, %{"success" => false}} ->
-        {:error, @generic_error}
-
-      {:ok, %{"data" => data}} when is_binary(data) ->
-        {:ok, data}
-
-      {:ok, %{"screen" => screen}} when is_binary(screen) ->
-        {:ok, screen}
-
-      {:ok, %{"url" => url}} when is_binary(url) ->
-        {:ok, url}
-
-      {:ok, _other} ->
-        {:error, "The WhatsApp login screen isn't available yet. Try again shortly."}
-
-      {:error, _} ->
-        {:ok, "data:image/png;base64," <> Base.encode64(body)}
+    if png?(body) do
+      {:ok, "data:image/png;base64," <> Base.encode64(body)}
+    else
+      screen_error(body)
     end
   end
 
@@ -182,6 +170,19 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   defp handle_screen_response({:error, reason}) do
     Glific.log_error("Maytapi screen request error: #{SafeLog.safe_inspect(reason)}")
     {:error, @generic_error}
+  end
+
+  @spec png?(any()) :: boolean()
+  defp png?(<<137, 80, 78, 71, 13, 10, 26, 10, _::binary>>), do: true
+  defp png?(_), do: false
+
+  # A 200 that isn't a PNG is Maytapi's JSON error shape — surface its message.
+  @spec screen_error(binary()) :: {:error, String.t()}
+  defp screen_error(body) do
+    case Jason.decode(body) do
+      {:ok, %{"message" => message}} when is_binary(message) -> {:error, message}
+      _ -> {:error, @generic_error}
+    end
   end
 
   @doc """

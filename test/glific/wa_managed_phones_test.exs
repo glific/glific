@@ -364,6 +364,39 @@ defmodule Glific.WAManagedPhonesTest do
     assert notification.severity == "Warning"
   end
 
+  test "reconcile_wa_managed_phone_statuses/1 does not touch another org's phones", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    {:ok, _} = WAManagedPhones.update_wa_managed_phone(wa_managed_phone, %{status: "active"})
+
+    other_org = Fixtures.organization_fixture()
+
+    Partners.create_credential(%{
+      organization_id: other_org.id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-999", "token" => "tok-999"},
+      is_active: true
+    })
+
+    # the other org's Maytapi reports the SAME phone_id as disconnected
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: ~s([{"id":#{wa_managed_phone.phone_id},"number":"9829627508","status":"disabled"}])
+      }
+    end)
+
+    Repo.put_organization_id(other_org.id)
+    assert :ok == WAManagedPhones.reconcile_wa_managed_phone_statuses(other_org.id)
+    Repo.put_organization_id(organization_id)
+
+    # org 1's phone is untouched — the other org can't reconcile it
+    assert WAManagedPhones.get_wa_managed_phone(wa_managed_phone.phone_id).status == "active"
+  end
+
   test "fetch_phone_screen/2 returns the QR payload for an admin", %{
     organization_id: organization_id
   } do
@@ -377,15 +410,19 @@ defmodule Glific.WAManagedPhonesTest do
       is_active: true
     })
 
+    # Maytapi returns the screen as raw PNG bytes (the leading bytes are the PNG
+    # magic number); we hand back a base64 data-url.
     Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{status: 200, body: ~s({"success":true,"data":"data:image/png;base64,QQ=="})}
+      %Tesla.Env{status: 200, body: <<137, 80, 78, 71, 13, 10, 26, 10>>}
     end)
 
-    assert {:ok, %{code: "data:image/png;base64,QQ==", expires_at: %DateTime{}}} =
+    assert {:ok, %{code: code, expires_at: %DateTime{}}} =
              WAManagedPhones.fetch_phone_screen(organization_id, wa_managed_phone.id)
+
+    assert String.starts_with?(code, "data:image/png;base64,")
   end
 
-  test "fetch_phone_screen/2 surfaces a Maytapi failure message", %{
+  test "fetch_phone_screen/2 surfaces a Maytapi failure", %{
     organization_id: organization_id
   } do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
@@ -398,6 +435,8 @@ defmodule Glific.WAManagedPhonesTest do
       is_active: true
     })
 
+    # Maytapi signals real errors as HTTP 200 + {"success": false} JSON, not a
+    # PNG — the message is surfaced instead of a bogus QR image.
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{status: 200, body: ~s({"success":false,"message":"Phone is not connected"})}
     end)
@@ -425,6 +464,18 @@ defmodule Glific.WAManagedPhonesTest do
              WAManagedPhones.reconnect_wa_managed_phone(organization_id, wa_managed_phone.id)
 
     assert id == wa_managed_phone.id
+  end
+
+  test "reconnect_wa_managed_phone/2 refuses to log out a phone that is already active", %{
+    organization_id: organization_id
+  } do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+    {:ok, _} = WAManagedPhones.update_wa_managed_phone(wa_managed_phone, %{status: "active"})
+
+    assert {:error, message} =
+             WAManagedPhones.reconnect_wa_managed_phone(organization_id, wa_managed_phone.id)
+
+    assert message =~ "already connected"
   end
 
   test "status/2 shouldn't create a notification when status is 'active' or loading", %{

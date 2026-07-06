@@ -309,7 +309,7 @@ defmodule Glific.WAManagedPhones do
            ApiClient.list_wa_managed_phones(org_id),
          {:ok, response} <- Jason.decode(body),
          {:ok, phones} <- validate_response(response) do
-      Enum.each(phones, &reconcile_known_phone/1)
+      Enum.each(phones, &reconcile_known_phone(&1, org_id))
       :ok
     else
       {:error, error} -> {:error, error}
@@ -317,17 +317,27 @@ defmodule Glific.WAManagedPhones do
     end
   end
 
-  @spec reconcile_known_phone(map()) :: :ok
-  defp reconcile_known_phone(%{"id" => phone_id, "status" => new_status})
+  @spec reconcile_known_phone(map(), non_neg_integer()) :: :ok
+  defp reconcile_known_phone(%{"id" => phone_id, "status" => new_status}, org_id)
        when not is_nil(phone_id) do
-    with %WAManagedPhone{} = phone <- get_wa_managed_phone(phone_id) do
-      reconcile_status(phone, to_string(new_status))
-    end
+    with %WAManagedPhone{} = phone <-
+           Repo.get_by(WAManagedPhone, %{phone_id: phone_id, organization_id: org_id}),
+         {:ok, _updated} <- reconcile_status(phone, to_string(new_status)) do
+      :ok
+    else
+      nil ->
+        :ok
 
-    :ok
+      {:error, changeset} ->
+        Glific.log_error(
+          "Failed to reconcile status for phone_id #{phone_id} (org #{org_id}): #{SafeLog.safe_inspect(changeset.errors)}"
+        )
+
+        :ok
+    end
   end
 
-  defp reconcile_known_phone(_attrs), do: :ok
+  defp reconcile_known_phone(_attrs, _org_id), do: :ok
 
   # Updates a known phone's status, stamps the check time, and alerts only when
   # the status *transitions* into a bad state — so a phone that stays
@@ -424,9 +434,11 @@ defmodule Glific.WAManagedPhones do
   def reconnect_wa_managed_phone(org_id, wa_managed_phone_id) do
     with {:ok, %WAManagedPhone{} = phone} <-
            Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
+         false <- phone.status == "active",
          :ok <- ApiClient.logout_phone(org_id, phone.phone_id) do
       {:ok, phone}
     else
+      true -> {:error, "This WhatsApp phone is already connected."}
       {:error, [_ | _] = messages} -> {:error, Enum.join(messages, ", ")}
       {:error, error} when is_binary(error) -> {:error, error}
       _ -> {:error, "Could not start reconnect. Please try again."}

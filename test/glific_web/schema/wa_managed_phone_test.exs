@@ -128,15 +128,16 @@ defmodule GlificWeb.Schema.WAManagedPhoneTest do
     phone = Fixtures.wa_managed_phone_fixture(attrs)
     maytapi_credential(user.organization_id)
 
+    # Maytapi returns the screen as raw PNG bytes
     Tesla.Mock.mock(fn _env ->
-      %Tesla.Env{status: 200, body: ~s({"success":true,"data":"data:image/png;base64,QQ=="})}
+      %Tesla.Env{status: 200, body: <<137, 80, 78, 71, 13, 10, 26, 10>>}
     end)
 
     result = auth_query_gql_by(:screen, user, variables: %{"wa_managed_phone_id" => phone.id})
     assert {:ok, query_data} = result
 
     code = get_in(query_data, [:data, "whatsapp_phone_screen", "wa_phone_screen", "code"])
-    assert code == "data:image/png;base64,QQ=="
+    assert String.starts_with?(code, "data:image/png;base64,")
   end
 
   test "whatsapp_phone_screen is rejected for a non-admin", %{manager: user} = attrs do
