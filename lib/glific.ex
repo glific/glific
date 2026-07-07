@@ -535,18 +535,6 @@ defmodule Glific do
   end
 
   @doc """
-  Get Bhashini keys
-  """
-  @spec get_bhashini_keys() :: map()
-  def get_bhashini_keys do
-    %{
-      user_id: Application.get_env(:glific, :bhasini_user_id),
-      ulca_api_key: Application.get_env(:glific, :bhasini_ulca_api_key),
-      inference_key: Application.get_env(:glific, :bhasini_inference_key)
-    }
-  end
-
-  @doc """
   Get Get Google Maps keys
   """
   @spec get_google_maps_api_key() :: String.t()

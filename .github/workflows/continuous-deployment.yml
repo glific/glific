@@ -22,13 +22,13 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'push' && 'master' || github.event.pull_request.head.ref }} # Checkout out master or the PR commit
           fetch-depth: 0 # Checkout the whole branch
 
       # setup  python
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
