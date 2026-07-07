@@ -481,7 +481,7 @@ defmodule Glific.Flows.WebhookTest do
       assert response["message"] =~ "contact the Glific Team"
     end
 
-    test "leaves audio output messages (base64 TTS content) untouched" do
+    test "applies the sanitizer to audio output messages too, as a no-op on base64 TTS content" do
       audio_content = Base.encode64("contact Kaapi fake audio bytes")
 
       params = %{

@@ -651,8 +651,7 @@ defmodule Glific.Flows.Webhook do
     output_type = get_in(output, ["type"])
     conversation_id = response_data["conversation_id"]
 
-    message = get_in(output, ["content", "value"])
-    message = if output_type == "audio", do: message, else: sanitize_kaapi_wording(message)
+    message = get_in(output, ["content", "value"]) |> sanitize_kaapi_wording()
 
     metadata
     |> Map.put("thread_id", conversation_id)
