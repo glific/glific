@@ -25,9 +25,13 @@ defmodule Glific.Providers.Instrumentation.Adapter do
 
       @provider unquote(provider)
 
+      @doc "Returns the provider tag stamped on this adapter's metrics."
+      @spec provider() :: String.t()
       @impl Glific.Providers.Instrumentation.Behaviour
       def provider, do: @provider
 
+      @doc "Default send classification: returns the raw status unchanged."
+      @spec classify_send(atom(), map()) :: atom()
       @impl Glific.Providers.Instrumentation.Behaviour
       def classify_send(status, _context), do: status
 
