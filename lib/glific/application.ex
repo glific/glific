@@ -125,7 +125,7 @@ defmodule Glific.Application do
 
   @spec notify_deployment_healthy() :: :ok | {:error, String.t()}
   defp notify_deployment_healthy do
-    if Application.get_env(:glific, :environment) != :test,
+    if Application.get_env(:glific, :environment) == :prod,
       do: DiscordNotifications.send_deployment_healthy(),
       else: :ok
   end
