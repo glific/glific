@@ -38,4 +38,14 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
       _ -> %{success: false, reason: "Kaapi is not active"}
     end
   end
+
+  @doc """
+  Classify this webhook's own failures; everything else (external OpenAI/Kaapi errors) returns
+  `nil` and defers to `Glific.Flows.Webhooks.ErrorClassifier`.
+  """
+  @impl true
+  @spec error_class(map()) :: :config | :system | :transient | :stale | nil
+  def error_class(%{reason: "Kaapi is not active" <> _}), do: :system
+  def error_class(%{reason: "Assistant not found" <> _}), do: :config
+  def error_class(_result), do: nil
 end

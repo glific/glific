@@ -14,9 +14,9 @@ defmodule Glific.Flows.Webhooks.Errors do
     Raised in `Instrumentation.report_timeout/1`.
   - `Error` — general-purpose; for failures that don't fit the above categories.
 
-  `ConfigurationError` is intentionally absent — there are no concrete missing-credential
-  scenarios yet that warrant a dedicated subtype. Add it here when a specific scenario
-  emerges (e.g. a missing API key detected at dispatch time).
+  - `ConfigurationError` — NGO / flow-author misconfiguration (missing creds, bad JSON body,
+    unrecognised webhook function). Routed to the `flow_webhook_config_errors` namespace so it
+    notifies support instead of paging on-call.
   """
 
   defmodule SystemError do
@@ -31,6 +31,15 @@ defmodule Glific.Flows.Webhooks.Errors do
 
   defmodule Error do
     @moduledoc "General-purpose webhook failure not covered by the more specific types."
+    defexception [:message]
+  end
+
+  defmodule ConfigurationError do
+    @moduledoc """
+    Webhook failure caused by NGO / flow-author misconfiguration (missing creds, bad JSON body,
+    unrecognised webhook function, unresolved template variable). Routed to a separate AppSignal
+    namespace (`flow_webhook_config_errors`) so it notifies support instead of paging on-call.
+    """
     defexception [:message]
   end
 end

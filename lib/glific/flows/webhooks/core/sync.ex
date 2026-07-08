@@ -42,6 +42,13 @@ defmodule Glific.Flows.Webhooks.Sync do
       @spec mode() :: :sync
       @impl true
       def mode, do: :sync
+
+      @doc "Classify this webhook's own failures; `nil` defers to the central engine."
+      @spec error_class(map()) :: :config | :system | :transient | :stale | nil
+      @impl true
+      def error_class(_result), do: nil
+
+      defoverridable error_class: 1
     end
   end
 end

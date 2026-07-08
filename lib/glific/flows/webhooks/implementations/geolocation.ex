@@ -22,6 +22,13 @@ defmodule Glific.Flows.Webhooks.Geolocation do
           {:ok, Address.t()} | {:error, String.t()}
   def call(fields, _ctx), do: geocode(fields)
 
+  @doc "Bad geocoding input (invalid latlng / missing coords) is user/flow config; else defer."
+  @impl true
+  @spec error_class(map()) :: :config | :system | :transient | :stale | nil
+  def error_class(%{reason: "Invalid geocoding request" <> _}), do: :config
+  def error_class(%{reason: "Missing lat or long" <> _}), do: :config
+  def error_class(_result), do: nil
+
   @spec geocode(map()) :: {:ok, Address.t()} | {:error, String.t()}
   defp geocode(fields) do
     lat = (fields["lat"] || "") |> to_string() |> String.trim()

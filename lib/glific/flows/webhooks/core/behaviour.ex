@@ -81,5 +81,12 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
-  @optional_callbacks wait_time_default: 0
+  @doc """
+  Classify a failure THIS webhook produced into a bucket, or `nil` to defer to the central
+  engine (`Glific.Flows.Webhooks.ErrorClassifier`). Optional — the `Sync`/`Async` macro injects
+  a `nil` default, so a module only overrides it for its own domain failures.
+  """
+  @callback error_class(result :: map()) :: :config | :system | :transient | :stale | nil
+
+  @optional_callbacks wait_time_default: 0, error_class: 1
 end

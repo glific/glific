@@ -76,6 +76,17 @@ defmodule Glific.Flows.Webhook do
     defexception [:message]
   end
 
+  defmodule ConfigurationError do
+    @moduledoc """
+    Webhook failure caused by NGO / flow-author misconfiguration (missing creds, bad JSON body,
+    unrecognised webhook function, unresolved template variable). Routed to the
+    `flow_webhook_config_errors` AppSignal namespace so it notifies support instead of paging
+    on-call with system failures. Keep `:message` low-cardinality; per-occurrence detail goes in
+    AppSignal tags at the report site.
+    """
+    defexception [:message]
+  end
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",

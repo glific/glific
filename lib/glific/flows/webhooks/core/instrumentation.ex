@@ -164,6 +164,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   """
   @spec report_failure(String.t(), tags()) :: :ok
   def report_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
+    # TODO(error-classification): class = ErrorClassifier.classify(module, result);
+    #   ErrorClassifier.report(class, result, tags) — replaces the hard-coded SystemError below.
     %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
     |> Glific.log_exception(
       namespace: "flow_webhooks",
