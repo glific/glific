@@ -17,7 +17,7 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Settings,
+    Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
   }
@@ -153,9 +153,9 @@ defmodule Glific.Templates do
     # Deriving from shortcode + language also means a language-specific submission that
     # gets rejected by Meta can be resubmitted under the same shortcode+language without
     # hitting the [:label, :language_id, :organization_id] unique constraint.
-    attrs = Map.put(attrs, :label, resolve_label(attrs))
-
-    with :ok <- validate_hsm(attrs),
+    with {:ok, label} <- resolve_label(attrs),
+         attrs <- Map.put(attrs, :label, label),
+         :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
          :ok <- validate_template_length(attrs) do
       submit_for_approval(attrs)
@@ -165,22 +165,24 @@ defmodule Glific.Templates do
   def create_session_template(attrs),
     do: do_create_session_template(attrs)
 
-  @spec resolve_label(map()) :: String.t() | nil
-  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: label
+  @spec resolve_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: {:ok, label}
   defp resolve_label(attrs), do: generate_unique_label(attrs)
 
-  @spec generate_unique_label(map()) :: String.t() | nil
+  @spec generate_unique_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
   defp generate_unique_label(%{
          shortcode: shortcode,
          language_id: language_id,
          organization_id: organization_id
        })
        when is_binary(shortcode) and shortcode != "" do
-    locale = Settings.get_language!(language_id).locale
-    make_unique_label("#{shortcode}_#{locale}", organization_id)
+    case Repo.get(Language, language_id) do
+      nil -> {:error, ["language_id", "does not exist"]}
+      language -> {:ok, make_unique_label("#{shortcode}_#{language.locale}", organization_id)}
+    end
   end
 
-  defp generate_unique_label(attrs), do: Map.get(attrs, :label)
+  defp generate_unique_label(attrs), do: {:ok, Map.get(attrs, :label)}
 
   @spec make_unique_label(String.t(), non_neg_integer(), non_neg_integer() | nil) :: String.t()
   defp make_unique_label(base_label, organization_id, suffix \\ nil) do
