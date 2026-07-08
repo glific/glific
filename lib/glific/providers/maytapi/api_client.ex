@@ -22,7 +22,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   """
   @spec maytapi_get(String.t(), String.t()) :: Tesla.Env.result()
   def maytapi_get(url, token),
-    do: client(:read) |> Tesla.get(url, headers: headers(token)) |> log_on_failure(url)
+    do:
+      :read
+      |> client()
+      |> Tesla.get(url, headers: headers(token))
+      |> log_on_failure(url)
 
   # Group operations (createGroup, group/add, group/remove)
   # trigger real WhatsApp actions on the device and can take well over the
@@ -90,9 +94,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   end
 
   @doc """
-  Fetches phone numbers linked to Maytapi account and sync it in Glific
+  Fetches the phones linked to the org's Maytapi account. Returns the decoded
+  list of phone maps (`{:ok, [%{"id" => ..., "status" => ..., ...}, ...]}`) or
+  `{:error, message}`.
   """
-  @spec list_wa_managed_phones(non_neg_integer()) :: Tesla.Env.result()
+  @spec list_wa_managed_phones(non_neg_integer()) :: {:ok, [map()]} | {:error, String.t()}
   def list_wa_managed_phones(org_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
@@ -100,7 +106,91 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/listPhones"
 
-      maytapi_get(url, token)
+      url
+      |> maytapi_get(token)
+      |> handle_maytapi_response(:list_phones)
+    end
+  end
+
+  @doc """
+  Fetches the current screen for a phone. When the phone is on the WhatsApp login
+  screen (status `qr-screen`), this is the QR image to rescan — the surface we
+  expose so admins can reconnect a disconnected phone from Glific.
+
+  Maytapi returns the screen as raw PNG bytes, so this returns `{:ok, data_url}`
+  (a `data:image/png;base64,...` string the frontend can render) or
+  `{:error, message}`; the raw HTTP/Tesla layer is handled here.
+  """
+  @spec fetch_phone_screen(non_neg_integer(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def fetch_phone_screen(org_id, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/screen"
+
+      url
+      |> maytapi_get(token)
+      |> handle_screen_response()
+    end
+  end
+
+  @doc """
+  Logs a phone out of its WhatsApp session so Maytapi shows a fresh QR to relink.
+  Returns `:ok` or `{:error, message}`.
+  """
+  @spec logout_phone(non_neg_integer(), non_neg_integer()) :: :ok | {:error, String.t()}
+  def logout_phone(org_id, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/logout"
+
+      # logout takes no parameters. This client has no JSON middleware (see
+      # `client/1`), so bodies are always pre-encoded strings — send an empty one.
+      url
+      |> maytapi_post("{}", token)
+      |> handle_maytapi_response()
+    end
+  end
+
+  # On success the `screen` endpoint returns the raw PNG bytes of the phone's
+  # current screen (the QR image when it's on the login screen). On failure it
+  # returns a JSON error body (still HTTP 200). So only a body that is actually a
+  # PNG is Base64-encoded into a data-url; anything else is treated as an error
+  # (`screen_error/1`) rather than handed back as a bogus QR image.
+  @spec handle_screen_response(Tesla.Env.result()) :: {:ok, String.t()} | {:error, String.t()}
+  defp handle_screen_response({:ok, %Tesla.Env{status: status, body: body}})
+       when status in 200..299 do
+    if png?(body) do
+      {:ok, "data:image/png;base64," <> Base.encode64(body)}
+    else
+      screen_error(body)
+    end
+  end
+
+  defp handle_screen_response({:ok, %Tesla.Env{body: body}}) do
+    Glific.log_error("Maytapi screen non-2xx response: #{SafeLog.safe_inspect(body)}")
+    {:error, @generic_error}
+  end
+
+  defp handle_screen_response({:error, reason}) do
+    Glific.log_error("Maytapi screen request error: #{SafeLog.safe_inspect(reason)}")
+    {:error, @generic_error}
+  end
+
+  @spec png?(any()) :: boolean()
+  defp png?(<<137, 80, 78, 71, 13, 10, 26, 10, _::binary>>), do: true
+  defp png?(_), do: false
+
+  # A 200 that isn't a PNG is Maytapi's JSON error shape — surface its message.
+  @spec screen_error(binary()) :: {:error, String.t()}
+  defp screen_error(body) do
+    case Jason.decode(body) do
+      {:ok, %{"message" => message}} when is_binary(message) -> {:error, message}
+      _ -> {:error, @generic_error}
     end
   end
 
@@ -198,10 +288,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # Handles any Maytapi response. Maytapi answers HTTP 200 even on failure, with
   # `%{"success" => false, "message" => "...", "code" => "..."}`, so a 2xx status
   # alone is not enough — we decode the body and check `success`. The `:create`
-  # clause extracts the new group's data; the default clause just reports `:ok`.
+  # clause extracts the new group's data; the `:list_phones` clause returns the
+  # JSON array of phones; the default clause just reports `:ok`.
   # Non-2xx / transport / unexpected → `{:error, message}`.
-  @spec handle_maytapi_response(Tesla.Env.result(), :create | :default) ::
-          :ok | {:ok, map()} | {:error, String.t()}
+  @spec handle_maytapi_response(Tesla.Env.result(), :create | :default | :list_phones) ::
+          :ok | {:ok, map()} | {:ok, [map()]} | {:error, String.t()}
   defp handle_maytapi_response(response, type \\ :default)
 
   defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, :create)
@@ -216,6 +307,22 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       _ ->
         {:error, "Unexpected Maytapi create group response"}
+    end
+  end
+
+  # listPhones returns a JSON array of phones on success. Errors come back as
+  # Maytapi's usual {"success": false, "message": ...} shape (surface the message).
+  defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, :list_phones)
+       when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, phones} when is_list(phones) ->
+        {:ok, phones}
+
+      {:ok, %{"success" => false, "message" => message}} when is_binary(message) ->
+        {:error, message}
+
+      _ ->
+        {:error, @generic_error}
     end
   end
 
