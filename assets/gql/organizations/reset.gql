@@ -1,0 +1,3 @@
+mutation resetOrganization($resetOrganizationId: ID!, $isConfirmed: Boolean!) {
+  resetOrganization(resetOrganizationId: $resetOrganizationId, isConfirmed: $isConfirmed)
+}

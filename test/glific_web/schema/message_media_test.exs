@@ -42,8 +42,9 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     messages_media = get_in(query_data, [:data, "messagesMedia"])
     assert length(messages_media) > 0
 
-    [message_media | _] = messages_media
-    assert get_in(message_media, ["caption"]) == "default caption"
+    # the list has no default order, so assert membership rather than position
+    captions = Enum.map(messages_media, &get_in(&1, ["caption"]))
+    assert "default caption" in captions
   end
 
   test "messages media field obeys limit and offset", %{staff: user} do

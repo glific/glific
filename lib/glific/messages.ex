@@ -833,6 +833,13 @@ defmodule Glific.Messages do
     if has_no_errors, do: do_create_message_media(changeset, attrs), else: {:error, changeset}
   end
 
+  # Dedup media by (url, caption, organization_id). Caption stays in the app
+  # lookup so that personalized captions on a shared media URL keep distinct
+  # rows — the caption sent to the contact is read from the media row
+  # (message.media.caption), so collapsing distinct captions would deliver the
+  # wrong one. Caption is only kept OUT of the btree index: indexing the full
+  # caption overflowed the 2704-byte row limit and crashed inbound media
+  # inserts on long captions (glific#5319).
   @spec do_create_message_media(Ecto.Changeset.t(), map()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp do_create_message_media(changeset, attrs) do
@@ -852,12 +859,9 @@ defmodule Glific.Messages do
     end
   end
 
-  defp add_caption(query, caption) when is_nil(caption), do: query
-
-  defp add_caption(query, caption) do
-    query
-    |> where([mm], mm.caption == ^caption)
-  end
+  @spec add_caption(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Queryable.t()
+  defp add_caption(query, nil), do: query
+  defp add_caption(query, caption), do: where(query, [mm], mm.caption == ^caption)
 
   @doc """
   Updates a message media.

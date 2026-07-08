@@ -18,16 +18,12 @@ defmodule GlificWeb.Resolvers.Partners do
   }
 
   @doc """
-  Get a specific organization by id
+  Get the current user's organization. Any client-supplied `id` is ignored — this
+  endpoint only ever returns the caller's own organization (tenant isolation).
   """
   @spec organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def organization(_, %{id: id}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
-         do: {:ok, %{organization: organization}}
-  end
-
-  def organization(_, _, %{context: %{current_user: current_user}}) do
+  def organization(_, _args, %{context: %{current_user: current_user}}) do
     with {:ok, organization} <-
            Repo.fetch(Organization, current_user.organization_id, skip_organization_id: true),
          do: {:ok, %{organization: organization}}
@@ -75,13 +71,15 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Updates an organization
+  Updates the caller's organization. The client-supplied `id` is ignored; the
+  organization is always derived from the current user (tenant isolation).
   """
-  @spec update_organization(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_organization(Absinthe.Resolution.t(), %{input: map()}, %{
           context: map()
         }) :: {:ok, any} | {:error, any}
-  def update_organization(_, %{id: id, input: params}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
+  def update_organization(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with {:ok, organization} <-
+           Repo.fetch(Organization, current_user.organization_id, skip_organization_id: true),
          {:ok, organization} <- Partners.update_organization(organization, params) do
       {:ok, %{organization: organization}}
     end
@@ -101,13 +99,15 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Deletes all the test (dynamic) data of an organization
+  Deletes all the test (dynamic) data of the caller's organization. Any
+  client-supplied `id` is ignored; the organization is always derived from the
+  current user (tenant isolation).
   """
-  @spec delete_organization_test_data(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec delete_organization_test_data(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_organization_test_data(_, %{id: id}, _) do
+  def delete_organization_test_data(_, _args, %{context: %{current_user: current_user}}) do
     # make sure organization exists
-    with {:ok, organization} <- Repo.fetch(Organization, id) do
+    with {:ok, organization} <- Repo.fetch(Organization, current_user.organization_id) do
       Partners.delete_organization_test_data(organization)
     end
   end
