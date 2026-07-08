@@ -30,7 +30,11 @@ defmodule Glific.Flows.Webhooks.Registry do
     "speech_to_text" => Webhooks.SpeechToText,
     "text_to_speech" => Webhooks.TextToSpeech,
     "filesearch-gpt" => Webhooks.FilesearchGpt,
-    "voice-filesearch-gpt" => Webhooks.VoiceFilesearchGpt
+    "voice-filesearch-gpt" => Webhooks.VoiceFilesearchGpt,
+    "parse_via_chat_gpt" => Webhooks.ParseViaChatGpt,
+    "parse_via_gpt_vision" => Webhooks.ParseViaGptVision,
+    "send_wa_group_poll" => Webhooks.SendWaGroupPoll,
+    "create_certificate" => Webhooks.CreateCertificate
   }
 
   @doc """
