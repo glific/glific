@@ -308,7 +308,7 @@ defmodule Glific.WAManagedPhonesTest do
     {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
 
     assert notification.message ==
-             "WhatsApp phone 9829627508 is not working (status: qr-screen). Messaging is blocked — reconnect it from the WhatsApp Phones page; if it stays down it may need action on the WhatsApp/Meta side."
+             "WhatsApp phone 9829627508 is not working (status: qr-screen). Messaging is blocked — reconnect it from the WhatsApp Phones page."
 
     # any unhealthy status blocks messaging, so it alerts as critical
     assert notification.severity == "Critical"
