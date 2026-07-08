@@ -3,10 +3,10 @@ defmodule Glific.Flows.Webhooks.Registry do
   Maps a webhook's name string (as it appears in flow JSON URLs) to the
   module that implements `Glific.Flows.Webhooks.Behaviour` for it.
 
-  Migration is incremental — only webhooks that have been ported live here.
-  `Glific.Clients.CommonWebhook` keeps its existing per-name clauses for
-  the unmigrated webhooks; once a webhook moves to this registry, its
-  CommonWebhook clause shrinks to a `Dispatcher.dispatch/3` call.
+  Every flow-webhook node is registered here and routed to its `Glific.Flows.Webhooks`
+  implementation module by `Glific.Flows.Webhook.dispatch_function/3` → `Dispatcher.dispatch/3`.
+  Org-specific webhook functions (per-org client modules) fall through to
+  `Glific.Clients.webhook/2` instead.
 
   ## Why Registry is separate from Dispatcher
 
@@ -34,7 +34,9 @@ defmodule Glific.Flows.Webhooks.Registry do
     "parse_via_chat_gpt" => Webhooks.ParseViaChatGpt,
     "parse_via_gpt_vision" => Webhooks.ParseViaGptVision,
     "send_wa_group_poll" => Webhooks.SendWaGroupPoll,
-    "create_certificate" => Webhooks.CreateCertificate
+    "create_certificate" => Webhooks.CreateCertificate,
+    "get_buttons" => Webhooks.GetButtons,
+    "check_response" => Webhooks.CheckResponse
   }
 
   @doc """

@@ -242,7 +242,7 @@ defmodule Glific.Flows.Webhook do
 
   # Routes a function-type webhook to the central Dispatcher when it is registered (sync or
   # async — both run their module's call/2 wrapped in instrumentation), otherwise falls back
-  # to the legacy Glific.Clients.webhook chain (CommonWebhook + per-org client modules).
+  # to Glific.Clients.webhook/2 (per-org client modules).
   @spec dispatch_function(String.t(), map(), list()) :: any()
   defp dispatch_function(function, fields, headers) do
     case Registry.lookup(function) do

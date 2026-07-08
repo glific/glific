@@ -5,7 +5,6 @@ defmodule Glific.ClientsTest do
     Clients,
     Clients.Atecf,
     Clients.Bandhu,
-    Clients.CommonWebhook,
     Clients.KEF,
     Clients.ReapBenefit,
     Clients.Sarc,
@@ -126,9 +125,6 @@ defmodule Glific.ClientsTest do
                "organization_id" => attrs.organization_id
              })
            )
-
-    assert %{error: "Missing webhook function implementation"} ==
-             CommonWebhook.webhook("function", %{fields: "some fields"})
   end
 
   test "fetch_user_profiles webhook function" do
@@ -197,7 +193,8 @@ defmodule Glific.ClientsTest do
             {"content-length", "3209581"}
           ],
           method: :get,
-          status: 200
+          status: 200,
+          body: "image-bytes"
         }
 
       %{method: :post} ->
