@@ -1,7 +1,7 @@
 defmodule Glific.Providers.InstrumentationTest.StubAdapter do
   @moduledoc false
   # A bare adapter with no overrides, to exercise the generic mixin defaults.
-  use Glific.Providers.Instrumentation.Adapter, provider: "stub"
+  use Glific.Providers.Instrumentation, provider: "stub"
 end
 
 defmodule Glific.Providers.InstrumentationTest do

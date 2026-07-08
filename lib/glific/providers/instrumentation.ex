@@ -11,17 +11,17 @@ defmodule Glific.Providers.Instrumentation do
 
   ## Adding a provider
 
-  A provider gets all the counters for free by defining a tiny adapter:
+  A provider gets all the counters for free by defining a tiny module:
 
       defmodule Glific.Providers.Maytapi.Instrumentation do
-        use Glific.Providers.Instrumentation.Adapter, provider: "maytapi"
+        use Glific.Providers.Instrumentation, provider: "maytapi"
       end
 
   and calling `Maytapi.Instrumentation.track_send(:success, organization_id: id)`
   etc. Provider-specific behaviour — e.g. Gupshup reclassifying a frequency-capped
   4xx as `frequency_capped` instead of `error` — is a single overridden
-  `c:Glific.Providers.Instrumentation.Behaviour.classify_send/2` callback; the
-  metric mechanics below never change. See `Glific.Providers.Gupshup.Instrumentation`.
+  `classify_send/2`; the metric mechanics below never change.
+  See `Glific.Providers.Gupshup.Instrumentation`.
 
   Metrics (all tagged with `provider`):
 
@@ -56,6 +56,60 @@ defmodule Glific.Providers.Instrumentation do
   @type send_status :: :success | :error | :timeout
 
   @type sync_status :: :success | :failure
+
+  @doc """
+  Injects provider-scoped instrumentation helpers into the caller.
+
+  Requires `:provider` in `opts` and defines `provider/0`, `classify_send/2`
+  (overridable), and `track_send/2`, `track_receive/2`, `track_status/2`,
+  `track_hsm_sync/2` that delegate to this module.
+  """
+  defmacro __using__(opts) do
+    provider = Keyword.fetch!(opts, :provider)
+
+    quote do
+      alias Glific.Providers.Instrumentation
+
+      @provider unquote(provider)
+
+      @doc "Returns the provider tag stamped on this module's metrics."
+      @spec provider() :: String.t()
+      def provider, do: @provider
+
+      @doc """
+      Reclassify a raw send outcome into the final status recorded on
+      `provider_send_count`.
+
+      `status` is the raw outcome (`:success` | `:error` | `:timeout`); `context`
+      is whatever the call site passed to `track_send/2` (e.g. `%{error_code: 472}`).
+      Override to add provider-specific classification.
+      """
+      @spec classify_send(atom(), map()) :: atom()
+      def classify_send(status, _context), do: status
+
+      defoverridable classify_send: 2
+
+      @doc "See `Glific.Providers.Instrumentation.track_send/3`."
+      @spec track_send(Instrumentation.send_status(), keyword()) :: :ok
+      def track_send(status, opts \\ []),
+        do: Instrumentation.track_send(__MODULE__, status, opts)
+
+      @doc "See `Glific.Providers.Instrumentation.track_receive/3`."
+      @spec track_receive(any(), non_neg_integer() | nil) :: :ok
+      def track_receive(type, organization_id),
+        do: Instrumentation.track_receive(__MODULE__, type, organization_id)
+
+      @doc "See `Glific.Providers.Instrumentation.track_status/3`."
+      @spec track_status(atom(), non_neg_integer() | nil) :: :ok
+      def track_status(status, organization_id),
+        do: Instrumentation.track_status(__MODULE__, status, organization_id)
+
+      @doc "See `Glific.Providers.Instrumentation.track_hsm_sync/3`."
+      @spec track_hsm_sync(Instrumentation.sync_status(), non_neg_integer() | nil) :: :ok
+      def track_hsm_sync(status, organization_id),
+        do: Instrumentation.track_hsm_sync(__MODULE__, status, organization_id)
+    end
+  end
 
   @doc """
   Record an outbound send. `adapter` is the provider's instrumentation module;
