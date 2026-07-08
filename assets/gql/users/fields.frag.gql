@@ -3,6 +3,7 @@ fragment UserFields on UserResult {
     id
     name
     phone
+    email
     roles
     isRestricted
     groups {
