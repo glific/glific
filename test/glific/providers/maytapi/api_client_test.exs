@@ -27,6 +27,8 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
 
   defp mock_post(response), do: Tesla.Mock.mock(fn %{method: :post} -> response end)
 
+  defp mock_get(response), do: Tesla.Mock.mock(fn %{method: :get} -> response end)
+
   defp ok_body(map), do: {:ok, %Tesla.Env{status: 200, body: Jason.encode!(map)}}
 
   describe "create_group/3" do
@@ -130,6 +132,39 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
       payload = %{conversation_id: "120363@g.us", number: ["919425010449"]}
       assert :ok == ApiClient.add_group_member(org_id, payload, @phone_id)
       assert Agent.get(counter, & &1) >= 2
+    end
+  end
+
+  describe "fetch_phone_screen/2 response handling" do
+    test "returns a generic error when the non-PNG error body has no message", %{
+      organization_id: org_id
+    } do
+      # A 200 that isn't a PNG is Maytapi's JSON error shape; without a message we
+      # can't surface anything specific, so fall back to the generic error.
+      mock_get(ok_body(%{"success" => false}))
+      assert {:error, @generic_error} == ApiClient.fetch_phone_screen(org_id, @phone_id)
+    end
+
+    test "returns a generic error on a non-2xx response", %{organization_id: org_id} do
+      mock_get({:ok, %Tesla.Env{status: 404, body: "not found"}})
+      assert {:error, @generic_error} == ApiClient.fetch_phone_screen(org_id, @phone_id)
+    end
+
+    test "returns a generic error on a transport failure", %{organization_id: org_id} do
+      # :closed is not a retriable reason, so this resolves immediately.
+      mock_get({:error, :closed})
+      assert {:error, @generic_error} == ApiClient.fetch_phone_screen(org_id, @phone_id)
+    end
+  end
+
+  describe "list_wa_managed_phones/1 response handling" do
+    test "returns a generic error on an unexpected (non-list) success body", %{
+      organization_id: org_id
+    } do
+      # listPhones returns a JSON array on success; a `success: false` shape with
+      # no message is neither a list nor a surfacable error → generic error.
+      mock_get(ok_body(%{"success" => false}))
+      assert {:error, @generic_error} == ApiClient.list_wa_managed_phones(org_id)
     end
   end
 end

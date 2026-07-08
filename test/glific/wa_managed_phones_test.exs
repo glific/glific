@@ -252,6 +252,32 @@ defmodule Glific.WAManagedPhonesTest do
 
       assert WAManagedPhones.get_wa_managed_phone(existing.phone_id).status == "disabled"
     end
+
+    test "fetch_wa_managed_phones/1 ignores a logged-out phone whose id Glific has never seen",
+         attrs do
+      Partners.create_credential(%{
+        organization_id: attrs.organization_id,
+        shortcode: "maytapi",
+        keys: %{},
+        secrets: %{
+          "product_id" => "3fa22108-f464-41e5-81d9-d8a298854430",
+          "token" => "f4f38e00-3a50-4892-99ce-a282fe24d041"
+        },
+        is_active: true
+      })
+
+      Tesla.Mock.mock(fn _env ->
+        %Tesla.Env{
+          status: 200,
+          body: ~s([{"id":987654,"status":"disabled","type":"whatsapp"}])
+        }
+      end)
+
+      assert {:error, "No active phones available"} ==
+               WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+
+      assert WAManagedPhones.get_wa_managed_phone(987_654) == nil
+    end
   end
 
   test "status/2 webhook should update the status on wa_managed_phone", %{
@@ -484,6 +510,54 @@ defmodule Glific.WAManagedPhonesTest do
              WAManagedPhones.reconnect_wa_managed_phone(organization_id, wa_managed_phone.id)
 
     assert message =~ "already connected"
+  end
+
+  test "reconcile_wa_managed_phone_statuses/1 skips Maytapi phones that have no id", %{
+    organization_id: organization_id
+  } do
+    Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    Partners.create_credential(%{
+      organization_id: organization_id,
+      shortcode: "maytapi",
+      keys: %{},
+      secrets: %{"product_id" => "prod-123", "token" => "tok-123"},
+      is_active: true
+    })
+
+    # a malformed Maytapi entry with no "id" is ignored, not crashed on
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{status: 200, body: ~s([{"number":"9829627508","status":"active"}])}
+    end)
+
+    assert :ok == WAManagedPhones.reconcile_wa_managed_phone_statuses(organization_id)
+  end
+
+  test "fetch_phone_screen/2 errors when the phone does not belong to the org", %{
+    organization_id: organization_id
+  } do
+    assert {:error, message} = WAManagedPhones.fetch_phone_screen(organization_id, 0)
+    assert message =~ "Resource not found"
+  end
+
+  test "reconnect_wa_managed_phone/2 errors when the phone does not belong to the org", %{
+    organization_id: organization_id
+  } do
+    assert {:error, message} = WAManagedPhones.reconnect_wa_managed_phone(organization_id, 0)
+    assert message =~ "Resource not found"
+  end
+
+  test "reconnect_wa_managed_phone/2 surfaces a plain-string error when Maytapi isn't configured",
+       %{organization_id: organization_id} do
+    wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+
+    # a disconnected phone is reconnectable, but with no Maytapi credential the
+    # logout call fails with a plain-string reason, surfaced as-is
+    {:ok, wa_managed_phone} =
+      WAManagedPhones.update_wa_managed_phone(wa_managed_phone, %{status: "qr-screen"})
+
+    assert {:error, "Maytapi is not active"} ==
+             WAManagedPhones.reconnect_wa_managed_phone(organization_id, wa_managed_phone.id)
   end
 
   test "status/2 shouldn't create a notification when status is 'active' or loading", %{
