@@ -258,7 +258,7 @@ defmodule Glific.Flows.Webhook do
         Dispatcher.dispatch(function, fields, headers)
 
       _ ->
-        Glific.Clients.webhook(function, fields, headers)
+        Glific.Clients.webhook(function, fields)
     end
   end
 
