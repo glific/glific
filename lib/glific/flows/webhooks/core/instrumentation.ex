@@ -77,6 +77,10 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # `flow_webhook_count` is emitted here (not on the async path) — no double-count, since the
   # async success/failure count is recorded at callback time in `record_callback_outcome/2`.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
+  # A rate-limit snooze is neither success nor failure — the Oban job reschedules and re-runs
+  # call/2 later, so record no latency, count, or failure report for it.
+  defp record_outcome(_mode, {:snooze, _seconds}, _webhook_name, _start, _ctx), do: :ok
+
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_webhook_count(webhook_name, sync_count_status(result))

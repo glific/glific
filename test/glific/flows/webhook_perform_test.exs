@@ -16,8 +16,10 @@ defmodule Glific.Flows.WebhookPerformTest do
       args: %{
         "method" => "function",
         "url" => "speech_to_text",
+        # organization_id must live in the body: the STT module reads it from the webhook
+        # fields (via parse_flow_fields) before enforcing the shared rate limit.
+        "body" => Jason.encode!(%{"organization_id" => org_id}),
         "result_name" => "response",
-        "body" => "{}",
         "headers" => [],
         "webhook_log_id" => 1,
         "context" => %{"id" => 1},
