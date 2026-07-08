@@ -179,10 +179,7 @@ defmodule Glific.WAManagedPhones do
   @spec fetch_wa_managed_phones(non_neg_integer()) :: :ok | {:error, String.t()}
   def fetch_wa_managed_phones(org_id) do
     with {:ok, secrets} <- ApiClient.fetch_credentials(org_id),
-         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
-           ApiClient.list_wa_managed_phones(org_id),
-         {:ok, response} <- Jason.decode(body),
-         {:ok, wa_managed_phones} <- validate_response(response) do
+         {:ok, wa_managed_phones} <- ApiClient.list_wa_managed_phones(org_id) do
       Enum.each(wa_managed_phones, fn wa_managed_phone ->
         upsert_wa_managed_phone(wa_managed_phone, org_id, secrets["product_id"])
       end)
@@ -262,15 +259,6 @@ defmodule Glific.WAManagedPhones do
 
   defp log_upsert_error(_result, _phone, _org_id), do: {:ok, "success"}
 
-  @spec validate_response(list() | map()) :: {:ok, list()} | {:error, String.t()}
-  defp validate_response(wa_managed_phones) when is_list(wa_managed_phones),
-    do: {:ok, wa_managed_phones}
-
-  defp validate_response(%{"message" => message, "success" => false}),
-    do: {:error, message}
-
-  defp validate_response(_), do: {:error, "Something went wrong"}
-
   @spec ensure_active_phone(list()) :: :ok | {:error, String.t()}
   defp ensure_active_phone(wa_managed_phones) do
     if Enum.any?(wa_managed_phones, &(&1["status"] == "active")),
@@ -305,24 +293,29 @@ defmodule Glific.WAManagedPhones do
   """
   @spec reconcile_wa_managed_phone_statuses(non_neg_integer()) :: :ok | {:error, String.t()}
   def reconcile_wa_managed_phone_statuses(org_id) do
-    with {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 <-
-           ApiClient.list_wa_managed_phones(org_id),
-         {:ok, response} <- Jason.decode(body),
-         {:ok, phones} <- validate_response(response) do
-      Enum.each(phones, &reconcile_known_phone(&1, org_id))
+    with {:ok, phones} <- ApiClient.list_wa_managed_phones(org_id) do
+      reconcile_phones(phones, org_id)
       :ok
-    else
-      {:error, error} -> {:error, error}
-      _ -> {:error, "Could not reconcile WhatsApp phone statuses"}
     end
   end
 
-  @spec reconcile_known_phone(map(), non_neg_integer()) :: :ok
-  defp reconcile_known_phone(%{"id" => phone_id, "status" => new_status}, org_id)
-       when not is_nil(phone_id) do
-    with %WAManagedPhone{} = phone <-
-           Repo.get_by(WAManagedPhone, %{phone_id: phone_id, organization_id: org_id}),
-         {:ok, _updated} <- reconcile_status(phone, to_string(new_status)) do
+  @spec reconcile_phones([map()], non_neg_integer()) :: :ok
+  defp reconcile_phones(maytapi_phones, org_id) do
+    phone_ids = maytapi_phones |> Enum.map(& &1["id"]) |> Enum.reject(&is_nil/1)
+
+    existing =
+      WAManagedPhone
+      |> where([p], p.phone_id in ^phone_ids and p.organization_id == ^org_id)
+      |> Repo.all()
+      |> Map.new(&{&1.phone_id, &1})
+
+    Enum.each(maytapi_phones, &reconcile_one(&1, existing, org_id))
+  end
+
+  @spec reconcile_one(map(), map(), non_neg_integer()) :: :ok
+  defp reconcile_one(%{"id" => phone_id} = attrs, existing, org_id) do
+    with %WAManagedPhone{} = phone <- Map.get(existing, phone_id),
+         {:ok, _updated} <- reconcile_status(phone, attrs["status"]) do
       :ok
     else
       nil ->
@@ -337,7 +330,7 @@ defmodule Glific.WAManagedPhones do
     end
   end
 
-  defp reconcile_known_phone(_attrs, _org_id), do: :ok
+  defp reconcile_one(_attrs, _existing, _org_id), do: :ok
 
   # Updates a known phone's status, stamps the check time, and alerts only when
   # the status *transitions* into a bad state — so a phone that stays
@@ -365,13 +358,11 @@ defmodule Glific.WAManagedPhones do
 
   @spec maybe_alert_status_transition(String.t() | nil, WAManagedPhone.t()) :: :ok
   defp maybe_alert_status_transition(previous_status, %WAManagedPhone{status: new_status} = phone) do
-    if not healthy_status?(new_status) and new_status != previous_status do
-      severity = status_severity(new_status)
-
+    if became_unhealthy?(previous_status, new_status) do
       Notifications.create_notification(%{
         category: "WhatsApp Groups",
-        message: status_alert_message(phone, severity),
-        severity: severity,
+        message: status_alert_message(phone),
+        severity: Notifications.types().critical,
         organization_id: phone.organization_id,
         entity: %{phone: phone.phone, status: new_status}
       })
@@ -380,25 +371,13 @@ defmodule Glific.WAManagedPhones do
     :ok
   end
 
-  # A phone suspended/banned by WhatsApp (Meta) is critical — unusable until
-  # restored. A plain Maytapi disconnect is a warning: the admin can reconnect it
-  # from Glific.
-  @spec status_severity(String.t() | nil) :: String.t()
-  defp status_severity(status) do
-    normalized = status |> to_string() |> String.downcase()
+  @spec became_unhealthy?(String.t() | nil, String.t() | nil) :: boolean()
+  defp became_unhealthy?(previous_status, new_status),
+    do: healthy_status?(previous_status) and not healthy_status?(new_status)
 
-    if String.contains?(normalized, "ban") or String.contains?(normalized, "suspend"),
-      do: Notifications.types().critical,
-      else: Notifications.types().warning
-  end
-
-  @spec status_alert_message(WAManagedPhone.t(), String.t()) :: String.t()
-  defp status_alert_message(%WAManagedPhone{phone: phone, status: status}, severity) do
-    if severity == Notifications.types().critical do
-      "WhatsApp phone #{phone} appears suspended by WhatsApp (status: #{status}). Messaging is blocked until it is restored."
-    else
-      "WhatsApp phone #{phone} is disconnected (status: #{status}). Reconnect it from the WhatsApp Phones page to resume messaging."
-    end
+  @spec status_alert_message(WAManagedPhone.t()) :: String.t()
+  defp status_alert_message(%WAManagedPhone{phone: phone, status: status}) do
+    "WhatsApp phone #{phone} is not working (status: #{status}). Messaging is blocked — reconnect it from the WhatsApp Phones page."
   end
 
   @doc """
@@ -434,7 +413,7 @@ defmodule Glific.WAManagedPhones do
   def reconnect_wa_managed_phone(org_id, wa_managed_phone_id) do
     with {:ok, %WAManagedPhone{} = phone} <-
            Repo.fetch_by(WAManagedPhone, %{id: wa_managed_phone_id, organization_id: org_id}),
-         false <- phone.status == "active",
+         false <- healthy_status?(phone.status),
          :ok <- ApiClient.logout_phone(org_id, phone.phone_id) do
       {:ok, phone}
     else

@@ -94,9 +94,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   end
 
   @doc """
-  Fetches phone numbers linked to Maytapi account and sync it in Glific
+  Fetches the phones linked to the org's Maytapi account. Returns the decoded
+  list of phone maps (`{:ok, [%{"id" => ..., "status" => ..., ...}, ...]}`) or
+  `{:error, message}`.
   """
-  @spec list_wa_managed_phones(non_neg_integer()) :: Tesla.Env.result()
+  @spec list_wa_managed_phones(non_neg_integer()) :: {:ok, [map()]} | {:error, String.t()}
   def list_wa_managed_phones(org_id) do
     with {:ok, secrets} <- fetch_credentials(org_id) do
       product_id = secrets["product_id"]
@@ -104,7 +106,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       url = @maytapi_url <> "/#{product_id}/listPhones"
 
-      maytapi_get(url, token)
+      url
+      |> maytapi_get(token)
+      |> handle_maytapi_response(:list_phones)
     end
   end
 
@@ -284,10 +288,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # Handles any Maytapi response. Maytapi answers HTTP 200 even on failure, with
   # `%{"success" => false, "message" => "...", "code" => "..."}`, so a 2xx status
   # alone is not enough — we decode the body and check `success`. The `:create`
-  # clause extracts the new group's data; the default clause just reports `:ok`.
+  # clause extracts the new group's data; the `:list_phones` clause returns the
+  # JSON array of phones; the default clause just reports `:ok`.
   # Non-2xx / transport / unexpected → `{:error, message}`.
-  @spec handle_maytapi_response(Tesla.Env.result(), :create | :default) ::
-          :ok | {:ok, map()} | {:error, String.t()}
+  @spec handle_maytapi_response(Tesla.Env.result(), :create | :default | :list_phones) ::
+          :ok | {:ok, map()} | {:ok, [map()]} | {:error, String.t()}
   defp handle_maytapi_response(response, type \\ :default)
 
   defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, :create)
@@ -302,6 +307,22 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
       _ ->
         {:error, "Unexpected Maytapi create group response"}
+    end
+  end
+
+  # listPhones returns a JSON array of phones on success. Errors come back as
+  # Maytapi's usual {"success": false, "message": ...} shape (surface the message).
+  defp handle_maytapi_response({:ok, %Tesla.Env{status: status, body: body}}, :list_phones)
+       when status in 200..299 do
+    case Jason.decode(body) do
+      {:ok, phones} when is_list(phones) ->
+        {:ok, phones}
+
+      {:ok, %{"success" => false, "message" => message}} when is_binary(message) ->
+        {:error, message}
+
+      _ ->
+        {:error, @generic_error}
     end
   end
 

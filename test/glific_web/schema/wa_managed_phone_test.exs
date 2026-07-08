@@ -151,6 +151,10 @@ defmodule GlificWeb.Schema.WAManagedPhoneTest do
   test "reconnect_wa_managed_phone logs the phone out for an admin",
        %{glific_admin: user} = attrs do
     phone = Fixtures.wa_managed_phone_fixture(attrs)
+
+    {:ok, phone} =
+      Glific.WAManagedPhones.update_wa_managed_phone(phone, %{status: "disconnected"})
+
     maytapi_credential(user.organization_id)
 
     Tesla.Mock.mock(fn _env -> %Tesla.Env{status: 200, body: ~s({"success":true})} end)

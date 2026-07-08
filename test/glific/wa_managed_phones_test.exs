@@ -293,9 +293,10 @@ defmodule Glific.WAManagedPhonesTest do
     assert WAManagedPhones.status(new_status, phone_id) == {:error, "Phone ID not found"}
   end
 
-  test "status/2 warns on a transition into a disconnected state and stamps the check time", %{
-    organization_id: organization_id
-  } do
+  test "status/2 raises a critical alert on a transition into a disconnected state and stamps the check time",
+       %{
+         organization_id: organization_id
+       } do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
 
     new_status = "qr-screen"
@@ -307,9 +308,10 @@ defmodule Glific.WAManagedPhonesTest do
     {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
 
     assert notification.message ==
-             "WhatsApp phone 9829627508 is disconnected (status: qr-screen). Reconnect it from the WhatsApp Phones page to resume messaging."
+             "WhatsApp phone 9829627508 is not working (status: qr-screen). Messaging is blocked — reconnect it from the WhatsApp Phones page; if it stays down it may need action on the WhatsApp/Meta side."
 
-    assert notification.severity == "Warning"
+    # any unhealthy status blocks messaging, so it alerts as critical
+    assert notification.severity == "Critical"
   end
 
   test "status/2 does not re-notify when the phone stays in the same bad state", %{
@@ -334,7 +336,7 @@ defmodule Glific.WAManagedPhonesTest do
 
     {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
     assert notification.severity == "Critical"
-    assert notification.message =~ "suspended by WhatsApp"
+    assert notification.message =~ "Messaging is blocked"
   end
 
   test "reconcile_wa_managed_phone_statuses/1 polls Maytapi and alerts on transitions", %{
@@ -353,15 +355,18 @@ defmodule Glific.WAManagedPhonesTest do
     Tesla.Mock.mock(fn _env ->
       %Tesla.Env{
         status: 200,
-        body: ~s([{"id":#{wa_managed_phone.phone_id},"number":"9829627508","status":"disabled"}])
+        body:
+          ~s([{"id":#{wa_managed_phone.phone_id},"number":"9829627508","status":"disconnected"}])
       }
     end)
 
     assert :ok == WAManagedPhones.reconcile_wa_managed_phone_statuses(organization_id)
 
-    assert WAManagedPhones.get_wa_managed_phone(wa_managed_phone.phone_id).status == "disabled"
+    assert WAManagedPhones.get_wa_managed_phone(wa_managed_phone.phone_id).status ==
+             "disconnected"
+
     {:ok, notification} = Repo.fetch_by(Notification, %{organization_id: organization_id})
-    assert notification.severity == "Warning"
+    assert notification.severity == "Critical"
   end
 
   test "reconcile_wa_managed_phone_statuses/1 does not touch another org's phones", %{
@@ -449,6 +454,9 @@ defmodule Glific.WAManagedPhonesTest do
     organization_id: organization_id
   } do
     wa_managed_phone = Fixtures.wa_managed_phone_fixture(%{organization_id: organization_id})
+    # a disconnected (non-healthy) phone is the reconnectable case
+    {:ok, wa_managed_phone} =
+      WAManagedPhones.update_wa_managed_phone(wa_managed_phone, %{status: "qr-screen"})
 
     Partners.create_credential(%{
       organization_id: organization_id,
