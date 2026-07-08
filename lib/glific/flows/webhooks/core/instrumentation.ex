@@ -73,10 +73,13 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
+  # `flow_webhook_count` is emitted here (not on the async path) — no double-count, since the
+  # async success/failure count is recorded at callback time in `record_callback_outcome/2`.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_status(webhook_name, result)
+    track_webhook_count(webhook_name, sync_count_status(result))
     maybe_report_failure(result, webhook_name, ctx)
   end
 
@@ -92,6 +95,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     track_status(webhook_name, result)
     maybe_report_failure(result, webhook_name, ctx)
   end
+
+  # A sync result is a success only when it is a `%{success: true}` map; bare strings,
+  # `%{success: false}`, nil and other shapes all route the flow to Failure.
+  @spec sync_count_status(any()) :: String.t()
+  defp sync_count_status(%{success: true}), do: "success"
+  defp sync_count_status(_result), do: "failure"
 
   @doc """
   Callback-time failure report (the Kaapi callback arrived but `success` was
