@@ -54,28 +54,6 @@ defmodule Glific.Flows.Webhook do
     defexception [:message, :reason, :organization_id]
   end
 
-  defmodule SystemError do
-    @moduledoc """
-    Webhook failure: 4xx/5xx HTTP responses, transport errors (DNS,
-    connection refused, timeout), unexpected response shapes. Keep the
-    `:message` field low-cardinality so AppSignal groups identical failures
-    into one incident; per-occurrence detail (org, status, reason) is
-    attached as AppSignal tags via `Span.set_sample_data` at the report
-    site, not on the struct.
-    """
-    defexception [:message]
-  end
-
-  defmodule TimeoutError do
-    @moduledoc """
-    Webhook timeout: an async webhook (STT/TTS/unified-llm) parked the flow
-    waiting for a Kaapi callback, but none arrived within the wait window.
-    A distinct exception module so AppSignal groups timeouts into their own
-    incident, separate from `SystemError`.
-    """
-    defexception [:message]
-  end
-
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
@@ -84,23 +62,6 @@ defmodule Glific.Flows.Webhook do
     "speech_to_text",
     "text_to_speech"
   ]
-
-  @doc """
-  Report a flow-webhook exception (`SystemError` / `Timeout`) to AppSignal
-  under the `flow_webhooks` namespace.
-  """
-  @spec report_to_appsignal(Exception.t(), map()) :: :ok
-  def report_to_appsignal(exception, tags) when is_map(tags) do
-    Logger.error(Exception.message(exception))
-
-    Appsignal.send_error(exception, [], fn span ->
-      span
-      |> Appsignal.Span.set_namespace("flow_webhooks")
-      |> Appsignal.Span.set_sample_data("tags", tags)
-    end)
-
-    :ok
-  end
 
   @doc """
   Execute a webhook action, could be either get or post for now

@@ -2,9 +2,10 @@ defmodule Glific.Flows.Webhooks.Errors do
   @moduledoc """
   Exception types for the `Glific.Flows.Webhooks` subsystem.
 
-  These are independent of the legacy `Glific.Flows.Webhook.{Error,SystemError,TimeoutError}`
-  exception modules. New code in the `Webhooks` namespace raises and reports these types;
-  the old single-module `Webhook` worker continues to use its own exception types.
+  These are the single home for webhook error reporting. The legacy `Glific.Flows.Webhook`
+  reporting path (`report_to_appsignal/2` + its `SystemError`/`TimeoutError`) has been removed;
+  `Glific.Flows.Webhook.Error` remains only as the Kaapi-worker exception. New code in the
+  `Webhooks` namespace raises and reports the types below.
 
   Three exception classes mirror the failure modes of the webhook execution pipeline:
 
