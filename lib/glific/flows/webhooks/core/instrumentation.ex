@@ -67,6 +67,9 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       exception ->
         track_latency(webhook_name, mode, start, :error)
         track_status(webhook_name, nil)
+        # Mirror the sync record_outcome path: a raised sync webhook is a failure and must
+        # increment flow_webhook_count too. Async keeps its count at callback time.
+        if mode == :sync, do: track_webhook_count(webhook_name, "failure")
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
         reraise exception, __STACKTRACE__
     end

@@ -274,10 +274,10 @@ defmodule Glific.Clients do
   of modifying the DB and doing some advanced stuff in an easy manner
   """
   @spec webhook(String.t(), map(), list()) :: map()
-  def webhook(name, fields, headers \\ []) do
+  def webhook(name, fields, _headers \\ []) do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
 
-    case CommonWebhook.webhook(name, fields, headers) do
+    case CommonWebhook.webhook(name, fields) do
       %{error: "Missing webhook function implementation"} -> module_name.webhook(name, fields)
       results -> results
     end

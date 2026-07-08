@@ -986,6 +986,19 @@ defmodule Glific.Flows.CommonWebhookTest do
              Dispatcher.dispatch("create_certificate", invalid_fields)
   end
 
+  test "webhook/2 for certificate returns a validation error (no crash) on non-numeric certificate_id" do
+    invalid_fields = %{
+      "certificate_id" => "not-a-number",
+      "organization_id" => 1,
+      "contact" => %{"id" => "123"},
+      "replace_texts" => %{"{1}" => "John Doe"}
+    }
+
+    result = Dispatcher.dispatch("create_certificate", invalid_fields)
+    assert is_binary(result)
+    assert result =~ "certificate_id must be a valid integer"
+  end
+
   describe "speech_to_text webhook" do
     setup do
       contact = Fixtures.contact_fixture()

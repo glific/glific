@@ -44,7 +44,16 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
         type: :integer,
         required: true,
         cast_func: fn value ->
-          {:ok, if(is_binary(value), do: Glific.parse_maybe_integer!(value), else: value)}
+          # Non-numeric input must not raise (it would escape call/2 and crash the
+          # Oban job); surface it as a validation error routed to the Failure branch.
+          if is_binary(value) do
+            case Glific.parse_maybe_integer(value) do
+              {:ok, integer} -> {:ok, integer}
+              :error -> {:error, "must be a valid integer"}
+            end
+          else
+            {:ok, value}
+          end
         end
       ],
       contact: [type: :map, required: true],

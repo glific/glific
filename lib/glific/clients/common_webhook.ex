@@ -17,15 +17,9 @@ defmodule Glific.Clients.CommonWebhook do
   """
 
   @doc """
-  Create a webhook with different signatures along with header, so we can easily implement
-  additional functionality as needed
-  """
-  @spec webhook(String.t(), map(), list()) :: map() | String.t()
-  def webhook(function, fields, _headers), do: webhook(function, fields)
-
-  @doc """
-  Create a webhook with different signatures, so we can easily implement
-  additional functionality as needed
+  Route a webhook function by name. Only the pure-local clauses (`get_buttons`,
+  `check_response`) and the missing-implementation fallthrough remain; every external-call
+  node is handled by `Glific.Flows.Webhooks.Dispatcher` and never reaches this module.
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_buttons", fields) do
