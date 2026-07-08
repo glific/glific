@@ -174,8 +174,13 @@ defmodule Glific.Jobs.MinuteWorker do
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
         CollectionCount.collection_stats()
+
         # Platform-wide inbound liveness — a single cross-org check, not per-org.
-        Instrumentation.check_inbound_staleness()
+        # Wrapped in a cron check-in so a stalled five_minute_tasks (which would
+        # also silence this uptime probe) is itself flagged by AppSignal's heartbeat.
+        Appsignal.CheckIn.cron("glific_platform_inbound_staleness", fn ->
+          Instrumentation.check_inbound_staleness()
+        end)
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
