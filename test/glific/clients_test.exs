@@ -11,7 +11,8 @@ defmodule Glific.ClientsTest do
     Clients.Sarc,
     Clients.Sol,
     Contacts,
-    Fixtures
+    Fixtures,
+    Flows.Webhooks.Dispatcher
   }
 
   test "plugins returns the right value for test vs prod" do
@@ -218,8 +219,10 @@ defmodule Glific.ClientsTest do
         }
     end)
 
+    # parse_via_gpt_vision is a registered webhook, so it routes through the Dispatcher
+    # (not the legacy Clients/CommonWebhook fallback chain).
     %{response: response} =
-      Clients.webhook("parse_via_gpt_vision", %{
+      Dispatcher.dispatch("parse_via_gpt_vision", %{
         "prompt" => "what's in the image",
         "url" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
       })

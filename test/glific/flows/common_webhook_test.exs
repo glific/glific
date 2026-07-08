@@ -6,8 +6,8 @@ defmodule Glific.Flows.CommonWebhookTest do
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Certificates.CertificateTemplate,
-    Clients.CommonWebhook,
     Fixtures,
+    Flows.Webhooks.Dispatcher,
     Flows.Webhooks.Errors.SystemError,
     Flows.Webhooks.FilesearchGpt,
     Flows.Webhooks.SpeechToText,
@@ -101,7 +101,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert %{success: true, response: "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"} =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
@@ -136,7 +136,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert %{success: true, response: %{"steps" => 4, "answer" => 10}} =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
@@ -172,7 +172,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert "response_format type should be json_schema or json_object" =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
@@ -229,7 +229,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert %{success: true, response: %{"steps" => "4", "answer" => "10"}} =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
@@ -288,7 +288,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert "I'm sorry, but I can't provide the information from the document." =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
@@ -325,7 +325,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         }
 
         assert %{success: true, response: %{"answer" => 10}} =
-                 CommonWebhook.webhook("parse_via_gpt_vision", fields)
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     after
       FunWithFlags.disable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
@@ -353,7 +353,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         }
 
         assert "Failed to download image for vision parsing" ==
-                 CommonWebhook.webhook("parse_via_gpt_vision", fields)
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     after
       FunWithFlags.disable(:is_gpt_vision_base64_enabled, for_actor: %{organization_id: 1})
@@ -411,13 +411,13 @@ defmodule Glific.Flows.CommonWebhookTest do
       }
 
       assert "Invalid schema for response_format" <> _ =
-               CommonWebhook.webhook("parse_via_gpt_vision", fields)
+               Dispatcher.dispatch("parse_via_gpt_vision", fields)
     end
   end
 
   test "parse_via_chat_gpt, failed due to empty question_text" do
     assert "question_text is empty" =
-             CommonWebhook.webhook("parse_via_chat_gpt", %{})
+             Dispatcher.dispatch("parse_via_chat_gpt", %{})
   end
 
   test "parse_via_chat_gpt, failed due to empty question_text: 2" do
@@ -426,7 +426,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
 
     assert "question_text is empty" =
-             CommonWebhook.webhook("parse_via_chat_gpt", fields)
+             Dispatcher.dispatch("parse_via_chat_gpt", fields)
   end
 
   test "parse_via_chat_gpt, success with only question_text as params, rest will be defaults" do
@@ -456,7 +456,7 @@ defmodule Glific.Flows.CommonWebhookTest do
              parsed_msg:
                "1^2 = 1\n2^2 = 4\n3^2 = 9\n4^2 = 16\n5^2 = 25\n6^2 = 36\n7^2 = 49\n8^2 = 64\n9^2 = 81\n10^2 = 100\n\nMin: 1\nMax: 100"
            } =
-             CommonWebhook.webhook("parse_via_chat_gpt", fields)
+             Dispatcher.dispatch("parse_via_chat_gpt", fields)
   end
 
   test "parse_via_chat_gpt, success with response_format as json_object" do
@@ -496,7 +496,7 @@ defmodule Glific.Flows.CommonWebhookTest do
                }
              }
            } =
-             CommonWebhook.webhook("parse_via_chat_gpt", fields)
+             Dispatcher.dispatch("parse_via_chat_gpt", fields)
   end
 
   test "parse_via_chat_gpt, success with response_format as json_schema" do
@@ -551,13 +551,13 @@ defmodule Glific.Flows.CommonWebhookTest do
                "maximum_value" => "10"
              }
            } =
-             CommonWebhook.webhook("parse_via_chat_gpt", fields)
+             Dispatcher.dispatch("parse_via_chat_gpt", fields)
   end
 
   test "send_wa_group_poll", attrs do
     fields = %{}
 
-    assert "wa_group is invalid" = CommonWebhook.webhook("send_wa_group_poll", fields)
+    assert "wa_group is invalid" = Dispatcher.dispatch("send_wa_group_poll", fields)
 
     fields = %{
       "wa_group" => %{
@@ -567,7 +567,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "organization_id" => attrs.organization_id
     }
 
-    assert "poll_uuid is invalid" = CommonWebhook.webhook("send_wa_group_poll", fields)
+    assert "poll_uuid is invalid" = Dispatcher.dispatch("send_wa_group_poll", fields)
 
     poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
 
@@ -581,7 +581,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
 
     assert ~s|["Elixir.Glific.WAGroup.WAManagedPhone", "Resource not found"]| =
-             CommonWebhook.webhook("send_wa_group_poll", fields)
+             Dispatcher.dispatch("send_wa_group_poll", fields)
 
     wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
     wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
@@ -599,7 +599,7 @@ defmodule Glific.Flows.CommonWebhookTest do
              success: true,
              poll: _
            } =
-             CommonWebhook.webhook("send_wa_group_poll", fields)
+             Dispatcher.dispatch("send_wa_group_poll", fields)
   end
 
   test "successfully creates a certificate" do
@@ -693,7 +693,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
 
-      result = CommonWebhook.webhook("create_certificate", fields)
+      result = Dispatcher.dispatch("create_certificate", fields)
       assert result[:success] == true
       assert result[:certificate_url] == "https:storage.googleapis.com"
     end
@@ -790,7 +790,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
 
-      result = CommonWebhook.webhook("create_certificate", fields)
+      result = Dispatcher.dispatch("create_certificate", fields)
       assert result[:success] == false
       assert result[:reason] == "Failed to download thumbnail url"
     end
@@ -883,7 +883,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
 
-      result = CommonWebhook.webhook("create_certificate", fields)
+      result = Dispatcher.dispatch("create_certificate", fields)
       assert result[:success] == false
     end
   end
@@ -929,7 +929,7 @@ defmodule Glific.Flows.CommonWebhookTest do
         "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
       }
 
-      result = CommonWebhook.webhook("create_certificate", fields)
+      result = Dispatcher.dispatch("create_certificate", fields)
       assert result[:success] == false
       assert result[:certificate_url] == nil
     end
@@ -945,14 +945,14 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    result = CommonWebhook.webhook("create_certificate", fields)
+    result = Dispatcher.dispatch("create_certificate", fields)
 
     assert result == "Certificate template not found for ID: #{certificate_id}"
   end
 
   test "webhook/2 for certificate should fail when validation fails" do
     invalid_fields = %{}
-    error = CommonWebhook.webhook("create_certificate", invalid_fields)
+    error = Dispatcher.dispatch("create_certificate", invalid_fields)
     assert is_binary(error)
     assert String.split(error, "is required") |> length() == 5
 
@@ -965,7 +965,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
 
     assert "replace_texts is invalid" =
-             CommonWebhook.webhook("create_certificate", invalid_fields)
+             Dispatcher.dispatch("create_certificate", invalid_fields)
 
     invalid_fields = %{
       "certificate_id" => "1",
@@ -973,7 +973,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       "replace_texts" => %{"{1}" => "John Doe", "{2}" => "March 5, 2025"}
     }
 
-    assert "contact is required" = CommonWebhook.webhook("create_certificate", invalid_fields)
+    assert "contact is required" = Dispatcher.dispatch("create_certificate", invalid_fields)
 
     invalid_fields = %{
       "certificate_id" => 0,
@@ -983,7 +983,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     }
 
     assert "Certificate template not found" <> _ =
-             CommonWebhook.webhook("create_certificate", invalid_fields)
+             Dispatcher.dispatch("create_certificate", invalid_fields)
   end
 
   describe "speech_to_text webhook" do
@@ -1797,7 +1797,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       {exception, tags} =
         capture_appsignal(fn ->
           result =
-            CommonWebhook.webhook("parse_via_chat_gpt", %{"organization_id" => 1})
+            Dispatcher.dispatch("parse_via_chat_gpt", %{"organization_id" => 1})
 
           assert result == "question_text is empty"
         end)
@@ -1818,7 +1818,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
         {exception, tags} =
           capture_appsignal(fn ->
-            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            result = Dispatcher.dispatch("parse_via_gpt_vision", fields)
             # bare-string return preserved (routes to the flow's Failure category)
             assert result == "response_format type should be json_schema or json_object"
           end)
@@ -1838,7 +1838,7 @@ defmodule Glific.Flows.CommonWebhookTest do
       ) do
         {exception, tags} =
           capture_appsignal(fn ->
-            result = CommonWebhook.webhook("parse_via_gpt_vision", fields)
+            result = Dispatcher.dispatch("parse_via_gpt_vision", fields)
             assert result == "Media URL is invalid"
           end)
 

@@ -4,15 +4,17 @@ defmodule Glific.Clients.CommonWebhook do
 
   > #### Deprecated {: .warning}
   >
-  > This module is a thin, deprecated router. External-call webhook nodes now live under
-  > `Glific.Flows.Webhooks.*` and are invoked through `Glific.Flows.Webhooks.Dispatcher`, which
-  > owns failure reporting and latency telemetry. Each clause below either delegates to the
-  > dispatcher or is a pure-local helper (no external call, no error reporting). Do not add new
-  > webhook logic here — add a `Glific.Flows.Webhooks` implementation module and register it in
-  > `Glific.Flows.Webhooks.Registry` instead.
+  > This module is a thin, deprecated fallback. External-call webhook nodes now live under
+  > `Glific.Flows.Webhooks.*` and are routed by `Glific.Flows.Webhook.dispatch_function/3`
+  > straight to `Glific.Flows.Webhooks.Dispatcher` via `Glific.Flows.Webhooks.Registry` — they
+  > intentionally have **no** clause here (see `geolocation`, `filesearch-gpt`, `speech_to_text`,
+  > `parse_via_chat_gpt`, `create_certificate`, …). A registered webhook never reaches this
+  > module.
+  >
+  > Only the two pure-local clauses (`get_buttons`, `check_response` — no external call, no error
+  > reporting) and the missing-implementation fallthrough remain. Do not add new webhook logic
+  > here; add a `Glific.Flows.Webhooks` implementation module and register it in the `Registry`.
   """
-
-  alias Glific.Flows.Webhooks.Dispatcher
 
   @doc """
   Create a webhook with different signatures along with header, so we can easily implement
@@ -25,13 +27,7 @@ defmodule Glific.Clients.CommonWebhook do
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
-  @spec webhook(String.t(), map()) :: any()
-  def webhook("parse_via_chat_gpt", fields),
-    do: Dispatcher.dispatch("parse_via_chat_gpt", fields)
-
-  def webhook("parse_via_gpt_vision", fields),
-    do: Dispatcher.dispatch("parse_via_gpt_vision", fields)
-
+  @spec webhook(String.t(), map()) :: map()
   def webhook("get_buttons", fields) do
     buttons =
       fields["buttons_data"]
@@ -49,15 +45,6 @@ defmodule Glific.Clients.CommonWebhook do
 
   def webhook("check_response", fields),
     do: %{response: String.equivalent?(fields["correct_response"], fields["user_response"])}
-
-  def webhook("geolocation", fields),
-    do: Dispatcher.dispatch("geolocation", fields)
-
-  def webhook("send_wa_group_poll", fields),
-    do: Dispatcher.dispatch("send_wa_group_poll", fields)
-
-  def webhook("create_certificate", fields),
-    do: Dispatcher.dispatch("create_certificate", fields)
 
   def webhook(_, _fields), do: %{error: "Missing webhook function implementation"}
 end
