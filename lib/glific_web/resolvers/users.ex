@@ -37,7 +37,10 @@ defmodule GlificWeb.Resolvers.Users do
           {:ok, any} | {:error, any}
   def current_user(_, _, %{context: %{current_user: current_user}}) do
     with {:ok, user} <-
-           Repo.fetch_by(User, %{id: current_user.id, organization_id: current_user.organization_id}),
+           Repo.fetch_by(User, %{
+             id: current_user.id,
+             organization_id: current_user.organization_id
+           }),
          do: {:ok, %{user: user}}
   end
 
