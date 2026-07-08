@@ -1312,7 +1312,7 @@ defmodule Glific.Partners do
         Credential
         |> where([c], c.provider_id == ^provider.id)
         |> where([c], c.organization_id == ^organization_id)
-        |> Repo.update_all(set: [is_active: false])
+        |> Repo.update_all([set: [is_active: false]], skip_organization_id: true)
 
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
@@ -1331,6 +1331,40 @@ defmodule Glific.Partners do
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
+    end
+  end
+
+  @doc """
+  Re-enables a previously disabled credential for an organization and triggers the
+  appropriate sync callback (BigQuery schema sync or GCS bucket setup). If the callback
+  fails the credential is left inactive until the next retry.
+
+  Used by the weekly sync-disabled report to automatically restore service after alerting
+  the internal team.
+  """
+  @spec enable_credential(non_neg_integer(), String.t()) :: :ok | {:error, String.t()}
+  def enable_credential(organization_id, shortcode) do
+    credential_query =
+      from c in Credential,
+        join: p in Provider,
+        on: c.provider_id == p.id and p.shortcode == ^shortcode,
+        where: c.organization_id == ^organization_id
+
+    case Repo.one(credential_query, skip_organization_id: true) do
+      nil ->
+        {:error, "No #{shortcode} credential found for org #{organization_id}"}
+
+      credential ->
+        organization = get_organization!(organization_id)
+        remove_organization_cache(organization.id, organization.shortcode)
+
+        Credential
+        |> where([c], c.id == ^credential.id)
+        |> Repo.update_all([set: [is_active: true]], skip_organization_id: true)
+
+        Logger.info("Re-enabling #{shortcode} credential for org_id: #{organization_id}")
+        credential_update_callback(organization, %{credential | is_active: true}, shortcode)
+        :ok
     end
   end
 

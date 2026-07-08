@@ -366,7 +366,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization_mutations do
     field :create_organization, :organization_result do
       arg(:input, non_null(:organization_input))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.create_organization/3)
     end
 
@@ -379,13 +379,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :delete_organization_test_data, :organization_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_organization_test_data/3)
     end
 
     field :delete_organization, :organization_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_organization/3)
     end
 
@@ -399,14 +399,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :delete_inactive_organization, :organization_result do
       arg(:delete_organization_id, non_null(:id))
       arg(:is_confirmed, non_null(:boolean))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_inactive_organization/3)
     end
 
     field :reset_organization, :string do
       arg(:reset_organization_id, non_null(:id))
       arg(:is_confirmed, non_null(:boolean))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.reset_organization/3)
     end
   end
