@@ -59,6 +59,15 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
         validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
       ) do
         Tesla.Mock.mock(fn
+          # The webhook downloads the image and inlines it as a base64 data URL before
+          # calling OpenAI, so the media GET must be mocked too.
+          %{method: :get, url: "https://example.com/image.jpg"} ->
+            %Tesla.Env{
+              status: 200,
+              body: "fake-image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
           %{url: "https://api.openai.com/v1/chat/completions"} ->
             %Tesla.Env{
               status: 200,
@@ -114,6 +123,15 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
         validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
       ) do
         Tesla.Mock.mock(fn
+          # The webhook downloads the image and inlines it as a base64 data URL before
+          # calling OpenAI, so the media GET must be mocked too.
+          %{method: :get, url: "https://example.com/image.jpg"} ->
+            %Tesla.Env{
+              status: 200,
+              body: "fake-image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
           %{url: "https://api.openai.com/v1/chat/completions"} ->
             %Tesla.Env{
               status: 500,

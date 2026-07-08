@@ -23,7 +23,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
 
     # validating if the url passed is a valid image url
     with %{is_valid: true} <- Glific.Messages.validate_media(url, "image"),
-         {:ok, fields} <- maybe_inline_image(fields, url, org_id),
+         {:ok, fields} <- inline_image(fields, url, org_id),
          {:ok, fields} <- ChatGPT.parse_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
       %{success: true, response: ChatGPT.parse_gpt_response(response)}
@@ -36,8 +36,8 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
     end
   end
 
-  # Best-effort org_id for the base64 feature flag / media download. Returns nil if
-  # absent/unparseable rather than raising.
+  # Best-effort org_id for the media download. Returns nil if absent/unparseable rather
+  # than raising.
   @spec parse_org_id(map()) :: non_neg_integer() | nil
   defp parse_org_id(fields) do
     case Glific.parse_maybe_integer(fields["organization_id"]) do
@@ -46,22 +46,20 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
     end
   end
 
-  @spec maybe_inline_image(map(), String.t(), non_neg_integer() | nil) ::
+  # Download the image and pass it to OpenAI as an inline base64 data URL rather than a bare
+  # link (Gupshup media URLs expire / need auth, so a link OpenAI fetches later can 404).
+  @spec inline_image(map(), String.t(), non_neg_integer() | nil) ::
           {:ok, map()} | {:error, String.t()}
-  defp maybe_inline_image(fields, image_url, org_id) do
-    if FunWithFlags.enabled?(:is_gpt_vision_base64_enabled, for: %{organization_id: org_id}) do
-      case GupshupClient.download_media_content(image_url, org_id) do
-        {:ok, encoded_image, content_type} ->
-          # OpenAI needs a data URL (data:<mime>;base64,<...>), not bare base64.
-          # Use the server's Content-Type since Gupshup media URLs carry no extension.
-          mime = normalize_image_mime(content_type)
-          {:ok, Map.put(fields, "url", "data:#{mime};base64,#{encoded_image}")}
+  defp inline_image(fields, image_url, org_id) do
+    case GupshupClient.download_media_content(image_url, org_id) do
+      {:ok, encoded_image, content_type} ->
+        # OpenAI needs a data URL (data:<mime>;base64,<...>), not bare base64.
+        # Use the server's Content-Type since Gupshup media URLs carry no extension.
+        mime = normalize_image_mime(content_type)
+        {:ok, Map.put(fields, "url", "data:#{mime};base64,#{encoded_image}")}
 
-        {:error, _reason} ->
-          {:error, "Failed to download image for vision parsing"}
-      end
-    else
-      {:ok, fields}
+      {:error, _reason} ->
+        {:error, "Failed to download image for vision parsing"}
     end
   end
 
