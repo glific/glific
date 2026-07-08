@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query getOrganizationBilling($organizationId: Gid) {
+  getOrganizationBilling(organizationId: $organizationId) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}
