@@ -8,7 +8,7 @@ defmodule Glific.Flows.CommonWebhookTest do
     Certificates.CertificateTemplate,
     Clients.CommonWebhook,
     Fixtures,
-    Flows.Webhook.SystemError,
+    Flows.Webhooks.Errors.SystemError,
     Flows.Webhooks.FilesearchGpt,
     Flows.Webhooks.SpeechToText,
     Flows.Webhooks.TextToSpeech,
