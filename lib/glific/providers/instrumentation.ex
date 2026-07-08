@@ -29,8 +29,8 @@ defmodule Glific.Providers.Instrumentation do
       classification) and `type` (`hsm` | `session`).
     * `provider_receive_count` — inbound messages, tagged `type`.
     * `provider_status_count` — delivery-status callbacks, tagged `status`.
-    * `provider_hsm_sync_count` — HSM template-sync runs, tagged `status`
-      (`success` | `failure`).
+    * `provider_action_count` — provider-specific named actions (e.g. Gupshup's
+      `hsm_sync`), tagged `action` and `status` (`success` | `failure`).
 
   ## Platform liveness
 
@@ -55,14 +55,15 @@ defmodule Glific.Providers.Instrumentation do
   @typedoc "Raw send outcome handed to `track_send/3` before provider classification."
   @type send_status :: :success | :error | :timeout
 
-  @type sync_status :: :success | :failure
+  @typedoc "Outcome of a provider-specific named action recorded via `track_action/4`."
+  @type action_status :: :success | :failure
 
   @doc """
   Injects provider-scoped instrumentation helpers into the caller.
 
   Requires `:provider` in `opts` and defines `provider/0`, `classify_send/2`
   (overridable), and `track_send/2`, `track_receive/2`, `track_status/2`,
-  `track_hsm_sync/2` that delegate to this module.
+  `track_action/3` that delegate to this module.
   """
   defmacro __using__(opts) do
     provider = Keyword.fetch!(opts, :provider)
@@ -104,10 +105,11 @@ defmodule Glific.Providers.Instrumentation do
       def track_status(status, organization_id),
         do: Instrumentation.track_status(__MODULE__, status, organization_id)
 
-      @doc "See `Glific.Providers.Instrumentation.track_hsm_sync/3`."
-      @spec track_hsm_sync(Instrumentation.sync_status(), non_neg_integer() | nil) :: :ok
-      def track_hsm_sync(status, organization_id),
-        do: Instrumentation.track_hsm_sync(__MODULE__, status, organization_id)
+      @doc "See `Glific.Providers.Instrumentation.track_action/4`."
+      @spec track_action(String.t(), Instrumentation.action_status(), non_neg_integer() | nil) ::
+              :ok
+      def track_action(action, status, organization_id),
+        do: Instrumentation.track_action(__MODULE__, action, status, organization_id)
     end
   end
 
@@ -164,12 +166,17 @@ defmodule Glific.Providers.Instrumentation do
   end
 
   @doc """
-  Record the outcome of an HSM template-sync run (`:success` or `:failure`).
+  Record the outcome of a provider-specific named action (`:success` or
+  `:failure`) — for actions the base framework doesn't model, e.g. Gupshup's HSM
+  template sync as `track_action("hsm_sync", ...)`. `action` is a short,
+  stable label used as the metric's `action` tag.
   """
-  @spec track_hsm_sync(module(), sync_status(), non_neg_integer() | nil) :: :ok
-  def track_hsm_sync(adapter, status, organization_id) when status in [:success, :failure] do
-    Appsignal.increment_counter("provider_hsm_sync_count", 1, %{
+  @spec track_action(module(), String.t(), action_status(), non_neg_integer() | nil) :: :ok
+  def track_action(adapter, action, status, organization_id)
+      when status in [:success, :failure] do
+    Appsignal.increment_counter("provider_action_count", 1, %{
       provider: adapter.provider(),
+      action: action,
       status: Atom.to_string(status),
       organization_id: org_tag(organization_id)
     })

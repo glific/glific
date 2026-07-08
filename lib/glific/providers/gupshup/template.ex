@@ -398,11 +398,11 @@ defmodule Glific.Providers.Gupshup.Template do
       |> Enum.reduce([], &(&2 ++ [Map.put(&1, "bsp_id", &1["id"])]))
       |> Templates.update_hsms(organization)
 
-      Instrumentation.track_hsm_sync(:success, org_id)
+      Instrumentation.track_action("hsm_sync", :success, org_id)
       :ok
     else
       _ ->
-        Instrumentation.track_hsm_sync(:failure, org_id)
+        Instrumentation.track_action("hsm_sync", :failure, org_id)
         {:error, "BSP Couldn't connect"}
     end
   end

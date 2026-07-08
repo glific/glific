@@ -26,8 +26,8 @@ defmodule Glific.Providers.InstrumentationTest do
       assert :ok = StubAdapter.track_send(:timeout)
       assert :ok = StubAdapter.track_receive("text handler", organization_id)
       assert :ok = StubAdapter.track_status(:delivered, organization_id)
-      assert :ok = StubAdapter.track_hsm_sync(:success, organization_id)
-      assert :ok = StubAdapter.track_hsm_sync(:failure, organization_id)
+      assert :ok = StubAdapter.track_action("some_action", :success, organization_id)
+      assert :ok = StubAdapter.track_action("some_action", :failure, organization_id)
     end
   end
 

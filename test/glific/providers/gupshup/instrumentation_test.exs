@@ -50,7 +50,7 @@ defmodule Glific.Providers.Gupshup.InstrumentationTest do
 
       assert :ok = Instrumentation.track_receive("text handler", organization_id)
       assert :ok = Instrumentation.track_status(:read, organization_id)
-      assert :ok = Instrumentation.track_hsm_sync(:success, organization_id)
+      assert :ok = Instrumentation.track_action("hsm_sync", :success, organization_id)
     end
   end
 end

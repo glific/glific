@@ -3,11 +3,12 @@ defmodule Glific.Providers.Gupshup.Instrumentation do
   Gupshup instrumentation adapter.
 
   Inherits the standard provider counters (`track_send/2`, `track_receive/2`,
-  `track_status/2`, `track_hsm_sync/2`) from
+  `track_status/2`, `track_action/3`) from
   `Glific.Providers.Instrumentation`, and adds Gupshup's one bit of
   custom classification: a frequency-capped 4xx is recorded under a
   `frequency_capped` status rather than `error`, so throttled sends don't trip
-  send-failure alerts.
+  send-failure alerts. HSM template sync is recorded via
+  `track_action("hsm_sync", ...)`.
   """
 
   use Glific.Providers.Instrumentation, provider: "gupshup"
