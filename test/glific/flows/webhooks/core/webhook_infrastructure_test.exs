@@ -514,6 +514,90 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
+  # End-to-end config-vs-system routing through Instrumentation → ErrorClassifier.
+  describe "ErrorClassifier routing" do
+    test "Kaapi-not-active dispatch failure → system (module verdict)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_failure("speech_to_text", %{
+            organization_id: 1,
+            reason: "Kaapi is not active"
+          })
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "system"
+    end
+
+    test "geolocation input error → config (module verdict)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_failure("geolocation", %{
+            organization_id: 1,
+            reason: "Invalid geocoding request. Invalid 'latlng' parameter."
+          })
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "config"
+    end
+
+    test "OpenAI 400 (unresolved var) callback → config via the heuristic" do
+      response = %{
+        "organization_id" => 1,
+        "webhook_name" => "filesearch-gpt",
+        "flow_id" => 1,
+        "contact_id" => 2,
+        "webhook_log_id" => 3
+      }
+
+      result = %{
+        "success" => false,
+        "error" => "OpenAI bad request (code: 400): Invalid 'conversation.id': '@contact...'"
+      }
+
+      {exception, _tags} =
+        capture_appsignal(fn -> Instrumentation.report_callback_failure(result, response) end)
+
+      assert %Errors.ConfigurationError{} = exception
+    end
+
+    test "stale resume (no active flows) is suppressed — no incident" do
+      with_mocks([
+        {Appsignal, [:passthrough],
+         [
+           send_error: fn _ex, _st, _cf -> flunk("stale must not report an incident") end,
+           increment_counter: fn _n, _v, _t -> :ok end
+         ]}
+      ]) do
+        assert :ok =
+                 Instrumentation.report_resume_failure(
+                   %{"organization_id" => 1, "webhook_name" => "filesearch-gpt"},
+                   "123 does not have any active flows awaiting results."
+                 )
+      end
+    end
+
+    test "conversation_locked callback is transient — no incident" do
+      with_mocks([
+        {Appsignal, [:passthrough],
+         [
+           send_error: fn _ex, _st, _cf -> flunk("transient must not report an incident") end,
+           increment_counter: fn _n, _v, _t -> :ok end
+         ]}
+      ]) do
+        response = %{"organization_id" => 1, "webhook_name" => "filesearch-gpt"}
+
+        result = %{
+          "success" => false,
+          "error" => "OpenAI bad request (code: 400): ... 'code': 'conversation_locked' ..."
+        }
+
+        assert :ok = Instrumentation.report_callback_failure(result, response)
+      end
+    end
+  end
+
   # --- Private helpers --------------------------------------------------------
 
   defp capture_appsignal(fun) do

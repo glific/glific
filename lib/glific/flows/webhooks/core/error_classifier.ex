@@ -35,12 +35,13 @@ defmodule Glific.Flows.Webhooks.ErrorClassifier do
   """
   @spec classify(module() | nil, map()) :: class()
   def classify(module, result) do
-    cond do
-      module && function_exported?(module, :error_class, 1) ->
-        module.error_class(result) || heuristic(result)
-
-      true ->
-        heuristic(result)
+    # Code.ensure_loaded? matters under interactive code loading (dev/test): function_exported?/3
+    # reports false for a module the code server hasn't loaded yet, which would silently skip the
+    # module's error_class/1 verdict and fall through to the heuristic.
+    if module && Code.ensure_loaded?(module) && function_exported?(module, :error_class, 1) do
+      module.error_class(result) || heuristic(result)
+    else
+      heuristic(result)
     end
   end
 
