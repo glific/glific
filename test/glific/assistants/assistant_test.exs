@@ -277,7 +277,18 @@ defmodule Glific.Assistants.AssistantTest do
           }
       end)
 
-      for extension <- ["csv", "doc", "docx", "htm", "html", "md", "markdown", "pdf", "txt"] do
+      for extension <- [
+            "csv",
+            "doc",
+            "docx",
+            "htm",
+            "html",
+            "json",
+            "md",
+            "markdown",
+            "pdf",
+            "txt"
+          ] do
         upload = build_upload_for_extension(extension)
         assert {:ok, _} = Assistants.upload_file(%{media: upload}, organization_id)
       end
