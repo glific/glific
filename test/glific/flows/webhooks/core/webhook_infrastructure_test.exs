@@ -385,10 +385,11 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
-      assert exception.message == "Webhook callback failure"
+      assert exception.message == "Webhook system_error from kaapi_asr"
       assert tags.organization_id == 1
       assert tags.webhook_name == "kaapi_asr"
       assert tags.reason == "ASR failed"
+      assert tags.error_type == "system"
     end
 
     test "is a no-op when success is true" do

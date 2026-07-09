@@ -21,7 +21,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   — independent from the legacy `Glific.Flows.Webhook.*` exception classes.
   """
 
-  alias Glific.Flows.Webhooks.Errors
+  alias Glific.Flows.Webhooks.{ErrorClassifier, Errors, Registry}
   alias Glific.Metrics
   alias Glific.SafeLog
 
@@ -103,19 +103,20 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     reason =
       result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
-    %Errors.SystemError{message: "Webhook callback failure"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: response["organization_id"],
-        webhook_name: response["webhook_name"],
-        flow_id: response["flow_id"],
-        contact_id: response["contact_id"],
-        webhook_log_id: response["webhook_log_id"],
-        error_type: result["error_type"],
-        reason: reason
-      }
-    )
+    normalized = %{reason: reason, http_status: result["http_status"]}
+    module = Registry.lookup(response["webhook_name"])
+
+    tags = %{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"]
+    }
+
+    module
+    |> ErrorClassifier.classify(normalized)
+    |> ErrorClassifier.report(normalized, tags)
   end
 
   def report_callback_failure(_result, _response), do: :ok
@@ -141,18 +142,27 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   """
   @spec report_resume_failure(map(), any()) :: :ok
   def report_resume_failure(response, reason) do
-    %Errors.SystemError{message: "Webhook resume failure"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: response["organization_id"],
-        webhook_name: response["webhook_name"],
-        flow_id: response["flow_id"],
-        contact_id: response["contact_id"],
-        webhook_log_id: response["webhook_log_id"],
-        reason: SafeLog.safe_inspect(reason)
-      }
-    )
+    reason_str = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
+
+    # The resume path isn't a webhook module, so classify the two known reasons directly:
+    # a late/duplicate callback (no awaiting flow) is a benign race → :stale (suppressed);
+    # an unmatched flow category is a flow-author mistake → :config; anything else → :system.
+    class =
+      cond do
+        reason_str =~ ~r/does not have any active flows/ -> :stale
+        reason_str =~ ~r/Could not find category/ -> :config
+        true -> :system
+      end
+
+    tags = %{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"]
+    }
+
+    ErrorClassifier.report(class, %{reason: reason_str}, tags)
   end
 
   @doc """
@@ -164,13 +174,13 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   """
   @spec report_failure(String.t(), tags()) :: :ok
   def report_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
-    # TODO(error-classification): class = ErrorClassifier.classify(module, result);
-    #   ErrorClassifier.report(class, result, tags) — replaces the hard-coded SystemError below.
-    %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: Map.put(tags, :webhook_name, webhook_name)
-    )
+    tags = Map.put(tags, :webhook_name, webhook_name)
+    result = %{reason: tags[:reason], http_status: tags[:http_status]}
+
+    webhook_name
+    |> Registry.lookup()
+    |> ErrorClassifier.classify(result)
+    |> ErrorClassifier.report(result, tags)
   end
 
   @doc """
@@ -181,7 +191,9 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   @spec record_callback_outcome(map(), map()) :: :ok
   def record_callback_outcome(result, response) do
     status = if result["success"], do: "success", else: "failure"
-    track_webhook_count(response["webhook_name"], status)
+    # Success is counted here; failures are counted (with an error_type) by ErrorClassifier.report
+    # via report_callback_failure/2 below, so don't double-count them.
+    if result["success"], do: track_webhook_count(response["webhook_name"], "success")
     track_kaapi_latency(response, status)
     report_callback_failure(result, response)
   end
