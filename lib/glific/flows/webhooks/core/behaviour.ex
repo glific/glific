@@ -53,7 +53,6 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   """
   @type sync_result ::
           map()
-          | nil
           | String.t()
           | {:ok, term()}
           | {:error, String.t()}

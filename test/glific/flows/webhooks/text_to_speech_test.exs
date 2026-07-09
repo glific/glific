@@ -18,6 +18,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
+    Flows.Webhooks.TextToSpeech,
     Flows.WebhookLog,
     Partners,
     Repo,
@@ -201,5 +202,65 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
       assert log != nil
       assert log.error != nil
     end
+  end
+
+  # Dispatch-level tests: exercise call/2 (Kaapi ack + payload structure) directly. The per-org
+  # STT/TTS rate-limit bucket is reset per test so these extra call/2 invocations don't exhaust
+  # the shared budget and snooze.
+  describe "text_to_speech dispatch" do
+    setup do
+      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
+      ExRated.delete_bucket(key)
+      on_exit(fn -> ExRated.delete_bucket(key) end)
+      %{fields: tts_fields(Fixtures.contact_fixture().id)}
+    end
+
+    test "returns success when Kaapi acknowledges the TTS request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_456"}}
+      end)
+
+      assert TextToSpeech.call(fields, %{}).success == true
+    end
+
+    test "sends correct payload structure to Kaapi for TTS", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          assert get_in(decoded, ["query", "input"]) == "Hello world"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "tts"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.1-flash-tts-preview"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "voice"]) == "Kore"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "language"]) ==
+                   "hindi"
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "tts-456"}}
+      end)
+
+      assert TextToSpeech.call(fields, %{}).success == true
+    end
+  end
+
+  defp tts_fields(contact_id) do
+    %{
+      "text" => "Hello world",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
   end
 end

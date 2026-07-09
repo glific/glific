@@ -20,6 +20,7 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
+    Flows.Webhooks.SpeechToText,
     Flows.WebhookLog,
     Partners,
     Repo,
@@ -221,5 +222,118 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
       assert log != nil
       assert log.error != nil
     end
+  end
+
+  # Dispatch-level tests: exercise call/2 (Kaapi ack, payload structure, failure shaping)
+  # directly. The per-org STT/TTS rate-limit bucket is reset per test so these extra call/2
+  # invocations don't exhaust the shared budget and snooze.
+  describe "speech_to_text dispatch" do
+    setup do
+      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
+      ExRated.delete_bucket(key)
+      on_exit(fn -> ExRated.delete_bucket(key) end)
+      %{fields: stt_fields(Fixtures.contact_fixture().id)}
+    end
+
+    test "returns success when Kaapi acknowledges the STT request", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{request_id: "req_123"}}
+      end)
+
+      assert SpeechToText.call(fields, %{}).success == true
+    end
+
+    test "sends correct payload structure to Kaapi for STT", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+          assert get_in(decoded, ["query", "input", "type"]) == "audio"
+          assert get_in(decoded, ["query", "input", "content", "format"]) == "base64"
+          assert get_in(decoded, ["config", "blob", "completion", "type"]) == "stt"
+          assert get_in(decoded, ["config", "blob", "completion", "provider"]) == "google"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "model"]) ==
+                   "gemini-3.1-pro-preview"
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "input_language"]) ==
+                   "auto"
+
+          refute Map.has_key?(
+                   get_in(decoded, ["config", "blob", "completion", "params"]),
+                   "output_language"
+                 )
+
+          metadata = decoded["request_metadata"]
+          assert metadata["organization_id"] == 1
+          assert metadata["flow_id"] == 1
+          assert metadata["webhook_log_id"] == 1
+          assert metadata["result_name"] == "response"
+          assert decoded["callback_url"] =~ "/webhook/flow_resume"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-123"}}
+      end)
+
+      assert SpeechToText.call(fields, %{}).success == true
+    end
+
+    test "passes output_language to Kaapi when specified in fields", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+
+        %{method: :post, body: body} ->
+          decoded = Jason.decode!(body)
+
+          assert get_in(decoded, ["config", "blob", "completion", "params", "output_language"]) ==
+                   "english"
+
+          %Tesla.Env{status: 200, body: %{"job_id" => "stt-456"}}
+      end)
+
+      assert SpeechToText.call(Map.put(fields, "output_language", "english"), %{}).success == true
+    end
+
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
+      fields: fields
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
+      end)
+
+      result = SpeechToText.call(fields, %{})
+      assert result.success == false
+      assert result.error_type == "kaapi_logical_failure"
+      assert result.reason == "boom"
+    end
+
+    test "returns failure result on a Kaapi 5xx response", %{fields: fields} do
+      Tesla.Mock.mock(fn
+        %{method: :get} -> %Tesla.Env{status: 200, body: "fake_audio_bytes"}
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      assert SpeechToText.call(fields, %{}).success == false
+    end
+
+    test "rejects empty speech URL without calling Kaapi", %{fields: fields} do
+      assert SpeechToText.call(Map.put(fields, "speech", ""), %{}) ==
+               %{success: false, reason: "Media URL is invalid"}
+    end
+  end
+
+  defp stt_fields(contact_id) do
+    %{
+      "speech" => "https://filemanager.gupshup.io/wa/audio.ogg",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "#{contact_id}",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
   end
 end
