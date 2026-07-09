@@ -20,8 +20,8 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
-    Flows.Webhooks.SpeechToText,
     Flows.WebhookLog,
+    Flows.Webhooks.SpeechToText,
     Partners,
     Repo,
     Seeds.SeedsDev

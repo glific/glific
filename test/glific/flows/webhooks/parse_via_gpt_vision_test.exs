@@ -10,8 +10,8 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
-    Flows.Webhooks.Dispatcher,
     Flows.WebhookLog,
+    Flows.Webhooks.Dispatcher,
     Messages,
     Repo,
     Seeds.SeedsDev

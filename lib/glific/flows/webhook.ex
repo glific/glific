@@ -300,22 +300,7 @@ defmodule Glific.Flows.Webhook do
           result
 
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
-          case Jason.decode(message.body) do
-            {:ok, list_response} when is_list(list_response) ->
-              list_response = format_response(list_response)
-              updated_message = Map.put(message, :body, Jason.encode!(list_response))
-              update_log(webhook_log_id, updated_message)
-              list_response
-
-            {:ok, json_response} ->
-              update_log(webhook_log_id, message)
-              format_response(json_response)
-
-            {:error, _error} ->
-              update_log(webhook_log_id, "Could not decode message body: " <> message.body)
-
-              nil
-          end
+          decode_success_response(message, webhook_log_id)
 
         {:ok, %Tesla.Env{} = message} ->
           update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
@@ -329,6 +314,28 @@ defmodule Glific.Flows.Webhook do
     case result do
       {:snooze, seconds} -> {:snooze, seconds}
       _ -> handle_webhook_result(result, context, result_name, url, organization_id)
+    end
+  end
+
+  # Decodes a 2xx POST/GET response body, logs it, and returns the value for the flow.
+  # A JSON list is indexed into a map; a JSON map passes through; an undecodable body
+  # is logged and routes the flow to Failure (nil).
+  @spec decode_success_response(Tesla.Env.t(), non_neg_integer() | nil) :: any()
+  defp decode_success_response(message, webhook_log_id) do
+    case Jason.decode(message.body) do
+      {:ok, list_response} when is_list(list_response) ->
+        list_response = format_response(list_response)
+        updated_message = Map.put(message, :body, Jason.encode!(list_response))
+        update_log(webhook_log_id, updated_message)
+        list_response
+
+      {:ok, json_response} ->
+        update_log(webhook_log_id, message)
+        format_response(json_response)
+
+      {:error, _error} ->
+        update_log(webhook_log_id, "Could not decode message body: " <> message.body)
+        nil
     end
   end
 

@@ -1246,7 +1246,7 @@ defmodule Glific.Flows do
   @spec log_sheet_link_failure(any(), String.t() | nil, map()) :: :ok
   defp log_sheet_link_failure("Invalid sheet URL" = reason, url, flow_info) do
     Logger.info(
-      "Skipping Google Sheet link for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{reason}, url: #{inspect(url)}"
+      "Skipping Google Sheet link for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{reason}, url: #{Glific.SafeLog.safe_inspect(url)}"
     )
 
     :ok
@@ -1254,7 +1254,7 @@ defmodule Glific.Flows do
 
   defp log_sheet_link_failure(reason, url, flow_info) do
     Glific.log_error(
-      "Failed to link Google Sheet during import for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{inspect(reason)}, url: #{inspect(url)}"
+      "Failed to link Google Sheet during import for flow #{flow_info[:flow_name]} (#{flow_info[:flow_uuid]}): #{Glific.SafeLog.safe_inspect(reason)}, url: #{Glific.SafeLog.safe_inspect(url)}"
     )
 
     :ok

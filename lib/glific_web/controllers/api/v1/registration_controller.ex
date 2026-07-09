@@ -203,7 +203,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
           error ->
             # Do not surface delivery failures to the client either; a distinguishable response
             # here would still let a caller enumerate accounts. Log internally instead.
-            Logger.error("Failed to send forgot-password OTP to #{phone}: #{inspect(error)}")
+            Logger.error(
+              "Failed to send forgot-password OTP to #{phone}: #{Glific.SafeLog.safe_inspect(error)}"
+            )
         end
 
       {:error, _} ->

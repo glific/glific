@@ -10,8 +10,8 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Webhook,
-    Flows.Webhooks.Dispatcher,
     Flows.WebhookLog,
+    Flows.Webhooks.Dispatcher,
     Partners,
     Repo,
     Seeds.SeedsDev

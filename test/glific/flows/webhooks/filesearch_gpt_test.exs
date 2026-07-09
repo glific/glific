@@ -12,8 +12,8 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
-    Flows.Webhooks.FilesearchGpt,
     Flows.WebhookLog,
+    Flows.Webhooks.FilesearchGpt,
     Partners,
     Repo,
     Seeds.SeedsDev

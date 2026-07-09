@@ -12,8 +12,8 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
-    Flows.Webhooks.Dispatcher,
     Flows.WebhookLog,
+    Flows.Webhooks.Dispatcher,
     Partners,
     Repo,
     Seeds.SeedsDev
