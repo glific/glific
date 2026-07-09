@@ -347,4 +347,35 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
       "result_name" => "response"
     }
   end
+
+  describe "perform/1 rate limiting" do
+    test "snoozes a speech_to_text job once the shared per-org rate limit is exceeded" do
+      # The shared kaapi_stt_tts bucket allows 10 requests / 60s per org (see
+      # Glific.Flows.Webhook). ExRated buckets are process-global, so reset around the test.
+      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
+      ExRated.delete_bucket(key)
+      on_exit(fn -> ExRated.delete_bucket(key) end)
+
+      for _ <- 1..10 do
+        {:ok, _} = ExRated.check_rate(key, 60_000, 10)
+      end
+
+      job = %Oban.Job{
+        args: %{
+          "method" => "function",
+          "url" => "speech_to_text",
+          "body" => Jason.encode!(%{"organization_id" => 1}),
+          "result_name" => "response",
+          "headers" => [],
+          "webhook_log_id" => 1,
+          "context" => %{"id" => 1},
+          "organization_id" => 1,
+          "flow_id" => 1,
+          "contact_id" => 1
+        }
+      }
+
+      assert {:snooze, 5} = Webhook.perform(job)
+    end
+  end
 end
