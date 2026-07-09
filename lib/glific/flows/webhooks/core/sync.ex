@@ -8,6 +8,12 @@ defmodule Glific.Flows.Webhooks.Sync do
   `Glific.Flows.Webhooks.Dispatcher`, not by this macro, so unit tests of
   `call/2` see raw return values.
 
+  A sync webhook classifies its own failures **unidirectionally**: it returns
+  `{:error, Glific.Flows.Webhooks.ErrorType.t(), message}` from `call/2` (a stable
+  atom the reporter maps to a bucket) rather than implementing an `error_class/1`
+  callback the classifier would call back into. Return an untyped `{:error, message}`
+  to defer classification to the central engine.
+
   ## Example
 
       defmodule Glific.Flows.Webhooks.Geolocation do
@@ -42,13 +48,6 @@ defmodule Glific.Flows.Webhooks.Sync do
       @spec mode() :: :sync
       @impl true
       def mode, do: :sync
-
-      @doc "Classify this webhook's own failures; `nil` defers to the central engine."
-      @spec error_class(map()) :: :config | :system | :transient | :stale | nil
-      @impl true
-      def error_class(_result), do: nil
-
-      defoverridable error_class: 1
     end
   end
 end

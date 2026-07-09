@@ -36,10 +36,13 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     module = Registry.lookup!(name)
     ctx = build_context(fields, headers)
 
-    Instrumentation.around(module, ctx, fn ->
-      module.call(fields, ctx)
-      |> ResultTranslator.to_legacy_structure(module)
-    end)
+    # Translation runs AFTER instrumentation so Instrumentation.around/3 sees the raw
+    # result — including a typed `{:error, ErrorType.t(), msg}` — and can classify from
+    # the returned value without calling back into the module. The flow engine only ever
+    # sees the translated legacy shape.
+    module
+    |> Instrumentation.around(ctx, fn -> module.call(fields, ctx) end)
+    |> ResultTranslator.to_legacy_structure(module)
   end
 
   # Builds the minimal ctx that Instrumentation needs (organization_id for

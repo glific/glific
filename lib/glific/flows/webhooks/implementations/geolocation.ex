@@ -8,34 +8,35 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   clause; the centralised dispatcher adds AppSignal reporting on failure
   paths.
 
-  Returns `{:ok, Address.t()}` or `{:error, String.t()}` from `call/2`. The
-  dispatcher encodes those tuples for the flow engine (map on success, string
-  on failure) via `Glific.Flows.Webhooks.ResultTranslator`.
+  Returns `{:ok, Address.t()}` or a failure tuple from `call/2`. Failures are
+  **typed** — `{:error, ErrorType.t(), String.t()}` — so the reporter buckets them
+  without re-entering this module: bad coordinates / no result are `:invalid_geocoding`
+  / `:empty_input` (config), a denied key is `:missing_api_key` (system), an exceeded
+  quota is `:rate_limited` and a connection failure is `:service_unavailable`
+  (transient). Genuinely ambiguous provider responses return an untyped
+  `{:error, String.t()}` and defer to the engine (fail-safe system). The dispatcher
+  encodes all of these for the flow engine (map on success, string on failure) via
+  `Glific.Flows.Webhooks.ResultTranslator`.
   """
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
 
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Geolocation.Address
 
+  @type result :: {:ok, Address.t()} | {:error, String.t()} | {:error, ErrorType.t(), String.t()}
+
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
-          {:ok, Address.t()} | {:error, String.t()}
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: result()
   def call(fields, _ctx), do: geocode(fields)
 
-  @doc "Bad geocoding input (invalid latlng / missing coords) is user/flow config; else defer."
-  @impl true
-  @spec error_class(map()) :: :config | :system | :transient | :stale | nil
-  def error_class(%{reason: "Invalid geocoding request" <> _}), do: :config
-  def error_class(%{reason: "Missing lat or long" <> _}), do: :config
-  def error_class(_result), do: nil
-
-  @spec geocode(map()) :: {:ok, Address.t()} | {:error, String.t()}
+  @spec geocode(map()) :: result()
   defp geocode(fields) do
     lat = (fields["lat"] || "") |> to_string() |> String.trim()
     long = (fields["long"] || "") |> to_string() |> String.trim()
 
     if lat == "" or long == "" do
-      {:error, "Missing lat or long field"}
+      {:error, :empty_input, "Missing lat or long field"}
     else
       api_key = Glific.get_google_maps_api_key()
 
@@ -58,19 +59,19 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     )
   end
 
-  @spec do_geocode(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
+  @spec do_geocode(String.t()) :: result()
   defp do_geocode(url) do
     case Tesla.get(client(), url) do
       {:ok, %Tesla.Env{body: body}} ->
         decode_response(body)
 
       {:error, reason} ->
-        {:error,
+        {:error, :service_unavailable,
          "Could not connect to the geocoding service (#{Glific.SafeLog.safe_inspect(reason)}). Check your network connection and try again."}
     end
   end
 
-  @spec decode_response(String.t()) :: {:ok, Address.t()} | {:error, String.t()}
+  @spec decode_response(String.t()) :: result()
   defp decode_response(body) do
     case Jason.decode(body) do
       {:ok, decoded} when is_map(decoded) ->
@@ -88,12 +89,12 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   # The Geocoding API contract is defined purely by the `status` field in the JSON body —
   # the docs make no guarantees about HTTP status codes.
   # See https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
-  @spec decode_geocode_response(map()) :: {:ok, Address.t()} | {:error, String.t()}
+  @spec decode_geocode_response(map()) :: result()
   defp decode_geocode_response(%{"status" => "OK", "results" => results}),
     do: parse_results(results)
 
   defp decode_geocode_response(%{"status" => status} = decoded) do
-    {:error, geocode_status_error(status, Map.get(decoded, "error_message"))}
+    geocode_status_error(status, Map.get(decoded, "error_message"))
   end
 
   # Must come after the status-bearing clause above — a response with both "status" and
@@ -105,49 +106,59 @@ defmodule Glific.Flows.Webhooks.Geolocation do
      "The geocoding service returned an unexpected response format. Please try again later."}
   end
 
-  @spec geocode_status_error(String.t(), String.t() | nil) :: String.t()
+  # Bad coordinates (no result / invalid request) are user/flow config; a denied key is a
+  # Glific provisioning gap (system); an exceeded quota is a transient blip. A genuinely
+  # unknown/other status stays untyped so the engine fails it safe to system and we investigate.
+  @spec geocode_status_error(String.t(), String.t() | nil) ::
+          {:error, ErrorType.t(), String.t()} | {:error, String.t()}
   defp geocode_status_error("ZERO_RESULTS", _error_message) do
-    "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."
+    {:error, :invalid_geocoding,
+     "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."}
   end
 
   defp geocode_status_error("REQUEST_DENIED", error_message) do
-    wrap_gmaps_error(
-      "Geocoding request was denied.",
-      error_message,
-      " Check that the Google Maps API key is valid and the Geocoding API is enabled."
-    )
+    {:error, :missing_api_key,
+     wrap_gmaps_error(
+       "Geocoding request was denied.",
+       error_message,
+       " Check that the Google Maps API key is valid and the Geocoding API is enabled."
+     )}
   end
 
   defp geocode_status_error("OVER_QUERY_LIMIT", error_message) do
-    wrap_gmaps_error(
-      "Geocoding quota exceeded.",
-      error_message,
-      " Please try again later."
-    )
+    {:error, :rate_limited,
+     wrap_gmaps_error(
+       "Geocoding quota exceeded.",
+       error_message,
+       " Please try again later."
+     )}
   end
 
   defp geocode_status_error("INVALID_REQUEST", error_message) do
-    wrap_gmaps_error(
-      "Invalid geocoding request.",
-      error_message,
-      " Verify that the latitude and longitude values are valid."
-    )
+    {:error, :invalid_geocoding,
+     wrap_gmaps_error(
+       "Invalid geocoding request.",
+       error_message,
+       " Verify that the latitude and longitude values are valid."
+     )}
   end
 
   defp geocode_status_error("UNKNOWN_ERROR", error_message) do
-    wrap_gmaps_error(
-      "The geocoding service encountered an unexpected error.",
-      error_message,
-      " Please try again later."
-    )
+    {:error,
+     wrap_gmaps_error(
+       "The geocoding service encountered an unexpected error.",
+       error_message,
+       " Please try again later."
+     )}
   end
 
   defp geocode_status_error(status, error_message) do
-    wrap_gmaps_error(
-      "Geocoding failed (#{status}).",
-      error_message,
-      " Please try again later."
-    )
+    {:error,
+     wrap_gmaps_error(
+       "Geocoding failed (#{status}).",
+       error_message,
+       " Please try again later."
+     )}
   end
 
   @spec wrap_gmaps_error(String.t(), String.t() | nil, String.t()) :: String.t()
@@ -161,7 +172,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   @spec blank?(String.t() | nil) :: boolean()
   defp blank?(value), do: is_nil(value) or value == ""
 
-  @spec parse_results(list()) :: {:ok, Address.t()} | {:error, String.t()}
+  @spec parse_results(list()) :: {:ok, Address.t()} | {:error, ErrorType.t(), String.t()}
   defp parse_results([
          %{"address_components" => components, "formatted_address" => formatted_address} | _
        ]) do
@@ -177,7 +188,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   end
 
   defp parse_results(_) do
-    {:error,
+    {:error, :invalid_geocoding,
      "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."}
   end
 

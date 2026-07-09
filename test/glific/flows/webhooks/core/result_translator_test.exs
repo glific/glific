@@ -53,6 +53,16 @@ defmodule Glific.Flows.Webhooks.Core.ResultTranslatorTest do
       refute is_map(result)
       assert is_binary(result)
     end
+
+    test "{:error, error_type, message} drops the type and returns the message string" do
+      result =
+        ResultTranslator.to_legacy_structure(
+          {:error, :invalid_geocoding, "No address found"},
+          Geolocation
+        )
+
+      assert result == "No address found"
+    end
   end
 
   describe "to_legacy_structure/2 passthrough behaviour" do

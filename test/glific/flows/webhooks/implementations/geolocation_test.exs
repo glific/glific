@@ -159,12 +159,14 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
       assert msg =~ "unreadable response"
     end
 
-    test "returns {:error, string} on network failure" do
+    test "returns {:error, :service_unavailable, string} on network failure" do
       Tesla.Mock.mock(fn %{method: :get} ->
         {:error, :timeout}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+      assert {:error, :service_unavailable, msg} =
+               Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+
       assert is_binary(msg)
       assert msg =~ "timeout"
     end
@@ -174,7 +176,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         {:error, %Tesla.Error{reason: :econnrefused}}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+      assert {:error, :service_unavailable, msg} =
+               Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+
       assert is_binary(msg)
     end
   end
@@ -187,7 +191,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "0.0", "long" => "0.0"}, @ctx)
+      assert {:error, :invalid_geocoding, msg} =
+               Geolocation.call(%{"lat" => "0.0", "long" => "0.0"}, @ctx)
+
       assert msg =~ "No address found"
     end
 
@@ -202,7 +208,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :missing_api_key, msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+
       assert msg =~ "Geocoding request was denied."
       assert msg =~ "This API project is not authorized"
     end
@@ -214,7 +222,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :missing_api_key, msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+
       assert msg =~ "Geocoding request was denied."
       refute msg =~ "nil"
     end
@@ -226,7 +236,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :rate_limited, msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+
       assert msg =~ "quota"
     end
 
@@ -237,7 +249,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "bad", "long" => "bad"}, @ctx)
+      assert {:error, :invalid_geocoding, msg} =
+               Geolocation.call(%{"lat" => "bad", "long" => "bad"}, @ctx)
+
       assert msg =~ "Invalid"
     end
 
@@ -270,7 +284,8 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, _msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :invalid_geocoding, _msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
     end
   end
 
@@ -297,37 +312,37 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
 
   describe "call/2 - missing / whitespace coordinates" do
     test "missing lat returns error" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"long" => "77.5946"}, @ctx)
     end
 
     test "missing long returns error" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => "12.9716"}, @ctx)
     end
 
     test "whitespace-only lat treated as missing" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => "   ", "long" => "77.5946"}, @ctx)
     end
 
     test "whitespace-only long treated as missing" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => "12.9716", "long" => "  "}, @ctx)
     end
 
     test "nil lat treated as missing" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => nil, "long" => "77.5946"}, @ctx)
     end
 
     test "nil long treated as missing" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => "12.9716", "long" => nil}, @ctx)
     end
 
     test "empty string lat treated as missing" do
-      assert {:error, "Missing lat or long field"} =
+      assert {:error, :empty_input, "Missing lat or long field"} =
                Geolocation.call(%{"lat" => "", "long" => "77.5946"}, @ctx)
     end
   end

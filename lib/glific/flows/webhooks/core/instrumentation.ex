@@ -21,7 +21,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   — independent from the legacy `Glific.Flows.Webhook.*` exception classes.
   """
 
-  alias Glific.Flows.Webhooks.{ErrorClassifier, Errors, Registry}
+  alias Glific.Flows.Webhooks.{ErrorClassifier, Errors, ErrorType, Registry}
   alias Glific.Metrics
   alias Glific.SafeLog
 
@@ -73,11 +73,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
+  # Failures are reported unidirectionally — the class is read off the returned value
+  # (a typed `{:error, ErrorType.t(), msg}` or the engine heuristic), never by calling
+  # back into the module.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_status(webhook_name, result)
-    maybe_report_failure(result, webhook_name, ctx)
+    report_sync_failure(result, webhook_name, ctx)
   end
 
   # Async webhooks: a successful ack means the Kaapi request is in flight. The real
@@ -252,6 +255,48 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp track_kaapi_latency(_response, _status), do: :ok
 
+  # Sync failure reporting (unidirectional). A typed `{:error, ErrorType.t(), msg}` carries
+  # its own class out of the module — map the atom directly, no callback. Everything else
+  # (bare `{:error, msg}`, a legacy result map, nil/non-map) defers to the engine heuristic.
+  @spec report_sync_failure(any(), String.t(), map()) :: :ok
+  defp report_sync_failure({:ok, _value}, _webhook_name, _ctx), do: :ok
+
+  defp report_sync_failure({:error, error_type, message}, webhook_name, ctx)
+       when is_atom(error_type) and is_binary(message) do
+    result = %{reason: message}
+    class = ErrorType.class(error_type) || ErrorClassifier.classify(nil, result)
+    ErrorClassifier.report(class, result, failure_tags(webhook_name, ctx))
+  end
+
+  defp report_sync_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
+    report_via_heuristic(%{reason: message}, webhook_name, ctx)
+  end
+
+  defp report_sync_failure(%{success: false} = result, webhook_name, ctx) do
+    {status, reason} = extract_status_and_reason(result)
+    report_via_heuristic(%{reason: reason, http_status: status}, webhook_name, ctx)
+  end
+
+  defp report_sync_failure(result, webhook_name, ctx)
+       when is_nil(result) or not is_map(result) do
+    reason = if is_binary(result), do: result, else: Glific.SafeLog.safe_inspect(result)
+    report_via_heuristic(%{reason: reason}, webhook_name, ctx)
+  end
+
+  defp report_sync_failure(_success, _webhook_name, _ctx), do: :ok
+
+  @spec report_via_heuristic(map(), String.t(), map()) :: :ok
+  defp report_via_heuristic(result, webhook_name, ctx) do
+    nil
+    |> ErrorClassifier.classify(result)
+    |> ErrorClassifier.report(result, failure_tags(webhook_name, ctx))
+  end
+
+  @spec failure_tags(String.t(), map()) :: map()
+  defp failure_tags(webhook_name, ctx) do
+    %{webhook_name: webhook_name, organization_id: Map.get(ctx, :organization_id)}
+  end
+
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
   defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     {status, reason} = extract_status_and_reason(result)
@@ -304,6 +349,10 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @spec track_status(String.t(), any()) :: :ok
+  defp track_status(webhook_name, {:ok, _value}) do
+    Metrics.increment(metric_event_name(webhook_name, "Success"))
+  end
+
   defp track_status(webhook_name, %{success: true}) do
     Metrics.increment(metric_event_name(webhook_name, "Success"))
   end

@@ -8,6 +8,8 @@ defmodule Glific.Flows.Webhooks.ResultTranslator do
 
   * `{:ok, value}` → results map (`success: true` + payload) → Success branch
   * `{:error, message}` → bare string → Failure branch
+  * `{:error, error_type, message}` → bare string (the type atom was already consumed
+    for reporting by `Instrumentation`) → Failure branch
   * other return values pass through unchanged (legacy map responses)
 
   Migrated webhooks return `{:ok, _}` / `{:error, _}` from `call/2`; the
@@ -33,6 +35,10 @@ defmodule Glific.Flows.Webhooks.ResultTranslator do
   end
 
   def to_legacy_structure({:error, message}, module) when is_binary(message) do
+    encode_tuple({:error, message}, encoder_for(module))
+  end
+
+  def to_legacy_structure({:error, _error_type, message}, module) when is_binary(message) do
     encode_tuple({:error, message}, encoder_for(module))
   end
 

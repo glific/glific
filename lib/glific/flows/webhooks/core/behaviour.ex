@@ -42,11 +42,24 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   Return shape for all synchronous webhooks.
 
   Webhook modules that have not yet adopted tuple results return maps/strings
-  directly. Migrated modules return `{:ok, value}` / `{:error, String.t()}`.
-  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises
-  all forms into the map/string shape consumed by the flow engine.
+  directly. Migrated modules return `{:ok, value}` / `{:error, String.t()}`, or the
+  **typed** `{:error, ErrorType.t(), String.t()}` — a stable atom the module owns
+  plus the human message. The atom carries the failure's class *out* of the module
+  (unidirectional: the classifier reads it, never calls back in), while the message
+  is what the flow engine surfaces. Return an untyped `{:error, String.t()}` to defer
+  classification to the central engine.
+
+  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises all
+  forms into the map/string shape consumed by the flow engine (the error-type atom
+  is used for reporting only, then stripped).
   """
-  @type sync_result :: map() | nil | String.t() | {:ok, term()} | {:error, String.t()}
+  @type sync_result ::
+          map()
+          | nil
+          | String.t()
+          | {:ok, term()}
+          | {:error, String.t()}
+          | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}
 
   @typedoc """
   Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt,

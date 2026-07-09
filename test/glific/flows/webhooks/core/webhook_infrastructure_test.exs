@@ -529,17 +529,40 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.error_type == "system"
     end
 
-    test "geolocation input error → config (module verdict)" do
+    test "typed sync failure → config, read off the return value (no module callback)" do
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_failure("geolocation", %{
-            organization_id: 1,
-            reason: "Invalid geocoding request. Invalid 'latlng' parameter."
-          })
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :invalid_geocoding, "Invalid geocoding request. Invalid 'latlng' parameter."}
+          end)
         end)
 
       assert %Errors.ConfigurationError{} = exception
       assert tags.error_type == "config"
+    end
+
+    test "typed sync failure → system for a Glific-owned provisioning gap" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :missing_api_key, "Geocoding request was denied."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "system"
+    end
+
+    test "untyped sync failure defers to the engine heuristic (fail-safe system)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, "The geocoding service returned an unreadable response."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "system"
     end
 
     test "OpenAI 400 (unresolved var) callback → config via the heuristic" do
