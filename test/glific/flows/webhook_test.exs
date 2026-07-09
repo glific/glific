@@ -702,5 +702,4 @@ defmodule Glific.Flows.WebhookTest do
     [job] = all_enqueued(worker: Webhook, prefix: "global")
     assert job.queue == "custom_certificate"
   end
-
 end
