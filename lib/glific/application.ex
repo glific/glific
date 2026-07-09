@@ -78,9 +78,6 @@ defmodule Glific.Application do
     # Add this :telemetry.attach/4 for Ecto query timing:
     attach_repo_telemetry_event()
 
-    # Attach AppSignal's built-in Absinthe instrumentation for GraphQL operation timing:
-    attach_absinthe_telemetry_event()
-
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
@@ -184,9 +181,5 @@ defmodule Glific.Application do
       &Glific.Appsignal.handle_event/4,
       []
     )
-  end
-
-  defp attach_absinthe_telemetry_event do
-    Appsignal.Absinthe.attach()
   end
 end
