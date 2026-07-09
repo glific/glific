@@ -1328,12 +1328,20 @@ defmodule Glific.SheetsTest do
 
         params = %{range: "Sheet1!A:A", data: [["Alice", "30"]]}
 
-        capture_log(fn ->
-          result = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
+        log =
+          capture_log(fn ->
+            result = GoogleSheets.insert_row(organization_id, @spreadsheet_id, params)
 
-          assert match?({:error, _reason}, result)
-          refute match?({:ok, _result}, result)
-        end)
+            assert {:error, %Tesla.Env{status: 403}} = result
+            refute match?({:ok, _result}, result)
+          end)
+
+        assert log =~
+                 "Google Sheets API write failed for organization #{organization_id}, spreadsheet #{@spreadsheet_id}"
+
+        assert log =~ "The caller does not have permission"
+        refute log =~ "Google Sheets API is not enabled"
+        refute log =~ "console.developers.google.com"
       end
     end
 
