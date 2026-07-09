@@ -6,16 +6,20 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGpt do
   central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
   reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
 
-  `call/2` returns `%{success: true, parsed_msg: ...}` on success, or a bare error string on
-  failure (which routes the flow to its "Failure" category).
+  `call/2` returns `%{success: true, parsed_msg: ...}` on success, or a typed
+  `{:error, ErrorType.t(), message}` on failure (which the dispatcher turns into a bare string
+  routing the flow to its "Failure" category). An empty question is `:empty_input` (config);
+  an OpenAI error the node can't judge is `:unknown` (→ system).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "parse_via_chat_gpt"
 
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.OpenAI.ChatGPT
 
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map() | String.t()
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
+          map() | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, fields} <- parse_chatgpt_fields(fields),
          {:ok, fields} <- ChatGPT.parse_response_format(fields),
@@ -25,15 +29,15 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGpt do
         parsed_msg: ChatGPT.parse_gpt_response(text)
       }
     else
-      {:error, error} ->
-        error
+      {:error, error_type, message} -> {:error, error_type, message}
+      {:error, message} -> {:error, :unknown, message}
     end
   end
 
-  @spec parse_chatgpt_fields(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec parse_chatgpt_fields(map()) :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
   defp parse_chatgpt_fields(fields) do
     if fields["question_text"] in [nil, ""] do
-      {:error, "question_text is empty"}
+      {:error, :empty_input, "question_text is empty"}
     else
       {:ok,
        %{

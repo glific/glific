@@ -6,17 +6,21 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
   central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
   reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
 
-  Failures return a bare string (not `%{success: false}`) so the flow routes to the "Failure"
-  category (`Glific.Flows.Webhook` keys off `is_map`).
+  Success returns `%{success: true, ...}`; a failure returns a typed
+  `{:error, ErrorType.t(), message}` (the dispatcher turns it into a bare string so the flow
+  routes to the "Failure" category). An invalid media URL is `:invalid_media_url` (config);
+  a download/OpenAI error the node can't judge is `:unknown` (→ system).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "parse_via_gpt_vision"
 
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.OpenAI.ChatGPT
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
 
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map() | String.t()
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
+          map() | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     url = fields["url"]
     org_id = parse_org_id(fields)
@@ -29,10 +33,10 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
       %{success: true, response: ChatGPT.parse_gpt_response(response)}
     else
       %{is_valid: false, message: message} ->
-        message
+        {:error, :invalid_media_url, message}
 
-      {:error, error} ->
-        error
+      {:error, message} ->
+        {:error, :unknown, message}
     end
   end
 

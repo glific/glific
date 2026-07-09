@@ -8,11 +8,11 @@ defmodule Glific.Flows.Webhooks.Sync do
   `Glific.Flows.Webhooks.Dispatcher`, not by this macro, so unit tests of
   `call/2` see raw return values.
 
-  A sync webhook classifies its own failures **unidirectionally**: it returns
-  `{:error, Glific.Flows.Webhooks.ErrorType.t(), message}` from `call/2` (a stable
-  atom the reporter maps to a bucket) rather than implementing an `error_class/1`
-  callback the classifier would call back into. Return an untyped `{:error, message}`
-  to defer classification to the central engine.
+  A sync webhook classifies its own failures: it returns
+  `{:error, Glific.Flows.Webhooks.ErrorType.t(), message}` from `call/2` — a stable atom the
+  reporter maps to a config/system bucket. The node owns the verdict; there is no central
+  heuristic. A failure the node genuinely can't judge is `{:error, :unknown, message}`
+  (→ system, so it still pages).
 
   ## Example
 

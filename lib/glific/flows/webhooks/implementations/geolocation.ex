@@ -8,15 +8,13 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   clause; the centralised dispatcher adds AppSignal reporting on failure
   paths.
 
-  Returns `{:ok, Address.t()}` or a failure tuple from `call/2`. Failures are
-  **typed** — `{:error, ErrorType.t(), String.t()}` — so the reporter buckets them
-  without re-entering this module: bad coordinates / no result are `:invalid_geocoding`
-  / `:empty_input` (config), a denied key is `:missing_api_key` (system), an exceeded
-  quota is `:rate_limited` and a connection failure is `:service_unavailable`
-  (transient). Genuinely ambiguous provider responses return an untyped
-  `{:error, String.t()}` and defer to the engine (fail-safe system). The dispatcher
-  encodes all of these for the flow engine (map on success, string on failure) via
-  `Glific.Flows.Webhooks.ResultTranslator`.
+  Returns `{:ok, Address.t()}` or a **typed** failure `{:error, ErrorType.t(), String.t()}`
+  from `call/2` — the node classifies every failure itself: bad coordinates / no result are
+  `:invalid_geocoding` / `:empty_input` (config), a denied key is `:missing_api_key` (system),
+  an exceeded quota is `:rate_limited` and a connection failure is `:service_unavailable`
+  (transient). A response the node genuinely can't judge is `:unknown` (→ system, so it still
+  pages). The dispatcher encodes these for the flow engine (map on success, string on failure)
+  via `Glific.Flows.Webhooks.ResultTranslator`.
   """
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
@@ -24,7 +22,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Geolocation.Address
 
-  @type result :: {:ok, Address.t()} | {:error, String.t()} | {:error, ErrorType.t(), String.t()}
+  @type result :: {:ok, Address.t()} | {:error, ErrorType.t(), String.t()}
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: result()
@@ -78,11 +76,12 @@ defmodule Glific.Flows.Webhooks.Geolocation do
         decode_geocode_response(decoded)
 
       {:ok, _unexpected} ->
-        {:error,
+        {:error, :unknown,
          "The geocoding service returned an unexpected response format. Please try again later."}
 
       {:error, _decode_error} ->
-        {:error, "The geocoding service returned an unreadable response. Please try again later."}
+        {:error, :unknown,
+         "The geocoding service returned an unreadable response. Please try again later."}
     end
   end
 
@@ -102,15 +101,14 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   defp decode_geocode_response(%{"results" => results}), do: parse_results(results)
 
   defp decode_geocode_response(_unexpected) do
-    {:error,
+    {:error, :unknown,
      "The geocoding service returned an unexpected response format. Please try again later."}
   end
 
   # Bad coordinates (no result / invalid request) are user/flow config; a denied key is a
   # Glific provisioning gap (system); an exceeded quota is a transient blip. A genuinely
-  # unknown/other status stays untyped so the engine fails it safe to system and we investigate.
-  @spec geocode_status_error(String.t(), String.t() | nil) ::
-          {:error, ErrorType.t(), String.t()} | {:error, String.t()}
+  # unknown/other status is typed `:unknown` (→ system) so it still pages and we investigate.
+  @spec geocode_status_error(String.t(), String.t() | nil) :: {:error, ErrorType.t(), String.t()}
   defp geocode_status_error("ZERO_RESULTS", _error_message) do
     {:error, :invalid_geocoding,
      "No address found for these coordinates. Verify that the latitude and longitude are correct and fall within a supported region."}
@@ -144,7 +142,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   end
 
   defp geocode_status_error("UNKNOWN_ERROR", error_message) do
-    {:error,
+    {:error, :unknown,
      wrap_gmaps_error(
        "The geocoding service encountered an unexpected error.",
        error_message,
@@ -153,7 +151,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   end
 
   defp geocode_status_error(status, error_message) do
-    {:error,
+    {:error, :unknown,
      wrap_gmaps_error(
        "Geocoding failed (#{status}).",
        error_message,

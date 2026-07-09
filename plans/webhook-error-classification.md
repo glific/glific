@@ -2,6 +2,19 @@
 
 Issue: [#5196](https://github.com/glific/glific/issues/5196)
 
+> **Implemented scope (this PR — sync nodes only).** Each **sync** webhook classifies its own
+> failure by returning `{:error, ErrorType.t(), message}` from `call/2`. `Instrumentation` reads
+> that atom and `ErrorReporter` routes it — `:config` → `flow_webhook_config_errors`, `:system` →
+> `flow_webhooks`, `:transient` → counter only. The node owns the verdict; **there is no central
+> classifier/heuristic on the sync path** (a failure a node can't judge is `:unknown` → system).
+> The `ErrorType` vocabulary + `ErrorReporter` (route/report) are the only new engine pieces.
+>
+> **Deferred to a follow-up (async / Kaapi).** Callback / resume / timeout failures still report a
+> plain `SystemError` under `flow_webhooks` (master behaviour). The heuristic engine
+> (crash/transient/status parsing of opaque provider strings) and per-callback config/system
+> classification belong to that async PR — the sections below describing `ErrorClassifier`,
+> `error_class/1`, and the engine tiers are the original (superseded) design kept for context.
+
 ## Problem
 
 All webhook failures report to AppSignal as `SystemError`. ~85% are actually **config errors**

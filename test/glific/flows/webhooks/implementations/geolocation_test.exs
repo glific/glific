@@ -155,7 +155,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 500, body: "Internal Server Error"}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+      assert {:error, :unknown, msg} =
+               Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+
       assert msg =~ "unreadable response"
     end
 
@@ -262,7 +264,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :unknown, msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+
       assert msg =~ "unexpected error"
     end
 
@@ -273,7 +277,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+      assert {:error, :unknown, msg} =
+               Geolocation.call(%{"lat" => "12.9", "long" => "77.5"}, @ctx)
+
       assert msg =~ "SOME_FUTURE_STATUS"
     end
 
@@ -295,7 +301,9 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: "not json at all {{"}
       end)
 
-      assert {:error, msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+      assert {:error, :unknown, msg} =
+               Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+
       assert is_binary(msg)
     end
 
@@ -306,7 +314,8 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:error, _msg} = Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
+      assert {:error, :unknown, _msg} =
+               Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
     end
   end
 

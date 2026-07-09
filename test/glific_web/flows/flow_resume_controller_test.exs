@@ -763,15 +763,15 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end)
 
       assert %SystemError{} = exception
-      assert Exception.message(exception) == "Webhook system_error from voice-filesearch-gpt"
+      assert Exception.message(exception) == "Webhook callback failure"
       assert tags.organization_id == organization_id
       assert tags.webhook_name == "voice-filesearch-gpt"
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
-      # The classifier heuristics the reason ("LLM provider timed out" → system). The callback's
-      # own "error_type" is not yet honoured — deferred to the Kaapi-sends-structured-error ask.
-      assert tags.error_type == "system"
+      # The async callback path passes the callback's own structured error_type straight through
+      # to the tag (config/system classification for async is a separate, later change).
+      assert tags.error_type == "timeout"
       assert tags.reason == "LLM provider timed out"
     end
 
@@ -1024,13 +1024,11 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end)
 
       assert %SystemError{} = exception
-      # webhook_name is absent from this callback response, so the low-cardinality message
-      # ends with an empty name. A non-stale/non-category resume error classifies as system.
-      assert Exception.message(exception) == "Webhook system_error from "
+      assert Exception.message(exception) == "Webhook resume failure"
       assert tags.organization_id == organization_id
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
-      assert tags.reason == "flow context not found"
+      assert tags.reason == inspect("flow context not found")
     end
 
     test "run_supervised_task rescues exceptions and returns :ok" do

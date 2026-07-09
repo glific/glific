@@ -1,51 +1,44 @@
 defmodule Glific.Flows.Webhooks.ErrorType do
   @moduledoc """
-  The allowed webhook error-type atoms and their bucket — single source of truth for the
+  The allowed sync-webhook error-type atoms and their bucket — single source of truth for the
   typed-return variant `{:error, ErrorType.t(), String.t()}`.
 
-  A sync webhook emits a stable atom (not prose) as part of its `call/2` return —
-  `{:error, ErrorType.t(), message}` — and `class/1` maps it to a bucket, so rewording the
-  human message never remisclassifies. `Instrumentation` reads the atom off the returned value
-  and reports the class directly (unidirectional — no call back into the module).
+  A sync webhook classifies its own failures: `call/2` returns `{:error, ErrorType.t(), message}`
+  with a stable atom (not prose), and `class/1` maps that atom to a bucket. `Instrumentation`
+  reads the atom off the return value and reports the class directly — the module owns the
+  verdict, there is no central heuristic in the sync path. `:unknown` is the in-module fail-safe
+  for a failure the node genuinely can't judge (→ `:system`, so it still pages).
+
+  (Async / Kaapi callbacks are classified separately and are out of scope here.)
 
   See `plans/webhook-error-classification.md`.
   """
 
   @type t ::
-          :kaapi_not_active
-          | :missing_api_key
-          | :tts_upload_failed
-          | :invalid_json_body
-          | :unknown_webhook_fn
+          :missing_api_key
           | :invalid_media_url
-          | :assistant_not_found
           | :invalid_geocoding
           | :empty_input
-          | :flow_category_unmatched
-          | :stale_callback
+          | :invalid_input
           | :rate_limited
           | :service_unavailable
+          | :unknown
 
-  # A Glific-owned provisioning/infra gap (system) pages on-call; an NGO/flow-author mistake
-  # (config) notifies support; an upstream blip (transient) is rate-monitored; a benign race
-  # (stale) is suppressed. See the buckets in `Glific.Flows.Webhooks.ErrorClassifier`.
+  # A Glific-owned provisioning/infra gap or an unjudgeable failure (system) pages on-call; an
+  # NGO/flow-author mistake (config) notifies support; an upstream blip (transient) is
+  # rate-monitored (no incident).
   @class %{
-    kaapi_not_active: :system,
     missing_api_key: :system,
-    tts_upload_failed: :system,
-    invalid_json_body: :config,
-    unknown_webhook_fn: :config,
+    unknown: :system,
     invalid_media_url: :config,
-    assistant_not_found: :config,
     invalid_geocoding: :config,
     empty_input: :config,
-    flow_category_unmatched: :config,
-    stale_callback: :stale,
+    invalid_input: :config,
     rate_limited: :transient,
     service_unavailable: :transient
   }
 
-  @doc "Map an error-type atom to its bucket, or nil if unknown (caller defers to the engine)."
-  @spec class(t() | nil) :: :config | :system | :transient | :stale | nil
+  @doc "Map an error-type atom to its bucket, or `nil` if unrecognised (caller fails safe to system)."
+  @spec class(t() | nil) :: :config | :system | :transient | nil
   def class(error_type), do: Map.get(@class, error_type)
 end

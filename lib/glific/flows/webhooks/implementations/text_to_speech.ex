@@ -51,10 +51,4 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
       {:error, reason} -> %{success: false, reason: reason}
     end
   end
-
-  @doc "A keyless org is a provisioning gap (system); other failures defer to the engine."
-  @impl true
-  @spec error_class(map()) :: :config | :system | nil
-  def error_class(%{reason: "Kaapi is not active" <> _}), do: :system
-  def error_class(_result), do: nil
 end
