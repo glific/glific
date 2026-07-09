@@ -651,10 +651,12 @@ defmodule Glific.Flows.Webhook do
     output_type = get_in(output, ["type"])
     conversation_id = response_data["conversation_id"]
 
+    message = get_in(output, ["content", "value"]) |> sanitize_kaapi_wording()
+
     metadata
     |> Map.put("thread_id", conversation_id)
     |> Map.put("output_type", output_type)
-    |> Map.put("message", get_in(output, ["content", "value"]))
+    |> Map.put("message", message)
   end
 
   # Fallback for unexpected formats
@@ -684,12 +686,21 @@ defmodule Glific.Flows.Webhook do
   defp tts_aware_log_message(result, response) do
     %{
       success: result["success"],
-      message: response["message"] || result["error"],
+      message: response["message"] || sanitize_kaapi_wording(result["error"]),
       error_type: result["error_type"],
-      reason: result["reason"],
+      reason: sanitize_kaapi_wording(result["reason"]),
       thread_id: response["thread_id"]
     }
   end
+
+  # Kaapi's error copy sometimes tells the user to "contact Kaapi" directly — an internal
+  # AI service NGO staff have no account with or way to reach. Point them to Glific support
+  # instead, since that's who can actually act on the report.
+  @spec sanitize_kaapi_wording(String.t() | nil) :: String.t() | nil
+  defp sanitize_kaapi_wording(text) when is_binary(text),
+    do: String.replace(text, "contact Kaapi", "contact the Glific Team")
+
+  defp sanitize_kaapi_wording(text), do: text
 
   @doc """
   Upload base64 TTS audio (when present) to GCS, replacing the inline payload
