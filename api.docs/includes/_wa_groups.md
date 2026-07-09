@@ -177,6 +177,124 @@ query waManagedPhones($filter: WaManagedPhoneFilter, $opts: Opts) {
 }
 ```
 
+## Sync WhatsApp Managed Phone Statuses
+
+Re-poll Maytapi and reconcile the stored `status` of every managed phone for the
+org (raising a critical notification on any phone that has just transitioned into
+a disconnected state). Does not provision new phones. Manager-only.
+
+```graphql
+mutation sync_wa_managed_phone_statuses {
+  sync_wa_managed_phone_statuses {
+    message
+    errors { key message }
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sync_wa_managed_phone_statuses": {
+      "message": "WhatsApp phone statuses have been refreshed.",
+      "errors": null
+    }
+  }
+}
+```
+
+## Reconnect a WhatsApp Managed Phone
+
+Log a disconnected managed phone out of its WhatsApp session so Maytapi issues a
+fresh QR/login screen to rescan. Errors if the phone is already connected
+(`active`/`loading`). After calling this, poll `whatsapp_phone_screen` to render
+the QR. Admin-only.
+
+```graphql
+mutation reconnect_wa_managed_phone($wa_managed_phone_id: ID!) {
+  reconnect_wa_managed_phone(wa_managed_phone_id: $wa_managed_phone_id) {
+    wa_managed_phone {
+      id
+      phone
+      status
+    }
+    errors { key message }
+  }
+}
+
+{
+  "wa_managed_phone_id": 4
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "reconnect_wa_managed_phone": {
+      "wa_managed_phone": { "id": "4", "phone": "917777777777", "status": "qr-screen" },
+      "errors": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+wa_managed_phone_id | <a href="#id">ID</a> | required | the managed phone to reconnect
+
+## WhatsApp Phone Login Screen
+
+Fetch the QR / login screen for a managed phone so an admin can reconnect it
+without logging into the Maytapi console. `code` is a `data:image/png;base64,...`
+image the frontend can render, and `expires_at` hints when to refresh it (Maytapi
+rotates the QR). Admin-only.
+
+```graphql
+query whatsapp_phone_screen($wa_managed_phone_id: ID!) {
+  whatsapp_phone_screen(wa_managed_phone_id: $wa_managed_phone_id) {
+    wa_phone_screen {
+      code
+      status
+      expires_at
+    }
+    errors { key message }
+  }
+}
+
+{
+  "wa_managed_phone_id": 4
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "whatsapp_phone_screen": {
+      "wa_phone_screen": {
+        "code": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+        "status": "qr-screen",
+        "expires_at": "2026-07-08T10:00:15Z"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+wa_managed_phone_id | <a href="#id">ID</a> | required | the managed phone whose screen to fetch
+
 ## Set Primary Phone
 
 Promote a managed phone to be the group's primary. The phone must be an active
