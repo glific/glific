@@ -6,8 +6,10 @@ defmodule Glific.Clients.CommonWebhook do
   alias Glific.Certificates.Certificate
   alias Glific.Certificates.CertificateTemplate
   alias Glific.Flows.Webhook
+  alias Glific.Flows.Webhook.ConfigurationError
   alias Glific.Flows.Webhook.SystemError
   alias Glific.Flows.Webhooks.Dispatcher
+  alias Glific.Flows.Webhooks.ErrorClassifier
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Groups.WAGroup
   alias Glific.OpenAI.ChatGPT
@@ -378,14 +380,25 @@ defmodule Glific.Clients.CommonWebhook do
           String.t() | nil
         ) :: :ok
   defp report_webhook_failure(webhook_name, meta, http_status, reason) do
-    %SystemError{message: "Webhook system_error from #{webhook_name}"}
-    |> Webhook.report_to_appsignal(%{
+    # Legacy CommonWebhook nodes aren't Behaviour modules, so classify via the heuristic
+    # (status-based: 4xx → config, 5xx / crash → system). Build the matching exception so
+    # report_to_appsignal routes config errors to the flow_webhook_config_errors namespace.
+    class = ErrorClassifier.classify(nil, %{reason: reason, http_status: http_status})
+
+    exception =
+      case class do
+        :config -> %ConfigurationError{message: "Webhook config_error from #{webhook_name}"}
+        _ -> %SystemError{message: "Webhook system_error from #{webhook_name}"}
+      end
+
+    Webhook.report_to_appsignal(exception, %{
       organization_id: meta[:organization_id],
       webhook_name: webhook_name,
       flow_id: meta[:flow_id],
       contact_id: meta[:contact_id],
       http_status: http_status,
-      reason: reason
+      reason: reason,
+      error_type: to_string(class)
     })
   end
 

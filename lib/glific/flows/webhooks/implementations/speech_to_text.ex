@@ -47,4 +47,11 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
       {:error, reason} -> %{success: false, reason: reason}
     end
   end
+
+  @doc "An invalid/missing media URL is user input (config); a keyless org is a provisioning gap (system)."
+  @impl true
+  @spec error_class(map()) :: :config | :system | nil
+  def error_class(%{reason: "Media URL is" <> _}), do: :config
+  def error_class(%{reason: "Kaapi is not active" <> _}), do: :system
+  def error_class(_result), do: nil
 end

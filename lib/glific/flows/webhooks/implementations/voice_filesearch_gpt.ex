@@ -211,4 +211,12 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       reason: "Kaapi callback returned success=true but message was empty/nil"
     })
   end
+
+  @doc "Media/assistant input errors are config; a keyless org is a provisioning gap (system)."
+  @impl true
+  @spec error_class(map()) :: :config | :system | nil
+  def error_class(%{reason: "Media URL is" <> _}), do: :config
+  def error_class(%{reason: "Assistant not found" <> _}), do: :config
+  def error_class(%{reason: "Kaapi is not active" <> _}), do: :system
+  def error_class(_result), do: nil
 end

@@ -97,8 +97,9 @@ defmodule Glific.Flows.Webhook do
   ]
 
   @doc """
-  Report a flow-webhook exception (`SystemError` / `Timeout`) to AppSignal
-  under the `flow_webhooks` namespace.
+  Report a flow-webhook exception to AppSignal. The namespace is derived from the exception
+  type: a `ConfigurationError` goes to `flow_webhook_config_errors` (notifies support), everything
+  else to `flow_webhooks` (pages on-call).
   """
   @spec report_to_appsignal(Exception.t(), map()) :: :ok
   def report_to_appsignal(exception, tags) when is_map(tags) do
@@ -106,12 +107,16 @@ defmodule Glific.Flows.Webhook do
 
     Appsignal.send_error(exception, [], fn span ->
       span
-      |> Appsignal.Span.set_namespace("flow_webhooks")
+      |> Appsignal.Span.set_namespace(namespace_for(exception))
       |> Appsignal.Span.set_sample_data("tags", tags)
     end)
 
     :ok
   end
+
+  @spec namespace_for(Exception.t()) :: String.t()
+  defp namespace_for(%__MODULE__.ConfigurationError{}), do: "flow_webhook_config_errors"
+  defp namespace_for(_exception), do: "flow_webhooks"
 
   @doc """
   Execute a webhook action, could be either get or post for now
