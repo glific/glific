@@ -1,0 +1,209 @@
+name: Cypress E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+
+    env:
+      ELIXIR_VERSION: "1.18.3-otp-27"
+      OTP_VERSION: "27.3.3"
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: glific_dev
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+
+    steps:
+      # The checked-out repo IS the backend (glific). It is used directly as
+      # the backend under test; the frontend is cloned into ./glific-frontend.
+      - name: Checkout backend
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Must run BEFORE setup-beam: erlef/setup-beam auto-runs `mix local.rebar`,
+      # which loads config/dev.exs -> `import_config "dev.secret.exs"`. Without
+      # dev.secret.exs present, that mix invocation fails.
+      - name: Configure backend (hosts, certs, secrets)
+        run: |
+          echo '127.0.0.1  glific.test' | sudo tee -a /etc/hosts
+          echo '127.0.0.1  postgres' | sudo tee -a /etc/hosts
+          echo '127.0.0.1  api.glific.test' | sudo tee -a /etc/hosts
+          mkdir -p priv/cert
+          echo "${{ secrets.TEST_CERTIFICATE }}" > priv/cert/glific.test+1.pem
+          echo "${{ secrets.TEST_CERTIFICATE_KEY }}" > priv/cert/glific.test+1-key.pem
+          cp config/dev.secret.exs.txt config/dev.secret.exs
+          cp config/.env.dev.txt config/.env.dev
+          sed -i 's/:max_rate_limit_request, 60/:max_rate_limit_request, 300/g' config/config.exs
+
+      - name: Clone frontend
+        run: git clone https://github.com/glific/glific-frontend.git
+
+      - name: Use latest Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.21.1"
+
+      - name: Setup elixir
+        uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: |
+            glific-frontend/node_modules
+            glific-frontend/.yarn/cache
+          key: ${{ runner.os }}-yarn-${{ hashFiles('glific-frontend/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Setup frontend
+        run: |
+          cd glific-frontend
+          cp .env.example .env
+          cat /proc/sys/fs/inotify/max_user_watches
+          echo set watchers
+          sudo sysctl fs.inotify.max_user_watches=524288
+          sudo sysctl -p
+          cat /proc/sys/fs/inotify/max_user_watches
+          yarn setup
+
+      - name: Download ngrok
+        run: |
+          wget -q -O ngrok.tgz https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+          tar -xzvf ngrok.tgz
+          chmod +x ngrok
+          sudo mv ngrok /usr/local/bin/
+
+      - name: Start ngrok tunnel
+        run: |
+          ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
+          nohup ngrok http 4000 --pooling-enabled --host-header=glific.test:4000 --log=stdout > ngrok.log 2>&1 &
+          # Wait for ngrok to initialize and fetch tunnel URL
+          sleep 5
+          tail ngrok.log
+
+      - name: Set GLIFIC_API_HOST_OVERRIDE env
+        run: |
+          # Get public URL from ngrok API
+          NGROK_API_URL="http://127.0.0.1:4040/api/tunnels"
+          count=0
+          until curl -s "${NGROK_API_URL}" | grep -q '"public_url"' || [ $count -eq 10 ]; do
+            echo "ngrok public_url not ready"
+            sleep 2
+            count=$((count+1))
+          done
+          API_URL=$(curl -s ${NGROK_API_URL} | jq -r '.tunnels[] | select(.proto=="https") | .public_url')
+          # Fall back to http if https not available
+          if [ -z "$API_URL" ]; then
+            API_URL=$(curl -s ${NGROK_API_URL} | jq -r '.tunnels[] | select(.proto=="http") | .public_url')
+          fi
+
+          if [ -z "$API_URL" ]; then
+            echo "ERROR: Failed to resolve ngrok API_URL from ${NGROK_API_URL}" >&2
+            exit 1
+          fi
+
+          if ! printf '%s' "$API_URL" | grep -Eq '^https?://[^[:space:]]+$'; then
+            echo "ERROR: Resolved API_URL is not a valid URL: ${API_URL}" >&2
+            exit 1
+          fi
+
+          if [ -n "$API_URL" ]; then
+            echo "GLIFIC_API_HOST_OVERRIDE=${API_URL}" >> $GITHUB_ENV
+          fi
+
+      - name: Cache Elixir deps and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ env.ELIXIR_VERSION }}-otp-${{ env.OTP_VERSION }}-
+
+      - name: Setup backend (mix)
+        env:
+          KAAPI_API_KEY: ${{ secrets.KAAPI_API_KEY }}
+        run: |
+          echo install mix dependencies if not Cached
+          mix local.rebar --force
+          mix local.hex --force
+          mix hex.repo add oban https://getoban.pro/repo --fetch-public-key ${{ secrets.OBAN_PUBLIC_KEY }} --auth-key ${{ secrets.OBAN_PRO_KEY }}
+          mix deps.get
+          echo done. start installing inotify-tools
+          sudo apt-get install -y inotify-tools
+          echo start mix setup
+          ENABLE_DB_SSL=false KAAPI_API_KEY=${KAAPI_API_KEY} mix setup
+
+      - name: Setup cypress
+        run: |
+          cd glific-frontend
+          git clone https://github.com/glific/cypress-testing.git
+          cp -r cypress-testing/cypress ./cypress
+          cp cypress-testing/cypress.config.ts.example ./cypress.config.ts
+          yarn add cypress@15.15.0
+
+      - name: Run glific frontend
+        run: |
+          cd glific-frontend
+          yarn dev &
+
+      - name: Run glific backend
+        run: |
+          ENABLE_DB_SSL=false mix phx.server > phoenix-server.log 2>&1 &
+          echo "artifacts_path=${PWD}/phoenix-server.log" >> $GITHUB_ENV
+
+      - name: Wait for backend to be ready
+        uses: iFaxity/wait-on-action@a7d13170ec542bdca4ef8ac4b15e9c6aa00a6866 # v1.2.1
+        with:
+          resource: https-get://glific.test:4001
+          timeout: 180000
+
+      - name: Cypress run (shard ${{ matrix.shard }}/3)
+        run: |
+          cd glific-frontend
+          yarn run cypress run \
+            --config '{"excludeSpecPattern":["cypress/e2e/filesearch/Filesearch.spec.ts","cypress/e2e/smoke.spec.ts"]}' \
+            --record \
+            --key ${{ secrets.CYPRESS_DASHBOARD_KEY }}
+        env:
+          SPLIT: 3
+          SPLIT_INDEX: ${{ matrix.shard }}
+
+      - name: Upload Phoenix server & ngrok logs (shard ${{ matrix.shard }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phoenix-server-log-shard-${{ matrix.shard }}
+          path: |
+            phoenix-server.log
+            ngrok.log
+          if-no-files-found: warn
+          retention-days: 7
