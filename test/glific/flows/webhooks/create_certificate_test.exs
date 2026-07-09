@@ -450,6 +450,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
         assert result[:success] == false
         assert result[:certificate_url] == nil
+        assert result[:reason] =~ "Failed to copy slide. Status: 400"
       end)
     end
 
