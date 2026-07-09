@@ -32,12 +32,13 @@ defmodule Glific.Providers.Instrumentation do
     * `provider_action_count` — provider-specific named actions (e.g. Gupshup's
       `hsm_sync`), tagged `action` and `status` (`success` | `failure`).
 
-  ## Platform liveness
+  ## Inbound liveness
 
-  `check_inbound_staleness/0` is separate and deliberately NOT per-provider or
-  per-organization: it is a single whole-platform uptime signal that alerts when
-  *no* organization has received *any* inbound message within
-  #{15} minutes.
+  `check_inbound_staleness/0` is separate and NOT per-organization: it is a single
+  cross-org uptime signal that alerts when *no* organization has received a
+  Gupshup inbound message (the `messages` table) within #{15} minutes. Scoped to
+  Gupshup on purpose — Maytapi's low, bursty group volume would false-alarm a
+  silence check.
   """
 
   import Ecto.Query, warn: false
@@ -185,20 +186,23 @@ defmodule Glific.Providers.Instrumentation do
   end
 
   @doc """
-  Platform-wide inbound liveness check, run once (not per-organization) from
+  Gupshup inbound liveness check, run once (not per-organization) from
   `Glific.Jobs.MinuteWorker`.
 
-  Looks at the most recent inbound message across *all* organizations and sets a
-  `platform_seconds_since_last_inbound` gauge. When that gap exceeds the
-  #{@staleness_threshold_minutes}-minute threshold — i.e. the whole platform has
-  gone silent — it increments `platform_inbound_stale` so the outage is countable
-  and logs a warning. A single quiet organization never trips it.
+  Looks at the most recent inbound row in the `messages` table (Gupshup / 1:1
+  WhatsApp traffic) across *all* organizations and sets a
+  `gupshup_seconds_since_last_inbound` gauge. When that gap exceeds the
+  #{@staleness_threshold_minutes}-minute threshold it increments
+  `gupshup_inbound_stale` and logs. Scoped to Gupshup deliberately: Maytapi's
+  low, bursty WhatsApp-group volume (which lands in `wa_messages`) would
+  false-alarm a silence check, so it is not covered here. A single quiet
+  organization never trips it.
   """
   @spec check_inbound_staleness :: :ok
   def check_inbound_staleness do
     seconds = seconds_since_last_inbound()
 
-    Appsignal.set_gauge("platform_seconds_since_last_inbound", seconds, %{})
+    Appsignal.set_gauge("gupshup_seconds_since_last_inbound", seconds, %{})
 
     maybe_flag_staleness(seconds)
   end
@@ -215,10 +219,10 @@ defmodule Glific.Providers.Instrumentation do
 
   @spec maybe_flag_staleness(non_neg_integer()) :: :ok
   defp maybe_flag_staleness(seconds) when seconds >= @staleness_threshold_minutes * 60 do
-    Appsignal.increment_counter("platform_inbound_stale", 1, %{})
+    Appsignal.increment_counter("gupshup_inbound_stale", 1, %{})
 
     Glific.log_error(
-      "Platform inbound staleness: no organization has received a message in #{div(seconds, 60)} minutes"
+      "Gupshup inbound staleness: no organization has received a message in #{div(seconds, 60)} minutes"
     )
 
     :ok
