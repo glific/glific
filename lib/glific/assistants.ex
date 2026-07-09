@@ -39,7 +39,6 @@ defmodule Glific.Assistants do
     "docx",
     "htm",
     "html",
-    "json",
     "md",
     "markdown",
     "pdf",
@@ -890,11 +889,6 @@ defmodule Glific.Assistants do
         {:error, "File upload failed: #{Glific.SafeLog.safe_inspect(reason)}"}
     end
   end
-
-  @spec format_upload_error_body(map() | String.t() | any()) :: String.t()
-  defp format_upload_error_body(%{error: error}) when is_binary(error), do: error
-  defp format_upload_error_body(body) when is_binary(body), do: body
-  defp format_upload_error_body(body), do: Glific.SafeLog.safe_inspect(body)
 
   @doc """
   Delete an assistant config from Kaapi first, then deletes

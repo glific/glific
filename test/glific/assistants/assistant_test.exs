@@ -283,7 +283,6 @@ defmodule Glific.Assistants.AssistantTest do
             "docx",
             "htm",
             "html",
-            "json",
             "md",
             "markdown",
             "pdf",
