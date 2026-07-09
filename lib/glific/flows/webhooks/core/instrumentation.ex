@@ -22,7 +22,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   """
 
   alias Glific.Flows.Webhooks.{ErrorClassifier, Errors, ErrorType, Registry}
-  alias Glific.Metrics
   alias Glific.SafeLog
 
   require Logger
@@ -66,21 +65,34 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     rescue
       exception ->
         track_latency(webhook_name, mode, start, :error)
-        track_status(webhook_name, nil)
+        # Mirror the sync record_outcome path: a raised sync webhook is a failure and must
+        # increment flow_webhook_count too. Async keeps its count at callback time.
+        if mode == :sync, do: track_webhook_count(webhook_name, "failure")
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
         reraise exception, __STACKTRACE__
     end
   end
 
-  # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
+  # Sync webhooks: the call IS the work, so record latency + count + any failure now.
+  # `flow_webhook_count` is emitted here (not on the async path) — no double-count, since the
+  # async success/failure count is recorded at callback time in `record_callback_outcome/2`.
   # Failures are reported unidirectionally — the class is read off the returned value
-  # (a typed `{:error, ErrorType.t(), msg}` or the engine heuristic), never by calling
-  # back into the module.
+  # (a typed `{:error, ErrorType.t(), msg}` or the engine heuristic), never by calling back
+  # into the module.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
+  # A rate-limit snooze is neither success nor failure — the Oban job reschedules and re-runs
+  # call/2 later, so record no latency, count, or failure report for it.
+  defp record_outcome(_mode, {:snooze, _seconds}, _webhook_name, _start, _ctx), do: :ok
+
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
-    track_status(webhook_name, result)
-    report_sync_failure(result, webhook_name, ctx)
+
+    # Success bumps the plain counter; a failure is classified + counted (with error_type) by
+    # report_sync_failure via ErrorClassifier.report — so it's counted exactly once.
+    case sync_count_status(result) do
+      "success" -> track_webhook_count(webhook_name, "success")
+      "failure" -> report_sync_failure(result, webhook_name, ctx)
+    end
   end
 
   # Async webhooks: a successful ack means the Kaapi request is in flight. The real
@@ -92,9 +104,16 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :async, start, :error)
-    track_status(webhook_name, result)
     maybe_report_failure(result, webhook_name, ctx)
   end
+
+  # A sync result is a success only when it is `{:ok, _}` (migrated typed return) or a
+  # `%{success: true}` map (legacy); bare strings, `{:error, ...}`, `%{success: false}`, nil
+  # and other shapes all route the flow to Failure.
+  @spec sync_count_status(any()) :: String.t()
+  defp sync_count_status({:ok, _value}), do: "success"
+  defp sync_count_status(%{success: true}), do: "success"
+  defp sync_count_status(_result), do: "failure"
 
   @doc """
   Callback-time failure report (the Kaapi callback arrived but `success` was
@@ -346,29 +365,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       http_status: http_status,
       reason: reason
     })
-  end
-
-  @spec track_status(String.t(), any()) :: :ok
-  defp track_status(webhook_name, {:ok, _value}) do
-    Metrics.increment(metric_event_name(webhook_name, "Success"))
-  end
-
-  defp track_status(webhook_name, %{success: true}) do
-    Metrics.increment(metric_event_name(webhook_name, "Success"))
-  end
-
-  defp track_status(webhook_name, _) do
-    Metrics.increment(metric_event_name(webhook_name, "Failure"))
-  end
-
-  @spec metric_event_name(String.t(), String.t()) :: String.t()
-  defp metric_event_name(webhook_name, outcome) do
-    title =
-      webhook_name
-      |> String.split("_")
-      |> Enum.map_join(" ", &String.capitalize/1)
-
-    "#{title} API #{outcome}"
   end
 
   @spec track_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok

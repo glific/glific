@@ -19,6 +19,31 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   require Logger
 
+  # Shared per-org rate limit for Kaapi STT/TTS dispatch (lifted from the former SttTtsWorker):
+  # STT and TTS share ONE per-org budget — at most @rate_limit_max dispatches per
+  # @rate_limit_window_ms combined — so both nodes call check_rate_limit/1 rather than keeping
+  # independent limiters (two buckets would double the effective limit).
+  @rate_limit_window_ms 60_000
+  @rate_limit_max 10
+  @rate_limit_snooze_seconds 5
+
+  @doc """
+  Check-and-consume the shared STT/TTS budget for `organization_id`.
+
+  `ExRated.check_rate/3` both checks and consumes a token: under the limit it returns `:ok` and
+  reserves this job's slot; over the limit it returns `{:snooze, seconds}` so the Oban worker
+  reschedules instead of hammering Kaapi.
+  """
+  @spec check_rate_limit(non_neg_integer()) :: :ok | {:snooze, pos_integer()}
+  def check_rate_limit(organization_id) do
+    key = "kaapi_stt_tts:#{Partners.organization(organization_id).shortcode}"
+
+    case ExRated.check_rate(key, @rate_limit_window_ms, @rate_limit_max) do
+      {:ok, _count} -> :ok
+      {:error, _limit} -> {:snooze, @rate_limit_snooze_seconds}
+    end
+  end
+
   @doc """
   Builds the callback URL and signed `request_metadata` map for a Kaapi async call.
 

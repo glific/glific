@@ -1,12 +1,7 @@
 defmodule Glific.Flows.Webhooks.Errors do
   @moduledoc """
-  Exception types for the `Glific.Flows.Webhooks` subsystem.
-
-  These are independent of the legacy `Glific.Flows.Webhook.{Error,SystemError,TimeoutError}`
-  exception modules. New code in the `Webhooks` namespace raises and reports these types;
-  the old single-module `Webhook` worker continues to use its own exception types.
-
-  Three exception classes mirror the failure modes of the webhook execution pipeline:
+  Exception types for the `Glific.Flows.Webhooks` subsystem — the single home for webhook
+  error reporting. Three classes mirror the failure modes of the webhook execution pipeline:
 
   - `SystemError` — the webhook call itself failed (HTTP error, API rejection, parse
     failure). Raised or constructed in `Instrumentation.around/3`.

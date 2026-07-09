@@ -457,6 +457,52 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
+  describe "Webhook.parse_callback_response/1 Kaapi wording sanitization" do
+    test "rewrites 'contact Kaapi' to 'contact the Glific Team' in a text output message" do
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{
+              "type" => "text",
+              "content" => %{
+                "value" =>
+                  "STT response is missing transcribed text. Gemini returned an empty result. If the issue persists, contact Kaapi."
+              }
+            }
+          }
+        },
+        "metadata" => %{"organization_id" => 1},
+        "success" => false
+      }
+
+      response = Webhook.parse_callback_response(params)
+
+      refute response["message"] =~ "contact Kaapi"
+      assert response["message"] =~ "contact the Glific Team"
+    end
+
+    test "applies the sanitizer to audio output messages too, as a no-op on base64 TTS content" do
+      audio_content = Base.encode64("contact Kaapi fake audio bytes")
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "output" => %{
+              "type" => "audio",
+              "content" => %{"value" => audio_content}
+            }
+          }
+        },
+        "metadata" => %{"organization_id" => 1},
+        "success" => true
+      }
+
+      response = Webhook.parse_callback_response(params)
+
+      assert response["message"] == audio_content
+    end
+  end
+
   test "execute a webhook with a POST request, consecutive webhook calls should not work",
        attrs do
     Tesla.Mock.mock(fn
@@ -702,5 +748,4 @@ defmodule Glific.Flows.WebhookTest do
     [job] = all_enqueued(worker: Webhook, prefix: "global")
     assert job.queue == "custom_certificate"
   end
-
 end

@@ -15,11 +15,9 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   so the flow engine receives a results map on success and a bare string on failure;
   result maps (the async webhooks) pass through unchanged.
 
-  Migration is incremental: `Glific.Clients.CommonWebhook.webhook/2,3` keeps
-  its existing per-name clauses for unmigrated webhooks. The org-fallback chain in
-  `Glific.Clients.webhook/3` is unchanged — non-CommonWebhook webhooks (the
-  org-specific client modules like `Glific.Clients.Sol`, `Avanti`, etc.) are
-  still resolved exactly as today.
+  Org-specific webhook functions (per-org client modules like `Glific.Clients.Sol`, `Avanti`,
+  etc.) are resolved by `Glific.Clients.webhook/2` — only framework nodes registered in the
+  `Registry` route through here.
   """
 
   alias Glific.Flows.Webhooks.{Instrumentation, Registry, ResultTranslator}

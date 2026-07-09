@@ -1801,7 +1801,7 @@ if Code.ensure_loaded?(Faker) do
       if trusted_env?,
         do:
           Repo.insert!(%Role{
-            label: "Glific Admin",
+            label: "Glific_admin",
             description: "Super Admin Role for Glific",
             is_reserved: true,
             organization_id: organization.id

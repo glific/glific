@@ -584,4 +584,29 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
 
     {exception, tags}
   end
+
+  # Dispatch-level regression: an invalid (non-https) audio URL must return a structured
+  # failure from call/2 rather than raising a CaseClauseError. The happy/STT-failure/LLM-error
+  # dispatch paths are already exercised by the e2e tests above.
+  describe "voice-filesearch-gpt dispatch" do
+    test "returns structured failure (no CaseClauseError) when the audio URL is invalid" do
+      contact = Fixtures.contact_fixture()
+
+      fields = %{
+        "organization_id" => 1,
+        "flow_id" => 1,
+        "contact_id" => contact.id,
+        "assistant_id" => "asst_voice_bad_url",
+        # http (not https) → validate_media returns invalid
+        "speech" => "http://example.com/audio.ogg",
+        "source_language" => "english",
+        "target_language" => "hindi",
+        "webhook_log_id" => 1,
+        "result_name" => "result"
+      }
+
+      assert VoiceFilesearchGpt.call(fields, %{}) ==
+               %{success: false, reason: "Media URL is invalid"}
+    end
+  end
 end
