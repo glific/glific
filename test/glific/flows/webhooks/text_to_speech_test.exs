@@ -37,6 +37,9 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
         is_active: true
       })
 
+    # The STT/TTS rate-limit ExRated bucket is process-global and shared across both webhooks.
+    # Reset it before every test so tokens don't leak between tests (order-dependent snoozes).
+    ExRated.delete_bucket("kaapi_stt_tts:#{Partners.organization(1).shortcode}")
     :ok
   end
 
@@ -209,9 +212,6 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
   # the shared budget and snooze.
   describe "text_to_speech dispatch" do
     setup do
-      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
-      ExRated.delete_bucket(key)
-      on_exit(fn -> ExRated.delete_bucket(key) end)
       %{fields: tts_fields(Fixtures.contact_fixture().id)}
     end
 

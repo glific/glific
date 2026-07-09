@@ -39,6 +39,9 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
         is_active: true
       })
 
+    # The STT/TTS rate-limit ExRated bucket is process-global and shared across both webhooks.
+    # Reset it before every test so tokens don't leak between tests (order-dependent snoozes).
+    ExRated.delete_bucket("kaapi_stt_tts:#{Partners.organization(1).shortcode}")
     :ok
   end
 
@@ -229,9 +232,6 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
   # invocations don't exhaust the shared budget and snooze.
   describe "speech_to_text dispatch" do
     setup do
-      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
-      ExRated.delete_bucket(key)
-      on_exit(fn -> ExRated.delete_bucket(key) end)
       %{fields: stt_fields(Fixtures.contact_fixture().id)}
     end
 
@@ -323,6 +323,17 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
     test "rejects empty speech URL without calling Kaapi", %{fields: fields} do
       assert SpeechToText.call(Map.put(fields, "speech", ""), %{}) ==
                %{success: false, reason: "Media URL is invalid"}
+    end
+
+    test "snoozes (does not call Kaapi) once the shared STT/TTS rate limit is exhausted", %{
+      fields: fields
+    } do
+      key = "kaapi_stt_tts:#{Partners.organization(1).shortcode}"
+      # Consume the whole per-org budget; the next call/2 must snooze rather than dispatch.
+      for _ <- 1..10, do: {:ok, _} = ExRated.check_rate(key, 60_000, 10)
+
+      assert {:snooze, seconds} = SpeechToText.call(fields, %{})
+      assert is_integer(seconds) and seconds > 0
     end
   end
 
