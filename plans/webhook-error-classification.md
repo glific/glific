@@ -27,7 +27,7 @@ The first cut (PR #5351, already merged/shipped) centralised classification behi
 into* the module to ask for its verdict. Review flagged this as the wrong shape — it makes the
 control flow **bounce back into the module**:
 
-```
+```text
 flow → dispatcher → instrument → filesearch_gpt.call → (error) → instrument
      → ErrorClassifier.classify(module, …) → filesearch_gpt.error_class   ← re-enters the module
 ```
@@ -112,7 +112,12 @@ So:
 
 ### Where classification lives (centralised)
 
-```
+> **Note:** the diagram below describes the original callback shape. For **sync** nodes this is
+> now unidirectional — the class rides out on the `call/2` return value
+> (`{:error, ErrorType.t(), msg}`) and the reporter never calls back into the module. See the
+> [Architecture revision](#architecture-revision-post-review--unidirectional-error-flow) above.
+
+```text
                         module.error_class(result)          # per-module, ONE local clause (optional)
                                  │  (nil → defer)
 report site ──► ErrorClassifier.classify(module, result) ──► ErrorClassifier heuristics   # crash→transient→status→failsafe
@@ -146,8 +151,11 @@ column.** The provider's *real* status lives inside `response_json`, in one of t
 - embedded as **text in the message/reason** string: `(code: 400)`, `(code: 500 INTERNAL)`,
   `Status: 403`.
 
-Some failures have neither status nor a parseable code — they're classified by `error_type`
-(if Glific-raised) or fall to crash/pattern heuristics.
+Some failures have neither status nor a parseable code. Glific-raised ones carry their class
+explicitly — a sync node's typed `{:error, ErrorType.t(), msg}` return, or (async, for now) an
+`error_class/1` verdict — so they never touch the heuristics. Everything else falls to the
+crash/pattern heuristics below. (The `error_type` *tag* on `flow_webhook_count` is just the
+resolved class stringified for charting — it is an output of classification, not an input.)
 
 ## Classification — module callback first, engine heuristics as fallback
 
@@ -249,10 +257,12 @@ def classify(module, result) do
   end
 end
 
-# reason = result["reason"] || result["error"] || result["message"];
+# reason is normalised to a STRING first — a failure's reason can already be a non-binary
+# term (map/tuple), and feeding that straight into Regex.run/2 would crash the classifier.
+# `to_reason/1` returns "" for anything non-binary (mirrors Webhook.update_log's safe_inspect).
 # http_status = NESTED result["http_status"] (never the DB status_code column)
 defp heuristic(result) do
-  reason = result["reason"] || result["error"] || result["message"] || ""
+  reason = to_reason(result)            # binary, or "" for a non-binary reason
   code = result["http_status"] || provider_status(reason)
   cond do
     reason =~ @crash -> :system                                    # Tier 2
