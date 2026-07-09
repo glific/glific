@@ -10,6 +10,7 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.Webhook,
+    Flows.Webhooks.Dispatcher,
     Flows.WebhookLog,
     Repo,
     Seeds.SeedsDev
@@ -134,6 +135,123 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGptTest do
       # Flow execution assertion — webhook failure routes to the Failure branch
       message = await_flow_message(context.contact_id, "failure")
       assert message.body == "failure"
+    end
+  end
+
+  # Dispatch-level tests: exercise call/2 (parsing/validation/response_format handling) directly
+  # via the Dispatcher, independent of the Oban/flow-resume path above.
+  describe "parse_via_chat_gpt dispatch" do
+    test "failed due to empty question_text" do
+      assert "question_text is empty" = Dispatcher.dispatch("parse_via_chat_gpt", %{})
+    end
+
+    test "failed due to empty question_text: 2" do
+      assert "question_text is empty" =
+               Dispatcher.dispatch("parse_via_chat_gpt", %{"question_text" => ""})
+    end
+
+    test "success with only question_text as params, rest will be defaults" do
+      fields = %{
+        "question_text" => "get first 10 numbers and their squares, only return min and max"
+      }
+
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" =>
+                      "1^2 = 1\n2^2 = 4\n3^2 = 9\n4^2 = 16\n5^2 = 25\n6^2 = 36\n7^2 = 49\n8^2 = 64\n9^2 = 81\n10^2 = 100\n\nMin: 1\nMax: 100"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      assert %{
+               success: true,
+               parsed_msg:
+                 "1^2 = 1\n2^2 = 4\n3^2 = 9\n4^2 = 16\n5^2 = 25\n6^2 = 36\n7^2 = 49\n8^2 = 64\n9^2 = 81\n10^2 = 100\n\nMin: 1\nMax: 100"
+             } = Dispatcher.dispatch("parse_via_chat_gpt", fields)
+    end
+
+    test "success with response_format as json_object" do
+      fields = %{
+        "question_text" =>
+          "get first 10 numbers and their squares, only return min and max in json",
+        "response_format" => %{"type" => "json_object"}
+      }
+
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" =>
+                      "{\n  \"min\": {\n    \"number\": 1,\n    \"square\": 1\n  },\n  \"max\": {\n    \"number\": 10,\n    \"square\": 100\n  }\n}"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      assert %{
+               success: true,
+               parsed_msg: %{
+                 "min" => %{"square" => 1, "number" => 1},
+                 "max" => %{"square" => 100, "number" => 10}
+               }
+             } = Dispatcher.dispatch("parse_via_chat_gpt", fields)
+    end
+
+    test "success with response_format as json_schema" do
+      fields = %{
+        "question_text" =>
+          "get first 10 numbers and their squares, only return min and max in json",
+        "response_format" => %{
+          "type" => "json_schema",
+          "json_schema" => %{
+            "name" => "square_schema",
+            "strict" => true,
+            "schema" => %{
+              "type" => "object",
+              "properties" => %{
+                "minimum value" => %{"type" => "string"},
+                "maximum_value" => %{"type" => "string"}
+              },
+              "required" => ["minimum value", "maximum_value"],
+              "additionalProperties" => false
+            }
+          }
+        }
+      }
+
+      Tesla.Mock.mock(fn
+        %{url: "https://api.openai.com/v1/chat/completions"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              "choices" => [
+                %{
+                  "message" => %{
+                    "content" => "{\"maximum_value\":\"10\",\"minimum_value\":\"1\"}"
+                  }
+                }
+              ]
+            }
+          }
+      end)
+
+      assert %{success: true, parsed_msg: %{"minimum_value" => "1", "maximum_value" => "10"}} =
+               Dispatcher.dispatch("parse_via_chat_gpt", fields)
     end
   end
 end
