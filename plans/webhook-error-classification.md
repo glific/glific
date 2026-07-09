@@ -20,6 +20,69 @@ notify support.
 
 ---
 
+## Architecture revision (post-review) — unidirectional error flow
+
+The first cut (PR #5351, already merged/shipped) centralised classification behind a
+`Behaviour.error_class/1` **callback**: `ErrorClassifier.classify(module, result)` calls *back
+into* the module to ask for its verdict. Review flagged this as the wrong shape — it makes the
+control flow **bounce back into the module**:
+
+```
+flow → dispatcher → instrument → filesearch_gpt.call → (error) → instrument
+     → ErrorClassifier.classify(module, …) → filesearch_gpt.error_class   ← re-enters the module
+```
+
+**Target: a unidirectional pipeline. The module names the error once, on the way out, and the
+call never comes back to it.**
+
+- **`call/2` returns the error type inline.** Instead of `%{success: false, reason: …}` +
+  a separate `error_class/1` clause, the module returns the class *with* the failure — one
+  value, one direction. Pattern-match on it downstream (`:config` vs `:system`), don't ask the
+  module again.
+- **`AsyncResult` gains an `error_type` field** (plus the message). Async acks/callbacks carry
+  the class the same way sync returns do — an async failure can be `:config` or `:system` just
+  like a sync one.
+- **`ErrorClassifier` becomes a pure function of the returned result** — module verdict is read
+  off the result, not fetched via a callback. The heuristic tiers (crash / transient / provider
+  status) stay exactly as-is for *external* errors the module can't classify; they already only
+  read the returned result, so they're already unidirectional.
+- Keep a **single** classifier for the Copilot/Oracle LLM-copy calls; other nodes handle their
+  own returns. Don't grow one mega-switch across unrelated node types.
+
+### Sync first, async second (incremental)
+
+- **Sync nodes:** most validation happens upfront; provider 400s are caught when the response
+  comes back. Return `:config`/`:system` inline from `call/2`. Do these first — lower risk.
+- **Async nodes:** some config errors only surface at *runtime* from Copilot (e.g. unresolved
+  conversation/thread id → 400). These can't be validated upfront — they must be caught in the
+  **webhook / flow-resume controller** and reported as `:config` there. Upfront checks still
+  apply where possible (e.g. assistant-id prefix validation). Tackle async **after** sync lands.
+
+### PR sequencing
+
+1. **This work / done:** classification engine + routing (config vs system namespaces), stale +
+   transient suppression. Shipped with the callback shape.
+2. **Next PR:** migrate the remaining sync nodes off `CommonWebhook` (same pattern as
+   `create_certificate` / `geolocation`), **and** fix the error structure in the same PR —
+   replace the callback with the unidirectional `call/2` return + `AsyncResult.error_type`, and
+   simplify away the verbose current result format. Delete `CommonWebhook` once the last call is
+   moved.
+3. **Cleanup:** remove the legacy `report_to_appsignal/2` + `Webhook.SystemError` path from the
+   codebase (used only by pre-framework nodes). AppSignal history is retained by its 30-day
+   retention, so deleting the code loses nothing operationally. Tracked in
+   [#5346](https://github.com/glific/glific/issues/5346).
+
+### Config-error hotspots to design around
+
+- **STT and GPT/Copilot nodes** — thread/conversation-id typos, user-input errors (highest volume).
+- **Create Certificate** — users store the cert template in a *personal* drive instead of the
+  *shared* drive; a frequent, self-inflicted config failure worth its own clear message.
+- **`"… does not have any active flows awaiting results"`** — flow moved on before the async
+  response arrived. Currently classed `:stale` (suppressed); flagged for **investigation** (why
+  the flow advances early), not just suppression.
+
+---
+
 ## Solution overview
 
 Production logs show **four** failure kinds, not two. Two of the highest-volume ones both flow
