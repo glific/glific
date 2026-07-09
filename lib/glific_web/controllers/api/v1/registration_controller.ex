@@ -25,6 +25,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     Partners.Saas,
     Providers.Gupshup.PartnerAPI,
     Repo,
+    SafeLog,
     Users,
     Users.User
   }
@@ -204,7 +205,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
             # Do not surface delivery failures to the client either; a distinguishable response
             # here would still let a caller enumerate accounts. Log internally instead.
             Logger.error(
-              "Failed to send forgot-password OTP to #{phone}: #{Glific.SafeLog.safe_inspect(error)}"
+              "Failed to send forgot-password OTP to #{phone}: #{SafeLog.safe_inspect(error)}"
             )
         end
 
