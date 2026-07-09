@@ -880,7 +880,8 @@ defmodule Glific.Assistants do
        }}
     else
       {:error, %{status: status, body: body}} ->
-        {:error, "File upload failed (status #{status}): #{format_upload_error_body(body)}"}
+        error_message = body[:error]
+        {:error, "File upload failed (status #{status}): #{error_message}"}
 
       {:error, reason} when is_binary(reason) ->
         {:error, reason}
