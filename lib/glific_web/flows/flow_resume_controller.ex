@@ -26,6 +26,10 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # Parse + TTS upload run in the request process (not the supervised task) to
     # avoid transferring large audio binaries between processes.
     # https://elixirmerge.com/p/the-impact-of-data-transfer-on-performance-in-elixirs-task-async
+    # TODO: Move `Webhook.maybe_upload_tts_audio/1` out of this controller. It is
+    # TTS-specific and breaches this module's contract as a thin, generic resume
+    # handler, so it belongs in a more appropriate place. To be addressed during the
+    # speech-to-speech integration.
     response = result |> Webhook.parse_callback_response() |> Webhook.maybe_upload_tts_audio()
 
     run_supervised(fn -> Webhook.resume(organization_id, result, response) end)
