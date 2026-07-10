@@ -17,16 +17,19 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
   alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Fires the Kaapi STT request. Validates the speech URL, builds the signed callback
-  metadata, and dispatches to Kaapi. Returns the Kaapi ack map (`%{success: …}`).
+  Fires the Kaapi STT request. Enforces the shared per-org STT/TTS rate limit (returning
+  `{:snooze, seconds}` so the Oban worker reschedules when the budget is exhausted), validates
+  the speech URL, builds the signed callback metadata, and dispatches to Kaapi. Returns the
+  Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map()
+  @spec call(map(), Behaviour.ctx()) :: map() | {:snooze, pos_integer()}
   def call(fields, _ctx) do
     speech = fields["speech"]
 
     with {:ok, {organization_id, flow_id, contact_id}} <-
            KaapiSupport.parse_flow_fields(fields),
+         :ok <- KaapiSupport.check_rate_limit(organization_id),
          :ok <- KaapiSupport.validate_media(speech) do
       {callback_url, request_metadata} =
         KaapiSupport.build_flow_resume_metadata(organization_id, flow_id, contact_id, fields)
@@ -44,6 +47,7 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
       Glific.Metrics.increment("Kaapi STT Call", organization_id)
       Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
     else
+      {:snooze, _seconds} = snooze -> snooze
       {:error, reason} -> %{success: false, reason: reason}
     end
   end
