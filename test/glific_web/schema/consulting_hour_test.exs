@@ -12,7 +12,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
   load_gql(:fetch, GlificWeb.Schema, "assets/gql/consulting_hour/fetch.gql")
 
-  test "create a consulting hour entry", %{user: user} = attrs do
+  test "create a consulting hour entry", %{glific_admin: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -36,7 +36,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hour["staff"] == "Adelle Cavin"
   end
 
-  test "count returns the number of consulting hours", %{user: user} = attrs do
+  test "count returns the number of consulting hours", %{glific_admin: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
@@ -64,7 +64,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
 
-  test "fetch consulting hours field returns list of consulting hours", %{user: user} = attrs do
+  test "fetch consulting hours field returns list of consulting hours",
+       %{glific_admin: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{
         organization_id: attrs.organization_id,
@@ -95,7 +96,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert is_binary(consulting_hours) == true
   end
 
-  test "consulting hours field returns list of consulting hours", %{user: user} = attrs do
+  test "consulting hours field returns list of consulting hours", %{glific_admin: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{
         organization_id: attrs.organization_id,
@@ -182,7 +183,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     shortcode: "organization_shortcode 1",
     email: "Contact person email 1"
   }
-  test "update a consulting hours", %{user: user} = attrs do
+  test "update a consulting hours", %{glific_admin: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -215,7 +216,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert duration == 120
   end
 
-  test "delete a consulting hours", %{user: user} = attrs do
+  test "delete a consulting hours", %{glific_admin: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -230,7 +231,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert content == consulting_hour.content
   end
 
-  test "get consulting hours and test possible scenarios and errors", %{user: user} = attrs do
+  test "get consulting hours and test possible scenarios and errors",
+       %{glific_admin: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -258,5 +260,110 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert {:ok, query_data} = result
     [error] = get_in(query_data, [:data, "consultingHour", "errors"])
     assert error["message"] == "Resource not found"
+  end
+
+  describe "authorization boundary for consulting hours raised to glific_admin" do
+    test "consulting hour queries and mutations reject admin, manager, and staff, but allow glific_admin",
+         %{
+           user: admin_user,
+           manager: manager_user,
+           staff: staff_user,
+           glific_admin: glific_admin_user
+         } = attrs do
+      consulting_hour =
+        Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
+
+      for rejected_user <- [admin_user, manager_user, staff_user] do
+        {:ok, query_data} =
+          auth_query_gql_by(:by_id, rejected_user, variables: %{"id" => consulting_hour.id})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} = auth_query_gql_by(:list, rejected_user, variables: %{})
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} = auth_query_gql_by(:count, rejected_user, variables: %{})
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:fetch, rejected_user,
+            variables: %{
+              "filter" => %{
+                "client_id" => attrs.organization_id,
+                "end_date" => Date.utc_today() |> Date.to_string(),
+                "start_date" => Date.utc_today() |> Timex.shift(days: -11) |> Date.to_string()
+              }
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:create, rejected_user,
+            variables: %{
+              "input" => %{"participants" => "Adam", "clientId" => attrs.organization_id}
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:update, rejected_user,
+            variables: %{
+              "id" => consulting_hour.id,
+              "input" => %{"duration" => 5, "clientId" => attrs.organization_id}
+            }
+          )
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+
+        {:ok, query_data} =
+          auth_query_gql_by(:delete, rejected_user, variables: %{"id" => consulting_hour.id})
+
+        [error] = get_in(query_data, [:errors])
+        assert error.message == "Unauthorized"
+      end
+
+      # gate cleared for glific_admin — the fixture was never actually deleted above since
+      # every rejected attempt short-circuited on the Unauthorized middleware
+      {:ok, query_data} =
+        auth_query_gql_by(:by_id, glific_admin_user, variables: %{"id" => consulting_hour.id})
+
+      assert get_in(query_data, [:errors]) == nil
+
+      fetched_consulting_hour = get_in(query_data, [:data, "consultingHour", "consultingHour"])
+      assert fetched_consulting_hour["id"] == to_string(consulting_hour.id)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:update, glific_admin_user,
+          variables: %{
+            "id" => consulting_hour.id,
+            "input" => %{"duration" => 42, "clientId" => attrs.organization_id}
+          }
+        )
+
+      assert get_in(query_data, [:errors]) == nil
+
+      updated_duration =
+        get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
+
+      assert updated_duration == 42
+
+      {:ok, query_data} =
+        auth_query_gql_by(:delete, glific_admin_user, variables: %{"id" => consulting_hour.id})
+
+      assert get_in(query_data, [:errors]) == nil
+
+      deleted_consulting_hour =
+        get_in(query_data, [:data, "deleteConsultingHour", "consultingHour"])
+
+      assert deleted_consulting_hour["id"] == to_string(consulting_hour.id)
+    end
   end
 end

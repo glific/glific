@@ -45,8 +45,18 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   directly. Migrated modules return `{:ok, value}` / `{:error, String.t()}`.
   `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises
   all forms into the map/string shape consumed by the flow engine.
+
+  `{:snooze, seconds}` is a pre-dispatch gate: a `call/2` may return it (e.g. when a per-org
+  rate limit is hit) to have the `Glific.Flows.Webhook` Oban worker reschedule the job instead
+  of dispatching. It flows back through the dispatcher untouched and is not recorded as a
+  success or failure.
   """
-  @type sync_result :: map() | nil | String.t() | {:ok, term()} | {:error, String.t()}
+  @type sync_result ::
+          map()
+          | String.t()
+          | {:ok, term()}
+          | {:error, String.t()}
+          | {:snooze, pos_integer()}
 
   @typedoc """
   Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt,

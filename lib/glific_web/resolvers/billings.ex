@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Billings do
   """
 
   alias Glific.{Partners, Partners.Billing, Repo}
+  alias GlificWeb.Schema.Middleware.Authorize
 
   @doc """
   Get a specific billing by id
@@ -22,10 +23,10 @@ defmodule GlificWeb.Resolvers.Billings do
           {:ok, any} | {:error, any}
   def get_organization_billing(_, input, %{context: %{current_user: user}}) do
     ## here we are assuming that there will be a single active billing entry for the organization.
-    organization_id = input[:organization_id] || user.organization_id
+    org_id = target_org_id(user, input[:organization_id])
 
     with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{is_active: true, organization_id: organization_id},
+           Repo.fetch_by(Billing, %{is_active: true, organization_id: org_id},
              skip_organization_id: true
            ),
          do: {:ok, %{billing: billing}}
@@ -49,8 +50,11 @@ defmodule GlificWeb.Resolvers.Billings do
   @doc false
   @spec create_billing(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_billing(_, %{input: params}, _) do
-    with organization <- Partners.organization(params.organization_id),
+  def create_billing(_, %{input: params}, %{context: %{current_user: user}}) do
+    org_id = target_org_id(user, params[:organization_id])
+    params = Map.put(params, :organization_id, org_id)
+
+    with organization <- Partners.organization(org_id),
          {:ok, billing} <- Billing.create(organization, params) do
       {:ok, %{billing: billing}}
     end
@@ -59,10 +63,19 @@ defmodule GlificWeb.Resolvers.Billings do
   @doc false
   @spec update_billing(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_billing(_, %{id: id, input: params}, _) do
-    # Using skip organization as this function can be called by glific_admin
-    with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{id: id}, skip_organization_id: true),
+  def update_billing(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    # An update must never re-home a billing to another org; the target org is fixed by the
+    # record we fetch. So drop any organization_id (client-supplied, or auto-injected by the
+    # AddOrganization middleware) from the update params for every role.
+    params = Map.delete(params, :organization_id)
+
+    # glific_admin keeps cross-org fetch ability; every other role is pinned to its own org.
+    {fetch_clauses, fetch_opts} =
+      if Authorize.valid_role?(user.roles, :glific_admin),
+        do: {%{id: id}, [skip_organization_id: true]},
+        else: {%{id: id, organization_id: user.organization_id}, []}
+
+    with {:ok, billing} <- Repo.fetch_by(Billing, fetch_clauses, fetch_opts),
          {:ok, billing} <- Billing.update_stripe_customer(billing, params),
          {:ok, billing} <- Billing.update_billing(billing, params) do
       {:ok, %{billing: billing}}
@@ -109,5 +122,14 @@ defmodule GlificWeb.Resolvers.Billings do
            Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}) do
       Billing.delete_billing(billing)
     end
+  end
+
+  # glific_admin may target a client-supplied org (SaaS operator managing another org's
+  # billing); every other role is pinned to its own org regardless of what is supplied.
+  @spec target_org_id(Glific.Users.User.t(), integer() | nil) :: integer()
+  defp target_org_id(user, client_org_id) do
+    if Authorize.valid_role?(user.roles, :glific_admin),
+      do: client_org_id || user.organization_id,
+      else: user.organization_id
   end
 end

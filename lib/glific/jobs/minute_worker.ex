@@ -35,6 +35,8 @@ defmodule Glific.Jobs.MinuteWorker do
     Triggers
   }
 
+  alias Glific.Providers.Instrumentation
+
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
@@ -172,6 +174,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
         CollectionCount.collection_stats()
+        Instrumentation.check_inbound_staleness()
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
