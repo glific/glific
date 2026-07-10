@@ -9,9 +9,11 @@ defmodule Glific.Groups.WAGroupMemberImport do
   """
 
   alias Glific.{
+    Groups.WAGroup,
     Groups.WAGroupMemberImportWorker,
     Jobs.UserJob,
-    Notifications
+    Notifications,
+    Repo
   }
 
   @chunk_size 100
@@ -59,6 +61,8 @@ defmodule Glific.Groups.WAGroupMemberImport do
   defp run_import(org_id, wa_group_id, opts) do
     # Resolve the source first so a failed download doesn't leave an orphan job.
     with {:ok, stream} <- fetch_data_as_string(opts) do
+      group_label = Repo.get!(WAGroup, wa_group_id).label
+
       user_job =
         UserJob.create_user_job(%{
           status: "pending",
@@ -69,7 +73,7 @@ defmodule Glific.Groups.WAGroupMemberImport do
           errors: %{}
         })
 
-      create_notification(org_id, user_job.id)
+      create_notification(org_id, user_job.id, group_label)
 
       params = %{"organization_id" => org_id, "wa_group_id" => wa_group_id}
 
@@ -141,12 +145,12 @@ defmodule Glific.Groups.WAGroupMemberImport do
     IO.binstream(stream, :line)
   end
 
-  @spec create_notification(non_neg_integer(), non_neg_integer()) ::
+  @spec create_notification(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  defp create_notification(org_id, user_job_id) do
+  defp create_notification(org_id, user_job_id, group_label) do
     Notifications.create_notification(%{
       category: "WA Group Member Upload",
-      message: "WhatsApp group member upload in progress",
+      message: "WhatsApp group member upload in progress for #{group_label}",
       severity: Notifications.types().info,
       organization_id: org_id,
       entity: %{user_job_id: user_job_id}
