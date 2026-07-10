@@ -10,7 +10,7 @@ defmodule Glific.Flows.Webhooks.GetButtons do
   use Glific.Flows.Webhooks.Sync, name: "get_buttons"
 
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: {:ok, map()}
   def call(fields, _ctx) do
     buttons =
       fields["buttons_data"]
@@ -19,10 +19,11 @@ defmodule Glific.Flows.Webhooks.GetButtons do
       |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", String.trim(answer)} end)
       |> Enum.into(%{})
 
-    %{
-      buttons: buttons,
-      button_count: length(Map.keys(buttons)),
-      is_valid: true
-    }
+    {:ok,
+     %{
+       buttons: buttons,
+       button_count: length(Map.keys(buttons)),
+       is_valid: true
+     }}
   end
 end

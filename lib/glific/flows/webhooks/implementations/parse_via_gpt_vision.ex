@@ -20,7 +20,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
-          map() | {:error, ErrorType.t(), String.t()}
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     url = fields["url"]
     org_id = parse_org_id(fields)
@@ -30,7 +30,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVision do
          {:ok, fields} <- inline_image(fields, url, org_id),
          {:ok, fields} <- ChatGPT.parse_response_format(fields),
          {:ok, response} <- ChatGPT.gpt_vision(fields) do
-      %{success: true, response: ChatGPT.parse_gpt_response(response)}
+      {:ok, %{success: true, response: ChatGPT.parse_gpt_response(response)}}
     else
       %{is_valid: false, message: message} ->
         {:error, :invalid_media_url, message}

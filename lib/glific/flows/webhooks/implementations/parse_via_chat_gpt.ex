@@ -19,15 +19,16 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGpt do
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
-          map() | {:error, ErrorType.t(), String.t()}
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, fields} <- parse_chatgpt_fields(fields),
          {:ok, fields} <- ChatGPT.parse_response_format(fields),
          {:ok, text} <- Glific.get_open_ai_key() |> ChatGPT.parse(fields) do
-      %{
-        success: true,
-        parsed_msg: ChatGPT.parse_gpt_response(text)
-      }
+      {:ok,
+       %{
+         success: true,
+         parsed_msg: ChatGPT.parse_gpt_response(text)
+       }}
     else
       {:error, error_type, message} -> {:error, error_type, message}
       {:error, message} -> {:error, :unknown, message}

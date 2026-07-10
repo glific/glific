@@ -21,18 +21,24 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
-          map() | {:error, ErrorType.t(), String.t()}
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, parsed_fields} <- parse_certificate_params(fields),
          {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
          {:ok, slide_details} <-
            Slide.parse_slides_url(certificate_template.url) do
-      Certificate.generate_certificate(
-        parsed_fields,
-        parsed_fields.contact["id"],
-        slide_details.presentation_id,
-        slide_details.page_id
-      )
+      # generate_certificate returns %{success: true, certificate_url} or
+      # %{success: false, reason} — a generation failure (Google Slides / GCS) is a real
+      # failure, so route it to the Failure branch as a typed error.
+      case Certificate.generate_certificate(
+             parsed_fields,
+             parsed_fields.contact["id"],
+             slide_details.presentation_id,
+             slide_details.page_id
+           ) do
+        %{success: false, reason: reason} -> {:error, :unknown, reason}
+        result -> {:ok, result}
+      end
     else
       {:error, error_type, message} when is_atom(error_type) ->
         {:error, error_type, message}

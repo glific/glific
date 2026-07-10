@@ -21,7 +21,7 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
-          map() | {:error, ErrorType.t(), String.t()}
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
          {:ok, wa_phone} <-
@@ -41,7 +41,7 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
            }),
          {:ok, wa_message} <-
            Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
-      %{success: true, poll: wa_message.poll_content}
+      {:ok, %{success: true, poll: wa_message.poll_content}}
     else
       {:error, error_type, message} when is_atom(error_type) ->
         {:error, error_type, message}

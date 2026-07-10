@@ -14,7 +14,6 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   """
 
   alias Glific.Flows.{Action, FlowContext}
-  alias Glific.Messages.Message
 
   @typedoc """
   Context passed to a webhook's `call/2`. Built by the dispatcher; carries
@@ -39,43 +38,38 @@ defmodule Glific.Flows.Webhooks.Behaviour do
         }
 
   @typedoc """
-  Return shape for all synchronous webhooks.
+  Return shape for all synchronous webhooks — uniform across every node.
 
-  Webhook modules that have not yet adopted tuple results return maps/strings
-  directly. Migrated modules return `{:ok, value}` / `{:error, String.t()}`, or the
-  **typed** `{:error, ErrorType.t(), String.t()}` — a stable atom the module owns
-  plus the human message. The atom carries the failure's class *out* of the module
-  (unidirectional: the classifier reads it, never calls back in), while the message
-  is what the flow engine surfaces. Return an untyped `{:error, String.t()}` to defer
-  classification to the central engine.
+  * **Success** — `{:ok, value}`. `value` is usually the result map the flow reads
+    (`@results.<node>.*`); a plain value is wrapped into a map by the translator.
+  * **Failure** — the **typed** `{:error, ErrorType.t(), String.t()}`: a stable atom the node
+    picks (it owns the config/system verdict) plus the human message. A failure the node
+    genuinely can't judge is `{:error, :unknown, msg}` (→ system). A sync node always names its
+    error — there is no untyped failure shape.
+  * **Snooze** — `{:snooze, seconds}` is a pre-dispatch gate: a `call/2` may return it (e.g. a
+    per-org rate limit) to have the `Glific.Flows.Webhook` Oban worker reschedule the job instead
+    of dispatching. It flows back through the dispatcher untouched, recorded as neither success
+    nor failure.
 
-  `{:snooze, seconds}` is a pre-dispatch gate: a `call/2` may return it (e.g. when a per-org
-  rate limit is hit) to have the `Glific.Flows.Webhook` Oban worker reschedule the job instead
-  of dispatching. It flows back through the dispatcher untouched and is not recorded as a
-  success or failure.
-
-  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises all
-  forms into the map/string shape consumed by the flow engine (the error-type atom
-  is used for reporting only, then stripped).
+  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises these into the
+  map/string shape the flow engine routes on (`{:ok, _}` → map → Success branch;
+  `{:error, _, _}` → string → Failure branch; the error-type atom is used for reporting only,
+  then stripped).
   """
   @type sync_result ::
-          map()
-          | String.t()
-          | {:ok, term()}
-          | {:error, String.t()}
+          {:ok, term()}
           | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}
           | {:snooze, pos_integer()}
 
   @typedoc """
-  Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt,
-  voice-filesearch-gpt). `{:wait, ctx, []}` parks the flow context;
-  `{:ok, ctx, [msg]}` is the immediate-failure branch (e.g. missing Kaapi
-  creds, body decode error) where the flow continues with a Failure message
-  without ever entering the await state.
+  Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt, voice-filesearch-gpt).
+
+  `call/2` fires the Kaapi request and returns the ack map: `%{success: true, ...}` leaves the
+  flow parked (the Kaapi callback resumes it via `FlowResumeController`), while
+  `%{success: false, reason: ...}` is an immediate dispatch failure that wakes the flow on the
+  Failure branch. `{:snooze, seconds}` reschedules the Oban job (e.g. a per-org rate limit).
   """
-  @type async_result ::
-          {:wait, FlowContext.t(), [Message.t()]}
-          | {:ok, FlowContext.t(), [Message.t()]}
+  @type async_result :: map() | {:snooze, pos_integer()}
 
   @doc """
   The webhook's stable identifier — matches the URL string persisted in flow
