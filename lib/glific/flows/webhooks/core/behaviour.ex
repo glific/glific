@@ -7,7 +7,6 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   """
 
   alias Glific.Flows.{Action, FlowContext}
-  alias Glific.Messages.Message
 
   @type ctx :: %{
           required(:organization_id) => non_neg_integer() | nil,
@@ -29,11 +28,10 @@ defmodule Glific.Flows.Webhooks.Behaviour do
           | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}
           | {:snooze, pos_integer()}
 
-  # Async webhooks: {:wait, ctx, []} parks the flow context; {:ok, ctx, [msg]} is the
-  # immediate-failure branch (flow continues on a Failure message without entering await).
-  @type async_result ::
-          {:wait, FlowContext.t(), [Message.t()]}
-          | {:ok, FlowContext.t(), [Message.t()]}
+  # Async (Kaapi): call/2 returns an ack map — %{success: true} parks the flow (resumed via the
+  # Kaapi callback), %{success: false, reason} wakes it on Failure; {:snooze, seconds} reschedules
+  # the Oban job. The flow's wait itself is set up in the flow engine (action.ex), not by this return.
+  @type async_result :: map() | {:snooze, pos_integer()}
 
   @callback name() :: String.t()
   @callback mode() :: :sync | :async
