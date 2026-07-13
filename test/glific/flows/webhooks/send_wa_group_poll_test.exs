@@ -133,22 +133,22 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
   end
 
   # Dispatch-level test: exercises call/2 validation branches (invalid wa_group / poll_uuid /
-  # missing managed phone) and the success path directly via the Dispatcher.
+  # unknown wa_group) and the success path directly via the Dispatcher.
   describe "send_wa_group_poll dispatch" do
     test "validates inputs and sends the poll", attrs do
       assert "wa_group is invalid" = Dispatcher.dispatch("send_wa_group_poll", %{})
 
       assert "poll_uuid is invalid" =
                Dispatcher.dispatch("send_wa_group_poll", %{
-                 "wa_group" => %{"wa_managed_phone_id" => 0, "id" => 0},
+                 "wa_group" => %{"id" => 0},
                  "organization_id" => attrs.organization_id
                })
 
       poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
 
-      assert ~s|["Elixir.Glific.WAGroup.WAManagedPhone", "Resource not found"]| =
+      assert ~s|["Elixir.Glific.Groups.WAGroup", "Resource not found"]| =
                Dispatcher.dispatch("send_wa_group_poll", %{
-                 "wa_group" => %{"wa_managed_phone_id" => 0, "id" => 0},
+                 "wa_group" => %{"id" => 0},
                  "organization_id" => attrs.organization_id,
                  "poll_uuid" => poll.uuid
                })
@@ -163,11 +163,13 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
       end)
 
       wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
-      wa_group = Fixtures.wa_group_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+      wa_group =
+        Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
 
       assert %{success: true, poll: _} =
                Dispatcher.dispatch("send_wa_group_poll", %{
-                 "wa_group" => %{"wa_managed_phone_id" => wa_phone.id, "id" => wa_group.id},
+                 "wa_group" => %{"id" => wa_group.id},
                  "organization_id" => attrs.organization_id,
                  "poll_uuid" => poll.uuid
                })
