@@ -11,6 +11,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   """
 
   alias Glific.Assistants.Assistant
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Partners
   alias Glific.Repo
   alias Glific.SafeLog
@@ -126,14 +127,18 @@ defmodule Glific.Flows.Webhooks.Kaapi do
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)
     else
+      # A config assistant error self-classifies; the immediate Kaapi HTTP failure is system.
+      {:error, error_type, reason} when is_atom(error_type) ->
+        %{success: false, reason: reason, error_type: error_type}
+
       {:error, %{status: status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body), http_status: status}
+        %{success: false, reason: Jason.encode!(body), http_status: status, error_type: :unknown}
 
       {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason}
+        %{success: false, reason: reason, error_type: :unknown}
 
       {:error, reason} ->
-        %{success: false, reason: SafeLog.safe_inspect(reason)}
+        %{success: false, reason: SafeLog.safe_inspect(reason), error_type: :unknown}
     end
   end
 
@@ -145,14 +150,14 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   """
   @spec parse_flow_fields(map()) ::
           {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
-          | {:error, String.t()}
+          | {:error, ErrorType.t(), String.t()}
   def parse_flow_fields(fields) do
     with {:ok, organization_id} <- Glific.parse_maybe_integer(fields["organization_id"]),
          {:ok, flow_id} <- Glific.parse_maybe_integer(fields["flow_id"]),
          {:ok, contact_id} <- Glific.parse_maybe_integer(fields["contact_id"]) do
       {:ok, {organization_id, flow_id, contact_id}}
     else
-      _ -> {:error, "Invalid or missing flow metadata for Kaapi webhook"}
+      _ -> {:error, :invalid_input, "Invalid or missing flow metadata for Kaapi webhook"}
     end
   end
 
@@ -160,24 +165,25 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   Validates that a media URL is a well-formed https URL. Used by the STT webhook
   before dispatching to Kaapi.
   """
-  @spec validate_media(any()) :: :ok | {:error, String.t()}
+  @spec validate_media(any()) :: :ok | {:error, ErrorType.t(), String.t()}
   def validate_media(url) when is_binary(url) do
     case URI.parse(url) do
       %URI{scheme: "https", host: host} when is_binary(host) and host != "" ->
         :ok
 
       _ ->
-        {:error, "Media URL is invalid"}
+        {:error, :invalid_media_url, "Media URL is invalid"}
     end
   end
 
-  def validate_media(_), do: {:error, "Media URL is needed"}
+  def validate_media(_), do: {:error, :invalid_media_url, "Media URL is needed"}
 
+  # An unresolvable assistant is a flow-author/config mistake (bad or unset assistant id) → config.
   @spec lookup_kaapi_config(String.t() | nil, non_neg_integer()) ::
-          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+          {:ok, {String.t(), non_neg_integer()}} | {:error, ErrorType.t(), String.t()}
   defp lookup_kaapi_config(assistant_display_id, _organization_id)
        when is_nil(assistant_display_id),
-       do: {:error, "assistant_id is required"}
+       do: {:error, :invalid_input, "assistant_id is required"}
 
   defp lookup_kaapi_config(assistant_display_id, organization_id) do
     with {:ok, assistant} <-
@@ -192,16 +198,17 @@ defmodule Glific.Flows.Webhooks.Kaapi do
       {:ok, {kaapi_uuid, kaapi_version_number}}
     else
       {:error, :missing_kaapi_uuid} ->
-        {:error, "Assistant is still being set up"}
+        {:error, :invalid_input, "Assistant is still being set up"}
 
       {:error, _} ->
-        {:error, "Assistant not found: #{assistant_display_id}"}
+        {:error, :invalid_input, "Assistant not found: #{assistant_display_id}"}
 
       nil ->
-        {:error, "No active config version found for assistant #{assistant_display_id}"}
+        {:error, :invalid_input,
+         "No active config version found for assistant #{assistant_display_id}"}
 
       %{kaapi_version_number: nil} ->
-        {:error, "Kaapi version number not found"}
+        {:error, :invalid_input, "Kaapi version number not found"}
     end
   end
 

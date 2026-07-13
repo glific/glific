@@ -200,7 +200,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert result == %{success: true}
     end
 
-    test "a dispatch failure reports SystemError" do
+    test "an untyped dispatch failure fails safe to system (error_type unknown)" do
       {exception, tags} =
         capture_appsignal(fn ->
           Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
@@ -211,6 +211,20 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert %Errors.SystemError{} = exception
       assert exception.message =~ "stub_async_infra"
       assert tags.organization_id == 7
+      assert tags.error_type == "unknown"
+    end
+
+    test "a self-classified config dispatch failure routes to the config namespace" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
+            %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
+          end)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "invalid_media_url"
+      assert tags.reason == "Media URL is invalid"
     end
 
     test "an exception reports SystemError and reraises" do

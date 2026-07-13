@@ -34,8 +34,14 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
 
       KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
     else
-      {:error, reason} when is_binary(reason) -> %{success: false, reason: reason}
-      _ -> %{success: false, reason: "Kaapi is not active"}
+      {:error, error_type, reason} when is_atom(error_type) ->
+        %{success: false, reason: reason, error_type: error_type}
+
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason, error_type: :unknown}
+
+      _ ->
+        %{success: false, reason: "Kaapi is not active", error_type: :unknown}
     end
   end
 end

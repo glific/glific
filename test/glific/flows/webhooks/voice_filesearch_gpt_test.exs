@@ -606,7 +606,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       }
 
       assert VoiceFilesearchGpt.call(fields, %{}) ==
-               %{success: false, reason: "Media URL is invalid"}
+               %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
     end
   end
 end

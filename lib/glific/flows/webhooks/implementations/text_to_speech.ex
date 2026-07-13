@@ -48,7 +48,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
       )
     else
       {:snooze, _seconds} = snooze -> snooze
-      {:error, reason} -> %{success: false, reason: reason}
+      {:error, error_type, reason} -> %{success: false, reason: reason, error_type: error_type}
     end
   end
 end

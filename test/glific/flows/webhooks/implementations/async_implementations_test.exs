@@ -16,29 +16,41 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
     VoiceFilesearchGpt
   }
 
-  describe "call/2 with malformed flow metadata routes to a failure result" do
+  describe "call/2 self-classifies dispatch failures (error_type on the ack)" do
     # Unparseable organization_id/flow_id/contact_id -> parse_flow_fields returns
-    # {:error, ...}, which each module must turn into a %{success: false} result (not a crash).
+    # {:error, :invalid_input, _}, which each node turns into a %{success: false,
+    # error_type: :invalid_input} ack (config → notify support) instead of crashing the worker.
     @bad_meta %{"organization_id" => "x", "flow_id" => "y", "contact_id" => "z"}
 
-    test "speech_to_text" do
+    test "speech_to_text tags malformed metadata as :invalid_input" do
       fields = Map.put(@bad_meta, "speech", "https://x.test/a.ogg")
-      assert %{success: false, reason: _} = SpeechToText.call(fields, %{})
+      assert %{success: false, error_type: :invalid_input} = SpeechToText.call(fields, %{})
     end
 
-    test "text_to_speech" do
-      assert %{success: false, reason: _} =
+    test "text_to_speech tags malformed metadata as :invalid_input" do
+      assert %{success: false, error_type: :invalid_input} =
                TextToSpeech.call(Map.put(@bad_meta, "text", "hi"), %{})
     end
 
-    test "filesearch_gpt" do
+    test "filesearch_gpt tags malformed metadata as :invalid_input" do
       fields = Map.put(@bad_meta, "question", "hi")
-      assert %{success: false, reason: _} = FilesearchGpt.call(fields, %{})
+      assert %{success: false, error_type: :invalid_input} = FilesearchGpt.call(fields, %{})
     end
 
-    test "voice_filesearch_gpt" do
-      assert %{success: false, reason: _} =
+    test "voice_filesearch_gpt tags malformed metadata as :invalid_input" do
+      assert %{success: false, error_type: :invalid_input} =
                VoiceFilesearchGpt.call(Map.put(@bad_meta, "speech", "x"), %{})
+    end
+
+    test "speech_to_text tags an invalid media URL as :invalid_media_url" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "not-a-url"
+      }
+
+      assert %{success: false, error_type: :invalid_media_url} = SpeechToText.call(fields, %{})
     end
   end
 
@@ -47,9 +59,13 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
       assert :ok = KaapiSupport.validate_media("https://example.com/a.ogg")
     end
 
-    test "rejects a non-https URL" do
-      assert {:error, "Media URL is invalid"} =
+    test "rejects a non-https URL as a config error" do
+      assert {:error, :invalid_media_url, "Media URL is invalid"} =
                KaapiSupport.validate_media("http://example.com/a.ogg")
+    end
+
+    test "rejects a non-binary URL as a config error" do
+      assert {:error, :invalid_media_url, _} = KaapiSupport.validate_media(nil)
     end
   end
 

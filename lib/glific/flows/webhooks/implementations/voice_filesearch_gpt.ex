@@ -16,6 +16,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   use Glific.Flows.Webhooks.Async, name: "voice-filesearch-gpt"
 
   alias Glific.Flows.Webhooks.Behaviour
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
   alias Glific.OpenAI.ChatGPT
@@ -37,8 +38,14 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
            Kaapi.fetch_kaapi_creds(organization_id) do
       run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key)
     else
-      {:error, reason} when is_binary(reason) -> %{success: false, reason: reason}
-      _ -> %{success: false, reason: "Kaapi is not active"}
+      {:error, error_type, reason} when is_atom(error_type) ->
+        %{success: false, reason: reason, error_type: error_type}
+
+      {:error, reason} when is_binary(reason) ->
+        %{success: false, reason: reason, error_type: :unknown}
+
+      _ ->
+        %{success: false, reason: "Kaapi is not active", error_type: :unknown}
     end
   end
 
@@ -60,14 +67,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         |> Map.put("question", transcribed_text)
         |> dispatch_llm(organization_id, flow_id, contact_id, api_key, voice_start_timestamp)
 
+      {:error, error_type, reason} ->
+        %{success: false, reason: reason, error_type: error_type}
+
       {:error, reason} ->
-        %{success: false, reason: reason}
+        %{success: false, reason: reason, error_type: :unknown}
     end
   end
 
   # Synchronous Gemini speech-to-text. Validates the audio URL, then transcribes; a
   # failure short-circuits the pipeline so the async webhook surfaces it on the Failure branch.
-  @spec transcribe(any(), non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec transcribe(any(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, ErrorType.t(), String.t()} | {:error, String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
       case Gemini.speech_to_text(speech, organization_id) do

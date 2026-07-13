@@ -322,7 +322,7 @@ defmodule Glific.Flows.Webhooks.SpeechToTextTest do
 
     test "rejects empty speech URL without calling Kaapi", %{fields: fields} do
       assert SpeechToText.call(Map.put(fields, "speech", ""), %{}) ==
-               %{success: false, reason: "Media URL is invalid"}
+               %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
     end
 
     test "snoozes (does not call Kaapi) once the shared STT/TTS rate limit is exhausted", %{

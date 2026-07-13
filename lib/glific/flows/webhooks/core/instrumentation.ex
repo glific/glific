@@ -3,12 +3,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   Centralised failure reporting and latency telemetry for flow webhooks. Every webhook dispatched
   through `Dispatcher` is wrapped by `around/3`, which times the call, counts the outcome
   (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
-  `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`); async callback failures are
-  classified from the Kaapi response by `CallbackClassifier` and routed the same way. The
-  resume/timeout paths report `Errors.{SystemError, TimeoutError}` under `flow_webhooks`.
+  `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`). Async nodes self-classify their
+  dispatch failure via an `error_type` on the `%{success: false}` ack; their later callback
+  failure (an opaque Kaapi string) is classified by `CallbackClassifier`. Both route through
+  `ErrorReporter`. The resume/timeout paths report `Errors.{SystemError, TimeoutError}` under
+  `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.{CallbackClassifier, ErrorReporter, Errors}
+  alias Glific.Flows.Webhooks.{CallbackClassifier, ErrorReporter, Errors, ErrorType}
   alias Glific.SafeLog
 
   require Logger
@@ -40,6 +42,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
         # A raised sync webhook is a failure and must increment the count; async counts at callback.
         if mode == :sync, do: track_webhook_count(webhook_name, "failure")
+
         # A raised exception is unjudgeable — tag it "exception" (system) so it carries an error_type.
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception), "exception")
         reraise exception, __STACKTRACE__
@@ -221,20 +224,37 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp track_kaapi_latency(_response, _status), do: :ok
 
-  # Async dispatch-failure (immediate `%{success: false}` / nil ack, before any callback).
+  # Async dispatch-failure (immediate `%{success: false}` / nil ack, before any callback). The
+  # node self-classifies via an `error_type` on the ack (like a sync node); `ErrorReporter` routes
+  # it config/system. An untyped ack fails safe to `:unknown` (→ system).
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
   defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     {status, reason} = extract_status_and_reason(result)
-    report_webhook_failure(webhook_name, ctx, status, reason)
+
+    ErrorReporter.report(dispatch_error_type(result), reason || "Kaapi dispatch failure", %{
+      webhook_name: webhook_name,
+      organization_id: Map.get(ctx, :organization_id),
+      http_status: status
+    })
   end
 
   defp maybe_report_failure(result, webhook_name, ctx)
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
-    report_webhook_failure(webhook_name, ctx, nil, reason)
+
+    ErrorReporter.report(:unknown, reason, %{
+      webhook_name: webhook_name,
+      organization_id: Map.get(ctx, :organization_id)
+    })
   end
 
   defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
+
+  # The async node's self-classified error_type off its `%{success: false}` ack, or `:unknown`
+  # (→ system) when the node didn't name one.
+  @spec dispatch_error_type(map()) :: ErrorType.t()
+  defp dispatch_error_type(%{error_type: error_type}) when is_atom(error_type), do: error_type
+  defp dispatch_error_type(_result), do: :unknown
 
   @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
   defp extract_status_and_reason(result) do
@@ -269,7 +289,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
           String.t() | nil,
           String.t() | nil
         ) :: :ok
-  defp report_webhook_failure(webhook_name, ctx, http_status, reason, error_type \\ nil) do
+  defp report_webhook_failure(webhook_name, ctx, http_status, reason, error_type) do
     report_failure(webhook_name, %{
       organization_id: Map.get(ctx, :organization_id),
       http_status: http_status,
