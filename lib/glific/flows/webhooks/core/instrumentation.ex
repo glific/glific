@@ -3,11 +3,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   Centralised failure reporting and latency telemetry for flow webhooks. Every webhook dispatched
   through `Dispatcher` is wrapped by `around/3`, which times the call, counts the outcome
   (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
-  `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`); the async/callback/resume/timeout
-  paths report `Errors.{SystemError, TimeoutError}` under `flow_webhooks`.
+  `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`); async callback failures are
+  classified from the Kaapi response by `CallbackClassifier` and routed the same way. The
+  resume/timeout paths report `Errors.{SystemError, TimeoutError}` under `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.{ErrorReporter, Errors}
+  alias Glific.Flows.Webhooks.{CallbackClassifier, ErrorReporter, Errors}
   alias Glific.SafeLog
 
   require Logger
@@ -107,28 +108,33 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     %{webhook_name: webhook_name, organization_id: Map.get(ctx, :organization_id)}
   end
 
+  # An async failure surfaces at callback time as an opaque Kaapi string, so the node can't
+  # self-classify the way a sync `call/2` does. `CallbackClassifier` infers the ErrorType from
+  # the response and `ErrorReporter` routes it — `:config` → `flow_webhook_config_errors`,
+  # everything else → `flow_webhooks` — the same path the sync nodes use.
   @spec report_callback_failure(map(), map()) :: :ok
   def report_callback_failure(%{"success" => success} = result, response)
       when success != true do
     reason =
       result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
-    %Errors.SystemError{message: "Webhook callback failure"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: response["organization_id"],
-        webhook_name: response["webhook_name"],
-        flow_id: response["flow_id"],
-        contact_id: response["contact_id"],
-        webhook_log_id: response["webhook_log_id"],
-        error_type: result["error_type"],
-        reason: reason
-      }
-    )
+    result
+    |> CallbackClassifier.classify()
+    |> ErrorReporter.report(reason, callback_tags(response))
   end
 
   def report_callback_failure(_result, _response), do: :ok
+
+  @spec callback_tags(map()) :: map()
+  defp callback_tags(response) do
+    %{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"]
+    }
+  end
 
   @spec report_timeout(map()) :: :ok
   def report_timeout(tags) when is_map(tags) do

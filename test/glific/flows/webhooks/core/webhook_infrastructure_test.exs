@@ -371,7 +371,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
   # --- Instrumentation.report_callback_failure/2 ------------------------------
 
   describe "Instrumentation.report_callback_failure/2" do
-    test "reports SystemError to AppSignal when success is false" do
+    test "a statusless callback failure fails safe to a system incident" do
       response = %{
         "organization_id" => 1,
         "webhook_name" => "kaapi_asr",
@@ -388,10 +388,42 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
-      assert exception.message == "Webhook callback failure"
+      assert exception.message == "Webhook system_error from kaapi_asr"
       assert tags.organization_id == 1
       assert tags.webhook_name == "kaapi_asr"
       assert tags.reason == "ASR failed"
+      assert tags.error_type == "unknown"
+    end
+
+    test "a 4xx provider rejection is classified as a config error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+
+      result = %{
+        "success" => false,
+        "reason" => "OpenAI bad request (code: 400): Invalid 'conversation.id'"
+      }
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(result, response)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert exception.message == "Webhook config_error from unified-llm-call"
+      assert tags.error_type == "invalid_input"
+    end
+
+    test "a 5xx provider outage is classified as a system error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+      result = %{"success" => false, "http_status" => 502, "reason" => "Bad gateway"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
 
     test "is a no-op when success is true" do
