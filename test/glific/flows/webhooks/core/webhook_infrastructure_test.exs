@@ -137,7 +137,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       end
     end
 
-    test "reports to AppSignal on exception (tagged error_type crash)" do
+    test "reports to AppSignal on exception (tagged error_type exception)" do
       {exception, tags} =
         capture_appsignal(fn ->
           assert_raise RuntimeError, fn ->
@@ -148,7 +148,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
-      assert tags.error_type == "crash"
+      assert tags.error_type == "exception"
     end
 
     test "tags include organization_id from ctx" do

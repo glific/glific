@@ -39,8 +39,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
         # A raised sync webhook is a failure and must increment the count; async counts at callback.
         if mode == :sync, do: track_webhook_count(webhook_name, "failure")
-        # A crash is unjudgeable — tag it "crash" (system) so the incident still carries an error_type.
-        report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception), "crash")
+        # A raised exception is unjudgeable — tag it "exception" (system) so it carries an error_type.
+        report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception), "exception")
         reraise exception, __STACKTRACE__
     end
   end
