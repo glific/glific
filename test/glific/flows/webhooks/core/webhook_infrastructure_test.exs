@@ -567,6 +567,18 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert %Errors.SystemError{} = exception
       assert tags.error_type == "rate_limited"
     end
+
+    test "a malformed 3-tuple failure is still reported (not counted-but-invisible)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :some_type, %{not: "a binary"}}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
   end
 
   # Real-webhook failure reporting: a failing sync webhook dispatched through the framework

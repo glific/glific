@@ -102,6 +102,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
+  # A 3-tuple that violates the typed contract (non-atom type / non-binary message) still routed
+  # the flow to Failure — report it as :unknown so it isn't counted-but-invisible to on-call.
+  defp report_sync_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
+    ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
+  end
+
   defp report_sync_failure(_non_failure, _webhook_name, _ctx), do: :ok
 
   @spec failure_tags(String.t(), map()) :: map()
