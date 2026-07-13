@@ -155,6 +155,26 @@ Request headers are automatically scrubbed by `Glific.Flows.Webhook.HeaderRedact
 being persisted to `webhook_logs` — credentials (Authorization, X-Api-Key, etc.) are
 redacted. Do not special-case credential fields in individual webhook modules.
 
+## Provider instrumentation framework (`providers/instrumentation.ex`)
+
+A provider-agnostic mixin gives every BSP adapter (Gupshup, Maytapi, ...) the same AppSignal
+send/receive/status/action counters for free — the observability analog of the webhook
+framework above. Adding a provider is one module:
+
+```elixir
+defmodule Glific.Providers.Maytapi.Instrumentation do
+  use Glific.Providers.Instrumentation, provider: "maytapi"
+end
+```
+
+This defines `track_send/2`, `track_receive/2`, `track_status/2`, `track_action/3`, all tagged
+with `provider` (and `organization_id`). Provider-specific reclassification (e.g. Gupshup
+recording a frequency-capped 4xx as `frequency_capped` instead of `error` so it doesn't trip
+send-failure alerts) is a single overridable `classify_send/2` — see
+`Glific.Providers.Gupshup.Instrumentation`. Call sites emit explicitly (`instrument_oban: false`
+means nothing here is automatic). `Instrumentation.check_inbound_staleness/0` is a separate,
+single cross-org platform-liveness check (not per-org) wired into `MinuteWorker`.
+
 ## Large subsystems — read before touching
 
 These are old, dense, and pattern-divergent. Read the subtree and nearby tests **before**
