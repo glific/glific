@@ -93,6 +93,13 @@ end
   Do **not** trust that `prepare_query` alone is enough for mutations/reads keyed by a
   client-supplied id — always pass `organization_id` explicitly. Omitting it is a tenant-isolation
   bug (an attacker passes another org's id).
+- **Role-conditional org resolution for client-supplied `organization_id`/`id` args:** only
+  `:glific_admin` (SaaS operator) may target another org via a client-supplied id; every other
+  role must be pinned to `current_user.organization_id`, ignoring whatever the client sent. Gate
+  with `Authorize.valid_role?(user.roles, :glific_admin)` and branch the fetch/target-id
+  resolution accordingly — mirror `GlificWeb.Resolvers.Billings.target_org_id/2` and
+  `update_billing/3`. On updates, also `Map.delete(params, :organization_id)` before persisting so
+  a record can never be re-homed to another org regardless of caller role.
 
 ### 3. Wire into `schema.ex` (BOTH steps, or the field won't exist)
 
