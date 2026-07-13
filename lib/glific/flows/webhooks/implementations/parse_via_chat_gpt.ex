@@ -1,15 +1,6 @@
 defmodule Glific.Flows.Webhooks.ParseViaChatGpt do
   @moduledoc """
-  Parse a message via OpenAI ChatGPT (`parse_via_chat_gpt` flow-webhook node).
-
-  Migrated from `Glific.Clients.CommonWebhook.webhook("parse_via_chat_gpt", ...)` onto the
-  central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
-  reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
-
-  `call/2` returns `%{success: true, parsed_msg: ...}` on success, or a typed
-  `{:error, ErrorType.t(), message}` on failure (which the dispatcher turns into a bare string
-  routing the flow to its "Failure" category). An empty question is `:empty_input` (config);
-  an OpenAI error the node can't judge is `:unknown` (→ system).
+  Parse a message via OpenAI ChatGPT (`parse_via_chat_gpt` node).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "parse_via_chat_gpt"
@@ -44,11 +35,7 @@ defmodule Glific.Flows.Webhooks.ParseViaChatGpt do
        %{
          "question_text" => Map.get(fields, "question_text"),
          "prompt" => Map.get(fields, "prompt", nil),
-         # ID of the model to use.
          "model" => Map.get(fields, "model", "gpt-4o"),
-         # The sampling temperature, between 0 and 1.
-         # Higher values like 0.8 will make the output more random,
-         # while lower values like 0.2 will make it more focused and deterministic.
          "temperature" => Map.get(fields, "temperature", 0),
          "response_format" => Map.get(fields, "response_format", nil)
        }}

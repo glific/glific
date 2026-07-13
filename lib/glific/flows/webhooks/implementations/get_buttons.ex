@@ -1,10 +1,6 @@
 defmodule Glific.Flows.Webhooks.GetButtons do
   @moduledoc """
-  Split a `|`-delimited string into numbered quick-reply buttons (`get_buttons` flow-webhook
-  node).
-
-  Pure-local: no external call, no error reporting. Migrated one-for-one from the legacy
-  `Glific.Clients.CommonWebhook.webhook("get_buttons", ...)`.
+  Split a `|`-delimited string into numbered quick-reply buttons (`get_buttons` node). Pure-local.
   """
 
   use Glific.Flows.Webhooks.Sync, name: "get_buttons"

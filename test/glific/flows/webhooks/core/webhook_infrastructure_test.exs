@@ -528,7 +528,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.ConfigurationError{} = exception
-      assert tags.error_type == "config"
+      assert tags.error_type == "invalid_geocoding"
     end
 
     test "typed system failure → SystemError under the system namespace" do
@@ -540,7 +540,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
-      assert tags.error_type == "system"
+      assert tags.error_type == "missing_api_key"
     end
 
     test "untyped sync failure fails safe to :unknown (system)" do
@@ -552,23 +552,19 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
-      assert tags.error_type == "system"
+      assert tags.error_type == "unknown"
     end
 
-    test "typed transient failure emits no incident" do
-      with_mocks([
-        {Appsignal, [:passthrough],
-         [
-           send_error: fn _ex, _st, _cf -> flunk("transient must not report an incident") end,
-           increment_counter: fn _n, _v, _t -> :ok end,
-           add_distribution_value: fn _n, _v, _t -> :ok end
-         ]}
-      ]) do
-        assert {:error, :rate_limited, _msg} =
-                 Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
-                   {:error, :rate_limited, "Geocoding quota exceeded."}
-                 end)
-      end
+    test "typed upstream-blip failure reports a system incident (no retry — a blip is a real failure)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :rate_limited, "Geocoding quota exceeded."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "rate_limited"
     end
   end
 
@@ -587,7 +583,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.webhook_name == "parse_via_chat_gpt"
       assert tags.organization_id == 1
       assert tags.reason == "question_text is empty"
-      assert tags.error_type == "config"
+      assert tags.error_type == "empty_input"
     end
 
     test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
@@ -636,7 +632,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         assert tags.webhook_name == "parse_via_gpt_vision"
         assert tags.organization_id == 1
         assert tags.reason == "Media URL is invalid"
-        assert tags.error_type == "config"
+        assert tags.error_type == "invalid_media_url"
       end
     end
   end

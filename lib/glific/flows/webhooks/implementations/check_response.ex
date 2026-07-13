@@ -1,9 +1,6 @@
 defmodule Glific.Flows.Webhooks.CheckResponse do
   @moduledoc """
-  Compare a contact's response against the expected answer (`check_response` flow-webhook node).
-
-  Pure-local: no external call, no error reporting. Migrated one-for-one from the legacy
-  `Glific.Clients.CommonWebhook.webhook("check_response", ...)`.
+  Compare a contact's response against the expected answer (`check_response` node). Pure-local.
   """
 
   use Glific.Flows.Webhooks.Sync, name: "check_response"

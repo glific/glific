@@ -16,9 +16,9 @@ defmodule Glific.Flows.Webhooks.Core.ErrorTypeTest do
       assert ErrorType.class(:invalid_input) == :config
     end
 
-    test "maps upstream blips to :transient" do
-      assert ErrorType.class(:rate_limited) == :transient
-      assert ErrorType.class(:service_unavailable) == :transient
+    test "maps upstream blips to :system (no retry, so a blip is a real failure worth paging on)" do
+      assert ErrorType.class(:rate_limited) == :system
+      assert ErrorType.class(:service_unavailable) == :system
     end
 
     test "returns nil for an unrecognised atom (caller fails safe to system)" do

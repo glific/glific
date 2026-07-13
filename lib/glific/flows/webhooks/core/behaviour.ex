@@ -1,30 +1,14 @@
 defmodule Glific.Flows.Webhooks.Behaviour do
   @moduledoc """
-  Contract for a single flow-webhook node.
-
-  A webhook implementation is one module, one file, that owns its own
-  integration code (Tesla calls, Kaapi calls, payload building). Cross-cutting
-  concerns — failure reporting, latency telemetry, WebhookLog row creation,
-  wait-state management — are handled by `Glific.Flows.Webhooks.Dispatcher`
-  and `Glific.Flows.Webhooks.Instrumentation`, not by the per-webhook module.
-
-  Authors should `use Glific.Flows.Webhooks.Sync` or `Glific.Flows.Webhooks.Async`
-  rather than implementing this behaviour directly — the macros inject
-  `name/0` and `mode/0` and leave `call/2` for the author to write.
+  Contract for a single flow-webhook node. Each implementation owns its integration code; the
+  cross-cutting concerns (failure reporting, latency telemetry, WebhookLog, wait-state) live in
+  `Dispatcher`/`Instrumentation`. Authors `use` the `Sync`/`Async` macros rather than
+  implementing this directly.
   """
 
   alias Glific.Flows.{Action, FlowContext}
+  alias Glific.Messages.Message
 
-  @typedoc """
-  Context passed to a webhook's `call/2`. Built by the dispatcher; carries
-  enough state for the webhook to do its work and for instrumentation to
-  attach the right AppSignal tags.
-
-  Minimally `:organization_id` is set (may be `nil` when the field is
-  absent or unparseable). Async webhooks additionally expect `:flow_context`,
-  `:webhook_log_id`, `:action`, and the various ID fields used in the Kaapi
-  request_metadata.
-  """
   @type ctx :: %{
           required(:organization_id) => non_neg_integer() | nil,
           optional(:headers) => list(),
@@ -37,60 +21,23 @@ defmodule Glific.Flows.Webhooks.Behaviour do
           optional(:flow_context) => FlowContext.t()
         }
 
-  @typedoc """
-  Return shape for all synchronous webhooks — uniform across every node.
-
-  * **Success** — `{:ok, value}`. `value` is usually the result map the flow reads
-    (`@results.<node>.*`); a plain value is wrapped into a map by the translator.
-  * **Failure** — the **typed** `{:error, ErrorType.t(), String.t()}`: a stable atom the node
-    picks (it owns the config/system verdict) plus the human message. A failure the node
-    genuinely can't judge is `{:error, :unknown, msg}` (→ system). A sync node always names its
-    error — there is no untyped failure shape.
-  * **Snooze** — `{:snooze, seconds}` is a pre-dispatch gate: a `call/2` may return it (e.g. a
-    per-org rate limit) to have the `Glific.Flows.Webhook` Oban worker reschedule the job instead
-    of dispatching. It flows back through the dispatcher untouched, recorded as neither success
-    nor failure.
-
-  `Glific.Flows.Webhooks.ResultTranslator.to_legacy_structure/2` normalises these into the
-  map/string shape the flow engine routes on (`{:ok, _}` → map → Success branch;
-  `{:error, _, _}` → string → Failure branch; the error-type atom is used for reporting only,
-  then stripped).
-  """
+  # Sync: {:ok, value} → Success branch; {:error, ErrorType.t(), msg} → Failure branch (the node
+  # owns the config/system verdict, :unknown when it can't judge); {:snooze, seconds} reschedules
+  # the Oban job. ResultTranslator normalises these into the map/string the flow engine routes on.
   @type sync_result ::
           {:ok, term()}
           | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}
           | {:snooze, pos_integer()}
 
-  @typedoc """
-  Return shape for asynchronous webhooks (Kaapi STT/TTS, filesearch-gpt, voice-filesearch-gpt).
+  # Async webhooks: {:wait, ctx, []} parks the flow context; {:ok, ctx, [msg]} is the
+  # immediate-failure branch (flow continues on a Failure message without entering await).
+  @type async_result ::
+          {:wait, FlowContext.t(), [Message.t()]}
+          | {:ok, FlowContext.t(), [Message.t()]}
 
-  `call/2` fires the Kaapi request and returns the ack map: `%{success: true, ...}` leaves the
-  flow parked (the Kaapi callback resumes it via `FlowResumeController`), while
-  `%{success: false, reason: ...}` is an immediate dispatch failure that wakes the flow on the
-  Failure branch. `{:snooze, seconds}` reschedules the Oban job (e.g. a per-org rate limit).
-  """
-  @type async_result :: map() | {:snooze, pos_integer()}
-
-  @doc """
-  The webhook's stable identifier — matches the URL string persisted in flow
-  JSON (e.g. `"geolocation"`, `"speech_to_text"`).
-  """
   @callback name() :: String.t()
-
-  @doc """
-  `:sync` for webhooks that return immediately, `:async` for ones that park
-  the flow waiting for a Kaapi callback.
-  """
   @callback mode() :: :sync | :async
-
-  @doc """
-  Execute the webhook. The dispatcher wraps this call with failure reporting
-  and latency telemetry, so authors should NOT add their own `try`/`rescue`
-  for AppSignal — let exceptions propagate.
-  """
   @callback call(fields :: map(), ctx :: ctx()) :: sync_result() | async_result()
-
-  @doc "Default Kaapi wait window in seconds. `60` for everything today."
   @callback wait_time_default() :: non_neg_integer()
 
   @optional_callbacks wait_time_default: 0

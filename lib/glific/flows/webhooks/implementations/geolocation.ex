@@ -1,20 +1,8 @@
 defmodule Glific.Flows.Webhooks.Geolocation do
   @moduledoc """
-  Reverse-geocode `lat` / `long` to a structured address via Google Maps.
-
-  First webhook migrated to the `Glific.Flows.Webhooks` architecture — see
-  `plans/webhook-refactor.md` for the broader plan. Behaviour is preserved
-  one-for-one with the legacy `Glific.Clients.CommonWebhook.webhook("geolocation", ...)`
-  clause; the centralised dispatcher adds AppSignal reporting on failure
-  paths.
-
-  Returns `{:ok, Address.t()}` or a **typed** failure `{:error, ErrorType.t(), String.t()}`
-  from `call/2` — the node classifies every failure itself: bad coordinates / no result are
-  `:invalid_geocoding` / `:empty_input` (config), a denied key is `:missing_api_key` (system),
-  an exceeded quota is `:rate_limited` and a connection failure is `:service_unavailable`
-  (transient). A response the node genuinely can't judge is `:unknown` (→ system, so it still
-  pages). The dispatcher encodes these for the flow engine (map on success, string on failure)
-  via `Glific.Flows.Webhooks.ResultTranslator`.
+  Reverse-geocode `lat`/`long` to a structured address via Google Maps (`geolocation` node).
+  Returns `{:ok, Address.t()}` or a typed `{:error, ErrorType.t(), String.t()}` — the node
+  classifies each failure itself (see `Glific.Flows.Webhooks.ErrorType` for the buckets).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
@@ -85,9 +73,8 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     end
   end
 
-  # The Geocoding API contract is defined purely by the `status` field in the JSON body —
-  # the docs make no guarantees about HTTP status codes.
-  # See https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
+  # Geocoding API contract is the `status` field in the body, not the HTTP status. See
+  # https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
   @spec decode_geocode_response(map()) :: result()
   defp decode_geocode_response(%{"status" => "OK", "results" => results}),
     do: parse_results(results)
@@ -96,8 +83,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     geocode_status_error(status, Map.get(decoded, "error_message"))
   end
 
-  # Must come after the status-bearing clause above — a response with both "status" and
-  # "results" should be routed by status, not treated as a no-status success.
+  # Must come after the status-bearing clause: a response with both keys routes by status.
   defp decode_geocode_response(%{"results" => results}), do: parse_results(results)
 
   defp decode_geocode_response(_unexpected) do
@@ -105,9 +91,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
      "The geocoding service returned an unexpected response format. Please try again later."}
   end
 
-  # Bad coordinates (no result / invalid request) are user/flow config; a denied key is a
-  # Glific provisioning gap (system); an exceeded quota is a transient blip. A genuinely
-  # unknown/other status is typed `:unknown` (→ system) so it still pages and we investigate.
+  # Map each Geocoding status to its bucket; an unrecognised status is `:unknown` (→ system).
   @spec geocode_status_error(String.t(), String.t() | nil) :: {:error, ErrorType.t(), String.t()}
   defp geocode_status_error("ZERO_RESULTS", _error_message) do
     {:error, :invalid_geocoding,

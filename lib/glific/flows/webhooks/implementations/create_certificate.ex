@@ -1,10 +1,6 @@
 defmodule Glific.Flows.Webhooks.CreateCertificate do
   @moduledoc """
-  Generate a certificate for a contact (`create_certificate` flow-webhook node).
-
-  Migrated from `Glific.Clients.CommonWebhook.webhook("create_certificate", ...)` onto the
-  central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
-  reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
+  Generate a certificate for a contact (`create_certificate` node).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "create_certificate"
@@ -27,9 +23,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
          {:ok, certificate_template} <- fetch_certificate_template(parsed_fields),
          {:ok, slide_details} <-
            Slide.parse_slides_url(certificate_template.url) do
-      # generate_certificate returns %{success: true, certificate_url} or
-      # %{success: false, reason} — a generation failure (Google Slides / GCS) is a real
-      # failure, so route it to the Failure branch as a typed error.
+      # A generation failure (Google Slides / GCS) is a real failure → typed error to Failure.
       case Certificate.generate_certificate(
              parsed_fields,
              parsed_fields.contact["id"],
@@ -55,8 +49,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
         type: :integer,
         required: true,
         cast_func: fn value ->
-          # Non-numeric input must not raise (it would escape call/2 and crash the
-          # Oban job); surface it as a validation error routed to the Failure branch.
+          # Must not raise — that would escape call/2 and crash the Oban job.
           if is_binary(value) do
             case Glific.parse_maybe_integer(value) do
               {:ok, integer} -> {:ok, integer}
@@ -72,7 +65,6 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
       organization_id: [type: :integer, required: true]
     }
 
-    # Bad/missing params are flow-author config errors.
     case Tarams.cast(fields, certificate_params_schema) |> Glific.handle_tarams_result() do
       {:ok, parsed} -> {:ok, parsed}
       {:error, reason} -> {:error, :invalid_input, reason}
@@ -94,7 +86,6 @@ defmodule Glific.Flows.Webhooks.CreateCertificate do
           "Certificate template not found for ID: #{fields.certificate_id} and organization: #{fields.organization_id}"
         )
 
-        # Flow references a template that doesn't exist for this org → config.
         {:error, :invalid_input,
          "Certificate template not found for ID: #{fields.certificate_id}"}
     end
