@@ -1,0 +1,68 @@
+defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
+  @moduledoc """
+  Send a WhatsApp group poll in a flow (`send_wa_group_poll` flow-webhook node).
+
+  Migrated from `Glific.Clients.CommonWebhook.webhook("send_wa_group_poll", ...)` onto the
+  central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
+  reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
+  """
+
+  use Glific.Flows.Webhooks.Sync, name: "send_wa_group_poll"
+
+  alias Glific.{
+    Groups.WAGroup,
+    Providers.Maytapi,
+    Repo,
+    SafeLog,
+    WAGroup.WaPoll
+  }
+
+  @impl true
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map() | String.t()
+  def call(fields, _ctx) do
+    with {:ok, fields} <- parse_wa_poll_params(fields),
+         {:ok, wa_group} <-
+           Repo.fetch_by(WAGroup, %{
+             id: fields.wa_group["id"],
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_poll} <-
+           Repo.fetch_by(WaPoll, %{
+             uuid: fields.poll_uuid,
+             organization_id: fields.organization_id
+           }),
+         {:ok, wa_message} <-
+           Maytapi.Message.create_and_send_wa_message(wa_group, %{poll_id: wa_poll.id}) do
+      %{success: true, poll: wa_message.poll_content}
+    else
+      {:error, reason} when is_binary(reason) ->
+        reason
+
+      {:error, reason} ->
+        SafeLog.safe_inspect(reason)
+    end
+  end
+
+  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
+  defp parse_wa_poll_params(fields) do
+    # if wa_group is in the map, then the inner keys will be already filled by
+    # webhook module
+    with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
+         {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
+         {:ok, _} <-
+           Ecto.UUID.cast(fields["poll_uuid"]) do
+      {:ok,
+       %{
+         wa_group: fields["wa_group"],
+         poll_uuid: fields["poll_uuid"],
+         organization_id: fields["organization_id"]
+       }}
+    else
+      :error ->
+        {:error, "poll_uuid is invalid"}
+
+      {false, field} ->
+        {:error, "#{field} is invalid"}
+    end
+  end
+end

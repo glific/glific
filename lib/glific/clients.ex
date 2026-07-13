@@ -8,7 +8,6 @@ defmodule Glific.Clients do
   """
 
   alias Glific.{
-    Clients.CommonWebhook,
     Contacts.Contact,
     Flows.Action,
     Triggers.Trigger
@@ -273,13 +272,14 @@ defmodule Glific.Clients do
   Allow an organization to use glific functions to implement webhooks. A faster way
   of modifying the DB and doing some advanced stuff in an easy manner
   """
-  @spec webhook(String.t(), map(), list()) :: map()
-  def webhook(name, fields, headers \\ []) do
-    module_name = get_in(plugins(), [fields["organization_id"], :webhook])
-
-    case CommonWebhook.webhook(name, fields, headers) do
-      %{error: "Missing webhook function implementation"} -> module_name.webhook(name, fields)
-      results -> results
+  @spec webhook(String.t(), map()) :: map()
+  def webhook(name, fields) do
+    # Framework webhook nodes are routed to their modules by
+    # `Glific.Flows.Webhook.dispatch_function/3` (via the Registry) and never reach here — this
+    # is the fallback only for org-specific webhook functions (per-org client modules).
+    case get_in(plugins(), [fields["organization_id"], :webhook]) do
+      nil -> %{error: "Missing webhook function implementation"}
+      module_name -> module_name.webhook(name, fields)
     end
   end
 

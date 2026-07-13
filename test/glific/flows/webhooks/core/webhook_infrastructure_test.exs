@@ -10,6 +10,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     Registry
   }
 
+  alias Glific.Messages
+
   # --- Stub webhook modules ---------------------------------------------------
 
   defmodule StubWebhook do
@@ -510,6 +512,73 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     test "Error is a valid exception" do
       ex = %Errors.Error{message: "generic error"}
       assert Exception.message(ex) == "generic error"
+    end
+  end
+
+  # Real-webhook failure reporting: a failing sync webhook dispatched through the framework must
+  # surface a SystemError to AppSignal with the right tags (webhook_name / organization_id /
+  # reason). Complements the stub-based Instrumentation.around/3 tests above.
+  describe "Instrumentation reporting — real sync webhooks" do
+    test "reports SystemError with tags when parse_via_chat_gpt fails" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          assert Dispatcher.dispatch("parse_via_chat_gpt", %{"organization_id" => 1}) ==
+                   "question_text is empty"
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.webhook_name == "parse_via_chat_gpt"
+      assert tags.organization_id == 1
+      assert tags.reason == "question_text is empty"
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
+      fields = %{
+        "organization_id" => 1,
+        "url" => "https://example.com/image.jpg",
+        "response_format" => %{"type" => "json_objectz"}
+      }
+
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+        end)
+
+        {exception, tags} =
+          capture_appsignal(fn ->
+            assert Dispatcher.dispatch("parse_via_gpt_vision", fields) ==
+                     "response_format type should be json_schema or json_object"
+          end)
+
+        assert %Errors.SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "response_format type should be json_schema or json_object"
+      end
+    end
+
+    test "reports SystemError when parse_via_gpt_vision fails on invalid media URL" do
+      with_mock(Messages,
+        validate_media: fn _, _ -> %{is_valid: false, message: "Media URL is invalid"} end
+      ) do
+        {exception, tags} =
+          capture_appsignal(fn ->
+            assert Dispatcher.dispatch("parse_via_gpt_vision", %{
+                     "organization_id" => 1,
+                     "url" => "not-an-image"
+                   }) == "Media URL is invalid"
+          end)
+
+        assert %Errors.SystemError{} = exception
+        assert tags.webhook_name == "parse_via_gpt_vision"
+        assert tags.organization_id == 1
+        assert tags.reason == "Media URL is invalid"
+      end
     end
   end
 

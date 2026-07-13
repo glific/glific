@@ -7,12 +7,17 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   alias Glific.{
     Communications,
-    Providers.Gupshup
+    Providers.Gupshup,
+    Providers.Gupshup.Instrumentation
   }
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
+  def handler(conn, _params, msg) do
+    # Explicit inbound receive counter — these controllers stay in AppSignal's
+    # `ignore_namespaces`, so without this the receive volume is invisible.
+    Instrumentation.track_receive(msg, conn.assigns[:organization_id])
+
     conn
     |> Plug.Conn.send_resp(200, "")
     |> Plug.Conn.halt()
