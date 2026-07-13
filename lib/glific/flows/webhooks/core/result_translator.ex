@@ -10,6 +10,7 @@ defmodule Glific.Flows.Webhooks.ResultTranslator do
 
   @type encoder :: (term() -> map())
 
+  @doc "Translate a `call/2` return into the legacy map/string the flow engine routes on."
   @spec to_legacy_structure(term(), module()) :: map() | String.t() | term()
   def to_legacy_structure({:ok, value}, module) do
     encoder_for(module).(value)
@@ -21,6 +22,7 @@ defmodule Glific.Flows.Webhooks.ResultTranslator do
 
   def to_legacy_structure(other, _module), do: other
 
+  @doc "Return the `{:ok, value}` encoder for a module (module-specific or the default)."
   @spec encoder_for(module()) :: encoder()
   def encoder_for(Glific.Flows.Webhooks.Geolocation), do: &Address.to_flow_map/1
   def encoder_for(_module), do: &default_encoder/1

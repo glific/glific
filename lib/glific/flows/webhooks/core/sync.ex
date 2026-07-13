@@ -14,10 +14,12 @@ defmodule Glific.Flows.Webhooks.Sync do
 
       @webhook_name unquote(webhook_name)
 
+      @doc "Returns the webhook name used in flow JSON URLs."
       @spec name() :: String.t()
       @impl true
       def name, do: @webhook_name
 
+      @doc "Marks this webhook as synchronous."
       @spec mode() :: :sync
       @impl true
       def mode, do: :sync

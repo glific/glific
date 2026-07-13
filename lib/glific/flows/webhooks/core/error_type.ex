@@ -29,6 +29,7 @@ defmodule Glific.Flows.Webhooks.ErrorType do
     invalid_input: :config
   }
 
+  @doc "Map an error-type atom to its bucket (:config / :system), or nil if unrecognised."
   @spec class(t() | nil) :: :config | :system | nil
   def class(error_type), do: Map.get(@class, error_type)
 end

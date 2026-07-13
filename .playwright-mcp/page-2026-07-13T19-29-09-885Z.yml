@@ -1,0 +1,60 @@
+- generic [ref=e4]:
+  - navigation "navigation menus" [ref=e5]:
+    - generic [ref=e7]:
+      - generic [ref=e9]:
+        - heading [level=6] [ref=e10]:
+          - img "Glific" [ref=e11]
+        - button [ref=e12] [cursor=pointer]
+      - list [ref=e18]:
+        - generic [ref=e19]:
+          - link "Icon/Chat/Unselected Chats" [ref=e20] [cursor=pointer]:
+            - /url: /chat
+            - generic [ref=e21]:
+              - img "Icon/Chat/Unselected" [ref=e24]
+              - generic [ref=e26]: Chats
+          - heading [level=3] [ref=e29]:
+            - button [ref=e30] [cursor=pointer]:
+              - button "WhatsApp Groups" [ref=e32]
+          - heading [level=3] [ref=e43]:
+            - button [ref=e44] [cursor=pointer]:
+              - button "Flow Flows" [ref=e46]:
+                - generic [ref=e47]:
+                  - img "Flow" [ref=e50]
+                  - generic [ref=e55]: Flows
+          - heading [level=3] [ref=e60]:
+            - button [ref=e61] [cursor=pointer]:
+              - button "Icon/Speed send/Unselected Quick tools" [ref=e63]:
+                - generic [ref=e64]:
+                  - img "Icon/Speed send/Unselected" [ref=e67]
+                  - generic [ref=e70]: Quick tools
+          - link "Icon/Notification/Inactive Notifications" [ref=e73] [cursor=pointer]:
+            - /url: /notifications
+            - generic [ref=e74]:
+              - img "Icon/Notification/Inactive" [ref=e77]
+              - generic [ref=e80]: Notifications
+          - heading [level=3] [ref=e83]:
+            - button [ref=e84] [cursor=pointer]:
+              - button "AI toolkit" [ref=e86]
+          - heading [level=3] [ref=e99]:
+            - button [ref=e100] [cursor=pointer]:
+              - button "Manage" [ref=e102]
+        - separator [ref=e111]
+        - link "Help Resources" [ref=e112] [cursor=pointer]:
+          - /url: http://docs.glific.org
+          - img "Help" [ref=e115]
+          - generic [ref=e119]: Resources
+        - link "Discord Icon Discord" [ref=e123] [cursor=pointer]:
+          - /url: https://discord.gg/kyqsZAJEPK
+          - img "Discord Icon" [ref=e126]
+          - generic [ref=e129]: Discord
+      - generic [ref=e133]:
+        - button "Ask Glific" [ref=e134] [cursor=pointer]
+        - generic [ref=e137] [cursor=pointer]:
+          - separator [ref=e138]
+          - generic [ref=e145]:
+            - paragraph [ref=e146]: NGO Main Acc...
+            - generic [ref=e147]: "Last login: 7 days ago"
+  - main [ref=e150]:
+    - generic [ref=e152]:
+      - progressbar [ref=e154]
+      - heading "Loading..." [level=5] [ref=e157]

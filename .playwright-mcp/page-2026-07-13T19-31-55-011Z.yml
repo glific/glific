@@ -1,0 +1,386 @@
+- generic [ref=e4]:
+  - navigation "navigation menus" [ref=e5]:
+    - generic [ref=e7]:
+      - generic [ref=e9]:
+        - heading [level=6] [ref=e10]:
+          - img "Glific" [ref=e11]
+        - button [ref=e12] [cursor=pointer]
+      - generic "For any help, please contact the Glific team" [ref=e158]:
+        - generic [ref=e160]:
+          - img "Icon/Alert/White" [ref=e161]
+          - text: Verify Gupshup settings
+      - list [ref=e18]:
+        - generic [ref=e19]:
+          - link "Icon/Chat/Unselected Chats" [ref=e20] [cursor=pointer]:
+            - /url: /chat
+            - generic [ref=e21]:
+              - img "Icon/Chat/Unselected" [ref=e24]
+              - generic [ref=e26]: Chats
+          - heading [level=3] [ref=e29]:
+            - button [ref=e30] [cursor=pointer]:
+              - button "WhatsApp Groups" [ref=e32]
+          - heading [level=3] [ref=e43]:
+            - button [ref=e44] [cursor=pointer]:
+              - button "Flow Flows" [ref=e46]:
+                - generic [ref=e47]:
+                  - img "Flow" [ref=e50]
+                  - generic [ref=e55]: Flows
+          - heading [level=3] [ref=e60]:
+            - button [ref=e61] [cursor=pointer]:
+              - button "Icon/Speed send/Unselected Quick tools" [ref=e63]:
+                - generic [ref=e64]:
+                  - img "Icon/Speed send/Unselected" [ref=e67]
+                  - generic [ref=e70]: Quick tools
+          - link "Icon/Notification/Inactive 28 Notifications" [ref=e166] [cursor=pointer]:
+            - /url: /notifications
+            - generic [ref=e74]:
+              - generic [ref=e167]:
+                - img "Icon/Notification/Inactive" [ref=e168]
+                - generic [ref=e171]: "28"
+              - generic [ref=e80]: Notifications
+          - heading [level=3] [ref=e83]:
+            - button [ref=e84] [cursor=pointer]:
+              - button "AI toolkit" [ref=e86]
+          - heading [level=3] [ref=e99]:
+            - button [ref=e100] [cursor=pointer]:
+              - button "Manage" [ref=e102]
+        - separator [ref=e111]
+        - link "Help Resources" [ref=e112] [cursor=pointer]:
+          - /url: http://docs.glific.org
+          - img "Help" [ref=e115]
+          - generic [ref=e119]: Resources
+        - link "Discord Icon Discord" [ref=e123] [cursor=pointer]:
+          - /url: https://discord.gg/kyqsZAJEPK
+          - img "Discord Icon" [ref=e126]
+          - generic [ref=e129]: Discord
+      - generic [ref=e133]:
+        - button "Ask Glific" [ref=e134] [cursor=pointer]
+        - generic [ref=e137] [cursor=pointer]:
+          - separator [ref=e138]
+          - generic [ref=e145]:
+            - paragraph [ref=e146]: NGO Main Acc...
+            - generic [ref=e147]: "Last login: 7 days ago"
+  - main [ref=e150]:
+    - generic [ref=e151]:
+      - generic [ref=e173]:
+        - generic [ref=e175]:
+          - generic [ref=e179]:
+            - heading "Glific Simulator Five" [level=6] [ref=e182]
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188]: "Collections:"
+                - generic [ref=e189]: STARTED_AB
+              - generic [ref=e190]:
+                - generic [ref=e191]: "Time left:"
+                - generic [ref=e192]: 24 hrs
+          - generic [ref=e194]:
+            - generic [ref=e195]: Load more messages
+            - generic [ref=e197]:
+              - paragraph [ref=e199]: 06/07/26
+              - generic [ref=e201]:
+                - img "Icon/Dropdown" [ref=e203] [cursor=pointer]
+                - generic "06/07/26" [ref=e210]:
+                  - generic [ref=e212]:
+                    - generic [ref=e213]: draft:s
+                    - generic [ref=e215]: 18:14
+            - generic [ref=e217]:
+              - img "Icon/Dropdown" [ref=e219] [cursor=pointer]
+              - generic "06/07/26" [ref=e226]:
+                - generic [ref=e228]:
+                  - generic [ref=e229]: draft:s
+                  - generic [ref=e231]: 18:15
+            - generic [ref=e233]:
+              - img "Icon/Dropdown" [ref=e235] [cursor=pointer]
+              - generic "06/07/26" [ref=e242]:
+                - generic [ref=e244]:
+                  - generic [ref=e245]: draft:s
+                  - generic [ref=e247]: 18:16
+            - generic [ref=e248]:
+              - paragraph [ref=e250]: 13/07/26
+              - generic [ref=e252]:
+                - img "Icon/Dropdown" [ref=e254] [cursor=pointer]
+                - generic "13/07/26" [ref=e261]:
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: draft:s
+                    - generic [ref=e266]: 22:52
+            - generic [ref=e268]:
+              - img "Icon/Dropdown" [ref=e270] [cursor=pointer]
+              - generic "13/07/26" [ref=e277]:
+                - generic [ref=e279]:
+                  - generic [ref=e280]: what is the capital of india
+                  - generic [ref=e282]: 22:52
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - generic "13/07/26" [ref=e286]:
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: We are currently not in the office to respond to this message. Our working hours are typically Monday - Friday from 9:00 am - 6:00 pm. We will get back to you as soon as possible.As a reminder, we can only send you a message within 24 hours. If you have not heard from us by the next working day, please send us the message again. This will enable us to respond. You can use our automated help system to get more information and do our activities.
+                    - generic [ref=e292]: 22:52
+                - img "Icon/Dropdown" [ref=e294] [cursor=pointer]
+              - generic [ref=e300]: "Flow: Out of Office Workflow"
+            - generic [ref=e302]:
+              - img "Icon/Dropdown" [ref=e304] [cursor=pointer]
+              - generic "13/07/26" [ref=e311]:
+                - generic [ref=e313]:
+                  - generic [ref=e314]: draft:s
+                  - generic [ref=e316]: 22:52
+            - generic [ref=e318]:
+              - img "Icon/Dropdown" [ref=e320] [cursor=pointer]
+              - generic "13/07/26" [ref=e327]:
+                - generic [ref=e329]:
+                  - generic [ref=e330]: draft:s
+                  - generic [ref=e332]: 22:54
+            - generic [ref=e334]:
+              - img "Icon/Dropdown" [ref=e336] [cursor=pointer]
+              - generic "13/07/26" [ref=e343]:
+                - generic [ref=e345]:
+                  - generic [ref=e346]: draft:gp
+                  - generic [ref=e348]: 23:00
+            - generic [ref=e350]:
+              - img "Icon/Dropdown" [ref=e352] [cursor=pointer]
+              - generic "13/07/26" [ref=e359]:
+                - generic [ref=e361]:
+                  - generic [ref=e362]: what did a panda say to the tree
+                  - generic [ref=e364]: 23:00
+            - generic [ref=e365]:
+              - generic [ref=e366]:
+                - generic "13/07/26" [ref=e368]:
+                  - generic [ref=e370]:
+                    - generic [ref=e371]: "@results.result.message"
+                    - generic [ref=e373]: 23:00
+                - img "Icon/Dropdown" [ref=e375] [cursor=pointer]
+              - generic [ref=e381]: "Flow: gpt"
+            - generic [ref=e383]:
+              - img "Icon/Dropdown" [ref=e385] [cursor=pointer]
+              - generic "13/07/26" [ref=e392]:
+                - generic [ref=e394]:
+                  - generic [ref=e395]: draft:gp
+                  - generic [ref=e397]: 23:01
+            - generic [ref=e399]:
+              - img "Icon/Dropdown" [ref=e401] [cursor=pointer]
+              - generic "13/07/26" [ref=e408]:
+                - generic [ref=e410]:
+                  - generic [ref=e411]: draft:gp
+                  - generic [ref=e413]: 23:02
+            - generic [ref=e415]:
+              - img "Icon/Dropdown" [ref=e417] [cursor=pointer]
+              - generic "13/07/26" [ref=e424]:
+                - generic [ref=e426]:
+                  - generic [ref=e427]: what did a book say t the pen
+                  - generic [ref=e429]: 23:02
+            - generic [ref=e431]:
+              - img "Icon/Dropdown" [ref=e433] [cursor=pointer]
+              - generic "13/07/26" [ref=e440]:
+                - generic [ref=e442]:
+                  - generic [ref=e443]: draft:gp
+                  - generic [ref=e445]: 23:21
+            - generic [ref=e447]:
+              - img "Icon/Dropdown" [ref=e449] [cursor=pointer]
+              - generic "13/07/26" [ref=e456]:
+                - generic [ref=e458]:
+                  - generic [ref=e459]: what did he said to me
+                  - generic [ref=e461]: 23:22
+            - generic [ref=e463]:
+              - img "Icon/Dropdown" [ref=e465] [cursor=pointer]
+              - generic "13/07/26" [ref=e472]:
+                - generic [ref=e474]:
+                  - generic [ref=e475]: draft:gp
+                  - generic [ref=e477]: 23:42
+            - generic [ref=e479]:
+              - img "Icon/Dropdown" [ref=e481] [cursor=pointer]
+              - generic "13/07/26" [ref=e488]:
+                - generic [ref=e490]:
+                  - generic [ref=e491]: what did a man say to a women
+                  - generic [ref=e493]: 23:43
+            - generic [ref=e494]:
+              - paragraph [ref=e496]: 14/07/26
+              - generic [ref=e498]:
+                - img "Icon/Dropdown" [ref=e500] [cursor=pointer]
+                - generic "14/07/26" [ref=e507]:
+                  - generic [ref=e509]:
+                    - generic [ref=e510]: draft:gp
+                    - generic [ref=e512]: 00:24
+            - generic [ref=e514]:
+              - img "Icon/Dropdown" [ref=e516] [cursor=pointer]
+              - generic "14/07/26" [ref=e523]:
+                - generic [ref=e525]:
+                  - generic [ref=e526]: waht is this
+                  - generic [ref=e528]: 00:24
+          - generic [ref=e531]:
+            - button [ref=e532] [cursor=pointer]
+            - button "Icon/Attachment/Unselected" [ref=e536] [cursor=pointer]:
+              - img "Icon/Attachment/Unselected" [ref=e537]
+            - generic [ref=e542]:
+              - textbox [ref=e543]:
+                - paragraph [ref=e784]
+              - generic: Type a message...
+            - generic [ref=e545]:
+              - button "Icon/Mic/Inactive" [ref=e547] [cursor=pointer]:
+                - img "Icon/Mic/Inactive" [ref=e548]
+              - button "pick emoji" [ref=e554] [cursor=pointer]:
+                - img "pick emoji" [ref=e555]
+              - generic [ref=e558]:
+                - button "Icon/Send/Unselected" [disabled]:
+                  - img "Icon/Send/Unselected"
+        - generic [ref=e559]:
+          - generic [ref=e560]: Contacts
+          - tablist "chat tabs" [ref=e565]:
+            - tab "Contacts" [selected] [ref=e566] [cursor=pointer]
+            - tab "Collections" [ref=e567] [cursor=pointer]
+            - tab "Searches" [ref=e568] [cursor=pointer]
+          - generic [ref=e571]:
+            - generic [ref=e575]:
+              - img "Search" [ref=e576]
+              - generic [ref=e577]:
+                - textbox "Search" [ref=e578]
+                - button "toggle password visibility" [ref=e580] [cursor=pointer]
+            - generic [ref=e583]:
+              - generic [ref=e584]:
+                - generic [ref=e586] [cursor=pointer]:
+                  - text: All
+                  - generic [ref=e587]: (14)
+                - generic [ref=e589] [cursor=pointer]:
+                  - text: Unread
+                  - generic [ref=e590]: (2)
+                - generic [ref=e592] [cursor=pointer]:
+                  - text: Not replied
+                  - generic [ref=e593]: (5)
+              - button "more" [ref=e594] [cursor=pointer]
+            - list [ref=e600]:
+              - link "G Glific Simulator Fiv... waht is this 14/07/26 24 hrs" [active] [ref=e601] [cursor=pointer]:
+                - /url: /chat/6
+                - generic [ref=e602]: G
+                - generic [ref=e604]:
+                  - generic [ref=e605]: Glific Simulator Fiv...
+                  - generic [ref=e606]: waht is this
+                - generic [ref=e607]:
+                  - generic [ref=e608]: 14/07/26
+                  - generic [ref=e609]: 24 hrs
+              - link "G Glific Simulator One Paris 08/07/26 0 hrs" [ref=e612] [cursor=pointer]:
+                - /url: /chat/2
+                - generic [ref=e613]: G
+                - generic [ref=e615]:
+                  - generic [ref=e616]: Glific Simulator One
+                  - generic [ref=e617]: Paris
+                - generic [ref=e618]:
+                  - generic [ref=e619]: 08/07/26
+                  - generic [ref=e620]: 0 hrs
+              - link "C Chrissy Cron There is nothing either good or bad... 18/06/26 0 hrs" [ref=e623] [cursor=pointer]:
+                - /url: /chat/11
+                - generic [ref=e624]: C
+                - generic [ref=e626]:
+                  - generic [ref=e627]: Chrissy Cron
+                  - generic [ref=e628]: There is nothing either good or bad...
+                - generic [ref=e629]:
+                  - generic [ref=e630]: 18/06/26
+                  - generic [ref=e631]: 0 hrs
+              - 'link "M Margarita Quinteros This above all: to thine own self b... 18/06/26 0 hrs" [ref=e634] [cursor=pointer]':
+                - /url: /chat/10
+                - generic [ref=e635]: M
+                - generic [ref=e637]:
+                  - generic [ref=e638]: Margarita Quinteros
+                  - generic [ref=e639]: "This above all: to thine own self b..."
+                - generic [ref=e640]:
+                  - generic [ref=e641]: 18/06/26
+                  - generic [ref=e642]: 0 hrs
+              - link "A Adelle Cavin Though this be madness, yet there i... 18/06/26 0 hrs" [ref=e645] [cursor=pointer]:
+                - /url: /chat/9
+                - generic [ref=e646]: A
+                - generic [ref=e650]:
+                  - generic [ref=e651]: Adelle Cavin
+                  - generic [ref=e652]: Though this be madness, yet there i...
+                - generic [ref=e653]:
+                  - generic [ref=e654]: 18/06/26
+                  - generic [ref=e655]: 0 hrs
+              - link "D Default receiver hola 18/06/26 0 hrs" [ref=e658] [cursor=pointer]:
+                - /url: /chat/8
+                - generic [ref=e659]: D
+                - generic [ref=e663]:
+                  - generic [ref=e664]: Default receiver
+                  - generic [ref=e665]: hola
+                - generic [ref=e666]:
+                  - generic [ref=e667]: 18/06/26
+                  - generic [ref=e668]: 0 hrs
+              - link "N NGO Person who left Default Group message body 18/06/26 User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e671] [cursor=pointer]:
+                - /url: /chat/15
+                - generic [ref=e672]: "N"
+                - generic [ref=e674]:
+                  - generic [ref=e675]: NGO Person who left
+                  - generic [ref=e676]: Default Group message body
+                - generic [ref=e677]:
+                  - generic [ref=e678]: 18/06/26
+                  - generic "User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e680]:
+                    - img "Opted Out" [ref=e681]
+              - link "N NGO Admin Default Group message body 18/06/26 User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e685] [cursor=pointer]:
+                - /url: /chat/14
+                - generic [ref=e686]: "N"
+                - generic [ref=e688]:
+                  - generic [ref=e689]: NGO Admin
+                  - generic [ref=e690]: Default Group message body
+                - generic [ref=e691]:
+                  - generic [ref=e692]: 18/06/26
+                  - generic "User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e694]:
+                    - img "Opted Out" [ref=e695]
+              - link "N NGO Manager Default Group message body 18/06/26 User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e699] [cursor=pointer]:
+                - /url: /chat/13
+                - generic [ref=e700]: "N"
+                - generic [ref=e702]:
+                  - generic [ref=e703]: NGO Manager
+                  - generic [ref=e704]: Default Group message body
+                - generic [ref=e705]:
+                  - generic [ref=e706]: 18/06/26
+                  - generic "User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e708]:
+                    - img "Opted Out" [ref=e709]
+              - link "N NGO Staff Default Group message body 18/06/26 User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e713] [cursor=pointer]:
+                - /url: /chat/12
+                - generic [ref=e714]: "N"
+                - generic [ref=e716]:
+                  - generic [ref=e717]: NGO Staff
+                  - generic [ref=e718]: Default Group message body
+                - generic [ref=e719]:
+                  - generic [ref=e720]: 18/06/26
+                  - generic "User has not opted in to your number. You can only send message them when they initiate the conversation." [ref=e722]:
+                    - img "Opted Out" [ref=e723]
+              - link "S SaaS Admin STARTED_AB message body 18/06/26 0 hrs" [ref=e727] [cursor=pointer]:
+                - /url: /chat/7
+                - generic [ref=e728]: S
+                - generic [ref=e730]:
+                  - generic [ref=e731]: SaaS Admin
+                  - generic [ref=e732]: STARTED_AB message body
+                - generic [ref=e733]:
+                  - generic [ref=e734]: 18/06/26
+                  - generic [ref=e735]: 0 hrs
+              - link "G Glific Simulator Fou... STARTED_AB message body 18/06/26 0 hrs" [ref=e738] [cursor=pointer]:
+                - /url: /chat/5
+                - generic [ref=e739]: G
+                - generic [ref=e741]:
+                  - generic [ref=e742]: Glific Simulator Fou...
+                  - generic [ref=e743]: STARTED_AB message body
+                - generic [ref=e744]:
+                  - generic [ref=e745]: 18/06/26
+                  - generic [ref=e746]: 0 hrs
+              - link "G Glific Simulator Thr... STARTED_AB message body 18/06/26 0 hrs" [ref=e749] [cursor=pointer]:
+                - /url: /chat/4
+                - generic [ref=e750]: G
+                - generic [ref=e752]:
+                  - generic [ref=e753]: Glific Simulator Thr...
+                  - generic [ref=e754]: STARTED_AB message body
+                - generic [ref=e755]:
+                  - generic [ref=e756]: 18/06/26
+                  - generic [ref=e757]: 0 hrs
+              - link "G Glific Simulator Two STARTED_AB message body 18/06/26 0 hrs" [ref=e760] [cursor=pointer]:
+                - /url: /chat/3
+                - generic [ref=e761]: G
+                - generic [ref=e763]:
+                  - generic [ref=e764]: Glific Simulator Two
+                  - generic [ref=e765]: STARTED_AB message body
+                - generic [ref=e766]:
+                  - generic [ref=e767]: 18/06/26
+                  - generic [ref=e768]: 0 hrs
+              - link "N NGO Main Account 14/07/26 0 hrs" [ref=e771] [cursor=pointer]:
+                - /url: /chat/1
+                - generic [ref=e772]: "N"
+                - generic [ref=e774]: NGO Main Account
+                - generic [ref=e776]:
+                  - generic [ref=e777]: 14/07/26
+                  - generic [ref=e778]: 0 hrs
+      - button "ask glific" [ref=e781] [cursor=pointer]

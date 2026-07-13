@@ -26,6 +26,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
           optional(:error_type) => String.t() | nil
         }
 
+  @doc "Wrap a webhook `call/2` with failure reporting + latency telemetry; re-raises exceptions."
   @spec around(module(), map(), (-> any())) :: any()
   def around(module, ctx, fun) when is_atom(module) and is_map(ctx) and is_function(fun, 0) do
     webhook_name = module.name()
@@ -104,6 +105,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
+  # A 3-tuple that violates the typed contract (non-atom type / non-binary message) still routed
+  # the flow to Failure — report it as :unknown so it isn't counted-but-invisible to on-call.
+  defp report_sync_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
+    ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
+  end
+
   defp report_sync_failure(_non_failure, _webhook_name, _ctx), do: :ok
 
   @spec failure_tags(String.t(), map()) :: map()
@@ -115,6 +122,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # self-classify the way a sync `call/2` does. `CallbackClassifier` infers the ErrorType from
   # the response and `ErrorReporter` routes it — `:config` → `flow_webhook_config_errors`,
   # everything else → `flow_webhooks` — the same path the sync nodes use.
+  @doc "Report a Kaapi callback that arrived with `success` not true."
   @spec report_callback_failure(map(), map()) :: :ok
   def report_callback_failure(%{"success" => success} = result, response)
       when success != true do
@@ -139,6 +147,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     }
   end
 
+  @doc "Report an async webhook whose await window expired without a callback."
   @spec report_timeout(map()) :: :ok
   def report_timeout(tags) when is_map(tags) do
     webhook_name = Map.get(tags, :webhook_name) || "unknown"
@@ -147,6 +156,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     |> Glific.log_exception(namespace: "flow_webhooks", tags: tags)
   end
 
+  @doc "Report a callback that validated but could not resume the parked flow."
   @spec report_resume_failure(map(), any()) :: :ok
   def report_resume_failure(response, reason) do
     %Errors.SystemError{message: "Webhook resume failure"}
@@ -163,6 +173,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
+  @doc "Report a webhook failure surfaced outside the dispatcher's automatic path."
   @spec report_failure(String.t(), tags()) :: :ok
   def report_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
     %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
@@ -172,6 +183,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
+  @doc "Record callback-phase telemetry for an async webhook (count, latency, failure)."
   @spec record_callback_outcome(map(), map()) :: :ok
   def record_callback_outcome(result, response) do
     status = if result["success"], do: "success", else: "failure"
@@ -180,6 +192,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     report_callback_failure(result, response)
   end
 
+  @doc "Increment the success/failure counter for a flow-webhook node outcome."
   @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
   def track_webhook_count(webhook_name, status) do
     Appsignal.increment_counter("flow_webhook_count", 1, %{
@@ -190,6 +203,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     :ok
   end
 
+  @doc "Record a flow-webhook node execution latency as an AppSignal distribution."
   @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
   def track_webhook_latency(webhook_name, status, duration_ms) do
     Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{

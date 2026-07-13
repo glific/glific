@@ -9,6 +9,7 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
 
   alias Glific.Flows.Webhooks.{Instrumentation, Registry, ResultTranslator}
 
+  @doc "Dispatch a registered webhook by name with the parsed fields (+ optional headers)."
   @spec dispatch(String.t(), map(), keyword() | list()) :: any()
   def dispatch(name, fields, headers \\ []) when is_binary(name) and is_map(fields) do
     module = Registry.lookup!(name)

@@ -11,6 +11,7 @@ defmodule Glific.Flows.Webhooks.ErrorReporter do
 
   @type class :: :config | :system
 
+  @doc "Report a typed sync failure to AppSignal, routed by its class (fail-safe: system)."
   @spec report(ErrorType.t(), String.t(), map()) :: :ok
   def report(error_type, message, tags) do
     class = ErrorType.class(error_type) || :system
