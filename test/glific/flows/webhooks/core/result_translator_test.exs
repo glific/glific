@@ -41,17 +41,31 @@ defmodule Glific.Flows.Webhooks.Core.ResultTranslatorTest do
       assert result.country == "India"
     end
 
-    test "{:error, message} returns the error string directly" do
-      result = ResultTranslator.to_legacy_structure({:error, "No address found"}, Geolocation)
+    test "{:error, error_type, message} returns the error string directly" do
+      result =
+        ResultTranslator.to_legacy_structure(
+          {:error, :invalid_geocoding, "No address found"},
+          Geolocation
+        )
 
       assert result == "No address found"
     end
 
-    test "{:error, message} is a plain string (not a map)" do
-      result = ResultTranslator.to_legacy_structure({:error, "some error"}, Geolocation)
+    test "a typed error is a plain string (not a map)" do
+      result = ResultTranslator.to_legacy_structure({:error, :unknown, "some error"}, Geolocation)
 
       refute is_map(result)
       assert is_binary(result)
+    end
+
+    test "{:error, error_type, message} drops the type and returns the message string" do
+      result =
+        ResultTranslator.to_legacy_structure(
+          {:error, :invalid_geocoding, "No address found"},
+          Geolocation
+        )
+
+      assert result == "No address found"
     end
   end
 
@@ -85,18 +99,17 @@ defmodule Glific.Flows.Webhooks.Core.ResultTranslatorTest do
       assert result.city == "Mumbai"
     end
 
-    test "{:error, ...} with unknown module still returns the string" do
-      result = ResultTranslator.to_legacy_structure({:error, "oops"}, StubWebhook)
+    test "a typed error with an unknown module still returns the string" do
+      result = ResultTranslator.to_legacy_structure({:error, :unknown, "oops"}, StubWebhook)
       assert result == "oops"
     end
   end
 
   describe "to_legacy_structure/2 with unknown module (no custom encoder)" do
-    test "unknown module with plain map {:ok, map} returns map with success: true" do
+    test "unknown module with a plain map {:ok, map} passes the map through unchanged" do
       result = ResultTranslator.to_legacy_structure({:ok, %{foo: "bar"}}, __MODULE__)
 
-      assert is_map(result)
-      assert result.success == true
+      assert result == %{foo: "bar"}
     end
 
     test "unknown module with scalar {:ok, value} returns map with success: true" do
