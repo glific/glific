@@ -57,10 +57,6 @@ defmodule Glific.Flows.Webhooks.Core.KaapiCallbackClassifierTest do
                :invalid_input
     end
 
-    test "an atom :reason key is read (not only the string key)" do
-      assert KaapiCallbackClassifier.classify(%{reason: "denied. Status: 403"}) == :invalid_input
-    end
-
     test "a string http_status is normalised (4xx stays config)" do
       assert KaapiCallbackClassifier.classify(%{"http_status" => "404"}) == :invalid_input
     end

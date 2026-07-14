@@ -66,11 +66,11 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
 
   defp to_status(_status), do: nil
 
-  # A binary reason/error, else "" (a non-binary reason can't feed a regex → system fail-safe).
+  # The Kaapi callback is JSON, so the reason lives under a string key — `"reason"` or (some
+  # failures) `"error"`. A non-binary/absent reason → "" (which can't feed a regex → system).
   @spec to_reason(map()) :: String.t()
   defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
   defp to_reason(%{"error" => error}) when is_binary(error), do: error
-  defp to_reason(%{reason: reason}) when is_binary(reason), do: reason
   defp to_reason(_result), do: ""
 
   @spec provider_status(String.t()) :: integer() | nil
