@@ -5,12 +5,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
   `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`). Async nodes self-classify their
   dispatch failure via an `error_type` on the `%{success: false}` ack; their later callback
-  failure (an opaque Kaapi string) is classified by `CallbackClassifier`. Both route through
+  failure (an opaque Kaapi string) is classified by `KaapiCallbackClassifier`. Both route through
   `ErrorReporter`. The resume/timeout paths report `Errors.{SystemError, TimeoutError}` under
   `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.{CallbackClassifier, ErrorReporter, Errors, ErrorType}
+  alias Glific.Flows.Webhooks.{KaapiCallbackClassifier, ErrorReporter, Errors, ErrorType}
   alias Glific.SafeLog
 
   require Logger
@@ -119,7 +119,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   # An async failure surfaces at callback time as an opaque Kaapi string, so the node can't
-  # self-classify the way a sync `call/2` does. `CallbackClassifier` infers the ErrorType from
+  # self-classify the way a sync `call/2` does. `KaapiCallbackClassifier` infers the ErrorType from
   # the response and `ErrorReporter` routes it — `:config` → `flow_webhook_config_errors`,
   # everything else → `flow_webhooks` — the same path the sync nodes use.
   @doc "Report a Kaapi callback that arrived with `success` not true."
@@ -130,7 +130,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
     result
-    |> CallbackClassifier.classify()
+    |> KaapiCallbackClassifier.classify()
     |> ErrorReporter.report(reason, callback_tags(response))
   end
 

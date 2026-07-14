@@ -1,4 +1,4 @@
-defmodule Glific.Flows.Webhooks.CallbackClassifier do
+defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
   @moduledoc """
   Classifies an async Kaapi callback failure into an `ErrorType.t()` so the shared
   `ErrorReporter` can route it — `:config` failures to `flow_webhook_config_errors` (notify
