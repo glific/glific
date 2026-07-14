@@ -127,7 +127,6 @@ defmodule Glific.Flows.Webhooks.Kaapi do
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)
     else
-      # A config assistant error self-classifies; the immediate Kaapi HTTP failure is system.
       {:error, error_type, reason} when is_atom(error_type) ->
         %{success: false, reason: reason, error_type: error_type}
 

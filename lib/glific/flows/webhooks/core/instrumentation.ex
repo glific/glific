@@ -118,10 +118,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     %{webhook_name: webhook_name, organization_id: Map.get(ctx, :organization_id)}
   end
 
-  # An async failure surfaces at callback time as an opaque Kaapi string, so the node can't
-  # self-classify the way a sync `call/2` does. `KaapiCallbackClassifier` infers the ErrorType from
-  # the response and `ErrorReporter` routes it — `:config` → `flow_webhook_config_errors`,
-  # everything else → `flow_webhooks` — the same path the sync nodes use.
+  # An async callback failure is an opaque Kaapi string, so `KaapiCallbackClassifier` infers the
+  # ErrorType (the node can't self-classify here) and `ErrorReporter` routes it like the sync path.
   @doc "Report a Kaapi callback that arrived with `success` not true."
   @spec report_callback_failure(map(), map()) :: :ok
   def report_callback_failure(%{"success" => success} = result, response)
@@ -238,9 +236,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp track_kaapi_latency(_response, _status), do: :ok
 
-  # Async dispatch-failure (immediate `%{success: false}` / nil ack, before any callback). The
-  # node self-classifies via an `error_type` on the ack (like a sync node); `ErrorReporter` routes
-  # it config/system. An untyped ack fails safe to `:unknown` (→ system).
+  # Async dispatch-failure (before any callback): the node self-classifies via an `error_type` on
+  # the ack (untyped → `:unknown`/system), routed by `ErrorReporter` like the sync path.
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
   defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     {status, reason} = extract_status_and_reason(result)
@@ -264,8 +261,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
 
-  # The async node's self-classified error_type off its `%{success: false}` ack, or `:unknown`
-  # (→ system) when the node didn't name one.
   @spec dispatch_error_type(map()) :: ErrorType.t()
   defp dispatch_error_type(%{error_type: error_type}) when is_atom(error_type), do: error_type
   defp dispatch_error_type(_result), do: :unknown

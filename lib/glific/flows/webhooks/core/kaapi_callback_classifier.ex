@@ -52,9 +52,7 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
 
   def classify(_result), do: :unknown
 
-  # The reason for classification: a binary reason/error, else "" (a non-binary reason can't
-  # feed a regex). We only match patterns/codes, so an empty string simply falls through to the
-  # system fail-safe.
+  # A binary reason/error, else "" (a non-binary reason can't feed a regex → system fail-safe).
   @spec to_reason(map()) :: String.t()
   defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
   defp to_reason(%{"error" => error}) when is_binary(error), do: error
