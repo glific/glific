@@ -44,7 +44,6 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
         output_language: fields["output_language"]
       }
 
-      Glific.Metrics.increment("Kaapi STT Call", organization_id)
       Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
     else
       {:snooze, _seconds} = snooze -> snooze
