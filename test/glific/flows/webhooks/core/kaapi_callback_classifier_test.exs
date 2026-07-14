@@ -57,6 +57,10 @@ defmodule Glific.Flows.Webhooks.Core.KaapiCallbackClassifierTest do
                :invalid_input
     end
 
+    test "an atom :reason key is read (not only the string key)" do
+      assert KaapiCallbackClassifier.classify(%{reason: "denied. Status: 403"}) == :invalid_input
+    end
+
     test "a statusless, unrecognised reason fails safe to system" do
       result = %{"reason" => "[GEMINI] STT response is missing transcribed text"}
       assert KaapiCallbackClassifier.classify(result) == :unknown

@@ -227,6 +227,16 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.reason == "Media URL is invalid"
     end
 
+    test "a nil async ack fails safe to system (error_type unknown)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn -> nil end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+
     test "an exception reports SystemError and reraises" do
       {exception, _tags} =
         capture_appsignal(fn ->

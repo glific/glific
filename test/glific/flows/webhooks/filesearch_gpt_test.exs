@@ -352,6 +352,22 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       assert result[:reason] =~ "Assistant is still being set up"
       assert result[:error_type] == :invalid_input
     end
+
+    test "returns :invalid_input when no active config version is linked" do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "No Active Config",
+          organization_id: 1,
+          kaapi_uuid: "kaapi_uuid_present"
+        })
+        |> Repo.insert()
+
+      result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+      assert result[:success] == false
+      assert result[:reason] =~ "No active config version"
+      assert result[:error_type] == :invalid_input
+    end
   end
 
   describe "filesearch-gpt dispatch — Kaapi failure result" do
@@ -371,6 +387,14 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       Tesla.Mock.mock(fn
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
+
+      result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+      assert result.success == false
+      assert result.error_type == :unknown
+    end
+
+    test "returns :unknown on a Kaapi transport error", %{assistant: assistant} do
+      Tesla.Mock.mock(fn %{method: :post} -> {:error, :econnrefused} end)
 
       result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
       assert result.success == false

@@ -52,6 +52,31 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
 
       assert %{success: false, error_type: :invalid_media_url} = SpeechToText.call(fields, %{})
     end
+
+    test "filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :unknown (system)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "question" => "hi",
+        "assistant_id" => "asst_x"
+      }
+
+      assert %{success: false, error_type: :unknown, reason: "Kaapi is not active"} =
+               FilesearchGpt.call(fields, %{})
+    end
+
+    test "voice_filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :unknown (system)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://x.test/a.ogg"
+      }
+
+      assert %{success: false, error_type: :unknown, reason: "Kaapi is not active"} =
+               VoiceFilesearchGpt.call(fields, %{})
+    end
   end
 
   describe "Kaapi.validate_media/1" do
