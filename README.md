@@ -161,6 +161,14 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
  [Oban](https://getoban.pro) is a job processing library for Elixir. It supports features like background jobs and scheduled tasks (cron-style).
  Oban is **required** before running mix for Glific to operate.
 
+ Glific's default config uses **Oban Pro** (a paid add-on). An **Oban Pro key is NOT mandatory
+ for open-source contributors** — Glific also runs on the free, open-source version of Oban. Pick
+ one of the paths below:
+
+ - **Have / can get an Oban Pro key** → follow *For contributors on social impact projects* below.
+ - **No key (free Oban)** → skip the key entirely and follow
+   [*Running Glific with free (open-source) Oban*](#running-glific-with-free-open-source-oban) below.
+
  **For contributors on social impact projects (including NGOs):**
 
   Please get in touch with the team on Discord and request a limited-time Oban Pro key.
@@ -169,8 +177,67 @@ Gupshup is a messaging platform that enables bots and businesses to communicate 
   mix hex.repo add oban https://getoban.pro/repo --fetch-public-key SHA256:4/abc/edf/gef+aIWPc --auth-key abcdefghi
    ```
 
- **For others, if you want to use the free Oban solution**
- People have contributed code changes to allow Glific to work with the free version of Oban. You can view the details here: https://github.com/glific/glific/pull/2391
+#### Running Glific with free (open-source) Oban
+
+ You can run Glific locally **without an Oban Pro key** by switching the Pro engine and plugins to
+ their free, open-source equivalents. The only paid dependency is `oban_pro` (pulled from Oban's
+ private `oban` hex repo); `oban`, `oban_web`, and `oban_met` are all open source on hex.pm.
+
+ Make the following **local changes** (treat them as a personal workaround — do **not** commit
+ them, as production still uses Oban Pro):
+
+ 1. **`mix.exs`** — comment out the `oban_pro` dependency (the only one from the private repo):
+
+    ```elixir
+    # {:oban_pro, "~> 1.5", repo: "oban", only: @oban_envs},
+    ```
+
+    Leave `:oban` and `:oban_web` as-is — they install from public hex.
+
+ 2. **`config/config.exs`** — replace the Pro engine and Pro plugins with the free ones. Change
+    the `oban_engine`/`oban_plugins`/`config :glific, Oban` block to:
+
+    ```elixir
+    # oban_engine = Oban.Pro.Engines.Smart   # Pro-only; the free Oban.Engines.Basic is the default
+
+    oban_plugins = [
+      # Prune jobs after 5 mins, gives us some time to go investigate if needed
+      {Oban.Plugins.Pruner, max_age: 5 * 60, limit: 25_000},
+      {Oban.Plugins.Cron, crontab: oban_crontab},
+      Oban.Plugins.Lifeline
+      # Oban.Pro.Plugins.DynamicPrioritizer has no free equivalent — omit it
+    ]
+
+    config :glific, Oban,
+      prefix: "global",
+      repo: Glific.Repo,
+      # engine: oban_engine,   # omit -> falls back to the free Oban.Engines.Basic
+      queues: oban_queues,
+      plugins: oban_plugins,
+      shutdown_grace_period: :timer.seconds(60)
+    ```
+
+    Mapping of Pro → free plugins: `Oban.Pro.Plugins.DynamicPruner` → `Oban.Plugins.Pruner`,
+    `Oban.Pro.Plugins.DynamicLifeline` → `Oban.Plugins.Lifeline`,
+    `Oban.Pro.Plugins.DynamicPrioritizer` → no free equivalent (drop it).
+    `Oban.Plugins.Cron` is already free, so it stays.
+
+ 3. **Drop the Pro lock entry and fetch deps** (run from `glific_backend`):
+
+    ```bash
+    mix deps.unlock oban_pro
+    mix deps.get
+    ```
+
+ 4. Continue with `mix setup` as usual.
+
+ No router change is needed — `GlificWeb.InjectOban` only mounts the `/oban` dashboard when
+ `Oban.Web` is available, so the app boots cleanly either way. The dashboard at `/oban` still
+ works on free Oban (Oban Web is open source).
+
+ > Historical reference: the original community change that enabled free Oban is
+ > [PR #2391](https://github.com/glific/glific/pull/2391). The steps above are the up-to-date
+ > equivalent for the current config.
 
  **For production use:**
 
