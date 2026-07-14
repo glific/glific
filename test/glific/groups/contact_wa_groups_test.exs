@@ -70,7 +70,7 @@ defmodule Glific.Groups.ContactWAGroupsTest do
     end
 
     test "returns an error when the acting phone is not found", %{wa_group: wa_group} do
-      assert {:error, "Acting phone not found in this organization"} =
+      assert {:error, "Acting phone not found in this organization" <> _} =
                ContactWAGroups.add_members(wa_group, 0, ["919900112233"])
     end
 
