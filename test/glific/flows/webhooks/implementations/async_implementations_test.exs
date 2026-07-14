@@ -7,7 +7,10 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
   """
   use Glific.DataCase, async: false
 
+  import Mock
+
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
+  alias Glific.ThirdParty.Kaapi, as: ThirdPartyKaapi
 
   alias Glific.Flows.Webhooks.{
     ErrorType,
@@ -79,6 +82,46 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
 
       assert %{success: false, error_type: :missing_api_key, reason: "Kaapi is not active"} =
                VoiceFilesearchGpt.call(fields, %{})
+    end
+
+    # A creds row present but with no usable api_key fails the `when is_binary(api_key)` guard
+    # and hits the catch-all: it is NOT "Kaapi is not active", so it fails safe to a generic
+    # :unknown rather than claiming a specific cause.
+    test "filesearch_gpt fails safe to :unknown when the creds carry no api_key" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "question" => "hi",
+        "assistant_id" => "asst_x"
+      }
+
+      with_mock ThirdPartyKaapi, [:passthrough], fetch_kaapi_creds: fn _ -> {:ok, %{}} end do
+        assert %{
+                 success: false,
+                 error_type: :unknown,
+                 reason: "Unexpected Kaapi dispatch failure"
+               } =
+                 FilesearchGpt.call(fields, %{})
+      end
+    end
+
+    test "voice_filesearch_gpt fails safe to :unknown when the creds carry no api_key" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://x.test/a.ogg"
+      }
+
+      with_mock ThirdPartyKaapi, [:passthrough], fetch_kaapi_creds: fn _ -> {:ok, %{}} end do
+        assert %{
+                 success: false,
+                 error_type: :unknown,
+                 reason: "Unexpected Kaapi dispatch failure"
+               } =
+                 VoiceFilesearchGpt.call(fields, %{})
+      end
     end
   end
 

@@ -42,14 +42,15 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       {:error, error_type, reason} when is_atom(error_type) ->
         %{success: false, reason: reason, error_type: error_type}
 
-      # The only untyped failures reaching here are from fetch_kaapi_creds — an unconfigured
-      # org ({:error, binary}) or creds without a usable api_key ({:ok, map} → catch-all) — a
-      # provisioning gap, not an unjudgeable error, so name it :missing_api_key (→ system).
+      # An unconfigured org: fetch_kaapi_creds returns {:error, "Kaapi is not active"} — a
+      # provisioning gap, so name it :missing_api_key (→ system) rather than leave it unjudged.
       {:error, reason} when is_binary(reason) ->
         %{success: false, reason: reason, error_type: :missing_api_key}
 
+      # Any other shape (e.g. a creds row carrying no usable api_key) is genuinely unexpected —
+      # fail safe to a generic system error instead of guessing a specific cause.
       _ ->
-        %{success: false, reason: "Kaapi is not active", error_type: :missing_api_key}
+        %{success: false, reason: "Unexpected Kaapi dispatch failure", error_type: :unknown}
     end
   end
 
