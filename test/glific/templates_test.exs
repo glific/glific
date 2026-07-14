@@ -547,6 +547,44 @@ defmodule Glific.TemplatesTest do
       assert session_template.label == "My Custom Title"
     end
 
+    test "create_session_template/1 for HSM with blank label and a non-existent language_id returns an error instead of raising",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: 999_999_999,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message_invalid_language",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error, ["language_id", "does not exist"]} =
+               Templates.create_session_template(attrs)
+    end
+
+    test "create_session_template/1 for HSM with blank label and no shortcode falls back to the incomplete-data error",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language_fixture().id,
+        is_hsm: true,
+        type: :text,
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "HSM approval",
+                "for HSM approval shortcode, category and example fields are required"
+              ]} = Templates.create_session_template(attrs)
+    end
+
     test "create_session_template/1 for HSM data with image url, should submit it for approval",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"

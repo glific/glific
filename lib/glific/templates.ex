@@ -147,12 +147,7 @@ defmodule Glific.Templates do
         do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
         else: attrs
 
-    # callers that don't have their own title UI (e.g. HSMV2) send an empty label and
-    # expect us to name it; callers that already collect a title (e.g. the older HSM
-    # page) keep full control of their label, so we only fill it in when it's blank.
-    # Deriving from shortcode + language also means a language-specific submission that
-    # gets rejected by Meta can be resubmitted under the same shortcode+language without
-    # hitting the [:label, :language_id, :organization_id] unique constraint.
+    # derive a label from shortcode + language when the caller sends a blank one (e.g. HSMV2)
     with {:ok, label} <- resolve_label(attrs),
          attrs <- Map.put(attrs, :label, label),
          :ok <- validate_hsm(attrs),
