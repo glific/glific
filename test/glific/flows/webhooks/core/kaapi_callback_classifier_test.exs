@@ -1,7 +1,7 @@
 defmodule Glific.Flows.Webhooks.Core.KaapiCallbackClassifierTest do
   use ExUnit.Case, async: true
 
-  alias Glific.Flows.Webhooks.{KaapiCallbackClassifier, ErrorType}
+  alias Glific.Flows.Webhooks.{ErrorType, KaapiCallbackClassifier}
 
   describe "classify/1" do
     test "a nested http_status 4xx (except 408/429) is a config error" do

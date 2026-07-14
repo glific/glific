@@ -10,7 +10,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.{KaapiCallbackClassifier, ErrorReporter, Errors, ErrorType}
+  alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType, KaapiCallbackClassifier}
   alias Glific.SafeLog
 
   require Logger

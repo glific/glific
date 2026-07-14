@@ -763,15 +763,15 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end)
 
       assert %SystemError{} = exception
-      assert Exception.message(exception) == "Webhook callback failure"
+      assert Exception.message(exception) == "Webhook system_error from voice-filesearch-gpt"
       assert tags.organization_id == organization_id
       assert tags.webhook_name == "voice-filesearch-gpt"
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
-      # The async callback path passes the callback's own structured error_type straight through
-      # to the tag (config/system classification for async is a separate, later change).
-      assert tags.error_type == "timeout"
+      # The async callback is classified by KaapiCallbackClassifier from status/reason; a
+      # statusless "timed out" reason is unjudgeable → :unknown (system).
+      assert tags.error_type == "unknown"
       assert tags.reason == "LLM provider timed out"
     end
 
