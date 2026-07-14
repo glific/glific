@@ -414,33 +414,41 @@ defmodule Glific.Partners do
     # The status transition is recorded in the same transaction as the org update so a
     # transition can never be applied without its history entry (and vice-versa), and
     # concurrent updates to the same org are serialized rather than dropped/duplicated.
-    Repo.transaction(fn ->
-      organization
-      |> Organization.changeset(attrs)
-      |> Repo.update(skip_organization_id: true)
-      |> case do
-        {:ok, updated_organization} ->
-          record_status_transition(organization, updated_organization, attrs)
-
-          # pin both new contact and optin flow id
-          maybe_pin_flow(
-            updated_organization.newcontact_flow_id,
-            organization.newcontact_flow_id,
-            updated_organization
-          )
-
-          maybe_pin_flow(
-            updated_organization.optin_flow_id,
-            organization.optin_flow_id,
-            updated_organization
-          )
-
-          updated_organization
-
-        {:error, changeset} ->
-          Repo.rollback(changeset)
-      end
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(
+      :organization,
+      Organization.changeset(organization, attrs),
+      skip_organization_id: true
+    )
+    |> Ecto.Multi.run(:status_history, fn _repo, %{organization: updated_organization} ->
+      record_status_transition(organization, updated_organization, attrs)
     end)
+    |> Ecto.Multi.run(:pin_flows, fn _repo, %{organization: updated_organization} ->
+      pin_flows(organization, updated_organization)
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{organization: updated_organization}} -> {:ok, updated_organization}
+      {:error, _failed_step, changeset, _changes_so_far} -> {:error, changeset}
+    end
+  end
+
+  # Pins/unpins the new-contact and optin flows when they change on an org update.
+  @spec pin_flows(Organization.t(), Organization.t()) :: {:ok, Organization.t()}
+  defp pin_flows(organization, updated_organization) do
+    maybe_pin_flow(
+      updated_organization.newcontact_flow_id,
+      organization.newcontact_flow_id,
+      updated_organization
+    )
+
+    maybe_pin_flow(
+      updated_organization.optin_flow_id,
+      organization.optin_flow_id,
+      updated_organization
+    )
+
+    {:ok, updated_organization}
   end
 
   # Records an append-only status-transition history entry when — and only when — the
