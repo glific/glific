@@ -28,10 +28,14 @@ defmodule Glific.Flows.Webhooks.Core.ErrorTypeTest do
   end
 
   describe "from_http_status/1" do
-    test "a 408/429 is an upstream blip → :rate_limited (system)" do
-      assert ErrorType.from_http_status(408) == :rate_limited
+    test "a 429 is a rate-limit blip → :rate_limited (system)" do
       assert ErrorType.from_http_status(429) == :rate_limited
       assert ErrorType.class(:rate_limited) == :system
+    end
+
+    test "a 408 request timeout is a transient upstream stall → :service_unavailable (system)" do
+      assert ErrorType.from_http_status(408) == :service_unavailable
+      assert ErrorType.class(:service_unavailable) == :system
     end
 
     test "any other 4xx is a rejected request → :invalid_input (config)" do

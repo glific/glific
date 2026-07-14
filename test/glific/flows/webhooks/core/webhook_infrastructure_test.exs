@@ -432,9 +432,10 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         "reason" => "OpenAI bad request (code: 400): Invalid 'conversation.id'"
       }
 
+      # The node classifies (StubAsyncWebhook.classify delegates to KaapiSupport.classify).
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(nil, result, response)
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
         end)
 
       assert %Errors.ConfigurationError{} = exception
@@ -448,7 +449,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(nil, result, response)
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
         end)
 
       assert %Errors.SystemError{} = exception
@@ -491,7 +492,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
           Instrumentation.report_callback_failure(nil, result, response)
         end)
 
-      assert tags.reason =~ "Kaapi callback failure"
+      # Provider-agnostic default: uses the webhook_name, not a hardcoded "Kaapi".
+      assert tags.reason =~ "kaapi_asr callback failure"
     end
   end
 

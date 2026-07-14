@@ -33,8 +33,9 @@ defmodule Glific.Flows.Webhooks.KaapiTest do
     end
 
     test "408 / 429 are upstream blips → system (we do not retry)" do
-      assert KaapiSupport.classify(%{"http_status" => 408}) == :rate_limited
+      assert KaapiSupport.classify(%{"http_status" => 408}) == :service_unavailable
       assert KaapiSupport.classify(%{"http_status" => 429}) == :rate_limited
+      assert ErrorType.class(:service_unavailable) == :system
       assert ErrorType.class(:rate_limited) == :system
     end
 

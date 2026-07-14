@@ -5,14 +5,13 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
   `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`). Async nodes self-classify their
   dispatch failure via an `error_type` on the `%{success: false}` ack; their later callback
-  failure (an opaque Kaapi string) is classified by the node's `classify/1` (default
-  `KaapiSupport.classify`), funnelled here through `around_callback/4`. Both route through
+  failure (an opaque provider string) is classified by the node's own `classify/1`, funnelled
+  here through `around_callback/4` — this module stays provider-agnostic. Both route through
   `ErrorReporter`. The resume/timeout paths report `Errors.{SystemError, TimeoutError}` under
   `flow_webhooks`.
   """
 
   alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType}
-  alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
   alias Glific.SafeLog
 
   require Logger
@@ -132,14 +131,15 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     }
   end
 
-  # An async callback failure is an opaque Kaapi string, so the node's `classify/1` infers the
+  # An async callback failure is an opaque provider string, so the node's `classify/1` infers the
   # ErrorType (the node can't self-classify here) and `ErrorReporter` routes it like the sync path.
-  @doc "Report a Kaapi callback that arrived with `success` not true, classified by the node."
+  @doc "Report an async callback that arrived with `success` not true, classified by the node."
   @spec report_callback_failure(module() | nil, map(), map()) :: :ok
   def report_callback_failure(module, %{"success" => success} = result, response)
       when success != true do
     reason =
-      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+      result["reason"] || result["error"] || response["message"] ||
+        "#{response["webhook_name"] || "Webhook"} callback failure"
 
     result
     |> classify_callback(module)
@@ -148,13 +148,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   def report_callback_failure(_module, _result, _response), do: :ok
 
-  # Ask the node to classify (it may override `classify/1`), or fall back to the shared default
-  # when the callback arrived without a resolvable webhook module.
+  # Delegate classification to the node (it may override `classify/1`). A callback that arrived
+  # without a resolvable webhook module has no node to consult, so it fails safe to system —
+  # keeping this module free of any provider-specific classifier.
   @spec classify_callback(map(), module() | nil) :: ErrorType.t()
   defp classify_callback(result, module) when is_atom(module) and not is_nil(module),
     do: module.classify(result)
 
-  defp classify_callback(result, _module), do: KaapiSupport.classify(result)
+  defp classify_callback(_result, _module), do: :unknown
 
   # Keep the raw Kaapi `error_type` and `http_status` (the classification driver) as tags alongside
   # the classified bucket `ErrorReporter` adds, so incidents stay debuggable.

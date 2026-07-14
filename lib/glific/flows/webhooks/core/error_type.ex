@@ -35,10 +35,10 @@ defmodule Glific.Flows.Webhooks.ErrorType do
 
   @doc """
   Map a raw HTTP status to an `t()` so any webhook — sync, async dispatch, or a provider call
-  like Gemini STT — buckets a status the same way. A 408/429 is an upstream blip
-  (`:rate_limited` → system, since we do not retry), any other 4xx is a rejected request
-  (`:invalid_input` → config), and everything else (5xx, a transport atom like `:timeout`, a
-  raw body, `nil`) fails safe to `:unknown` → system.
+  like Gemini STT — buckets a status the same way. A 429 is a rate-limit blip (`:rate_limited`
+  → system); a 408 request timeout is a transient upstream stall (`:service_unavailable` →
+  system); any other 4xx is a rejected request (`:invalid_input` → config); everything else
+  (5xx, a transport atom like `:timeout`, a raw body, `nil`) fails safe to `:unknown` → system.
 
   ## Examples
 
@@ -48,6 +48,9 @@ defmodule Glific.Flows.Webhooks.ErrorType do
       iex> Glific.Flows.Webhooks.ErrorType.from_http_status(429)
       :rate_limited
 
+      iex> Glific.Flows.Webhooks.ErrorType.from_http_status(408)
+      :service_unavailable
+
       iex> Glific.Flows.Webhooks.ErrorType.from_http_status(500)
       :unknown
 
@@ -55,7 +58,8 @@ defmodule Glific.Flows.Webhooks.ErrorType do
       :unknown
   """
   @spec from_http_status(any()) :: t()
-  def from_http_status(status) when status in [408, 429], do: :rate_limited
+  def from_http_status(429), do: :rate_limited
+  def from_http_status(408), do: :service_unavailable
   def from_http_status(status) when is_integer(status) and status in 400..499, do: :invalid_input
   def from_http_status(_status), do: :unknown
 end
