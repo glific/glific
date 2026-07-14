@@ -141,6 +141,74 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     end
   end
 
+  # A crash surfaces as a stacktrace/FunctionClauseError in the reason with no real status —
+  # unjudgeable, so force system.
+  @crash ~r/no function clause matching|is undefined|no match of right hand side|\*\* \(/
+
+  # Upstream busy/overloaded/rate-limited. We do NOT retry, so the contact's message goes
+  # unanswered — a real failure we page on (system), not an NGO-fixable config issue. Kept
+  # specific on purpose: a bare "try again" appears in plenty of 4xx config errors too.
+  @overloaded ~r/conversation_locked|Another process is currently operating|is overloaded|server_is_overloaded|rate limit/i
+
+  # Real provider status embedded in the reason string (never the DB status_code column).
+  @code ~r/\(code:\s*(\d{3})|Status:\s*(\d{3})/
+
+  @doc """
+  Classifies a failed async Kaapi callback `result` into an `ErrorType.t()`.
+
+  A sync webhook names its own failure inline, but an async failure surfaces later, at callback
+  time, as an **opaque string** from Kaapi — the node can't self-classify. So this infers the
+  class from the only signals available: a provider status code (nested `http_status`, or a
+  `(code: NNN)` / `Status: NNN` embedded in the reason) and crash/overload signatures in the
+  reason text. Config (4xx) → `:invalid_input`; everything else fails safe to a system type
+  (crash, overloaded upstream, 408/429, 5xx, or a statusless reason we can't judge).
+
+  This is the default used by every async node via the `Async` macro; a node may override
+  `classify/1` if it has richer signals. See `plans/webhook-error-classification.md`.
+  """
+  @spec classify(map()) :: ErrorType.t()
+  def classify(result) when is_map(result) do
+    reason = to_reason(result)
+    code = to_status(result["http_status"]) || provider_status(reason)
+
+    cond do
+      reason =~ @crash -> :unknown
+      reason =~ @overloaded -> :service_unavailable
+      true -> ErrorType.from_http_status(code)
+    end
+  end
+
+  def classify(_result), do: :unknown
+
+  # A status code that may arrive as an integer or a JSON string ("404"); anything else → nil.
+  @spec to_status(any()) :: integer() | nil
+  defp to_status(status) when is_integer(status), do: status
+
+  defp to_status(status) when is_binary(status) do
+    case Integer.parse(status) do
+      {code, _rest} -> code
+      :error -> nil
+    end
+  end
+
+  defp to_status(_status), do: nil
+
+  # The Kaapi callback is JSON, so the reason lives under a string key — `"reason"` or (some
+  # failures) `"error"`. A non-binary/absent reason → "" (which can't feed a regex → system).
+  @spec to_reason(map()) :: String.t()
+  defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
+  defp to_reason(%{"error" => error}) when is_binary(error), do: error
+  defp to_reason(_result), do: ""
+
+  @spec provider_status(String.t()) :: integer() | nil
+  defp provider_status(reason) do
+    case Regex.run(@code, reason) do
+      [_, code] -> String.to_integer(code)
+      [_, _, code] -> String.to_integer(code)
+      _ -> nil
+    end
+  end
+
   @doc """
   Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. All three
   are required (the Kaapi callback signature depends on them). Returns a tagged tuple so

@@ -135,12 +135,23 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   end
 
   @doc """
+  Callback phase: shapes the Kaapi response the flow resumes on. Overrides the async default
+  (pass-through) because voice needs NMT + TTS post-processing — but only on success; on a
+  failure the flow takes the Failure branch and there's nothing to speak, so pass it through.
+  Invoked via `Dispatcher.callback` so callback telemetry + classification are instrumented.
+  """
+  @impl true
+  @spec callback(map(), map(), Behaviour.ctx()) :: map()
+  def callback(%{"success" => true}, response, %{organization_id: organization_id}) do
+    voice_post_process(organization_id, response)
+  end
+
+  def callback(_result, response, _ctx), do: response
+
+  @doc """
   Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`
   (translate + generate audio), merging `translated_text` and `media_url` into the
-  response for the voice reply.
-
-  Called by `Glific.Flows.Webhook` on the `/kaapi/voice_flow_resume` callback path
-  only when the callback succeeded — there's nothing to speak on a failure.
+  response for the voice reply. Invoked by `callback/3` on a successful callback.
   """
   @spec voice_post_process(non_neg_integer(), map()) :: map()
   def voice_post_process(organization_id, response) do

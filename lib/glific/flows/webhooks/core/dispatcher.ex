@@ -22,6 +22,40 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     |> ResultTranslator.to_legacy_structure(module)
   end
 
+  @doc """
+  Dispatch a registered webhook's callback phase — the async Kaapi POST-back — instrumented like
+  the call phase. Runs the node's `callback/3` inside `Instrumentation.around_callback` so
+  callback telemetry + failure classification funnel through the Dispatcher too, and returns the
+  (possibly post-processed) response the flow resumes on. An unregistered/absent name passes the
+  response through unchanged while still recording generic callback telemetry.
+  """
+  @spec callback(String.t() | nil, map(), map()) :: map()
+  def callback(name, result, response) when is_map(result) and is_map(response) do
+    case Registry.lookup(name) do
+      nil ->
+        Instrumentation.around_callback(nil, result, response, fn -> response end)
+
+      module ->
+        ctx = callback_ctx(response)
+
+        Instrumentation.around_callback(module, result, response, fn ->
+          module.callback(result, response, ctx)
+        end)
+    end
+  end
+
+  # The ctx a node's callback/3 runs with, from the parsed callback response (string keys, ids
+  # already integers) — mirrors build_context so the callback and dispatch phases see one shape.
+  @spec callback_ctx(map()) :: map()
+  defp callback_ctx(response) do
+    %{
+      organization_id: response["organization_id"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"]
+    }
+  end
+
   # Carry the flow-context ids from the fields onto ctx so a failure reported before the callback
   # (dispatch failure / crash) still tags contact/flow/webhook_log, like the callback path does.
   @spec build_context(map(), keyword() | list()) :: map()

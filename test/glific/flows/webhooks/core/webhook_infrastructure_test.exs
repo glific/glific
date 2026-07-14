@@ -397,9 +397,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # --- Instrumentation.report_callback_failure/2 ------------------------------
+  # --- Instrumentation.report_callback_failure/3 ------------------------------
 
-  describe "Instrumentation.report_callback_failure/2" do
+  describe "Instrumentation.report_callback_failure/3" do
     test "a statusless callback failure fails safe to a system incident" do
       response = %{
         "organization_id" => 1,
@@ -413,7 +413,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert %Errors.SystemError{} = exception
@@ -434,7 +434,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert %Errors.ConfigurationError{} = exception
@@ -448,7 +448,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert %Errors.SystemError{} = exception
@@ -466,7 +466,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       ]) do
         result = %{"success" => true}
         response = %{"webhook_name" => "kaapi_asr"}
-        assert :ok = Instrumentation.report_callback_failure(result, response)
+        assert :ok = Instrumentation.report_callback_failure(nil, result, response)
       end
     end
 
@@ -476,7 +476,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert tags.reason == "error from error key"
@@ -488,10 +488,42 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert tags.reason =~ "Kaapi callback failure"
+    end
+  end
+
+  # --- Dispatcher.callback/3 --------------------------------------------------
+
+  describe "Dispatcher.callback/3" do
+    test "an unregistered/absent webhook name passes the response through" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "not_registered", "organization_id" => 1}
+
+      # No registered module → nil branch: the response is returned unchanged.
+      assert ^response = Dispatcher.callback("not_registered", result, response)
+    end
+
+    test "a registered async node runs its default callback (pass-through) inside instrumentation" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      # speech_to_text keeps the default callback/3 → response passes through; still instrumented.
+      assert ^response = Dispatcher.callback("speech_to_text", result, response)
+    end
+
+    test "a failed callback for a registered node classifies + reports without raising" do
+      result = %{"success" => false, "http_status" => 500, "reason" => "boom"}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      {exception, tags} =
+        capture_appsignal(fn -> Dispatcher.callback("speech_to_text", result, response) end)
+
+      # 5xx → system incident, classified via the node's classify/1 (→ KaapiSupport.classify).
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
   end
 

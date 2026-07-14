@@ -769,7 +769,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
-      # The async callback is classified by KaapiCallbackClassifier from status/reason; a
+      # The async callback is classified by the node.s classify/1 (KaapiSupport.classify) from status/reason; a
       # statusless "timed out" reason is unjudgeable → :unknown (system). The raw Kaapi
       # error_type is preserved separately for debugging.
       assert tags.error_type == "unknown"

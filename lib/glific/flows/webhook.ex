@@ -515,14 +515,17 @@ defmodule Glific.Flows.Webhook do
 
     maybe_update_log(response["webhook_log_id"], log_message)
 
-    Instrumentation.record_callback_outcome(result, response)
+    # Route the callback through the Dispatcher: it runs the node's callback/3 (pass-through for
+    # STT/TTS/filesearch) inside callback-phase instrumentation, so telemetry + classification
+    # happen in one place. The shaped response is what the flow resumes on.
+    shaped = Dispatcher.callback(response["webhook_name"], result, response)
 
     response_key = response["result_name"] || "response"
 
     FlowContext.resume_contact_flow(
       contact,
       response["flow_id"],
-      %{response_key => response},
+      %{response_key => shaped},
       resume_message(result, response, organization_id)
     )
     |> report_resume_error(response)
@@ -532,19 +535,17 @@ defmodule Glific.Flows.Webhook do
   defp resume_voice_filesearch_gpt(organization_id, result, response, contact) do
     response_key = response["result_name"] || "response"
 
-    # On failure the flow takes the Failure branch and there's nothing to speak,
-    # so skip the (NMT + TTS) post-processing entirely and resume with the raw callback.
-    {message, voice_response} =
-      if result["success"] do
-        {Messages.create_temp_message(organization_id, "Success"),
-         VoiceFilesearchGpt.voice_post_process(organization_id, response)}
-      else
-        {Messages.create_temp_message(organization_id, "Failure"), response}
-      end
+    # The Dispatcher runs VoiceFilesearchGpt.callback/3 (NMT + TTS post-processing on success,
+    # pass-through on failure) inside callback-phase instrumentation, returning the shaped voice
+    # response — the webhook_name is fixed here since this route only serves the voice node.
+    voice_response = Dispatcher.callback(VoiceFilesearchGpt.name(), result, response)
+
+    message =
+      if result["success"],
+        do: Messages.create_temp_message(organization_id, "Success"),
+        else: Messages.create_temp_message(organization_id, "Failure")
 
     maybe_update_log(response["webhook_log_id"], voice_response)
-
-    Instrumentation.record_callback_outcome(result, response)
 
     FlowContext.resume_contact_flow(
       contact,

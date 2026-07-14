@@ -5,12 +5,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
   `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`). Async nodes self-classify their
   dispatch failure via an `error_type` on the `%{success: false}` ack; their later callback
-  failure (an opaque Kaapi string) is classified by `KaapiCallbackClassifier`. Both route through
+  failure (an opaque Kaapi string) is classified by the node's `classify/1` (default
+  `KaapiSupport.classify`), funnelled here through `around_callback/4`. Both route through
   `ErrorReporter`. The resume/timeout paths report `Errors.{SystemError, TimeoutError}` under
   `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType, KaapiCallbackClassifier}
+  alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType}
+  alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
   alias Glific.SafeLog
 
   require Logger
@@ -130,21 +132,29 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     }
   end
 
-  # An async callback failure is an opaque Kaapi string, so `KaapiCallbackClassifier` infers the
+  # An async callback failure is an opaque Kaapi string, so the node's `classify/1` infers the
   # ErrorType (the node can't self-classify here) and `ErrorReporter` routes it like the sync path.
-  @doc "Report a Kaapi callback that arrived with `success` not true."
-  @spec report_callback_failure(map(), map()) :: :ok
-  def report_callback_failure(%{"success" => success} = result, response)
+  @doc "Report a Kaapi callback that arrived with `success` not true, classified by the node."
+  @spec report_callback_failure(module() | nil, map(), map()) :: :ok
+  def report_callback_failure(module, %{"success" => success} = result, response)
       when success != true do
     reason =
       result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
 
     result
-    |> KaapiCallbackClassifier.classify()
+    |> classify_callback(module)
     |> ErrorReporter.report(reason, callback_tags(result, response))
   end
 
-  def report_callback_failure(_result, _response), do: :ok
+  def report_callback_failure(_module, _result, _response), do: :ok
+
+  # Ask the node to classify (it may override `classify/1`), or fall back to the shared default
+  # when the callback arrived without a resolvable webhook module.
+  @spec classify_callback(map(), module() | nil) :: ErrorType.t()
+  defp classify_callback(result, module) when is_atom(module) and not is_nil(module),
+    do: module.classify(result)
+
+  defp classify_callback(result, _module), do: KaapiSupport.classify(result)
 
   # Keep the raw Kaapi `error_type` and `http_status` (the classification driver) as tags alongside
   # the classified bucket `ErrorReporter` adds, so incidents stay debuggable.
@@ -197,13 +207,28 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
-  @doc "Record callback-phase telemetry for an async webhook (count, latency, failure)."
-  @spec record_callback_outcome(map(), map()) :: :ok
-  def record_callback_outcome(result, response) do
+  @doc """
+  Run an async webhook's `callback/3` inside callback-phase instrumentation: executes `fun`
+  (the node's callback — post-processing for voice, pass-through otherwise), records count +
+  latency, classifies/reports a failure, and returns whatever the callback shaped. This is the
+  single callback-phase entry point (`Dispatcher.callback` calls it), mirroring `around/3` for
+  the dispatch phase.
+  """
+  @spec around_callback(module() | nil, map(), map(), (-> map())) :: map()
+  def around_callback(module, result, response, fun)
+      when (is_atom(module) or is_nil(module)) and is_function(fun, 0) do
+    shaped = fun.()
+    record_callback_outcome(module, result, response)
+    shaped
+  end
+
+  # Callback-phase telemetry for an async webhook (count, latency, failure classification).
+  @spec record_callback_outcome(module() | nil, map(), map()) :: :ok
+  defp record_callback_outcome(module, result, response) do
     status = if result["success"], do: "success", else: "failure"
     track_webhook_count(response["webhook_name"], status)
     track_kaapi_latency(response, status)
-    report_callback_failure(result, response)
+    report_callback_failure(module, result, response)
   end
 
   @doc "Increment the success/failure counter for a flow-webhook node outcome."
