@@ -11,6 +11,7 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
     Flows.FlowRevision,
     Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.Dispatcher,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -128,6 +129,50 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPollTest do
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_attrs}))
       assert log != nil
       assert log.error != nil
+    end
+  end
+
+  # Dispatch-level test: exercises call/2 validation branches (invalid wa_group / poll_uuid /
+  # unknown wa_group) and the success path directly via the Dispatcher.
+  describe "send_wa_group_poll dispatch" do
+    test "validates inputs and sends the poll", attrs do
+      assert "wa_group is invalid" = Dispatcher.dispatch("send_wa_group_poll", %{})
+
+      assert "poll_uuid is invalid" =
+               Dispatcher.dispatch("send_wa_group_poll", %{
+                 "wa_group" => %{"id" => 0},
+                 "organization_id" => attrs.organization_id
+               })
+
+      poll = Fixtures.wa_poll_fixture(%{label: "poll_a"})
+
+      assert ~s|["Elixir.Glific.Groups.WAGroup", "Resource not found"]| =
+               Dispatcher.dispatch("send_wa_group_poll", %{
+                 "wa_group" => %{"id" => 0},
+                 "organization_id" => attrs.organization_id,
+                 "poll_uuid" => poll.uuid
+               })
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: "https://api.maytapi.com/api/" <> _} ->
+          {:ok,
+           %Tesla.Env{
+             status: 200,
+             body: %{"success" => true, "data" => %{"chatId" => "1@g.us", "msgId" => "abc"}}
+           }}
+      end)
+
+      wa_phone = Fixtures.wa_managed_phone_fixture(attrs)
+
+      wa_group =
+        Fixtures.wa_group_with_primary_fixture(Map.put(attrs, :wa_managed_phone_id, wa_phone.id))
+
+      assert %{success: true, poll: _} =
+               Dispatcher.dispatch("send_wa_group_poll", %{
+                 "wa_group" => %{"id" => wa_group.id},
+                 "organization_id" => attrs.organization_id,
+                 "poll_uuid" => poll.uuid
+               })
     end
   end
 end

@@ -1,55 +1,34 @@
 defmodule Glific.Flows.Webhooks.ResultTranslator do
   @moduledoc """
-  Temporary adapter: converts sync webhook `call/2` results into the legacy shape
-  consumed by the flow engine's success/failure routing.
-
-  Until the flow engine routes on an application-level `success` field (rather than
-  checking `is_map/1`):
-
-  * `{:ok, value}` → results map (`success: true` + payload) → Success branch
-  * `{:error, message}` → bare string → Failure branch
-  * other return values pass through unchanged (legacy map responses)
-
-  Migrated webhooks return `{:ok, _}` / `{:error, _}` from `call/2`; the
-  dispatcher applies `to_legacy_structure/2` after the call. Webhook modules must
-  not call this module directly.
-
-  Remove once all webhooks are migrated and the flow engine is updated.
+  Temporary adapter converting sync `call/2` results into the legacy shape the flow engine routes
+  on via `is_map/1` (map → Success, string → Failure): `{:ok, value}` → encoded map,
+  `{:error, _type, message}` → the bare message (the type atom was already reported), anything
+  else passes through. Remove once the flow engine routes on an explicit `success` field.
   """
 
   alias Glific.Flows.Webhooks.Geolocation.Address
 
   @type encoder :: (term() -> map())
 
-  @doc """
-  Translates a `call/2` return value into the legacy format for the flow engine.
-
-  Tuple results are encoded via `encoder_for/1`; legacy maps and other values
-  are returned unchanged.
-  """
+  @doc "Translate a `call/2` return into the legacy map/string the flow engine routes on."
   @spec to_legacy_structure(term(), module()) :: map() | String.t() | term()
   def to_legacy_structure({:ok, value}, module) do
-    encode_tuple({:ok, value}, encoder_for(module))
+    encoder_for(module).(value)
   end
 
-  def to_legacy_structure({:error, message}, module) when is_binary(message) do
-    encode_tuple({:error, message}, encoder_for(module))
+  def to_legacy_structure({:error, _error_type, message}, _module) when is_binary(message) do
+    message
   end
 
   def to_legacy_structure(other, _module), do: other
 
-  @doc "Encoder for `{:ok, value}` when no module-specific encoder is registered."
+  @doc "Return the `{:ok, value}` encoder for a module (module-specific or the default)."
   @spec encoder_for(module()) :: encoder()
   def encoder_for(Glific.Flows.Webhooks.Geolocation), do: &Address.to_flow_map/1
   def encoder_for(_module), do: &default_encoder/1
 
-  @spec encode_tuple({:ok, term()} | {:error, String.t()}, encoder()) :: map() | String.t()
-  defp encode_tuple({:ok, value}, encoder) when is_function(encoder, 1) do
-    encoder.(value)
-  end
-
-  defp encode_tuple({:error, message}, _encoder) when is_binary(message), do: message
-
+  # A map is already the flow payload; a struct/scalar is wrapped (`success: true`) so the engine
+  # still sees a map on the Success branch.
   @spec default_encoder(term()) :: map()
   defp default_encoder(%_{} = struct) do
     struct
@@ -57,7 +36,7 @@ defmodule Glific.Flows.Webhooks.ResultTranslator do
     |> Map.put(:success, true)
   end
 
-  defp default_encoder(map) when is_map(map), do: Map.put(map, :success, true)
+  defp default_encoder(map) when is_map(map), do: map
 
   defp default_encoder(value), do: %{success: true, value: value}
 end

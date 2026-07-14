@@ -36,6 +36,8 @@ defmodule Glific.Jobs.MinuteWorker do
     WAManagedPhones
   }
 
+  alias Glific.Providers.Instrumentation
+
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
@@ -173,6 +175,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
         CollectionCount.collection_stats()
+        Instrumentation.check_inbound_staleness()
 
         Partners.perform_all(&WAManagedPhones.reconcile_wa_managed_phone_statuses/1, nil, [])
 

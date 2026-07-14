@@ -146,6 +146,47 @@ defmodule Glific.OpenAI.ChatGPT do
   end
 
   @doc """
+  Normalise the OpenAI `response_format` option for a webhook request.
+
+  `json_schema` is only supported since `gpt-4o-2024-08-06`, so pin the model when it is
+  requested; `json_object` and no format pass through unchanged. Returns `{:error, reason}`
+  for an unrecognised format type.
+  """
+  @spec parse_response_format(map()) :: {:ok, map()} | {:error, String.t()}
+  def parse_response_format(%{"response_format" => response_format} = fields) do
+    case response_format do
+      %{"type" => "json_schema"} ->
+        # Support for json_schema is only since gpt-4o-2024-08-06
+        {:ok, Map.put(fields, "model", "gpt-4o-2024-08-06")}
+
+      %{"type" => "json_object"} ->
+        {:ok, fields}
+
+      nil ->
+        {:ok, fields}
+
+      _ ->
+        {:error, "response_format type should be json_schema or json_object"}
+    end
+  end
+
+  def parse_response_format(fields), do: {:ok, Map.put(fields, "response_format", nil)}
+
+  @doc """
+  Decode a GPT response body as JSON, returning the raw string when it is not valid JSON.
+  """
+  @spec parse_gpt_response(String.t()) :: any()
+  def parse_gpt_response(response) do
+    case Jason.decode(response) do
+      {:ok, decoded_response} ->
+        decoded_response
+
+      {:error, _err} ->
+        response
+    end
+  end
+
+  @doc """
   This function makes an API call to the OpenAI and returns the public media URL of the file.
   """
   @spec text_to_speech(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
