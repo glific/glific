@@ -137,8 +137,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       end
     end
 
-    test "reports to AppSignal on exception" do
-      {exception, _tags} =
+    test "reports to AppSignal on exception (tagged error_type exception)" do
+      {exception, tags} =
         capture_appsignal(fn ->
           assert_raise RuntimeError, fn ->
             Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
@@ -148,6 +148,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
         end)
 
       assert %Errors.SystemError{} = exception
+      assert tags.error_type == "exception"
     end
 
     test "tags include organization_id from ctx" do
@@ -515,21 +516,87 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # Real-webhook failure reporting: a failing sync webhook dispatched through the framework must
-  # surface a SystemError to AppSignal with the right tags (webhook_name / organization_id /
-  # reason). Complements the stub-based Instrumentation.around/3 tests above.
+  # Config-vs-system routing for SYNC nodes: a typed `{:error, ErrorType.t(), msg}` return is
+  # mapped by Instrumentation → ErrorReporter to the right namespace. The node owns the verdict;
+  # there is no central heuristic. (Async / Kaapi classification is a separate, later change.)
+  describe "ErrorReporter routing (sync)" do
+    test "typed config failure → ConfigurationError under the config namespace" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :invalid_geocoding, "Invalid geocoding request. Invalid 'latlng' parameter."}
+          end)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "invalid_geocoding"
+    end
+
+    test "typed system failure → SystemError under the system namespace" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :missing_api_key, "Geocoding request was denied."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "missing_api_key"
+    end
+
+    test "untyped sync failure fails safe to :unknown (system)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, "some failure the node did not classify"}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+
+    test "typed upstream-blip failure reports a system incident (no retry — a blip is a real failure)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :rate_limited, "Geocoding quota exceeded."}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "rate_limited"
+    end
+
+    test "a malformed 3-tuple failure is still reported (not counted-but-invisible)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubWebhook, %{organization_id: 1}, fn ->
+            {:error, :some_type, %{not: "a binary"}}
+          end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
+    end
+  end
+
+  # Real-webhook failure reporting: a failing sync webhook dispatched through the framework
+  # surfaces the right exception (config vs system) to AppSignal with the right tags
+  # (webhook_name / organization_id / reason). Complements the stub-based around/3 tests above.
   describe "Instrumentation reporting — real sync webhooks" do
-    test "reports SystemError with tags when parse_via_chat_gpt fails" do
+    test "reports a config error when parse_via_chat_gpt gets empty input" do
       {exception, tags} =
         capture_appsignal(fn ->
           assert Dispatcher.dispatch("parse_via_chat_gpt", %{"organization_id" => 1}) ==
                    "question_text is empty"
         end)
 
-      assert %Errors.SystemError{} = exception
+      assert %Errors.ConfigurationError{} = exception
       assert tags.webhook_name == "parse_via_chat_gpt"
       assert tags.organization_id == 1
       assert tags.reason == "question_text is empty"
+      assert tags.error_type == "empty_input"
     end
 
     test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
@@ -562,7 +629,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       end
     end
 
-    test "reports SystemError when parse_via_gpt_vision fails on invalid media URL" do
+    test "reports a config error when parse_via_gpt_vision gets an invalid media URL" do
       with_mock(Messages,
         validate_media: fn _, _ -> %{is_valid: false, message: "Media URL is invalid"} end
       ) do
@@ -574,10 +641,11 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
                    }) == "Media URL is invalid"
           end)
 
-        assert %Errors.SystemError{} = exception
+        assert %Errors.ConfigurationError{} = exception
         assert tags.webhook_name == "parse_via_gpt_vision"
         assert tags.organization_id == 1
         assert tags.reason == "Media URL is invalid"
+        assert tags.error_type == "invalid_media_url"
       end
     end
   end

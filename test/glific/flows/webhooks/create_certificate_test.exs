@@ -263,11 +263,10 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         assert log != nil
         assert log.error != nil
 
-        # Flow execution assertion — the webhook returns %{success: false, reason: ...}
-        # which handle/3 treats as a result map, so the flow advances on the success
-        # branch regardless. This proves the flow engine ran after the certificate job.
-        message = await_flow_message(context.contact_id, "@results.filesearch.message")
-        assert message.body == "@results.filesearch.message"
+        # Flow execution assertion — a generation failure returns a typed
+        # {:error, :unknown, reason}, so the flow routes to the Failure branch.
+        message = await_flow_message(context.contact_id, "failure")
+        assert message.body == "failure"
       end
     end
   end
@@ -354,8 +353,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         result =
           Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))
 
-        assert result[:success] == false
-        assert result[:reason] == "Failed to download thumbnail url"
+        assert result == "Failed to download thumbnail url"
       end)
     end
 
@@ -416,9 +414,13 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
         contact = Fixtures.contact_fixture()
 
-        assert Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))[
-                 :success
-               ] == false
+        # A generation failure now returns a typed error → dispatcher yields the reason string.
+        assert is_binary(
+                 Dispatcher.dispatch(
+                   "create_certificate",
+                   cert_fields(certificate.id, contact.id)
+                 )
+               )
       end)
     end
 
@@ -448,9 +450,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         result =
           Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))
 
-        assert result[:success] == false
-        assert result[:certificate_url] == nil
-        assert result[:reason] =~ "Failed to copy slide. Status: 400"
+        assert result =~ "Failed to copy slide. Status: 400"
       end)
     end
 
