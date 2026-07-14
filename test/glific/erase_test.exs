@@ -18,6 +18,7 @@ defmodule Glific.EraseTest do
     Messages.Message,
     Notifications,
     Notifications.Notification,
+    Partners,
     Partners.Organization,
     Repo,
     WhatsappForms.WhatsappFormRevision,
@@ -264,6 +265,33 @@ defmodule Glific.EraseTest do
       Repo.fetch(Organization, organization.id, skip_organization_id: true, include_deleted: true)
 
     assert deleted_org.deleted_at != nil
+  end
+
+  test "organization status history survives organization deletion" do
+    # The status timeline is deliberately preserved (org_data_preserved_tables/0): churn
+    # and time-to-reactivation reporting is specifically about orgs that left, so erasing
+    # a deleted org's transitions would drop it from the very reports it exists to serve.
+    organization = Fixtures.organization_fixture(%{status: :active})
+
+    {:ok, organization} =
+      Partners.update_organization(organization, %{status: :forced_suspension})
+
+    {:ok, organization} = Partners.update_organization(organization, %{status: :ready_to_delete})
+
+    assert length(Partners.list_organization_status_histories(organization.id)) == 2
+
+    assert {:ok, job} = Erase.delete_organization(organization.id)
+    assert :ok = perform_job(Erase, job.args)
+
+    transitions =
+      organization.id
+      |> Partners.list_organization_status_histories()
+      |> Enum.map(&{&1.previous_status, &1.new_status})
+
+    assert transitions == [
+             {:active, :forced_suspension},
+             {:forced_suspension, :ready_to_delete}
+           ]
   end
 
   test "handles non-existent organization gracefully" do

@@ -687,6 +687,12 @@ defmodule Glific.Erase do
 
     * `stats`, `trackers` — analytics we retain past the org's lifetime.
     * `invoices`, `billings` — financial records kept for billing/audit history.
+    * `organization_status_histories` — the bot's status timeline, retained past the
+      org's lifetime for fleet reporting. Churn and time-to-reactivation analysis is
+      specifically about orgs that left, so erasing a deleted org's transitions would
+      silently drop it from exactly the reports the history exists to serve. It also
+      records the `ready_to_delete` transition itself, which deletion would erase.
+      Org-level metadata only — no contact/user PII.
 
   All of them reference only `organizations` (which is itself preserved, soft-deleted),
   so keeping them is FK-safe. Together with `org_data_deletion_order/0` this must cover
@@ -697,6 +703,7 @@ defmodule Glific.Erase do
     ~w(
       billings
       invoices
+      organization_status_histories
       stats
       trackers
     )
