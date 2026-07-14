@@ -61,6 +61,15 @@ defmodule Glific.Flows.Webhooks.Core.KaapiCallbackClassifierTest do
       assert KaapiCallbackClassifier.classify(%{reason: "denied. Status: 403"}) == :invalid_input
     end
 
+    test "a string http_status is normalised (4xx stays config)" do
+      assert KaapiCallbackClassifier.classify(%{"http_status" => "404"}) == :invalid_input
+    end
+
+    test "a 4xx reason containing 'try again' stays config (not misfiled as overload)" do
+      result = %{"http_status" => 400, "reason" => "bad input, please try again"}
+      assert KaapiCallbackClassifier.classify(result) == :invalid_input
+    end
+
     test "a statusless, unrecognised reason fails safe to system" do
       result = %{"reason" => "[GEMINI] STT response is missing transcribed text"}
       assert KaapiCallbackClassifier.classify(result) == :unknown

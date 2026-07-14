@@ -214,10 +214,12 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.error_type == "unknown"
     end
 
-    test "a self-classified config dispatch failure routes to the config namespace" do
+    test "a self-classified config dispatch failure routes to config with the flow-context ids" do
+      ctx = %{organization_id: 7, flow_id: 42, contact_id: 88, webhook_log_id: 99}
+
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
+          Instrumentation.around(StubAsyncWebhook, ctx, fn ->
             %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
           end)
         end)
@@ -225,6 +227,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert %Errors.ConfigurationError{} = exception
       assert tags.error_type == "invalid_media_url"
       assert tags.reason == "Media URL is invalid"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
     end
 
     test "a nil async ack fails safe to system (error_type unknown)" do
@@ -642,10 +647,17 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
   # (webhook_name / organization_id / reason). Complements the stub-based around/3 tests above.
   describe "Instrumentation reporting — real sync webhooks" do
     test "reports a config error when parse_via_chat_gpt gets empty input" do
+      # ids arrive as strings (JSON/Oban) and must flow through build_context onto the failure tags
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "42",
+        "contact_id" => "88",
+        "webhook_log_id" => "99"
+      }
+
       {exception, tags} =
         capture_appsignal(fn ->
-          assert Dispatcher.dispatch("parse_via_chat_gpt", %{"organization_id" => 1}) ==
-                   "question_text is empty"
+          assert Dispatcher.dispatch("parse_via_chat_gpt", fields) == "question_text is empty"
         end)
 
       assert %Errors.ConfigurationError{} = exception
@@ -653,6 +665,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.organization_id == 1
       assert tags.reason == "question_text is empty"
       assert tags.error_type == "empty_input"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
     end
 
     test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do

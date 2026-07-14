@@ -115,7 +115,19 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   @spec failure_tags(String.t(), map()) :: map()
   defp failure_tags(webhook_name, ctx) do
-    %{webhook_name: webhook_name, organization_id: Map.get(ctx, :organization_id)}
+    Map.put(ctx_tags(ctx), :webhook_name, webhook_name)
+  end
+
+  # The flow-context ids carried on `ctx` (built by the Dispatcher) so every pre-callback failure
+  # report — sync, async-dispatch, crash — tags contact/flow/webhook_log for debugging.
+  @spec ctx_tags(map()) :: map()
+  defp ctx_tags(ctx) do
+    %{
+      organization_id: Map.get(ctx, :organization_id),
+      flow_id: Map.get(ctx, :flow_id),
+      contact_id: Map.get(ctx, :contact_id),
+      webhook_log_id: Map.get(ctx, :webhook_log_id)
+    }
   end
 
   # An async callback failure is an opaque Kaapi string, so `KaapiCallbackClassifier` infers the
@@ -129,19 +141,23 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
     result
     |> KaapiCallbackClassifier.classify()
-    |> ErrorReporter.report(reason, callback_tags(response))
+    |> ErrorReporter.report(reason, callback_tags(result, response))
   end
 
   def report_callback_failure(_result, _response), do: :ok
 
-  @spec callback_tags(map()) :: map()
-  defp callback_tags(response) do
+  # Keep the raw Kaapi `error_type` and `http_status` (the classification driver) as tags alongside
+  # the classified bucket `ErrorReporter` adds, so incidents stay debuggable.
+  @spec callback_tags(map(), map()) :: map()
+  defp callback_tags(result, response) do
     %{
       organization_id: response["organization_id"],
       webhook_name: response["webhook_name"],
       flow_id: response["flow_id"],
       contact_id: response["contact_id"],
-      webhook_log_id: response["webhook_log_id"]
+      webhook_log_id: response["webhook_log_id"],
+      http_status: result["http_status"],
+      kaapi_error_type: result["error_type"]
     }
   end
 
@@ -241,22 +257,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   @spec maybe_report_failure(any(), String.t(), map()) :: :ok
   defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     {status, reason} = extract_status_and_reason(result)
-
-    ErrorReporter.report(dispatch_error_type(result), reason || "Kaapi dispatch failure", %{
-      webhook_name: webhook_name,
-      organization_id: Map.get(ctx, :organization_id),
-      http_status: status
-    })
+    tags = Map.put(failure_tags(webhook_name, ctx), :http_status, status)
+    ErrorReporter.report(dispatch_error_type(result), reason || "Kaapi dispatch failure", tags)
   end
 
   defp maybe_report_failure(result, webhook_name, ctx)
        when is_nil(result) or not is_map(result) do
     reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
-
-    ErrorReporter.report(:unknown, reason, %{
-      webhook_name: webhook_name,
-      organization_id: Map.get(ctx, :organization_id)
-    })
+    ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
   defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
@@ -299,12 +307,10 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
           String.t() | nil
         ) :: :ok
   defp report_webhook_failure(webhook_name, ctx, http_status, reason, error_type) do
-    report_failure(webhook_name, %{
-      organization_id: Map.get(ctx, :organization_id),
-      http_status: http_status,
-      reason: reason,
-      error_type: error_type
-    })
+    report_failure(
+      webhook_name,
+      Map.merge(ctx_tags(ctx), %{http_status: http_status, reason: reason, error_type: error_type})
+    )
   end
 
   @spec track_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok

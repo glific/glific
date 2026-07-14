@@ -770,8 +770,10 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
       # The async callback is classified by KaapiCallbackClassifier from status/reason; a
-      # statusless "timed out" reason is unjudgeable → :unknown (system).
+      # statusless "timed out" reason is unjudgeable → :unknown (system). The raw Kaapi
+      # error_type is preserved separately for debugging.
       assert tags.error_type == "unknown"
+      assert tags.kaapi_error_type == "timeout"
       assert tags.reason == "LLM provider timed out"
     end
 

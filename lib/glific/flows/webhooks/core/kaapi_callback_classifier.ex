@@ -22,8 +22,9 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
   @crash ~r/no function clause matching|is undefined|no match of right hand side|\*\* \(/
 
   # Upstream busy/overloaded/rate-limited. We do NOT retry, so the contact's message goes
-  # unanswered — a real failure we page on (system), not an NGO-fixable config issue.
-  @overloaded ~r/conversation_locked|Another process is currently operating|is overloaded|server_is_overloaded|rate limit|try again/i
+  # unanswered — a real failure we page on (system), not an NGO-fixable config issue. Kept
+  # specific on purpose: a bare "try again" appears in plenty of 4xx config errors too.
+  @overloaded ~r/conversation_locked|Another process is currently operating|is overloaded|server_is_overloaded|rate limit/i
 
   # Real provider status embedded in the reason string (never the DB status_code column).
   @code ~r/\(code:\s*(\d{3})|Status:\s*(\d{3})/
@@ -38,7 +39,7 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
   @spec classify(map()) :: ErrorType.t()
   def classify(result) when is_map(result) do
     reason = to_reason(result)
-    code = result["http_status"] || provider_status(reason)
+    code = to_status(result["http_status"]) || provider_status(reason)
 
     cond do
       reason =~ @crash -> :unknown
@@ -51,6 +52,19 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
   end
 
   def classify(_result), do: :unknown
+
+  # A status code that may arrive as an integer or a JSON string ("404"); anything else → nil.
+  @spec to_status(any()) :: integer() | nil
+  defp to_status(status) when is_integer(status), do: status
+
+  defp to_status(status) when is_binary(status) do
+    case Integer.parse(status) do
+      {code, _rest} -> code
+      :error -> nil
+    end
+  end
+
+  defp to_status(_status), do: nil
 
   # A binary reason/error, else "" (a non-binary reason can't feed a regex → system fail-safe).
   @spec to_reason(map()) :: String.t()

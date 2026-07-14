@@ -22,26 +22,28 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     |> ResultTranslator.to_legacy_structure(module)
   end
 
+  # Carry the flow-context ids from the fields onto ctx so a failure reported before the callback
+  # (dispatch failure / crash) still tags contact/flow/webhook_log, like the callback path does.
   @spec build_context(map(), keyword() | list()) :: map()
   defp build_context(fields, headers) do
-    org_id =
-      case fields["organization_id"] do
-        nil ->
-          nil
-
-        id when is_integer(id) ->
-          id
-
-        id when is_binary(id) ->
-          case Glific.parse_maybe_integer(id) do
-            {:ok, parsed} -> parsed
-            :error -> nil
-          end
-
-        _ ->
-          nil
-      end
-
-    %{organization_id: org_id, headers: headers}
+    %{
+      organization_id: parse_id(fields["organization_id"]),
+      flow_id: parse_id(fields["flow_id"]),
+      contact_id: parse_id(fields["contact_id"]),
+      webhook_log_id: parse_id(fields["webhook_log_id"]),
+      headers: headers
+    }
   end
+
+  @spec parse_id(any()) :: non_neg_integer() | nil
+  defp parse_id(id) when is_integer(id), do: id
+
+  defp parse_id(id) when is_binary(id) do
+    case Glific.parse_maybe_integer(id) do
+      {:ok, parsed} -> parsed
+      :error -> nil
+    end
+  end
+
+  defp parse_id(_), do: nil
 end
