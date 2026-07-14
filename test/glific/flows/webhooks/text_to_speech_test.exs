@@ -251,6 +251,11 @@ defmodule Glific.Flows.Webhooks.TextToSpeechTest do
 
       assert TextToSpeech.call(fields, %{}).success == true
     end
+
+    test "tags malformed flow metadata as :invalid_input (config)", %{fields: fields} do
+      bad = Map.put(fields, "organization_id", "not-an-int")
+      assert %{success: false, error_type: :invalid_input} = TextToSpeech.call(bad, %{})
+    end
   end
 
   defp tts_fields(contact_id) do

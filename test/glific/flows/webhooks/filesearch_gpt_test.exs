@@ -278,12 +278,14 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       result = FilesearchGpt.call(Map.delete(lookup_fields("x"), "assistant_id"), %{})
       assert result[:success] == false
       assert result[:reason] == "assistant_id is required"
+      assert result[:error_type] == :invalid_input
     end
 
     test "returns error when assistant not found" do
       result = FilesearchGpt.call(lookup_fields("nonexistent_id"), %{})
       assert result[:success] == false
       assert result[:reason] =~ "Assistant not found"
+      assert result[:error_type] == :invalid_input
     end
 
     test "returns error when kaapi_version_number is nil" do
@@ -318,6 +320,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
       assert result[:success] == false
       assert result[:reason] =~ "Kaapi version number not found"
+      assert result[:error_type] == :invalid_input
     end
 
     test "returns error when kaapi_uuid is nil" do
@@ -347,6 +350,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
       assert result[:success] == false
       assert result[:reason] =~ "Assistant is still being set up"
+      assert result[:error_type] == :invalid_input
     end
   end
 
@@ -356,8 +360,11 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
         %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
       end)
 
-      assert FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{}).success ==
-               false
+      result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+      assert result.success == false
+      # A dispatch-phase Kaapi HTTP failure is system (the callback classifier, not dispatch,
+      # is what maps a real provider 4xx to config).
+      assert result.error_type == :unknown
     end
 
     test "returns failure result on a Kaapi 5xx response", %{assistant: assistant} do
@@ -365,8 +372,9 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
         %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
       end)
 
-      assert FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{}).success ==
-               false
+      result = FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+      assert result.success == false
+      assert result.error_type == :unknown
     end
 
     test "returns failure result when Kaapi returns 200 with a success:false body", %{
