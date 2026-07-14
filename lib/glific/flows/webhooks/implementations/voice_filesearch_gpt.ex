@@ -21,6 +21,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
   alias Glific.OpenAI.ChatGPT
   alias Glific.Partners
+  alias Glific.SafeLog
   alias Glific.ThirdParty.Gemini
   alias Glific.ThirdParty.Kaapi
 
@@ -41,11 +42,14 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       {:error, error_type, reason} when is_atom(error_type) ->
         %{success: false, reason: reason, error_type: error_type}
 
+      # The only untyped failures reaching here are from fetch_kaapi_creds — an unconfigured
+      # org ({:error, binary}) or creds without a usable api_key ({:ok, map} → catch-all) — a
+      # provisioning gap, not an unjudgeable error, so name it :missing_api_key (→ system).
       {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason, error_type: :unknown}
+        %{success: false, reason: reason, error_type: :missing_api_key}
 
       _ ->
-        %{success: false, reason: "Kaapi is not active", error_type: :unknown}
+        %{success: false, reason: "Kaapi is not active", error_type: :missing_api_key}
     end
   end
 
@@ -67,16 +71,16 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
       {:error, error_type, reason} ->
         %{success: false, reason: reason, error_type: error_type}
-
-      {:error, reason} ->
-        %{success: false, reason: reason, error_type: :unknown}
     end
   end
 
-  # Synchronous Gemini speech-to-text. Validates the audio URL, then transcribes; a
-  # failure short-circuits the pipeline so the async webhook surfaces it on the Failure branch.
+  # Synchronous Gemini speech-to-text. Validates the audio URL, then transcribes; a failure
+  # short-circuits the pipeline so the async webhook surfaces it on the Failure branch. The
+  # Gemini failure self-classifies off the status it hands back (`asr_response_text`) — the same
+  # status rule every other webhook uses — so a bad-request 4xx routes to config while an outage
+  # (5xx / transport error) pages on-call, instead of every STT failure collapsing to system.
   @spec transcribe(any(), non_neg_integer()) ::
-          {:ok, String.t()} | {:error, ErrorType.t(), String.t()} | {:error, String.t()}
+          {:ok, String.t()} | {:error, ErrorType.t(), String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
       case Gemini.speech_to_text(speech, organization_id) do
@@ -84,10 +88,17 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           {:ok, transcribed_text}
 
         %{success: false} = failure ->
-          {:error, to_string(failure[:asr_response_text] || "Speech to text failed")}
+          detail = failure[:asr_response_text]
+          {:error, ErrorType.from_http_status(detail), stt_failure_reason(detail)}
       end
     end
   end
+
+  # `asr_response_text` on a failure is a status integer, a transport atom, a "download failed"
+  # string, or a raw body map — render it without crashing (`to_string/1` would on a map).
+  @spec stt_failure_reason(any()) :: String.t()
+  defp stt_failure_reason(detail) when is_binary(detail), do: detail
+  defp stt_failure_reason(detail), do: "Speech to text failed (#{SafeLog.safe_inspect(detail)})"
 
   @spec dispatch_llm(
           map(),

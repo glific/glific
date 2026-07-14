@@ -44,10 +44,7 @@ defmodule Glific.Flows.Webhooks.KaapiCallbackClassifier do
     cond do
       reason =~ @crash -> :unknown
       reason =~ @overloaded -> :service_unavailable
-      code in [408, 429] -> :rate_limited
-      is_integer(code) and code in 400..499 -> :invalid_input
-      is_integer(code) -> :unknown
-      true -> :unknown
+      true -> ErrorType.from_http_status(code)
     end
   end
 

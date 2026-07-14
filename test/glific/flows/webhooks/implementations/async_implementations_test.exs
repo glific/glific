@@ -10,6 +10,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
 
   alias Glific.Flows.Webhooks.{
+    ErrorType,
     FilesearchGpt,
     SpeechToText,
     TextToSpeech,
@@ -53,7 +54,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
       assert %{success: false, error_type: :invalid_media_url} = SpeechToText.call(fields, %{})
     end
 
-    test "filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :unknown (system)" do
+    test "filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :missing_api_key (system)" do
       fields = %{
         "organization_id" => "1",
         "flow_id" => "1",
@@ -62,11 +63,13 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
         "assistant_id" => "asst_x"
       }
 
-      assert %{success: false, error_type: :unknown, reason: "Kaapi is not active"} =
+      assert %{success: false, error_type: :missing_api_key, reason: "Kaapi is not active"} =
                FilesearchGpt.call(fields, %{})
+
+      assert ErrorType.class(:missing_api_key) == :system
     end
 
-    test "voice_filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :unknown (system)" do
+    test "voice_filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :missing_api_key (system)" do
       fields = %{
         "organization_id" => "1",
         "flow_id" => "1",
@@ -74,7 +77,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
         "speech" => "https://x.test/a.ogg"
       }
 
-      assert %{success: false, error_type: :unknown, reason: "Kaapi is not active"} =
+      assert %{success: false, error_type: :missing_api_key, reason: "Kaapi is not active"} =
                VoiceFilesearchGpt.call(fields, %{})
     end
   end

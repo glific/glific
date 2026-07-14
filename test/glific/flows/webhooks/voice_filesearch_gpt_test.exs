@@ -333,6 +333,51 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert log.error != nil
     end
 
+    # STT self-classification: a Gemini 4xx is a rejected request (bad/unsupported audio),
+    # so the ack is tagged config (`:invalid_input`) instead of collapsing every STT failure
+    # to system — giving per-status visibility into where Gemini is failing.
+    test "STT 4xx self-classifies the dispatch ack as :invalid_input (config)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: "https://generativelanguage.googleapis.com" <> _} ->
+          %Tesla.Env{status: 400, body: %{"error" => "unsupported audio"}}
+      end)
+
+      assert %{success: false, error_type: :invalid_input, reason: reason} =
+               VoiceFilesearchGpt.call(fields, %{})
+
+      assert reason =~ "400"
+    end
+
+    # A Gemini 5xx is an upstream outage → the ack is tagged system (`:unknown`) so it pages.
+    test "STT 5xx self-classifies the dispatch ack as :unknown (system)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: "https://generativelanguage.googleapis.com" <> _} ->
+          %Tesla.Env{status: 503, body: %{"error" => "overloaded"}}
+      end)
+
+      assert %{success: false, error_type: :unknown} = VoiceFilesearchGpt.call(fields, %{})
+    end
+
     # Stage 2 (Kaapi LLM) failure (non-timeout): STT succeeds but the unified LLM call
     # returns an API error (500); VoiceFilesearchGpt.call returns %{success: false} and
     # the flow records the error.
