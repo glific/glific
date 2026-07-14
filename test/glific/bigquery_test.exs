@@ -13,6 +13,7 @@ defmodule Glific.BigQueryTest do
     Contacts.Contact,
     Flows.FlowResult,
     Partners,
+    Partners.Saas,
     Repo,
     Seeds.SeedsDev
   }
@@ -788,6 +789,46 @@ defmodule Glific.BigQueryTest do
     test "wa_groups_phones is registered in bigquery_tables" do
       tables = BigQuery.bigquery_tables(1)
       assert Map.has_key?(tables, "wa_groups_phones")
+    end
+  end
+
+  describe "organizations BigQuery serialization" do
+    test "organization_schema/0 includes the curated fields and excludes PII/secrets" do
+      field_names = Schema.organization_schema() |> Enum.map(& &1.name)
+
+      for expected <- ~w(id name shortcode status is_active is_approved is_suspended
+                         suspended_until is_trial_org trial_expiration_date deleted_at
+                         inserted_at updated_at) do
+        assert expected in field_names
+      end
+
+      for excluded <- ~w(email team_emails signature_phrase setting fields last_communication_at) do
+        refute excluded in field_names
+      end
+    end
+
+    test "organization_status_history_schema/0 includes the transition fields" do
+      field_names = Schema.organization_status_history_schema() |> Enum.map(& &1.name)
+
+      for expected <- ~w(id organization_id previous_status new_status reason metadata
+                         changed_at inserted_at updated_at) do
+        assert expected in field_names
+      end
+    end
+
+    test "organizations and organization_status_histories are registered only for the SaaS org" do
+      saas_tables = BigQuery.bigquery_tables(Saas.organization_id())
+      assert Map.has_key?(saas_tables, "organizations")
+      assert Map.has_key?(saas_tables, "organization_status_histories")
+
+      other_tables = BigQuery.bigquery_tables(Saas.organization_id() + 1)
+      refute Map.has_key?(other_tables, "organizations")
+      refute Map.has_key?(other_tables, "organization_status_histories")
+    end
+
+    test "organization_status_histories is append-only (ignores updates)" do
+      assert "organization_status_histories" in BigQuery.ignore_updates_for_table()
+      refute "organizations" in BigQuery.ignore_updates_for_table()
     end
 
     test "primary_wa_phone/1 returns phone from primary membership", %{

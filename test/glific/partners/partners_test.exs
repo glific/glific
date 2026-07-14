@@ -432,6 +432,80 @@ defmodule Glific.PartnersTest do
       assert updated_organization.newcontact_flow_id == flow.id
     end
 
+    test "update_organization/2 records a status transition when the status changes" do
+      organization = Fixtures.organization_fixture(%{status: :active})
+
+      assert {:ok, _updated_organization} =
+               Partners.update_organization(organization, %{status: :forced_suspension})
+
+      assert [history] = Partners.list_organization_status_histories(organization.id)
+      assert history.previous_status == :active
+      assert history.new_status == :forced_suspension
+      assert history.organization_id == organization.id
+      assert history.changed_at != nil
+      assert history.reason == nil
+      assert history.metadata == %{}
+    end
+
+    test "update_organization/2 does not record a history entry for a no-op status update" do
+      organization = Fixtures.organization_fixture(%{status: :active})
+
+      assert {:ok, _updated_organization} =
+               Partners.update_organization(organization, %{status: :active})
+
+      assert [] == Partners.list_organization_status_histories(organization.id)
+    end
+
+    test "update_organization/2 does not record a history entry when status is untouched" do
+      organization = Fixtures.organization_fixture(%{status: :active})
+
+      assert {:ok, _updated_organization} =
+               Partners.update_organization(organization, @update_org_attrs)
+
+      assert [] == Partners.list_organization_status_histories(organization.id)
+    end
+
+    test "update_organization/2 records the optional reason and metadata" do
+      organization = Fixtures.organization_fixture(%{status: :active})
+
+      assert {:ok, _updated_organization} =
+               Partners.update_organization(organization, %{
+                 status: :forced_suspension,
+                 status_change_reason: "payment_default",
+                 status_change_metadata: %{"invoice_id" => "inv_123"}
+               })
+
+      assert [history] = Partners.list_organization_status_histories(organization.id)
+      assert history.reason == "payment_default"
+      assert history.metadata == %{"invoice_id" => "inv_123"}
+    end
+
+    test "update_organization/2 captures rapid successive transitions in order" do
+      organization = Fixtures.organization_fixture(%{status: :active})
+
+      {:ok, organization} =
+        Partners.update_organization(organization, %{status: :forced_suspension})
+
+      {:ok, organization} = Partners.update_organization(organization, %{status: :active})
+      {:ok, _organization} = Partners.update_organization(organization, %{status: :suspended})
+
+      transitions =
+        organization.id
+        |> Partners.list_organization_status_histories()
+        |> Enum.map(&{&1.previous_status, &1.new_status})
+
+      assert transitions == [
+               {:active, :forced_suspension},
+               {:forced_suspension, :active},
+               {:active, :suspended}
+             ]
+    end
+
+    test "list_organization_status_histories/1 returns an empty timeline for a bot with no history" do
+      organization = Fixtures.organization_fixture()
+      assert [] == Partners.list_organization_status_histories(organization.id)
+    end
+
     test "update_organization/2 should update regex flow" do
       organization = Fixtures.organization_fixture()
       flow = Fixtures.flow_fixture()

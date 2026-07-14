@@ -2096,6 +2096,188 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the organizations dimension table (SaaS dataset only).
+
+  A curated, current-state subset of the organizations table — enough to join other
+  cross-org tables (stats_all, trackers_all, …) against for the org name/status.
+  Deliberately excludes PII (email, team_emails), secrets (signature_phrase), config
+  blobs (setting, fields, out_of_office, regx_flow) and the noisy last_communication_at.
+  """
+  @spec organization_schema :: list()
+  def organization_schema do
+    [
+      %{
+        description: "Unique ID for the organization",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the organization",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Shortcode of the organization",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Current lifecycle status of the organization",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is active",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is approved",
+        name: "is_approved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is suspended",
+        name: "is_suspended",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp until which the organization is suspended",
+        name: "suspended_until",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is a trial organization",
+        name: "is_trial_org",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Expiration date of the trial",
+        name: "trial_expiration_date",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp when the organization was soft-deleted",
+        name: "deleted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the organization was created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the organization was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for the organization status history table (SaaS dataset only).
+
+  Append-only log of every organization status transition, joinable to the
+  organizations dimension on organization_id for fleet-level status reporting.
+  """
+  @spec organization_status_history_schema :: list()
+  def organization_status_history_schema do
+    [
+      %{
+        description: "Unique ID for the status history entry",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Organization whose status changed",
+        name: "organization_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Organization status before this transition",
+        name: "previous_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Organization status after this transition",
+        name: "new_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Why the status changed, e.g. payment_default",
+        name: "reason",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Optional structured context for the transition",
+        name: "metadata",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp when the status transition was applied",
+        name: "changed_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the status history entry was created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the status history entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for message conversation table
   """
   @spec message_conversation_schema :: list()

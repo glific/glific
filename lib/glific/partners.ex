@@ -35,6 +35,7 @@ defmodule Glific.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.OrganizationData,
+    Partners.OrganizationStatusHistory,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
@@ -212,6 +213,20 @@ defmodule Glific.Partners do
         &filter_organization_with/2,
         skip_organization_id: true
       )
+
+  @doc """
+  Returns the append-only status-transition timeline for an organization, oldest first.
+
+  Bots created before status-history tracking existed simply have no rows — callers
+  must tolerate an empty timeline (only the current `status` is known for them).
+  """
+  @spec list_organization_status_histories(non_neg_integer()) :: [OrganizationStatusHistory.t()]
+  def list_organization_status_histories(organization_id),
+    do:
+      OrganizationStatusHistory
+      |> where([h], h.organization_id == ^organization_id)
+      |> order_by([h], asc: h.changed_at, asc: h.id)
+      |> Repo.all(skip_organization_id: true)
 
   @doc """
   List of organizations that are active within the system
@@ -396,23 +411,57 @@ defmodule Glific.Partners do
     ## We need to think about a better approach to handle this one.
     Caches.remove(organization.id, ["flow_keywords_map"])
 
-    with {:ok, updated_organization} <-
-           organization
-           |> Organization.changeset(attrs)
-           |> Repo.update(skip_organization_id: true) do
-      # pin both new contact and optin flow id
-      maybe_pin_flow(
-        updated_organization.newcontact_flow_id,
-        organization.newcontact_flow_id,
-        updated_organization
-      )
+    # The status transition is recorded in the same transaction as the org update so a
+    # transition can never be applied without its history entry (and vice-versa), and
+    # concurrent updates to the same org are serialized rather than dropped/duplicated.
+    Repo.transaction(fn ->
+      organization
+      |> Organization.changeset(attrs)
+      |> Repo.update(skip_organization_id: true)
+      |> case do
+        {:ok, updated_organization} ->
+          record_status_transition(organization, updated_organization, attrs)
 
-      maybe_pin_flow(
-        updated_organization.optin_flow_id,
-        organization.optin_flow_id,
-        updated_organization
-      )
-    end
+          # pin both new contact and optin flow id
+          maybe_pin_flow(
+            updated_organization.newcontact_flow_id,
+            organization.newcontact_flow_id,
+            updated_organization
+          )
+
+          maybe_pin_flow(
+            updated_organization.optin_flow_id,
+            organization.optin_flow_id,
+            updated_organization
+          )
+
+          updated_organization
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  # Records an append-only status-transition history entry when — and only when — the
+  # organization's status actually changed. No-op updates (status set to the same value,
+  # or an update that never touched status) are intentionally skipped. `reason`/`metadata`
+  # are optional and default to nil/empty when the caller has no billing/manual context.
+  @spec record_status_transition(Organization.t(), Organization.t(), map()) ::
+          {:ok, OrganizationStatusHistory.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
+  defp record_status_transition(%{status: same}, %{status: same}, _attrs), do: {:ok, nil}
+
+  defp record_status_transition(%{status: previous}, %{status: new} = updated, attrs) do
+    %OrganizationStatusHistory{}
+    |> OrganizationStatusHistory.changeset(%{
+      previous_status: previous,
+      new_status: new,
+      reason: attrs[:status_change_reason],
+      metadata: attrs[:status_change_metadata] || %{},
+      changed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      organization_id: updated.id
+    })
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @spec update_org_contact(Organization.t(), String.t()) ::

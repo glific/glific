@@ -53,6 +53,8 @@ defmodule Glific.BigQuery do
     Messages.MessageConversation,
     Messages.MessageMedia,
     Partners,
+    Partners.Organization,
+    Partners.OrganizationStatusHistory,
     Partners.Saas,
     Profiles.Profile,
     Registrations.Registration,
@@ -159,6 +161,8 @@ defmodule Glific.BigQuery do
   defp bigquery_tables(organization_id) do
     if organization_id == Saas.organization_id() do
       Map.merge(@bigquery_tables, %{
+        "organizations" => :organization_schema,
+        "organization_status_histories" => :organization_status_history_schema,
         "stats_all" => :stats_all_schema,
         "trackers_all" => :trackers_all_schema,
         "trial_users" => :trial_user_schema
@@ -178,6 +182,7 @@ defmodule Glific.BigQuery do
       "flow_labels",
       "flows",
       "message_conversations",
+      "organization_status_histories",
       "stats",
       "stats_all",
       "tags"
@@ -281,6 +286,8 @@ defmodule Glific.BigQuery do
     "message_conversations" => MessageConversation,
     "messages" => Message,
     "messages_media" => MessageMedia,
+    "organizations" => Organization,
+    "organization_status_histories" => OrganizationStatusHistory,
     "profiles" => Profile,
     "stats" => Stat,
     "stats_all" => Stat,
