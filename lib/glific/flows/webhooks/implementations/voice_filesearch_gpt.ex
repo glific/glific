@@ -59,8 +59,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   defp run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key) do
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    Glific.Metrics.increment("Voice Filesearch GPT", organization_id)
-
     case transcribe(fields["speech"], organization_id) do
       {:ok, transcribed_text} ->
         fields

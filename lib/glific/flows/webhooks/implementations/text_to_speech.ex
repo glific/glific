@@ -37,8 +37,6 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
         voice: fields["voice"]
       }
 
-      Glific.Metrics.increment("Kaapi TTS Call", organization_id)
-
       Kaapi.text_to_speech(
         organization_id,
         fields["text"],
