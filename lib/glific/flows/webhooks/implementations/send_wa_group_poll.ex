@@ -1,15 +1,12 @@
 defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
   @moduledoc """
-  Send a WhatsApp group poll in a flow (`send_wa_group_poll` flow-webhook node).
-
-  Migrated from `Glific.Clients.CommonWebhook.webhook("send_wa_group_poll", ...)` onto the
-  central `Glific.Flows.Webhooks` framework; behaviour is preserved one-for-one. Failure
-  reporting and latency telemetry are added by `Glific.Flows.Webhooks.Dispatcher`, not here.
+  Send a WhatsApp group poll in a flow (`send_wa_group_poll` node).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "send_wa_group_poll"
 
   alias Glific.{
+    Flows.Webhooks.ErrorType,
     Groups.WAGroup,
     Providers.Maytapi,
     Repo,
@@ -19,7 +16,8 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
   }
 
   @impl true
-  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map() | String.t()
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
          {:ok, wa_phone} <-
@@ -39,20 +37,21 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
            }),
          {:ok, wa_message} <-
            Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
-      %{success: true, poll: wa_message.poll_content}
+      {:ok, %{success: true, poll: wa_message.poll_content}}
     else
+      {:error, error_type, message} when is_atom(error_type) ->
+        {:error, error_type, message}
+
       {:error, reason} when is_binary(reason) ->
-        reason
+        {:error, :unknown, reason}
 
       {:error, reason} ->
-        SafeLog.safe_inspect(reason)
+        {:error, :unknown, SafeLog.safe_inspect(reason)}
     end
   end
 
-  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec parse_wa_poll_params(map()) :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
   defp parse_wa_poll_params(fields) do
-    # if wa_group is in the map, then the inner keys will be already filled by
-    # webhook module
     with {true, _} <- {is_map(fields["wa_group"]), :wa_group},
          {true, _} <- {is_integer(fields["organization_id"]), :organization_id},
          {:ok, _} <-
@@ -65,10 +64,10 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
        }}
     else
       :error ->
-        {:error, "poll_uuid is invalid"}
+        {:error, :invalid_input, "poll_uuid is invalid"}
 
       {false, field} ->
-        {:error, "#{field} is invalid"}
+        {:error, :invalid_input, "#{field} is invalid"}
     end
   end
 end

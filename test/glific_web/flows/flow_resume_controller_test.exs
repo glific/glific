@@ -769,6 +769,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
+      # The async callback path passes the callback's own structured error_type straight through
+      # to the tag (config/system classification for async is a separate, later change).
       assert tags.error_type == "timeout"
       assert tags.reason == "LLM provider timed out"
     end
