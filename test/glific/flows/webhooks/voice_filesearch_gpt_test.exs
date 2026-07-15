@@ -146,6 +146,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         "timestamp" => timestamp,
         "webhook_log_id" => webhook_log_id,
         "result_name" => "filesearch",
+        "webhook_name" => "voice-filesearch-gpt",
         "voice_post_process" => %{
           "source_language" => "english",
           "target_language" => "english",

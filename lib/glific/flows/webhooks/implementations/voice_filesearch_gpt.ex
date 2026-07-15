@@ -214,7 +214,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     if speech_engine == "open_ai" || language == "english" do
       ChatGPT.text_to_speech_with_open_ai(organization_id, text)
     else
-      Glific.Metrics.increment("Gemini NMT TTS Call", organization_id)
       Gemini.text_to_speech(organization_id, text)
     end
   end

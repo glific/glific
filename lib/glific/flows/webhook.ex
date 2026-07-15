@@ -21,8 +21,7 @@ defmodule Glific.Flows.Webhook do
     Dispatcher,
     Instrumentation,
     Registry,
-    Request,
-    VoiceFilesearchGpt
+    Request
   }
 
   use Oban.Worker,
@@ -448,35 +447,23 @@ defmodule Glific.Flows.Webhook do
   # `GlificWeb.Flows.FlowResumeController` stays thin: it pulls org context off
   # the connection, parses the callback (`parse_callback_response/1`) and uploads
   # any TTS audio (`maybe_upload_tts_audio/1`) in the request process, then hands
-  # off to `resume/3` / `voice_resume/3`. Validation, logging, telemetry and the
+  # off to `resume/3` (one handler for every async node). Validation, logging, telemetry and the
   # actual flow resume all live here so the signing (`add_signature/3`) and the
   # verification (`validate_request/2`) sit in one module.
   # --------------------------------------------------------------------------
 
   @doc """
-  Resume a flow parked on an async webhook, from the parsed Kaapi callback.
+  Resume a flow parked on any async webhook, from the parsed Kaapi callback.
 
-  Validates the callback signature and contact BEFORE any side effect, then
-  updates the webhook log, records telemetry, and resumes the contact's flow
-  with the parsed callback merged into the flow results.
+  Validates the callback signature and contact BEFORE any side effect, then updates the webhook
+  log, records telemetry, and resumes the contact's flow with the parsed callback merged into the
+  flow results. Node-specific callback work (e.g. voice NMT+TTS) runs inside the node's
+  `callback/3`, dispatched by `webhook_name` — so this one handler serves every async node.
   """
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
       resume(organization_id, result, response, contact)
-    end)
-  end
-
-  @doc """
-  Resume a flow parked on the voice unified-LLM webhook.
-
-  Same validation gate as `resume/3`, but shapes the callback through voice
-  post-processing (NMT + TTS) before resuming the flow.
-  """
-  @spec voice_resume(non_neg_integer(), map(), map()) :: :ok
-  def voice_resume(organization_id, result, response) do
-    with_validated_callback(organization_id, response, "Voice flow resume", fn contact ->
-      resume_voice_filesearch_gpt(organization_id, result, response, contact)
     end)
   end
 
@@ -531,31 +518,6 @@ defmodule Glific.Flows.Webhook do
     |> report_resume_error(response)
   end
 
-  @spec resume_voice_filesearch_gpt(non_neg_integer(), map(), map(), Contact.t()) :: :ok
-  defp resume_voice_filesearch_gpt(organization_id, result, response, contact) do
-    response_key = response["result_name"] || "response"
-
-    # The Dispatcher runs VoiceFilesearchGpt.callback/3 (NMT + TTS post-processing on success,
-    # pass-through on failure) inside callback-phase instrumentation, returning the shaped voice
-    # response — the webhook_name is fixed here since this route only serves the voice node.
-    voice_response = Dispatcher.callback(VoiceFilesearchGpt.name(), result, response)
-
-    message =
-      if result["success"],
-        do: Messages.create_temp_message(organization_id, "Success"),
-        else: Messages.create_temp_message(organization_id, "Failure")
-
-    maybe_update_log(response["webhook_log_id"], voice_response)
-
-    FlowContext.resume_contact_flow(
-      contact,
-      response["flow_id"],
-      %{response_key => voice_response},
-      message
-    )
-    |> report_resume_error(response)
-  end
-
   # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
   # webhook responses (falls back to the default behavior).
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
@@ -585,7 +547,7 @@ defmodule Glific.Flows.Webhook do
 
   @doc """
   Parse the raw Kaapi/external callback body into the internal response map
-  consumed by `resume/3` and `voice_resume/3`.
+  consumed by `resume/3`.
   """
   # New format from filesearch-gpt (/api/v1/llm/call):
   # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]

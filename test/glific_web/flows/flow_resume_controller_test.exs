@@ -641,7 +641,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       with_mock FlowContext,
         resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
         assert :ok =
-                 Webhook.voice_resume(
+                 Webhook.resume(
                    organization_id,
                    params,
                    response
@@ -695,7 +695,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         })
 
       assert :ok =
-               Webhook.voice_resume(
+               Webhook.resume(
                  organization_id,
                  %{"success" => false},
                  response
@@ -755,7 +755,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       {exception, tags} =
         capture_appsignal(fn ->
           assert :ok =
-                   Webhook.voice_resume(
+                   Webhook.resume(
                      organization_id,
                      result,
                      response
@@ -769,6 +769,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert tags.flow_id == flow.id
       assert tags.contact_id == contact.id
       assert tags.webhook_log_id == webhook_log.id
+
       # The async callback is classified by the node.s classify/1 (KaapiSupport.classify) from status/reason; a
       # statusless "timed out" reason is unjudgeable → :unknown (system). The raw Kaapi
       # error_type is preserved separately for debugging.
