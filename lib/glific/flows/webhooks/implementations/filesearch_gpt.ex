@@ -10,9 +10,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
   alias Glific.ThirdParty.Kaapi
 
-  @doc """
-  Fires the async Kaapi LLM request and returns the ack map (`%{success: …}`).
-  """
+  @doc "Fires the async Kaapi LLM request."
   @impl true
   @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
@@ -32,8 +30,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
       {:error, _error_type, _reason} = error ->
         error
 
-      # fetch_kaapi_creds returns {:error, "Kaapi is not active"} for an unconfigured org — a
-      # provisioning gap, so name it :missing_api_key (-> system).
+      # unconfigured org (fetch_kaapi_creds -> {:error, binary}): a provisioning gap -> system
       {:error, reason} when is_binary(reason) ->
         {:error, :missing_api_key, reason}
 

@@ -41,7 +41,6 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     end
   end
 
-  # Mirrors build_context so the callback and dispatch phases see the same ctx shape.
   @spec callback_ctx(map()) :: map()
   defp callback_ctx(response) do
     %{
@@ -52,8 +51,7 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
     }
   end
 
-  # Carries the flow-context ids so a failure reported before the callback (dispatch failure /
-  # crash) still tags contact/flow/webhook_log.
+  # flow-context ids so a pre-callback failure (dispatch/crash) still tags contact/flow/webhook_log
   @spec build_context(map(), keyword() | list()) :: map()
   defp build_context(fields, headers) do
     %{

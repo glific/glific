@@ -47,7 +47,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
-  # A snooze reschedules the Oban job — record nothing.
   defp record_outcome(_mode, {:snooze, _seconds}, _webhook_name, _start, _ctx), do: :ok
 
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
@@ -65,14 +64,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     report_typed_failure(result, webhook_name, ctx)
   end
 
-  # Success only for `{:ok, _}` or `%{success: true}`; every other shape is Failure.
   @spec sync_count_status(any()) :: String.t()
   defp sync_count_status({:ok, _value}), do: "success"
   defp sync_count_status(%{success: true}), do: "success"
   defp sync_count_status(_result), do: "failure"
 
-  # A typed `{:error, ErrorType.t(), msg}` is routed by ErrorReporter; any untyped failure shape
-  # fails safe to `:unknown` (-> system).
   @spec report_typed_failure(any(), String.t(), map()) :: :ok
   defp report_typed_failure({:error, error_type, message}, webhook_name, ctx)
        when is_atom(error_type) and is_binary(message) do
@@ -112,7 +108,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     Map.put(ctx_tags(ctx), :webhook_name, webhook_name)
   end
 
-  # The flow-context ids carried on `ctx` (built by the Dispatcher).
   @spec ctx_tags(map()) :: map()
   defp ctx_tags(ctx) do
     %{
@@ -123,8 +118,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     }
   end
 
-  # An async callback failure is an opaque provider string, so the node's `classify/1` infers the
-  # ErrorType and `ErrorReporter` routes it like the sync path.
   @doc "Report an async callback that arrived with `success` not true, classified by the node."
   @spec report_callback_failure(module() | nil, map(), map()) :: :ok
   def report_callback_failure(_module, %{"success" => true}, _response), do: :ok
@@ -142,8 +135,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   def report_callback_failure(_module, _result, _response), do: :ok
 
-  # Delegates to the node's own `classify/1` when known; a callback with no resolvable module
-  # fails safe to system.
   @spec classify_callback(map(), module() | nil) :: ErrorType.t()
   defp classify_callback(result, module) when is_atom(module) and not is_nil(module),
     do: module.classify(result)
@@ -218,7 +209,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       reraise exception, __STACKTRACE__
   end
 
-  # Callback-phase telemetry for an async webhook (count, latency, failure classification).
   @spec record_callback_outcome(module() | nil, map(), map()) :: :ok
   defp record_callback_outcome(module, result, response) do
     status = if result["success"], do: "success", else: "failure"
@@ -251,7 +241,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # --- private ----------------------------------------------------------------
 
-  # Async callback latency (request dispatch -> callback arrival), from the request timestamp.
   @spec track_kaapi_latency(map(), String.t()) :: :ok
   defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
        when is_integer(timestamp) do

@@ -153,7 +153,6 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   def from_http_status(status) when is_integer(status) and status in 400..499, do: :invalid_input
   def from_http_status(_status), do: :unknown
 
-  # Status may arrive as an integer or a JSON string ("404"); anything else → nil.
   @spec to_status(any()) :: integer() | nil
   defp to_status(status) when is_integer(status), do: status
 
@@ -167,7 +166,6 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   defp to_status(_status), do: nil
 
-  # The reason lives under "reason" or (some failures) "error"; absent/non-binary → "".
   @spec to_reason(map()) :: String.t()
   defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
   defp to_reason(%{"error" => error}) when is_binary(error), do: error
