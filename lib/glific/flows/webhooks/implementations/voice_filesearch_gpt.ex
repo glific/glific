@@ -1,21 +1,14 @@
 defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @moduledoc """
-  Async webhook implementation for the `voice-filesearch-gpt` flow node.
-
-  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it transcribes the
-  incoming audio synchronously with Gemini speech-to-text, then fires the async Kaapi LLM
-  request with a voice callback path so the answer is post-processed (NMT + TTS) before
-  resuming the flow.
-
-  The Kaapi response arrives at `GlificWeb.Flows.FlowResumeController.voice_flow_resume/2`
-  and is post-processed here by `voice_post_process/3` (NMT + TTS) before
-  `Glific.Flows.Webhook` resumes the flow. The Gemini STT / NMT+TTS calls live here directly
-  (the standalone `*_with_bhasini` webhook nodes have been removed).
+  Async webhook implementation for the `voice-filesearch-gpt` flow node: transcribes the
+  incoming audio with Gemini STT, then fires the async Kaapi LLM request with a voice callback
+  path so the answer is post-processed (NMT + TTS) before resuming the flow.
   """
 
   use Glific.Flows.Webhooks.Async, name: "voice-filesearch-gpt"
 
   alias Glific.Flows.Webhooks.Behaviour
+  alias Glific.Flows.Webhooks.ErrorReporter
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Instrumentation
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiWebhook
@@ -27,13 +20,11 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
   @doc """
   Fires the voice LLM pipeline: synchronous Gemini STT, then the async Kaapi LLM call.
-  Returns the Kaapi ack map, or a failure map if STT fails or Kaapi is not configured.
   """
   @impl true
   @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
-    # Check Kaapi creds before running STT — no point transcribing if the LLM call can't
-    # be made. The STT step itself uses Gemini, not the Kaapi API key.
+    # Check Kaapi creds before running STT — no point transcribing if the LLM call can't be made.
     with {:ok, {organization_id, flow_id, contact_id}} <- KaapiWebhook.parse_flow_fields(fields),
          {:ok, %{"api_key" => api_key}} when is_binary(api_key) <-
            Kaapi.fetch_kaapi_creds(organization_id) do
@@ -42,13 +33,11 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       {:error, _error_type, _reason} = error ->
         error
 
-      # An unconfigured org: fetch_kaapi_creds returns {:error, "Kaapi is not active"} — a
-      # provisioning gap, so name it :missing_api_key (→ system) rather than leave it unjudged.
+      # fetch_kaapi_creds returns {:error, "Kaapi is not active"} for an unconfigured org — a
+      # provisioning gap, so name it :missing_api_key (-> system).
       {:error, reason} when is_binary(reason) ->
         {:error, :missing_api_key, reason}
 
-      # Any other shape (e.g. a creds row carrying no usable api_key) is genuinely unexpected —
-      # fail safe to a generic system error instead of guessing a specific cause.
       _ ->
         {:error, :unknown, "Unexpected Kaapi dispatch failure"}
     end
@@ -76,11 +65,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     end
   end
 
-  # Synchronous Gemini speech-to-text. Validates the audio URL, then transcribes; a failure
-  # short-circuits the pipeline so the async webhook surfaces it on the Failure branch. The
-  # Gemini failure self-classifies off the status it hands back (`asr_response_text`) — the same
-  # status rule every other webhook uses — so a bad-request 4xx routes to config while an outage
-  # (5xx / transport error) pages on-call, instead of every STT failure collapsing to system.
+  # Gemini STT failure self-classifies off the status it hands back, same status rule every
+  # other webhook uses, so a 4xx routes to config while an outage pages on-call.
   @spec transcribe(any(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, ErrorType.t(), String.t()}
   defp transcribe(speech, organization_id) do
@@ -93,17 +79,16 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           detail = failure[:asr_response_text]
           {:error, KaapiWebhook.from_http_status(detail), stt_failure_reason(detail)}
 
-        # Gemini.speech_to_text can pass an upstream error term through unchanged (e.g. a bare
-        # {:error, reason} when the download fails with a non-standard reason) — normalise it to a
-        # typed failure instead of raising CaseClauseError in the worker.
+        # Normalise an unusual passthrough (e.g. a bare download-error term) instead of raising
+        # CaseClauseError in the worker.
         unexpected ->
           {:error, :unknown, stt_failure_reason(unexpected)}
       end
     end
   end
 
-  # `asr_response_text` on a failure is a status integer, a transport atom, a "download failed"
-  # string, or a raw body map — render it without crashing (`to_string/1` would on a map).
+  # asr_response_text on failure may be a status, atom, string, or raw map — to_string/1 would
+  # raise on a map, so render defensively.
   @spec stt_failure_reason(any()) :: String.t()
   defp stt_failure_reason(detail) when is_binary(detail), do: detail
   defp stt_failure_reason(detail), do: "Speech to text failed (#{SafeLog.safe_inspect(detail)})"
@@ -142,10 +127,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   end
 
   @doc """
-  Callback phase: shapes the Kaapi response the flow resumes on. Overrides the async default
-  (pass-through) because voice needs NMT + TTS post-processing — but only on success; on a
-  failure the flow takes the Failure branch and there's nothing to speak, so pass it through.
-  Invoked via `Dispatcher.callback` so callback telemetry + classification are instrumented.
+  Callback phase: overrides the async default (pass-through) to add NMT + TTS post-processing,
+  but only on success — a failure has nothing to speak.
   """
   @impl true
   @spec callback(map(), map(), Behaviour.ctx()) :: map()
@@ -156,9 +139,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   def callback(_result, response, _ctx), do: response
 
   @doc """
-  Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`
-  (translate + generate audio), merging `translated_text` and `media_url` into the
-  response for the voice reply. Invoked by `callback/3` on a successful callback.
+  Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`, merging
+  `translated_text` and `media_url` into it for the voice reply.
   """
   @spec voice_post_process(non_neg_integer(), map()) :: map()
   def voice_post_process(organization_id, response) do
@@ -173,9 +155,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     |> Map.put("media_url", media_url)
   end
 
-  # Non-empty text: translate (when needed) + synthesise audio via Gemini directly. A
-  # successful Gemini result carries `translated_text` / `media_url`; any failure falls back
-  # to the untranslated LLM text with no audio.
+  # Translate (when needed) + synthesise audio via Gemini directly; a Gemini failure degrades to
+  # the untranslated LLM text with no audio.
   @spec nmt_tts(non_neg_integer(), String.t(), map()) :: {String.t(), String.t() | nil}
   defp nmt_tts(organization_id, text, voice_fields) when text != "" do
     source_language = normalize_language(voice_fields["source_language"])
@@ -192,8 +173,12 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       end
 
     case result do
-      %{success: true} = success -> {success[:translated_text] || text, success[:media_url]}
-      _ -> {text, nil}
+      %{success: true} = success ->
+        {success[:translated_text] || text, success[:media_url]}
+
+      failure ->
+        report_tts_failure(organization_id, failure)
+        {text, nil}
     end
   end
 
@@ -207,8 +192,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   defp normalize_language(nil), do: ""
   defp normalize_language(language), do: String.downcase(language)
 
-  # Source and target match: plain TTS. OpenAI for English / explicit open_ai engine,
-  # Gemini otherwise.
+  # Source and target match: plain TTS. OpenAI for English / explicit open_ai engine, Gemini
+  # otherwise.
   @spec tts_only(String.t(), non_neg_integer(), String.t(), String.t()) :: map()
   defp tts_only(language, organization_id, text, speech_engine) do
     if speech_engine == "open_ai" || language == "english" do
@@ -219,7 +204,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   end
 
   # Source and target differ: translate + synthesise via Gemini, guarded by a GCS-enabled +
-  # supported-language pre-check (so a disabled/unsupported org fails fast without a network call).
+  # supported-language pre-check so an unsupported org fails fast without a network call.
   @spec nmt_tts_call(String.t(), String.t(), non_neg_integer(), String.t(), Keyword.t()) :: map()
   defp nmt_tts_call(source_language, target_language, organization_id, text, opts) do
     organization = Partners.organization(organization_id)
@@ -231,16 +216,15 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       Gemini.nmt_text_to_speech(organization_id, text, source_language, target_language, opts)
     else
       true ->
-        %{success: false, reason: "GCS is disabled"}
+        %{success: false, reason: "GCS is disabled", error_type: :invalid_input}
 
       false ->
-        %{success: false, reason: "Language not supported in Gemini"}
+        %{success: false, reason: "Language not supported in Gemini", error_type: :invalid_input}
     end
   end
 
-  # success=true but empty body — the HTTP call succeeded (status 200), the content
-  # was just unusable. Reporting (SystemError + flow_webhooks namespace) is owned by
-  # the centralised Instrumentation module, like every other webhook failure.
+  # success=true but empty body — reporting is owned by Instrumentation, like every other
+  # webhook failure.
   @spec report_empty_message(non_neg_integer()) :: :ok
   defp report_empty_message(organization_id) do
     Instrumentation.report_failure(name(), %{
@@ -249,4 +233,33 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       reason: "Kaapi callback returned success=true but message was empty/nil"
     })
   end
+
+  # Reports a voice TTS/NMT post-processing failure with the node's own verdict; the caller
+  # still degrades to text-only so the flow resumes.
+  @spec report_tts_failure(non_neg_integer(), map()) :: :ok
+  defp report_tts_failure(organization_id, failure) do
+    reason = failure[:reason] || failure[:error] || "Voice TTS post-processing failed"
+    reason = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
+
+    ErrorReporter.report(tts_error_type(failure), reason, %{
+      organization_id: organization_id,
+      webhook_name: name()
+    })
+  end
+
+  # Self-classifies the TTS failure: an explicit error_type wins; otherwise an HTTP status maps
+  # through the shared status rule, a known config reason routes to config, else system.
+  @spec tts_error_type(map()) :: ErrorType.t()
+  defp tts_error_type(%{error_type: error_type})
+       when is_atom(error_type) and not is_nil(error_type),
+       do: error_type
+
+  defp tts_error_type(%{http_status: status}) when is_integer(status),
+    do: KaapiWebhook.from_http_status(status)
+
+  defp tts_error_type(%{reason: reason}) when is_binary(reason) do
+    if reason =~ ~r/GCS is disabled|Language not supported/i, do: :invalid_input, else: :unknown
+  end
+
+  defp tts_error_type(_failure), do: :unknown
 end

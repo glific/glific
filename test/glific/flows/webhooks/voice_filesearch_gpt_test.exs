@@ -13,6 +13,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.ConfigurationError,
     Flows.Webhooks.Errors.SystemError,
     Flows.Webhooks.VoiceFilesearchGpt,
     Partners,
@@ -493,9 +494,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     end
 
     # Stage 3 (NMT+TTS) failure: a non-empty answer, but the Gemini NMT+TTS step fails
-    # (GCS not enabled for org 1 in test) — voice_post_process falls back to the
-    # untranslated text with no audio rather than crashing.
-    test "returns untranslated text and no audio when NMT+TTS fails (GCS disabled)" do
+    # (GCS not enabled for org 1 in test) — voice_post_process reports the failure (for
+    # visibility) and falls back to the untranslated text with no audio rather than crashing.
+    test "reports a config error and degrades to text-only when NMT+TTS fails (GCS disabled)" do
       response = %{
         "message" => "Hello there",
         "voice_post_process" => %{
@@ -504,10 +505,20 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         }
       }
 
-      result = VoiceFilesearchGpt.voice_post_process(1, response)
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = VoiceFilesearchGpt.voice_post_process(1, response)
 
-      assert result["translated_text"] == "Hello there"
-      assert is_nil(result["media_url"])
+          # Degrades gracefully: untranslated text, no audio.
+          assert result["translated_text"] == "Hello there"
+          assert is_nil(result["media_url"])
+        end)
+
+      # GCS disabled is an org-provisioning issue → config (notify support), not on-call.
+      assert %ConfigurationError{} = exception
+      assert tags.webhook_name == "voice-filesearch-gpt"
+      assert tags.error_type == "invalid_input"
+      assert tags.reason =~ "GCS is disabled"
     end
 
     # Stage 3 (NMT+TTS) success: source != target, GCS enabled, supported languages —
