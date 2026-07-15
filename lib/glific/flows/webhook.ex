@@ -471,8 +471,6 @@ defmodule Glific.Flows.Webhook do
 
     maybe_update_log(response["webhook_log_id"], log_message)
 
-    # Runs the node's callback/3 (pass-through for STT/TTS/filesearch) inside callback-phase
-    # instrumentation, so telemetry + classification happen in one place.
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
 
     response_key = response["result_name"] || "response"
