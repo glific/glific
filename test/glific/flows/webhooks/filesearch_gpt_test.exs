@@ -280,7 +280,9 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     end
 
     test "returns error when assistant not found" do
-      assert {:error, :invalid_input, reason} = FilesearchGpt.call(lookup_fields("nonexistent_id"), %{})
+      assert {:error, :invalid_input, reason} =
+               FilesearchGpt.call(lookup_fields("nonexistent_id"), %{})
+
       assert reason =~ "Assistant not found"
     end
 

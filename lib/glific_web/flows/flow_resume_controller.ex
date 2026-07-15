@@ -11,8 +11,9 @@ defmodule GlificWeb.Flows.FlowResumeController do
   alias Glific.Flows.Webhook
 
   @doc """
-  Resume a flow after any async webhook calls back. Both `/flow_resume` and
-  `/voice_flow_resume` land here — `Webhook.resume` dispatches to the node's `callback/3`.
+  Resume a flow after any async webhook calls back. Every Kaapi node (STT, TTS, filesearch-gpt,
+  voice) posts back to `/webhook/flow_resume` — `Webhook.resume` dispatches to the node's
+  `handle_callback/3`.
   """
   @spec flow_resume(Plug.Conn.t(), map) :: Plug.Conn.t()
   def flow_resume(

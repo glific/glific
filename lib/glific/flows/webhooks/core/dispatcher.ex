@@ -28,18 +28,19 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   """
   @spec callback(String.t() | nil, map(), map()) :: map()
   def callback(name, result, response) when is_map(result) and is_map(response) do
-    case Registry.lookup(name) do
-      nil ->
-        Instrumentation.around_callback(nil, result, response, fn -> response end)
+    module = Registry.lookup(name)
 
-      module ->
-        ctx = callback_ctx(response)
-
-        Instrumentation.around_callback(module, result, response, fn ->
-          module.callback(result, response, ctx)
-        end)
-    end
+    Instrumentation.around_callback(module, result, response, fn ->
+      shape_response(module, result, response)
+    end)
   end
+
+  # nil module (unregistered/absent name) -> pass the response through unchanged.
+  @spec shape_response(module() | nil, map(), map()) :: map()
+  defp shape_response(nil, _result, response), do: response
+
+  defp shape_response(module, result, response),
+    do: module.handle_callback(result, response, callback_ctx(response))
 
   @spec callback_ctx(map()) :: map()
   defp callback_ctx(response) do

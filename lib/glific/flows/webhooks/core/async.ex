@@ -36,9 +36,9 @@ defmodule Glific.Flows.Webhooks.Async do
       def wait_time_default, do: 60
 
       @doc "Shapes the parsed callback the flow resumes on; default passes it through unchanged."
-      @spec callback(map(), map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
+      @spec handle_callback(map(), map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
       @impl true
-      def callback(_result, response, _ctx), do: response
+      def handle_callback(_result, response, _ctx), do: response
 
       @doc "Classifies a failed Kaapi callback into an ErrorType; default delegates to KaapiSupport."
       @spec classify(map()) :: Glific.Flows.Webhooks.ErrorType.t()
@@ -48,7 +48,7 @@ defmodule Glific.Flows.Webhooks.Async do
       # credo:disable-for-next-line Credo.Check.Design.AliasUsage
       def classify(result), do: Glific.Flows.Webhooks.Kaapi.classify(result)
 
-      defoverridable wait_time_default: 0, callback: 3, classify: 1
+      defoverridable wait_time_default: 0, handle_callback: 3, classify: 1
     end
   end
 end

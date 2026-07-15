@@ -467,7 +467,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
-    log_message = tts_aware_log_message(result, response)
+    log_message = response["tts_upload_error"] || callback_log_message(result, response)
 
     maybe_update_log(response["webhook_log_id"], log_message)
 
@@ -488,8 +488,8 @@ defmodule Glific.Flows.Webhook do
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
   # A failed TTS audio upload routes to Failure even though Kaapi itself reported success —
   # there's no usable audio to continue the Success branch with.
-  defp resume_message(_result, %{"tts_upload_error" => reason}, organization_id)
-       when is_binary(reason) do
+  defp resume_message(_result, %{"tts_upload_error" => log}, organization_id)
+       when is_map(log) do
     Messages.create_temp_message(organization_id, "Failure")
   end
 
@@ -541,21 +541,8 @@ defmodule Glific.Flows.Webhook do
     %{}
   end
 
-  # A failed TTS audio upload (e.g. GCS not enabled) is recorded on the WebhookLog as an
-  # explicit failure rather than a silent success with a nil message.
-  @spec tts_aware_log_message(map(), map()) :: map()
-  defp tts_aware_log_message(_result, %{"tts_upload_error" => reason} = response)
-       when is_binary(reason) do
-    %{
-      success: false,
-      message: nil,
-      error_type: "tts_upload_failed",
-      reason: reason,
-      thread_id: response["thread_id"]
-    }
-  end
-
-  defp tts_aware_log_message(result, response) do
+  @spec callback_log_message(map(), map()) :: map()
+  defp callback_log_message(result, response) do
     %{
       success: result["success"],
       message: response["message"] || sanitize_kaapi_wording(result["error"]),
@@ -587,11 +574,17 @@ defmodule Glific.Flows.Webhook do
         Map.put(response, "message", media_url)
 
       {:error, reason} ->
-        # Surface the failure (see tts_aware_log_message/2) instead of silently resuming with
-        # success=true and a nil message.
+        # Emit a ready-to-log failure map (not a silent success=true/nil message). resume/3 writes
+        # it to the WebhookLog verbatim and routes the flow to Failure.
         response
         |> Map.put("message", nil)
-        |> Map.put("tts_upload_error", reason)
+        |> Map.put("tts_upload_error", %{
+          success: false,
+          message: nil,
+          error_type: "tts_upload_failed",
+          reason: reason,
+          thread_id: response["thread_id"]
+        })
     end
   end
 

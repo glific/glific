@@ -34,11 +34,11 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @callback wait_time_default() :: non_neg_integer()
 
   # Async callback phase (Kaapi POSTs back): `Dispatcher.callback` runs these through the same
-  # instrumentation as `call/2`. `callback/3` shapes the response the flow resumes on (default
+  # instrumentation as `call/2`. `handle_callback/3` shapes the response the flow resumes on (default
   # pass-through; voice-filesearch-gpt overrides it for NMT+TTS). `classify/1` maps a failed
   # callback to an `ErrorType.t()` (default -> `Kaapi.classify`; overridable).
-  @callback callback(result :: map(), response :: map(), ctx :: ctx()) :: map()
+  @callback handle_callback(result :: map(), response :: map(), ctx :: ctx()) :: map()
   @callback classify(result :: map()) :: Glific.Flows.Webhooks.ErrorType.t()
 
-  @optional_callbacks wait_time_default: 0, callback: 3, classify: 1
+  @optional_callbacks wait_time_default: 0, handle_callback: 3, classify: 1
 end

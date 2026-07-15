@@ -102,7 +102,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         flow_id,
         contact_id,
         fields,
-        "/kaapi/voice_flow_resume",
+        "/webhook/flow_resume",
         voice_start_timestamp
       )
 
@@ -125,12 +125,12 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   but only on success — a failure has nothing to speak.
   """
   @impl true
-  @spec callback(map(), map(), Behaviour.ctx()) :: map()
-  def callback(%{"success" => true}, response, %{organization_id: organization_id}) do
+  @spec handle_callback(map(), map(), Behaviour.ctx()) :: map()
+  def handle_callback(%{"success" => true}, response, %{organization_id: organization_id}) do
     voice_post_process(organization_id, response)
   end
 
-  def callback(_result, response, _ctx), do: response
+  def handle_callback(_result, response, _ctx), do: response
 
   @doc """
   Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`, merging

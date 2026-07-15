@@ -593,14 +593,14 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
           node_uuid: node.uuid
         })
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
     end
 
     test "voice_flow_resume returns 200 for unexpected callback format", %{
       conn: conn
     } do
-      conn = post(conn, "/kaapi/voice_flow_resume", %{"unexpected" => "format"})
+      conn = post(conn, "/webhook/flow_resume", %{"unexpected" => "format"})
       assert json_response(conn, 200) == ""
     end
 
@@ -632,7 +632,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "success" => true
       }
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
       # Call do_voice_flow_resume directly to verify the flow is NOT resumed
@@ -855,7 +855,11 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       result = Webhook.maybe_upload_tts_audio(response)
 
       assert is_nil(result["message"])
-      assert result["tts_upload_error"] =~ "not valid base64"
+
+      assert %{success: false, error_type: "tts_upload_failed", reason: reason} =
+               result["tts_upload_error"]
+
+      assert reason =~ "not valid base64"
     end
 
     test "maybe_upload_tts_audio surfaces the real GcsWorker error (not a hardcoded GCS message)" do
@@ -873,7 +877,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
         assert is_nil(result["message"])
         # the actual GcsWorker reason is passed through, not assumed "GCS not enabled"
-        assert result["tts_upload_error"] == gcs_error
+        assert result["tts_upload_error"][:reason] == gcs_error
       end
     end
 
@@ -904,8 +908,13 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "webhook_log_id" => webhook_log.id,
         "result_name" => "response",
         "message" => nil,
-        "tts_upload_error" =>
-          "TTS audio upload failed (GCS may not be enabled for this organization)"
+        "tts_upload_error" => %{
+          success: false,
+          message: nil,
+          error_type: "tts_upload_failed",
+          reason: "TTS audio upload failed (GCS may not be enabled for this organization)",
+          thread_id: nil
+        }
       }
 
       with_mock FlowContext, [:passthrough],

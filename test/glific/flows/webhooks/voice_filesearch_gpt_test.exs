@@ -178,7 +178,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
   describe "voice-filesearch-gpt" do
     # Happy path: the flow is already in await state (simulating that the
     # voice-filesearch-gpt webhook fired and put it there). The Kaapi LLM
-    # callback arrives at /kaapi/voice_flow_resume and the flow moves to
+    # callback arrives at /webhook/flow_resume and the flow moves to
     # the success branch, sending the translated response.
     test "happy path callback - flow moves to success route after voice callback", %{
       conn: %{assigns: %{organization_id: org_id}} = conn
@@ -197,7 +197,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           expected_message
         )
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
       message = await_flow_message(contact.id, expected_message)
@@ -220,7 +220,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           "Kaapi error: voice processing failed"
         )
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
       message = await_flow_message(contact.id, "failure")

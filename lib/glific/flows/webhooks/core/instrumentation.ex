@@ -52,7 +52,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_webhook_count(webhook_name, sync_count_status(result))
-    report_typed_failure(result, webhook_name, ctx)
+    maybe_report_failure(result, webhook_name, ctx)
   end
 
   # An accepted async dispatch (`{:ok, ack}`) means the request is in flight — latency/count
@@ -61,7 +61,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :async, start, :error)
-    report_typed_failure(result, webhook_name, ctx)
+    maybe_report_failure(result, webhook_name, ctx)
   end
 
   @spec sync_count_status(any()) :: String.t()
@@ -69,22 +69,22 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   defp sync_count_status(%{success: true}), do: "success"
   defp sync_count_status(_result), do: "failure"
 
-  @spec report_typed_failure(any(), String.t(), map()) :: :ok
-  defp report_typed_failure({:error, error_type, message}, webhook_name, ctx)
+  @spec maybe_report_failure(any(), String.t(), map()) :: :ok
+  defp maybe_report_failure({:error, error_type, message}, webhook_name, ctx)
        when is_atom(error_type) and is_binary(message) do
     ErrorReporter.report(error_type, message, failure_tags(webhook_name, ctx))
   end
 
-  defp report_typed_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
+  defp maybe_report_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
     ErrorReporter.report(:unknown, message, failure_tags(webhook_name, ctx))
   end
 
-  defp report_typed_failure(result, webhook_name, ctx) when is_binary(result) or is_nil(result) do
+  defp maybe_report_failure(result, webhook_name, ctx) when is_binary(result) or is_nil(result) do
     reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
-  defp report_typed_failure(%{success: false} = result, webhook_name, ctx) do
+  defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
     reason =
       case result do
         %{reason: reason} when is_binary(reason) -> reason
@@ -97,11 +97,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # A 3-tuple violating the typed contract (non-atom type / non-binary message) still routed the
   # flow to Failure — report :unknown rather than staying invisible to on-call.
-  defp report_typed_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
+  defp maybe_report_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
     ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
   end
 
-  defp report_typed_failure(_non_failure, _webhook_name, _ctx), do: :ok
+  defp maybe_report_failure(_non_failure, _webhook_name, _ctx), do: :ok
 
   @spec failure_tags(String.t(), map()) :: map()
   defp failure_tags(webhook_name, ctx) do
