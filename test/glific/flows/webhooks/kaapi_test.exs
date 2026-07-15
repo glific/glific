@@ -39,11 +39,6 @@ defmodule Glific.Flows.Webhooks.KaapiTest do
       assert ErrorType.class(:rate_limited) == :system
     end
 
-    test "a crash signature is unjudgeable → system, even without a status" do
-      result = %{"reason" => "no function clause matching in Kaapi.parse/1"}
-      assert KaapiSupport.classify(result) == :unknown
-    end
-
     test "an overloaded / locked upstream is a system error (before any status rule)" do
       # code 400 present, but the transient signature wins so it is NOT misfiled as config.
       locked = %{"reason" => "OpenAI bad request (code: 400): conversation_locked"}

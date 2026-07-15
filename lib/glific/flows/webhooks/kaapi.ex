@@ -1,13 +1,7 @@
 defmodule Glific.Flows.Webhooks.Kaapi do
   @moduledoc """
-  Shared Kaapi helpers for the async Kaapi webhook implementations
-  (`speech_to_text`, `text_to_speech`, `filesearch-gpt`, `voice-filesearch-gpt`).
-
-  This module owns the Kaapi-specific plumbing that used to live in
-  `Glific.Clients.CommonWebhook`: building the flow-resume callback URL +
-  signed `request_metadata`, looking up an assistant's Kaapi config, and
-  dispatching the unified LLM call. The per-webhook modules under
-  `Glific.Flows.Webhooks.*` call into here from their `call/2` (worker phase).
+  Shared Kaapi helpers for the async Kaapi webhook implementations (STT, TTS, filesearch-gpt,
+  voice-filesearch-gpt): callback URL/signed metadata, config lookup, and the unified LLM call.
   """
 
   alias Glific.Assistants.Assistant
@@ -20,21 +14,13 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   require Logger
 
-  # Shared per-org rate limit for Kaapi STT/TTS dispatch (lifted from the former SttTtsWorker):
-  # STT and TTS share ONE per-org budget — at most @rate_limit_max dispatches per
-  # @rate_limit_window_ms combined — so both nodes call check_rate_limit/1 rather than keeping
-  # independent limiters (two buckets would double the effective limit).
+  # STT and TTS share ONE per-org rate-limit budget (not independent buckets, which would
+  # double the effective limit).
   @rate_limit_window_ms 60_000
   @rate_limit_max 10
   @rate_limit_snooze_seconds 5
 
-  @doc """
-  Check-and-consume the shared STT/TTS budget for `organization_id`.
-
-  `ExRated.check_rate/3` both checks and consumes a token: under the limit it returns `:ok` and
-  reserves this job's slot; over the limit it returns `{:snooze, seconds}` so the Oban worker
-  reschedules instead of hammering Kaapi.
-  """
+  @doc "Check-and-consume the shared STT/TTS rate-limit budget for `organization_id`."
   @spec check_rate_limit(non_neg_integer()) :: :ok | {:snooze, pos_integer()}
   def check_rate_limit(organization_id) do
     key = "kaapi_stt_tts:#{Partners.organization(organization_id).shortcode}"
@@ -45,14 +31,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     end
   end
 
-  @doc """
-  Builds the callback URL and signed `request_metadata` map for a Kaapi async call.
-
-  Centralises signature generation and callback-URL construction shared by STT, TTS,
-  and the unified LLM calls. `callback_path` defaults to the standard flow-resume route;
-  the voice LLM path passes `"/kaapi/voice_flow_resume"`. `timestamp` may be supplied to
-  keep latency measurement consistent across a multi-step call.
-  """
+  @doc "Builds the callback URL and signed `request_metadata` map for a Kaapi async call."
   @spec build_flow_resume_metadata(
           non_neg_integer(),
           non_neg_integer(),
@@ -103,11 +82,8 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
-  Dispatches the async unified LLM call to Kaapi (`/api/v1/llm/call`).
-
-  Expects the org Kaapi API key in `headers` as `X-API-KEY`. On success returns the
-  normalised Kaapi ack body (`%{success: true, ...}`); Kaapi POSTs the actual result to
-  the flow-resume callback later. On failure returns `%{success: false, reason: ...}`.
+  Dispatches the async unified LLM call to Kaapi (`/api/v1/llm/call`). Returns the normalised
+  ack body on success; Kaapi POSTs the actual result to the flow-resume callback later.
   """
   @spec call_llm(map(), list(), String.t(), map()) :: map()
   def call_llm(fields, headers, callback_url, request_metadata) do
@@ -141,70 +117,35 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     end
   end
 
-  # A crash surfaces as a stacktrace/FunctionClauseError in the reason with no real status —
-  # unjudgeable, so force system.
-  @crash ~r/no function clause matching|is undefined|no match of right hand side|\*\* \(/
-
-  # Upstream busy/overloaded/rate-limited. We do NOT retry, so the contact's message goes
-  # unanswered — a real failure we page on (system), not an NGO-fixable config issue. Kept
-  # specific on purpose: a bare "try again" appears in plenty of 4xx config errors too.
+  # Upstream busy/overloaded/rate-limited → :service_unavailable (system), not config. Kept
+  # specific — a bare "try again" also appears in plenty of 4xx config errors.
   @overloaded ~r/conversation_locked|Another process is currently operating|is overloaded|server_is_overloaded|rate limit/i
 
-  # Real provider status embedded in the reason string (never the DB status_code column).
   @code ~r/\(code:\s*(\d{3})|Status:\s*(\d{3})/
 
   @doc """
-  Classifies a failed async Kaapi callback `result` into an `ErrorType.t()`.
-
-  A sync webhook names its own failure inline, but an async failure surfaces later, at callback
-  time, as an **opaque string** from Kaapi — the node can't self-classify. So this infers the
-  class from the only signals available: a provider status code (nested `http_status`, or a
-  `(code: NNN)` / `Status: NNN` embedded in the reason) and crash/overload signatures in the
-  reason text. Config (4xx) → `:invalid_input`; everything else fails safe to a system type
-  (crash, overloaded upstream, 408/429, 5xx, or a statusless reason we can't judge).
-
-  This is the default used by every async node via the `Async` macro; a node may override
-  `classify/1` if it has richer signals. See `plans/webhook-error-classification.md`.
+  Classifies a failed async Kaapi callback into an `ErrorType.t()`: overloaded/locked upstream
+  → `:service_unavailable`; otherwise the status is bucketed by `from_http_status/1`.
   """
   @spec classify(map()) :: ErrorType.t()
   def classify(result) when is_map(result) do
     reason = to_reason(result)
     code = to_status(result["http_status"]) || provider_status(reason)
 
-    cond do
-      reason =~ @crash -> :unknown
-      reason =~ @overloaded -> :service_unavailable
-      true -> from_http_status(code)
+    if reason =~ @overloaded do
+      :service_unavailable
+    else
+      from_http_status(code)
     end
   end
 
   def classify(_result), do: :unknown
 
   @doc """
-  Maps a raw HTTP status to an `ErrorType.t()`, so any webhook failure — a Kaapi callback, an
-  async dispatch, or a provider call like Gemini STT — buckets a status the same way. A 429 is a
-  rate-limit blip (`:rate_limited` → system); a 408 request timeout is a transient upstream stall
-  (`:service_unavailable` → system); any other 4xx is a rejected request (`:invalid_input` →
-  config); everything else (5xx, a transport atom like `:timeout`, a raw body, `nil`) fails safe
-  to `:unknown` → system. Lives here — not in `ErrorType` — because it *decides* a type, whereas
-  `ErrorType` only defines the vocabulary and buckets it (`class/1`).
-
-  ## Examples
-
-      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(400)
-      :invalid_input
-
-      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(429)
-      :rate_limited
-
-      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(408)
-      :service_unavailable
-
-      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(500)
-      :unknown
-
-      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(:timeout)
-      :unknown
+  Maps a raw HTTP status to an `ErrorType.t()`, so every webhook failure buckets a status the
+  same way: 429 → `:rate_limited`, 408 → `:service_unavailable`, other 4xx → `:invalid_input`,
+  everything else (5xx, transport atoms, nil) → `:unknown`. Lives here rather than in
+  `ErrorType` because it *decides* a type, whereas `ErrorType` only defines the vocabulary.
   """
   @spec from_http_status(any()) :: ErrorType.t()
   def from_http_status(429), do: :rate_limited
@@ -212,13 +153,12 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   def from_http_status(status) when is_integer(status) and status in 400..499, do: :invalid_input
   def from_http_status(_status), do: :unknown
 
-  # A status code that may arrive as an integer or a JSON string ("404"); anything else → nil.
+  # Status may arrive as an integer or a JSON string ("404"); anything else → nil.
   @spec to_status(any()) :: integer() | nil
   defp to_status(status) when is_integer(status), do: status
 
   defp to_status(status) when is_binary(status) do
-    # Only a cleanly-parsed integer counts — `Integer.parse/1` accepts prefixes, so "404invalid"
-    # would otherwise be read as 404. A malformed status falls back to nil (→ system).
+    # Only a cleanly-parsed integer counts — Integer.parse/1 accepts prefixes ("404invalid" -> 404).
     case status |> String.trim() |> Integer.parse() do
       {code, ""} -> code
       _ -> nil
@@ -227,8 +167,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   defp to_status(_status), do: nil
 
-  # The Kaapi callback is JSON, so the reason lives under a string key — `"reason"` or (some
-  # failures) `"error"`. A non-binary/absent reason → "" (which can't feed a regex → system).
+  # The reason lives under "reason" or (some failures) "error"; absent/non-binary → "".
   @spec to_reason(map()) :: String.t()
   defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
   defp to_reason(%{"error" => error}) when is_binary(error), do: error
@@ -244,14 +183,8 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
-  Converts a Kaapi ack map into the typed `call/2` result, so an async node returns the same
-  `{:ok, term} | {:error, ErrorType.t(), reason}` shape as a sync node instead of a bespoke
-  `%{success: …}` map.
-
-  A success ack parks the flow (`{:ok, ack}`). A failure becomes `{:error, type, reason}`: the
-  ack's `error_type` is used when it is already a known `ErrorType.t()` atom, otherwise (a raw
-  string like `"kaapi_logical_failure"`, or absent) it fails safe to `:unknown`, and any
-  `http_status` is folded into the reason so nothing is lost under the flatter contract.
+  Converts a Kaapi ack map into the typed `call/2` result: success parks the flow (`{:ok, ack}`);
+  failure becomes `{:error, type, reason}`, folding `http_status` into the reason.
   """
   @spec to_result(map()) :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def to_result(%{success: true} = ack), do: {:ok, ack}
@@ -279,10 +212,9 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
-  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. All three
-  are required (the Kaapi callback signature depends on them). Returns a tagged tuple so
-  callers route a malformed payload to the Failure branch rather than crashing the worker;
-  the error string intentionally omits the payload to avoid leaking user data into logs.
+  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. Returns a tagged
+  tuple so callers route a malformed payload to Failure instead of crashing the worker; the
+  error string omits the payload to avoid leaking user data into logs.
   """
   @spec parse_flow_fields(map()) ::
           {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
@@ -297,10 +229,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     end
   end
 
-  @doc """
-  Validates that a media URL is a well-formed https URL. Used by the STT webhook
-  before dispatching to Kaapi.
-  """
+  @doc "Validates that a media URL is a well-formed https URL."
   @spec validate_media(any()) :: :ok | {:error, ErrorType.t(), String.t()}
   def validate_media(url) when is_binary(url) do
     case URI.parse(url) do
@@ -314,7 +243,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   def validate_media(_), do: {:error, :invalid_media_url, "Media URL is needed"}
 
-  # An unresolvable assistant is a flow-author/config mistake (bad or unset assistant id) → config.
+  # An unresolvable assistant is a flow-author/config mistake → config.
   @spec lookup_kaapi_config(String.t() | nil, non_neg_integer()) ::
           {:ok, {String.t(), non_neg_integer()}} | {:error, ErrorType.t(), String.t()}
   defp lookup_kaapi_config(assistant_display_id, _organization_id)
