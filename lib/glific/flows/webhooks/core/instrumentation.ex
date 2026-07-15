@@ -1,14 +1,9 @@
 defmodule Glific.Flows.Webhooks.Instrumentation do
   @moduledoc """
   Centralised failure reporting and latency telemetry for flow webhooks. Every webhook dispatched
-  through `Dispatcher` is wrapped by `around/3`, which times the call, counts the outcome
-  (`flow_webhook_count`) and reports failures. Sync nodes self-classify via
-  `{:error, ErrorType.t(), msg}` (routed by `ErrorReporter`). Async nodes self-classify their
-  dispatch failure via an `error_type` on the `%{success: false}` ack; their later callback
-  failure (an opaque provider string) is classified by the node's own `classify/1`, funnelled
-  here through `around_callback/4` — this module stays provider-agnostic. Both route through
-  `ErrorReporter`. The resume/timeout paths report `Errors.{SystemError, TimeoutError}` under
-  `flow_webhooks`.
+  through `Dispatcher` is wrapped by `around/3`; async callbacks go through `around_callback/4`.
+  Both route through `ErrorReporter`. Resume/timeout paths report `Errors.{SystemError,
+  TimeoutError}` under `flow_webhooks`.
   """
 
   alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType}
@@ -42,30 +37,27 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       exception ->
         track_latency(webhook_name, mode, start, :error)
 
-        # A raised sync webhook is a failure and must increment the count; async counts at callback.
+        # Async counts at callback; a raised sync webhook must count here.
         if mode == :sync, do: track_webhook_count(webhook_name, "failure")
 
-        # A raised exception is unjudgeable — tag it "exception" (system) so it carries an error_type.
+        # Unjudgeable -> "exception" (system) so it still carries an error_type.
         report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception), "exception")
         reraise exception, __STACKTRACE__
     end
   end
 
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
-  # A snooze is neither success nor failure — the Oban job reschedules, so record nothing.
+  # A snooze reschedules the Oban job — record nothing.
   defp record_outcome(_mode, {:snooze, _seconds}, _webhook_name, _start, _ctx), do: :ok
 
-  # Sync: the call IS the work, so count here (async counts at callback time — no double-count).
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_webhook_count(webhook_name, sync_count_status(result))
     report_typed_failure(result, webhook_name, ctx)
   end
 
-  # Async: an accepted dispatch (`{:ok, ack}`) means the request is in flight; latency + success
-  # count land at callback time (recording them here would pollute the same metric). Only a
-  # dispatch failure, which never reaches the callback, is recorded now — via the same typed path
-  # as sync, since async nodes now return the same `{:ok, _} | {:error, type, msg}` contract.
+  # An accepted async dispatch (`{:ok, ack}`) means the request is in flight — latency/count
+  # land at callback time instead. Only a dispatch failure is recorded now.
   defp record_outcome(:async, {:ok, _ack}, _webhook_name, _start, _ctx), do: :ok
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
@@ -73,14 +65,14 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     report_typed_failure(result, webhook_name, ctx)
   end
 
-  # Success only for `{:ok, _}` or `%{success: true}`; every other shape routes to Failure.
+  # Success only for `{:ok, _}` or `%{success: true}`; every other shape is Failure.
   @spec sync_count_status(any()) :: String.t()
   defp sync_count_status({:ok, _value}), do: "success"
   defp sync_count_status(%{success: true}), do: "success"
   defp sync_count_status(_result), do: "failure"
 
   # A typed `{:error, ErrorType.t(), msg}` is routed by ErrorReporter; any untyped failure shape
-  # failed to name itself and fails safe to `:unknown` (→ system). Non-failures emit no incident.
+  # fails safe to `:unknown` (-> system).
   @spec report_typed_failure(any(), String.t(), map()) :: :ok
   defp report_typed_failure({:error, error_type, message}, webhook_name, ctx)
        when is_atom(error_type) and is_binary(message) do
@@ -107,8 +99,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
-  # A 3-tuple that violates the typed contract (non-atom type / non-binary message) still routed
-  # the flow to Failure — report it as :unknown so it isn't counted-but-invisible to on-call.
+  # A 3-tuple violating the typed contract (non-atom type / non-binary message) still routed the
+  # flow to Failure — report :unknown rather than staying invisible to on-call.
   defp report_typed_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
     ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
   end
@@ -120,8 +112,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     Map.put(ctx_tags(ctx), :webhook_name, webhook_name)
   end
 
-  # The flow-context ids carried on `ctx` (built by the Dispatcher) so every pre-callback failure
-  # report — sync, async-dispatch, crash — tags contact/flow/webhook_log for debugging.
+  # The flow-context ids carried on `ctx` (built by the Dispatcher).
   @spec ctx_tags(map()) :: map()
   defp ctx_tags(ctx) do
     %{
@@ -133,13 +124,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   # An async callback failure is an opaque provider string, so the node's `classify/1` infers the
-  # ErrorType (the node can't self-classify here) and `ErrorReporter` routes it like the sync path.
+  # ErrorType and `ErrorReporter` routes it like the sync path.
   @doc "Report an async callback that arrived with `success` not true, classified by the node."
   @spec report_callback_failure(module() | nil, map(), map()) :: :ok
   def report_callback_failure(_module, %{"success" => true}, _response), do: :ok
 
-  # Any other map is a failure — including one missing the `success` key, which must not be
-  # silently swallowed (the flow already branched to Failure on it).
+  # Any other map is a failure, including one missing the `success` key.
   def report_callback_failure(module, result, response) when is_map(result) do
     reason =
       result["reason"] || result["error"] || response["message"] ||
@@ -152,17 +142,16 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   def report_callback_failure(_module, _result, _response), do: :ok
 
-  # Delegate classification to the node (it may override `classify/1`). A callback that arrived
-  # without a resolvable webhook module has no node to consult, so it fails safe to system —
-  # keeping this module free of any provider-specific classifier.
+  # Delegates to the node's own `classify/1` when known; a callback with no resolvable module
+  # fails safe to system.
   @spec classify_callback(map(), module() | nil) :: ErrorType.t()
   defp classify_callback(result, module) when is_atom(module) and not is_nil(module),
     do: module.classify(result)
 
   defp classify_callback(_result, _module), do: :unknown
 
-  # Keep the raw Kaapi `error_type` and `http_status` (the classification driver) as tags alongside
-  # the classified bucket `ErrorReporter` adds, so incidents stay debuggable.
+  # Keeps the raw Kaapi error_type/http_status alongside ErrorReporter's classified bucket so
+  # incidents stay debuggable.
   @spec callback_tags(map(), map()) :: map()
   defp callback_tags(result, response) do
     %{
@@ -213,17 +202,13 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
-  Run an async webhook's `callback/3` inside callback-phase instrumentation: executes `fun`
-  (the node's callback — post-processing for voice, pass-through otherwise), records count +
-  latency, classifies/reports a failure, and returns whatever the callback shaped. This is the
-  single callback-phase entry point (`Dispatcher.callback` calls it), mirroring `around/3` for
-  the dispatch phase.
+  Run an async webhook's `callback/3` inside callback-phase instrumentation: executes `fun`,
+  records count + latency, classifies/reports a failure, and returns whatever `fun` shaped.
   """
   @spec around_callback(module() | nil, map(), map(), (-> map())) :: map()
   def around_callback(module, result, response, fun)
       when (is_atom(module) or is_nil(module)) and is_function(fun, 0) do
-    # Mirror `around/3`: a raising callback (e.g. voice post-processing) must still record its
-    # count/latency/failure before the exception propagates, or callback telemetry is lost.
+    # Mirrors around/3: a raising callback must still record its telemetry before re-raising.
     shaped = fun.()
     record_callback_outcome(module, result, response)
     shaped

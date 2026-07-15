@@ -1,11 +1,7 @@
 defmodule Glific.Flows.Webhooks.FilesearchGpt do
   @moduledoc """
   Async webhook implementation for the `filesearch-gpt` flow node (Kaapi unified LLM call).
-
-  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it injects the org
-  Kaapi API key, fires the async LLM request to `/api/v1/llm/call`, and returns the Kaapi
-  ack. Kaapi POSTs the answer to `GlificWeb.Flows.FlowResumeController.flow_resume/2`, which
-  resumes the parked flow.
+  Kaapi POSTs the answer to `FlowResumeController.flow_resume/2`, which resumes the parked flow.
   """
 
   use Glific.Flows.Webhooks.Async, name: "filesearch-gpt"
@@ -15,9 +11,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
   alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Fires the async Kaapi LLM request. Fetches the org Kaapi API key, builds the signed
-  callback metadata, and dispatches via `KaapiSupport.call_llm/4`. Returns the ack map
-  (`%{success: …}`); `%{success: false, reason: "Kaapi is not active"}` when unconfigured.
+  Fires the async Kaapi LLM request and returns the ack map (`%{success: …}`).
   """
   @impl true
   @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
@@ -38,13 +32,11 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
       {:error, _error_type, _reason} = error ->
         error
 
-      # An unconfigured org: fetch_kaapi_creds returns {:error, "Kaapi is not active"} — a
-      # provisioning gap, so name it :missing_api_key (→ system) rather than leave it unjudged.
+      # fetch_kaapi_creds returns {:error, "Kaapi is not active"} for an unconfigured org — a
+      # provisioning gap, so name it :missing_api_key (-> system).
       {:error, reason} when is_binary(reason) ->
         {:error, :missing_api_key, reason}
 
-      # Any other shape (e.g. a creds row carrying no usable api_key) is genuinely unexpected —
-      # fail safe to a generic system error instead of guessing a specific cause.
       _ ->
         {:error, :unknown, "Unexpected Kaapi dispatch failure"}
     end

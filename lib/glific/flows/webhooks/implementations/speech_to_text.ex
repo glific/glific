@@ -1,13 +1,7 @@
 defmodule Glific.Flows.Webhooks.SpeechToText do
   @moduledoc """
-  Async webhook implementation for the `speech_to_text` flow node.
-
-  Runs inside the `Glific.Flows.Webhook` Oban worker (worker phase): it fires the
-  Kaapi STT request and returns the Kaapi ack. Kaapi POSTs the transcription to
-  `GlificWeb.Flows.FlowResumeController.flow_resume/2`, which resumes the parked flow.
-
-  A successful ack (`%{success: true}`) means "Kaapi accepted the request" — the flow
-  stays parked until the callback arrives. A failure routes the flow to the Failure branch.
+  Async webhook implementation for the `speech_to_text` flow node. Kaapi POSTs the transcription
+  to `FlowResumeController.flow_resume/2`, which resumes the parked flow.
   """
 
   use Glific.Flows.Webhooks.Async, name: "speech_to_text"
@@ -17,10 +11,8 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
   alias Glific.ThirdParty.Kaapi
 
   @doc """
-  Fires the Kaapi STT request. Enforces the shared per-org STT/TTS rate limit (returning
-  `{:snooze, seconds}` so the Oban worker reschedules when the budget is exhausted), validates
-  the speech URL, builds the signed callback metadata, and dispatches to Kaapi. Returns the
-  Kaapi ack map (`%{success: …}`).
+  Fires the Kaapi STT request, enforcing the shared per-org STT/TTS rate limit and media
+  validation first. Returns the Kaapi ack map (`%{success: …}`).
   """
   @impl true
   @spec call(map(), Behaviour.ctx()) :: Behaviour.result()

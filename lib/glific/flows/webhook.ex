@@ -37,10 +37,8 @@ defmodule Glific.Flows.Webhook do
 
   defmodule Error do
     @moduledoc """
-    Custom error module for Kaapi webhook failures.
-    Since Kaapi is a backend service (NGOs don’t interact with it directly),
-    sending errors to them won’t resolve the issue.
-    Reporting these failures to AppSignal lets us detect and fix problems
+    Custom error for Kaapi webhook failures, reported to AppSignal since Kaapi is a backend
+    service NGOs can't act on directly.
     """
     defexception [:message, :reason, :organization_id]
   end
@@ -70,8 +68,7 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  # Update the webhook log only when there is one — async callbacks without a
-  # webhook_log_id (e.g. non-Kaapi resumes) simply skip the log write.
+  # Async callbacks without a webhook_log_id (e.g. non-Kaapi resumes) skip the log write.
   @spec maybe_update_log(non_neg_integer() | nil, map() | binary()) :: any()
   defp maybe_update_log(nil, _message), do: :ok
   defp maybe_update_log(webhook_log_id, message), do: update_log(webhook_log_id, message)
@@ -87,7 +84,6 @@ defmodule Glific.Flows.Webhook do
   end
 
   def update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
-    # handle incorrect json body
     json_body =
       case Jason.decode(body) do
         {:ok, json_body} ->
@@ -105,16 +101,13 @@ defmodule Glific.Flows.Webhook do
     webhook_log |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # Distinguishes a success map from an application-level failure map
-  # (%{success: false, ...}) so the WebhookLog row records the failure with a
-  # non-200 status and an error reason
+  # An application-level failure map (%{success: false, ...}) records a non-200 status + reason.
   def update_log(webhook_log, %{success: false} = result) do
     reason =
       Map.get(result, :reason) || Map.get(result, :error) || Map.get(result, :message)
 
-    # reason can be a non-binary term (e.g. a decoded JSON map from a Tesla 500
-    # body). to_string/1 would raise on those; inspect/1 produces a safe string
-    # for any term.
+    # reason can be a non-binary term (e.g. a decoded JSON map); to_string/1 would raise, so
+    # inspect defensively via safe_inspect.
     error =
       cond do
         is_binary(reason) -> reason
@@ -145,8 +138,6 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # method can be either a get or a post. The do_oban function
-  # does the right thing based on if it is a get or post
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
     case Request.create_body(context, action.body) do
@@ -180,7 +171,7 @@ defmodule Glific.Flows.Webhook do
         webhook_log_id: webhook_log.id,
         flow_id: context.flow_id,
         contact_id: context.contact_id,
-        # for job uniqueness,
+        # for job uniqueness
         context_id: context.id,
         context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
         organization_id: context.organization_id,
@@ -231,17 +222,15 @@ defmodule Glific.Flows.Webhook do
     }
   rescue
     error ->
-      # Report via the centralized wrapper (not Appsignal directly). The webhook name is
-      # safe to log; the request payload is omitted to avoid leaking user data.
+      # Webhook name is safe to log; the request payload is omitted to avoid leaking user data.
       Glific.log_exception(error)
 
       {:error,
        "Calling webhook function #{SafeLog.safe_inspect(function)} threw: #{Exception.message(error)}"}
   end
 
-  # Routes a function-type webhook to the central Dispatcher when it is registered (sync or
-  # async — both run their module's call/2 wrapped in instrumentation), otherwise falls back
-  # to Glific.Clients.webhook/2 (per-org client modules).
+  # Routes a function-type webhook to the central Dispatcher when registered, else falls back to
+  # Glific.Clients.webhook/2 (per-org client modules).
   @spec dispatch_function(String.t(), map(), list()) :: any()
   defp dispatch_function(function, fields, headers) do
     case Registry.lookup(function) do
@@ -277,9 +266,8 @@ defmodule Glific.Flows.Webhook do
 
     headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
-    # Function webhooks receive the decoded body enriched with the flow metadata the
-    # registered modules need (flow/contact ids, webhook_log_id, result_name). POST/GET
-    # keep the raw body string they send to the external service.
+    # Function webhooks get the decoded body enriched with flow metadata; POST/GET keep the raw
+    # body string.
     enrichment = %{
       "flow_id" => args["flow_id"],
       "contact_id" => args["contact_id"],
@@ -289,8 +277,7 @@ defmodule Glific.Flows.Webhook do
 
     result =
       case do_action(method, url, action_input(method, body, enrichment), headers) do
-        # A webhook module (e.g. an STT/TTS rate limit) asked to reschedule: propagate the
-        # snooze to Oban without logging or routing the flow — the job re-runs call/2 later.
+        # Propagate a rate-limit snooze to Oban without logging or routing the flow.
         {:ok, :function, {:snooze, _seconds} = snooze} ->
           snooze
 
@@ -316,9 +303,8 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  # Decodes a 2xx POST/GET response body, logs it, and returns the value for the flow.
-  # A JSON list is indexed into a map; a JSON map passes through; an undecodable body
-  # is logged and routes the flow to Failure (nil).
+  # Decodes a 2xx POST/GET response body and returns the value for the flow. A JSON list is
+  # indexed into a map; an undecodable body routes the flow to Failure (nil).
   @spec decode_success_response(Tesla.Env.t(), non_neg_integer() | nil) :: any()
   defp decode_success_response(message, webhook_log_id) do
     case Jason.decode(message.body) do
@@ -338,17 +324,14 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  # Builds the input passed to do_action/4. Function webhooks get the decoded body
-  # merged with flow metadata; POST/GET keep the raw body string.
   @spec action_input(String.t(), String.t(), map()) :: map() | String.t()
   defp action_input("function", body, enrichment),
     do: body |> Jason.decode!() |> Map.merge(enrichment)
 
   defp action_input(_method, body, _enrichment), do: body
 
-  # Routes the dispatch result to the flow engine. For async webhooks a successful ack
-  # leaves the flow parked (the Kaapi callback resumes it via FlowResumeController); a
-  # failure wakes the flow on the Failure branch. Sync webhooks resume immediately.
+  # For async webhooks a successful ack leaves the flow parked (the callback resumes it via
+  # FlowResumeController); a failure wakes it on the Failure branch. Sync webhooks resume now.
   @spec handle_webhook_result(any(), map(), String.t(), String.t(), non_neg_integer()) :: :ok
   defp handle_webhook_result(result, context, result_name, url, organization_id) do
     if Registry.async?(url) do
@@ -378,8 +361,6 @@ defmodule Glific.Flows.Webhook do
   @spec handle(String.t(), map(), String.t()) :: :ok
   defp handle(result, context_data, result_name) do
     context_id = context_data["id"]
-    ## In case the context already carries a delay before webhook,
-    ## we are going to use that.
 
     context =
       Repo.get!(FlowContext, context_id)
@@ -394,7 +375,6 @@ defmodule Glific.Flows.Webhook do
           Messages.create_temp_message(context.organization_id, "Failure")
         }
       else
-        # update the context with the results from webhook return values
         {
           FlowContext.update_results(
             context,
@@ -442,23 +422,13 @@ defmodule Glific.Flows.Webhook do
   defp create_oban_changeset(payload), do: __MODULE__.new(payload)
 
   # --------------------------------------------------------------------------
-  # Async callback resume — the inbound counterpart of execute/2 + perform/1.
-  #
-  # `GlificWeb.Flows.FlowResumeController` stays thin: it pulls org context off
-  # the connection, parses the callback (`parse_callback_response/1`) and uploads
-  # any TTS audio (`maybe_upload_tts_audio/1`) in the request process, then hands
-  # off to `resume/3` (one handler for every async node). Validation, logging, telemetry and the
-  # actual flow resume all live here so the signing (`add_signature/3`) and the
-  # verification (`validate_request/2`) sit in one module.
+  # Async callback resume — the inbound counterpart of execute/2 + perform/1. The controller
+  # parses the callback and uploads any TTS audio, then hands off to resume/3; validation,
+  # logging, telemetry and the actual flow resume all live here.
   # --------------------------------------------------------------------------
 
   @doc """
   Resume a flow parked on any async webhook, from the parsed Kaapi callback.
-
-  Validates the callback signature and contact BEFORE any side effect, then updates the webhook
-  log, records telemetry, and resumes the contact's flow with the parsed callback merged into the
-  flow results. Node-specific callback work (e.g. voice NMT+TTS) runs inside the node's
-  `callback/3`, dispatched by `webhook_name` — so this one handler serves every async node.
   """
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
@@ -467,9 +437,8 @@ defmodule Glific.Flows.Webhook do
     end)
   end
 
-  # Restores tenant context, validates the callback signature and resolves the
-  # contact BEFORE running `fun`. A forged/unsigned callback must not drive any
-  # log writes, metrics, or flow resume — so validation comes first.
+  # Restores tenant context and validates the callback signature/contact BEFORE running fun — a
+  # forged/unsigned callback must not drive any log write, metric, or flow resume.
   @spec with_validated_callback(non_neg_integer(), map(), String.t(), (Contact.t() -> any())) ::
           :ok
   defp with_validated_callback(organization_id, response, label, fun) do
@@ -502,9 +471,8 @@ defmodule Glific.Flows.Webhook do
 
     maybe_update_log(response["webhook_log_id"], log_message)
 
-    # Route the callback through the Dispatcher: it runs the node's callback/3 (pass-through for
-    # STT/TTS/filesearch) inside callback-phase instrumentation, so telemetry + classification
-    # happen in one place. The shaped response is what the flow resumes on.
+    # Runs the node's callback/3 (pass-through for STT/TTS/filesearch) inside callback-phase
+    # instrumentation, so telemetry + classification happen in one place.
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
 
     response_key = response["result_name"] || "response"
@@ -518,11 +486,10 @@ defmodule Glific.Flows.Webhook do
     |> report_resume_error(response)
   end
 
-  # Picks the wakeup message for the resumed flow. nil keeps compatibility with non-Kaapi
-  # webhook responses (falls back to the default behavior).
+  # nil keeps compatibility with non-Kaapi webhook responses (falls back to default behavior).
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
-  # A failed TTS audio upload routes the flow to Failure even though Kaapi itself
-  # reported success — there's no usable audio to continue the Success branch with.
+  # A failed TTS audio upload routes to Failure even though Kaapi itself reported success —
+  # there's no usable audio to continue the Success branch with.
   defp resume_message(_result, %{"tts_upload_error" => reason}, organization_id)
        when is_binary(reason) do
     Messages.create_temp_message(organization_id, "Failure")
@@ -537,8 +504,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  # Resume failures are reported to AppSignal (flow_webhooks namespace) via
-  # Instrumentation, which already logs — so no separate Logger call here.
+  # Resume failures are reported to AppSignal via Instrumentation, which already logs.
   @spec report_resume_error(tuple(), map()) :: :ok
   defp report_resume_error({:ok, _context, _messages}, _response), do: :ok
 
@@ -549,11 +515,9 @@ defmodule Glific.Flows.Webhook do
   Parse the raw Kaapi/external callback body into the internal response map
   consumed by `resume/3`.
   """
-  # New format from filesearch-gpt (/api/v1/llm/call):
-  # metadata (org_id, flow_id, signature, etc.) is in result["metadata"]
-  # Map the response_id/conversation_id to thread_id, since we treat response_id as the thread ID in Glific
-  # For TTS (output type "audio"), "message" holds the raw base64 and "output_type" is set
-  # so that maybe_upload_tts_audio/1 can upload it to GCS and replace "message" with the media URL.
+  # New format from filesearch-gpt (/api/v1/llm/call): metadata (org_id, flow_id, signature) is
+  # in result["metadata"]; response_id/conversation_id maps to thread_id; for TTS, "message"
+  # holds raw base64 with "output_type" set so maybe_upload_tts_audio/1 can upload it to GCS.
   @spec parse_callback_response(map()) :: map()
   def parse_callback_response(%{"metadata" => metadata, "data" => data})
       when is_map(metadata) and map_size(metadata) > 0 do
@@ -579,9 +543,8 @@ defmodule Glific.Flows.Webhook do
     %{}
   end
 
-  # When the TTS audio upload failed (e.g. GCS not enabled), record the failure on the
-  # WebhookLog (success: false + reason) so it is visible to the user, instead of a silent
-  # success with a nil message. Otherwise build the normal log entry.
+  # A failed TTS audio upload (e.g. GCS not enabled) is recorded on the WebhookLog as an
+  # explicit failure rather than a silent success with a nil message.
   @spec tts_aware_log_message(map(), map()) :: map()
   defp tts_aware_log_message(_result, %{"tts_upload_error" => reason} = response)
        when is_binary(reason) do
@@ -604,9 +567,8 @@ defmodule Glific.Flows.Webhook do
     }
   end
 
-  # Kaapi's error copy sometimes tells the user to "contact Kaapi" directly — an internal
-  # AI service NGO staff have no account with or way to reach. Point them to Glific support
-  # instead, since that's who can actually act on the report.
+  # Kaapi's error copy sometimes tells the user to "contact Kaapi" — an internal AI service NGO
+  # staff have no way to reach. Point them to Glific support instead.
   @spec sanitize_kaapi_wording(String.t() | nil) :: String.t() | nil
   defp sanitize_kaapi_wording(text) when is_binary(text),
     do: String.replace(text, "contact Kaapi", "contact the Glific Team")
@@ -627,8 +589,8 @@ defmodule Glific.Flows.Webhook do
         Map.put(response, "message", media_url)
 
       {:error, reason} ->
-        # Surface the failure (see tts_aware_log_message/2) rather than silently
-        # resuming with success=true and a nil message.
+        # Surface the failure (see tts_aware_log_message/2) instead of silently resuming with
+        # success=true and a nil message.
         response
         |> Map.put("message", nil)
         |> Map.put("tts_upload_error", reason)
@@ -652,10 +614,8 @@ defmodule Glific.Flows.Webhook do
       File.rm(mp3_file)
       {:ok, media_meta.url}
     else
-      # Surface the ACTUAL failure rather than assuming "GCS not enabled":
-      # Base.decode64 returns :error; GcsWorker.upload_media returns {:error, reason}
-      # where reason already describes the real cause (auth, accountDisabled, etc.,
-      # from handle_gcs_error/2).
+      # Surface the actual failure rather than assuming "GCS not enabled": Base.decode64
+      # returns :error; GcsWorker.upload_media returns {:error, reason} with the real cause.
       :error ->
         File.rm(mp3_file)
         {:error, "TTS audio is not valid base64"}

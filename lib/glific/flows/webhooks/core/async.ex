@@ -1,25 +1,16 @@
 defmodule Glific.Flows.Webhooks.Async do
   @moduledoc """
-  `use` macro for asynchronous flow webhooks — Kaapi STT/TTS,
-  filesearch-gpt, voice-filesearch-gpt. These park the flow context with
-  `is_await_result: true` and are resumed by a callback to
-  `flow_resume_controller`.
+  `use` macro for asynchronous flow webhooks (Kaapi STT/TTS, filesearch-gpt,
+  voice-filesearch-gpt). These park the flow context (`is_await_result: true`) and are resumed
+  by a callback to `flow_resume_controller`.
 
   Authors write `call/2`; the parsed callback is merged into the flow context by
-  `Glific.Flows.Webhook` when it resumes. They may also override
-  `wait_time_default/0` if the default 60-second await window is wrong for
-  that webhook.
-
-  Failure reporting and latency telemetry are added by the Dispatcher (for
-  execution) and by `Glific.Flows.Webhooks.Instrumentation` (for callback
-  and timeout phases).
+  `Glific.Flows.Webhook` on resume. Override `wait_time_default/0` if the default 60s await
+  window doesn't fit.
   """
 
   @doc """
-  Injects the default async webhook implementation into the caller.
-
-  Requires `:name` in `opts` and defines default `name/0`, `mode/0`,
-  and `wait_time_default/0`.
+  Injects the default async webhook implementation into the caller. Requires `:name` in `opts`.
   """
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)

@@ -1,9 +1,8 @@
 defmodule Glific.Flows.Webhooks.Behaviour do
   @moduledoc """
-  Contract for a single flow-webhook node. Each implementation owns its integration code; the
-  cross-cutting concerns (failure reporting, latency telemetry, WebhookLog, wait-state) live in
-  `Dispatcher`/`Instrumentation`. Authors `use` the `Sync`/`Async` macros rather than
-  implementing this directly.
+  Contract for a single flow-webhook node. Cross-cutting concerns (failure reporting, latency
+  telemetry, WebhookLog, wait-state) live in `Dispatcher`/`Instrumentation` — authors `use` the
+  `Sync`/`Async` macros rather than implementing this directly.
   """
 
   alias Glific.Flows.{Action, FlowContext}
@@ -20,13 +19,10 @@ defmodule Glific.Flows.Webhooks.Behaviour do
           optional(:flow_context) => FlowContext.t()
         }
 
-  # Sync and async nodes return the SAME typed result. `{:ok, value}` → Success branch;
-  # `{:error, ErrorType.t(), msg}` → Failure branch (the node owns the config/system verdict,
-  # `:unknown` when it can't judge); `{:snooze, seconds}` reschedules the Oban job.
-  # For async (Kaapi) nodes, `{:ok, ack}` means the dispatch was accepted and the flow parks until
-  # the Kaapi callback resumes it; `{:error, …}` means the dispatch failed and the flow wakes on
-  # Failure. `ResultTranslator` normalises these into the map/string the flow engine routes on, and
-  # the async wait itself is set up in the flow engine (action.ex), not by this return.
+  # Sync and async nodes return the SAME typed result: `{:ok, value}` -> Success branch,
+  # `{:error, ErrorType.t(), msg}` -> Failure branch, `{:snooze, seconds}` reschedules the Oban
+  # job. For async (Kaapi) nodes `{:ok, ack}` means the dispatch was accepted and the flow parks
+  # until the callback resumes it. `ResultTranslator` normalises this for the flow engine.
   @type result ::
           {:ok, term()}
           | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}
@@ -38,10 +34,9 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   @callback wait_time_default() :: non_neg_integer()
 
   # Async callback phase (Kaapi POSTs back): `Dispatcher.callback` runs these through the same
-  # instrumentation as `call/2`, so callback telemetry + error typing funnel through the
-  # Dispatcher too. `callback/3` shapes the parsed response the flow resumes on (default passes
-  # it through; voice-filesearch-gpt overrides it to post-process NMT+TTS). `classify/1` maps a
-  # failed callback to an `ErrorType.t()` (default → `KaapiSupport.classify`; overridable).
+  # instrumentation as `call/2`. `callback/3` shapes the response the flow resumes on (default
+  # pass-through; voice-filesearch-gpt overrides it for NMT+TTS). `classify/1` maps a failed
+  # callback to an `ErrorType.t()` (default -> `Kaapi.classify`; overridable).
   @callback callback(result :: map(), response :: map(), ctx :: ctx()) :: map()
   @callback classify(result :: map()) :: Glific.Flows.Webhooks.ErrorType.t()
 
