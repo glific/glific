@@ -23,7 +23,7 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
   Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map() | {:snooze, pos_integer()}
+  @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
     speech = fields["speech"]
 
@@ -45,9 +45,10 @@ defmodule Glific.Flows.Webhooks.SpeechToText do
       }
 
       Kaapi.speech_to_text(speech, callback_url, request_metadata, organization_id, stt_opts)
+      |> KaapiSupport.to_result()
     else
       {:snooze, _seconds} = snooze -> snooze
-      {:error, error_type, reason} -> %{success: false, reason: reason, error_type: error_type}
+      {:error, _error_type, _reason} = error -> error
     end
   end
 end

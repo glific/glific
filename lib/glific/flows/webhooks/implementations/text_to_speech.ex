@@ -19,7 +19,7 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
   signed callback metadata, and dispatches to Kaapi. Returns the Kaapi ack map (`%{success: …}`).
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map() | {:snooze, pos_integer()}
+  @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
     with {:ok, {organization_id, flow_id, contact_id}} <-
            KaapiSupport.parse_flow_fields(fields),
@@ -44,9 +44,10 @@ defmodule Glific.Flows.Webhooks.TextToSpeech do
         request_metadata,
         tts_opts
       )
+      |> KaapiSupport.to_result()
     else
       {:snooze, _seconds} = snooze -> snooze
-      {:error, error_type, reason} -> %{success: false, reason: reason, error_type: error_type}
+      {:error, _error_type, _reason} = error -> error
     end
   end
 end

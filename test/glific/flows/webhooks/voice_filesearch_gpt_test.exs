@@ -352,7 +352,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           %Tesla.Env{status: 400, body: %{"error" => "unsupported audio"}}
       end)
 
-      assert %{success: false, error_type: :invalid_input, reason: reason} =
+      assert {:error, :invalid_input, reason} =
                VoiceFilesearchGpt.call(fields, %{})
 
       assert reason =~ "400"
@@ -375,7 +375,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           %Tesla.Env{status: 503, body: %{"error" => "overloaded"}}
       end)
 
-      assert %{success: false, error_type: :unknown} = VoiceFilesearchGpt.call(fields, %{})
+      assert {:error, :unknown, _reason} = VoiceFilesearchGpt.call(fields, %{})
     end
 
     # Gemini.speech_to_text can pass an upstream error term through unchanged (a bare
@@ -391,7 +391,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       with_mock(Gemini, [:passthrough],
         speech_to_text: fn _speech, _org -> {:error, :timeout} end
       ) do
-        assert %{success: false, error_type: :unknown, reason: reason} =
+        assert {:error, :unknown, reason} =
                  VoiceFilesearchGpt.call(fields, %{})
 
         assert reason =~ "timeout"
@@ -671,7 +671,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       }
 
       assert VoiceFilesearchGpt.call(fields, %{}) ==
-               %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
+               {:error, :invalid_media_url, "Media URL is invalid"}
     end
   end
 end

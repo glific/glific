@@ -59,17 +59,18 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
     track_webhook_count(webhook_name, sync_count_status(result))
-    report_sync_failure(result, webhook_name, ctx)
+    report_typed_failure(result, webhook_name, ctx)
   end
 
-  # Async: a successful ack means the request is in flight; latency + success count land at
-  # callback time (recording them here would pollute the same metric). Only a dispatch failure,
-  # which never reaches the callback, is recorded now.
-  defp record_outcome(:async, %{success: true}, _webhook_name, _start, _ctx), do: :ok
+  # Async: an accepted dispatch (`{:ok, ack}`) means the request is in flight; latency + success
+  # count land at callback time (recording them here would pollute the same metric). Only a
+  # dispatch failure, which never reaches the callback, is recorded now — via the same typed path
+  # as sync, since async nodes now return the same `{:ok, _} | {:error, type, msg}` contract.
+  defp record_outcome(:async, {:ok, _ack}, _webhook_name, _start, _ctx), do: :ok
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :async, start, :error)
-    maybe_report_failure(result, webhook_name, ctx)
+    report_typed_failure(result, webhook_name, ctx)
   end
 
   # Success only for `{:ok, _}` or `%{success: true}`; every other shape routes to Failure.
@@ -80,22 +81,22 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # A typed `{:error, ErrorType.t(), msg}` is routed by ErrorReporter; any untyped failure shape
   # failed to name itself and fails safe to `:unknown` (→ system). Non-failures emit no incident.
-  @spec report_sync_failure(any(), String.t(), map()) :: :ok
-  defp report_sync_failure({:error, error_type, message}, webhook_name, ctx)
+  @spec report_typed_failure(any(), String.t(), map()) :: :ok
+  defp report_typed_failure({:error, error_type, message}, webhook_name, ctx)
        when is_atom(error_type) and is_binary(message) do
     ErrorReporter.report(error_type, message, failure_tags(webhook_name, ctx))
   end
 
-  defp report_sync_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
+  defp report_typed_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
     ErrorReporter.report(:unknown, message, failure_tags(webhook_name, ctx))
   end
 
-  defp report_sync_failure(result, webhook_name, ctx) when is_binary(result) or is_nil(result) do
+  defp report_typed_failure(result, webhook_name, ctx) when is_binary(result) or is_nil(result) do
     reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
 
-  defp report_sync_failure(%{success: false} = result, webhook_name, ctx) do
+  defp report_typed_failure(%{success: false} = result, webhook_name, ctx) do
     reason =
       case result do
         %{reason: reason} when is_binary(reason) -> reason
@@ -108,11 +109,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # A 3-tuple that violates the typed contract (non-atom type / non-binary message) still routed
   # the flow to Failure — report it as :unknown so it isn't counted-but-invisible to on-call.
-  defp report_sync_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
+  defp report_typed_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
     ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
   end
 
-  defp report_sync_failure(_non_failure, _webhook_name, _ctx), do: :ok
+  defp report_typed_failure(_non_failure, _webhook_name, _ctx), do: :ok
 
   @spec failure_tags(String.t(), map()) :: map()
   defp failure_tags(webhook_name, ctx) do
@@ -286,52 +287,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   defp track_kaapi_latency(_response, _status), do: :ok
-
-  # Async dispatch-failure (before any callback): the node self-classifies via an `error_type` on
-  # the ack (untyped → `:unknown`/system), routed by `ErrorReporter` like the sync path.
-  @spec maybe_report_failure(any(), String.t(), map()) :: :ok
-  defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
-    {status, reason} = extract_status_and_reason(result)
-    tags = Map.put(failure_tags(webhook_name, ctx), :http_status, status)
-    ErrorReporter.report(dispatch_error_type(result), reason || "Kaapi dispatch failure", tags)
-  end
-
-  # Any other non-success ack — nil, a non-map, or a map missing/≠false `:success` — is still a
-  # dispatch failure the flow branched on, so report it as :unknown rather than swallow it.
-  defp maybe_report_failure(result, webhook_name, ctx) do
-    reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
-    ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
-  end
-
-  @spec dispatch_error_type(map()) :: ErrorType.t()
-  defp dispatch_error_type(%{error_type: error_type}) when is_atom(error_type), do: error_type
-  defp dispatch_error_type(_result), do: :unknown
-
-  @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
-  defp extract_status_and_reason(result) do
-    case result do
-      %{http_status: status, reason: reason} when is_integer(status) and is_binary(reason) ->
-        {status, reason}
-
-      %{http_status: status} when is_integer(status) ->
-        {status, nil}
-
-      %{asr_response_text: status} when is_integer(status) ->
-        {status, nil}
-
-      %{asr_response_text: status} when is_binary(status) ->
-        {nil, status}
-
-      %{reason: status} when is_binary(status) ->
-        {nil, status}
-
-      %{error: error} when is_binary(error) ->
-        {nil, error}
-
-      other ->
-        {nil, SafeLog.safe_inspect(other)}
-    end
-  end
 
   @spec report_webhook_failure(
           String.t(),

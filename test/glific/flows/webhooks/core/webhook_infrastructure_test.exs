@@ -193,11 +193,11 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
           {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]}
         ]) do
           Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
-            %{success: true}
+            {:ok, %{success: true}}
           end)
         end
 
-      assert result == %{success: true}
+      assert result == {:ok, %{success: true}}
     end
 
     test "an untyped dispatch failure fails safe to system (error_type unknown)" do
@@ -220,7 +220,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       {exception, tags} =
         capture_appsignal(fn ->
           Instrumentation.around(StubAsyncWebhook, ctx, fn ->
-            %{success: false, reason: "Media URL is invalid", error_type: :invalid_media_url}
+            {:error, :invalid_media_url, "Media URL is invalid"}
           end)
         end)
 

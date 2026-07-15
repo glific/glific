@@ -30,7 +30,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   Returns the Kaapi ack map, or a failure map if STT fails or Kaapi is not configured.
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map()
+  @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
     # Check Kaapi creds before running STT — no point transcribing if the LLM call can't
     # be made. The STT step itself uses Gemini, not the Kaapi API key.
@@ -39,18 +39,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
            Kaapi.fetch_kaapi_creds(organization_id) do
       run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key)
     else
-      {:error, error_type, reason} when is_atom(error_type) ->
-        %{success: false, reason: reason, error_type: error_type}
+      {:error, _error_type, _reason} = error ->
+        error
 
       # An unconfigured org: fetch_kaapi_creds returns {:error, "Kaapi is not active"} — a
       # provisioning gap, so name it :missing_api_key (→ system) rather than leave it unjudged.
       {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason, error_type: :missing_api_key}
+        {:error, :missing_api_key, reason}
 
       # Any other shape (e.g. a creds row carrying no usable api_key) is genuinely unexpected —
       # fail safe to a generic system error instead of guessing a specific cause.
       _ ->
-        %{success: false, reason: "Unexpected Kaapi dispatch failure", error_type: :unknown}
+        {:error, :unknown, "Unexpected Kaapi dispatch failure"}
     end
   end
 
@@ -60,7 +60,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           non_neg_integer(),
           non_neg_integer(),
           String.t()
-        ) :: map()
+        ) :: Behaviour.result()
   defp run_voice_pipeline(fields, organization_id, flow_id, contact_id, api_key) do
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
@@ -69,9 +69,10 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         fields
         |> Map.put("question", transcribed_text)
         |> dispatch_llm(organization_id, flow_id, contact_id, api_key, voice_start_timestamp)
+        |> KaapiWebhook.to_result()
 
-      {:error, error_type, reason} ->
-        %{success: false, reason: reason, error_type: error_type}
+      {:error, _error_type, _reason} = error ->
+        error
     end
   end
 

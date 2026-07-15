@@ -28,21 +28,21 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
 
     test "speech_to_text tags malformed metadata as :invalid_input" do
       fields = Map.put(@bad_meta, "speech", "https://x.test/a.ogg")
-      assert %{success: false, error_type: :invalid_input} = SpeechToText.call(fields, %{})
+      assert {:error, :invalid_input, _} = SpeechToText.call(fields, %{})
     end
 
     test "text_to_speech tags malformed metadata as :invalid_input" do
-      assert %{success: false, error_type: :invalid_input} =
+      assert {:error, :invalid_input, _} =
                TextToSpeech.call(Map.put(@bad_meta, "text", "hi"), %{})
     end
 
     test "filesearch_gpt tags malformed metadata as :invalid_input" do
       fields = Map.put(@bad_meta, "question", "hi")
-      assert %{success: false, error_type: :invalid_input} = FilesearchGpt.call(fields, %{})
+      assert {:error, :invalid_input, _} = FilesearchGpt.call(fields, %{})
     end
 
     test "voice_filesearch_gpt tags malformed metadata as :invalid_input" do
-      assert %{success: false, error_type: :invalid_input} =
+      assert {:error, :invalid_input, _} =
                VoiceFilesearchGpt.call(Map.put(@bad_meta, "speech", "x"), %{})
     end
 
@@ -54,7 +54,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
         "speech" => "not-a-url"
       }
 
-      assert %{success: false, error_type: :invalid_media_url} = SpeechToText.call(fields, %{})
+      assert {:error, :invalid_media_url, _} = SpeechToText.call(fields, %{})
     end
 
     test "filesearch_gpt tags a missing-Kaapi-creds dispatch failure as :missing_api_key (system)" do
@@ -66,7 +66,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
         "assistant_id" => "asst_x"
       }
 
-      assert %{success: false, error_type: :missing_api_key, reason: "Kaapi is not active"} =
+      assert {:error, :missing_api_key, "Kaapi is not active"} =
                FilesearchGpt.call(fields, %{})
 
       assert ErrorType.class(:missing_api_key) == :system
@@ -80,7 +80,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
         "speech" => "https://x.test/a.ogg"
       }
 
-      assert %{success: false, error_type: :missing_api_key, reason: "Kaapi is not active"} =
+      assert {:error, :missing_api_key, "Kaapi is not active"} =
                VoiceFilesearchGpt.call(fields, %{})
     end
 
@@ -97,11 +97,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
       }
 
       with_mock ThirdPartyKaapi, [:passthrough], fetch_kaapi_creds: fn _ -> {:ok, %{}} end do
-        assert %{
-                 success: false,
-                 error_type: :unknown,
-                 reason: "Unexpected Kaapi dispatch failure"
-               } =
+        assert {:error, :unknown, "Unexpected Kaapi dispatch failure"} =
                  FilesearchGpt.call(fields, %{})
       end
     end
@@ -115,11 +111,7 @@ defmodule Glific.Flows.Webhooks.AsyncImplementationsTest do
       }
 
       with_mock ThirdPartyKaapi, [:passthrough], fetch_kaapi_creds: fn _ -> {:ok, %{}} end do
-        assert %{
-                 success: false,
-                 error_type: :unknown,
-                 reason: "Unexpected Kaapi dispatch failure"
-               } =
+        assert {:error, :unknown, "Unexpected Kaapi dispatch failure"} =
                  VoiceFilesearchGpt.call(fields, %{})
       end
     end

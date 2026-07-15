@@ -212,6 +212,41 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
+  Converts a Kaapi ack map into the typed `call/2` result, so an async node returns the same
+  `{:ok, term} | {:error, ErrorType.t(), reason}` shape as a sync node instead of a bespoke
+  `%{success: …}` map.
+
+  A success ack parks the flow (`{:ok, ack}`). A failure becomes `{:error, type, reason}`: the
+  ack's `error_type` is used when it is already a known `ErrorType.t()` atom, otherwise (a raw
+  string like `"kaapi_logical_failure"`, or absent) it fails safe to `:unknown`, and any
+  `http_status` is folded into the reason so nothing is lost under the flatter contract.
+  """
+  @spec to_result(map()) :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
+  def to_result(%{success: true} = ack), do: {:ok, ack}
+
+  def to_result(%{success: false} = ack) do
+    {:error, ack_error_type(ack[:error_type]), ack_reason(ack)}
+  end
+
+  @spec ack_error_type(any()) :: ErrorType.t()
+  defp ack_error_type(error_type) when is_atom(error_type) do
+    if ErrorType.class(error_type), do: error_type, else: :unknown
+  end
+
+  defp ack_error_type(_error_type), do: :unknown
+
+  @spec ack_reason(map()) :: String.t()
+  defp ack_reason(ack) do
+    reason = ack[:reason] || ack[:error] || "Kaapi dispatch failure"
+    reason = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
+
+    case ack[:http_status] do
+      status when is_integer(status) -> "#{reason} (HTTP #{status})"
+      _ -> reason
+    end
+  end
+
+  @doc """
   Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. All three
   are required (the Kaapi callback signature depends on them). Returns a tagged tuple so
   callers route a malformed payload to the Failure branch rather than crashing the worker;

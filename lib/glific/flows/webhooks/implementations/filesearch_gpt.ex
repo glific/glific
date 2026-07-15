@@ -20,7 +20,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
   (`%{success: …}`); `%{success: false, reason: "Kaapi is not active"}` when unconfigured.
   """
   @impl true
-  @spec call(map(), Behaviour.ctx()) :: map()
+  @spec call(map(), Behaviour.ctx()) :: Behaviour.result()
   def call(fields, _ctx) do
     with {:ok, {organization_id, flow_id, contact_id}} <-
            KaapiSupport.parse_flow_fields(fields),
@@ -33,19 +33,20 @@ defmodule Glific.Flows.Webhooks.FilesearchGpt do
         Map.merge(request_metadata, %{call_type: "llm", webhook_name: name()})
 
       KaapiSupport.call_llm(fields, [{"X-API-KEY", api_key}], callback_url, request_metadata)
+      |> KaapiSupport.to_result()
     else
-      {:error, error_type, reason} when is_atom(error_type) ->
-        %{success: false, reason: reason, error_type: error_type}
+      {:error, _error_type, _reason} = error ->
+        error
 
       # An unconfigured org: fetch_kaapi_creds returns {:error, "Kaapi is not active"} — a
       # provisioning gap, so name it :missing_api_key (→ system) rather than leave it unjudged.
       {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason, error_type: :missing_api_key}
+        {:error, :missing_api_key, reason}
 
       # Any other shape (e.g. a creds row carrying no usable api_key) is genuinely unexpected —
       # fail safe to a generic system error instead of guessing a specific cause.
       _ ->
-        %{success: false, reason: "Unexpected Kaapi dispatch failure", error_type: :unknown}
+        {:error, :unknown, "Unexpected Kaapi dispatch failure"}
     end
   end
 end
