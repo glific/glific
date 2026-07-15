@@ -91,7 +91,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
         %{success: false} = failure ->
           detail = failure[:asr_response_text]
-          {:error, ErrorType.from_http_status(detail), stt_failure_reason(detail)}
+          {:error, KaapiWebhook.from_http_status(detail), stt_failure_reason(detail)}
 
         # Gemini.speech_to_text can pass an upstream error term through unchanged (e.g. a bare
         # {:error, reason} when the download fails with a non-standard reason) — normalise it to a

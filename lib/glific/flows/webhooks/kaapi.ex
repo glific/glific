@@ -174,11 +174,43 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     cond do
       reason =~ @crash -> :unknown
       reason =~ @overloaded -> :service_unavailable
-      true -> ErrorType.from_http_status(code)
+      true -> from_http_status(code)
     end
   end
 
   def classify(_result), do: :unknown
+
+  @doc """
+  Maps a raw HTTP status to an `ErrorType.t()`, so any webhook failure — a Kaapi callback, an
+  async dispatch, or a provider call like Gemini STT — buckets a status the same way. A 429 is a
+  rate-limit blip (`:rate_limited` → system); a 408 request timeout is a transient upstream stall
+  (`:service_unavailable` → system); any other 4xx is a rejected request (`:invalid_input` →
+  config); everything else (5xx, a transport atom like `:timeout`, a raw body, `nil`) fails safe
+  to `:unknown` → system. Lives here — not in `ErrorType` — because it *decides* a type, whereas
+  `ErrorType` only defines the vocabulary and buckets it (`class/1`).
+
+  ## Examples
+
+      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(400)
+      :invalid_input
+
+      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(429)
+      :rate_limited
+
+      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(408)
+      :service_unavailable
+
+      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(500)
+      :unknown
+
+      iex> Glific.Flows.Webhooks.Kaapi.from_http_status(:timeout)
+      :unknown
+  """
+  @spec from_http_status(any()) :: ErrorType.t()
+  def from_http_status(429), do: :rate_limited
+  def from_http_status(408), do: :service_unavailable
+  def from_http_status(status) when is_integer(status) and status in 400..499, do: :invalid_input
+  def from_http_status(_status), do: :unknown
 
   # A status code that may arrive as an integer or a JSON string ("404"); anything else → nil.
   @spec to_status(any()) :: integer() | nil
