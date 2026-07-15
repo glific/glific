@@ -378,6 +378,26 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert %{success: false, error_type: :unknown} = VoiceFilesearchGpt.call(fields, %{})
     end
 
+    # Gemini.speech_to_text can pass an upstream error term through unchanged (a bare
+    # {:error, reason}); call/2 must normalise it to a typed failure, not raise CaseClauseError.
+    test "an unexpected Gemini STT result is normalised to a typed failure (no crash)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      with_mock(Gemini, [:passthrough],
+        speech_to_text: fn _speech, _org -> {:error, :timeout} end
+      ) do
+        assert %{success: false, error_type: :unknown, reason: reason} =
+                 VoiceFilesearchGpt.call(fields, %{})
+
+        assert reason =~ "timeout"
+      end
+    end
+
     # Stage 2 (Kaapi LLM) failure (non-timeout): STT succeeds but the unified LLM call
     # returns an API error (500); VoiceFilesearchGpt.call returns %{success: false} and
     # the flow records the error.

@@ -61,6 +61,8 @@ defmodule Glific.Flows.Webhooks.KaapiTest do
 
     test "a string http_status is normalised (4xx stays config)" do
       assert KaapiSupport.classify(%{"http_status" => "404"}) == :invalid_input
+      # A partially-parsed status ("404invalid") is rejected → system, not misread as 404.
+      assert KaapiSupport.classify(%{"http_status" => "404invalid"}) == :unknown
     end
 
     test "a 4xx reason containing 'try again' stays config (not misfiled as overload)" do

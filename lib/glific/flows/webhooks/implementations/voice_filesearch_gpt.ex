@@ -85,12 +85,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
       case Gemini.speech_to_text(speech, organization_id) do
-        %{success: true, asr_response_text: transcribed_text} ->
+        %{success: true, asr_response_text: transcribed_text} when is_binary(transcribed_text) ->
           {:ok, transcribed_text}
 
         %{success: false} = failure ->
           detail = failure[:asr_response_text]
           {:error, ErrorType.from_http_status(detail), stt_failure_reason(detail)}
+
+        # Gemini.speech_to_text can pass an upstream error term through unchanged (e.g. a bare
+        # {:error, reason} when the download fails with a non-standard reason) — normalise it to a
+        # typed failure instead of raising CaseClauseError in the worker.
+        unexpected ->
+          {:error, :unknown, stt_failure_reason(unexpected)}
       end
     end
   end

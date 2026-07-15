@@ -495,6 +495,40 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       # Provider-agnostic default: uses the webhook_name, not a hardcoded "Kaapi".
       assert tags.reason =~ "kaapi_asr callback failure"
     end
+
+    test "a failure payload missing the success key is still reported (not swallowed)" do
+      response = %{"organization_id" => 1, "webhook_name" => "kaapi_asr"}
+      result = %{"reason" => "malformed, no success key"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(nil, result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.reason == "malformed, no success key"
+    end
+  end
+
+  # --- Instrumentation.around_callback/4 --------------------------------------
+
+  describe "Instrumentation.around_callback/4" do
+    test "a raising callback still records failure telemetry, then reraises" do
+      result = %{"success" => true}
+      response = %{"organization_id" => 1, "webhook_name" => "stub_async_infra"}
+
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise RuntimeError, "callback boom", fn ->
+            Instrumentation.around_callback(StubAsyncWebhook, result, response, fn ->
+              raise RuntimeError, "callback boom"
+            end)
+          end
+        end)
+
+      # The rescue path marks the callback a failure and reports it before reraising.
+      assert %Errors.SystemError{} = exception
+    end
   end
 
   # --- Dispatcher.callback/3 --------------------------------------------------

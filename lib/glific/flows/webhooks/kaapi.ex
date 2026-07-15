@@ -185,9 +185,11 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   defp to_status(status) when is_integer(status), do: status
 
   defp to_status(status) when is_binary(status) do
-    case Integer.parse(status) do
-      {code, _rest} -> code
-      :error -> nil
+    # Only a cleanly-parsed integer counts — `Integer.parse/1` accepts prefixes, so "404invalid"
+    # would otherwise be read as 404. A malformed status falls back to nil (→ system).
+    case status |> String.trim() |> Integer.parse() do
+      {code, ""} -> code
+      _ -> nil
     end
   end
 

@@ -135,8 +135,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   # ErrorType (the node can't self-classify here) and `ErrorReporter` routes it like the sync path.
   @doc "Report an async callback that arrived with `success` not true, classified by the node."
   @spec report_callback_failure(module() | nil, map(), map()) :: :ok
-  def report_callback_failure(module, %{"success" => success} = result, response)
-      when success != true do
+  def report_callback_failure(_module, %{"success" => true}, _response), do: :ok
+
+  # Any other map is a failure — including one missing the `success` key, which must not be
+  # silently swallowed (the flow already branched to Failure on it).
+  def report_callback_failure(module, result, response) when is_map(result) do
     reason =
       result["reason"] || result["error"] || response["message"] ||
         "#{response["webhook_name"] || "Webhook"} callback failure"
@@ -218,9 +221,15 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   @spec around_callback(module() | nil, map(), map(), (-> map())) :: map()
   def around_callback(module, result, response, fun)
       when (is_atom(module) or is_nil(module)) and is_function(fun, 0) do
+    # Mirror `around/3`: a raising callback (e.g. voice post-processing) must still record its
+    # count/latency/failure before the exception propagates, or callback telemetry is lost.
     shaped = fun.()
     record_callback_outcome(module, result, response)
     shaped
+  rescue
+    exception ->
+      record_callback_outcome(module, Map.put(result, "success", false), response)
+      reraise exception, __STACKTRACE__
   end
 
   # Callback-phase telemetry for an async webhook (count, latency, failure classification).
@@ -287,13 +296,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     ErrorReporter.report(dispatch_error_type(result), reason || "Kaapi dispatch failure", tags)
   end
 
-  defp maybe_report_failure(result, webhook_name, ctx)
-       when is_nil(result) or not is_map(result) do
+  # Any other non-success ack — nil, a non-map, or a map missing/≠false `:success` — is still a
+  # dispatch failure the flow branched on, so report it as :unknown rather than swallow it.
+  defp maybe_report_failure(result, webhook_name, ctx) do
     reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
     ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
   end
-
-  defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
 
   @spec dispatch_error_type(map()) :: ErrorType.t()
   defp dispatch_error_type(%{error_type: error_type}) when is_atom(error_type), do: error_type
