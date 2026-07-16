@@ -19,7 +19,7 @@ defmodule Glific.Flows.Expression do
      `Timex.cmd/2` node byte-identical to a legitimate `Timex.today/0` node.
      Validating one representation and executing another is the bug. We walk and
      execute the same tree.
-  3. **Fail closed.** `e/2` implements only the allowed node types. `alias`,
+  3. **Fail closed.** `eval_node/2` implements only the allowed node types. `alias`,
      `import`, `fn`, captures, computed modules and `apply/3` need no dedicated
      rule — they have no clause and fall to the catch-all, which rejects.
   4. **Modules resolve through `@mfa` only**, never Elixir's alias resolution.
@@ -29,9 +29,9 @@ defmodule Glific.Flows.Expression do
 
   ## Where the security guarantee lives
 
-  `e/2` (and its catch-all) is the **sole** security boundary. `safe_shape/1` is
+  `eval_node/2` (and its catch-all) is the **sole** security boundary. `safe_shape/1` is
   a cheap, deliberately permissive structural pre-check used at publish time for
-  early author feedback — it is NOT a gate, and nothing that reaches `e/2` may
+  early author feedback — it is NOT a gate, and nothing that reaches `eval_node/2` may
   rely on it having run. Do not "optimise" by trusting `safe_shape/1` at runtime.
   """
 
@@ -150,7 +150,7 @@ defmodule Glific.Flows.Expression do
         {:cont, {:ok, [text | acc]}}
 
       {:expr, ast}, {:ok, acc} ->
-        case isolated(fn -> e(ast, bindings) end) do
+        case isolated(fn -> eval_node(ast, bindings) end) do
           {:ok, value} -> {:cont, {:ok, [to_output(value) | acc]}}
           {:error, _} = err -> {:halt, err}
         end
@@ -251,12 +251,12 @@ defmodule Glific.Flows.Expression do
     if n > @max_nodes, do: {:error, "expression too complex"}, else: :ok
   end
 
-  # Structural validation that mirrors e/2's accepted node shapes exactly by
+  # Structural validation that mirrors eval_node/2's accepted node shapes exactly by
   # recursing top-down — never classifying a sub-node in isolation. Because it is
-  # the structural twin of e/2, `validate/1` cannot green-light anything e/2
+  # the structural twin of eval_node/2, `validate/1` cannot green-light anything eval_node/2
   # would reject: the two stay in lock-step and there is no publish-vs-runtime
   # drift. It cannot see runtime-only failures (division by zero, field access on
-  # a non-map, unbound variable), which remain e/2's responsibility.
+  # a non-map, unbound variable), which remain eval_node/2's responsibility.
   @spec safe_shape(Macro.t()) :: :ok | {:error, String.t()}
   defp safe_shape(ast), do: validate_ast(ast)
 
@@ -313,7 +313,7 @@ defmodule Glific.Flows.Expression do
     with {:ok, ast} <- parse(src, true),
          :ok <- check_size(ast),
          :ok <- safe_shape(ast) do
-      isolated(fn -> e(ast, bindings) end)
+      isolated(fn -> eval_node(ast, bindings) end)
     end
   end
 
@@ -355,49 +355,51 @@ defmodule Glific.Flows.Expression do
   end
 
   # literals
-  defp e(n, _)
+  defp eval_node(n, _)
        when is_integer(n) or is_float(n) or is_binary(n) or is_boolean(n) or is_nil(n),
        do: n
 
-  defp e(n, _) when is_atom(n), do: reject("bare atom #{Glific.SafeLog.safe_inspect(n)}")
+  defp eval_node(n, _) when is_atom(n),
+    do: reject("bare atom #{Glific.SafeLog.safe_inspect(n)}")
 
-  defp e(l, b) when is_list(l), do: Enum.map(l, &e(&1, b))
+  defp eval_node(l, bindings) when is_list(l), do: Enum.map(l, &eval_node(&1, bindings))
 
   # EEx assign: @results -> bindings lookup. Data, never code.
-  defp e({:@, _, [{name, _, nil}]}, b) when is_atom(name), do: fetch(b, name)
+  defp eval_node({:@, _, [{name, _, nil}]}, bindings) when is_atom(name),
+    do: fetch(bindings, name)
 
   # bare var
-  defp e({name, _, nil}, b) when is_atom(name), do: fetch(b, name)
+  defp eval_node({name, _, nil}, bindings) when is_atom(name), do: fetch(bindings, name)
 
   # remote call: module MUST be a literal alias on the table. This is the only
   # path to a module, so alias/import/computed modules cannot reach one.
-  defp e({{:., _, [{:__aliases__, _, [m]}, f]}, _, args}, b) when is_list(args) do
+  defp eval_node({{:., _, [{:__aliases__, _, [m]}, f]}, _, args}, bindings) when is_list(args) do
     key = {m, f, length(args)}
 
     case Map.fetch(@mfa, key) do
-      {:ok, fun} -> apply(fun, Enum.map(args, &e(&1, b)))
+      {:ok, fun} -> apply(fun, Enum.map(args, &eval_node(&1, bindings)))
       :error -> reject("#{m}.#{f}/#{length(args)}")
     end
   end
 
   # field access on plain maps only -- never structs, never modules
-  defp e({{:., _, [inner, key]}, _, []}, b) when is_atom(key) do
-    case e(inner, b) do
+  defp eval_node({{:., _, [inner, key]}, _, []}, bindings) when is_atom(key) do
+    case eval_node(inner, bindings) do
       m when is_map(m) and not is_struct(m) -> map_get(m, key)
       _ -> reject("field access on non-map")
     end
   end
 
   # allowed operators / Kernel calls
-  defp e({op, _, args}, b) when is_atom(op) and is_list(args) do
+  defp eval_node({op, _, args}, bindings) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
-      do: kernel_call(op, Enum.map(args, &e(&1, b))),
+      do: kernel_call(op, Enum.map(args, &eval_node(&1, bindings))),
       else: reject("#{op}/#{length(args)}")
   end
 
   # FAIL-CLOSED CATCH-ALL. alias, import, fn, &capture, spawn, apply/3,
   # __block__, sigils, computed modules all land here. No rule needed.
-  defp e(node, _), do: reject(safe_desc(node))
+  defp eval_node(node, _), do: reject(safe_desc(node))
 
   # Explicit dispatch. Args are already evaluated (strict), so using the
   # non-short-circuit :erlang BIFs for and/or/not matches our semantics.
