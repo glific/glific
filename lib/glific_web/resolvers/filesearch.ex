@@ -5,8 +5,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   alias Glific.{
     Assistants,
-    Filesearch,
-    Filesearch.VectorStore
+    Filesearch
   }
 
   require Logger
@@ -38,17 +37,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
           {:ok, any()} | {:error, any()}
   def delete_assistant(_, params, _) do
     with {:ok, assistant} <- Assistants.delete_assistant(params.id) do
-      {:ok, %{assistant: assistant}}
-    end
-  end
-
-  @doc """
-  Upload and add the files to the VectorStore
-  """
-  @spec add_assistant_files(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def add_assistant_files(_, params, _) do
-    with {:ok, assistant} <- Filesearch.add_assistant_files(params) do
       {:ok, %{assistant: assistant}}
     end
   end
@@ -133,9 +121,8 @@ defmodule GlificWeb.Resolvers.Filesearch do
 
   @doc """
   Return the details of the files in a VectorStore.
-  Handles both unified API (map) and legacy (VectorStore struct) data.
   """
-  @spec list_files(VectorStore.t(), map(), map()) :: {:ok, list()}
+  @spec list_files(map(), map(), map()) :: {:ok, list()}
   def list_files(vector_store, _args, _context) do
     Enum.map(vector_store.files, fn {id, info} ->
       %{
