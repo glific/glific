@@ -1,8 +1,9 @@
 defmodule Glific.Flows.Webhooks.Geolocation do
   @moduledoc """
   Reverse-geocode `lat`/`long` to a structured address via Google Maps (`geolocation` node).
-  Returns `{:ok, Address.t()}` or a typed `{:error, ErrorType.t(), String.t()}` — the node
-  classifies each failure itself (see `Glific.Flows.Webhooks.ErrorType` for the buckets).
+  Returns `{:ok, map()}` (the flow-facing address map) or a typed
+  `{:error, ErrorType.t(), String.t()}` — the node classifies each failure itself (see
+  `Glific.Flows.Webhooks.ErrorType` for the buckets).
   """
 
   use Glific.Flows.Webhooks.Sync, name: "geolocation"
@@ -10,13 +11,19 @@ defmodule Glific.Flows.Webhooks.Geolocation do
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Geolocation.Address
 
-  @type result :: {:ok, Address.t()} | {:error, ErrorType.t(), String.t()}
+  @type result :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
+  @type address_result :: {:ok, Address.t()} | {:error, ErrorType.t(), String.t()}
 
   @impl true
   @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: result()
-  def call(fields, _ctx), do: geocode(fields)
+  def call(fields, _ctx) do
+    case geocode(fields) do
+      {:ok, %Address{} = address} -> {:ok, Address.to_flow_map(address)}
+      error -> error
+    end
+  end
 
-  @spec geocode(map()) :: result()
+  @spec geocode(map()) :: address_result()
   defp geocode(fields) do
     lat = (fields["lat"] || "") |> to_string() |> String.trim()
     long = (fields["long"] || "") |> to_string() |> String.trim()
@@ -45,7 +52,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     )
   end
 
-  @spec do_geocode(String.t()) :: result()
+  @spec do_geocode(String.t()) :: address_result()
   defp do_geocode(url) do
     case Tesla.get(client(), url) do
       {:ok, %Tesla.Env{body: body}} ->
@@ -57,7 +64,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
     end
   end
 
-  @spec decode_response(String.t()) :: result()
+  @spec decode_response(String.t()) :: address_result()
   defp decode_response(body) do
     case Jason.decode(body) do
       {:ok, decoded} when is_map(decoded) ->
@@ -75,7 +82,7 @@ defmodule Glific.Flows.Webhooks.Geolocation do
 
   # Geocoding API contract is the `status` field in the body, not the HTTP status. See
   # https://developers.google.com/maps/documentation/geocoding/requests-geocoding#StatusCodes
-  @spec decode_geocode_response(map()) :: result()
+  @spec decode_geocode_response(map()) :: address_result()
   defp decode_geocode_response(%{"status" => "OK", "results" => results}),
     do: parse_results(results)
 

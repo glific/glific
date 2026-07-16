@@ -125,8 +125,7 @@ end
 A typed, instrumented framework wraps all flow-webhook nodes. Two directories:
 
 - **`flows/webhooks/core/`** — infrastructure (never touch for a new webhook):
-  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `ResultTranslator`, `Sync`/`Async`
-  macros, `Errors`
+  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `Sync`/`Async` macros, `Errors`
 - **`flows/webhooks/implementations/`** — per-webhook domain modules (one module per node)
 
 ### Adding a new sync webhook
