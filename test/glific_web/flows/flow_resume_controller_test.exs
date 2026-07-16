@@ -855,11 +855,9 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       result = Webhook.maybe_upload_tts_audio(response)
 
       assert is_nil(result["message"])
-
-      assert %{success: false, error_type: "tts_upload_failed", reason: reason} =
-               result["tts_upload_error"]
-
-      assert reason =~ "not valid base64"
+      assert result["success"] == false
+      assert result["error_type"] == "tts_upload_failed"
+      assert result["reason"] =~ "not valid base64"
     end
 
     test "maybe_upload_tts_audio surfaces the real GcsWorker error (not a hardcoded GCS message)" do
@@ -876,8 +874,9 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         result = Webhook.maybe_upload_tts_audio(response)
 
         assert is_nil(result["message"])
+        assert result["success"] == false
         # the actual GcsWorker reason is passed through, not assumed "GCS not enabled"
-        assert result["tts_upload_error"][:reason] == gcs_error
+        assert result["reason"] == gcs_error
       end
     end
 
@@ -908,13 +907,9 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "webhook_log_id" => webhook_log.id,
         "result_name" => "response",
         "message" => nil,
-        "tts_upload_error" => %{
-          success: false,
-          message: nil,
-          error_type: "tts_upload_failed",
-          reason: "TTS audio upload failed (GCS may not be enabled for this organization)",
-          thread_id: nil
-        }
+        "success" => false,
+        "error_type" => "tts_upload_failed",
+        "reason" => "TTS audio upload failed (GCS may not be enabled for this organization)"
       }
 
       with_mock FlowContext, [:passthrough],

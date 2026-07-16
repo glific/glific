@@ -492,9 +492,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume(organization_id, result, response, contact) do
-    log_message = response["tts_upload_error"] || callback_log_message(result, response)
-
-    maybe_update_log(response["webhook_log_id"], log_message)
+    maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
 
@@ -509,17 +507,12 @@ defmodule Glific.Flows.Webhook do
     |> report_resume_error(response)
   end
 
-  # nil keeps compatibility with non-Kaapi webhook responses (falls back to default behavior).
+  # Route on the response-first outcome (a failed TTS upload overwrites it to success=false, so it
+  # goes to Failure even though Kaapi reported success). nil keeps compatibility with non-Kaapi
+  # webhook responses (falls back to default behavior).
   @spec resume_message(map(), map(), non_neg_integer()) :: Messages.Message.t() | nil
-  # A failed TTS audio upload routes to Failure even though Kaapi itself reported success —
-  # there's no usable audio to continue the Success branch with.
-  defp resume_message(_result, %{"tts_upload_error" => log}, organization_id)
-       when is_map(log) do
-    Messages.create_temp_message(organization_id, "Failure")
-  end
-
   defp resume_message(result, response, organization_id) do
-    case {result["success"], response["webhook_log_id"]} do
+    case {Map.get(response, "success", result["success"]), response["webhook_log_id"]} do
       {true, nil} -> Messages.create_temp_message(organization_id, "No Response")
       {true, _} -> Messages.create_temp_message(organization_id, "Success")
       {false, _} -> Messages.create_temp_message(organization_id, "Failure")
@@ -566,13 +559,16 @@ defmodule Glific.Flows.Webhook do
     %{}
   end
 
+  # Read the outcome from `response` first, falling back to the raw `result`: normally they agree,
+  # but a failed TTS upload overwrites `response` with success=false so the log records the real
+  # failure even though Kaapi's `result` reported success.
   @spec callback_log_message(map(), map()) :: map()
   defp callback_log_message(result, response) do
     %{
-      success: result["success"],
+      success: Map.get(response, "success", result["success"]),
       message: response["message"] || sanitize_kaapi_wording(result["error"]),
-      error_type: result["error_type"],
-      reason: sanitize_kaapi_wording(result["reason"]),
+      error_type: Map.get(response, "error_type", result["error_type"]),
+      reason: sanitize_kaapi_wording(Map.get(response, "reason", result["reason"])),
       thread_id: response["thread_id"]
     }
   end
@@ -599,17 +595,14 @@ defmodule Glific.Flows.Webhook do
         Map.put(response, "message", media_url)
 
       {:error, reason} ->
-        # Emit a ready-to-log failure map (not a silent success=true/nil message). resume/3 writes
-        # it to the WebhookLog verbatim and routes the flow to Failure.
+        # Kaapi reported success, but with no stored audio there's nothing to resume with. Overwrite
+        # the response outcome to a failure so the normal log/routing path records it and routes to
+        # Failure — rather than silently resuming success=true with a nil message.
         response
         |> Map.put("message", nil)
-        |> Map.put("tts_upload_error", %{
-          success: false,
-          message: nil,
-          error_type: "tts_upload_failed",
-          reason: reason,
-          thread_id: response["thread_id"]
-        })
+        |> Map.put("success", false)
+        |> Map.put("error_type", "tts_upload_failed")
+        |> Map.put("reason", reason)
     end
   end
 
