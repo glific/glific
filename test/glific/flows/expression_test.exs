@@ -155,9 +155,9 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.eval("<%= div(5, 0) %>")
     end
 
-    test "rejects invalid syntax and unbound variables" do
+    test "rejects invalid syntax; an unbound variable is nil (empty)" do
       assert {:error, _} = Expression.eval("<%= 4 + %>")
-      assert {:error, _} = Expression.eval("<%= @missing %>", %{})
+      assert {:ok, ""} = Expression.eval("<%= @missing %>", %{})
     end
 
     # Note: timeout / heap-kill in isolated/1 are backstops. They are effectively
@@ -210,6 +210,55 @@ defmodule Glific.Flows.ExpressionTest do
     test "renders arithmetic from a compiled template" do
       {:ok, compiled} = Expression.compile("<%= 6 * 7 %>")
       assert {:ok, "42"} = Expression.render(compiled, %{})
+    end
+  end
+
+  describe "eval/2 — control-flow forms" do
+    test "if / else" do
+      assert {:ok, "yes"} = Expression.eval("<%= if 3 > 2, do: \"yes\", else: \"no\" %>")
+      assert {:ok, "no"} = Expression.eval("<%= if 1 > 2, do: \"yes\", else: \"no\" %>")
+    end
+
+    test "cond" do
+      template = "<%= cond do @n > 3 -> \"big\"; true -> \"small\" end %>"
+      assert {:ok, "big"} = Expression.eval(template, %{"n" => 5})
+      assert {:ok, "small"} = Expression.eval(template, %{"n" => 1})
+    end
+
+    test "pipe chain" do
+      assert {:ok, "HI"} =
+               Expression.eval("<%= \"  hi  \" |> String.trim() |> String.upcase() %>")
+    end
+
+    test "short-circuit && / ||" do
+      assert {:ok, "true"} = Expression.eval("<%= @n > 0 && @n <= 10 %>", %{"n" => 5})
+      assert {:ok, "default"} = Expression.eval("<%= @missing || \"default\" %>", %{})
+    end
+
+    test "in operator and string interpolation" do
+      assert {:ok, "true"} = Expression.eval("<%= @n in [1, 2, 5] %>", %{"n" => 5})
+      assert {:ok, "count: 5"} = Expression.eval(~S(<%= "count: #{@n}" %>), %{"n" => 5})
+    end
+
+    test "multi-statement block with local assignment" do
+      assert {:ok, "9"} = Expression.eval("<%= x = 3\nx * x %>", %{})
+    end
+
+    test "expanded function allowlist" do
+      assert {:ok, "a-b-c"} = Expression.eval("<%= String.replace(\"a b c\", \" \", \"-\") %>")
+      assert {:ok, "5"} = Expression.eval("<%= String.to_integer(\"5\") %>")
+    end
+
+    test "control-flow forms do not become an escape hatch" do
+      for payload <- [
+            "<%= if true, do: System.cmd(\"id\", []), else: 0 %>",
+            "<%= \"x\" |> System.cmd([]) %>",
+            "<%= true && File.read!(\"/etc/hostname\") %>",
+            "<%= cond do true -> :os.cmd(~c\"id\") end %>"
+          ] do
+        assert {:error, _} = Expression.eval(payload), "expected #{payload} to reject"
+        assert {:error, _} = Expression.validate(payload)
+      end
     end
   end
 end

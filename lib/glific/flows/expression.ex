@@ -44,13 +44,61 @@ defmodule Glific.Flows.Expression do
   # depends on organisation-timezone semantics for `Timex.today()`, revisit this
   # during the Phase 0 corpus audit before enabling.
   @mfa %{
+    # String
     {:String, :length, 1} => &String.length/1,
     {:String, :upcase, 1} => &String.upcase/1,
     {:String, :downcase, 1} => &String.downcase/1,
     {:String, :trim, 1} => &String.trim/1,
+    {:String, :trim, 2} => &String.trim/2,
+    {:String, :trim_leading, 2} => &String.trim_leading/2,
+    {:String, :replace_leading, 3} => &String.replace_leading/3,
+    {:String, :replace, 3} => &String.replace/3,
+    {:String, :replace, 4} => &String.replace/4,
+    {:String, :slice, 2} => &String.slice/2,
+    {:String, :slice, 3} => &String.slice/3,
+    {:String, :split, 2} => &String.split/2,
+    {:String, :to_integer, 1} => &String.to_integer/1,
+    {:String, :starts_with?, 2} => &String.starts_with?/2,
+    {:String, :ends_with?, 2} => &String.ends_with?/2,
+    {:String, :contains?, 2} => &String.contains?/2,
+    # Enum / List / Map
     {:Enum, :count, 1} => &Enum.count/1,
+    {:Enum, :at, 2} => &Enum.at/2,
+    {:Enum, :join, 1} => &Enum.join/1,
+    {:Enum, :join, 2} => &Enum.join/2,
+    # NOTE: Enum.random/1 is NOT pure (non-deterministic). Included for the corpus
+    # audit only; decide deliberately before enabling.
+    {:Enum, :random, 1} => &Enum.random/1,
+    {:List, :first, 1} => &List.first/1,
+    {:Map, :get, 2} => &Map.get/2,
+    {:Map, :get, 3} => &Map.get/3,
+    # Integer / Float / URI / Jason
+    {:Integer, :to_string, 1} => &Integer.to_string/1,
+    {:Float, :parse, 1} => &Float.parse/1,
+    {:URI, :encode, 1} => &URI.encode/1,
+    {:Jason, :encode!, 1} => &Jason.encode!/1,
+    # Date / Time / DateTime / NaiveDateTime
+    {:Date, :utc_today, 0} => &Date.utc_today/0,
+    {:Date, :to_string, 1} => &Date.to_string/1,
+    {:Date, :diff, 2} => &Date.diff/2,
+    {:Date, :days_in_month, 1} => &Date.days_in_month/1,
+    {:Time, :diff, 3} => &Time.diff/3,
+    {:DateTime, :utc_now, 0} => &DateTime.utc_now/0,
+    {:DateTime, :diff, 2} => &DateTime.diff/2,
+    {:DateTime, :diff, 3} => &DateTime.diff/3,
+    {:DateTime, :after?, 2} => &DateTime.after?/2,
+    {:DateTime, :to_unix, 1} => &DateTime.to_unix/1,
+    {:NaiveDateTime, :diff, 3} => &NaiveDateTime.diff/3,
+    {:NaiveDateTime, :compare, 2} => &NaiveDateTime.compare/2,
+    # Timex (today/0 kept as UTC per the note above)
     {:Timex, :today, 0} => &Date.utc_today/0,
-    {:Date, :utc_today, 0} => &Date.utc_today/0
+    {:Timex, :today, 1} => &Timex.today/1,
+    {:Timex, :now, 0} => &Timex.now/0,
+    {:Timex, :now, 1} => &Timex.now/1,
+    {:Timex, :diff, 3} => &Timex.diff/3,
+    {:Timex, :compare, 2} => &Timex.compare/2,
+    {:Timex, :to_unix, 1} => &Timex.to_unix/1,
+    {:Timex, :format!, 2} => &Timex.format!/2
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain
@@ -78,7 +126,17 @@ defmodule Glific.Flows.Expression do
     {:<>, 2},
     {:not, 1},
     {:and, 2},
-    {:or, 2}
+    {:or, 2},
+    {:===, 2},
+    {:!==, 2},
+    {:!, 1},
+    {:in, 2},
+    {:to_string, 1},
+    {:is_number, 1},
+    {:is_binary, 1},
+    {:is_nil, 1},
+    {:max, 2},
+    {:min, 2}
   ]
 
   # Resource limits. An interpreter prevents RCE, not resource exhaustion:
@@ -285,6 +343,25 @@ defmodule Glific.Flows.Expression do
   # nested field chain) -- never a bare atom or module.
   defp validate_ast({{:., _, [inner, f]}, _, []}) when is_atom(f), do: validate_ast(inner)
 
+  # control-flow forms — twins of the eval_node clauses, same order
+  defp validate_ast({:if, _, [condition, branches]}) when is_list(branches) do
+    with :ok <- validate_ast(condition),
+         :ok <- validate_ast(Keyword.get(branches, :do)) do
+      validate_ast(Keyword.get(branches, :else))
+    end
+  end
+
+  defp validate_ast({:cond, _, [[{:do, clauses}]]}), do: validate_cond(clauses)
+
+  defp validate_ast({:&&, _, [a, b]}), do: validate_all([a, b])
+  defp validate_ast({:||, _, [a, b]}), do: validate_all([a, b])
+
+  defp validate_ast({:|>, _, [left, right]}), do: validate_ast(inject_pipe(left, right))
+
+  defp validate_ast({:__block__, _, stmts}), do: validate_block(stmts)
+
+  defp validate_ast({:<<>>, _, parts}), do: validate_interp(parts)
+
   # operators / Kernel calls on the @kernel table
   defp validate_ast({op, _, args}) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -293,6 +370,51 @@ defmodule Glific.Flows.Expression do
   end
 
   defp validate_ast(node), do: {:error, "disallowed expression: #{safe_desc(node)}"}
+
+  defp validate_cond(clauses) do
+    Enum.reduce_while(clauses, :ok, fn
+      {:->, _, [[condition], body]}, :ok ->
+        case validate_all([condition, body]) do
+          :ok -> {:cont, :ok}
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed cond clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  defp validate_block(stmts) do
+    Enum.reduce_while(stmts, :ok, fn
+      {:=, _, [{var, _, nil}, expr]}, :ok when is_atom(var) ->
+        case validate_ast(expr) do
+          :ok -> {:cont, :ok}
+          {:error, _} = err -> {:halt, err}
+        end
+
+      stmt, :ok ->
+        case validate_ast(stmt) do
+          :ok -> {:cont, :ok}
+          {:error, _} = err -> {:halt, err}
+        end
+    end)
+  end
+
+  defp validate_interp(parts) do
+    Enum.reduce_while(parts, :ok, fn
+      s, :ok when is_binary(s) ->
+        {:cont, :ok}
+
+      {:"::", _, [inner, _]}, :ok ->
+        case validate_ast(unwrap_to_string(inner)) do
+          :ok -> {:cont, :ok}
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed interpolation #{safe_desc(other)}"}}
+    end)
+  end
 
   @spec validate_all([Macro.t()]) :: :ok | {:error, String.t()}
   defp validate_all(nodes) do
@@ -390,6 +512,41 @@ defmodule Glific.Flows.Expression do
     end
   end
 
+  # -- control-flow special forms (branching only; still non-Turing-complete) --
+
+  # if cond, do: x, else: y   (else optional)
+  defp eval_node({:if, _, [condition, branches]}, bindings) when is_list(branches) do
+    if truthy?(eval_node(condition, bindings)),
+      do: eval_node(Keyword.get(branches, :do), bindings),
+      else: eval_node(Keyword.get(branches, :else), bindings)
+  end
+
+  # cond do c -> body ... end
+  defp eval_node({:cond, _, [[{:do, clauses}]]}, bindings), do: eval_cond(clauses, bindings)
+
+  # short-circuit && / ||
+  defp eval_node({:&&, _, [a, b]}, bindings) do
+    va = eval_node(a, bindings)
+    if truthy?(va), do: eval_node(b, bindings), else: va
+  end
+
+  defp eval_node({:||, _, [a, b]}, bindings) do
+    va = eval_node(a, bindings)
+    if truthy?(va), do: va, else: eval_node(b, bindings)
+  end
+
+  # pipe: a |> f(b)  ==  f(a, b). We rewrite the AST and interpret it -- never eval.
+  defp eval_node({:|>, _, [left, right]}, bindings),
+    do: eval_node(inject_pipe(left, right), bindings)
+
+  # multi-statement block; `x = expr` binds x for later statements in the block.
+  defp eval_node({:__block__, _, stmts}, bindings), do: eval_block(stmts, bindings)
+
+  # string interpolation "a #{x} b"
+  defp eval_node({:<<>>, _, parts}, bindings) do
+    parts |> Enum.map(&interp_part(&1, bindings)) |> IO.iodata_to_binary()
+  end
+
   # allowed operators / Kernel calls
   defp eval_node({op, _, args}, bindings) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -430,15 +587,65 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:not, [a]), do: :erlang.not(a)
   defp kernel_call(:and, [a, b]), do: :erlang.and(a, b)
   defp kernel_call(:or, [a, b]), do: :erlang.or(a, b)
+  defp kernel_call(:===, [a, b]), do: a === b
+  defp kernel_call(:!==, [a, b]), do: a !== b
+  defp kernel_call(:!, [a]), do: not truthy?(a)
+  defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
+  defp kernel_call(:in, _), do: reject("in requires a list")
+  defp kernel_call(:to_string, [a]), do: to_string(a)
+  defp kernel_call(:is_number, [a]), do: is_number(a)
+  defp kernel_call(:is_binary, [a]), do: is_binary(a)
+  defp kernel_call(:is_nil, [a]), do: is_nil(a)
+  defp kernel_call(:max, [a, b]), do: max(a, b)
+  defp kernel_call(:min, [a, b]), do: min(a, b)
   defp kernel_call(op, args), do: reject("#{op}/#{length(args)}")
 
-  @spec fetch(binding(), atom()) :: any()
-  defp fetch(b, name) do
-    case map_get(b, name) do
-      nil -> reject("unbound variable @#{name}")
-      v -> v
-    end
+  # -- control-flow helpers -------------------------------------------------
+
+  defp truthy?(false), do: false
+  defp truthy?(nil), do: false
+  defp truthy?(_), do: true
+
+  defp eval_cond([], _bindings), do: reject("no cond clause matched")
+
+  defp eval_cond([{:->, _, [[condition], body]} | rest], bindings) do
+    if truthy?(eval_node(condition, bindings)),
+      do: eval_node(body, bindings),
+      else: eval_cond(rest, bindings)
   end
+
+  defp eval_cond([other | _], _bindings), do: reject("disallowed cond clause #{safe_desc(other)}")
+
+  defp inject_pipe(left, {call, meta, args}) when is_list(args), do: {call, meta, [left | args]}
+  defp inject_pipe(left, {call, meta, nil}), do: {call, meta, [left]}
+
+  defp eval_block(stmts, bindings) do
+    {value, _binds} =
+      Enum.reduce(stmts, {nil, bindings}, fn
+        {:=, _, [{var, _, nil}, expr]}, {_last, binds} when is_atom(var) ->
+          value = eval_node(expr, binds)
+          {value, Map.put(binds, var, value)}
+
+        stmt, {_last, binds} ->
+          {eval_node(stmt, binds), binds}
+      end)
+
+    value
+  end
+
+  defp interp_part(s, _bindings) when is_binary(s), do: s
+
+  defp interp_part({:"::", _, [inner, _]}, bindings),
+    do: to_string(eval_node(unwrap_to_string(inner), bindings))
+
+  defp unwrap_to_string({{:., _, [_mod, :to_string]}, _, [expr]}), do: expr
+  defp unwrap_to_string(other), do: other
+
+  # An unbound or nil variable evaluates to nil (falsy), matching flow semantics
+  # where a missing @var is empty. This is what makes the common `@x || "default"`
+  # idiom work instead of erroring.
+  @spec fetch(binding(), atom()) :: any()
+  defp fetch(b, name), do: map_get(b, name)
 
   # bindings arrive with string keys from MessageVarParser, atom keys elsewhere
   defp map_get(m, key) when is_map(m) do
