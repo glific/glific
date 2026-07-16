@@ -475,6 +475,14 @@ defmodule Glific.Flows.Webhook do
   """
   @spec voice_resume(non_neg_integer(), map(), map()) :: :ok
   def voice_resume(organization_id, result, response) do
+    # Stamp callback arrival so the Kaapi filesearch round-trip can be isolated as
+    # arrival - dispatch (issue #5290). Done here rather than in the (intentionally thin)
+    # controller; `put_new` keeps any stamp a caller already set.
+    response =
+      Map.put_new_lazy(response, "callback_received_ts", fn ->
+        DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+      end)
+
     with_validated_callback(organization_id, response, "Voice flow resume", fn contact ->
       resume_voice_filesearch_gpt(organization_id, result, response, contact)
     end)
@@ -531,20 +539,25 @@ defmodule Glific.Flows.Webhook do
   @spec resume_voice_filesearch_gpt(non_neg_integer(), map(), map(), Contact.t()) :: :ok
   defp resume_voice_filesearch_gpt(organization_id, result, response, contact) do
     response_key = response["result_name"] || "response"
+    status = if result["success"], do: "success", else: "failure"
 
-    # On failure the flow takes the Failure branch and there's nothing to speak,
-    # so skip the (NMT + TTS) post-processing entirely and resume with the raw callback.
-    {message, voice_response} =
+    {message, voice_response, tts_ms} =
       if result["success"] do
-        {Messages.create_temp_message(organization_id, "Success"),
-         VoiceFilesearchGpt.voice_post_process(organization_id, response)}
+        tts_start = System.monotonic_time()
+        voice_response = VoiceFilesearchGpt.voice_post_process(organization_id, response)
+
+        tts_ms =
+          System.convert_time_unit(System.monotonic_time() - tts_start, :native, :millisecond)
+
+        {Messages.create_temp_message(organization_id, "Success"), voice_response, tts_ms}
       else
-        {Messages.create_temp_message(organization_id, "Failure"), response}
+        {Messages.create_temp_message(organization_id, "Failure"), response, 0}
       end
 
     maybe_update_log(response["webhook_log_id"], voice_response)
 
     Instrumentation.record_callback_outcome(result, response)
+    Instrumentation.record_voice_latencies(response, tts_ms, status)
 
     FlowContext.resume_contact_flow(
       contact,

@@ -55,10 +55,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     Glific.Metrics.increment("Voice Filesearch GPT", organization_id)
 
     case transcribe(fields["speech"], organization_id) do
-      {:ok, transcribed_text} ->
+      {:ok, transcribed_text, stt_ms, size_bucket} ->
         fields
         |> Map.put("question", transcribed_text)
-        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, voice_start_timestamp)
+        |> dispatch_llm(
+          organization_id,
+          flow_id,
+          contact_id,
+          api_key,
+          voice_start_timestamp,
+          stt_ms,
+          size_bucket
+        )
 
       {:error, reason} ->
         %{success: false, reason: reason}
@@ -67,17 +75,47 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
   # Synchronous Gemini speech-to-text. Validates the audio URL, then transcribes; a
   # failure short-circuits the pipeline so the async webhook surfaces it on the Failure branch.
-  @spec transcribe(any(), non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  # Times the STT call, buckets the audio by file size, and records the `stt` component latency.
+  # The duration + bucket are threaded on so the callback can attribute the rest
+  # of the pipeline (filesearch, TTS, total) to the same size bucket.
+  @spec transcribe(any(), non_neg_integer()) ::
+          {:ok, String.t(), non_neg_integer(), String.t()} | {:error, String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
-      case Gemini.speech_to_text(speech, organization_id) do
+      start = System.monotonic_time()
+      result = Gemini.speech_to_text(speech, organization_id)
+      stt_ms = duration_ms(start)
+      size_bucket = Instrumentation.size_bucket(audio_byte_size(result))
+
+      case result do
         %{success: true, asr_response_text: transcribed_text} ->
-          {:ok, transcribed_text}
+          track_stt(stt_ms, size_bucket, "success")
+          {:ok, transcribed_text, stt_ms, size_bucket}
 
         %{success: false} = failure ->
+          track_stt(stt_ms, size_bucket, "failure")
           {:error, to_string(failure[:asr_response_text] || "Speech to text failed")}
       end
     end
+  end
+
+  @spec audio_byte_size(any()) :: non_neg_integer() | nil
+  defp audio_byte_size(%{audio_byte_size: bytes}) when is_integer(bytes), do: bytes
+  defp audio_byte_size(_result), do: nil
+
+  @spec track_stt(non_neg_integer(), String.t(), String.t()) :: :ok
+  defp track_stt(stt_ms, size_bucket, status) do
+    Instrumentation.track_voice_component(name(), "stt", stt_ms,
+      size_bucket: size_bucket,
+      status: status
+    )
+  end
+
+  @spec duration_ms(integer()) :: non_neg_integer()
+  defp duration_ms(start_monotonic) do
+    System.monotonic_time()
+    |> Kernel.-(start_monotonic)
+    |> System.convert_time_unit(:native, :millisecond)
   end
 
   @spec dispatch_llm(
@@ -86,9 +124,20 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
-          integer()
+          integer(),
+          non_neg_integer(),
+          String.t()
         ) :: map()
-  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, voice_start_timestamp) do
+  defp dispatch_llm(
+         fields,
+         organization_id,
+         flow_id,
+         contact_id,
+         api_key,
+         voice_start_timestamp,
+         stt_ms,
+         size_bucket
+       ) do
     {callback_url, request_metadata} =
       KaapiWebhook.build_flow_resume_metadata(
         organization_id,
@@ -99,10 +148,15 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         voice_start_timestamp
       )
 
+    kaapi_dispatch_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
     request_metadata =
       Map.merge(request_metadata, %{
         call_type: "voice_llm",
         webhook_name: name(),
+        audio_size_bucket: size_bucket,
+        stt_latency_ms: stt_ms,
+        kaapi_dispatch_ts: kaapi_dispatch_ts,
         voice_post_process: %{
           source_language: fields["source_language"],
           target_language: fields["target_language"],

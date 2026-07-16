@@ -53,7 +53,7 @@ defmodule Glific.ThirdParty.Gemini do
          %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
       Metrics.increment("Gemini STT Success", organization_id)
 
-      response
+      Map.put(response, :audio_byte_size, approx_audio_bytes(encoded_audio))
     else
       {:error, :download_failed} ->
         Metrics.increment("Gemini STT Failure", organization_id)
@@ -64,6 +64,10 @@ defmodule Glific.ThirdParty.Gemini do
         error
     end
   end
+
+  @spec approx_audio_bytes(binary()) :: non_neg_integer()
+  defp approx_audio_bytes(encoded_audio) when is_binary(encoded_audio),
+    do: div(byte_size(encoded_audio) * 3, 4)
 
   @doc """
   Converts text to speech using Gemini API and uploads the audio to Google Cloud Storage.
