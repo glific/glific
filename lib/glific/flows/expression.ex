@@ -57,6 +57,7 @@ defmodule Glific.Flows.Expression do
     {:String, :slice, 2} => &String.slice/2,
     {:String, :slice, 3} => &String.slice/3,
     {:String, :split, 2} => &String.split/2,
+    {:String, :split, 3} => &String.split/3,
     {:String, :to_integer, 1} => &String.to_integer/1,
     {:String, :starts_with?, 2} => &String.starts_with?/2,
     {:String, :ends_with?, 2} => &String.ends_with?/2,
@@ -66,10 +67,21 @@ defmodule Glific.Flows.Expression do
     {:Enum, :at, 2} => &Enum.at/2,
     {:Enum, :join, 1} => &Enum.join/1,
     {:Enum, :join, 2} => &Enum.join/2,
+    # higher-order Enum functions. Safe because the predicate is one of our own
+    # closures, whose body still only runs allowlisted operations.
+    {:Enum, :find, 2} => &Enum.find/2,
+    {:Enum, :any?, 2} => &Enum.any?/2,
+    {:Enum, :all?, 2} => &Enum.all?/2,
+    {:Enum, :filter, 2} => &Enum.filter/2,
+    {:Enum, :reject, 2} => &Enum.reject/2,
+    {:Enum, :map, 2} => &Enum.map/2,
+    {:Enum, :at, 3} => &Enum.at/3,
+    {:Enum, :slice, 2} => &Enum.slice/2,
     # NOTE: Enum.random/1 is NOT pure (non-deterministic). Included for the corpus
     # audit only; decide deliberately before enabling.
     {:Enum, :random, 1} => &Enum.random/1,
     {:List, :first, 1} => &List.first/1,
+    {:List, :last, 1} => &List.last/1,
     {:Map, :get, 2} => &Map.get/2,
     {:Map, :get, 3} => &Map.get/3,
     # Integer / Float / URI / Jason
@@ -81,15 +93,23 @@ defmodule Glific.Flows.Expression do
     {:Date, :utc_today, 0} => &Date.utc_today/0,
     {:Date, :to_string, 1} => &Date.to_string/1,
     {:Date, :diff, 2} => &Date.diff/2,
+    {:Date, :add, 2} => &Date.add/2,
+    {:Date, :compare, 2} => &Date.compare/2,
     {:Date, :days_in_month, 1} => &Date.days_in_month/1,
+    {:Date, :from_iso8601!, 1} => &Date.from_iso8601!/1,
     {:Time, :diff, 3} => &Time.diff/3,
+    {:Time, :from_iso8601!, 1} => &Time.from_iso8601!/1,
     {:DateTime, :utc_now, 0} => &DateTime.utc_now/0,
     {:DateTime, :diff, 2} => &DateTime.diff/2,
     {:DateTime, :diff, 3} => &DateTime.diff/3,
     {:DateTime, :after?, 2} => &DateTime.after?/2,
     {:DateTime, :to_unix, 1} => &DateTime.to_unix/1,
+    {:DateTime, :from_naive!, 2} => &DateTime.from_naive!/2,
+    {:DateTime, :now!, 1} => &DateTime.now!/1,
     {:NaiveDateTime, :diff, 3} => &NaiveDateTime.diff/3,
     {:NaiveDateTime, :compare, 2} => &NaiveDateTime.compare/2,
+    {:NaiveDateTime, :from_iso8601!, 1} => &NaiveDateTime.from_iso8601!/1,
+    {:Calendar, :strftime, 2} => &Calendar.strftime/2,
     # Timex (today/0 kept as UTC per the note above)
     {:Timex, :today, 0} => &Date.utc_today/0,
     {:Timex, :today, 1} => &Timex.today/1,
@@ -134,15 +154,17 @@ defmodule Glific.Flows.Expression do
     {:to_string, 1},
     {:is_number, 1},
     {:is_binary, 1},
+    {:is_integer, 1},
     {:is_nil, 1},
     {:max, 2},
-    {:min, 2}
+    {:min, 2},
+    {:then, 2}
   ]
 
   # Resource limits. An interpreter prevents RCE, not resource exhaustion:
   # `2*2*2*...` builds bignums, and Glific runs a single BEAM node shared with
   # Oban and the web server.
-  @max_nodes 100
+  @max_nodes 300
   @max_output 10_000
   @timeout_ms 100
   @max_heap_words 200_000
@@ -362,6 +384,17 @@ defmodule Glific.Flows.Expression do
 
   defp validate_ast({:<<>>, _, parts}), do: validate_interp(parts)
 
+  # single-clause fn with simple params; the body is validated like any other
+  # expression (param vars are bare vars, always structurally valid).
+  defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
+    if Enum.all?(params, &match?({name, _, nil} when is_atom(name), &1)),
+      do: validate_ast(body),
+      else: {:error, "unsupported fn parameter"}
+  end
+
+  defp validate_ast({:&, _, [n]}) when is_integer(n), do: :ok
+  defp validate_ast({:&, _, [inner]}), do: validate_ast(inner)
+
   # operators / Kernel calls on the @kernel table
   defp validate_ast({op, _, args}) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -547,6 +580,22 @@ defmodule Glific.Flows.Expression do
     parts |> Enum.map(&interp_part(&1, bindings)) |> IO.iodata_to_binary()
   end
 
+  # single-clause anonymous function with simple (non-pattern) params. Produces a
+  # real closure whose body is still interpreted through eval_node, so nothing
+  # outside the allowlist can run inside it. Used by Enum.find/map/reject/then.
+  defp eval_node({:fn, _, [{:->, _, [params, body]}]}, bindings) when is_list(params) do
+    build_closure(params, body, bindings)
+  end
+
+  # capture placeholder &1, &2, ...
+  defp eval_node({:&, _, [n]}, bindings) when is_integer(n),
+    do: Map.fetch!(bindings, {:capture, n})
+
+  # anonymous-shorthand capture &(&1 > 3) -> a closure (function-ref captures like
+  # &String.upcase/1 have no placeholder, hit make_capture(0, ...) and reject).
+  defp eval_node({:&, _, [inner]}, bindings),
+    do: make_capture(max_placeholder(inner, 0), inner, bindings)
+
   # allowed operators / Kernel calls
   defp eval_node({op, _, args}, bindings) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -595,10 +644,54 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:to_string, [a]), do: to_string(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
+  defp kernel_call(:is_integer, [a]), do: is_integer(a)
   defp kernel_call(:is_nil, [a]), do: is_nil(a)
   defp kernel_call(:max, [a, b]), do: max(a, b)
   defp kernel_call(:min, [a, b]), do: min(a, b)
+  defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
+  defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(op, args), do: reject("#{op}/#{length(args)}")
+
+  # -- anonymous-function closures ------------------------------------------
+
+  defp build_closure(params, body, bindings) do
+    names =
+      Enum.map(params, fn
+        {name, _, nil} when is_atom(name) -> name
+        _ -> reject("unsupported fn parameter")
+      end)
+
+    make_fun(names, body, bindings)
+  end
+
+  defp make_fun([p1], body, bindings),
+    do: fn a1 -> eval_node(body, Map.put(bindings, p1, a1)) end
+
+  defp make_fun([p1, p2], body, bindings),
+    do: fn a1, a2 -> eval_node(body, bindings |> Map.put(p1, a1) |> Map.put(p2, a2)) end
+
+  defp make_fun(_params, _body, _bindings), do: reject("unsupported fn arity")
+
+  defp max_placeholder({:&, _, [n]}, acc) when is_integer(n), do: max(n, acc)
+
+  defp max_placeholder({_, _, args}, acc) when is_list(args),
+    do: Enum.reduce(args, acc, &max_placeholder/2)
+
+  defp max_placeholder(list, acc) when is_list(list),
+    do: Enum.reduce(list, acc, &max_placeholder/2)
+
+  defp max_placeholder({a, b}, acc), do: max_placeholder(b, max_placeholder(a, acc))
+  defp max_placeholder(_other, acc), do: acc
+
+  defp make_capture(1, inner, bindings),
+    do: fn a1 -> eval_node(inner, Map.put(bindings, {:capture, 1}, a1)) end
+
+  defp make_capture(2, inner, bindings),
+    do: fn a1, a2 ->
+      eval_node(inner, bindings |> Map.put({:capture, 1}, a1) |> Map.put({:capture, 2}, a2))
+    end
+
+  defp make_capture(_arity, _inner, _bindings), do: reject("unsupported capture")
 
   # -- control-flow helpers -------------------------------------------------
 

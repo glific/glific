@@ -249,6 +249,51 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "5"} = Expression.eval("<%= String.to_integer(\"5\") %>")
     end
 
+    test "anonymous functions (fn and & capture) with Enum" do
+      results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
+
+      {:ok, c1} = Expression.compile("<%= Enum.find(@results.list, fn x -> x > 3 end) %>")
+      assert {:ok, "4"} = Expression.render(c1, results)
+
+      {:ok, c2} = Expression.compile("<%= Enum.count(Enum.reject(@results.list, &(&1 > 3))) %>")
+      assert {:ok, "3"} = Expression.render(c2, results)
+
+      assert {:ok, "10"} = Expression.eval("<%= 5 |> then(fn v -> v * 2 end) %>")
+    end
+
+    test "a closure body cannot escape the allowlist" do
+      for payload <- [
+            "<%= Enum.find(@l, fn x -> System.cmd(x, []) end) %>",
+            "<%= Enum.map(@l, &(File.read!(&1))) %>"
+          ] do
+        assert {:error, _} = Expression.validate(payload), "expected #{payload} to reject"
+      end
+    end
+
+    test "deeply nested if-in group routing (real flow: Activity Capgemini)" do
+      groups =
+        ~w(TAP_1_Art_L3_1 TAP_1_Art_L2_1 TAP_2_Art_L3_1 TAP_2_Art_L3_2 TAP_3_Art_L2_1
+           TAP_3_Art_L2_2 TAP_3_Art_L2_3 TAP_4_Art_L2_1 TAP_4_Art_L2_2 TAP_4_Art_L2_3
+           TAP_5_Art_L2_1 TAP_5_Art_L2_2)
+
+      inner =
+        groups
+        |> Enum.reverse()
+        |> Enum.reduce("2", fn group, acc ->
+          ~s(if "#{group}" in @contact.in_groups, do: 1, else: #{acc})
+        end)
+
+      operand = "<%= " <> inner <> " %>"
+
+      assert {:ok, compiled} = Expression.compile(operand)
+
+      assert {:ok, "1"} =
+               Expression.render(compiled, %{"contact" => %{"in_groups" => ["TAP_3_Art_L2_2"]}})
+
+      assert {:ok, "2"} =
+               Expression.render(compiled, %{"contact" => %{"in_groups" => ["not_a_group"]}})
+    end
+
     test "control-flow forms do not become an escape hatch" do
       for payload <- [
             "<%= if true, do: System.cmd(\"id\", []), else: 0 %>",
