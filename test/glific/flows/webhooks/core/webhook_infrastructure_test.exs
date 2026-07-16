@@ -299,9 +299,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
             "organization_id" => 1
           })
 
-        assert is_map(result)
-        assert result.success == true
-        assert result.city == "Bangalore"
+        assert {:ok, address} = result
+        assert address.success == true
+        assert address.city == "Bangalore"
       end
     end
 
@@ -331,7 +331,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
             "organization_id" => 1
           })
 
-        assert is_binary(result)
+        assert {:error, _type, reason} = result
+        assert is_binary(reason)
       end
     end
 
@@ -725,7 +726,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          assert Dispatcher.dispatch("parse_via_chat_gpt", fields) == "question_text is empty"
+          assert {:error, _type, "question_text is empty"} =
+                   Dispatcher.dispatch("parse_via_chat_gpt", fields)
         end)
 
       assert %Errors.ConfigurationError{} = exception
@@ -757,8 +759,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
         {exception, tags} =
           capture_appsignal(fn ->
-            assert Dispatcher.dispatch("parse_via_gpt_vision", fields) ==
-                     "response_format type should be json_schema or json_object"
+            assert {:error, _type, "response_format type should be json_schema or json_object"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", fields)
           end)
 
         assert %Errors.SystemError{} = exception
@@ -774,10 +776,11 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       ) do
         {exception, tags} =
           capture_appsignal(fn ->
-            assert Dispatcher.dispatch("parse_via_gpt_vision", %{
-                     "organization_id" => 1,
-                     "url" => "not-an-image"
-                   }) == "Media URL is invalid"
+            assert {:error, _type, "Media URL is invalid"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", %{
+                       "organization_id" => 1,
+                       "url" => "not-an-image"
+                     })
           end)
 
         assert %Errors.ConfigurationError{} = exception

@@ -6,19 +6,19 @@ defmodule Glific.Flows.Webhooks.Dispatcher do
   `Glific.Clients.webhook/2`).
   """
 
-  alias Glific.Flows.Webhooks.{Instrumentation, Registry, ResultTranslator}
+  alias Glific.Flows.Webhooks.{Instrumentation, Registry}
 
-  @doc "Dispatch a registered webhook by name with the parsed fields (+ optional headers)."
+  @doc """
+  Dispatch a registered webhook by name with the parsed fields (+ optional headers). Returns the
+  node's typed `Behaviour.result()` (`{:ok, value} | {:error, type, reason} | {:snooze, n}`); the
+  flow engine routes Success/Failure on the `:ok`/`:error` tag.
+  """
   @spec dispatch(String.t(), map(), keyword() | list()) :: any()
   def dispatch(name, fields, headers \\ []) when is_binary(name) and is_map(fields) do
     module = Registry.lookup!(name)
     ctx = build_context(fields, headers)
 
-    # Translation runs after instrumentation so around/3 sees the raw typed result; the flow
-    # engine only ever sees the translated legacy shape.
-    module
-    |> Instrumentation.around(ctx, fn -> module.call(fields, ctx) end)
-    |> ResultTranslator.to_legacy_structure(module)
+    Instrumentation.around(module, ctx, fn -> module.call(fields, ctx) end)
   end
 
   @doc """

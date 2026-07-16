@@ -22,7 +22,7 @@ defmodule Glific.Flows.Webhooks.Behaviour do
   # Sync and async nodes return the SAME typed result: `{:ok, value}` -> Success branch,
   # `{:error, ErrorType.t(), msg}` -> Failure branch, `{:snooze, seconds}` reschedules the Oban
   # job. For async (Kaapi) nodes `{:ok, ack}` means the dispatch was accepted and the flow parks
-  # until the callback resumes it. `ResultTranslator` normalises this for the flow engine.
+  # until the callback resumes it. The flow engine routes on the `:ok`/`:error` tag directly.
   @type result ::
           {:ok, term()}
           | {:error, Glific.Flows.Webhooks.ErrorType.t(), String.t()}

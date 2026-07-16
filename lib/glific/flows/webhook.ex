@@ -238,9 +238,15 @@ defmodule Glific.Flows.Webhook do
         Dispatcher.dispatch(function, fields, headers)
 
       _ ->
-        Glific.Clients.webhook(function, fields)
+        function |> Glific.Clients.webhook(fields) |> wrap_legacy_result()
     end
   end
+
+  # Per-org client webhooks return a bare map; wrap it in the same typed shape registered nodes
+  # use so routing and logging stay uniform. A non-map (shouldn't happen) still routes to Failure
+  # via handle/3's `is_map` guard.
+  @spec wrap_legacy_result(map()) :: {:ok, map()}
+  defp wrap_legacy_result(value), do: {:ok, value}
 
   @doc """
   Standard perform method to use Oban worker
@@ -281,20 +287,21 @@ defmodule Glific.Flows.Webhook do
         {:ok, :function, {:snooze, _seconds} = snooze} ->
           snooze
 
-        {:ok, :function, result} ->
-          update_log(webhook_log_id, result)
-          result
+        {:ok, :function, function_result} ->
+          log_function_result(webhook_log_id, function_result)
+          function_result
 
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           decode_success_response(message, webhook_log_id)
 
         {:ok, %Tesla.Env{} = message} ->
           update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
-          nil
+          {:error, :unknown, "Webhook did not return a 200..299 status code"}
 
         {:error, error_message} ->
-          update_log(webhook_log_id, SafeLog.safe_inspect(error_message))
-          nil
+          reason = SafeLog.safe_inspect(error_message)
+          update_log(webhook_log_id, reason)
+          {:error, :unknown, reason}
       end
 
     case result do
@@ -303,8 +310,18 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  # Decodes a 2xx POST/GET response body and returns the value for the flow. A JSON list is
-  # indexed into a map; an undecodable body routes the flow to Failure (nil).
+  # Logs the unwrapped value of a function webhook's typed result (registered node or wrapped
+  # per-org client) to the WebhookLog. A snooze is not logged — the job just reschedules.
+  @spec log_function_result(non_neg_integer(), any()) :: any()
+  defp log_function_result(webhook_log_id, {:ok, value}), do: update_log(webhook_log_id, value)
+
+  defp log_function_result(webhook_log_id, {:error, _type, reason}),
+    do: update_log(webhook_log_id, reason)
+
+  defp log_function_result(_webhook_log_id, {:snooze, _seconds}), do: :ok
+
+  # Decodes a 2xx POST/GET response body into a typed `{:ok, map} | {:error, ...}`. A JSON list is
+  # indexed into a map; an undecodable body or non-object routes the flow to Failure.
   @spec decode_success_response(Tesla.Env.t(), non_neg_integer() | nil) :: any()
   defp decode_success_response(message, webhook_log_id) do
     case Jason.decode(message.body) do
@@ -312,17 +329,24 @@ defmodule Glific.Flows.Webhook do
         list_response = format_response(list_response)
         updated_message = Map.put(message, :body, Jason.encode!(list_response))
         update_log(webhook_log_id, updated_message)
-        list_response
+        {:ok, list_response}
 
       {:ok, json_response} ->
         update_log(webhook_log_id, message)
-        format_response(json_response)
+        wrap_decoded_response(format_response(json_response))
 
       {:error, _error} ->
         update_log(webhook_log_id, "Could not decode message body: " <> message.body)
-        nil
+        {:error, :unknown, "Webhook response body could not be decoded"}
     end
   end
+
+  # format_response can yield a non-map (a scalar JSON body); only a map routes to Success.
+  @spec wrap_decoded_response(any()) :: {:ok, map()} | {:error, atom(), String.t()}
+  defp wrap_decoded_response(response) when is_map(response), do: {:ok, response}
+
+  defp wrap_decoded_response(_response),
+    do: {:error, :unknown, "Webhook response was not a JSON object"}
 
   @spec action_input(String.t(), String.t(), map()) :: map() | String.t()
   defp action_input("function", body, enrichment),
@@ -336,7 +360,7 @@ defmodule Glific.Flows.Webhook do
   defp handle_webhook_result(result, context, result_name, url, organization_id) do
     if Registry.async?(url) do
       case result do
-        %{success: true} -> :ok
+        {:ok, _ack} -> :ok
         _ -> wake_with_failure(context, organization_id)
       end
     else
@@ -358,7 +382,9 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec handle(String.t(), map(), String.t()) :: :ok
+  # Routes a sync webhook result: `{:ok, map}` (with a result_name) stores the map and takes the
+  # Success branch; every other shape takes Failure.
+  @spec handle(any(), map(), String.t() | nil) :: :ok
   defp handle(result, context_data, result_name) do
     context_id = context_data["id"]
 
@@ -369,19 +395,18 @@ defmodule Glific.Flows.Webhook do
       |> Map.put(:uuids_seen, context_data["uuids_seen"])
 
     {context, message} =
-      if is_nil(result) || !is_map(result) || is_nil(result_name) do
-        {
-          context,
-          Messages.create_temp_message(context.organization_id, "Failure")
-        }
-      else
-        {
-          FlowContext.update_results(
-            context,
-            %{result_name => Map.put(result, :inserted_at, DateTime.utc_now())}
-          ),
-          Messages.create_temp_message(context.organization_id, "Success")
-        }
+      case result do
+        {:ok, value} when is_map(value) and not is_nil(result_name) ->
+          {
+            FlowContext.update_results(
+              context,
+              %{result_name => Map.put(value, :inserted_at, DateTime.utc_now())}
+            ),
+            Messages.create_temp_message(context.organization_id, "Success")
+          }
+
+        _ ->
+          {context, Messages.create_temp_message(context.organization_id, "Failure")}
       end
 
     FlowContext.wakeup_one(context, message)
