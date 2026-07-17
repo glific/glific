@@ -140,7 +140,18 @@ defmodule Glific.Flows.Expression do
     {:Timex, :diff, 3} => &Timex.diff/3,
     {:Timex, :compare, 2} => &Timex.compare/2,
     {:Timex, :to_unix, 1} => &Timex.to_unix/1,
-    {:Timex, :format!, 2} => &Timex.format!/2
+    {:Timex, :format!, 2} => &Timex.format!/2,
+    # Glific flow helper. send_template/2 is PURE: it builds a JSON template
+    # descriptor string and does NOT send anything (the flow engine sends later).
+    # Each entry maps to the actual function the author named (the per-NGO
+    # Clients.* modules currently just delegate to Glific.send_template/2, but we
+    # call the real function so any future org-specific logic is honoured), keyed
+    # by full alias path for the multi-segment modules.
+    {:Glific, :send_template, 2} => &Glific.send_template/2,
+    {[:Glific, :Clients, :PehlayAkshar], :send_template, 2} =>
+      &Glific.Clients.PehlayAkshar.send_template/2,
+    {[:Glific, :Clients, :DigitalGreen], :send_template, 2} =>
+      &Glific.Clients.DigitalGreen.send_template/2
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain
@@ -383,6 +394,14 @@ defmodule Glific.Flows.Expression do
       else: {:error, "#{m}.#{f}/#{length(args)}"}
   end
 
+  # multi-segment module call (twin of the eval_node clause above)
+  defp validate_ast({{:., _, [{:__aliases__, _, segments}, f]}, _, args})
+       when is_list(segments) and length(segments) > 1 and is_list(args) do
+    if Map.has_key?(@mfa, {segments, f, length(args)}),
+      do: validate_all(args),
+      else: {:error, "#{Enum.join(segments, ".")}.#{f}/#{length(args)}"}
+  end
+
   # field access: inner must itself be a valid data expression (a var, @var or a
   # nested field chain) -- never a bare atom or module.
   defp validate_ast({{:., _, [inner, f]}, _, []}) when is_atom(f), do: validate_ast(inner)
@@ -556,6 +575,19 @@ defmodule Glific.Flows.Expression do
     case Map.fetch(@mfa, key) do
       {:ok, fun} -> apply(fun, Enum.map(args, &eval_node(&1, bindings)))
       :error -> reject("#{m}.#{f}/#{length(args)}")
+    end
+  end
+
+  # multi-segment module (e.g. Glific.Clients.PehlayAkshar) -- keyed by the literal
+  # alias path. We concat nothing and never consult Elixir's alias table, so the
+  # path is exactly what the author typed; the @mfa lookup is still the only gate.
+  defp eval_node({{:., _, [{:__aliases__, _, segments}, f]}, _, args}, bindings)
+       when is_list(segments) and length(segments) > 1 and is_list(args) do
+    key = {segments, f, length(args)}
+
+    case Map.fetch(@mfa, key) do
+      {:ok, fun} -> apply(fun, Enum.map(args, &eval_node(&1, bindings)))
+      :error -> reject("#{Enum.join(segments, ".")}.#{f}/#{length(args)}")
     end
   end
 

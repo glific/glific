@@ -294,6 +294,19 @@ defmodule Glific.Flows.ExpressionTest do
                Expression.render(compiled, %{"contact" => %{"in_groups" => ["not_a_group"]}})
     end
 
+    test "allowlisted send_template builds a payload (pure); multi-segment modules" do
+      assert {:ok, json} = Expression.eval("<%= Glific.send_template(\"uuid\", [\"a\"]) %>")
+      assert json =~ "uuid"
+
+      # per-NGO client module (multi-segment alias) resolves too
+      assert :ok =
+               Expression.validate("<%= Glific.Clients.PehlayAkshar.send_template(\"u\", []) %>")
+
+      # but unknown multi-segment modules/functions are still rejected
+      assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
+      assert {:error, _} = Expression.validate("<%= Glific.Repo.all() %>")
+    end
+
     test "control-flow forms do not become an escape hatch" do
       for payload <- [
             "<%= if true, do: System.cmd(\"id\", []), else: 0 %>",
