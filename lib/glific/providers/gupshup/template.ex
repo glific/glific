@@ -44,7 +44,8 @@ defmodule Glific.Providers.Gupshup.Template do
   @doc """
   Submitting HSM template for approval
   """
-  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  @spec submit_for_approval(map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()} | {:error, [String.t()]}
   def submit_for_approval(attrs) do
     with {:ok, merged_attrs} <- submit_for_approval_attrs(attrs) do
       merged_attrs
@@ -64,7 +65,7 @@ defmodule Glific.Providers.Gupshup.Template do
   DB write (whatever shape it takes) has run, mirroring how `submit_for_approval/1` above
   cleans it up only after `do_create_session_template/1` completes.
   """
-  @spec submit_for_approval_attrs(map()) :: {:ok, map()} | {:error, String.t()}
+  @spec submit_for_approval_attrs(map()) :: {:ok, map()} | {:error, [String.t()]}
   def submit_for_approval_attrs(attrs) do
     organization = Partners.organization(attrs.organization_id)
 

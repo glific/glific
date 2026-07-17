@@ -426,6 +426,11 @@ defmodule Glific.Templates do
   transaction (they're HTTP calls); the DB is only touched once the BSP has accepted the new
   template.
 
+  Only reapplies `old_template` when it's `is_hsm: true` and its `status` is `"REJECTED"` or
+  `"FAILED"` - anything else (an approved/pending HSM, or a plain non-HSM template) is refused
+  outright, since deleting a live HSM template from the BSP or silently routing a regular
+  template through a BSP submission would both be destructive/nonsensical.
+
   ## Examples
 
       iex> reapply_session_template(old_template, %{field: value})
@@ -434,10 +439,19 @@ defmodule Glific.Templates do
       iex> reapply_session_template(old_template, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
+      iex> reapply_session_template(%{old_template | status: "APPROVED"}, %{field: value})
+      {:error, ["Reapply Session Template", "Only rejected or failed HSM templates can be reapplied"]}
+
   """
   @spec reapply_session_template(SessionTemplate.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, any()}
-  def reapply_session_template(%SessionTemplate{} = old_template, attrs) do
+  def reapply_session_template(
+        %SessionTemplate{is_hsm: true, status: status} = old_template,
+        attrs
+      )
+      when status in ["REJECTED", "FAILED"] do
+    attrs = Map.put(attrs, :is_hsm, true)
+
     attrs =
       if Map.has_key?(attrs, :shortcode),
         do: Map.update!(attrs, :shortcode, &String.downcase/1),
@@ -461,10 +475,13 @@ defmodule Glific.Templates do
     end
   end
 
-  @spec delete_old_template_from_bsp(module(), SessionTemplate.t()) :: :ok
-  defp delete_old_template_from_bsp(_bsp_module, %SessionTemplate{is_hsm: false}), do: :ok
+  def reapply_session_template(%SessionTemplate{}, _attrs) do
+    {:error,
+     ["Reapply Session Template", "Only rejected or failed HSM templates can be reapplied"]}
+  end
 
-  defp delete_old_template_from_bsp(bsp_module, %SessionTemplate{} = session_template) do
+  @spec delete_old_template_from_bsp(module(), SessionTemplate.t()) :: :ok
+  defp delete_old_template_from_bsp(bsp_module, %SessionTemplate{is_hsm: true} = session_template) do
     case bsp_module.delete(session_template.organization_id, Map.from_struct(session_template)) do
       {:ok, _res} ->
         :ok
