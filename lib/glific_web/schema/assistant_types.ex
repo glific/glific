@@ -265,12 +265,6 @@ defmodule GlificWeb.Schema.AssistantTypes do
       resolve(&Resolvers.Filesearch.count_assistants/3)
     end
 
-    @desc "List models"
-    field :list_openai_models, list_of(:string) do
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Filesearch.list_models/3)
-    end
-
     @desc "List all config versions for an assistant"
     field :assistant_versions, list_of(:assistant_config_version) do
       arg(:assistant_id, non_null(:id))

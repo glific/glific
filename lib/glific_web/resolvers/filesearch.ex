@@ -3,10 +3,7 @@ defmodule GlificWeb.Resolvers.Filesearch do
   Filesearch Resolver which sits between the GraphQL schema and Glific Filesearch API.
   """
 
-  alias Glific.{
-    Assistants,
-    Filesearch
-  }
+  alias Glific.Assistants
 
   require Logger
 
@@ -88,15 +85,6 @@ defmodule GlificWeb.Resolvers.Filesearch do
   @spec count_assistants(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer()}
   def count_assistants(_, params, _) do
     {:ok, Assistants.count_assistants(params)}
-  end
-
-  @doc """
-  Fetch available openai models
-  """
-  @spec list_models(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any()} | {:error, any()}
-  def list_models(_, _params, _) do
-    {:ok, Filesearch.list_models()}
   end
 
   @doc """

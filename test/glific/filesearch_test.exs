@@ -50,12 +50,6 @@ defmodule Glific.FilesearchTest do
     "assets/gql/assistants/count_assistants.gql"
   )
 
-  load_gql(
-    :list_models,
-    GlificWeb.Schema,
-    "assets/gql/filesearch/list_models.gql"
-  )
-
   test "update assistant", attrs do
     enable_kaapi(%{organization_id: attrs.organization_id})
 
@@ -309,56 +303,6 @@ defmodule Glific.FilesearchTest do
       )
 
     assert result.data["countAssistants"] == 1
-  end
-
-  test "list_models, success api response", attrs do
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{
-            data: [
-              %{
-                owned_by: "project-tech4dev",
-                id: "gpt-4o"
-              },
-              %{
-                owned_by: "system",
-                id: "gpt-4o"
-              },
-              %{
-                owned_by: "system",
-                id: "dalle-e"
-              }
-            ]
-          }
-        }
-    end)
-
-    {:ok, result} =
-      auth_query_gql_by(:list_models, attrs.user, variables: %{})
-
-    assert length(result.data["ListOpenaiModels"]) == 1
-  end
-
-  test "list_models, openai api failure", attrs do
-    # If api is failed from openAI, we just send the default model which is gpt-4o
-    Tesla.Mock.mock(fn
-      %{method: :get} ->
-        %Tesla.Env{
-          status: 408,
-          body: %{
-            error: %{
-              message: "timeout"
-            }
-          }
-        }
-    end)
-
-    {:ok, result} =
-      auth_query_gql_by(:list_models, attrs.user, variables: %{})
-
-    assert length(result.data["ListOpenaiModels"]) == 1
   end
 
   defp enable_kaapi(attrs) do
