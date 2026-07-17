@@ -524,22 +524,6 @@ defmodule Glific.Flags do
     Map.put(organization, :is_copy_node_enabled, get_copy_node_enabled(organization))
   end
 
-  @doc """
-  Get template v2 (HSM revamp) value for organization flag
-  """
-  @spec get_template_v2_enabled(map()) :: boolean
-  def get_template_v2_enabled(organization) do
-    FunWithFlags.enabled?(:is_template_v2_enabled, for: %{organization_id: organization.id})
-  end
-
-  @doc """
-  Set fun_with_flag toggle for template v2 for an organization
-  """
-  @spec set_template_v2_enabled(map()) :: map()
-  def set_template_v2_enabled(organization) do
-    Map.put(organization, :is_template_v2_enabled, get_template_v2_enabled(organization))
-  end
-
   # setting default fun_with_flags values as disabled for an organization except for out_of_office
   @spec init_fun_with_flags(Organization.t()) :: :ok
   defp init_fun_with_flags(organization) do
