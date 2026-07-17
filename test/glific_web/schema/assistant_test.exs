@@ -1,6 +1,6 @@
-defmodule Glific.FilesearchTest do
+defmodule GlificWeb.Schema.AssistantTest do
   @moduledoc """
-  Tests for public filesearch APIs
+  Tests for the assistant GraphQL API
   """
 
   alias Glific.{
