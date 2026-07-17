@@ -7,6 +7,8 @@ defmodule Glific.Templates do
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 
+  alias Ecto.Multi
+
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
@@ -161,26 +163,44 @@ defmodule Glific.Templates do
     do: do_create_session_template(attrs)
 
   @spec resolve_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
-  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: {:ok, label}
-  defp resolve_label(attrs), do: generate_unique_label(attrs)
+  defp resolve_label(attrs), do: resolve_label(attrs, nil)
 
-  @spec generate_unique_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
-  defp generate_unique_label(%{
-         shortcode: shortcode,
-         language_id: language_id,
-         organization_id: organization_id
-       })
+  @spec resolve_label(map(), non_neg_integer() | nil) ::
+          {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp resolve_label(%{label: label}, _exclude_id) when is_binary(label) and label != "",
+    do: {:ok, label}
+
+  defp resolve_label(attrs, exclude_id), do: generate_unique_label(attrs, exclude_id)
+
+  @spec generate_unique_label(map(), non_neg_integer() | nil) ::
+          {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp generate_unique_label(
+         %{
+           shortcode: shortcode,
+           language_id: language_id,
+           organization_id: organization_id
+         },
+         exclude_id
+       )
        when is_binary(shortcode) and shortcode != "" do
     case Repo.get(Language, language_id) do
-      nil -> {:error, ["language_id", "does not exist"]}
-      language -> {:ok, make_unique_label("#{shortcode}_#{language.locale}", organization_id)}
+      nil ->
+        {:error, ["language_id", "does not exist"]}
+
+      language ->
+        {:ok, make_unique_label("#{shortcode}_#{language.locale}", organization_id, exclude_id)}
     end
   end
 
-  defp generate_unique_label(attrs), do: {:ok, Map.get(attrs, :label)}
+  defp generate_unique_label(attrs, _exclude_id), do: {:ok, Map.get(attrs, :label)}
 
-  @spec make_unique_label(String.t(), non_neg_integer(), non_neg_integer() | nil) :: String.t()
-  defp make_unique_label(base_label, organization_id, suffix \\ nil) do
+  @spec make_unique_label(
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer() | nil,
+          non_neg_integer() | nil
+        ) :: String.t()
+  defp make_unique_label(base_label, organization_id, exclude_id, suffix \\ nil) do
     candidate = if suffix, do: "#{base_label}_#{suffix}", else: base_label
 
     query =
@@ -188,8 +208,10 @@ defmodule Glific.Templates do
         where: t.label == ^candidate and t.organization_id == ^organization_id
       )
 
+    query = if exclude_id, do: from(t in query, where: t.id != ^exclude_id), else: query
+
     if Repo.exists?(query),
-      do: make_unique_label(base_label, organization_id, (suffix || 1) + 1),
+      do: make_unique_label(base_label, organization_id, exclude_id, (suffix || 1) + 1),
       else: candidate
   end
 
@@ -387,6 +409,93 @@ defmodule Glific.Templates do
     end
 
     Repo.delete(session_template)
+  end
+
+  @doc """
+  Atomically reapplies a rejected/failed HSM session template: (best-effort) deletes the old
+  template from the BSP first, freeing up its shortcode + language slot, then resubmits the
+  corrected attrs to the BSP for approval, and only once that has succeeded, replaces the old
+  row with the newly approved one in a single DB transaction. The BSP delete has to be
+  attempted before the BSP submit - resubmitting under the same shortcode + language while the
+  old (rejected/failed) template still occupies that slot on the BSP would conflict with it
+  (Gupshup/WhatsApp enforce `elementName` uniqueness per WABA namespace even against rejected
+  templates).
+
+  This replaces the frontend's separate delete-then-create flow, which raced an unawaited
+  async BSP delete against the DB delete. The BSP calls happen entirely outside the DB
+  transaction (they're HTTP calls); the DB is only touched once the BSP has accepted the new
+  template.
+
+  ## Examples
+
+      iex> reapply_session_template(old_template, %{field: value})
+      {:ok, %SessionTemplate{}}
+
+      iex> reapply_session_template(old_template, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec reapply_session_template(SessionTemplate.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, any()}
+  def reapply_session_template(%SessionTemplate{} = old_template, attrs) do
+    attrs =
+      if Map.has_key?(attrs, :shortcode),
+        do: Map.update!(attrs, :shortcode, &String.downcase/1),
+        else: attrs
+
+    bsp_module = Provider.bsp_module(old_template.organization_id, :template)
+
+    with {:ok, label} <- resolve_label(attrs, old_template.id),
+         attrs <- Map.put(attrs, :label, label),
+         :ok <- validate_hsm(attrs),
+         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
+         :ok <- validate_template_length(attrs),
+         :ok <- delete_old_template_from_bsp(bsp_module, old_template),
+         {:ok, merged_attrs} <- bsp_module.submit_for_approval_attrs(attrs) do
+      Multi.new()
+      |> Multi.delete(:delete_old, old_template)
+      |> Multi.insert(:insert_new, SessionTemplate.changeset(%SessionTemplate{}, merged_attrs))
+      |> Repo.transaction()
+      |> handle_reapply_transaction_result()
+      |> tap(fn _result -> bsp_module.cleanup_local_resource(merged_attrs) end)
+    end
+  end
+
+  @spec delete_old_template_from_bsp(module(), SessionTemplate.t()) :: :ok
+  defp delete_old_template_from_bsp(_bsp_module, %SessionTemplate{is_hsm: false}), do: :ok
+
+  defp delete_old_template_from_bsp(bsp_module, %SessionTemplate{} = session_template) do
+    case bsp_module.delete(session_template.organization_id, Map.from_struct(session_template)) do
+      {:ok, _res} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Reapply: BSP delete of old template #{session_template.id} failed, continuing anyway: #{Glific.SafeLog.safe_inspect(reason)}",
+          false
+        )
+
+        :ok
+    end
+  end
+
+  @spec handle_reapply_transaction_result({:ok, map()} | {:error, atom(), any(), map()}) ::
+          {:ok, SessionTemplate.t()} | {:error, any()}
+  defp handle_reapply_transaction_result(result) do
+    case result do
+      {:ok, %{insert_new: session_template}} ->
+        {:ok, session_template}
+
+      {:error, _failed_operation, %Ecto.Changeset{} = changeset, _changes_so_far} ->
+        {:error, changeset}
+
+      {:error, failed_operation, failed_value, _changes_so_far} ->
+        Logger.error(
+          "Failed to reapply session template at #{failed_operation}: #{Glific.SafeLog.safe_inspect(failed_value)}"
+        )
+
+        {:error, ["Reapply Session Template", "Something went wrong, please try again"]}
+    end
   end
 
   @doc """

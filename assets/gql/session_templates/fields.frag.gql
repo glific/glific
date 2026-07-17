@@ -6,6 +6,7 @@ fragment SessionTemplateFields on SessionTemplateResult {
     type
     shortcode
     is_hsm
+    status
     category
     example
     is_reserved

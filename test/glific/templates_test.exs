@@ -1165,6 +1165,207 @@ defmodule Glific.TemplatesTest do
       end
     end
 
+    defp rejected_hsm_template_fixture(attrs, overrides \\ %{}) do
+      language = language_fixture()
+
+      valid_attrs = %{
+        label: "ticket_update_status_en",
+        shortcode: "ticket_update_status",
+        body: "Your train ticket no. {{1}}",
+        type: :text,
+        is_hsm: true,
+        status: "REJECTED",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        language_id: language.id,
+        organization_id: attrs.organization_id,
+        uuid: Ecto.UUID.generate()
+      }
+
+      {:ok, session_template} =
+        %SessionTemplate{}
+        |> SessionTemplate.changeset(Map.merge(valid_attrs, overrides))
+        |> Repo.insert()
+
+      session_template
+    end
+
+    defp mock_bsp_reapply(new_bsp_uuid) do
+      submit_body =
+        Jason.encode!(%{
+          "status" => "success",
+          "template" => %{
+            "id" => new_bsp_uuid,
+            "status" => "PENDING",
+            "category" => "ACCOUNT_UPDATE"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :delete} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"status" => "success"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: submit_body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+    end
+
+    test "reapply_session_template/2 resubmits to the BSP and atomically replaces the old template",
+         attrs do
+      old_template = rejected_hsm_template_fixture(attrs)
+      new_bsp_uuid = Ecto.UUID.generate()
+      mock_bsp_reapply(new_bsp_uuid)
+
+      reapply_attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "Reapplied Ticket Update",
+        language_id: old_template.language_id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = new_template} =
+               Templates.reapply_session_template(old_template, reapply_attrs)
+
+      assert new_template.id != old_template.id
+      assert new_template.uuid == new_bsp_uuid
+      assert new_template.bsp_id == new_bsp_uuid
+      assert new_template.status == "PENDING"
+      assert new_template.label == "Reapplied Ticket Update"
+      assert new_template.shortcode == "ticket_update_status"
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Templates.get_session_template!(old_template.id)
+      end
+    end
+
+    test "reapply_session_template/2 leaves the old template untouched when the BSP submit fails",
+         attrs do
+      old_template = rejected_hsm_template_fixture(attrs)
+
+      Tesla.Mock.mock(fn
+        %{method: :delete} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"status" => "success"})}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 422, body: Jason.encode!(%{"message" => "Invalid template"})}
+      end)
+
+      reapply_attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "Reapplied Ticket Update",
+        language_id: old_template.language_id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      # the BSP delete (which now runs first, freeing up the shortcode+language slot) succeeds,
+      # but the resubmission itself is rejected by the BSP
+      assert {:error, ["BSP", _message]} =
+               Templates.reapply_session_template(old_template, reapply_attrs)
+
+      assert {:ok, reloaded} = Repo.fetch_by(SessionTemplate, %{id: old_template.id})
+      assert reloaded.status == "REJECTED"
+
+      assert [_only_the_old_one] =
+               Templates.list_session_templates(%{
+                 filter: %{
+                   organization_id: attrs.organization_id,
+                   shortcode: "ticket_update_status"
+                 }
+               })
+    end
+
+    test "reapply_session_template/2 does not block on a failed BSP delete of the old template - it's best-effort, so the resubmission still proceeds",
+         attrs do
+      old_template = rejected_hsm_template_fixture(attrs)
+      new_bsp_uuid = Ecto.UUID.generate()
+
+      submit_body =
+        Jason.encode!(%{
+          "status" => "success",
+          "template" => %{
+            "id" => new_bsp_uuid,
+            "status" => "PENDING",
+            "category" => "ACCOUNT_UPDATE"
+          }
+        })
+
+      # the BSP delete of the old (already gone, or otherwise undeletable) template fails, but
+      # that alone must not stop the reapply - a retry after a previous attempt already deleted
+      # it would otherwise get stuck failing here forever. The resubmission is the real gate:
+      # if the old template genuinely still exists, the BSP would reject *this* call instead.
+      Tesla.Mock.mock(fn
+        %{method: :delete} ->
+          %Tesla.Env{status: 500, body: Jason.encode!(%{"message" => "boom"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: submit_body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      reapply_attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "Reapplied Ticket Update",
+        language_id: old_template.language_id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = new_template} =
+               Templates.reapply_session_template(old_template, reapply_attrs)
+
+      assert new_template.uuid == new_bsp_uuid
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Templates.get_session_template!(old_template.id)
+      end
+    end
+
+    test "reapply_session_template/2 with a blank label excludes the old (soon-to-be-replaced) row from the uniqueness check",
+         attrs do
+      old_template = rejected_hsm_template_fixture(attrs, %{label: "ticket_update_status_en"})
+      new_bsp_uuid = Ecto.UUID.generate()
+      mock_bsp_reapply(new_bsp_uuid)
+
+      reapply_attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "",
+        language_id: old_template.language_id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = new_template} =
+               Templates.reapply_session_template(old_template, reapply_attrs)
+
+      assert new_template.label == "ticket_update_status_en"
+    end
+
     test "change_session_template/1 returns a session_template changeset", attrs do
       session_template = session_template_fixture(attrs)
       assert %Ecto.Changeset{} = Templates.change_session_template(session_template)
