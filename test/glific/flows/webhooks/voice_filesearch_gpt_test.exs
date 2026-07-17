@@ -13,6 +13,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     Flows.Flow,
     Flows.FlowContext,
     Flows.WebhookLog,
+    Flows.Webhooks.Errors.ConfigurationError,
     Flows.Webhooks.Errors.SystemError,
     Flows.Webhooks.VoiceFilesearchGpt,
     Partners,
@@ -146,6 +147,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         "timestamp" => timestamp,
         "webhook_log_id" => webhook_log_id,
         "result_name" => "filesearch",
+        "webhook_name" => "voice-filesearch-gpt",
         "voice_post_process" => %{
           "source_language" => "english",
           "target_language" => "english",
@@ -176,7 +178,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
   describe "voice-filesearch-gpt" do
     # Happy path: the flow is already in await state (simulating that the
     # voice-filesearch-gpt webhook fired and put it there). The Kaapi LLM
-    # callback arrives at /kaapi/voice_flow_resume and the flow moves to
+    # callback arrives at /webhook/flow_resume and the flow moves to
     # the success branch, sending the translated response.
     test "happy path callback - flow moves to success route after voice callback", %{
       conn: %{assigns: %{organization_id: org_id}} = conn
@@ -195,7 +197,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           expected_message
         )
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
       message = await_flow_message(contact.id, expected_message)
@@ -218,7 +220,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
           "Kaapi error: voice processing failed"
         )
 
-      conn = post(conn, "/kaapi/voice_flow_resume", params)
+      conn = post(conn, "/webhook/flow_resume", params)
       assert json_response(conn, 200) == ""
 
       message = await_flow_message(contact.id, "failure")
@@ -333,6 +335,71 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       assert log.error != nil
     end
 
+    # STT self-classification: a Gemini 4xx is a rejected request (bad/unsupported audio),
+    # so the ack is tagged config (`:invalid_input`) instead of collapsing every STT failure
+    # to system — giving per-status visibility into where Gemini is failing.
+    test "STT 4xx self-classifies the dispatch ack as :invalid_input (config)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: "https://generativelanguage.googleapis.com" <> _} ->
+          %Tesla.Env{status: 400, body: %{"error" => "unsupported audio"}}
+      end)
+
+      assert {:error, :invalid_input, reason} =
+               VoiceFilesearchGpt.call(fields, %{})
+
+      assert reason =~ "400"
+    end
+
+    # A Gemini 5xx is an upstream outage → the ack is tagged system (`:unknown`) so it pages.
+    test "STT 5xx self-classifies the dispatch ack as :unknown (system)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://gcs.example.com/audio.ogg"} ->
+          %Tesla.Env{status: 200, body: "fake-audio-bytes"}
+
+        %{method: :post, url: "https://generativelanguage.googleapis.com" <> _} ->
+          %Tesla.Env{status: 503, body: %{"error" => "overloaded"}}
+      end)
+
+      assert {:error, :unknown, _reason} = VoiceFilesearchGpt.call(fields, %{})
+    end
+
+    # Gemini.speech_to_text can pass an upstream error term through unchanged (a bare
+    # {:error, reason}); call/2 must normalise it to a typed failure, not raise CaseClauseError.
+    test "an unexpected Gemini STT result is normalised to a typed failure (no crash)" do
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "1",
+        "contact_id" => "1",
+        "speech" => "https://gcs.example.com/audio.ogg"
+      }
+
+      with_mock(Gemini, [:passthrough],
+        speech_to_text: fn _speech, _org -> {:error, :timeout} end
+      ) do
+        assert {:error, :unknown, reason} =
+                 VoiceFilesearchGpt.call(fields, %{})
+
+        assert reason =~ "timeout"
+      end
+    end
+
     # Stage 2 (Kaapi LLM) failure (non-timeout): STT succeeds but the unified LLM call
     # returns an API error (500); VoiceFilesearchGpt.call returns %{success: false} and
     # the flow records the error.
@@ -427,9 +494,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     end
 
     # Stage 3 (NMT+TTS) failure: a non-empty answer, but the Gemini NMT+TTS step fails
-    # (GCS not enabled for org 1 in test) — voice_post_process falls back to the
-    # untranslated text with no audio rather than crashing.
-    test "returns untranslated text and no audio when NMT+TTS fails (GCS disabled)" do
+    # (GCS not enabled for org 1 in test) — voice_post_process reports the failure (for
+    # visibility) and falls back to the untranslated text with no audio rather than crashing.
+    test "reports a config error and degrades to text-only when NMT+TTS fails (GCS disabled)" do
       response = %{
         "message" => "Hello there",
         "voice_post_process" => %{
@@ -438,10 +505,20 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
         }
       }
 
-      result = VoiceFilesearchGpt.voice_post_process(1, response)
+      {exception, tags} =
+        capture_appsignal(fn ->
+          result = VoiceFilesearchGpt.voice_post_process(1, response)
 
-      assert result["translated_text"] == "Hello there"
-      assert is_nil(result["media_url"])
+          # Degrades gracefully: untranslated text, no audio.
+          assert result["translated_text"] == "Hello there"
+          assert is_nil(result["media_url"])
+        end)
+
+      # GCS disabled is an org-provisioning issue → config (notify support), not on-call.
+      assert %ConfigurationError{} = exception
+      assert tags.webhook_name == "voice-filesearch-gpt"
+      assert tags.error_type == "invalid_input"
+      assert tags.reason =~ "GCS is disabled"
     end
 
     # Stage 3 (NMT+TTS) success: source != target, GCS enabled, supported languages —
@@ -606,7 +683,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       }
 
       assert VoiceFilesearchGpt.call(fields, %{}) ==
-               %{success: false, reason: "Media URL is invalid"}
+               {:error, :invalid_media_url, "Media URL is invalid"}
     end
   end
 end
