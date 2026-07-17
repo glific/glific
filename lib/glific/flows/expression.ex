@@ -33,6 +33,28 @@ defmodule Glific.Flows.Expression do
   a cheap, deliberately permissive structural pre-check used at publish time for
   early author feedback — it is NOT a gate, and nothing that reaches `eval_node/2` may
   rely on it having run. Do not "optimise" by trusting `safe_shape/1` at runtime.
+
+  ## Known limitations — anonymous functions
+
+  `fn` and `&(...)` support is intentionally partial. None of these are security
+  holes (a closure body is still interpreted through `eval_node`, so it can only
+  run allowlisted operations), but they are gaps to close before this is
+  considered complete:
+
+    * **Only single-clause functions with simple variable params.** Multi-clause
+      / pattern-matching functions (`fn 1 -> ...; _ -> ... end`), destructuring
+      params (`fn {a, b} -> ... end`) and arity > 2 are rejected.
+    * **No function-reference captures.** `&String.upcase/1` is rejected; it must
+      be written `&String.upcase(&1)` or `fn x -> String.upcase(x) end`.
+    * **Publish/runtime drift on arity (known bug).** `validate_ast/1` checks a
+      closure's body but not its arity, so a 3-arg `fn` passes `validate/1` yet
+      fails at runtime with "unsupported fn arity". This breaks the otherwise-held
+      invariant that validation and evaluation agree; fix by arity-checking in
+      `validate_ast/1`.
+    * **The node cap does not bound closure work.** `@max_nodes` limits AST size,
+      but `Enum.map(list, fn ...)` runs the body once per element, so a small AST
+      can do work proportional to the list length. Runtime cost is still bounded
+      by the `isolated/1` heap and timeout caps — not by `@max_nodes`.
   """
 
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
@@ -583,6 +605,9 @@ defmodule Glific.Flows.Expression do
   # single-clause anonymous function with simple (non-pattern) params. Produces a
   # real closure whose body is still interpreted through eval_node, so nothing
   # outside the allowlist can run inside it. Used by Enum.find/map/reject/then.
+  # See "Known limitations — anonymous functions" in the @moduledoc for the
+  # partial-support gaps (multi-clause, arity, function-ref captures, the
+  # validate/runtime arity drift, and node-cap blindness).
   defp eval_node({:fn, _, [{:->, _, [params, body]}]}, bindings) when is_list(params) do
     build_closure(params, body, bindings)
   end
