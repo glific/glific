@@ -255,6 +255,21 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "5"} = Expression.render(compiled, %{"l" => [3, 5, 1]})
     end
 
+    test "keyword arguments (Timex.shift) validate the value" do
+      assert :ok = Expression.validate("<%= Timex.shift(@d, days: 1) %>")
+      assert :ok = Expression.validate("<%= Timex.shift(@d, days: 1, hours: 2) %>")
+      # a disallowed call in a keyword value is still rejected
+      assert {:error, _} =
+               Expression.validate("<%= Timex.shift(@d, days: System.cmd(\"id\", [])) %>")
+    end
+
+    test "literal regex sigil; interpolated patterns are rejected" do
+      assert {:ok, "true"} = Expression.eval(~S|<%= Regex.match?(~r/ab/, "xabc") %>|)
+      assert {:ok, "a-b"} = Expression.eval(~S|<%= Regex.replace(~r/\s/, "a b", "-") %>|)
+      # an interpolated pattern (multi-part <<>>) is not a compile-time regex
+      assert {:error, _} = Expression.validate(~S|<%= Regex.match?(~r/#{@x}/, "y") %>|)
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 

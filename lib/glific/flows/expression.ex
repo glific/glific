@@ -151,10 +151,19 @@ defmodule Glific.Flows.Expression do
     {:Timex, :compare, 2} => &Timex.compare/2,
     {:Timex, :to_unix, 1} => &Timex.to_unix/1,
     {:Timex, :format!, 2} => &Timex.format!/2,
+    {:Timex, :shift, 2} => &Timex.shift/2,
     {:Timex, :parse!, 2} => &Timex.parse!/2,
     {:Timex, :format!, 3} => &Timex.format!/3,
     {:Timex, :month_name, 1} => &Timex.month_name/1,
     {[:Timex, :Timezone], :convert, 2} => &Timex.Timezone.convert/2,
+    # Regex — the sigil compiles author-authored patterns; runtime is bounded by
+    # the isolated-process timeout (mitigates catastrophic-backtracking / ReDoS).
+    {:Regex, :match?, 2} => &Regex.match?/2,
+    {:Regex, :run, 2} => &Regex.run/2,
+    {:Regex, :run, 3} => &Regex.run/3,
+    {:Regex, :replace, 3} => &Regex.replace/3,
+    {:Regex, :replace, 4} => &Regex.replace/4,
+    {:Regex, :scan, 2} => &Regex.scan/2,
     # Glific flow helper. send_template/2 is PURE: it builds a JSON template
     # descriptor string and does NOT send anything (the flow engine sends later).
     # Each entry maps to the actual function the author named (the per-NGO
@@ -242,7 +251,11 @@ defmodule Glific.Flows.Expression do
     :desc,
     :ok,
     :error,
-    :strftime
+    :strftime,
+    # Regex.run/replace capture options
+    :all,
+    :first,
+    :all_but_first
   ]
 
   # Resource limits. An interpreter prevents RCE, not resource exhaustion:
@@ -479,6 +492,10 @@ defmodule Glific.Flows.Expression do
 
   defp validate_ast({:<<>>, _, parts}), do: validate_interp(parts)
 
+  # literal regex sigil (twin of the eval_node clause; before the operator clause)
+  defp validate_ast({:sigil_r, _, [{:<<>>, _, [pattern]}, _flags]}) when is_binary(pattern),
+    do: :ok
+
   # single-clause fn with simple params; the body is validated like any other
   # expression (param vars are bare vars, always structurally valid).
   defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
@@ -496,6 +513,9 @@ defmodule Glific.Flows.Expression do
       do: validate_all(args),
       else: {:error, "#{op}/#{length(args)}"}
   end
+
+  # keyword-list pair (twin of the eval_node clause) — validate only the value
+  defp validate_ast({key, value}) when is_atom(key), do: validate_ast(value)
 
   defp validate_ast(node), do: {:error, "disallowed expression: #{safe_desc(node)}"}
 
@@ -689,6 +709,13 @@ defmodule Glific.Flows.Expression do
     parts |> Enum.map(&interp_part(&1, bindings)) |> IO.iodata_to_binary()
   end
 
+  # ~r/.../ literal regex sigil (no interpolation — an interpolated pattern has a
+  # multi-part <<>> and falls through to the catch-all). Must precede the generic
+  # operator clause, which would otherwise match {:sigil_r, _, args}.
+  defp eval_node({:sigil_r, _, [{:<<>>, _, [pattern]}, flags]}, _bindings)
+       when is_binary(pattern),
+       do: Regex.compile!(pattern, List.to_string(flags))
+
   # single-clause anonymous function with simple (non-pattern) params. Produces a
   # real closure whose body is still interpreted through eval_node, so nothing
   # outside the allowlist can run inside it. Used by Enum.find/map/reject/then.
@@ -717,6 +744,11 @@ defmodule Glific.Flows.Expression do
 
   # FAIL-CLOSED CATCH-ALL. alias, import, fn, &capture, spawn, apply/3,
   # __block__, sigils, computed modules all land here. No rule needed.
+  # keyword-list pair, e.g. `days: 1` in Timex.shift(d, days: 1). The key is an
+  # inert atom label (it can never name a module or be called); the value is
+  # interpreted through the allowlist like anything else.
+  defp eval_node({key, value}, bindings) when is_atom(key), do: {key, eval_node(value, bindings)}
+
   defp eval_node(node, _), do: reject(safe_desc(node))
 
   # Explicit dispatch. Args are already evaluated (strict), so using the
