@@ -270,6 +270,14 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S|<%= Regex.match?(~r/#{@x}/, "y") %>|)
     end
 
+    test "calendar sigils, map literals, hd/is_map" do
+      assert {:ok, "12:30:00"} = Expression.eval("<%= ~T[12:30:00] %>")
+      assert {:ok, "2"} = Expression.eval(~S|<%= Map.get(%{"a" => 1, "b" => 2}, "b") %>|)
+      assert {:ok, "3"} = Expression.eval("<%= hd([3, 4]) %>")
+      # a disallowed call inside a map value is still rejected
+      assert {:error, _} = Expression.validate(~S|<%= %{a: System.cmd("id", [])} %>|)
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 

@@ -86,6 +86,7 @@ defmodule Glific.Flows.Expression do
     {:String, :contains?, 2} => &String.contains?/2,
     # Decimal
     {:Decimal, :round, 2} => &Decimal.round/2,
+    {:Decimal, :from_float, 1} => &Decimal.from_float/1,
     # Enum / List / Map
     {:Enum, :count, 1} => &Enum.count/1,
     {:Enum, :at, 2} => &Enum.at/2,
@@ -142,6 +143,7 @@ defmodule Glific.Flows.Expression do
     {:DateTime, :add, 3} => &DateTime.add/3,
     {:DateTime, :from_iso8601, 1} => &DateTime.from_iso8601/1,
     {:NaiveDateTime, :new!, 2} => &NaiveDateTime.new!/2,
+    {:DateTime, :new!, 3} => &DateTime.new!/3,
     # Timex (today/0 kept as UTC per the note above)
     {:Timex, :today, 0} => &Date.utc_today/0,
     {:Timex, :today, 1} => &Timex.today/1,
@@ -218,7 +220,9 @@ defmodule Glific.Flows.Expression do
     {:max, 2},
     {:min, 2},
     {:then, 2},
-    {:.., 2}
+    {:.., 2},
+    {:hd, 1},
+    {:is_map, 1}
   ]
 
   # Literal atoms that are safe to use as *values* — time units (for Date/Time/
@@ -496,6 +500,23 @@ defmodule Glific.Flows.Expression do
   defp validate_ast({:sigil_r, _, [{:<<>>, _, [pattern]}, _flags]}) when is_binary(pattern),
     do: :ok
 
+  # calendar sigils ~T/~D/~N
+  defp validate_ast({sigil, _, [{:<<>>, _, [str]}, _]})
+       when sigil in [:sigil_T, :sigil_D, :sigil_N] and is_binary(str),
+       do: :ok
+
+  # map literal — validate non-atom keys and all values
+  defp validate_ast({:%{}, _, pairs}) when is_list(pairs) do
+    Enum.reduce_while(pairs, :ok, fn {k, v}, :ok ->
+      with :ok <- validate_key(k),
+           :ok <- validate_ast(v) do
+        {:cont, :ok}
+      else
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
   # single-clause fn with simple params; the body is validated like any other
   # expression (param vars are bare vars, always structurally valid).
   defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
@@ -573,6 +594,10 @@ defmodule Glific.Flows.Expression do
       end
     end)
   end
+
+  # atom map keys are inert labels; any other key is a normal expression
+  defp validate_key(k) when is_atom(k), do: :ok
+  defp validate_key(k), do: validate_ast(k)
 
   # -- evaluation -----------------------------------------------------------
 
@@ -716,6 +741,17 @@ defmodule Glific.Flows.Expression do
        when is_binary(pattern),
        do: Regex.compile!(pattern, List.to_string(flags))
 
+  # literal calendar sigils ~T/~D/~N
+  defp eval_node({sigil, _, [{:<<>>, _, [str]}, _]}, _bindings)
+       when sigil in [:sigil_T, :sigil_D, :sigil_N] and is_binary(str),
+       do: sigil_value(sigil, str)
+
+  # map literal %{k => v, ...}. Atom keys are inert labels; other keys and all
+  # values are interpreted through the allowlist.
+  defp eval_node({:%{}, _, pairs}, bindings) when is_list(pairs) do
+    Map.new(pairs, fn {k, v} -> {eval_key(k, bindings), eval_node(v, bindings)} end)
+  end
+
   # single-clause anonymous function with simple (non-pattern) params. Produces a
   # real closure whose body is still interpreted through eval_node, so nothing
   # outside the allowlist can run inside it. Used by Enum.find/map/reject/then.
@@ -795,6 +831,9 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(:.., [a, b]), do: Range.new(a, b)
+  defp kernel_call(:hd, [a]) when is_list(a) and a != [], do: hd(a)
+  defp kernel_call(:hd, _), do: reject("hd requires a non-empty list")
+  defp kernel_call(:is_map, [a]), do: is_map(a)
   defp kernel_call(op, args), do: reject("#{op}/#{length(args)}")
 
   # -- anonymous-function closures ------------------------------------------
@@ -837,6 +876,13 @@ defmodule Glific.Flows.Expression do
     end
 
   defp make_capture(_arity, _inner, _bindings), do: reject("unsupported capture")
+
+  defp sigil_value(:sigil_T, s), do: Time.from_iso8601!(s)
+  defp sigil_value(:sigil_D, s), do: Date.from_iso8601!(s)
+  defp sigil_value(:sigil_N, s), do: NaiveDateTime.from_iso8601!(s)
+
+  defp eval_key(k, _bindings) when is_atom(k), do: k
+  defp eval_key(k, bindings), do: eval_node(k, bindings)
 
   # -- control-flow helpers -------------------------------------------------
 
