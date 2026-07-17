@@ -122,19 +122,18 @@ defmodule Glific.Flows.ExpressionTest do
       assert_raise ArgumentError, fn -> String.to_existing_atom(unique) end
     end
 
-    test "many disjoint hostile identifiers do not grow the atom table" do
-      before_count = :erlang.system_info(:atom_count)
+    test "many disjoint hostile identifiers are never interned" do
+      ids = for i <- 1..200, do: "zqxbulk#{i}_#{System.unique_integer([:positive])}"
 
-      for i <- 1..200 do
-        assert {:error, _} =
-                 Expression.eval(
-                   "<%= @zqxbulk#{i}_#{System.unique_integer([:positive])}.f %>",
-                   %{}
-                 )
+      for id <- ids do
+        assert {:error, _} = Expression.eval("<%= @#{id}.f %>", %{})
       end
 
-      # atoms are permanent; the interpreter must intern none of the above.
-      assert :erlang.system_info(:atom_count) == before_count
+      # Deterministic + concurrency-safe: assert each specific hostile identifier
+      # was never interned (checking the global atom_count is flaky under async).
+      for id <- ids do
+        assert_raise ArgumentError, fn -> String.to_existing_atom(id) end
+      end
     end
   end
 
@@ -311,6 +310,23 @@ defmodule Glific.Flows.ExpressionTest do
       # but unknown multi-segment modules/functions are still rejected
       assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
       assert {:error, _} = Expression.validate("<%= Glific.Repo.all() %>")
+    end
+
+    test "safe unit atoms are allowed, module-name atoms are not" do
+      # time-unit atom passed to an allowlisted function
+      assert {:ok, "5"} =
+               Expression.eval(
+                 "<%= Date.diff(Date.from_iso8601!(\"2026-01-06\"), Date.from_iso8601!(\"2026-01-01\")) %>"
+               )
+
+      assert :ok = Expression.validate("<%= DateTime.diff(@a, @b, :second) %>")
+      assert :ok = Expression.validate("<%= Time.diff(@a, @b, :minute) %>")
+
+      # module-name atoms stay rejected (defence in depth), and a bare-atom
+      # module call still has no clause and rejects regardless
+      assert {:error, _} = Expression.validate("<%= :os %>")
+      assert {:error, _} = Expression.validate("<%= :os.system_time(:second) %>")
+      assert {:error, _} = Expression.validate("<%= :crypto.hash(:sha, \"x\") %>")
     end
 
     test "control-flow forms do not become an escape hatch" do

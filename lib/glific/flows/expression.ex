@@ -196,6 +196,39 @@ defmodule Glific.Flows.Expression do
     {:then, 2}
   ]
 
+  # Literal atoms that are safe to use as *values* — time units (for Date/Time/
+  # DateTime/Timex diff & shift), comparison/ordering results, and a couple of
+  # formatter/result flags. This is a curated positive list: module-name atoms
+  # (`:os`, `:crypto`, `:rand`, `:erlang`, ...) are deliberately excluded, so a
+  # bare atom can never name a module. (Even if one slipped in, a `:mod.fun(...)`
+  # call has no eval_node clause and still rejects — this is defence in depth.)
+  @safe_atoms [
+    :microsecond,
+    :millisecond,
+    :second,
+    :seconds,
+    :minute,
+    :minutes,
+    :hour,
+    :hours,
+    :day,
+    :days,
+    :week,
+    :weeks,
+    :month,
+    :months,
+    :year,
+    :years,
+    :lt,
+    :gt,
+    :eq,
+    :asc,
+    :desc,
+    :ok,
+    :error,
+    :strftime
+  ]
+
   # Resource limits. An interpreter prevents RCE, not resource exhaustion:
   # `2*2*2*...` builds bignums, and Glific runs a single BEAM node shared with
   # Oban and the web server.
@@ -380,8 +413,11 @@ defmodule Glific.Flows.Expression do
        when is_integer(n) or is_float(n) or is_binary(n) or is_boolean(n) or is_nil(n),
        do: :ok
 
-  defp validate_ast(n) when is_atom(n),
-    do: {:error, "bare atom #{Glific.SafeLog.safe_inspect(n)}"}
+  defp validate_ast(n) when is_atom(n) do
+    if n in @safe_atoms,
+      do: :ok,
+      else: {:error, "bare atom #{Glific.SafeLog.safe_inspect(n)}"}
+  end
 
   defp validate_ast(l) when is_list(l), do: validate_all(l)
 
@@ -557,8 +593,9 @@ defmodule Glific.Flows.Expression do
        when is_integer(n) or is_float(n) or is_binary(n) or is_boolean(n) or is_nil(n),
        do: n
 
-  defp eval_node(n, _) when is_atom(n),
-    do: reject("bare atom #{Glific.SafeLog.safe_inspect(n)}")
+  defp eval_node(n, _) when is_atom(n) do
+    if n in @safe_atoms, do: n, else: reject("bare atom #{Glific.SafeLog.safe_inspect(n)}")
+  end
 
   defp eval_node(l, bindings) when is_list(l), do: Enum.map(l, &eval_node(&1, bindings))
 
