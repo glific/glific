@@ -248,6 +248,13 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "5"} = Expression.eval("<%= String.to_integer(\"5\") %>")
     end
 
+    test "ranges and Enum.sort_by with a capture" do
+      assert {:ok, "3"} = Expression.eval("<%= Enum.count(1..3) %>")
+
+      {:ok, compiled} = Expression.compile("<%= Enum.at(Enum.sort_by(@l, &(-&1)), 0) %>")
+      assert {:ok, "5"} = Expression.render(compiled, %{"l" => [3, 5, 1]})
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 

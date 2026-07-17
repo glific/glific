@@ -84,6 +84,8 @@ defmodule Glific.Flows.Expression do
     {:String, :starts_with?, 2} => &String.starts_with?/2,
     {:String, :ends_with?, 2} => &String.ends_with?/2,
     {:String, :contains?, 2} => &String.contains?/2,
+    # Decimal
+    {:Decimal, :round, 2} => &Decimal.round/2,
     # Enum / List / Map
     {:Enum, :count, 1} => &Enum.count/1,
     {:Enum, :at, 2} => &Enum.at/2,
@@ -99,6 +101,8 @@ defmodule Glific.Flows.Expression do
     {:Enum, :map, 2} => &Enum.map/2,
     {:Enum, :at, 3} => &Enum.at/3,
     {:Enum, :slice, 2} => &Enum.slice/2,
+    {:Enum, :find, 3} => &Enum.find/3,
+    {:Enum, :sort_by, 2} => &Enum.sort_by/2,
     # NOTE: Enum.random/1 is NOT pure (non-deterministic). Included for the corpus
     # audit only; decide deliberately before enabling.
     {:Enum, :random, 1} => &Enum.random/1,
@@ -132,6 +136,12 @@ defmodule Glific.Flows.Expression do
     {:NaiveDateTime, :compare, 2} => &NaiveDateTime.compare/2,
     {:NaiveDateTime, :from_iso8601!, 1} => &NaiveDateTime.from_iso8601!/1,
     {:Calendar, :strftime, 2} => &Calendar.strftime/2,
+    {:DateTime, :to_date, 1} => &DateTime.to_date/1,
+    {:DateTime, :to_string, 1} => &DateTime.to_string/1,
+    {:DateTime, :to_iso8601, 1} => &DateTime.to_iso8601/1,
+    {:DateTime, :add, 3} => &DateTime.add/3,
+    {:DateTime, :from_iso8601, 1} => &DateTime.from_iso8601/1,
+    {:NaiveDateTime, :new!, 2} => &NaiveDateTime.new!/2,
     # Timex (today/0 kept as UTC per the note above)
     {:Timex, :today, 0} => &Date.utc_today/0,
     {:Timex, :today, 1} => &Timex.today/1,
@@ -141,6 +151,10 @@ defmodule Glific.Flows.Expression do
     {:Timex, :compare, 2} => &Timex.compare/2,
     {:Timex, :to_unix, 1} => &Timex.to_unix/1,
     {:Timex, :format!, 2} => &Timex.format!/2,
+    {:Timex, :parse!, 2} => &Timex.parse!/2,
+    {:Timex, :format!, 3} => &Timex.format!/3,
+    {:Timex, :month_name, 1} => &Timex.month_name/1,
+    {[:Timex, :Timezone], :convert, 2} => &Timex.Timezone.convert/2,
     # Glific flow helper. send_template/2 is PURE: it builds a JSON template
     # descriptor string and does NOT send anything (the flow engine sends later).
     # Each entry maps to the actual function the author named (the per-NGO
@@ -153,7 +167,8 @@ defmodule Glific.Flows.Expression do
     {[:Glific, :Clients, :DigitalGreen], :send_template, 2} =>
       &Glific.Clients.DigitalGreen.send_template/2,
     {[:Glific, :Clients, :ArogyaWorld], :template, 2} => &Glific.Clients.ArogyaWorld.template/2,
-    {[:Glific, :Clients, :Tap], :template, 2} => &Glific.Clients.Tap.template/2
+    {[:Glific, :Clients, :Tap], :template, 2} => &Glific.Clients.Tap.template/2,
+    {[:Glific, :Clients, :Tap], :template, 1} => &Glific.Clients.Tap.template/1
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain
@@ -193,7 +208,8 @@ defmodule Glific.Flows.Expression do
     {:is_nil, 1},
     {:max, 2},
     {:min, 2},
-    {:then, 2}
+    {:then, 2},
+    {:.., 2}
   ]
 
   # Literal atoms that are safe to use as *values* — time units (for Date/Time/
@@ -746,6 +762,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:min, [a, b]), do: min(a, b)
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
+  defp kernel_call(:.., [a, b]), do: Range.new(a, b)
   defp kernel_call(op, args), do: reject("#{op}/#{length(args)}")
 
   # -- anonymous-function closures ------------------------------------------
