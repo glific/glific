@@ -223,8 +223,12 @@ defmodule Glific.Groups.ContactWAGroups do
            id: wa_managed_phone_id,
            organization_id: wa_group.organization_id
          }) do
-      nil -> {:error, "Acting phone not found in this organization"}
-      %WAManagedPhone{phone_id: acting_phone_id} -> {:ok, acting_phone_id}
+      nil ->
+        {:error,
+         "Acting phone not found in this organization, This WhatsApp number isn't connected right now. Check its status or reconnect it, then try again."}
+
+      %WAManagedPhone{phone_id: acting_phone_id} ->
+        {:ok, acting_phone_id}
     end
   end
 

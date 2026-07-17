@@ -53,18 +53,34 @@ defmodule Glific.Providers.Maytapi.ApiClientTest do
                ApiClient.create_group(org_id, @phone_id, %{name: "Group", numbers: []})
     end
 
-    test "returns the Maytapi message when create reports a failure", %{organization_id: org_id} do
+    test "surfaces the reconnect hint when create fails because the phone isn't connected",
+         %{organization_id: org_id} do
       mock_post(ok_body(%{"success" => false, "message" => "phone not connected"}))
 
-      assert {:error, "phone not connected"} ==
+      assert {:error, message} =
                ApiClient.create_group(org_id, @phone_id, %{name: "Group", numbers: []})
+
+      assert message =~ "isn't connected"
     end
 
-    test "returns a generic error on an unexpected create response", %{organization_id: org_id} do
+    test "surfaces an explicit WhatsApp-side message on an opaque create failure",
+         %{organization_id: org_id} do
+      mock_post(ok_body(%{"success" => false, "message" => "CreateGroup could not be completed"}))
+
+      assert {:error, message} =
+               ApiClient.create_group(org_id, @phone_id, %{name: "Group", numbers: []})
+
+      assert message =~ "WhatsApp is temporarily blocking group creation"
+    end
+
+    test "surfaces an explicit WhatsApp-side message on an unexpected create response",
+         %{organization_id: org_id} do
       mock_post(ok_body(%{"success" => true, "data" => %{}}))
 
-      assert {:error, "Unexpected Maytapi create group response"} ==
+      assert {:error, message} =
                ApiClient.create_group(org_id, @phone_id, %{name: "Group", numbers: []})
+
+      assert message =~ "Couldn't create the WhatsApp group"
     end
   end
 

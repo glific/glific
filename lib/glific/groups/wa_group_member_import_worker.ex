@@ -125,9 +125,10 @@ defmodule Glific.Groups.WAGroupMemberImportWorker do
           "WA group member import: add to group failed — wa_group=#{wa_group_id} reason=#{SafeLog.safe_inspect(reason)}"
         )
 
-        Map.new(new_phones, fn phone ->
-          {phone, "Could not be added to the WhatsApp group"}
-        end)
+        message =
+          if is_binary(reason), do: reason, else: "Could not be added to the WhatsApp group"
+
+        Map.new(new_phones, fn phone -> {phone, message} end)
     end
   end
 
