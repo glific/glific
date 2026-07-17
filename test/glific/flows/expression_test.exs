@@ -302,6 +302,12 @@ defmodule Glific.Flows.ExpressionTest do
       assert :ok =
                Expression.validate("<%= Glific.Clients.PehlayAkshar.send_template(\"u\", []) %>")
 
+      # per-NGO template/2 payload builders (also pure)
+      assert :ok =
+               Expression.validate("<%= Glific.Clients.ArogyaWorld.template(\"u\", []) %>")
+
+      assert :ok = Expression.validate("<%= Glific.Clients.Tap.template(\"code\", \"\") %>")
+
       # but unknown multi-segment modules/functions are still rejected
       assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
       assert {:error, _} = Expression.validate("<%= Glific.Repo.all() %>")

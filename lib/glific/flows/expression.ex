@@ -151,7 +151,9 @@ defmodule Glific.Flows.Expression do
     {[:Glific, :Clients, :PehlayAkshar], :send_template, 2} =>
       &Glific.Clients.PehlayAkshar.send_template/2,
     {[:Glific, :Clients, :DigitalGreen], :send_template, 2} =>
-      &Glific.Clients.DigitalGreen.send_template/2
+      &Glific.Clients.DigitalGreen.send_template/2,
+    {[:Glific, :Clients, :ArogyaWorld], :template, 2} => &Glific.Clients.ArogyaWorld.template/2,
+    {[:Glific, :Clients, :Tap], :template, 2} => &Glific.Clients.Tap.template/2
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain
