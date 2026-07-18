@@ -617,6 +617,23 @@ defmodule Glific.InteractiveTemplatesTest do
     assert reloaded.translations == interactive.translations
   end
 
+  test "translate_interactive_template/1 returns an error for list-type templates on a hard Google Translate failure",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{status: 500, body: %{"error" => %{"message" => "internal error"}}}
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
+
+    assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
+    assert reason =~ "Translation has failed"
+
+    reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
+    assert reloaded.translations == interactive.translations
+  end
+
   test "export the interactive template when add translation is true",
        %{organization_id: _organization_id} = attrs do
     add_translation = true
