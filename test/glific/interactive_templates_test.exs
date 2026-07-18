@@ -528,179 +528,180 @@ defmodule Glific.InteractiveTemplatesTest do
   end
 
   setup_all do
-    Tesla.Mock.mock_global(fn env ->
-      cond do
-        String.contains?(env.body, "Test glific quick reply?") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
-                ]
-              }
-            },
-            status: 200
-          }
+    Tesla.Mock.mock_global(&default_translate_mock/1)
+    :ok
+  end
 
-        String.contains?(env.body, "Quick Reply Fixture") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
-                ]
-              }
-            },
-            status: 200
-          }
+  defp default_translate_mock(env) do
+    cond do
+      String.contains?(env.body, "Test glific quick reply?") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Test 1") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "परीक्षण 1"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Quick Reply Fixture") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "त्वरित उत्तर स्थिरता"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Test 2") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "परीक्षण 2"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Test 1") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "परीक्षण 1"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "How was your experience with Glific?") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Test 2") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "परीक्षण 2"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Quick Reply Test Text 2") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "How was your experience with Glific?") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Great") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "उत्कृष्ट"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Quick Reply Test Text 2") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "त्वरित उत्तर स्थिरता"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Awesome") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "शानदार"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Great") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "उत्कृष्ट"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "please share your location") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "कृपया अपना स्थान साझा करें"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Awesome") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "शानदार"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Glific Features") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "शानदार विशेषताएं"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "please share your location") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "कृपया अपना स्थान साझा करें"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "Excitement level") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "उत्साह का स्तर"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Glific Features") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "शानदार विशेषताएं"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "glific") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "Excitement level") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "उत्साह का स्तर"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "caption is footer") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "कैप्शन पाद लेख है"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "glific") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "ग्लिफ़िक"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        true ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "अनुवाद उपलब्ध नहीं है"}
-                ]
-              }
+      String.contains?(env.body, "caption is footer") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "कैप्शन पाद लेख है"}
+              ]
+            }
+          },
+          status: 200
+        }
+
+      true ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "अनुवाद उपलब्ध नहीं है"}
+              ]
             }
           }
-      end
-    end)
-
-    :ok
+        }
+    end
   end
 
   test "translate_interactive_template/1 translates an interactive",
@@ -732,7 +733,7 @@ defmodule Glific.InteractiveTemplatesTest do
        %{organization_id: _organization_id} = attrs do
     interactive = Fixtures.interactive_fixture(attrs)
 
-    Tesla.Mock.mock(fn _env ->
+    Tesla.Mock.mock_global(fn _env ->
       %Tesla.Env{
         status: 403,
         body: %{
@@ -746,6 +747,8 @@ defmodule Glific.InteractiveTemplatesTest do
         }
       }
     end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
 
     assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
     assert reason =~ "API_KEY_SERVICE_BLOCKED"
