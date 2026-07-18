@@ -2,7 +2,6 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
   use Glific.DataCase, async: true
 
   alias Glific.Flows.Webhooks.Geolocation
-  alias Glific.Flows.Webhooks.Geolocation.Address
 
   @ctx %{organization_id: 1, headers: []}
 
@@ -81,9 +80,10 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: @success_body}
       end)
 
-      assert {:ok, %Address{} = addr} =
+      assert {:ok, addr} =
                Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
 
+      assert addr.success == true
       assert addr.city == "Bangalore"
       assert addr.state == "Karnataka"
       assert addr.country == "India"
@@ -110,7 +110,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:ok, %Address{} = addr} =
+      assert {:ok, addr} =
                Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
 
       assert addr.city == "N/A"
@@ -123,7 +123,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: @success_body}
       end)
 
-      assert {:ok, %Address{}} =
+      assert {:ok, %{success: true}} =
                Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
     end
 
@@ -144,7 +144,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         %Tesla.Env{status: 200, body: body}
       end)
 
-      assert {:ok, %Address{city: "Test City"}} =
+      assert {:ok, %{city: "Test City"}} =
                Geolocation.call(%{"lat" => "10.0", "long" => "80.0"}, @ctx)
     end
   end
@@ -371,7 +371,7 @@ defmodule Glific.Flows.Webhooks.Implementations.GeolocationTest do
         end
       end)
 
-      assert {:ok, %Address{}} =
+      assert {:ok, %{success: true}} =
                Geolocation.call(%{"lat" => "12.9716", "long" => "77.5946"}, @ctx)
     end
   end
