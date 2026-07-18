@@ -610,7 +610,8 @@ defmodule Glific.InteractiveTemplatesTest do
     on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
 
     assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
-    assert reason =~ "API_KEY_SERVICE_BLOCKED"
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
 
     reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
     assert reloaded.translations == interactive.translations
