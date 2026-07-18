@@ -49,8 +49,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
     if errors == [] do
       {:ok, texts}
     else
-      {:error,
-       "Google Translate failed for #{length(errors)} of #{length(texts)} string(s): #{hd(errors)}"}
+      {:error, hd(errors)}
     end
   end
 
@@ -108,7 +107,8 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
           true
         )
 
-        {:error, error}
+        {:error,
+         "Translation has failed. Please reach out to the Glific team as soon as possible."}
     end
   end
 end

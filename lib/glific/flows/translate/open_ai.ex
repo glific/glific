@@ -12,8 +12,6 @@ defmodule Glific.Flows.Translate.OpenAI do
     OpenAI.ChatGPT
   }
 
-  require Logger
-
   @doc """
   Translate a list of strings from language 'src' to language 'dst'
   Returns, either ok with the translated list in the same order,
@@ -29,30 +27,43 @@ defmodule Glific.Flows.Translate.OpenAI do
   def translate(strings, src, dst, opts) do
     org_id = Keyword.get(opts, :org_id)
 
-    strings
-    |> Translate.check_large_strings()
-    |> Task.async_stream(fn text -> do_translate(text, src, dst, org_id) end,
-      timeout: 300_000,
-      max_concurrency: 15,
-      # send {:exit, :timeout} so it can be handled
-      on_timeout: :kill_task
-    )
-    |> Enum.reduce([], fn response, acc ->
-      handle_async_response(response, acc)
-    end)
-    |> then(&{:ok, &1})
+    {texts, errors} =
+      strings
+      |> Translate.check_large_strings()
+      |> Task.async_stream(fn text -> do_translate(text, src, dst, org_id) end,
+        timeout: 300_000,
+        max_concurrency: 15,
+        # send {:exit, :timeout} so it can be handled
+        on_timeout: :kill_task
+      )
+      |> Enum.reduce({[], []}, &handle_async_response/2)
+
+    if errors == [] do
+      {:ok, texts}
+    else
+      {:error, hd(errors)}
+    end
   end
 
-  # add the translated string into list of string if translated successfully
-  # add the empty string into list of string if translation timed out so it can be translated in next go
-  # This way successfully translated string will be updated in first go and leftover will be translated in second go
-  @spec handle_async_response(tuple(), [String.t()]) :: [String.t()]
-  defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
+  # add the translated string into list of string if translated successfully.
+  # add the empty string into list of string (without recording an error) if translation
+  # timed out, so it can be retried in the next go -- successfully translated strings are
+  # updated in the first go and leftovers translated in a second go.
+  # a hard API error (not a timeout) also adds "" to keep the list aligned with the input,
+  # but is tracked separately so the caller can tell it apart from a genuine empty translation.
+  @spec handle_async_response(tuple(), {[String.t()], [String.t()]}) ::
+          {[String.t()], [String.t()]}
+  defp handle_async_response({:ok, {:ok, translated_text}}, {texts, errors}),
+    do: {[translated_text | texts], errors}
 
-  defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
+  defp handle_async_response({:ok, {:error, reason}}, {texts, errors}),
+    do: {["" | texts], [reason | errors]}
+
+  defp handle_async_response({:exit, :timeout}, {texts, errors}), do: {["" | texts], errors}
 
   # Making API call to open ai to translate list of string from src language to dst
-  @spec do_translate([String.t()], String.t(), String.t(), non_neg_integer()) :: String.t()
+  @spec do_translate([String.t()], String.t(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
   defp do_translate(strings, src, dst, org_id) do
     prompt =
       """
@@ -88,7 +99,7 @@ defmodule Glific.Flows.Translate.OpenAI do
         }
         |> TranslateLog.create_translate_log()
 
-        result
+        {:ok, result}
 
       {:error, error} ->
         %{
@@ -102,8 +113,13 @@ defmodule Glific.Flows.Translate.OpenAI do
         }
         |> TranslateLog.create_translate_log()
 
-        Logger.error("Error translating: #{error} String: #{strings}")
-        ""
+        Glific.log_error(
+          "OpenAI translation failed for org #{org_id} (#{src} -> #{dst}): #{error}",
+          true
+        )
+
+        {:error,
+         "Translation has failed. Please reach out to the Glific team as soon as possible."}
     end
   end
 

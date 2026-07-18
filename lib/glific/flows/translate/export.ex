@@ -34,8 +34,11 @@ defmodule Glific.Flows.Translate.Export do
     if errors == [] do
       Import.import_localization(rows, flow)
     else
-      {:error,
-       "Google Translate failed for #{length(errors)} string(s) while auto-translating flow #{flow.uuid}: #{hd(errors)}"}
+      Glific.log_error(
+        "Translation failed for #{length(errors)} string(s) while auto-translating flow #{flow.uuid}: #{hd(errors)}"
+      )
+
+      {:error, hd(errors)}
     end
   end
 
@@ -205,7 +208,8 @@ defmodule Glific.Flows.Translate.Export do
               Map.get(
                 Map.get(
                   translations,
-                  {language_labels[source_language], language_labels[language]}
+                  {language_labels[source_language], language_labels[language]},
+                  %{}
                 ),
                 default_text,
                 ""

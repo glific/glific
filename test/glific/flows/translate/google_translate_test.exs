@@ -125,8 +125,8 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     dst = "hindi"
 
     assert {:error, reason} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
-    assert reason =~ "500"
-    assert reason =~ "invalid response"
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
   end
 
   test "translate/3 surfaces the Google 403 API_KEY_SERVICE_BLOCKED error" do
@@ -154,8 +154,8 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
                org_id: org_id
              )
 
-    assert reason =~ "403"
-    assert reason =~ "API_KEY_SERVICE_BLOCKED"
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do

@@ -119,14 +119,16 @@ defmodule Glific.Flows.Translate.OpenAITest do
              OpenAI.check_large_strings([long_text, "thankyou for joining", "correct answer"])
   end
 
-  test "translate/3 test the possible errors", attrs do
+  test "translate/3 returns an error instead of silently persisting a blank translation on a hard API failure",
+       attrs do
     # This will basically fail
     string = ["Error to translate text"]
     src = "english"
     dst = "hindi"
 
-    {:ok, response} = OpenAI.translate(string, src, dst, org_id: attrs.organization_id)
-    assert response == [""]
+    assert {:error, reason} = OpenAI.translate(string, src, dst, org_id: attrs.organization_id)
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
   end
 
   test "translate_one!/3 to test the single string" do
