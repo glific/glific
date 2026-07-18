@@ -728,6 +728,32 @@ defmodule Glific.InteractiveTemplatesTest do
     assert translations == @valid_url_attrs[:translations]
   end
 
+  test "translate_interactive_template/1 returns an error and does not persist blank translations on a hard Google Translate failure",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(attrs)
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 403,
+        body: %{
+          "error" => %{
+            "code" => 403,
+            "status" => "PERMISSION_DENIED",
+            "message" =>
+              "Requests to this API translate method google.cloud.translate.v2.TranslateService.TranslateText are blocked.",
+            "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
+          }
+        }
+      }
+    end)
+
+    assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
+    assert reason =~ "API_KEY_SERVICE_BLOCKED"
+
+    reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
+    assert reloaded.translations == interactive.translations
+  end
+
   test "export the interactive template when add translation is true",
        %{organization_id: _organization_id} = attrs do
     add_translation = true

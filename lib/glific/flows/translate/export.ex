@@ -18,7 +18,7 @@ defmodule Glific.Flows.Translate.Export do
   At some point, we might extend this to export it as a .po file
   Lets keep the csv generation very distinct from the extraction
   """
-  @spec export_localization(Flow.t(), boolean()) :: list()
+  @spec export_localization(Flow.t(), boolean()) :: {list(), [String.t()]}
   def export_localization(flow, add_translation \\ true) do
     missing_localization(flow, flow.definition["localization"], add_translation)
   end
@@ -29,12 +29,17 @@ defmodule Glific.Flows.Translate.Export do
   """
   @spec translate(Flow.t()) :: {:ok, any} | {:error, String.t()}
   def translate(flow) do
-    flow
-    |> export_localization(true)
-    |> Import.import_localization(flow)
+    {rows, errors} = export_localization(flow, true)
+
+    if errors == [] do
+      Import.import_localization(rows, flow)
+    else
+      {:error,
+       "Google Translate failed for #{length(errors)} string(s) while auto-translating flow #{flow.uuid}: #{hd(errors)}"}
+    end
   end
 
-  @spec missing_localization(map(), map(), boolean()) :: list()
+  @spec missing_localization(map(), map(), boolean()) :: {list(), [String.t()]}
   defp missing_localization(flow, all_localization, add_translation) do
     flow.nodes
     |> Enum.reduce([], fn node, uuids ->
@@ -50,7 +55,8 @@ defmodule Glific.Flows.Translate.Export do
     )
   end
 
-  @spec add_missing_localization(map(), list(), non_neg_integer(), boolean()) :: Keyword.t()
+  @spec add_missing_localization(map(), list(), non_neg_integer(), boolean()) ::
+          {Keyword.t(), [String.t()]}
   defp add_missing_localization(
          all_localization,
          localizable_nodes,
@@ -66,7 +72,7 @@ defmodule Glific.Flows.Translate.Export do
     source_language = determine_source_language(organization_id)
 
     # first collect all the strings that we need to translate
-    translations =
+    {translations, errors} =
       localizable_nodes
       |> Enum.reduce(
         %{},
@@ -78,24 +84,27 @@ defmodule Glific.Flows.Translate.Export do
       )
       |> translate_strings(add_translation, organization_id)
 
-    localizable_nodes
-    |> Enum.reduce(
-      [
-        ["Type", "UUID" | Map.values(language_labels) ++ ["Node_uuid"]],
-        ["Type" | ["UUID" | language_keys] ++ ["Node_uuid"]]
-      ],
-      fn {action_uuid, action_text, node_uuid}, export ->
-        row =
-          localization_map
-          |> Map.get(action_uuid, %{})
-          |> make_row(language_labels, action_text, translations, source_language)
+    rows =
+      localizable_nodes
+      |> Enum.reduce(
+        [
+          ["Type", "UUID" | Map.values(language_labels) ++ ["Node_uuid"]],
+          ["Type" | ["UUID" | language_keys] ++ ["Node_uuid"]]
+        ],
+        fn {action_uuid, action_text, node_uuid}, export ->
+          row =
+            localization_map
+            |> Map.get(action_uuid, %{})
+            |> make_row(language_labels, action_text, translations, source_language)
 
-        new_row = ["Action", action_uuid] ++ row ++ [node_uuid]
+          new_row = ["Action", action_uuid] ++ row ++ [node_uuid]
 
-        [new_row | export]
-      end
-    )
-    |> Enum.reverse()
+          [new_row | export]
+        end
+      )
+      |> Enum.reverse()
+
+    {rows, errors}
   end
 
   @spec collect_strings(map(), map(), String.t(), map(), String.t()) :: Keyword.t()
@@ -127,17 +136,20 @@ defmodule Glific.Flows.Translate.Export do
     organization.default_language.locale
   end
 
-  @spec translate_strings(map(), boolean(), non_neg_integer()) :: map()
+  @spec translate_strings(map(), boolean(), non_neg_integer()) :: {map(), [String.t()]}
   defp translate_strings(strings, false, _organization_id) do
-    strings
-    |> Enum.reduce(
-      %{},
-      fn {{src, dst}, values}, acc ->
-        Enum.zip(values, [""])
-        |> Map.new()
-        |> then(&Map.put(acc, {src, dst}, &1))
-      end
-    )
+    translations =
+      strings
+      |> Enum.reduce(
+        %{},
+        fn {{src, dst}, values}, acc ->
+          Enum.zip(values, [""])
+          |> Map.new()
+          |> then(&Map.put(acc, {src, dst}, &1))
+        end
+      )
+
+    {translations, []}
   end
 
   defp translate_strings(strings, true, organization_id) do
@@ -154,19 +166,27 @@ defmodule Glific.Flows.Translate.Export do
       # send {:exit, :timeout} so it can be handled
       on_timeout: :kill_task
     )
-    |> Enum.reduce(%{}, fn response, acc ->
+    |> Enum.reduce({%{}, []}, fn response, acc ->
       handle_async_response(response, acc)
     end)
   end
 
-  @spec handle_async_response(tuple(), map()) :: map()
-  defp handle_async_response({:ok, {src, dst, values, {:ok, result}}}, acc) do
-    Enum.zip(values, result)
-    |> Map.new()
-    |> then(&Map.put(acc, {src, dst}, &1))
+  @spec handle_async_response(tuple(), {map(), [String.t()]}) :: {map(), [String.t()]}
+  defp handle_async_response({:ok, {src, dst, values, {:ok, result}}}, {acc, errors}) do
+    translations =
+      Enum.zip(values, result)
+      |> Map.new()
+
+    {Map.put(acc, {src, dst}, translations), errors}
   end
 
-  defp handle_async_response({:exit, :timeout}, acc), do: acc
+  # a hard translate failure leaves this {src, dst} pair's translations blank (same as a
+  # timeout) rather than crashing the reduce -- the caller decides whether blanks are
+  # acceptable (CSV export) or must abort (persisted auto-translate), see `translate/1`.
+  defp handle_async_response({:ok, {_src, _dst, _values, {:error, reason}}}, {acc, errors}),
+    do: {acc, [reason | errors]}
+
+  defp handle_async_response({:exit, :timeout}, {acc, errors}), do: {acc, errors}
 
   @spec make_row(map(), map(), String.t(), map(), String.t()) :: list()
   defp make_row(action_languages, language_labels, default_text, translations, source_language) do

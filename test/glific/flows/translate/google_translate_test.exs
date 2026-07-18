@@ -99,7 +99,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     assert translated_text == ["नमस्ते दुनिया", "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
   end
 
-  test "translate/3 test the possible errors" do
+  test "translate/3 returns an error instead of silently persisting a blank translation on a hard API failure" do
     org_id = Fixtures.get_org_id()
 
     Tesla.Mock.mock(fn _env ->
@@ -117,8 +117,36 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     src = "english"
     dst = "hindi"
 
-    {:ok, response} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
-    assert response == ["बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
+    assert {:error, reason} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
+    assert reason =~ "500"
+    assert reason =~ "invalid response"
+  end
+
+  test "translate/3 surfaces the Google 403 API_KEY_SERVICE_BLOCKED error" do
+    org_id = Fixtures.get_org_id()
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 403,
+        body: %{
+          "error" => %{
+            "code" => 403,
+            "status" => "PERMISSION_DENIED",
+            "message" =>
+              "Requests to this API translate method google.cloud.translate.v2.TranslateService.TranslateText are blocked.",
+            "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
+          }
+        }
+      }
+    end)
+
+    assert {:error, reason} =
+             GoogleTranslate.translate(["Some text to translate"], "english", "hindi",
+               org_id: org_id
+             )
+
+    assert reason =~ "403"
+    assert reason =~ "API_KEY_SERVICE_BLOCKED"
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do

@@ -21,7 +21,7 @@ defmodule Glific.Flows.TranslateTest do
   @help_flow_id 1
 
   test "ensure that export extracts the right nodes from the help flow", attrs do
-    result =
+    {result, _errors} =
       attrs.organization_id
       |> Flows.get_complete_flow(@help_flow_id)
       |> Export.export_localization()
@@ -47,7 +47,7 @@ defmodule Glific.Flows.TranslateTest do
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
     assert map_size(flow.definition["localization"]) == 1
     assert map_size(flow.definition["localization"]["hi"]) == 1
-    csv = Export.export_localization(flow)
+    {csv, _errors} = Export.export_localization(flow)
     Import.import_localization(csv, flow)
 
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
@@ -70,7 +70,7 @@ defmodule Glific.Flows.TranslateTest do
         "a970d5d9-2951-48dc-8c66-ee6833c4b21e"
       ])
 
-    csv = Export.export_localization(flow_before_import)
+    {csv, _errors} = Export.export_localization(flow_before_import)
     Import.import_localization(csv, flow_before_import)
 
     flow_after_import = Flows.get_complete_flow(attrs.organization_id, flow.id)
