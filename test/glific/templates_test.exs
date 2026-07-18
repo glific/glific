@@ -1368,29 +1368,31 @@ defmodule Glific.TemplatesTest do
 
     test "reapply_session_template/2 refuses an approved or pending HSM template - only rejected/failed can be reapplied",
          attrs do
-      reapply_attrs = %{
-        body: "Your train ticket no. {{1}}",
-        label: "Reapplied Ticket Update",
-        is_hsm: true,
-        type: :text,
-        shortcode: "ticket_update_status",
-        category: "ACCOUNT_UPDATE",
-        example: "Your train ticket no. [1234]",
-        organization_id: attrs.organization_id
-      }
-
       for status <- ["APPROVED", "PENDING"] do
-        old_template = rejected_hsm_template_fixture(attrs, %{status: status})
+        old_template =
+          rejected_hsm_template_fixture(attrs, %{
+            status: status,
+            label: "ticket_update_status_#{status}_en",
+            shortcode: "ticket_update_status_#{status}"
+          })
+
+        reapply_attrs = %{
+          body: "Your train ticket no. {{1}}",
+          label: "Reapplied Ticket Update",
+          is_hsm: true,
+          type: :text,
+          shortcode: old_template.shortcode,
+          category: "ACCOUNT_UPDATE",
+          example: "Your train ticket no. [1234]",
+          language_id: old_template.language_id,
+          organization_id: attrs.organization_id
+        }
 
         assert {:error,
                 [
                   "Reapply Session Template",
                   "Only rejected or failed HSM templates can be reapplied"
-                ]} =
-                 Templates.reapply_session_template(
-                   old_template,
-                   Map.put(reapply_attrs, :language_id, old_template.language_id)
-                 )
+                ]} = Templates.reapply_session_template(old_template, reapply_attrs)
 
         # nothing should have been touched - no BSP call, no DB change
         assert {:ok, reloaded} = Repo.fetch_by(SessionTemplate, %{id: old_template.id})

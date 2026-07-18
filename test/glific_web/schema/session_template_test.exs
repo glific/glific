@@ -450,7 +450,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
   describe "reapply session template" do
     defp rejected_hsm_template_fixture(organization_id, overrides \\ %{}) do
-
       valid_attrs = %{
         label: "reapply_ticket_status_en",
         shortcode: "reapply_ticket_status",

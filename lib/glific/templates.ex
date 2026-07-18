@@ -450,8 +450,6 @@ defmodule Glific.Templates do
         attrs
       )
       when status in ["REJECTED", "FAILED"] do
-    attrs = Map.put(attrs, :is_hsm, true)
-
     attrs =
       if Map.has_key?(attrs, :shortcode),
         do: Map.update!(attrs, :shortcode, &String.downcase/1),
