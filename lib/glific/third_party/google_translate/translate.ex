@@ -88,10 +88,10 @@ defmodule Glific.GoogleTranslate.Translate do
   defp extract_translations({:ok, %Tesla.Env{status: status, body: %{"error" => %{} = error}}})
        when status != 200 do
     reason =
-      error
-      |> Map.get("details", [])
-      |> List.first(%{})
-      |> Map.get("reason")
+      case error |> Map.get("details", []) |> List.wrap() |> List.first() do
+        %{"reason" => reason} -> reason
+        _ -> nil
+      end
 
     message = Map.get(error, "message", "")
     google_status = Map.get(error, "status", "")

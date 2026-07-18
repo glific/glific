@@ -104,7 +104,8 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         |> TranslateLog.create_translate_log()
 
         Glific.log_error(
-          "Google Translate failed for org #{org_id} (#{languages["src"]} -> #{languages["dst"]}): #{error}"
+          "Google Translate failed for org #{org_id} (#{languages["src"]} -> #{languages["dst"]}): #{error}",
+          true
         )
 
         {:error, error}

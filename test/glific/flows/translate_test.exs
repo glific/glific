@@ -146,5 +146,23 @@ defmodule Glific.Flows.TranslateTest do
       assert {:error, reason} = Translate.parse("super-secret-api-key", "Hello World", @languages)
       refute reason =~ "super-secret-api-key"
     end
+
+    test "does not crash when Google sends a malformed (non-list) details field" do
+      mock(fn _env ->
+        %Tesla.Env{
+          status: 400,
+          body: %{
+            "error" => %{
+              "message" => "Bad request",
+              "details" => nil
+            }
+          }
+        }
+      end)
+
+      assert {:error, reason} = Translate.parse("api_key", "Hello World", @languages)
+      assert reason =~ "400"
+      assert reason =~ "Bad request"
+    end
   end
 end
