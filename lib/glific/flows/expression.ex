@@ -121,6 +121,7 @@ defmodule Glific.Flows.Expression do
     {:Float, :parse, 1} => &Float.parse/1,
     {:URI, :encode, 1} => &URI.encode/1,
     {:Jason, :encode!, 1} => &Jason.encode!/1,
+    {:Jason, :decode!, 1} => &Jason.decode!/1,
     # Date / Time / DateTime / NaiveDateTime
     {:Date, :utc_today, 0} => &Date.utc_today/0,
     {:Date, :to_string, 1} => &Date.to_string/1,
@@ -483,6 +484,13 @@ defmodule Glific.Flows.Expression do
   # nested field chain) -- never a bare atom or module.
   defp validate_ast({{:., _, [inner, f]}, _, []}) when is_atom(f), do: validate_ast(inner)
 
+  # bracket access foo[key] -> Access.get/2 (twin of the eval_node clause). The
+  # bare `Access` atom only ever comes from bracket syntax; an explicit
+  # Access.get(...) uses the __aliases__ form above and is not allowlisted.
+  # Container and key are validated as ordinary data expressions.
+  defp validate_ast({{:., _, [Access, :get]}, _, [container, key]}),
+    do: validate_all([container, key])
+
   # control-flow forms — twins of the eval_node clauses, same order
   defp validate_ast({:if, _, [condition, branches]}) when is_list(branches) do
     with :ok <- validate_ast(condition),
@@ -699,6 +707,18 @@ defmodule Glific.Flows.Expression do
     case Map.fetch(@mfa, key) do
       {:ok, fun} -> apply(fun, Enum.map(args, &eval_node(&1, bindings)))
       :error -> reject("#{Enum.join(segments, ".")}.#{f}/#{length(args)}")
+    end
+  end
+
+  # bracket access foo[key] -> Access.get/2, restricted to plain maps (and nil).
+  # Both container and key are interpreted through the allowlist first, so a
+  # hostile key can only be one of our own safe values. Only the literal `Access`
+  # atom from bracket syntax reaches here -- never a module the author can call.
+  defp eval_node({{:., _, [Access, :get]}, _, [container, key]}, bindings) do
+    case eval_node(container, bindings) do
+      m when is_map(m) and not is_struct(m) -> Access.get(m, eval_node(key, bindings))
+      nil -> nil
+      _ -> reject("bracket access on non-map")
     end
   end
 

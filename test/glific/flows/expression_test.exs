@@ -288,6 +288,19 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S|<%= ~s(#{System.cmd("id", [])}) %>|)
     end
 
+    test "bracket access foo[key] on maps (incl. Jason.decode! result); non-maps rejected" do
+      assert {:ok, "2"} = Expression.eval(~S|<%= %{"a" => 1, "b" => 2}["b"] %>|)
+      # the real corpus shape: decode a JSON string, then index it
+      assert {:ok, "hi"} = Expression.eval(~S|<%= Jason.decode!(~s({"m":"hi"}))["m"] %>|)
+
+      # a missing key is nil (empty output), nil container is nil
+      assert {:ok, ""} = Expression.eval(~S|<%= %{"a" => 1}["missing"] %>|)
+      # bracket access on a non-map degrades to an error, never a crash
+      assert {:error, _} = Expression.eval(~S|<%= [1, 2, 3]["x"] %>|)
+      # a disallowed call inside the key/container is still rejected
+      assert {:error, _} = Expression.validate(~S|<%= %{"a" => 1}[System.cmd("id", [])] %>|)
+    end
+
     test "newly allowlisted pure functions (Decimal, Enum, List, Timex)" do
       assert {:ok, "6"} = Expression.eval("<%= Decimal.mult(2, 3) %>")
       assert {:ok, "3"} = Expression.eval("<%= Decimal.div(9, 3) %>")
