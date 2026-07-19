@@ -11,6 +11,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
     Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.Dispatcher,
     Messages,
     Repo,
     Seeds.SeedsDev
@@ -59,6 +60,15 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
         validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
       ) do
         Tesla.Mock.mock(fn
+          # The webhook downloads the image and inlines it as a base64 data URL before
+          # calling OpenAI, so the media GET must be mocked too.
+          %{method: :get, url: "https://example.com/image.jpg"} ->
+            %Tesla.Env{
+              status: 200,
+              body: "fake-image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
           %{url: "https://api.openai.com/v1/chat/completions"} ->
             %Tesla.Env{
               status: 200,
@@ -114,6 +124,15 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
         validate_media: fn _, _ -> %{is_valid: true, message: "success"} end
       ) do
         Tesla.Mock.mock(fn
+          # The webhook downloads the image and inlines it as a base64 data URL before
+          # calling OpenAI, so the media GET must be mocked too.
+          %{method: :get, url: "https://example.com/image.jpg"} ->
+            %Tesla.Env{
+              status: 200,
+              body: "fake-image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
           %{url: "https://api.openai.com/v1/chat/completions"} ->
             %Tesla.Env{
               status: 500,
@@ -147,6 +166,318 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
         # Flow execution assertion — webhook failure routes to the Failure branch
         message = await_flow_message(context.contact_id, "failure")
         assert message.body == "failure"
+      end
+    end
+  end
+
+  # Dispatch-level tests: exercise call/2 (media validation, base64 inlining, response_format
+  # handling) directly via the Dispatcher, independent of the Oban/flow-resume path above.
+  describe "parse_via_gpt_vision dispatch" do
+    test "without response_format params, trying to get valid json" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "choices" => [
+                  %{
+                    "message" => %{
+                      "content" => "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"
+                    }
+                  }
+                ]
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o"
+        }
+
+        assert {:ok,
+                %{
+                  success: true,
+                  response: "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"
+                }} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "with response_format type json_object, trying to get valid json" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "choices" => [
+                  %{"message" => %{"content" => "{\n  \"steps\": 4,\n  \"answer\": 10\n}"}}
+                ]
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o",
+          "response_format" => %{"type" => "json_object"}
+        }
+
+        assert {:ok, %{success: true, response: %{"steps" => 4, "answer" => 10}}} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "with invalid response_format param" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "choices" => [
+                  %{"message" => %{"content" => "{\n  \"steps\": 4,\n  \"answer\": 10\n}"}}
+                ]
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o",
+          "response_format" => %{"type" => "json_objectz"}
+        }
+
+        assert {:error, _type, "response_format type should be json_schema or json_object"} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "with response_format json_schema, trying to get valid json" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "choices" => [
+                  %{
+                    "message" => %{"content" => "{\n  \"steps\": \"4\",\n  \"answer\": \"10\"\n}"}
+                  }
+                ]
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o",
+          "response_format" => %{
+            "type" => "json_schema",
+            "json_schema" => %{
+              "name" => "schemaing",
+              "strict" => true,
+              "schema" => %{
+                "type" => "object",
+                "properties" => %{
+                  "steps" => %{"type" => "string"},
+                  "answer" => %{"type" => "string"}
+                },
+                "required" => ["steps", "answer"],
+                "additionalProperties" => false
+              }
+            }
+          }
+        }
+
+        assert {:ok, %{success: true, response: %{"steps" => "4", "answer" => "10"}}} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "with response_format json_schema but a non-nil refusal returns the refusal" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                "choices" => [
+                  %{
+                    "message" => %{
+                      "content" => nil,
+                      "refusal" =>
+                        "I'm sorry, but I can't provide the information from the document."
+                    }
+                  }
+                ]
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o",
+          "response_format" => %{
+            "type" => "json_schema",
+            "json_schema" => %{
+              "name" => "schemaing",
+              "strict" => true,
+              "schema" => %{
+                "type" => "object",
+                "properties" => %{
+                  "steps" => %{"type" => "string"},
+                  "answer" => %{"type" => "string"}
+                },
+                "required" => ["steps", "answer"],
+                "additionalProperties" => false
+              }
+            }
+          }
+        }
+
+        assert {:error, _type,
+                "I'm sorry, but I can't provide the information from the document."} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "downloads the image and sends it inline as base64" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        image_bytes = <<137, 80, 78, 71, 13, 10, 26, 10>>
+
+        Tesla.Mock.mock(fn
+          %{method: :get, url: "https://example.com/image.png"} ->
+            %Tesla.Env{status: 200, body: image_bytes, headers: [{"content-type", "image/png"}]}
+
+          %{method: :post, url: "https://api.openai.com/v1/chat/completions", body: body} ->
+            assert body =~ "data:image/png;base64,#{Base.encode64(image_bytes)}"
+            refute body =~ "https://example.com/image.png"
+
+            %Tesla.Env{
+              status: 200,
+              body: %{"choices" => [%{"message" => %{"content" => "{\"answer\": 10}"}}]}
+            }
+        end)
+
+        fields = %{
+          "prompt" => "what's the answer",
+          "url" => "https://example.com/image.png",
+          "model" => "gpt-4o",
+          "organization_id" => "1",
+          "response_format" => %{"type" => "json_object"}
+        }
+
+        assert {:ok, %{success: true, response: %{"answer" => 10}}} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "routes to Failure when image download fails" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get, url: "https://example.com/missing.png"} -> {:error, :timeout}
+        end)
+
+        fields = %{
+          "prompt" => "what's the answer",
+          "url" => "https://example.com/missing.png",
+          "model" => "gpt-4o",
+          "organization_id" => "1"
+        }
+
+        assert {:error, _type, "Failed to download image for vision parsing"} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
+      end
+    end
+
+    test "with invalid json_schema (OpenAI 400) returns the provider error" do
+      with_mock(Messages, validate_media: fn _, _ -> %{is_valid: true, message: "success"} end) do
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              status: 200,
+              body: "image-bytes",
+              headers: [{"content-type", "image/jpeg"}]
+            }
+
+          %{url: "https://api.openai.com/v1/chat/completions"} ->
+            %Tesla.Env{
+              status: 400,
+              body: %{
+                "error" => %{
+                  "message" =>
+                    "Invalid schema for response_format 'schemaing': In context=(), 'additionalProperties' is required to be supplied and to be false."
+                }
+              }
+            }
+        end)
+
+        fields = %{
+          "prompt" => "value of steps is 4 and value of answer is 10, give in valid json",
+          "url" => "https://fastly.picsum.photos/id/145/200/300.jpg?hmac=abc",
+          "model" => "gpt-4o",
+          "response_format" => %{
+            "type" => "json_schema",
+            "json_schema" => %{
+              "name" => "schemaing",
+              "strict" => true,
+              "schema" => %{
+                "type" => "object",
+                "properties" => %{
+                  "steps" => %{"type" => "string"},
+                  "answer" => %{"type" => "string"}
+                },
+                "required" => ["steps", "answer"]
+              }
+            }
+          }
+        }
+
+        assert {:error, _type, "Invalid schema for response_format" <> _} =
+                 Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
   end

@@ -13,6 +13,7 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
     Flows.FlowContext,
     Flows.Webhook,
     Flows.WebhookLog,
+    Flows.Webhooks.FilesearchGpt,
     Partners,
     Repo,
     Seeds.SeedsDev
@@ -254,6 +255,158 @@ defmodule Glific.Flows.Webhooks.FilesearchGptTest do
       log = List.first(WebhookLog.list_webhook_logs(%{filter: flow_filter}))
       assert log != nil
       assert log.error != nil
+    end
+  end
+
+  # Dispatch-level tests: exercise call/2's lookup_kaapi_config validation branches and Kaapi
+  # failure shaping directly (the e2e tests above only cover the happy/failure-callback/timeout
+  # flow paths).
+  defp lookup_fields(assistant_id) do
+    %{
+      "assistant_id" => assistant_id,
+      "question" => "test",
+      "organization_id" => "1",
+      "flow_id" => "1",
+      "contact_id" => "2",
+      "webhook_log_id" => 1,
+      "result_name" => "response"
+    }
+  end
+
+  describe "filesearch-gpt dispatch — lookup_kaapi_config" do
+    test "returns error when assistant_id is nil" do
+      assert {:error, :invalid_input, "assistant_id is required"} =
+               FilesearchGpt.call(Map.delete(lookup_fields("x"), "assistant_id"), %{})
+    end
+
+    test "returns error when assistant not found" do
+      assert {:error, :invalid_input, reason} =
+               FilesearchGpt.call(lookup_fields("nonexistent_id"), %{})
+
+      assert reason =~ "Assistant not found"
+    end
+
+    test "returns error when kaapi_version_number is nil" do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Version Nil Test",
+          organization_id: 1,
+          kaapi_uuid: "kaapi_uuid_test"
+        })
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready,
+          kaapi_version_number: nil
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: config.id})
+        |> Repo.update()
+
+      assert {:error, :invalid_input, reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+
+      assert reason =~ "Kaapi version number not found"
+    end
+
+    test "returns error when kaapi_uuid is nil" do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "No UUID Test", organization_id: 1})
+        |> Repo.insert()
+
+      {:ok, config} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: 1,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "test",
+          settings: %{},
+          status: :ready
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{active_config_version_id: config.id})
+        |> Repo.update()
+
+      assert {:error, :invalid_input, reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+
+      assert reason =~ "Assistant is still being set up"
+    end
+
+    test "returns :invalid_input when no active config version is linked" do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "No Active Config",
+          organization_id: 1,
+          kaapi_uuid: "kaapi_uuid_present"
+        })
+        |> Repo.insert()
+
+      assert {:error, :invalid_input, reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+
+      assert reason =~ "No active config version"
+    end
+  end
+
+  describe "filesearch-gpt dispatch — Kaapi failure result" do
+    test "returns failure result on a Kaapi 4xx response", %{assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 400, body: %{"error" => "bad request"}}
+      end)
+
+      # A dispatch-phase Kaapi HTTP failure is system (the callback classifier, not dispatch,
+      # is what maps a real provider 4xx to config).
+      assert {:error, :unknown, _reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+    end
+
+    test "returns failure result on a Kaapi 5xx response", %{assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 503, body: %{}}
+      end)
+
+      assert {:error, :unknown, _reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+    end
+
+    test "returns :unknown on a Kaapi transport error", %{assistant: assistant} do
+      Tesla.Mock.mock(fn %{method: :post} -> {:error, :econnrefused} end)
+
+      assert {:error, :unknown, _reason} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
+    end
+
+    test "returns failure result when Kaapi returns 200 with a success:false body", %{
+      assistant: assistant
+    } do
+      Tesla.Mock.mock(fn
+        %{method: :post} -> %Tesla.Env{status: 200, body: %{success: false, message: "boom"}}
+      end)
+
+      # error_type "kaapi_logical_failure" is a raw string, not a known ErrorType.t() atom, so
+      # to_result/1 fails it safe to :unknown; http_status is folded into the reason.
+      assert {:error, :unknown, "boom (HTTP 200)"} =
+               FilesearchGpt.call(lookup_fields(assistant.assistant_display_id), %{})
     end
   end
 end

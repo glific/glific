@@ -44,6 +44,9 @@ defmodule Glific.Providers.Maytapi.ApiClient do
   # message for. The raw detail is always logged separately.
   @generic_error "WhatsApp couldn't complete this action right now. Please try again in a moment."
 
+  @not_connected_error "This WhatsApp number isn't connected right now. Check its status or reconnect it, then try again."
+  @create_group_error "Couldn't create the WhatsApp group. This usually means WhatsApp is temporarily blocking group creation from this number (a WhatsApp/Meta-side restriction). Try another linked number, or try again in a little while."
+
   @doc """
   Making Tesla post call and adding api key in header
   """
@@ -302,11 +305,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
         {:ok,
          %{bsp_id: id, participants: data["participants"] || [], admins: data["admins"] || []}}
 
-      {:ok, %{"success" => false, "message" => message}} ->
-        {:error, message}
+      {:ok, decoded} ->
+        {:error, create_group_error(decoded)}
 
       _ ->
-        {:error, "Unexpected Maytapi create group response"}
+        {:error, @create_group_error}
     end
   end
 
@@ -351,13 +354,27 @@ defmodule Glific.Providers.Maytapi.ApiClient do
 
     cond do
       failure["code"] == @instance_not_ready_code ->
-        "This WhatsApp number isn't connected right now. Check its status or reconnect it, then try again."
+        @not_connected_error
 
       is_binary(failure["message"]) ->
         map_maytapi_message(failure["message"])
 
       true ->
         @generic_error
+    end
+  end
+
+  @spec create_group_error(map()) :: String.t()
+  defp create_group_error(failure) do
+    Glific.log_error("Maytapi create group failed: #{SafeLog.safe_inspect(failure)}")
+
+    message = failure["message"] || ""
+
+    if failure["code"] == @instance_not_ready_code or
+         String.contains?(String.downcase(message), "connect") do
+      @not_connected_error
+    else
+      @create_group_error
     end
   end
 

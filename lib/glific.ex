@@ -217,16 +217,51 @@ defmodule Glific do
     Glific.SafeLog.safe_inspect(stacktrace)
   end
 
-  @not_allowed ["Repo.", "IO.", "File.", "Code."]
+  # A substring denylist. Tokens are chosen to be prose-safe: module-qualified
+  # forms (with a trailing "." or an Erlang ":") and paren call-forms, so they
+  # do not collide with ordinary message text ("apply for...", "you will
+  # receive...") that also flows through execute_eex/1 via set_run_result,
+  # contact fields, and templating.
+  @not_allowed [
+    # module / data access
+    "Repo.",
+    "IO.",
+    "File.",
+    "Code.",
+    # OS command execution and low-level runtime
+    "System.",
+    ":os.",
+    ":erlang.",
+    ":erpc.",
+    "Port.",
+    "Node.",
+    # indirection used to reach the above via a bare-atom module argument,
+    # e.g. apply(System, :cmd, ...) / apply(:os, :cmd, ...)
+    "apply(",
+    "spawn(",
+    "Kernel.",
+    "Function.",
+    "Module.",
+    "Macro.",
+    # concurrency primitives that can run arbitrary functions
+    "Task.",
+    "Agent.",
+    "GenServer.",
+    "Process.",
+    # meta-evaluation
+    "EEx."
+  ]
 
   @doc """
-  Really simple function to ensure folks do not add Repo and/or IO calls
-  to an EEx snippet. This is an extremely short term fix to avoid shooting
-  ourselves in the foot, but we should move to lua for flows scripting in the
-  near future
+  Really simple function to ensure folks do not add dangerous calls to an EEx
+  snippet. This is an extremely short term fix to avoid shooting ourselves in
+  the foot, but we should move to a sandboxed, non-Turing-complete evaluator
+  (e.g. Lua) for flows scripting in the near future.
 
-  Note that folks can potentially find other ways to access the same modules, so
-  this by no means should be considered remotely secure
+  IMPORTANT: this is a denylist and a denylist can never be complete — every
+  omitted token (aliasing tricks, module attributes, etc.) is a potential
+  bypass. This by no means should be considered remotely secure; it only raises
+  the bar until flow expressions no longer evaluate arbitrary Elixir.
   """
   @spec suspicious_code(String.t()) :: boolean()
   def suspicious_code(code),
@@ -238,7 +273,9 @@ defmodule Glific do
   @spec execute_eex(String.t()) :: String.t()
   def execute_eex(content) do
     if suspicious_code(content) do
-      Logger.error("EEx suspicious code: #{content}")
+      # Route to AppSignal (not just Logger) so attempts to smuggle disallowed
+      # calls into flow expressions are visible to operators.
+      log_error("EEx suspicious code blocked: #{content}")
       "Suspicious Code. Please change your code. #{content}"
     else
       content

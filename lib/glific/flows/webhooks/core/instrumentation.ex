@@ -1,36 +1,16 @@
 defmodule Glific.Flows.Webhooks.Instrumentation do
   @moduledoc """
-  Centralised failure reporting and latency telemetry for flow webhooks.
-
-  This is the single home for cross-cutting observability in the
-  `Glific.Flows.Webhooks` subsystem. Every webhook dispatched through
-  `Glific.Flows.Webhooks.Dispatcher` is wrapped by `around/3`, which:
-
-    * Times the call and emits a `flow_webhook_latency` AppSignal distribution
-      tagged with `webhook_name`, `mode`, and `outcome`.
-    * Increments a `Glific.Metrics` counter for success/failure so per-webhook
-      ratios are chartable.
-    * Reports `%{success: false}` results and rescued exceptions via
-      `Glific.log_exception/1` under the `flow_webhooks` namespace.
-
-  Callback-time and timeout-time reporting (the other two facets of webhook
-  failure) live in `report_callback_failure/2` and `report_timeout/1` here —
-  same exception shapes, same `flow_webhooks` namespace.
-
-  Exception types are `Glific.Flows.Webhooks.Errors.{SystemError, TimeoutError}`
-  — independent from the legacy `Glific.Flows.Webhook.*` exception classes.
+  Centralised failure reporting and latency telemetry for flow webhooks. Every webhook dispatched
+  through `Dispatcher` is wrapped by `around/3`; async callbacks go through `around_callback/4`.
+  Both route through `ErrorReporter`. Resume/timeout paths report `Errors.{SystemError,
+  TimeoutError}` under `flow_webhooks`.
   """
 
-  alias Glific.Flows.Webhooks.Errors
-  alias Glific.Metrics
+  alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType}
   alias Glific.SafeLog
 
   require Logger
 
-  @typedoc """
-  Tags attached to the centralised AppSignal report. Keys are optional so each
-  call site supplies what it has.
-  """
   @type tags :: %{
           optional(:organization_id) => non_neg_integer() | nil,
           optional(:webhook_name) => String.t() | nil,
@@ -42,17 +22,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
           optional(:error_type) => String.t() | nil
         }
 
-  @doc """
-  Wrap a webhook invocation with failure reporting + latency telemetry.
-
-  `module` is the webhook module (implements `Glific.Flows.Webhooks.Behaviour`);
-  `ctx` carries `:organization_id` (and optional metadata for richer tags);
-  `fun` is the zero-arity callback that actually invokes the webhook.
-
-  Returns the result of `fun.()` unchanged. Exceptions are reported and then
-  re-raised — callers downstream of the dispatcher see the same exceptions they
-  would have seen without this wrapper.
-  """
+  @doc "Wrap a webhook `call/2` with failure reporting + latency telemetry; re-raises exceptions."
   @spec around(module(), map(), (-> any())) :: any()
   def around(module, ctx, fun) when is_atom(module) and is_map(ctx) and is_function(fun, 0) do
     webhook_name = module.name()
@@ -66,65 +36,127 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     rescue
       exception ->
         track_latency(webhook_name, mode, start, :error)
-        track_status(webhook_name, nil)
-        report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception))
+
+        # Async counts at callback; a raised sync webhook must count here.
+        if mode == :sync, do: track_webhook_count(webhook_name, "failure")
+
+        # Unjudgeable -> "exception" (system) so it still carries an error_type.
+        report_webhook_failure(webhook_name, ctx, nil, Exception.message(exception), "exception")
         reraise exception, __STACKTRACE__
     end
   end
 
-  # Sync webhooks: the call IS the work, so record latency + metric + any failure now.
   @spec record_outcome(:sync | :async, any(), String.t(), integer(), map()) :: :ok
+  defp record_outcome(_mode, {:snooze, _seconds}, _webhook_name, _start, _ctx), do: :ok
+
   defp record_outcome(:sync, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :sync, start, :ok)
-    track_status(webhook_name, result)
+    track_webhook_count(webhook_name, sync_count_status(result))
     maybe_report_failure(result, webhook_name, ctx)
   end
 
-  # Async webhooks: a successful ack means the Kaapi request is in flight. The real
-  # round-trip latency and the success count are recorded at callback time
-  # (FlowResumeController), so record nothing here — recording an ack-time latency would
-  # pollute the same `flow_webhook_latency` metric the callback fills. Only a dispatch
-  # failure, which never reaches the callback, is recorded now.
-  defp record_outcome(:async, %{success: true}, _webhook_name, _start, _ctx), do: :ok
+  # An accepted async dispatch (`{:ok, ack}`) means the request is in flight — latency/count
+  # land at callback time instead. Only a dispatch failure is recorded now.
+  defp record_outcome(:async, {:ok, _ack}, _webhook_name, _start, _ctx), do: :ok
 
   defp record_outcome(:async, result, webhook_name, start, ctx) do
     track_latency(webhook_name, :async, start, :error)
-    track_status(webhook_name, result)
     maybe_report_failure(result, webhook_name, ctx)
   end
 
-  @doc """
-  Callback-time failure report (the Kaapi callback arrived but `success` was
-  not `true`). Preserves the same tag keys so AppSignal filtering is unchanged.
-  """
-  @spec report_callback_failure(map(), map()) :: :ok
-  def report_callback_failure(%{"success" => success} = result, response)
-      when success != true do
-    reason =
-      result["reason"] || result["error"] || response["message"] || "Kaapi callback failure"
+  @spec sync_count_status(any()) :: String.t()
+  defp sync_count_status({:ok, _value}), do: "success"
+  defp sync_count_status(%{success: true}), do: "success"
+  defp sync_count_status(_result), do: "failure"
 
-    %Errors.SystemError{message: "Webhook callback failure"}
-    |> Glific.log_exception(
-      namespace: "flow_webhooks",
-      tags: %{
-        organization_id: response["organization_id"],
-        webhook_name: response["webhook_name"],
-        flow_id: response["flow_id"],
-        contact_id: response["contact_id"],
-        webhook_log_id: response["webhook_log_id"],
-        error_type: result["error_type"],
-        reason: reason
-      }
-    )
+  @spec maybe_report_failure(any(), String.t(), map()) :: :ok
+  defp maybe_report_failure({:error, error_type, message}, webhook_name, ctx)
+       when is_atom(error_type) and is_binary(message) do
+    ErrorReporter.report(error_type, message, failure_tags(webhook_name, ctx))
   end
 
-  def report_callback_failure(_result, _response), do: :ok
+  defp maybe_report_failure({:error, message}, webhook_name, ctx) when is_binary(message) do
+    ErrorReporter.report(:unknown, message, failure_tags(webhook_name, ctx))
+  end
 
-  @doc """
-  Timeout-time failure report (an async webhook's await window expired
-  without a callback). Builds a `TimeoutError` so AppSignal keeps timeouts in
-  their own incident bucket.
-  """
+  defp maybe_report_failure(result, webhook_name, ctx) when is_binary(result) or is_nil(result) do
+    reason = if is_binary(result), do: result, else: SafeLog.safe_inspect(result)
+    ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
+  end
+
+  defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
+    reason =
+      case result do
+        %{reason: reason} when is_binary(reason) -> reason
+        %{"reason" => reason} when is_binary(reason) -> reason
+        other -> SafeLog.safe_inspect(other)
+      end
+
+    ErrorReporter.report(:unknown, reason, failure_tags(webhook_name, ctx))
+  end
+
+  # A 3-tuple violating the typed contract (non-atom type / non-binary message) still routed the
+  # flow to Failure — report :unknown rather than staying invisible to on-call.
+  defp maybe_report_failure({:error, _error_type, _message} = result, webhook_name, ctx) do
+    ErrorReporter.report(:unknown, SafeLog.safe_inspect(result), failure_tags(webhook_name, ctx))
+  end
+
+  defp maybe_report_failure(_non_failure, _webhook_name, _ctx), do: :ok
+
+  @spec failure_tags(String.t(), map()) :: map()
+  defp failure_tags(webhook_name, ctx) do
+    Map.put(ctx_tags(ctx), :webhook_name, webhook_name)
+  end
+
+  @spec ctx_tags(map()) :: map()
+  defp ctx_tags(ctx) do
+    %{
+      organization_id: Map.get(ctx, :organization_id),
+      flow_id: Map.get(ctx, :flow_id),
+      contact_id: Map.get(ctx, :contact_id),
+      webhook_log_id: Map.get(ctx, :webhook_log_id)
+    }
+  end
+
+  @doc "Report an async callback that arrived with `success` not true, classified by the node."
+  @spec report_callback_failure(module() | nil, map(), map()) :: :ok
+  def report_callback_failure(_module, %{"success" => true}, _response), do: :ok
+
+  # Any other map is a failure, including one missing the `success` key.
+  def report_callback_failure(module, result, response) when is_map(result) do
+    reason =
+      result["reason"] || result["error"] || response["message"] ||
+        "#{response["webhook_name"] || "Webhook"} callback failure"
+
+    result
+    |> classify_callback(module)
+    |> ErrorReporter.report(reason, callback_tags(result, response))
+  end
+
+  def report_callback_failure(_module, _result, _response), do: :ok
+
+  @spec classify_callback(map(), module() | nil) :: ErrorType.t()
+  defp classify_callback(result, module) when is_atom(module) and not is_nil(module),
+    do: module.classify(result)
+
+  defp classify_callback(_result, _module), do: :unknown
+
+  # Keeps the raw Kaapi error_type/http_status alongside ErrorReporter's classified bucket so
+  # incidents stay debuggable.
+  @spec callback_tags(map(), map()) :: map()
+  defp callback_tags(result, response) do
+    %{
+      organization_id: response["organization_id"],
+      webhook_name: response["webhook_name"],
+      flow_id: response["flow_id"],
+      contact_id: response["contact_id"],
+      webhook_log_id: response["webhook_log_id"],
+      http_status: result["http_status"],
+      kaapi_error_type: result["error_type"]
+    }
+  end
+
+  @doc "Report an async webhook whose await window expired without a callback."
   @spec report_timeout(map()) :: :ok
   def report_timeout(tags) when is_map(tags) do
     webhook_name = Map.get(tags, :webhook_name) || "unknown"
@@ -133,12 +165,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     |> Glific.log_exception(namespace: "flow_webhooks", tags: tags)
   end
 
-  @doc """
-  Resume-time failure report (the Kaapi callback arrived and validated, but
-  `FlowContext.resume_contact_flow/4` could not resume the parked flow — e.g.
-  the awaiting context was already gone). Same `flow_webhooks` namespace and
-  tag shape as the callback/timeout reporters.
-  """
+  @doc "Report a callback that validated but could not resume the parked flow."
   @spec report_resume_failure(map(), any()) :: :ok
   def report_resume_failure(response, reason) do
     %Errors.SystemError{message: "Webhook resume failure"}
@@ -155,13 +182,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     )
   end
 
-  @doc """
-  Report a webhook failure surfaced outside the dispatcher's automatic path —
-  e.g. an implementation module detecting a callback that succeeded at the HTTP
-  layer but returned an unusable body. Same `flow_webhooks` namespace and tag
-  shape as the callback/timeout/resume reporters; `:webhook_name` is filled in
-  from the first argument.
-  """
+  @doc "Report a webhook failure surfaced outside the dispatcher's automatic path."
   @spec report_failure(String.t(), tags()) :: :ok
   def report_failure(webhook_name, tags) when is_binary(webhook_name) and is_map(tags) do
     %Errors.SystemError{message: "Webhook system_error from #{webhook_name}"}
@@ -172,23 +193,31 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
-  Record the callback-phase telemetry for an async webhook: success/failure
-  count, end-to-end latency, and (on failure) a `flow_webhooks` report. This is
-  the callback-time counterpart of the execution-phase `around/3`.
+  Run an async webhook's `callback/3` inside callback-phase instrumentation: executes `fun`,
+  records count + latency, classifies/reports a failure, and returns whatever `fun` shaped.
   """
-  @spec record_callback_outcome(map(), map()) :: :ok
-  def record_callback_outcome(result, response) do
+  @spec around_callback(module() | nil, map(), map(), (-> map())) :: map()
+  def around_callback(module, result, response, fun)
+      when (is_atom(module) or is_nil(module)) and is_function(fun, 0) do
+    # Mirrors around/3: a raising callback must still record its telemetry before re-raising.
+    shaped = fun.()
+    record_callback_outcome(module, result, response)
+    shaped
+  rescue
+    exception ->
+      record_callback_outcome(module, Map.put(result, "success", false), response)
+      reraise exception, __STACKTRACE__
+  end
+
+  @spec record_callback_outcome(module() | nil, map(), map()) :: :ok
+  defp record_callback_outcome(module, result, response) do
     status = if result["success"], do: "success", else: "failure"
     track_webhook_count(response["webhook_name"], status)
     track_kaapi_latency(response, status)
-    report_callback_failure(result, response)
+    report_callback_failure(module, result, response)
   end
 
-  @doc """
-  Increment a counter for a flow-webhook node outcome so success/failure ratios
-  can be computed per webhook node. `status` is "success" or "failure". Shared by
-  the sync, callback and timeout paths.
-  """
+  @doc "Increment the success/failure counter for a flow-webhook node outcome."
   @spec track_webhook_count(String.t() | nil, String.t()) :: :ok
   def track_webhook_count(webhook_name, status) do
     Appsignal.increment_counter("flow_webhook_count", 1, %{
@@ -199,10 +228,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     :ok
   end
 
-  @doc """
-  Records end-to-end latency for a webhook node execution as an AppSignal
-  distribution (so p50/p95/p99 can be charted). Generic across all node types.
-  """
+  @doc "Record a flow-webhook node execution latency as an AppSignal distribution."
   @spec track_webhook_latency(String.t() | nil, String.t(), number()) :: :ok
   def track_webhook_latency(webhook_name, status, duration_ms) do
     Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
@@ -215,8 +241,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   # --- private ----------------------------------------------------------------
 
-  # Latency for an async webhook callback (request dispatch -> callback arrival),
-  # derived from the request timestamp embedded in the callback metadata.
   @spec track_kaapi_latency(map(), String.t()) :: :ok
   defp track_kaapi_latency(%{"timestamp" => timestamp} = response, status)
        when is_integer(timestamp) do
@@ -238,74 +262,18 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   defp track_kaapi_latency(_response, _status), do: :ok
 
-  @spec maybe_report_failure(any(), String.t(), map()) :: :ok
-  defp maybe_report_failure(%{success: false} = result, webhook_name, ctx) do
-    {status, reason} = extract_status_and_reason(result)
-    report_webhook_failure(webhook_name, ctx, status, reason)
-  end
-
-  # nil / non-map results route to the flow's Failure category. Treat them as
-  # failures here too so the centralised reporter mirrors legacy behaviour.
-  defp maybe_report_failure(result, webhook_name, ctx)
-       when is_nil(result) or not is_map(result) do
-    reason = if is_binary(result), do: result, else: Glific.SafeLog.safe_inspect(result)
-    report_webhook_failure(webhook_name, ctx, nil, reason)
-  end
-
-  defp maybe_report_failure(_result, _webhook_name, _ctx), do: :ok
-
-  @spec extract_status_and_reason(map()) :: {integer() | nil, String.t() | nil}
-  defp extract_status_and_reason(result) do
-    case result do
-      %{http_status: status, reason: reason} when is_integer(status) and is_binary(reason) ->
-        {status, reason}
-
-      %{http_status: status} when is_integer(status) ->
-        {status, nil}
-
-      %{asr_response_text: status} when is_integer(status) ->
-        {status, nil}
-
-      %{asr_response_text: status} when is_binary(status) ->
-        {nil, status}
-
-      %{reason: status} when is_binary(status) ->
-        {nil, status}
-
-      %{error: error} when is_binary(error) ->
-        {nil, error}
-
-      other ->
-        {nil, Glific.SafeLog.safe_inspect(other)}
-    end
-  end
-
-  @spec report_webhook_failure(String.t(), map(), integer() | nil, String.t() | nil) :: :ok
-  defp report_webhook_failure(webhook_name, ctx, http_status, reason) do
-    report_failure(webhook_name, %{
-      organization_id: Map.get(ctx, :organization_id),
-      http_status: http_status,
-      reason: reason
-    })
-  end
-
-  @spec track_status(String.t(), any()) :: :ok
-  defp track_status(webhook_name, %{success: true}) do
-    Metrics.increment(metric_event_name(webhook_name, "Success"))
-  end
-
-  defp track_status(webhook_name, _) do
-    Metrics.increment(metric_event_name(webhook_name, "Failure"))
-  end
-
-  @spec metric_event_name(String.t(), String.t()) :: String.t()
-  defp metric_event_name(webhook_name, outcome) do
-    title =
-      webhook_name
-      |> String.split("_")
-      |> Enum.map_join(" ", &String.capitalize/1)
-
-    "#{title} API #{outcome}"
+  @spec report_webhook_failure(
+          String.t(),
+          map(),
+          integer() | nil,
+          String.t() | nil,
+          String.t() | nil
+        ) :: :ok
+  defp report_webhook_failure(webhook_name, ctx, http_status, reason, error_type) do
+    report_failure(
+      webhook_name,
+      Map.merge(ctx_tags(ctx), %{http_status: http_status, reason: reason, error_type: error_type})
+    )
   end
 
   @spec track_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok

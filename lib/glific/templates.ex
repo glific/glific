@@ -17,6 +17,7 @@ defmodule Glific.Templates do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
   }
@@ -146,7 +147,10 @@ defmodule Glific.Templates do
         do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
         else: attrs
 
-    with :ok <- validate_hsm(attrs),
+    # derive a label from shortcode + language when the caller sends a blank one (e.g. HSMV2)
+    with {:ok, label} <- resolve_label(attrs),
+         attrs <- Map.put(attrs, :label, label),
+         :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)),
          :ok <- validate_template_length(attrs) do
       submit_for_approval(attrs)
@@ -155,6 +159,39 @@ defmodule Glific.Templates do
 
   def create_session_template(attrs),
     do: do_create_session_template(attrs)
+
+  @spec resolve_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp resolve_label(%{label: label}) when is_binary(label) and label != "", do: {:ok, label}
+  defp resolve_label(attrs), do: generate_unique_label(attrs)
+
+  @spec generate_unique_label(map()) :: {:ok, String.t() | nil} | {:error, [String.t()]}
+  defp generate_unique_label(%{
+         shortcode: shortcode,
+         language_id: language_id,
+         organization_id: organization_id
+       })
+       when is_binary(shortcode) and shortcode != "" do
+    case Repo.get(Language, language_id) do
+      nil -> {:error, ["language_id", "does not exist"]}
+      language -> {:ok, make_unique_label("#{shortcode}_#{language.locale}", organization_id)}
+    end
+  end
+
+  defp generate_unique_label(attrs), do: {:ok, Map.get(attrs, :label)}
+
+  @spec make_unique_label(String.t(), non_neg_integer(), non_neg_integer() | nil) :: String.t()
+  defp make_unique_label(base_label, organization_id, suffix \\ nil) do
+    candidate = if suffix, do: "#{base_label}_#{suffix}", else: base_label
+
+    query =
+      from(t in SessionTemplate,
+        where: t.label == ^candidate and t.organization_id == ^organization_id
+      )
+
+    if Repo.exists?(query),
+      do: make_unique_label(base_label, organization_id, (suffix || 1) + 1),
+      else: candidate
+  end
 
   @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
   defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
