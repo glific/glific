@@ -18,6 +18,7 @@ defmodule Glific do
   require Logger
 
   alias Glific.{
+    Flows.Expression,
     Partners,
     Repo
   }
@@ -278,9 +279,7 @@ defmodule Glific do
       log_error("EEx suspicious code blocked: #{content}")
       "Suspicious Code. Please change your code. #{content}"
     else
-      content
-      |> EEx.eval_string()
-      |> String.trim()
+      evaluate_expression(content)
     end
   rescue
     EEx.SyntaxError ->
@@ -290,6 +289,43 @@ defmodule Glific do
     _ ->
       Logger.error("EEx threw a Error: #{content}")
       "Invalid Code"
+  end
+
+  # When the per-org `:safe_expressions` flag is on, interpret the expression with
+  # the fail-closed AST interpreter (Glific.Flows.Expression) and never touch EEx.
+  # Otherwise fall back to the legacy EEx evaluator — on that path the denylist
+  # above is the only guard. The flag is a per-org kill switch: enable it once an
+  # org's expressions are verified to be covered, disable it to revert instantly.
+  @spec evaluate_expression(String.t()) :: String.t()
+  defp evaluate_expression(content) do
+    if safe_expressions_enabled?() do
+      case Expression.eval(content) do
+        {:ok, output} ->
+          output
+
+        {:error, reason} ->
+          # The interpreter rejected or could not render this expression. Surface
+          # it to AppSignal so per-org coverage gaps are visible before and during
+          # rollout, and degrade to the same "Invalid Code" the rescue clause uses
+          # — we deliberately do NOT fall back to EEx on the enabled path.
+          log_error("Safe expression eval failed: #{reason} | #{content}")
+          "Invalid Code"
+      end
+    else
+      content
+      |> EEx.eval_string()
+      |> String.trim()
+    end
+  end
+
+  # Per-org gate for the safe expression interpreter. Reads the tenant from the
+  # process dictionary; a missing org (nil) resolves to the flag's default state
+  # (disabled), so unset contexts stay on the legacy EEx path.
+  @spec safe_expressions_enabled?() :: boolean()
+  defp safe_expressions_enabled? do
+    FunWithFlags.enabled?(:safe_expressions,
+      for: %{organization_id: Repo.get_organization_id()}
+    )
   end
 
   @doc """

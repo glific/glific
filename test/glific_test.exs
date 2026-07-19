@@ -1,5 +1,5 @@
 defmodule GlificTest do
-  use ExUnit.Case, async: true
+  use Glific.DataCase
 
   describe "execute_eex/1 flow-expression guard" do
     @blocked_marker "Suspicious Code. Please change your code."
@@ -49,6 +49,37 @@ defmodule GlificTest do
           ] do
         refute Glific.suspicious_code(text), "expected #{text} to be allowed"
       end
+    end
+  end
+
+  describe "execute_eex/1 with the :safe_expressions flag enabled" do
+    @blocked_marker "Suspicious Code. Please change your code."
+
+    setup do
+      # Use a fresh org so the ETS-cached flag never collides with (or leaks into)
+      # the shared org-1 tests; the DB write rolls back with the SQL sandbox.
+      organization = Glific.Fixtures.organization_fixture()
+      Glific.Repo.put_organization_id(organization.id)
+      FunWithFlags.enable(:safe_expressions, for_actor: %{organization_id: organization.id})
+
+      %{organization: organization}
+    end
+
+    test "renders a safe expression through the interpreter (never EEx)" do
+      assert Glific.execute_eex("<%= rem(5, 2) %>") == "1"
+      assert Glific.execute_eex("You earned <%= 4 + 4 %> points") == "You earned 8 points"
+    end
+
+    test "the denylist still blocks dangerous code before the interpreter runs" do
+      payload = ~s|<%= System.cmd("touch", ["/tmp/glific_poc_marker"]) %>|
+      assert Glific.execute_eex(payload) =~ @blocked_marker
+      refute File.exists?("/tmp/glific_poc_marker")
+    end
+
+    test "an expression the interpreter cannot handle degrades to Invalid Code, not EEx" do
+      # `with` is not supported by the interpreter; the enabled path must reject it
+      # rather than silently falling back to EEx.
+      assert Glific.execute_eex("<%= with x <- 1, do: x %>") == "Invalid Code"
     end
   end
 end
