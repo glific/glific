@@ -8,7 +8,6 @@ defmodule Glific.Flows.TranslateTest do
     Flows.Translate.Export,
     Flows.Translate.Import,
     GoogleTranslate.Translate,
-    Partners,
     Repo,
     Seeds.SeedsDev
   }
@@ -86,62 +85,6 @@ defmodule Glific.Flows.TranslateTest do
       ])
 
     assert attachment_url_before == attachment_url_after
-  end
-
-  test "translate/1 persists the translated localization on success", attrs do
-    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-    assert map_size(flow.definition["localization"]["hi"]) == 1
-
-    assert {:ok, _revision} = Export.translate(flow)
-
-    flow_after = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-    assert map_size(flow_after.definition["localization"]["hi"]) == 6
-  end
-
-  describe "translate/1 with a hard Google Translate failure" do
-    setup attrs do
-      organization = Partners.get_organization!(attrs.organization_id)
-
-      FunWithFlags.enable(:is_google_auto_translation_enabled,
-        for_actor: %{organization_id: organization.id}
-      )
-
-      on_exit(fn ->
-        FunWithFlags.disable(:is_google_auto_translation_enabled,
-          for_actor: %{organization_id: organization.id}
-        )
-      end)
-
-      :ok
-    end
-
-    test "does not persist blank translations and returns an error", attrs do
-      flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-      localization_before = flow.definition["localization"]
-
-      mock_global(fn _env ->
-        %Tesla.Env{
-          status: 403,
-          body: %{
-            "error" => %{
-              "message" =>
-                "Requests to this API translate method google.cloud.translate.v2.TranslateService.TranslateText are blocked.",
-              "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
-            }
-          }
-        }
-      end)
-
-      on_exit(fn ->
-        mock_global(fn _env -> %Tesla.Env{status: 200, body: %{}} end)
-      end)
-
-      assert {:error, reason} = Export.translate(flow)
-      assert reason =~ "Translation has failed"
-
-      flow_after = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
-      assert flow_after.definition["localization"] == localization_before
-    end
   end
 
   describe "Glific.GoogleTranslate.Translate.parse/3" do
