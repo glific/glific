@@ -87,6 +87,8 @@ defmodule Glific.Flows.Expression do
     # Decimal
     {:Decimal, :round, 2} => &Decimal.round/2,
     {:Decimal, :from_float, 1} => &Decimal.from_float/1,
+    {:Decimal, :mult, 2} => &Decimal.mult/2,
+    {:Decimal, :div, 2} => &Decimal.div/2,
     # Enum / List / Map
     {:Enum, :count, 1} => &Enum.count/1,
     {:Enum, :at, 2} => &Enum.at/2,
@@ -104,11 +106,14 @@ defmodule Glific.Flows.Expression do
     {:Enum, :slice, 2} => &Enum.slice/2,
     {:Enum, :find, 3} => &Enum.find/3,
     {:Enum, :sort_by, 2} => &Enum.sort_by/2,
+    {:Enum, :sum, 1} => &Enum.sum/1,
+    {:Enum, :map_join, 3} => &Enum.map_join/3,
     # NOTE: Enum.random/1 is NOT pure (non-deterministic). Included for the corpus
     # audit only; decide deliberately before enabling.
     {:Enum, :random, 1} => &Enum.random/1,
     {:List, :first, 1} => &List.first/1,
     {:List, :last, 1} => &List.last/1,
+    {:List, :wrap, 1} => &List.wrap/1,
     {:Map, :get, 2} => &Map.get/2,
     {:Map, :get, 3} => &Map.get/3,
     # Integer / Float / URI / Jason
@@ -157,6 +162,7 @@ defmodule Glific.Flows.Expression do
     {:Timex, :parse!, 2} => &Timex.parse!/2,
     {:Timex, :format!, 3} => &Timex.format!/3,
     {:Timex, :month_name, 1} => &Timex.month_name/1,
+    {:Timex, :to_datetime, 2} => &Timex.to_datetime/2,
     {[:Timex, :Timezone], :convert, 2} => &Timex.Timezone.convert/2,
     # Regex — the sigil compiles author-authored patterns; runtime is bounded by
     # the isolated-process timeout (mitigates catastrophic-backtracking / ReDoS).
@@ -505,6 +511,11 @@ defmodule Glific.Flows.Expression do
        when sigil in [:sigil_T, :sigil_D, :sigil_N] and is_binary(str),
        do: :ok
 
+  # ~s(...) string sigil — its first arg is the interpolation <<>>, validated
+  # exactly like an ordinary interpolated string (the modifiers carry no
+  # safety-relevant options; ~s only ever yields a binary).
+  defp validate_ast({:sigil_s, _, [{:<<>>, _, parts}, _mods]}), do: validate_interp(parts)
+
   # map literal — validate non-atom keys and all values
   defp validate_ast({:%{}, _, pairs}) when is_list(pairs) do
     Enum.reduce_while(pairs, :ok, fn {k, v}, :ok ->
@@ -745,6 +756,11 @@ defmodule Glific.Flows.Expression do
   defp eval_node({sigil, _, [{:<<>>, _, [str]}, _]}, _bindings)
        when sigil in [:sigil_T, :sigil_D, :sigil_N] and is_binary(str),
        do: sigil_value(sigil, str)
+
+  # ~s(...) string sigil — evaluate its interpolation <<>> exactly like an
+  # ordinary interpolated string.
+  defp eval_node({:sigil_s, _, [{:<<>>, _, parts}, _mods]}, bindings),
+    do: eval_node({:<<>>, [], parts}, bindings)
 
   # map literal %{k => v, ...}. Atom keys are inert labels; other keys and all
   # values are interpreted through the allowlist.

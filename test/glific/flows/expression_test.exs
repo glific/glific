@@ -278,6 +278,24 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S|<%= %{a: System.cmd("id", [])} %>|)
     end
 
+    test "~s string sigil renders (plain and interpolated); disallowed calls inside are rejected" do
+      assert {:ok, "hello"} = Expression.eval("<%= ~s(hello) %>")
+      # angle-bracket delimiter, same AST
+      assert {:ok, "0"} = Expression.eval("<%= ~s<0> %>")
+      # interpolation is evaluated through the allowlist
+      assert {:ok, "n=8"} = Expression.eval("<%= ~s(n=#{4 + 4}) %>")
+      # a disallowed call spliced via interpolation is still rejected
+      assert {:error, _} = Expression.validate(~S|<%= ~s(#{System.cmd("id", [])}) %>|)
+    end
+
+    test "newly allowlisted pure functions (Decimal, Enum, List, Timex)" do
+      assert {:ok, "6"} = Expression.eval("<%= Decimal.mult(2, 3) %>")
+      assert {:ok, "3"} = Expression.eval("<%= Decimal.div(9, 3) %>")
+      assert {:ok, "6"} = Expression.eval("<%= Enum.sum([1, 2, 3]) %>")
+      assert {:ok, "a, b"} = Expression.eval(~S|<%= Enum.map_join(["a", "b"], ", ", &(&1)) %>|)
+      assert {:ok, "1"} = Expression.eval("<%= Enum.count(List.wrap(1)) %>")
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 
