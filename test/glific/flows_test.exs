@@ -812,11 +812,23 @@ defmodule Glific.FLowsTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
     flow = Repo.preload(flow, [:revisions])
 
+    {:ok, revision_before} =
+      Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+
     assert {:errors, errors} = Flows.publish_flow(flow, user.id)
 
     # In this flow there are 3 split-by expressions in which 2 of them are not valid/unsupported
     assert Enum.count(errors, fn error ->
              error.category == "Critical" and String.contains?(error.message, "expression")
            end) == 2
+
+    # The gate must block before any DB write: do_publish_flow/2 never runs, so
+    # the revision is untouched. If it had published, do_publish_flow's changeset
+    # would stamp user_id and bump updated_at.
+    {:ok, revision_after} =
+      Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+
+    assert revision_after.user_id == revision_before.user_id
+    assert revision_after.updated_at == revision_before.updated_at
   end
 end

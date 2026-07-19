@@ -621,21 +621,23 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
-    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
-    result = do_publish_flow(flow, user_id)
 
-    cond do
-      # if validate and published both worked
-      errors == [] && elem(result, 0) == :ok ->
-        {:ok, flow}
+    # Validation MUST gate publishing: only touch the DB / cache once the flow is
+    # valid, so an invalid flow (e.g. an unsupported or unsafe expression) can
+    # never go live. Previously do_publish_flow/2 ran before this check, so the
+    # flow was already marked published and cached even when validation failed.
+    case Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id}) do
+      [] ->
+        case do_publish_flow(flow, user_id) do
+          {:ok, _revision} ->
+            {:ok, flow}
 
-      # we had an error saving to the DB
-      elem(result, 0) == :error ->
-        Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
-        result
+          {:error, _} = result ->
+            Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
+            result
+        end
 
-      # We had an error validating the flow
-      true ->
+      errors ->
         {:errors, format_flow_errors(errors)}
     end
   end
