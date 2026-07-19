@@ -53,8 +53,6 @@ defmodule GlificTest do
   end
 
   describe "execute_eex/1 with the :safe_expressions flag enabled" do
-    @blocked_marker "Suspicious Code. Please change your code."
-
     setup do
       # Use a fresh org so the ETS-cached flag never collides with (or leaks into)
       # the shared org-1 tests; the DB write rolls back with the SQL sandbox.
@@ -70,9 +68,11 @@ defmodule GlificTest do
       assert Glific.execute_eex("You earned <%= 4 + 4 %> points") == "You earned 8 points"
     end
 
-    test "the denylist still blocks dangerous code before the interpreter runs" do
+    test "a dangerous call is rejected by the interpreter and never executes" do
+      # On this path the denylist does not run; the interpreter's allowlist is the
+      # gate. The call is rejected to Invalid Code and must have no side effect.
       payload = ~s|<%= System.cmd("touch", ["/tmp/glific_poc_marker"]) %>|
-      assert Glific.execute_eex(payload) =~ @blocked_marker
+      assert Glific.execute_eex(payload) == "Invalid Code"
       refute File.exists?("/tmp/glific_poc_marker")
     end
 
@@ -80,6 +80,16 @@ defmodule GlificTest do
       # `with` is not supported by the interpreter; the enabled path must reject it
       # rather than silently falling back to EEx.
       assert Glific.execute_eex("<%= with x <- 1, do: x %>") == "Invalid Code"
+    end
+
+    test "renders a string literal containing a denylisted substring (no denylist on this path)" do
+      # The substring denylist only guards the legacy EEx path. On the interpreter
+      # path it would be a false positive: "Node." / "System." inside a string
+      # literal is harmless and must render, not be blocked.
+      assert Glific.execute_eex(~s|<%= "Node.js is great" %>|) == "Node.js is great"
+
+      assert Glific.execute_eex(~s|<%= "Email us at System.Support" %>|) ==
+               "Email us at System.Support"
     end
   end
 end

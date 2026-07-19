@@ -273,49 +273,89 @@ defmodule Glific do
   """
   @spec execute_eex(String.t()) :: String.t()
   def execute_eex(content) do
-    if suspicious_code(content) do
-      # Route to AppSignal (not just Logger) so attempts to smuggle disallowed
-      # calls into flow expressions are visible to operators.
-      log_error("EEx suspicious code blocked: #{content}")
-      "Suspicious Code. Please change your code. #{content}"
-    else
-      evaluate_expression(content)
-    end
-  rescue
-    EEx.SyntaxError ->
-      Logger.error("EEx threw a SyntaxError: #{content}")
-      "Invalid Code"
+    started_at = System.monotonic_time()
 
-    _ ->
-      Logger.error("EEx threw a Error: #{content}")
-      "Invalid Code"
+    {result, path, status} =
+      try do
+        if safe_expressions_enabled?() do
+          interpret(content)
+        else
+          legacy_eval(content)
+        end
+      rescue
+        EEx.SyntaxError ->
+          Logger.error("EEx threw a SyntaxError: #{content}")
+          {"Invalid Code", "legacy", "syntax"}
+
+        _ ->
+          Logger.error("EEx threw a Error: #{content}")
+          {"Invalid Code", "legacy", "invalid"}
+      end
+
+    record_expression_metrics(path, status, started_at)
+    result
   end
 
-  # When the per-org `:safe_expressions` flag is on, interpret the expression with
-  # the fail-closed AST interpreter (Glific.Flows.Expression) and never touch EEx.
-  # Otherwise fall back to the legacy EEx evaluator — on that path the denylist
-  # above is the only guard. The flag is a per-org kill switch: enable it once an
-  # org's expressions are verified to be covered, disable it to revert instantly.
-  @spec evaluate_expression(String.t()) :: String.t()
-  defp evaluate_expression(content) do
-    if safe_expressions_enabled?() do
-      case Expression.eval(content) do
-        {:ok, output} ->
-          output
+  # Flag ON: the fail-closed AST interpreter (Glific.Flows.Expression) is the sole
+  # gate. It never touches EEx, so the substring denylist — which exists only to
+  # guard EEx.eval_string — is intentionally NOT run here. Doing so would only
+  # cause false positives (e.g. "Node." inside a string literal or a substituted
+  # field value) while adding no safety: a real `System.cmd(...)` call node is not
+  # on the allowlist and is rejected to "Invalid Code" regardless. We deliberately
+  # do NOT fall back to EEx on this path.
+  @spec interpret(String.t()) :: {String.t(), String.t(), String.t()}
+  defp interpret(content) do
+    case Expression.eval(content) do
+      {:ok, output} ->
+        {output, "safe", "ok"}
 
-        {:error, reason} ->
-          # The interpreter rejected or could not render this expression. Surface
-          # it to AppSignal so per-org coverage gaps are visible before and during
-          # rollout, and degrade to the same "Invalid Code" the rescue clause uses
-          # — we deliberately do NOT fall back to EEx on the enabled path.
-          log_error("Safe expression eval failed: #{reason} | #{content}")
-          "Invalid Code"
-      end
-    else
-      content
-      |> EEx.eval_string()
-      |> String.trim()
+      {:error, reason} ->
+        # Surface interpreter rejections to AppSignal so per-org coverage gaps are
+        # visible before and during rollout.
+        log_error("Safe expression eval failed: #{reason} | #{content}")
+        {"Invalid Code", "safe", "error"}
     end
+  end
+
+  # Flag OFF: the legacy EEx evaluator. The substring denylist is its ONLY guard,
+  # so it runs here as the first gate before EEx.eval_string. The flag is a per-org
+  # kill switch: enable it once an org's expressions are verified to be covered,
+  # disable it to revert to this path instantly.
+  @spec legacy_eval(String.t()) :: {String.t(), String.t(), String.t()}
+  defp legacy_eval(content) do
+    if suspicious_code(content) do
+      log_error("EEx suspicious code blocked: #{content}")
+      {"Suspicious Code. Please change your code. #{content}", "denylist", "blocked"}
+    else
+      output =
+        content
+        |> EEx.eval_string()
+        |> String.trim()
+
+      {output, "legacy", "ok"}
+    end
+  end
+
+  # Emit AppSignal telemetry for a flow-expression evaluation: a count and a
+  # latency distribution, tagged by evaluator `path` (safe/legacy/denylist) and
+  # `status`:
+  #   * ok      — rendered successfully
+  #   * error   — interpreter rejected/failed the expression (safe path)
+  #   * blocked — denylist hit before EEx (legacy path)
+  #   * syntax  — EEx.SyntaxError raised (legacy path)
+  #   * invalid — any other error raised while evaluating (legacy path)
+  # Mirrors the flow-webhook instrumentation so operators can watch performance
+  # and error rates as the interpreter rolls out. Tags stay low-cardinality (no
+  # org_id) by design.
+  @spec record_expression_metrics(String.t(), String.t(), integer()) :: :ok
+  defp record_expression_metrics(path, status, started_at) do
+    duration_ms =
+      System.convert_time_unit(System.monotonic_time() - started_at, :native, :millisecond)
+
+    tags = %{path: path, status: status}
+    Appsignal.increment_counter("flow_expression_eval_count", 1, tags)
+    Appsignal.add_distribution_value("flow_expression_eval_latency", duration_ms, tags)
+    :ok
   end
 
   # Per-org gate for the safe expression interpreter. Reads the tenant from the
