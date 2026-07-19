@@ -75,6 +75,69 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  test "perform/1 snoozes on download timeout when attempts remain (incident #139)", attrs do
+    GCS.insert_gcs_jobs(attrs.organization_id)
+    media_item = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
+
+    with_mock(
+      Tesla,
+      [],
+      get: fn _url, _opts -> {:error, :timeout} end
+    ) do
+      # Simulate attempt 1 of 2 — should snooze, not fail or discard.
+      job = %Oban.Job{
+        args: %{
+          "media" => %{
+            "id" => media_item.id,
+            "url" => "https://example.com/file.mp3",
+            "type" => "audio",
+            "contact_id" => 1,
+            "flow_id" => 0,
+            "organization_id" => attrs.organization_id,
+            "sync_phase" => "incremental"
+          }
+        },
+        attempt: 1,
+        max_attempts: 2
+      }
+
+      assert {:snooze, snooze_secs} = GcsWorker.perform(job)
+      assert snooze_secs > 0
+    end
+  end
+
+  test "perform/1 discards on download timeout when final attempt is exhausted (incident #139)",
+       attrs do
+    GCS.insert_gcs_jobs(attrs.organization_id)
+    media_item = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
+
+    with_mock(
+      Tesla,
+      [],
+      get: fn _url, _opts -> {:error, :timeout} end
+    ) do
+      # Simulate attempt 2 of 2 (final) — should discard, not raise Oban.PerformError.
+      job = %Oban.Job{
+        args: %{
+          "media" => %{
+            "id" => media_item.id,
+            "url" => "https://example.com/file.mp3",
+            "type" => "audio",
+            "contact_id" => 1,
+            "flow_id" => 0,
+            "organization_id" => attrs.organization_id,
+            "sync_phase" => "unsynced"
+          }
+        },
+        attempt: 2,
+        max_attempts: 2
+      }
+
+      assert {:discard, reason} = GcsWorker.perform(job)
+      assert reason =~ "GCS Download timeout"
+    end
+  end
+
   test "upload_media/3 returns an error tuple (no crash) when the GCS upload raises", attrs do
     with_mock(
       Waffle.Storage.Google.CloudStorage,
