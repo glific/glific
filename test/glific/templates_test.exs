@@ -2723,7 +2723,10 @@ defmodule Glific.TemplatesTest do
        attrs do
     language = language_fixture(@valid_language_attrs_1)
 
-    Tesla.Mock.mock(fn env ->
+    # GoogleTranslate.translate/4 fans each string out to its own Task via
+    # Task.async_stream, so a process-scoped Tesla.Mock.mock/1 (bound to this test
+    # process) would be invisible to those tasks; mock_global is required here.
+    Tesla.Mock.mock_global(fn env ->
       translated =
         cond do
           String.contains?(env.body, "Thank you") -> "धन्यवाद"
@@ -2758,7 +2761,7 @@ defmodule Glific.TemplatesTest do
        attrs do
     language = language_fixture(@valid_language_attrs_1)
 
-    Tesla.Mock.mock(fn _env ->
+    Tesla.Mock.mock_global(fn _env ->
       %Tesla.Env{
         status: 200,
         body: %{"data" => %{"translations" => [%{"translatedText" => "अनुवादित"}]}}
