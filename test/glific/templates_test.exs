@@ -2718,4 +2718,69 @@ defmodule Glific.TemplatesTest do
 
     assert session_template.footer == "footer"
   end
+
+  test "translate_session_template/2 translates body, footer, and buttons into the target language",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+
+    Tesla.Mock.mock(fn env ->
+      translated =
+        cond do
+          String.contains?(env.body, "Thank you") -> "धन्यवाद"
+          String.contains?(env.body, "footer text") -> "पादलेख पाठ"
+          String.contains?(env.body, "Track Order") -> "आदेश को ट्रैक करें"
+          true -> "अनुवाद उपलब्ध नहीं है"
+        end
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => translated}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 language_id: language.id,
+                 body: "Thank you",
+                 footer: "footer text",
+                 buttons: ["Track Order"]
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "धन्यवाद"
+    assert result.footer == "पादलेख पाठ"
+    assert result.buttons == ["आदेश को ट्रैक करें"]
+  end
+
+  test "translate_session_template/2 returns nil footer and no buttons when none were provided",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+
+    Tesla.Mock.mock(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "अनुवादित"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+
+    assert result.body == "अनुवादित"
+    assert result.footer == nil
+    assert result.buttons == []
+  end
+
+  test "translate_session_template/2 returns an error for an unknown language", attrs do
+    assert {:error, _reason} =
+             Templates.translate_session_template(
+               %{language_id: 999_999, body: "Hello"},
+               attrs.organization_id
+             )
+  end
 end

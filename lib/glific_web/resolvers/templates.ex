@@ -174,4 +174,14 @@ defmodule GlificWeb.Resolvers.Templates do
       Map.get(attr, :cc, %{})
     )
   end
+
+  @doc """
+  Machine-translate an HSM draft's body/footer/buttons into the target
+  language, for the "Add new language" flow
+  """
+  @spec translate_session_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any}
+  def translate_session_template(_, params, %{context: %{current_user: user}}) do
+    Templates.translate_session_template(params, user.organization_id)
+  end
 end
