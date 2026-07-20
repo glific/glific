@@ -54,11 +54,10 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   end
 
   # add the translated string into list of string if translated successfully.
-  # add the empty string into list of string (without recording an error) if translation
-  # timed out, so it can be retried in the next go -- successfully translated strings are
-  # updated in the first go and leftovers translated in a second go.
-  # a hard API error (not a timeout) also adds "" to keep the list aligned with the input,
-  # but is tracked separately so the caller can tell it apart from a genuine empty translation.
+  # add the empty string into list of string if translation timed out or hit a hard API
+  # error, so it can be retried in the next go -- successfully translated strings are
+  # updated in the first go and leftovers translated in a second go. Both failure cases are
+  # tracked in `errors` so the caller can tell them apart from a genuine empty translation.
   @spec handle_async_response(tuple(), {[String.t()], [String.t()]}) ::
           {[String.t()], [String.t()]}
   defp handle_async_response({:ok, {:ok, translated_text}}, {texts, errors}),
@@ -67,7 +66,8 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   defp handle_async_response({:ok, {:error, reason}}, {texts, errors}),
     do: {["" | texts], [reason | errors]}
 
-  defp handle_async_response({:exit, :timeout}, {texts, errors}), do: {["" | texts], errors}
+  defp handle_async_response({:exit, :timeout}, {texts, errors}),
+    do: {["" | texts], ["Translation request timed out" | errors]}
 
   @spec do_translate(String.t(), map(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}

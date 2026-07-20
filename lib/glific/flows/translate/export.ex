@@ -183,13 +183,14 @@ defmodule Glific.Flows.Translate.Export do
     {Map.put(acc, {src, dst}, translations), errors}
   end
 
-  # a hard translate failure leaves this {src, dst} pair's translations blank (same as a
-  # timeout) rather than crashing the reduce -- the caller decides whether blanks are
-  # acceptable (CSV export) or must abort (persisted auto-translate), see `translate/1`.
+  # a hard translate failure or timeout leaves this {src, dst} pair's translations blank
+  # rather than crashing the reduce -- the caller decides whether blanks are acceptable
+  # (CSV export) or must abort (persisted auto-translate), see `translate/1`.
   defp handle_async_response({:ok, {_src, _dst, _values, {:error, reason}}}, {acc, errors}),
     do: {acc, [reason | errors]}
 
-  defp handle_async_response({:exit, :timeout}, {acc, errors}), do: {acc, errors}
+  defp handle_async_response({:exit, :timeout}, {acc, errors}),
+    do: {acc, ["Translation request timed out" | errors]}
 
   @spec make_row(map(), map(), String.t(), map(), String.t()) :: list()
   defp make_row(action_languages, language_labels, default_text, translations, source_language) do
