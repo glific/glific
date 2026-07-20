@@ -222,7 +222,7 @@ defmodule GlificWeb.Schema.AssistantTest do
       )
 
     assert query_data.data["updateAssistant"]["assistant"] == nil
-    assert query_data.data["updateAssistant"]["errors"] != nil
+    assert [_ | _] = query_data.data["updateAssistant"]["errors"]
   end
 
   test "list assistants", attrs do
