@@ -180,6 +180,51 @@ defmodule GlificWeb.Schema.AssistantTest do
     assert hd(vector_store["files"])["name"] == "test.pdf"
   end
 
+  test "get assistant formats a megabyte-scale vector store size", attrs do
+    {assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "assistant mb",
+        kaapi_uuid: "asst_mb",
+        kb_name: "MB KB",
+        size: 5_242_880
+      })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user, variables: %{"id" => assistant.id})
+
+    assert query_data.data["assistant"]["assistant"]["vector_store"]["size"] == "5.0 MB"
+  end
+
+  test "get assistant formats a gigabyte-scale vector store size", attrs do
+    {assistant, _} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "assistant gb",
+        kaapi_uuid: "asst_gb",
+        kb_name: "GB KB",
+        size: 2_147_483_648
+      })
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user, variables: %{"id" => assistant.id})
+
+    assert query_data.data["assistant"]["assistant"]["vector_store"]["size"] == "2.0 GB"
+  end
+
+  test "update assistant surfaces an error for a non-existent id", attrs do
+    {:ok, query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{"name" => "does not matter"},
+          "id" => 0
+        }
+      )
+
+    assert query_data.data["updateAssistant"]["assistant"] == nil
+    assert query_data.data["updateAssistant"]["errors"] != nil
+  end
+
   test "list assistants", attrs do
     # empty assistants
     {:ok, result} =

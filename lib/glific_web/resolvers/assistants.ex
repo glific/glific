@@ -180,7 +180,7 @@ defmodule GlificWeb.Resolvers.Assistants do
   """
   @spec calculate_vector_store_size(map(), map(), map()) :: {:ok, String.t()}
   def calculate_vector_store_size(vector_store, _args, _context) do
-    total_size = vector_store.size
+    total_size = vector_store.size || 0
     kb = 1_024
     mb = 1_048_576
     gb = 1_073_741_824
