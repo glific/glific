@@ -27,6 +27,8 @@ defmodule Glific.Groups.WAGroup do
           wa_managed_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_groups_phones: [WAGroupPhone.t()] | Ecto.Association.NotLoaded.t() | nil,
           wa_managed_phones: [WAManagedPhone.t()] | Ecto.Association.NotLoaded.t() | nil,
+          primary_membership: WAGroupPhone.t() | Ecto.Association.NotLoaded.t() | nil,
+          primary_phone: WAManagedPhone.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           is_org_read: :boolean | nil,
@@ -45,6 +47,9 @@ defmodule Glific.Groups.WAGroup do
     belongs_to :organization, Organization
 
     has_many :wa_groups_phones, WAGroupPhone
+
+    has_one :primary_membership, WAGroupPhone, where: [is_primary: true, is_active: true]
+    has_one :primary_phone, through: [:primary_membership, :wa_managed_phone]
 
     many_to_many :wa_managed_phones, WAManagedPhone,
       join_through: WAGroupPhone,
