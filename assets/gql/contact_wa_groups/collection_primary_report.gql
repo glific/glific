@@ -1,0 +1,6 @@
+query WaGroupCollectionPrimaryReport($userJobId: ID!) {
+  waGroupCollectionPrimaryReport(userJobId: $userJobId) {
+    csvRows
+    error
+  }
+}
