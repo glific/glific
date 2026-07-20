@@ -7,6 +7,7 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   alias Glific.{
     Communications,
     Notifications,
+    Providers.Maytapi.Instrumentation,
     Repo,
     WAGroup.WAMessage,
     WAMessages
@@ -18,26 +19,35 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   {\"success\":false,\"message\":\"Error sending message due to network issues or maytapi Outage\"}
   """
 
+  # Tesla error reasons that represent a timed-out send (kept distinct from hard
+  # errors so timeouts get their own AppSignal bucket).
+  @timeout_reasons [:timeout, :closed_timeout, :closed]
+
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, WAMessage.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
   def handle_response({:ok, response}, message) do
     case response do
       %Tesla.Env{status: status} when status in 200..299 ->
+        track_send(:success, message)
         handle_success_response(response, message)
 
       # Not authorized, Job succeeded, we should return an ok, so we don't retry
       %Tesla.Env{status: status} when status in 400..499 ->
+        track_send(:error, message)
         handle_error_response(response, message)
         :ok
 
       _ ->
+        track_send(:error, message)
         handle_error_response(response, message)
     end
   end
 
   # Sending default error when API Client call fails for some reason
   def handle_response(error, message) do
+    track_send(send_outcome(error), message)
+
     # Adding log when API Client fails
     Logger.info(
       "Error calling API Client for org_id: #{message["organization_id"]} error: #{Glific.SafeLog.safe_inspect(error)}"
@@ -122,6 +132,28 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
       true -> %{message: Glific.SafeLog.safe_inspect(body)}
     end
   end
+
+  # Every path through `Glific.Providers.Maytapi.WAWorker` funnels into exactly
+  # one `handle_response/2` call, so tracking here records one send per message
+  # — the final outcome. A send that fails and is then rescued by the worker's
+  # phone-failover retry counts only as the retry's outcome; the failover event
+  # itself is already tracked by `Glific.Providers.Maytapi.Sender`.
+  @spec track_send(Glific.Providers.Instrumentation.send_status(), WAMessage.t() | map() | any()) ::
+          :ok
+  defp track_send(status, message),
+    do: Instrumentation.track_send(status, organization_id: organization_id(message))
+
+  @spec send_outcome(any()) :: Glific.Providers.Instrumentation.send_status()
+  defp send_outcome({:error, reason}) when reason in @timeout_reasons, do: :timeout
+  defp send_outcome(_error), do: :error
+
+  # The send-time message is the Oban-serialised minimal map (string keys), but
+  # be tolerant of an atom-keyed WAMessage struct/map too.
+  @spec organization_id(any()) :: non_neg_integer() | nil
+  defp organization_id(message) when is_map(message),
+    do: Map.get(message, "organization_id") || Map.get(message, :organization_id)
+
+  defp organization_id(_message), do: nil
 
   @doc """
   Classify a Maytapi response as a phone-level error (eligible for retry
