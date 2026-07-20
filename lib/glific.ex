@@ -273,9 +273,7 @@ defmodule Glific do
   """
   @spec execute_eex(String.t()) :: String.t()
   def execute_eex(content) do
-    started_at = System.monotonic_time()
-
-    {result, path, status} =
+    measure_expression(fn ->
       try do
         if safe_expressions_enabled?() do
           interpret(content)
@@ -291,7 +289,16 @@ defmodule Glific do
           Logger.error("EEx threw a Error: #{content}")
           {"Invalid Code", "legacy", "invalid"}
       end
+    end)
+  end
 
+  # Time an evaluation and emit its AppSignal metrics. The wrapped function returns
+  # a `{result, path, status}` tuple; we record the count/latency (tagged by path
+  # and status) and hand back just the rendered result.
+  @spec measure_expression((-> {String.t(), String.t(), String.t()})) :: String.t()
+  defp measure_expression(eval_fun) do
+    started_at = System.monotonic_time()
+    {result, path, status} = eval_fun.()
     record_expression_metrics(path, status, started_at)
     result
   end

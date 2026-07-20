@@ -45,7 +45,7 @@ defmodule Glific.Flows.ExpressionTest do
     "Import your contacts from the dashboard"
   ]
 
-  describe "eval/2 — safe expressions (AC-1)" do
+  describe "eval/2 — safe expressions" do
     test "evaluates every real repo expression" do
       for {template, bindings, expected} <- @real do
         assert {:ok, ^expected} = Expression.eval(template, bindings), "for #{template}"
@@ -72,7 +72,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
-  describe "eval/2 — prose is never parsed (AC-1)" do
+  describe "eval/2 — prose is never parsed" do
     test "returns non-expression prose unchanged" do
       for text <- @prose do
         assert {:ok, ^text} = Expression.eval(text), "for #{text}"
@@ -80,7 +80,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
-  describe "eval/2 — fail-closed security boundary (AC-2)" do
+  describe "eval/2 — fail-closed security boundary" do
     test "rejects every attack payload" do
       for payload <- @attacks do
         assert {:error, _} = Expression.eval(payload), "expected #{inspect(payload)} to reject"
@@ -112,7 +112,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
-  describe "eval/2 — atom-table safety (AC-3)" do
+  describe "eval/2 — atom-table safety" do
     test "a novel hostile identifier is never interned as an atom" do
       unique = "zqxhostile#{System.unique_integer([:positive])}"
 
@@ -137,7 +137,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
-  describe "eval/2 — resource & error limits (AC-4)" do
+  describe "eval/2 — resource & error limits" do
     test "rejects an over-complex expression (node cap)" do
       big = "<%= " <> Enum.map_join(1..200, " + ", fn _ -> "1" end) <> " %>"
       assert {:error, "expression too complex"} = Expression.eval(big)
@@ -176,14 +176,14 @@ defmodule Glific.Flows.ExpressionTest do
       assert :ok = Expression.validate("Hi <%= @contact.fields.enrollment_status %>")
     end
 
-    test "validate rejects every attack payload (AC-5)" do
+    test "validate rejects every attack payload" do
       for payload <- @attacks do
         assert {:error, _} = Expression.validate(payload),
                "expected #{inspect(payload)} to reject"
       end
     end
 
-    test "validate/1 and eval/2 agree on the deny corpus (AC-5 drift guard)" do
+    test "validate/1 and eval/2 agree on the deny corpus (drift guard)" do
       for payload <- @attacks do
         assert {:error, _} = Expression.validate(payload)
         assert {:error, _} = Expression.eval(payload)
@@ -196,7 +196,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
   end
 
-  describe "render/2 — bindings never become code (AC-7, Phase 2)" do
+  describe "render/2 — bindings never become code (Phase 2)" do
     test "a hostile binding value is treated as data, not re-evaluated" do
       {:ok, compiled} = Expression.compile("Hi <%= @contact.name %>")
 
