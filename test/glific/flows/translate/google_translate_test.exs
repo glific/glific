@@ -129,7 +129,7 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     assert reason =~ "reach out to the Glific team"
   end
 
-  test "translate/3 surfaces the Google 403 API_KEY_SERVICE_BLOCKED error" do
+  test "translate/3 returns the generic failure message, not the raw Google 403 API_KEY_SERVICE_BLOCKED detail" do
     org_id = Fixtures.get_org_id()
 
     Tesla.Mock.mock_global(fn _env ->
