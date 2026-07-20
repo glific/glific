@@ -7,12 +7,18 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
   alias Glific.{
     Communications,
-    Providers.Maytapi
+    Providers.Maytapi,
+    Providers.Maytapi.Instrumentation
   }
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
+  def handler(conn, _params, msg) do
+    # Explicit inbound receive counter. These controllers do produce AppSignal
+    # action traces (unlike Gupshup's, they aren't in `ignore_namespaces`), but
+    # a trace can't distinguish message kinds or feed a receive-rate alert.
+    Instrumentation.track_receive(msg, conn.assigns[:organization_id])
+
     conn
     |> Plug.Conn.send_resp(200, "")
     |> Plug.Conn.halt()

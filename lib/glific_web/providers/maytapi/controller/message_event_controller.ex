@@ -7,6 +7,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   alias Glific.{
     Communications,
+    Providers.Maytapi.Instrumentation,
     Repo
   }
 
@@ -67,12 +68,16 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
     status = Map.get(@message_event_type, ack_type)
     bsp_message_id = Map.get(params, "msgId")
     Communications.GroupMessage.update_bsp_status(bsp_message_id, status, org_id)
+    # An ackType Maytapi added but we don't map yet still gets counted, under
+    # `unknown` — a silent gap in status handling is worth seeing on the chart.
+    Instrumentation.track_status(status || :unknown, org_id)
   end
 
   @spec do_update_error_status(map(), non_neg_integer()) :: any()
   defp do_update_error_status(params, org_id) do
     bsp_message_id = Map.get(params["data"], "id")
     Communications.GroupMessage.update_bsp_error_status(bsp_message_id, params, org_id)
+    Instrumentation.track_status(:error, org_id)
   end
 
   @spec handle_reactions(map(), non_neg_integer()) :: any()
