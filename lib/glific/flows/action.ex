@@ -569,6 +569,36 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
+  @doc """
+  Validate every author-authored expression field on an action against the same
+  publish-time guard the runtime uses (`Glific.validate_flow_expression/2`). All
+  of these fields reach `Glific.execute_eex/1` at runtime; previously only
+  Wait/Router operands were validated, so an unsafe or unsupported expression in
+  an action node went unchecked. Blank fields are ignored.
+  """
+  @spec validate_expressions(Action.t(), list(), map()) :: list()
+  def validate_expressions(action, errors, flow) do
+    [
+      {action.value, "Action value"},
+      {action.enter_flow_expression, "Enter flow expression"},
+      {action.interactive_template_expression, "Interactive template expression"},
+      {templating_expression(action), "Message template expression"}
+    ]
+    |> Enum.reduce(errors, fn {expression, label}, errors ->
+      case Glific.validate_flow_expression(expression, flow.organization_id) do
+        :ok ->
+          errors
+
+        {:error, _reason} ->
+          [{EEx, "#{label} has an unsupported expression", "Critical"} | errors]
+      end
+    end)
+  end
+
+  @spec templating_expression(Action.t()) :: String.t() | nil
+  defp templating_expression(%{templating: %{expression: expression}}), do: expression
+  defp templating_expression(_action), do: nil
+
   @spec check_missing_interactive_template(list(), Action.t(), map()) :: list()
   defp check_missing_interactive_template(errors, action, flow) do
     Repo.fetch_by(

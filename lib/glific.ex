@@ -358,14 +358,46 @@ defmodule Glific do
     :ok
   end
 
-  # Per-org gate for the safe expression interpreter. Reads the tenant from the
-  # process dictionary; a missing org (nil) resolves to the flag's default state
+  # Per-org gate for the safe expression interpreter. At runtime the tenant comes
+  # from the process dictionary; publish-time validation passes the flow's org
+  # explicitly. A missing org (nil) resolves to the flag's default state
   # (disabled), so unset contexts stay on the legacy EEx path.
-  @spec safe_expressions_enabled?() :: boolean()
-  defp safe_expressions_enabled? do
-    FunWithFlags.enabled?(:safe_expressions,
-      for: %{organization_id: Repo.get_organization_id()}
-    )
+  @spec safe_expressions_enabled?(non_neg_integer() | nil) :: boolean()
+  defp safe_expressions_enabled?(organization_id \\ Repo.get_organization_id()) do
+    FunWithFlags.enabled?(:safe_expressions, for: %{organization_id: organization_id})
+  end
+
+  @doc """
+  Validate a flow-authored expression at publish/import time, mirroring the
+  runtime path `execute_eex/1` will take for the org: the fail-closed safe
+  interpreter when the per-org `:safe_expressions` flag is on, otherwise the
+  legacy denylist + EEx syntax check. Blank expressions are always valid.
+
+  Returns `:ok` or `{:error, reason}` so each node's validator can shape its own
+  error tuple.
+  """
+  @spec validate_flow_expression(String.t() | nil, non_neg_integer()) ::
+          :ok | {:error, String.t()}
+  def validate_flow_expression(expression, _organization_id) when expression in ["", nil], do: :ok
+
+  def validate_flow_expression(expression, organization_id) do
+    if safe_expressions_enabled?(organization_id),
+      do: Expression.validate(expression),
+      else: legacy_validate_expression(expression)
+  end
+
+  # Legacy publish-time check: the substring denylist plus an EEx syntax check,
+  # matching the flag-off runtime path (denylist + EEx.eval_string).
+  @spec legacy_validate_expression(String.t()) :: :ok | {:error, String.t()}
+  defp legacy_validate_expression(expression) do
+    if suspicious_code(expression) do
+      {:error, "unsupported expression"}
+    else
+      EEx.compile_string(expression)
+      :ok
+    end
+  rescue
+    _ -> {:error, "invalid expression"}
   end
 
   @doc """
