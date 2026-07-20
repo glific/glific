@@ -176,7 +176,7 @@ defmodule GlificWeb.Resolvers.Templates do
   end
 
   @doc """
-  Machine-translate an HSM draft's body/footer/buttons into the target
+  Translate an HSM draft's body/footer/buttons into the target
   language, for the "Add new language" flow
   """
   @spec translate_session_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::

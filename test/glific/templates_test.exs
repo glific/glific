@@ -2780,7 +2780,7 @@ defmodule Glific.TemplatesTest do
   end
 
   test "translate_session_template/2 returns an error for an unknown language", attrs do
-    assert {:error, _reason} =
+    assert {:error, ["Elixir.Glific.Settings.Language", "Resource not found"]} =
              Templates.translate_session_template(
                %{language_id: 999_999, body: "Hello"},
                attrs.organization_id

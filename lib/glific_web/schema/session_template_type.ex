@@ -261,9 +261,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.report_to_gupshup/3)
     end
 
-    @desc "Machine-translate an HSM draft's body/footer/buttons into the target
-    language for the \"Add new language\" flow. Returns translated text only —
-    each language variant still has to be submitted separately for BSP approval."
     field :translate_session_template, :translate_session_template_result do
       arg(:language_id, non_null(:id))
       arg(:body, :string)
