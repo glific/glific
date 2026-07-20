@@ -125,7 +125,8 @@ end
 A typed, instrumented framework wraps all flow-webhook nodes. Two directories:
 
 - **`flows/webhooks/core/`** — infrastructure (never touch for a new webhook):
-  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `Sync`/`Async` macros, `Errors`
+  `Behaviour`, `Dispatcher`, `Instrumentation`, `Registry`, `Sync`/`Async` macros, `Errors`,
+  `ErrorType`, `ErrorReporter`
 - **`flows/webhooks/implementations/`** — per-webhook domain modules (one module per node)
 
 ### Adding a new sync webhook
@@ -134,19 +135,43 @@ A typed, instrumented framework wraps all flow-webhook nodes. Two directories:
 defmodule Glific.Flows.Webhooks.MyWebhook do
   use Glific.Flows.Webhooks.Sync, name: "my_webhook"
 
+  alias Glific.Flows.Webhooks.ErrorType
+
   @impl true
+  @spec call(map(), Glific.Flows.Webhooks.Behaviour.ctx()) ::
+          {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
-    # return {:ok, map} or {:error, "reason"}
+    # {:ok, map} on success. On failure, name the failure with an ErrorType.t()
+    # atom (:unknown if the node can't judge it) — see error classification below.
   end
 end
 ```
 
-Register it in `Registry` and add a delegation clause in `CommonWebhook`. The framework
-wires AppSignal telemetry (count + latency), `WebhookLog` management, and structured error
-reporting automatically — do **not** add those concerns to the implementation module.
+Register it in `Registry`'s `@webhooks` map (`"name" => Module`) — there is no separate
+delegation step. The framework wires AppSignal telemetry (count + latency), `WebhookLog`
+management, and structured error reporting automatically — do **not** add those concerns to
+the implementation module.
 
-Use `Glific.Flows.Webhooks.Async` instead of `Sync` for webhooks that park the flow
-(e.g. Kaapi speech-to-text) and implement `handle_resume/2` as well.
+Use `Glific.Flows.Webhooks.Async` instead of `Sync` for webhooks that park the flow (e.g.
+Kaapi speech-to-text). `handle_callback/3` (optional, defaults to pass-through) shapes the
+response the flow resumes on; `classify/1` (optional, defaults to the node's `Kaapi.classify/1`)
+maps a failed callback to an `ErrorType.t()`.
+
+### Error classification (config vs system)
+
+A failed sync `call/2`, or a failed async callback, names its own failure as an `ErrorType.t()`
+atom (`Glific.Flows.Webhooks.ErrorType`); `ErrorReporter` maps that atom to a bucket and routes
+the AppSignal report accordingly:
+
+- `:config` — NGO / flow-author misconfiguration (bad input, missing media, invalid geocoding)
+  → `flow_webhook_config_errors` namespace, notifies support.
+- `:system` — the webhook call itself failed (HTTP error, API rejection, rate limit) →
+  `flow_webhooks` namespace, pages on-call.
+- `:unknown` is the fail-safe default (maps to `:system`) — an unclassified or malformed
+  failure still pages on-call rather than going silent.
+
+Add new failure atoms to `ErrorType`'s `@class` map (never invent a bucket at the call site).
+See `plans/webhook-error-classification.md` for the full design.
 
 ### Webhook log security
 
@@ -161,7 +186,11 @@ editing or "cleaning up":
 
 - `flows/` (~40 modules) — the flow execution engine (FlowContext, actions, nodes, broadcast).
   State machine; small changes have wide blast radius. Webhook nodes now go through
-  `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
+  `flows/webhooks/core/Dispatcher` — see the Webhook framework section above. Any new
+  dynamically-evaluated (EEx) field on a flow node must be checked with
+  `Glific.suspicious_code/1` before it reaches `Glific.execute_eex/1` — see
+  `Flows.Wait.validate/3` for the pattern (validates `timeout.expression` at publish/import
+  time, mirroring router-operand validation).
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
 - `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.
