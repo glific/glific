@@ -59,7 +59,15 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   defp update_status(conn, params, status) do
     bsp_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
     Communications.Message.update_bsp_status(bsp_message_id, status, params)
-    Instrumentation.track_status(status, conn.assigns[:organization_id])
+
+    # A failed callback carries the error code at payload.payload.code (same path
+    # Communications.Message reads). Passing it lets Gupshup's classify_status/2
+    # bucket an async frequency cap as `frequency_capped` instead of `error`.
+    # It is nil for non-failure callbacks, which classify_status ignores.
+    Instrumentation.track_status(status, conn.assigns[:organization_id],
+      error_code: get_in(params, ["payload", "payload", "code"])
+    )
+
     handler(conn, params, "Status updated")
   end
 end

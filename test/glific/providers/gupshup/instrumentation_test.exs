@@ -26,6 +26,24 @@ defmodule Glific.Providers.Gupshup.InstrumentationTest do
     end
   end
 
+  describe "classify_status/2" do
+    test "reclassifies a frequency-capped failed callback to :frequency_capped" do
+      assert Instrumentation.classify_status(:error, %{error_code: 472}) == :frequency_capped
+      assert Instrumentation.classify_status(:error, %{error_code: "472"}) == :frequency_capped
+    end
+
+    test "keeps other failed callbacks as :error" do
+      assert Instrumentation.classify_status(:error, %{error_code: 471}) == :error
+      assert Instrumentation.classify_status(:error, %{error_code: nil}) == :error
+      assert Instrumentation.classify_status(:error, %{}) == :error
+    end
+
+    test "passes non-error statuses through even if a cap code is present" do
+      assert Instrumentation.classify_status(:delivered, %{}) == :delivered
+      assert Instrumentation.classify_status(:read, %{error_code: 472}) == :read
+    end
+  end
+
   describe "frequency_capped?/1" do
     test "is true only for the configured cap code, as integer or string" do
       assert Instrumentation.frequency_capped?(472)
@@ -50,6 +68,7 @@ defmodule Glific.Providers.Gupshup.InstrumentationTest do
 
       assert :ok = Instrumentation.track_receive("text handler", organization_id)
       assert :ok = Instrumentation.track_status(:read, organization_id)
+      assert :ok = Instrumentation.track_status(:error, organization_id, error_code: 472)
       assert :ok = Instrumentation.track_action("hsm_sync", :success, organization_id)
     end
   end
