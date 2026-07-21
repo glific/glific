@@ -18,6 +18,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Partners,
     Partners.Organization,
     Providers.Maytapi.ApiClient,
+    Providers.Maytapi.Instrumentation,
     Providers.Maytapi.ResponseHandler,
     Providers.Maytapi.Sender,
     Providers.Worker,
@@ -196,9 +197,22 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   """
   @spec perform_periodic(non_neg_integer()) :: :ok
   def perform_periodic(org_id) do
-    WAGroups.sync_wa_groups(org_id)
+    # This cron previously discarded the sync result and always logged
+    # "Completed", so a failed sync was invisible. Track the outcome as a
+    # provider action (mirrors Gupshup's `hsm_sync`) so the failure rate is
+    # chartable/alertable. `sync_wa_groups/1` reports `{:error, _}` when it
+    # can't reach Maytapi to list phones; per-phone group errors inside it are
+    # still swallowed there, so this is a connectivity-level signal.
+    case WAGroups.sync_wa_groups(org_id) do
+      :ok ->
+        Instrumentation.track_action("contact_sync", :success, org_id)
+        Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
 
-    Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
+      {:error, reason} ->
+        Instrumentation.track_action("contact_sync", :failure, org_id)
+        Logger.warning("WhatsApp groups sync failed for organization #{org_id}: #{reason}")
+    end
+
     :ok
   end
 end
