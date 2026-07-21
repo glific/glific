@@ -200,11 +200,13 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     case WAGroups.sync_wa_groups(org_id) do
       :ok ->
         Instrumentation.track_action("contact_sync", :success, org_id)
-        Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
 
       {:error, reason} ->
         Instrumentation.track_action("contact_sync", :failure, org_id)
-        Logger.warning("WhatsApp groups sync failed for organization #{org_id}: #{reason}")
+
+        Glific.log_error(
+          "WhatsApp groups sync failed for organization #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
     end
 
     :ok
