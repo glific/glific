@@ -190,6 +190,27 @@ defmodule Glific.Flows.ExpressionTest do
       end
     end
 
+    test "validate/1 and eval/2 agree on closure arity (no publish/runtime drift)" do
+      # Over-arity fn and captures are rejected at runtime by make_fun/3 and
+      # make_capture/3; validate/1 must reject them too, or a flow would publish
+      # cleanly and then degrade to "Invalid Code" for live contacts.
+      over_arity = [
+        "<%= Enum.map(@l, fn a, b, c -> a + b + c end) %>",
+        "<%= Enum.map(@l, &(&1 + &2 + &3)) %>",
+        # a function-reference capture has no placeholder at all
+        "<%= Enum.map(@l, &String.upcase/1) %>"
+      ]
+
+      for payload <- over_arity do
+        assert {:error, _} = Expression.validate(payload), "expected #{payload} to be rejected"
+        assert {:error, _} = Expression.eval(payload)
+      end
+
+      # the supported arities still validate and evaluate
+      assert :ok = Expression.validate("<%= Enum.map(@l, fn x -> x + 1 end) %>")
+      assert :ok = Expression.validate("<%= Enum.map(@l, &(&1 + 1)) %>")
+    end
+
     test "compile accepts novel custom-field identifiers (atoms_only: false)" do
       novel = "enrollment_status_#{System.unique_integer([:positive])}"
       assert {:ok, _} = Expression.compile("<%= @contact.fields.#{novel} %>")

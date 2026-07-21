@@ -317,12 +317,14 @@ defmodule Glific do
         {output, "safe", "ok"}
 
       {:error, reason} ->
-        # Surface interpreter rejections to AppSignal so per-org coverage gaps are
-        # visible before and during rollout.
-        log_error("Safe expression eval failed: #{reason} | #{content}")
+        log_error("Safe expression eval failed: #{redact_reason(reason)}")
         {"Invalid Code", "safe", "error"}
     end
   end
+
+  @spec redact_reason(String.t()) :: String.t()
+  defp redact_reason("disallowed expression:" <> _snippet), do: "disallowed expression"
+  defp redact_reason(reason), do: reason
 
   # Flag OFF: the legacy EEx evaluator. The substring denylist is its ONLY guard,
   # so it runs here as the first gate before EEx.eval_string. The flag is a per-org

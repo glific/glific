@@ -46,11 +46,6 @@ defmodule Glific.Flows.Expression do
       params (`fn {a, b} -> ... end`) and arity > 2 are rejected.
     * **No function-reference captures.** `&String.upcase/1` is rejected; it must
       be written `&String.upcase(&1)` or `fn x -> String.upcase(x) end`.
-    * **Publish/runtime drift on arity (known bug).** `validate_ast/1` checks a
-      closure's body but not its arity, so a 3-arg `fn` passes `validate/1` yet
-      fails at runtime with "unsupported fn arity". This breaks the otherwise-held
-      invariant that validation and evaluation agree; fix by arity-checking in
-      `validate_ast/1`.
     * **The node cap does not bound closure work.** `@max_nodes` limits AST size,
       but `Enum.map(list, fn ...)` runs the body once per element, so a small AST
       can do work proportional to the list length. Runtime cost is still bounded
@@ -539,13 +534,29 @@ defmodule Glific.Flows.Expression do
   # single-clause fn with simple params; the body is validated like any other
   # expression (param vars are bare vars, always structurally valid).
   defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
-    if Enum.all?(params, &match?({name, _, nil} when is_atom(name), &1)),
-      do: validate_ast(body),
-      else: {:error, "unsupported fn parameter"}
+    cond do
+      not Enum.all?(params, &match?({name, _, nil} when is_atom(name), &1)) ->
+        {:error, "unsupported fn parameter"}
+
+      # Bound arity to match make_fun/3 at runtime, so validate/1 cannot
+      # green-light a closure that eval_node/2 would reject.
+      length(params) not in [1, 2] ->
+        {:error, "unsupported fn arity"}
+
+      true ->
+        validate_ast(body)
+    end
   end
 
   defp validate_ast({:&, _, [n]}) when is_integer(n), do: :ok
-  defp validate_ast({:&, _, [inner]}), do: validate_ast(inner)
+
+  # Twin of make_capture/3: only &1/&2 placeholders are supported. A
+  # function-reference capture (&String.upcase/1) has no placeholder and yields 0.
+  defp validate_ast({:&, _, [inner]}) do
+    if max_placeholder(inner, 0) in [1, 2],
+      do: validate_ast(inner),
+      else: {:error, "unsupported capture"}
+  end
 
   # operators / Kernel calls on the @kernel table
   defp validate_ast({op, _, args}) when is_atom(op) and is_list(args) do

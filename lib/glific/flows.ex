@@ -620,8 +620,6 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t(), non_neg_integer()) ::
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
-    Logger.info("Published Flow: flow_id: '#{flow.id}'")
-
     # Validation MUST gate publishing: only touch the DB / cache once the flow is
     # valid, so an invalid flow (e.g. an unsupported or unsafe expression) can
     # never go live. Previously do_publish_flow/2 ran before this check, so the
@@ -630,6 +628,7 @@ defmodule Glific.Flows do
       [] ->
         case do_publish_flow(flow, user_id) do
           {:ok, _revision} ->
+            Logger.info("Published Flow: flow_id: '#{flow.id}'")
             {:ok, flow}
 
           {:error, _} = result ->
