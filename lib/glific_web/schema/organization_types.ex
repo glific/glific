@@ -35,6 +35,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:copy_node_enabled, :boolean)
     field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
+    field(:template_v2_enabled, :boolean)
   end
 
   object :organization_export_result do
@@ -148,6 +149,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:trial_expiration_date, :datetime)
     field(:assistant_config_versions_enabled, :boolean)
     field(:is_prompt_generator_enabled, :boolean)
+    field(:is_template_v2_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 

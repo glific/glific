@@ -22,6 +22,19 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :errors, list_of(:input_error)
   end
 
+  @desc "Result of setPrimaryPhoneForCollection. The bulk update runs in the background; poll `waGroupCollectionPrimaryReport` with `userJobId` for the skipped-groups CSV."
+  object :set_primary_phone_collection_result do
+    field :status, :string
+    field :user_job_id, :id
+    field :errors, list_of(:input_error)
+  end
+
+  @desc "CSV report of groups skipped during a collection primary-phone update (`Group,Reason`). `error` is set when the job isn't finished or doesn't exist."
+  object :wa_group_collection_report do
+    field :csv_rows, :string
+    field :error, :string
+  end
+
   @desc "Membership row linking a WAManagedPhone to a WAGroup. Exactly one row per group has `isPrimary: true`."
   object :wa_group_phone do
     field :id, :id
@@ -51,6 +64,11 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       resolve(dataloader(Repo, :wa_groups_phones))
     end
 
+    @desc "Contacts that are members of this WhatsApp group."
+    field :contacts, list_of(:contact) do
+      resolve(dataloader(Repo))
+    end
+
     field :groups, list_of(:group) do
       resolve(dataloader(Repo, use_parent: true))
     end
@@ -75,6 +93,17 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :fields, :json
   end
 
+  @desc """
+  Input for createWaGroup. Members are supplied via `importData` (a CSV with a
+  `phone` column plus an optional `name` column): its phones seed the group and a
+  background job enriches the contacts.
+  """
+  input_object :create_wa_group_input do
+    field :name, non_null(:string)
+    field :wa_managed_phone_id, non_null(:id)
+    field :import_data, non_null(:string)
+  end
+
   object :wa_group_queries do
     @desc "get the details of one wa group"
     field :wa_group, :wa_group_result do
@@ -96,6 +125,13 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
     end
+
+    @desc "Fetch the skipped-groups CSV for a completed collection primary-phone job. Admin-only."
+    field :wa_group_collection_primary_report, :wa_group_collection_report do
+      arg(:user_job_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.collection_primary_phone_report/3)
+    end
   end
 
   object :wa_group_mutations do
@@ -105,6 +141,38 @@ defmodule GlificWeb.Schema.WaGroupTypes do
       arg(:wa_managed_phone_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.WaGroup.set_primary_phone/3)
+    end
+
+    @desc "Create a new WhatsApp group via Maytapi using the chosen managed phone as the creator. Admin-only."
+    field :create_wa_group, :wa_group_result do
+      arg(:input, non_null(:create_wa_group_input))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.create_wa_group/3)
+    end
+
+    @desc "Remove a contact from a WhatsApp group via Maytapi (group/remove). Admin-only."
+    field :remove_wa_group_contact, :wa_group_result do
+      arg(:wa_group_id, non_null(:id))
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.remove_wa_group_contact/3)
+    end
+
+    @desc "Bulk-add members to a WhatsApp group from a CSV of phone numbers (a `phone` column). Processed in the background. Admin-only."
+    field :import_wa_group_contacts, :import_result do
+      arg(:wa_group_id, non_null(:id))
+      arg(:type, non_null(:import_contacts_type_enum))
+      arg(:data, non_null(:string))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.import_wa_group_contacts/3)
+    end
+
+    @desc "Set one managed phone as primary across every WhatsApp group in a collection. Runs in the background; returns a userJobId to poll for the skip report. Admin-only."
+    field :set_primary_phone_for_collection, :set_primary_phone_collection_result do
+      arg(:collection_id, non_null(:id))
+      arg(:wa_managed_phone_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.WaGroup.set_primary_phone_for_collection/3)
     end
   end
 end

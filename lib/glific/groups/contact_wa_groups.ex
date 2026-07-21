@@ -7,9 +7,12 @@ defmodule Glific.Groups.ContactWAGroups do
     Contacts,
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
+    Groups.WAGroup,
     Groups.WAGroups,
     Providers.Maytapi.ApiClient,
-    Repo
+    Repo,
+    SafeLog,
+    WAGroup.WAManagedPhone
   }
 
   use Ecto.Schema
@@ -139,22 +142,165 @@ defmodule Glific.Groups.ContactWAGroups do
   @spec remove_group_members(non_neg_integer(), non_neg_integer(), list()) ::
           integer()
   defp remove_group_members(org_id, wa_group_id, contact_ids) do
-    wa_group = WAGroups.get_wa_group!(wa_group_id)
-    wa_group = Repo.preload(wa_group, :wa_managed_phone)
+    wa_group = WAGroups.get_wa_group!(wa_group_id) |> Repo.preload(:primary_phone)
 
     Enum.reduce(contact_ids, 0, fn contact_id, numbers_deleted ->
       contact = Contacts.get_contact!(contact_id)
-      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone <> "@c.us"}
+      payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
 
-      case ApiClient.remove_group_member(org_id, payload, wa_group.wa_managed_phone.phone_id) do
-        {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+      case ApiClient.remove_group_member(org_id, payload, wa_group.primary_phone.phone_id) do
+        :ok ->
           fields = {{:wa_group_id, wa_group_id}, {:contact_id, [contact_id]}}
           {number_deleted, _} = Repo.delete_relationships_by_ids(ContactWAGroup, fields)
           numbers_deleted + number_deleted
 
-        _ ->
+        {:error, _} ->
           numbers_deleted
       end
     end)
+  end
+
+  @doc """
+  Add `phones` to a WhatsApp group via Maytapi, using `wa_managed_phone_id` as
+  the acting phone for every Maytapi call. This is the entry point for the
+  background CSV member import (`WAGroupMemberImportWorker`) — adding members is
+  never a foreground/GraphQL action.
+
+  Each phone is added with its own Maytapi `group/add` call, and its contact is
+  created on the fly when we don't already have it; on success we insert the
+  matching `contacts_wa_groups` row.
+
+  Maytapi answers HTTP 200 even on failure (e.g.
+  `%{"success" => false, "message" => "NOT_A_PARTICIPANT"}`), so we inspect the
+  `success` field. A failed add fails only that number — it's collected in the
+  returned `failed` map (`%{phone => message}`) so the caller can report it.
+
+  `wa_managed_phone_id` is the acting phone; the caller resolves it via
+  `WAGroups.acting_phone/1`.
+
+  Returns `{:ok, %{added: n, failed: %{phone => message}}}`, or
+  `{:error, message}` when the acting phone isn't in this organization.
+  """
+  @spec add_members(WAGroup.t(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
+          | {:error, String.t()}
+  def add_members(_wa_group, _wa_managed_phone_id, []),
+    do: {:ok, %{added: 0, failed: %{}}}
+
+  def add_members(%WAGroup{} = wa_group, wa_managed_phone_id, phones) do
+    with {:ok, acting_phone_id} <- acting_phone_id(wa_group, wa_managed_phone_id) do
+      do_add_members(wa_group.organization_id, wa_group, acting_phone_id, phones)
+    end
+  end
+
+  @doc """
+  Remove the contact `remove_contact_id` from a WhatsApp group via Maytapi, using
+  `wa_managed_phone_id` as the acting phone. This is the member action driven by
+  the `updateWaGroup` mutation.
+
+  On success the matching `contacts_wa_groups` row is deleted. A failed remove
+  stops with `{:error, message}`; a `nil` contact id is a no-op.
+
+  Returns `{:ok, count}`, or `{:error, message}` when the acting phone isn't in
+  this organization or Maytapi rejects the removal.
+  """
+  @spec remove_member(WAGroup.t(), non_neg_integer(), non_neg_integer() | nil) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  def remove_member(_wa_group, _wa_managed_phone_id, nil), do: {:ok, 0}
+
+  def remove_member(%WAGroup{} = wa_group, wa_managed_phone_id, contact_id) do
+    with {:ok, acting_phone_id} <- acting_phone_id(wa_group, wa_managed_phone_id) do
+      do_remove_member(wa_group.organization_id, wa_group, acting_phone_id, contact_id)
+    end
+  end
+
+  # Resolve the acting managed phone (scoped to the group's org) to its Maytapi
+  # `phone_id`, which every group/add and group/remove call is issued from.
+  @spec acting_phone_id(WAGroup.t(), non_neg_integer()) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp acting_phone_id(wa_group, wa_managed_phone_id) do
+    case Repo.get_by(WAManagedPhone, %{
+           id: wa_managed_phone_id,
+           organization_id: wa_group.organization_id
+         }) do
+      nil ->
+        {:error,
+         "Acting phone not found in this organization, This WhatsApp number isn't connected right now. Check its status or reconnect it, then try again."}
+
+      %WAManagedPhone{phone_id: acting_phone_id} ->
+        {:ok, acting_phone_id}
+    end
+  end
+
+  @spec do_add_members(non_neg_integer(), WAGroup.t(), non_neg_integer(), [String.t()]) ::
+          {:ok, %{added: non_neg_integer(), failed: %{String.t() => String.t()}}}
+  defp do_add_members(org_id, wa_group, acting_phone_id, phones) do
+    result =
+      Enum.reduce(phones, %{added: 0, failed: %{}}, fn phone, acc ->
+        case add_member(org_id, wa_group, acting_phone_id, phone) do
+          :ok -> %{acc | added: acc.added + 1}
+          {:error, message} -> %{acc | failed: Map.put(acc.failed, phone, message)}
+        end
+      end)
+
+    {:ok, result}
+  end
+
+  @spec add_member(non_neg_integer(), WAGroup.t(), non_neg_integer(), String.t()) ::
+          :ok | {:error, String.t()}
+  defp add_member(org_id, wa_group, acting_phone_id, phone) do
+    payload = %{conversation_id: wa_group.bsp_id, number: [phone]}
+
+    with :ok <- ApiClient.add_group_member(org_id, payload, acting_phone_id),
+         {:ok, _} <- link_phone_to_group(phone, wa_group, org_id) do
+      :ok
+    else
+      # add_group_member failed on Maytapi — surface its human-readable string error
+      {:error, message} when is_binary(message) ->
+        {:error, message}
+
+      # Maytapi add succeeded but the local link failed
+      {:error, reason} ->
+        Glific.log_error(
+          "WA group add: phone #{phone} added on Maytapi but local link failed for wa_group=#{wa_group.id}: #{SafeLog.safe_inspect(reason)}"
+        )
+
+        {:error, "Added on WhatsApp but could not be linked in Glific"}
+    end
+  end
+
+  @spec link_phone_to_group(String.t(), WAGroup.t(), non_neg_integer()) ::
+          {:ok, any()} | {:error, any()}
+  defp link_phone_to_group(phone, wa_group, org_id) do
+    with {:ok, contact} <-
+           Contacts.maybe_create_contact(%{
+             phone: phone,
+             organization_id: org_id,
+             contact_type: "WA"
+           }) do
+      create_contact_wa_group(%{
+        contact_id: contact.id,
+        wa_group_id: wa_group.id,
+        organization_id: org_id,
+        is_admin: false
+      })
+    end
+  end
+
+  @spec do_remove_member(non_neg_integer(), WAGroup.t(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  defp do_remove_member(org_id, wa_group, acting_phone_id, contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    # /group/remove takes a single plain phone number (a string, not an array).
+    payload = %{conversation_id: wa_group.bsp_id, number: contact.phone}
+
+    case ApiClient.remove_group_member(org_id, payload, acting_phone_id) do
+      :ok ->
+        delete_wa_group_contacts_by_ids(wa_group.id, [contact_id])
+        {:ok, 1}
+
+      {:error, message} ->
+        {:error, message}
+    end
   end
 end

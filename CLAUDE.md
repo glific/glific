@@ -67,6 +67,16 @@ Applies to all Elixir modules unless a layer doc says otherwise.
 - `@moduledoc` on all modules
 - `@doc` with iex examples where useful
 
+### Comments
+
+- `@moduledoc` is expected on every module; a public function gets a **one-line** `@doc`.
+- **Do not comment normal/private functions.** No inline comments that restate what the
+  code does — the code says that already.
+- The only allowed inline comment is a short **why** for a genuinely non-obvious or critical
+  decision (a subtle ordering constraint, a guard against a specific failure, a deliberate
+  deviation). If a reader could work out the reason in a few seconds, drop the comment.
+- Prefer a clear name or a small function over a comment. When in doubt, leave it out.
+
 ## Multi-tenancy (summary)
 
 Glific is multi-tenant: every major table has `organization_id`, and `Repo.prepare_query/3`
