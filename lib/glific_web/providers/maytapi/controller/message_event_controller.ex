@@ -52,7 +52,10 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
           do_update_status(response, ack_type, org_id)
 
         _ ->
-          nil
+          # A response shape inside `data` that we don't recognise. Counted
+          # rather than dropped silently, so a payload Maytapi starts sending
+          # and we never handle shows up as a rising series.
+          Instrumentation.track_receive("unhandled_event", org_id)
       end
     end)
   end
@@ -82,12 +85,19 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageEventController do
 
   @spec handle_reactions(map(), non_neg_integer()) :: any()
   defp handle_reactions(params, org_id) do
+    # A reaction is inbound user engagement, not a delivery status, so it goes
+    # on the receive counter rather than `provider_status_count`.
+    Instrumentation.track_receive("reaction", org_id)
+
     params
     |> Communications.GroupMessage.receive_reaction_msg(org_id)
   end
 
   @spec update_poll_response(map(), non_neg_integer()) :: any()
   defp update_poll_response(response, org_id) do
+    # A poll vote is inbound user engagement, counted as a receive alongside
+    # reactions (see `handle_reactions/2`), not a delivery status.
+    Instrumentation.track_receive("poll_response", org_id)
     bsp_message_id = Map.get(response, "msgId")
 
     poll_content = %{
