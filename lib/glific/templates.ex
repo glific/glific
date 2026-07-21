@@ -10,6 +10,7 @@ defmodule Glific.Templates do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
+    Flows.Translate.GoogleTranslate,
     Mails.MailLog,
     Mails.ReportGupshupMail,
     Notifications,
@@ -937,6 +938,35 @@ defmodule Glific.Templates do
          }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
       error -> {:ok, %{message: error}}
+    end
+  end
+
+  @doc """
+  Machine-translates an HSM draft's body/footer/button text from English into
+  the target language, for the "Add new language" flow on an existing
+  template family. Returns translated strings only — it does not create or
+  update any SessionTemplate record, since each language of an HSM still has
+  to be submitted separately (via create_session_template) for BSP approval.
+  """
+  @spec translate_session_template(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def translate_session_template(params, organization_id) do
+    body = Map.get(params, :body) || ""
+    footer = Map.get(params, :footer)
+    buttons = Map.get(params, :buttons) || []
+    texts = [body, footer || ""] ++ buttons
+
+    with {:ok, language} <- Repo.fetch_by(Language, %{id: params.language_id}),
+         {:ok, translated} <-
+           GoogleTranslate.translate(texts, "English", language.label, org_id: organization_id) do
+      [translated_body, translated_footer | translated_buttons] = translated
+
+      {:ok,
+       %{
+         body: translated_body,
+         footer: if(footer, do: translated_footer, else: nil),
+         buttons: translated_buttons
+       }}
     end
   end
 

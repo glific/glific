@@ -1,0 +1,31 @@
+meta {
+  name: Create a WhatsApp groups collection link
+  type: graphql
+  seq: 17
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createWaGroupsCollection($input: WaGroupsCollectionInput!) {
+    createWaGroupsCollection(input: $input) {
+      waGroupsCollection { id }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": { "groupId": 1, "waGroupId": 2 }
+  }
+}
