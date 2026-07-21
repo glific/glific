@@ -193,14 +193,14 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
           {Appsignal.Span, [:passthrough], [set_sample_data: fn span, _k, _v -> span end]}
         ]) do
           Instrumentation.around(StubAsyncWebhook, %{organization_id: 1}, fn ->
-            %{success: true}
+            {:ok, %{success: true}}
           end)
         end
 
-      assert result == %{success: true}
+      assert result == {:ok, %{success: true}}
     end
 
-    test "a dispatch failure reports SystemError" do
+    test "an untyped dispatch failure fails safe to system (error_type unknown)" do
       {exception, tags} =
         capture_appsignal(fn ->
           Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn ->
@@ -211,6 +211,35 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert %Errors.SystemError{} = exception
       assert exception.message =~ "stub_async_infra"
       assert tags.organization_id == 7
+      assert tags.error_type == "unknown"
+    end
+
+    test "a self-classified config dispatch failure routes to config with the flow-context ids" do
+      ctx = %{organization_id: 7, flow_id: 42, contact_id: 88, webhook_log_id: 99}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, ctx, fn ->
+            {:error, :invalid_media_url, "Media URL is invalid"}
+          end)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert tags.error_type == "invalid_media_url"
+      assert tags.reason == "Media URL is invalid"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
+    end
+
+    test "a nil async ack fails safe to system (error_type unknown)" do
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.around(StubAsyncWebhook, %{organization_id: 7}, fn -> nil end)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
 
     test "an exception reports SystemError and reraises" do
@@ -270,9 +299,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
             "organization_id" => 1
           })
 
-        assert is_map(result)
-        assert result.success == true
-        assert result.city == "Bangalore"
+        assert {:ok, address} = result
+        assert address.success == true
+        assert address.city == "Bangalore"
       end
     end
 
@@ -302,7 +331,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
             "organization_id" => 1
           })
 
-        assert is_binary(result)
+        assert {:error, _type, reason} = result
+        assert is_binary(reason)
       end
     end
 
@@ -368,10 +398,10 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
     end
   end
 
-  # --- Instrumentation.report_callback_failure/2 ------------------------------
+  # --- Instrumentation.report_callback_failure/3 ------------------------------
 
-  describe "Instrumentation.report_callback_failure/2" do
-    test "reports SystemError to AppSignal when success is false" do
+  describe "Instrumentation.report_callback_failure/3" do
+    test "a statusless callback failure fails safe to a system incident" do
       response = %{
         "organization_id" => 1,
         "webhook_name" => "kaapi_asr",
@@ -384,14 +414,47 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert %Errors.SystemError{} = exception
-      assert exception.message == "Webhook callback failure"
+      assert exception.message == "Webhook system_error from kaapi_asr"
       assert tags.organization_id == 1
       assert tags.webhook_name == "kaapi_asr"
       assert tags.reason == "ASR failed"
+      assert tags.error_type == "unknown"
+    end
+
+    test "a 4xx provider rejection is classified as a config error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+
+      result = %{
+        "success" => false,
+        "reason" => "OpenAI bad request (code: 400): Invalid 'conversation.id'"
+      }
+
+      # The node classifies (StubAsyncWebhook.classify delegates to KaapiSupport.classify).
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
+        end)
+
+      assert %Errors.ConfigurationError{} = exception
+      assert exception.message == "Webhook config_error from unified-llm-call"
+      assert tags.error_type == "invalid_input"
+    end
+
+    test "a 5xx provider outage is classified as a system error" do
+      response = %{"organization_id" => 1, "webhook_name" => "unified-llm-call"}
+      result = %{"success" => false, "http_status" => 502, "reason" => "Bad gateway"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(StubAsyncWebhook, result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
 
     test "is a no-op when success is true" do
@@ -405,7 +468,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       ]) do
         result = %{"success" => true}
         response = %{"webhook_name" => "kaapi_asr"}
-        assert :ok = Instrumentation.report_callback_failure(result, response)
+        assert :ok = Instrumentation.report_callback_failure(nil, result, response)
       end
     end
 
@@ -415,7 +478,7 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
       assert tags.reason == "error from error key"
@@ -427,10 +490,77 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
       {_exception, tags} =
         capture_appsignal(fn ->
-          Instrumentation.report_callback_failure(result, response)
+          Instrumentation.report_callback_failure(nil, result, response)
         end)
 
-      assert tags.reason =~ "Kaapi callback failure"
+      # Provider-agnostic default: uses the webhook_name, not a hardcoded "Kaapi".
+      assert tags.reason =~ "kaapi_asr callback failure"
+    end
+
+    test "a failure payload missing the success key is still reported (not swallowed)" do
+      response = %{"organization_id" => 1, "webhook_name" => "kaapi_asr"}
+      result = %{"reason" => "malformed, no success key"}
+
+      {exception, tags} =
+        capture_appsignal(fn ->
+          Instrumentation.report_callback_failure(nil, result, response)
+        end)
+
+      assert %Errors.SystemError{} = exception
+      assert tags.reason == "malformed, no success key"
+    end
+  end
+
+  # --- Instrumentation.around_callback/4 --------------------------------------
+
+  describe "Instrumentation.around_callback/4" do
+    test "a raising callback still records failure telemetry, then reraises" do
+      result = %{"success" => true}
+      response = %{"organization_id" => 1, "webhook_name" => "stub_async_infra"}
+
+      {exception, _tags} =
+        capture_appsignal(fn ->
+          assert_raise RuntimeError, "callback boom", fn ->
+            Instrumentation.around_callback(StubAsyncWebhook, result, response, fn ->
+              raise RuntimeError, "callback boom"
+            end)
+          end
+        end)
+
+      # The rescue path marks the callback a failure and reports it before reraising.
+      assert %Errors.SystemError{} = exception
+    end
+  end
+
+  # --- Dispatcher.callback/3 --------------------------------------------------
+
+  describe "Dispatcher.callback/3" do
+    test "an unregistered/absent webhook name passes the response through" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "not_registered", "organization_id" => 1}
+
+      # No registered module → nil branch: the response is returned unchanged.
+      assert ^response = Dispatcher.callback("not_registered", result, response)
+    end
+
+    test "a registered async node runs its default callback (pass-through) inside instrumentation" do
+      result = %{"success" => true}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      # speech_to_text keeps the default callback/3 → response passes through; still instrumented.
+      assert ^response = Dispatcher.callback("speech_to_text", result, response)
+    end
+
+    test "a failed callback for a registered node classifies + reports without raising" do
+      result = %{"success" => false, "http_status" => 500, "reason" => "boom"}
+      response = %{"webhook_name" => "speech_to_text", "organization_id" => 1}
+
+      {exception, tags} =
+        capture_appsignal(fn -> Dispatcher.callback("speech_to_text", result, response) end)
+
+      # 5xx → system incident, classified via the node's classify/1 (→ KaapiSupport.classify).
+      assert %Errors.SystemError{} = exception
+      assert tags.error_type == "unknown"
     end
   end
 
@@ -586,10 +716,18 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
   # (webhook_name / organization_id / reason). Complements the stub-based around/3 tests above.
   describe "Instrumentation reporting — real sync webhooks" do
     test "reports a config error when parse_via_chat_gpt gets empty input" do
+      # ids arrive as strings (JSON/Oban) and must flow through build_context onto the failure tags
+      fields = %{
+        "organization_id" => "1",
+        "flow_id" => "42",
+        "contact_id" => "88",
+        "webhook_log_id" => "99"
+      }
+
       {exception, tags} =
         capture_appsignal(fn ->
-          assert Dispatcher.dispatch("parse_via_chat_gpt", %{"organization_id" => 1}) ==
-                   "question_text is empty"
+          assert {:error, _type, "question_text is empty"} =
+                   Dispatcher.dispatch("parse_via_chat_gpt", fields)
         end)
 
       assert %Errors.ConfigurationError{} = exception
@@ -597,6 +735,9 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       assert tags.organization_id == 1
       assert tags.reason == "question_text is empty"
       assert tags.error_type == "empty_input"
+      assert tags.flow_id == 42
+      assert tags.contact_id == 88
+      assert tags.webhook_log_id == 99
     end
 
     test "reports SystemError when parse_via_gpt_vision fails on invalid response_format" do
@@ -618,8 +759,8 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
 
         {exception, tags} =
           capture_appsignal(fn ->
-            assert Dispatcher.dispatch("parse_via_gpt_vision", fields) ==
-                     "response_format type should be json_schema or json_object"
+            assert {:error, _type, "response_format type should be json_schema or json_object"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", fields)
           end)
 
         assert %Errors.SystemError{} = exception
@@ -635,10 +776,11 @@ defmodule Glific.Flows.Webhooks.Core.WebhookInfrastructureTest do
       ) do
         {exception, tags} =
           capture_appsignal(fn ->
-            assert Dispatcher.dispatch("parse_via_gpt_vision", %{
-                     "organization_id" => 1,
-                     "url" => "not-an-image"
-                   }) == "Media URL is invalid"
+            assert {:error, _type, "Media URL is invalid"} =
+                     Dispatcher.dispatch("parse_via_gpt_vision", %{
+                       "organization_id" => 1,
+                       "url" => "not-an-image"
+                     })
           end)
 
         assert %Errors.ConfigurationError{} = exception
