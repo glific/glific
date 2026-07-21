@@ -50,7 +50,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.MessageMedia,
     Partners,
     Partners.Organization,
-    Partners.OrganizationStatusHistory,
     Partners.Saas,
     Profiles.Profile,
     Repo,
@@ -128,10 +127,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     list_of_table =
       if(organization_id == Saas.organization_id()) do
-        # `organizations` is a current-state dimension synced in update mode, so it needs
-        # the dedup pass. `organization_status_histories` is append-only (see
-        # `ignore_updates_for_table/0`) and is intentionally omitted.
-        list_of_table ++ ["trial_users", "organizations"]
+        # `organizations` is deliberately NOT listed here. It is synced through the update
+        # pass (it is absent from `ignore_updates_for_table/0`), but its duplicates are kept
+        # rather than deduped: each re-sync appends a snapshot of the org row, so the table
+        # accumulates a change log instead of collapsing to one row per org. Adding it here
+        # would run the dedup query and destroy that history.
+        list_of_table ++ ["trial_users"]
       else
         list_of_table
       end
@@ -316,9 +317,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     do: query
 
   defp add_organization_id(query, "organizations", _organization_id),
-    do: query
-
-  defp add_organization_id(query, "organization_status_histories", _organization_id),
     do: query
 
   defp add_organization_id(query, _table, organization_id),
@@ -1159,39 +1157,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("organization_status_histories", organization_id, attrs) do
-    Logger.debug(
-      "fetching organization_status_histories data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
-    )
-
-    fetch_data("organization_status_histories", organization_id, attrs)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        [
-          %{
-            id: row.id,
-            organization_id: row.organization_id,
-            previous_status: row.previous_status,
-            new_status: row.new_status,
-            reason: row.reason,
-            metadata: BigQuery.format_json(row.metadata),
-            changed_at: BigQuery.format_date(row.changed_at, organization_id),
-            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
-            updated_at: BigQuery.format_date(row.updated_at, organization_id)
-          }
-          |> Map.merge(bq_fields(organization_id))
-          |> then(&%{json: &1})
-          | acc
-        ]
-      end
-    )
-    |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :organization_status_histories, organization_id, attrs))
-
-    :ok
-  end
-
   defp queue_table_data("message_conversations", organization_id, attrs) do
     Logger.debug(
       "fetching message_conversations data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
@@ -2016,19 +1981,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
 
-  # SaaS-dataset-only dimension: all orgs, current-state (upsert + dedup keeps one row per id).
+  # SaaS-dataset-only: all orgs. Synced via both the insert pass (new orgs) and the update
+  # pass (`updated_at` cursor). Duplicates are intentionally NOT deduped, so each update
+  # appends a snapshot and the table becomes a change log — order by `updated_at` per `id`
+  # to reconstruct an org's history. Note `last_communication_at` is written by a trigger on
+  # `messages` that never touches `updated_at`, so it does not churn this sync.
   defp get_query("organizations", _organization_id, attrs),
     do:
       Organization
       |> apply_action_clause(attrs)
       |> order_by([o], [o.inserted_at, o.id])
-
-  # SaaS-dataset-only append-only log: all orgs' status transitions.
-  defp get_query("organization_status_histories", _organization_id, attrs),
-    do:
-      OrganizationStatusHistory
-      |> apply_action_clause(attrs)
-      |> order_by([h], [h.inserted_at, h.id])
 
   defp get_query("speed_sends", organization_id, attrs),
     do:

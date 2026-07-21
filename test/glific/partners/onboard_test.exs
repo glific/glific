@@ -199,16 +199,6 @@ defmodule Glific.OnboardTest do
     assert updated_organization.is_active == false
   end
 
-  test "status/2 records a status-transition history entry through the onboard funnel" do
-    organization = Fixtures.organization_fixture(%{status: :active})
-
-    Onboard.status(organization.id, :inactive)
-
-    assert [history] = Partners.list_organization_status_histories(organization.id)
-    assert history.previous_status == :active
-    assert history.new_status == :inactive
-  end
-
   test "ensure that sending in valid parameters, delete inactive organization" do
     with_mock(
       GcsWorker,

@@ -2096,12 +2096,16 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
-  Schema for the organizations dimension table (SaaS dataset only).
+  Schema for the organizations table (SaaS dataset only).
 
-  A curated, current-state subset of the organizations table — enough to join other
-  cross-org tables (stats_all, trackers_all, …) against for the org name/status.
-  Deliberately excludes PII (email, team_emails), secrets (signature_phrase), config
-  blobs (setting, fields, out_of_office, regx_flow) and the noisy last_communication_at.
+  A curated subset of the organizations table — enough to join other cross-org tables
+  (stats_all, trackers_all, …) against for the org name/status. Deliberately excludes
+  PII (email, team_emails), secrets (signature_phrase), config blobs (setting, fields,
+  out_of_office, regx_flow) and the noisy last_communication_at.
+
+  Rows are appended on every update rather than deduped, so an `id` may appear many
+  times; take the row with the greatest `updated_at` for current state, or read the
+  sequence to see how an org changed over time.
   """
   @spec organization_schema :: list()
   def organization_schema do
@@ -2180,84 +2184,6 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "Time when the organization was last updated",
-        name: "updated_at",
-        type: "DATETIME",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Unique UUID for the row (allows us to delete duplicates)",
-        name: "bq_uuid",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when the record entry was made on bigquery",
-        name: "bq_inserted_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      }
-    ]
-  end
-
-  @doc """
-  Schema for the organization status history table (SaaS dataset only).
-
-  Append-only log of every organization status transition, joinable to the
-  organizations dimension on organization_id for fleet-level status reporting.
-  """
-  @spec organization_status_history_schema :: list()
-  def organization_status_history_schema do
-    [
-      %{
-        description: "Unique ID for the status history entry",
-        name: "id",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Organization whose status changed",
-        name: "organization_id",
-        type: "INTEGER",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Organization status before this transition",
-        name: "previous_status",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Organization status after this transition",
-        name: "new_status",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Why the status changed, e.g. payment_default",
-        name: "reason",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Optional structured context for the transition",
-        name: "metadata",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Timestamp when the status transition was applied",
-        name: "changed_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when the status history entry was created",
-        name: "inserted_at",
-        type: "DATETIME",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Time when the status history entry was last updated",
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
