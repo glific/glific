@@ -786,7 +786,7 @@ defmodule Glific.Flows.Expression do
   # literal calendar sigils ~T/~D/~N
   defp eval_node({sigil, _, [{:<<>>, _, [str]}, _]}, _bindings)
        when sigil in [:sigil_T, :sigil_D, :sigil_N] and is_binary(str),
-       do: sigil_value(sigil, str)
+       do: calendar_sigil_value(sigil, str)
 
   # ~s(...) string sigil — evaluate its interpolation <<>> exactly like an
   # ordinary interpolated string.
@@ -924,9 +924,9 @@ defmodule Glific.Flows.Expression do
 
   defp make_capture(_arity, _inner, _bindings), do: reject("unsupported capture")
 
-  defp sigil_value(:sigil_T, s), do: Time.from_iso8601!(s)
-  defp sigil_value(:sigil_D, s), do: Date.from_iso8601!(s)
-  defp sigil_value(:sigil_N, s), do: NaiveDateTime.from_iso8601!(s)
+  defp calendar_sigil_value(:sigil_T, s), do: Time.from_iso8601!(s)
+  defp calendar_sigil_value(:sigil_D, s), do: Date.from_iso8601!(s)
+  defp calendar_sigil_value(:sigil_N, s), do: NaiveDateTime.from_iso8601!(s)
 
   defp eval_key(k, _bindings) when is_atom(k), do: k
   defp eval_key(k, bindings), do: eval_node(k, bindings)

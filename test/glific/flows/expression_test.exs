@@ -235,8 +235,8 @@ defmodule Glific.Flows.ExpressionTest do
 
   describe "eval/2 — control-flow forms" do
     test "if / else" do
-      assert {:ok, "yes"} = Expression.eval("<%= if 3 > 2, do: \"yes\", else: \"no\" %>")
-      assert {:ok, "no"} = Expression.eval("<%= if 1 > 2, do: \"yes\", else: \"no\" %>")
+      assert {:ok, "yes"} = Expression.eval(~s|<%= if 3 > 2, do: "yes", else: "no" %>|)
+      assert {:ok, "no"} = Expression.eval(~s|<%= if 1 > 2, do: "yes", else: "no" %>|)
     end
 
     test "cond" do
@@ -265,7 +265,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
 
     test "expanded function allowlist" do
-      assert {:ok, "a-b-c"} = Expression.eval("<%= String.replace(\"a b c\", \" \", \"-\") %>")
+      assert {:ok, "a-b-c"} = Expression.eval(~s|<%= String.replace("a b c", " ", "-") %>|)
       assert {:ok, "5"} = Expression.eval("<%= String.to_integer(\"5\") %>")
     end
 
@@ -376,7 +376,7 @@ defmodule Glific.Flows.ExpressionTest do
     end
 
     test "allowlisted send_template builds a payload (pure); multi-segment modules" do
-      assert {:ok, json} = Expression.eval("<%= Glific.send_template(\"uuid\", [\"a\"]) %>")
+      assert {:ok, json} = Expression.eval(~s|<%= Glific.send_template("uuid", ["a"]) %>|)
       assert json =~ "uuid"
 
       # per-NGO client module (multi-segment alias) resolves too
@@ -387,7 +387,7 @@ defmodule Glific.Flows.ExpressionTest do
       assert :ok =
                Expression.validate("<%= Glific.Clients.ArogyaWorld.template(\"u\", []) %>")
 
-      assert :ok = Expression.validate("<%= Glific.Clients.Tap.template(\"code\", \"\") %>")
+      assert :ok = Expression.validate(~s|<%= Glific.Clients.Tap.template("code", "") %>|)
 
       # but unknown multi-segment modules/functions are still rejected
       assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
@@ -398,7 +398,7 @@ defmodule Glific.Flows.ExpressionTest do
       # time-unit atom passed to an allowlisted function
       assert {:ok, "5"} =
                Expression.eval(
-                 "<%= Date.diff(Date.from_iso8601!(\"2026-01-06\"), Date.from_iso8601!(\"2026-01-01\")) %>"
+                 ~s|<%= Date.diff(Date.from_iso8601!("2026-01-06"), Date.from_iso8601!("2026-01-01")) %>|
                )
 
       assert :ok = Expression.validate("<%= DateTime.diff(@a, @b, :second) %>")
