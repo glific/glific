@@ -413,7 +413,16 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       |> Keyword.merge(max_delay: @retry_max_delay, jitter_factor: 0.2)
       |> Keyword.put(:should_retry, should_retry(retry_mode, standard_retry?))
 
-    Tesla.client([{Tesla.Middleware.Retry, opts}])
+    # Every outgoing Maytapi call funnels through here, so plugging Telemetry
+    # once tags all of them (send, group management, phone screen, webhook
+    # setup) with `provider: "maytapi"`. The global handler in Glific.Appsignal
+    # turns that into per-URL latency (`tesla_request_response`) and error-rate
+    # (`tesla_request_error_count`) metrics — transport-level, complementing the
+    # message-outcome `provider_send_count` in ResponseHandler.
+    Tesla.client([
+      {Tesla.Middleware.Retry, opts},
+      {Tesla.Middleware.Telemetry, metadata: %{provider: "maytapi", sampling_scale: 10}}
+    ])
   end
 
   @spec should_retry(:read | :write, function()) :: function()
