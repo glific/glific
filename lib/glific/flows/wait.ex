@@ -67,9 +67,8 @@ defmodule Glific.Flows.Wait do
   end
 
   @doc """
-  Validate a wait. Guards the dynamic `timeout.expression` path — which is
-  evaluated as EEx at runtime (`get_wait_timeout/2`) but was previously not
-  checked at publish/import time — against disallowed code.
+  Validate a wait. Guards the dynamic `timeout.expression` path, which is
+  evaluated at runtime by `get_wait_timeout/2`.
   """
   @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(wait, errors, flow) do

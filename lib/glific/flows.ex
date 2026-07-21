@@ -620,10 +620,8 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t(), non_neg_integer()) ::
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
-    # Validation MUST gate publishing: only touch the DB / cache once the flow is
-    # valid, so an invalid flow (e.g. an unsupported or unsafe expression) can
-    # never go live. Previously do_publish_flow/2 ran before this check, so the
-    # flow was already marked published and cached even when validation failed.
+    # Only touch the DB / cache once the flow is valid, so an invalid flow can
+    # never go live.
     case Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id}) do
       [] ->
         case do_publish_flow(flow, user_id) do

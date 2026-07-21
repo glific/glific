@@ -571,10 +571,8 @@ defmodule Glific.Flows.Action do
 
   @doc """
   Validate every author-authored expression field on an action against the same
-  publish-time guard the runtime uses (`Glific.validate_flow_expression/2`). All
-  of these fields reach `Glific.execute_eex/1` at runtime; previously only
-  Wait/Router operands were validated, so an unsafe or unsupported expression in
-  an action node went unchecked. Blank fields are ignored.
+  guard the runtime uses (`Glific.validate_flow_expression/2`). All of these
+  fields reach `Glific.execute_eex/1` at runtime. Blank fields are ignored.
   """
   @spec validate_expressions(Action.t(), list(), map()) :: list()
   def validate_expressions(action, errors, flow) do
