@@ -18,6 +18,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Partners,
     Partners.Organization,
     Providers.Maytapi.ApiClient,
+    Providers.Maytapi.Instrumentation,
     Providers.Maytapi.ResponseHandler,
     Providers.Maytapi.Sender,
     Providers.Worker,
@@ -196,9 +197,18 @@ defmodule Glific.Providers.Maytapi.WAWorker do
   """
   @spec perform_periodic(non_neg_integer()) :: :ok
   def perform_periodic(org_id) do
-    WAGroups.sync_wa_groups(org_id)
+    case WAGroups.sync_wa_groups(org_id) do
+      :ok ->
+        Instrumentation.track_action("contact_sync", :success, org_id)
 
-    Logger.info("Completed WhatsApp groups sync for organization: #{org_id}")
+      {:error, reason} ->
+        Instrumentation.track_action("contact_sync", :failure, org_id)
+
+        Glific.log_error(
+          "WhatsApp groups sync failed for organization #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+    end
+
     :ok
   end
 end
