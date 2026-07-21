@@ -24,8 +24,8 @@ defmodule Glific.Providers.Maytapi.ResponseHandler do
   @timeout_reasons [:timeout, :closed_timeout, :closed]
 
   @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, WAMessage.t() | {:error, any()}) ::
-          :ok | {:error, String.t()}
+  @spec handle_response(Tesla.Env.result(), WAMessage.t() | map()) ::
+          {:ok, WAMessage.t()} | :ok | {:error, String.t()}
   def handle_response({:ok, response}, message) do
     case response do
       %Tesla.Env{status: status} when status in 200..299 ->
