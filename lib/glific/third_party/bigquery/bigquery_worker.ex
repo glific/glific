@@ -127,11 +127,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     list_of_table =
       if(organization_id == Saas.organization_id()) do
-        # `organizations` is deliberately NOT listed here. It is synced through the update
-        # pass (it is absent from `ignore_updates_for_table/0`), but its duplicates are kept
-        # rather than deduped: each re-sync appends a snapshot of the org row, so the table
-        # accumulates a change log instead of collapsing to one row per org. Adding it here
-        # would run the dedup query and destroy that history.
+        # `organizations` is deliberately absent: its duplicates are the point. Each update
+        # appends a snapshot, so adding it here would dedup them away and lose that history.
         list_of_table ++ ["trial_users"]
       else
         list_of_table
@@ -1981,11 +1978,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
 
-  # SaaS-dataset-only: all orgs. Synced via both the insert pass (new orgs) and the update
-  # pass (`updated_at` cursor). Duplicates are intentionally NOT deduped, so each update
-  # appends a snapshot and the table becomes a change log — order by `updated_at` per `id`
-  # to reconstruct an org's history. Note `last_communication_at` is written by a trigger on
-  # `messages` that never touches `updated_at`, so it does not churn this sync.
+  # Unscoped on purpose: this syncs every org into the SaaS dataset.
   defp get_query("organizations", _organization_id, attrs),
     do:
       Organization

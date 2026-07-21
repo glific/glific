@@ -2096,16 +2096,11 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
-  Schema for the organizations table (SaaS dataset only).
+  Schema for the organizations table (SaaS dataset only), used to join cross-org
+  tables for the org name/status.
 
-  A curated subset of the organizations table — enough to join other cross-org tables
-  (stats_all, trackers_all, …) against for the org name/status. Deliberately excludes
-  PII (email, team_emails), secrets (signature_phrase), config blobs (setting, fields,
-  out_of_office, regx_flow) and the noisy last_communication_at.
-
-  Rows are appended on every update rather than deduped, so an `id` may appear many
-  times; take the row with the greatest `updated_at` for current state, or read the
-  sequence to see how an org changed over time.
+  Excludes PII (email, team_emails), secrets (signature_phrase) and config blobs
+  (setting, fields, out_of_office, regx_flow).
   """
   @spec organization_schema :: list()
   def organization_schema do
