@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/session_templates/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/session_templates/delete.gql")
   load_gql(:sync, GlificWeb.Schema, "assets/gql/session_templates/sync.gql")
+  load_gql(:reapply, GlificWeb.Schema, "assets/gql/session_templates/reapply.gql")
 
   load_gql(
     :create_from_message,
@@ -445,5 +446,168 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "label"])
     assert label == "WA Form Template"
+  end
+
+  describe "reapply session template" do
+    defp rejected_hsm_template_fixture(organization_id, overrides \\ %{}) do
+      valid_attrs = %{
+        label: "reapply_ticket_status_en",
+        shortcode: "reapply_ticket_status",
+        body: "Your train ticket no. {{1}}",
+        type: :text,
+        is_hsm: true,
+        status: "REJECTED",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        language_id: 1,
+        organization_id: organization_id,
+        uuid: Ecto.UUID.generate()
+      }
+
+      {:ok, session_template} =
+        %SessionTemplate{}
+        |> SessionTemplate.changeset(Map.merge(valid_attrs, overrides))
+        |> Repo.insert()
+
+      session_template
+    end
+
+    defp mock_bsp_reapply(new_bsp_uuid) do
+      submit_body =
+        Jason.encode!(%{
+          "status" => "success",
+          "template" => %{
+            "id" => new_bsp_uuid,
+            "status" => "PENDING",
+            "category" => "ACCOUNT_UPDATE"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :delete} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"status" => "success"})}
+
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: submit_body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+    end
+
+    defp reapply_input(overrides) do
+      Map.merge(
+        %{
+          "label" => "Reapplied Ticket Status",
+          "body" => "Your train ticket no. {{1}}",
+          "type" => "TEXT",
+          "isHsm" => true,
+          "shortcode" => "reapply_ticket_status",
+          "category" => "ACCOUNT_UPDATE",
+          "example" => "Your train ticket no. [1234]"
+        },
+        overrides
+      )
+    end
+
+    test "reapply atomically replaces a rejected session_template with the newly approved one",
+         %{manager: user} do
+      old_template = rejected_hsm_template_fixture(user.organization_id)
+      new_bsp_uuid = Ecto.UUID.generate()
+      mock_bsp_reapply(new_bsp_uuid)
+
+      result =
+        auth_query_gql_by(:reapply, user,
+          variables: %{
+            "id" => old_template.id,
+            "input" => reapply_input(%{"languageId" => old_template.language_id})
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "reapplySessionTemplate", "errors"]) == nil
+
+      new_template = get_in(query_data, [:data, "reapplySessionTemplate", "sessionTemplate"])
+      assert new_template["label"] == "Reapplied Ticket Status"
+      assert new_template["status"] == "PENDING"
+      refute new_template["id"] == to_string(old_template.id)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Templates.get_session_template!(old_template.id)
+      end
+    end
+
+    test "reapply requires manager role - staff is rejected", %{staff: user} do
+      old_template = rejected_hsm_template_fixture(user.organization_id)
+
+      result =
+        auth_query_gql_by(:reapply, user,
+          variables: %{
+            "id" => old_template.id,
+            "input" => reapply_input(%{"languageId" => old_template.language_id})
+          }
+        )
+
+      assert {:ok, query_data} = result
+      [error] = get_in(query_data, [:errors])
+      assert error.message == "Unauthorized"
+    end
+
+    test "reapply for a non-existent id returns Resource not found", %{manager: user} do
+      result =
+        auth_query_gql_by(:reapply, user,
+          variables: %{
+            "id" => 123_456_789,
+            "input" => reapply_input(%{"languageId" => 1})
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      message =
+        get_in(query_data, [:data, "reapplySessionTemplate", "errors", Access.at(0), "message"])
+
+      assert message == "Resource not found"
+    end
+
+    test "reapply cannot touch a session_template belonging to a different organization",
+         %{manager: user} do
+      other_organization =
+        Fixtures.organization_fixture(%{shortcode: "other_org_reapply_isolation"})
+
+      other_org_template =
+        rejected_hsm_template_fixture(other_organization.organization_id, %{
+          label: "foreign_org_template",
+          shortcode: "foreign_org_template"
+        })
+
+      Repo.put_organization_id(user.organization_id)
+
+      result =
+        auth_query_gql_by(:reapply, user,
+          variables: %{
+            "id" => other_org_template.id,
+            "input" =>
+              reapply_input(%{
+                "label" => "Hijacked",
+                "languageId" => other_org_template.language_id,
+                "shortcode" => "foreign_org_template"
+              })
+          }
+        )
+
+      assert {:ok, query_data} = result
+
+      message =
+        get_in(query_data, [:data, "reapplySessionTemplate", "errors", Access.at(0), "message"])
+
+      assert message == "Resource not found"
+
+      # the foreign template must still exist, untouched
+      assert {:ok, _still_there} =
+               Repo.fetch_by(SessionTemplate, %{id: other_org_template.id},
+                 skip_organization_id: true
+               )
+    end
   end
 end
