@@ -133,7 +133,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:wa_group_queries)
 
-    import_fields(:filesearch_queries)
+    import_fields(:assistant_queries)
 
     import_fields(:wa_poll_queries)
 
@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:wa_groups_collection_mutations)
 
-    import_fields(:filesearch_mutations)
+    import_fields(:assistant_mutations)
 
     import_fields(:wa_poll_mutations)
 

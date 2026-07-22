@@ -638,8 +638,6 @@ defmodule Glific.Erase do
       messages_media
       messages_tags
       notifications
-      openai_assistants
-      openai_vector_stores
       organization_data
       organization_eval_requests
       profiles
