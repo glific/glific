@@ -87,6 +87,60 @@ defmodule Glific.Flows.TranslateTest do
     assert attachment_url_before == attachment_url_after
   end
 
+  test "export_localization/2 with add_translation false leaves the newly added translations blank",
+       attrs do
+
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    Flows.update_cached_flow(flow, "draft")
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+
+    {rows, errors} = Export.export_localization(flow, false)
+
+    assert errors == []
+
+    [_labels | [_keys | data_rows]] = rows
+
+    Enum.each(data_rows, fn row ->
+      [type, uuid, _src, _dst, _node_uuid] = row
+      assert type == "Action"
+      assert String.length(uuid) == 36
+    end)
+
+    assert Enum.any?(data_rows, fn [_type, _uuid, _src, dst, _node_uuid] -> dst == "" end)
+  end
+
+  test "translate/1 returns an error and does not import when a translation hard-fails", attrs do
+    Application.put_env(:glific, :adaptors, translators: Glific.Flows.Translate.GoogleTranslate)
+
+    on_exit(fn ->
+      Application.put_env(:glific, :adaptors, translators: Glific.Flows.Translate.Simple)
+    end)
+
+    mock_global(fn _env ->
+      %Tesla.Env{
+        status: 403,
+        body: %{
+          "error" => %{
+            "code" => 403,
+            "status" => "PERMISSION_DENIED",
+            "message" => "Requests to this API are blocked.",
+            "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
+          }
+        }
+      }
+    end)
+
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    Flows.update_cached_flow(flow, "draft")
+    flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+
+    assert {:error, reason} = Export.translate(flow)
+    assert reason =~ "Translation has failed"
+
+    flow_after = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
+    assert map_size(flow_after.definition["localization"]["hi"]) == 1
+  end
+
   describe "Glific.GoogleTranslate.Translate.parse/3" do
     @languages %{"source" => "en", "target" => "hi"}
 
