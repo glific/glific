@@ -4,19 +4,11 @@ defmodule Glific.Providers.Gupshup.Instrumentation do
 
   Inherits the standard provider counters (`track_send/2`, `track_receive/2`,
   `track_status/3`, `track_action/3`) from `Glific.Providers.Instrumentation`,
-  and adds Gupshup's custom frequency-cap classification on **both** seams a cap
-  can surface on:
-
-    * `classify_send/2` — a frequency-capped 4xx in the *synchronous* send
-      response is recorded as `frequency_capped` rather than `error`.
-    * `classify_status/2` — a frequency-capped *asynchronous* failed delivery
-      callback (where Gupshup actually reports the cap, code at
-      `payload.payload.code`) is likewise recorded as `frequency_capped` on
-      `provider_status_count` rather than `error`.
-
-  Both keep throttled traffic out of the `error` bucket so it doesn't trip
-  send/status-failure alerts. HSM template sync is recorded via
-  `track_action("hsm_sync", ...)`.
+  and adds Gupshup's frequency-cap classification: a capped send is recorded as
+  `frequency_capped` rather than `error`, both on the synchronous send response
+  (`classify_send/2`) and on the asynchronous failed delivery callback
+  (`classify_status/2`), so throttled traffic doesn't trip failure alerts. HSM
+  template sync is recorded via `track_action("hsm_sync", ...)`.
   """
 
   use Glific.Providers.Instrumentation, provider: "gupshup"
@@ -33,10 +25,6 @@ defmodule Glific.Providers.Gupshup.Instrumentation do
 
   def classify_send(status, context), do: super(status, context)
 
-  # A frequency cap normally surfaces as an async failed delivery callback (the
-  # send is accepted, then WhatsApp/Meta reports the cap later), so this is the
-  # seam that matters in practice; `classify_send/2` above covers the rarer
-  # synchronous case. Same `error_code` list drives both.
   def classify_status(:error, context) do
     if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
   end

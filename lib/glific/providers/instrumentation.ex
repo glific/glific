@@ -29,8 +29,7 @@ defmodule Glific.Providers.Instrumentation do
       classification) and `type` (`hsm` | `session`).
     * `provider_receive_count` — inbound messages, tagged `type`.
     * `provider_status_count` — delivery-status callbacks, tagged `status`
-      (post-classification, so a frequency-capped failed callback is
-      `frequency_capped` rather than `error`).
+      (final, after classification).
     * `provider_action_count` — provider-specific named actions (e.g. Gupshup's
       `hsm_sync`), tagged `action` and `status` (`success` | `failure`).
 
@@ -172,10 +171,8 @@ defmodule Glific.Providers.Instrumentation do
   Record a delivery-status callback (`:enqueued`, `:sent`, `:delivered`,
   `:read`, `:error`).
 
-  `opts` is passed to the adapter's `classify_status/2` as context and lets a
-  provider refine the raw status — e.g. Gupshup reclassifies a failed callback
-  carrying a frequency-cap `error_code` as `:frequency_capped` rather than
-  `:error`, so async throttling doesn't trip status-failure alerts.
+  `opts` is passed to the adapter's `classify_status/2` as context (e.g.
+  `error_code:` from a failed callback), which may refine the raw status.
   """
   @spec track_status(module(), atom(), non_neg_integer() | nil, keyword()) :: :ok
   def track_status(adapter, status, organization_id, opts \\ []) do
