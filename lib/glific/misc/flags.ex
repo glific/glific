@@ -524,7 +524,8 @@ defmodule Glific.Flags do
       :is_copy_node_enabled,
       :high_trigger_tps_enabled,
       :ai_evaluations,
-      :is_prompt_generator_enabled
+      :is_prompt_generator_enabled,
+      :is_template_v2_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

@@ -649,7 +649,7 @@ defmodule Glific.Templates.InteractiveTemplates do
       param when is_map(param) ->
         %{
           "title" => param["label"] |> meet_waba_button_spec(),
-          "description" => "",
+          "description" => trim_field(param["description"], 72) || "",
           "type" => "text",
           "id" => param["id"] || "",
           "postbackText" => param["id"] || ""
