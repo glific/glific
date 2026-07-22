@@ -1,25 +1,16 @@
 defmodule Glific.Flows.Webhooks.Async do
   @moduledoc """
-  `use` macro for asynchronous flow webhooks — Kaapi STT/TTS,
-  filesearch-gpt, voice-filesearch-gpt. These park the flow context with
-  `is_await_result: true` and are resumed by a callback to
-  `flow_resume_controller`.
+  `use` macro for asynchronous flow webhooks (Kaapi STT/TTS, filesearch-gpt,
+  voice-filesearch-gpt). These park the flow context (`is_await_result: true`) and are resumed
+  by a callback to `flow_resume_controller`.
 
   Authors write `call/2`; the parsed callback is merged into the flow context by
-  `Glific.Flows.Webhook` when it resumes. They may also override
-  `wait_time_default/0` if the default 60-second await window is wrong for
-  that webhook.
-
-  Failure reporting and latency telemetry are added by the Dispatcher (for
-  execution) and by `Glific.Flows.Webhooks.Instrumentation` (for callback
-  and timeout phases).
+  `Glific.Flows.Webhook` on resume. Override `wait_time_default/0` if the default 60s await
+  window doesn't fit.
   """
 
   @doc """
-  Injects the default async webhook implementation into the caller.
-
-  Requires `:name` in `opts` and defines default `name/0`, `mode/0`,
-  and `wait_time_default/0`.
+  Injects the default async webhook implementation into the caller. Requires `:name` in `opts`.
   """
   defmacro __using__(opts) do
     webhook_name = Keyword.fetch!(opts, :name)
@@ -44,7 +35,20 @@ defmodule Glific.Flows.Webhooks.Async do
       @impl true
       def wait_time_default, do: 60
 
-      defoverridable wait_time_default: 0
+      @doc "Shapes the parsed callback the flow resumes on; default passes it through unchanged."
+      @spec handle_callback(map(), map(), Glific.Flows.Webhooks.Behaviour.ctx()) :: map()
+      @impl true
+      def handle_callback(_result, response, _ctx), do: response
+
+      @doc "Classifies a failed Kaapi callback into an ErrorType; default delegates to KaapiSupport."
+      @spec classify(map()) :: Glific.Flows.Webhooks.ErrorType.t()
+      @impl true
+      # Fully qualified on purpose: an alias here would collide with caller modules that alias
+      # Glific.ThirdParty.Kaapi as `Kaapi`.
+      # credo:disable-for-next-line Credo.Check.Design.AliasUsage
+      def classify(result), do: Glific.Flows.Webhooks.Kaapi.classify(result)
+
+      defoverridable wait_time_default: 0, handle_callback: 3, classify: 1
     end
   end
 end

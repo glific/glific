@@ -32,7 +32,8 @@ defmodule Glific.Jobs.MinuteWorker do
     Templates,
     Trackers,
     TrialAccount.TrialWorker,
-    Triggers
+    Triggers,
+    WAManagedPhones
   }
 
   alias Glific.Providers.Instrumentation
@@ -175,6 +176,8 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
         CollectionCount.collection_stats()
         Instrumentation.check_inbound_staleness()
+
+        Partners.perform_all(&WAManagedPhones.reconcile_wa_managed_phone_statuses/1, nil, [])
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])

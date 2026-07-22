@@ -103,7 +103,7 @@ defmodule Glific.Flows.Broadcast do
         WaGroupsCollections.list_wa_groups_collection(%{
           filter: %{group_id: group_id, organization_id: flow.organization_id}
         })
-        |> Repo.preload([:wa_group])
+        |> Repo.preload(wa_group: :primary_phone)
 
       wa_group_collections
       |> Enum.map(& &1.wa_group_id)
