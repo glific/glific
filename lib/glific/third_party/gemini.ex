@@ -40,29 +40,39 @@ defmodule Glific.ThirdParty.Gemini do
   ## Examples
 
       iex> Glific.ThirdParty.Gemini.speech_to_text("https://example.com/audio.mp3", 1)
-      %{success: true, asr_response_text: "Hello, this is a transcription"}
+      %{success: true, asr_response_text: "Hello, this is a transcription", audio_byte_size: 12345}
 
       iex> Glific.ThirdParty.Gemini.speech_to_text("https://invalid.url/audio.mp3", 1)
       %{success: false, error: "Failed to fetch audio"}
 
+  Attaches the decoded audio size (`audio_byte_size`) whenever the download succeeds — on both the
+  success and STT-failure branches — so callers can size-bucket latency even for failed STT.
   """
   @spec speech_to_text(String.t(), non_neg_integer()) :: map() | String.t()
   def speech_to_text(audio_url, organization_id) do
-    with {:ok, encoded_audio, _content_type} <-
-           GupshupClient.download_media_content(audio_url, organization_id),
-         %{success: true} = response <- ApiClient.speech_to_text(encoded_audio, organization_id) do
-      Metrics.increment("Gemini STT Success", organization_id)
+    case GupshupClient.download_media_content(audio_url, organization_id) do
+      {:ok, encoded_audio, _content_type} ->
+        audio_byte_size = approx_audio_bytes(encoded_audio)
 
-      Map.put(response, :audio_byte_size, approx_audio_bytes(encoded_audio))
-    else
+        encoded_audio
+        |> ApiClient.speech_to_text(organization_id)
+        |> tag_stt_result(organization_id, audio_byte_size)
+
       {:error, :download_failed} ->
         Metrics.increment("Gemini STT Failure", organization_id)
         %{success: false, asr_response_text: "File download failed"}
-
-      error ->
-        Metrics.increment("Gemini STT Failure", organization_id)
-        error
     end
+  end
+
+  @spec tag_stt_result(map(), non_neg_integer(), non_neg_integer()) :: map()
+  defp tag_stt_result(%{success: true} = response, organization_id, audio_byte_size) do
+    Metrics.increment("Gemini STT Success", organization_id)
+    Map.put(response, :audio_byte_size, audio_byte_size)
+  end
+
+  defp tag_stt_result(%{} = response, organization_id, audio_byte_size) do
+    Metrics.increment("Gemini STT Failure", organization_id)
+    Map.put(response, :audio_byte_size, audio_byte_size)
   end
 
   @spec approx_audio_bytes(binary()) :: non_neg_integer()

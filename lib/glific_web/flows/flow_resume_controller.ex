@@ -20,12 +20,20 @@ defmodule GlificWeb.Flows.FlowResumeController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         result
       ) do
+    # Stamp arrival before parse/upload and the task hop, so the voice filesearch leg
+    # (arrival - dispatch) reflects true arrival rather than that overhead.
+    callback_received_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
     # Parse + TTS upload run in the request process (not the supervised task) to avoid
     # transferring large audio binaries between processes. maybe_upload_tts_audio/1 is a no-op
     # unless the callback carries TTS audio.
     # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
     # breaches the thin/generic contract; revisit during the speech-to-speech integration.
-    response = result |> Webhook.parse_callback_response() |> Webhook.maybe_upload_tts_audio()
+    response =
+      result
+      |> Webhook.parse_callback_response()
+      |> Webhook.maybe_upload_tts_audio()
+      |> Map.put("callback_received_ts", callback_received_ts)
 
     run_supervised(fn -> Webhook.resume(organization_id, result, response) end)
 

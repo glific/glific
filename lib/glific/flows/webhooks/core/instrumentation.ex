@@ -246,12 +246,10 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   @voice_total_metric "voice_node_latency"
 
   @doc """
-  Bucket an audio byte size into the coarse file-size ranges used for voice-node latency
-  baselining: `"0-1MB"`, `"1-5MB"`, `"5-10MB"`, `"10-20MB"`, `"20MB+"`. A
-  nil/unknown size (e.g. the media download failed before we could size it) buckets as
-  `"unknown"` so it never silently lands in `"0-1MB"`.
+  Bucket an audio byte size into the coarse file-size ranges used for voice-latency baselining.
+  A nil/negative size buckets as `"unknown"` (never silently `"0-1MB"`).
   """
-  @spec size_bucket(non_neg_integer() | nil) :: String.t()
+  @spec size_bucket(integer() | nil) :: String.t()
   def size_bucket(bytes) when is_integer(bytes) and bytes >= 0 do
     cond do
       bytes < @mb -> "0-1MB"
@@ -265,9 +263,9 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   def size_bucket(_bytes), do: "unknown"
 
   @doc """
-  Record a single voice-pipeline component latency (`"stt"` | `"filesearch"` | `"tts"`) as an
-  AppSignal distribution, tagged with the webhook name, component, file-size bucket and outcome
-  so each stage can be p95'd per size bucket independently.
+  Emit one voice-pipeline component latency (`stt` | `filesearch` | `tts`) as an AppSignal
+  distribution, tagged by component, file-size bucket and status. Observational — an emit failure
+  is logged, never raised.
   """
   @spec track_voice_component(String.t(), String.t(), number(), keyword()) :: :ok
   def track_voice_component(webhook_name, component, duration_ms, opts \\ []) do
@@ -279,19 +277,22 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     })
 
     :ok
+  rescue
+    exception ->
+      Logger.warning("voice_component_latency emit failed: #{Exception.message(exception)}")
+      :ok
   end
 
   @doc """
-  Record the per-component (`filesearch`, `tts`) and total latencies for a voice-filesearch
-  callback, tagged by file-size bucket. STT latency is recorded separately in the worker (where
-  the audio is downloaded and sized). `tts_ms` is measured locally around post-processing; the
-  Kaapi filesearch round-trip is derived from the dispatch/arrival wall-clock stamps that
-  round-trip through the signed `request_metadata`. The total is the sum of the three stages —
-  avoiding the cross-node wall-clock skew of an end-to-end `now - start` span for the STT/TTS
-  portions (only the unavoidable filesearch round-trip crosses nodes). Called from the voice
-  resume path.
+  Emit the voice-filesearch callback latencies — `filesearch`, `tts`, and the `voice_node_latency`
+  total — tagged by file-size bucket. STT is emitted earlier, in the worker.
+
+  `tts_ms` is `nil` on a failure callback (no TTS ran), so the `tts` component is skipped. The
+  total is `stt + filesearch + tts` and carries a `complete` tag — `"false"` when the filesearch
+  leg was missing (deploy window or clock skew) — so a partial total isn't mistaken for a fast one.
+  Observational — an emit failure is logged, never raised.
   """
-  @spec record_voice_latencies(map(), number(), String.t()) :: :ok
+  @spec record_voice_latencies(map(), number() | nil, String.t()) :: :ok
   def record_voice_latencies(response, tts_ms, status) do
     webhook_name = response["webhook_name"] || "voice-filesearch-gpt"
     size_bucket = response["audio_size_bucket"] || "unknown"
@@ -300,25 +301,29 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     filesearch_ms = voice_filesearch_ms(response)
 
     if is_number(filesearch_ms),
-      do: track_voice_component(webhook_name, "filesearch", filesearch_ms, opts)
+      do: track_voice_component(webhook_name, "filesearch", filesearch_ms, opts),
+      else: maybe_count_stamp_unusable(response, webhook_name)
 
-    track_voice_component(webhook_name, "tts", tts_ms, opts)
+    if is_number(tts_ms), do: track_voice_component(webhook_name, "tts", tts_ms, opts)
 
-    stt_ms = response["stt_latency_ms"] || 0
-    total_ms = stt_ms + (filesearch_ms || 0) + tts_ms
+    total_ms = numeric(response["stt_latency_ms"]) + (filesearch_ms || 0) + (tts_ms || 0)
 
     Appsignal.add_distribution_value(@voice_total_metric, total_ms, %{
       webhook_name: webhook_name,
       size_bucket: size_bucket,
-      status: status
+      status: status,
+      complete: to_string(is_number(filesearch_ms))
     })
 
     :ok
+  rescue
+    exception ->
+      Logger.warning("voice_node_latency emit failed: #{Exception.message(exception)}")
+      :ok
   end
 
-  # Kaapi filesearch round-trip = callback arrival - dispatch, both wall-clock microsecond
-  # stamps that round-trip through the signed request_metadata. Cross-node (worker -> web), so
-  # subject to clock skew; nil when either stamp is absent (e.g. a text/older callback).
+  # Kaapi round-trip = arrival - dispatch (microsecond wall-clock stamps that ride back in
+  # request_metadata). Cross-node, so nil when a stamp is missing or clock skew inverts the two.
   @spec voice_filesearch_ms(map()) :: number() | nil
   defp voice_filesearch_ms(%{
          "kaapi_dispatch_ts" => dispatch,
@@ -329,6 +334,35 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   defp voice_filesearch_ms(_response), do: nil
+
+  # Stamps present but unusable (wrong type, or skew inverting arrival/dispatch) — count it so a
+  # systematic skew that silently drops the filesearch leg stays visible. Match on presence, not
+  # type, so absent stamps (deploy window) aren't counted.
+  @spec maybe_count_stamp_unusable(map(), String.t()) :: :ok
+  defp maybe_count_stamp_unusable(response, webhook_name) do
+    if Map.has_key?(response, "kaapi_dispatch_ts") and
+         Map.has_key?(response, "callback_received_ts") do
+      Appsignal.increment_counter("voice_filesearch_stamp_unusable", 1, %{
+        webhook_name: webhook_name
+      })
+    end
+
+    :ok
+  end
+
+  # stt_latency_ms is echoed back by Kaapi — coerce a non-number to 0 rather than let `+` raise
+  # and strand the parked flow.
+  @spec numeric(any()) :: number()
+  defp numeric(value) when is_number(value), do: value
+  defp numeric(_value), do: 0
+
+  @doc "Elapsed milliseconds since a `System.monotonic_time/0` start value."
+  @spec duration_ms(integer()) :: non_neg_integer()
+  def duration_ms(start_monotonic) do
+    System.monotonic_time()
+    |> Kernel.-(start_monotonic)
+    |> System.convert_time_unit(:native, :millisecond)
+  end
 
   # --- private ----------------------------------------------------------------
 
@@ -369,12 +403,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
   @spec track_latency(String.t(), :sync | :async, integer(), :ok | :error) :: :ok
   defp track_latency(webhook_name, mode, start_monotonic, outcome) do
-    duration_ms =
-      System.monotonic_time()
-      |> Kernel.-(start_monotonic)
-      |> System.convert_time_unit(:native, :millisecond)
-
-    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms, %{
+    Appsignal.add_distribution_value("flow_webhook_latency", duration_ms(start_monotonic), %{
       webhook_name: webhook_name,
       mode: Atom.to_string(mode),
       outcome: Atom.to_string(outcome)

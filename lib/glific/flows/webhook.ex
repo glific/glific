@@ -457,13 +457,6 @@ defmodule Glific.Flows.Webhook do
   """
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
-    # Stamp callback arrival so the voice node can isolate the Kaapi filesearch round-trip as
-    # arrival - dispatch (issue #5290). Harmless for non-voice nodes, which ignore it.
-    response =
-      Map.put_new_lazy(response, "callback_received_ts", fn ->
-        DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-      end)
-
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
       resume(organization_id, result, response, contact)
     end)

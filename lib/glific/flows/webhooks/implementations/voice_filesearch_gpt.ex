@@ -71,16 +71,15 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     end
   end
 
-  # Times the STT call, buckets the audio by file size, and records the `stt` component latency.
-  # The duration + bucket are threaded on so the callback can attribute the rest
-  # of the pipeline (filesearch, TTS, total) to the same size bucket.
+  # The `stt` span is "download + STT": speech_to_text/2 does the Gupshup media download and the
+  # Gemini transcription, and the download is the size-sensitive part.
   @spec transcribe(any(), non_neg_integer()) ::
           {:ok, String.t(), non_neg_integer(), String.t()} | {:error, ErrorType.t(), String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
       start = System.monotonic_time()
       result = Gemini.speech_to_text(speech, organization_id)
-      stt_ms = duration_ms(start)
+      stt_ms = Instrumentation.duration_ms(start)
       size_bucket = Instrumentation.size_bucket(audio_byte_size(result))
 
       case result do
@@ -110,13 +109,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       size_bucket: size_bucket,
       status: status
     )
-  end
-
-  @spec duration_ms(integer()) :: non_neg_integer()
-  defp duration_ms(start_monotonic) do
-    System.monotonic_time()
-    |> Kernel.-(start_monotonic)
-    |> System.convert_time_unit(:native, :millisecond)
   end
 
   # to_string/1 raises on a map; safe_inspect renders any shape
@@ -181,15 +173,35 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @spec handle_callback(map(), map(), Behaviour.ctx()) :: map()
   def handle_callback(%{"success" => true}, response, %{organization_id: organization_id}) do
     tts_start = System.monotonic_time()
-    voice_response = voice_post_process(organization_id, response)
-    Instrumentation.record_voice_latencies(response, duration_ms(tts_start), "success")
-    voice_response
+
+    try do
+      voice_post_process(organization_id, response)
+    rescue
+      exception ->
+        # Record a (failure) latency sample even when NMT/TTS raises, so the stage isn't a blind
+        # gap; then re-raise.
+        record_tts_latency(response, tts_start, "failure")
+        reraise exception, __STACKTRACE__
+    else
+      voice_response ->
+        record_tts_latency(response, tts_start, "success")
+        voice_response
+    end
   end
 
   def handle_callback(_result, response, _ctx) do
-    # No TTS on failure — record the filesearch + total spans so failed calls still baseline.
-    Instrumentation.record_voice_latencies(response, 0, "failure")
+    # No TTS ran — nil skips the tts component (rather than a fake 0); filesearch + total still record.
+    Instrumentation.record_voice_latencies(response, nil, "failure")
     response
+  end
+
+  @spec record_tts_latency(map(), integer(), String.t()) :: :ok
+  defp record_tts_latency(response, tts_start, status) do
+    Instrumentation.record_voice_latencies(
+      response,
+      Instrumentation.duration_ms(tts_start),
+      status
+    )
   end
 
   @doc """
