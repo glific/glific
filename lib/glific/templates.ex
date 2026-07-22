@@ -461,6 +461,35 @@ defmodule Glific.Templates do
     end)
   end
 
+  @doc """
+  Applies a single HSM template status update pushed in real time by Gupshup's
+  `template-event` webhook (Meta approval / rejection), identified by the
+  template's `bsp_id`. Reuses the same reconciliation + notification path as the
+  periodic BSP sync, so an approval reflects within seconds instead of waiting
+  for the next daily sync.
+  """
+  @spec update_hsm_status(String.t(), non_neg_integer(), String.t(), String.t() | nil) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  def update_hsm_status(bsp_id, organization_id, status, reason \\ nil) do
+    case Repo.fetch_by(SessionTemplate, %{bsp_id: bsp_id, organization_id: organization_id}) do
+      {:ok, current_template} ->
+        template = %{
+          "bsp_id" => bsp_id,
+          "id" => bsp_id,
+          # the periodic sync stores status uppercase; the webhook sends it lowercase
+          "status" => String.upcase(status),
+          "category" => current_template.category,
+          "quality" => current_template.quality,
+          "reason" => reason
+        }
+
+        do_update_hsm(template, %{bsp_id => current_template})
+
+      _ ->
+        {:error, "Template with bsp_id #{bsp_id} not found"}
+    end
+  end
+
   @spec existing_template?(map(), map(), Organization.t()) :: boolean()
   defp existing_template?(db_templates, template, organization) do
     Enum.any?(db_templates, fn {_bsp_id, db_template} ->
