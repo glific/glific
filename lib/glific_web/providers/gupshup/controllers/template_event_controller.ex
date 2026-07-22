@@ -24,11 +24,20 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.TemplateEventController do
   @spec status_update(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def status_update(conn, params) do
     organization_id = conn.assigns[:organization_id]
-    payload = params["payload"] || %{}
 
-    with bsp_id when is_binary(bsp_id) <- payload["id"],
-         status when is_binary(status) <- payload["status"] do
-      Templates.update_hsm_status(bsp_id, organization_id, status, payload["rejectedReason"])
+    with %{"id" => bsp_id, "status" => status} = payload
+         when is_binary(bsp_id) and is_binary(status) <- params["payload"],
+         {:ok, _template} <-
+           Templates.update_hsm_status(bsp_id, organization_id, status, payload["rejectedReason"]) do
+      :ok
+    else
+      {:error, reason} ->
+        Glific.log_error(
+          "Gupshup template-event status update failed: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
+
+      _invalid_payload ->
+        :ok
     end
 
     handler(conn)

@@ -755,7 +755,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "REJECTED", reason: bsp_template["reason"]}
+    %{status: "REJECTED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status("FAILED", db_template, bsp_template) do
@@ -772,7 +772,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "FAILED", reason: bsp_template["reason"]}
+    %{status: "FAILED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
