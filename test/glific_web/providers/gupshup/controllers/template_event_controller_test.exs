@@ -29,12 +29,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.TemplateEventControllerTest do
 
   describe "status_update" do
     setup %{conn: conn} do
-      bsp_id = Faker.String.base64(36)
+      bsp_id = Ecto.UUID.generate()
 
       template =
         Fixtures.session_template_fixture(%{
           organization_id: conn.assigns[:organization_id],
-          is_hsm: true,
           bsp_id: bsp_id,
           uuid: bsp_id,
           status: "PENDING",
@@ -82,12 +81,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.TemplateEventControllerTest do
     end
 
     test "rejecting an already approved, active template deactivates it", %{conn: conn} do
-      bsp_id = Faker.String.base64(36)
+      bsp_id = Ecto.UUID.generate()
 
       approved_template =
         Fixtures.session_template_fixture(%{
           organization_id: conn.assigns[:organization_id],
-          is_hsm: true,
           bsp_id: bsp_id,
           uuid: bsp_id,
           status: "APPROVED",
