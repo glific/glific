@@ -583,7 +583,6 @@ defmodule Glific.Partners do
       |> set_languages()
       |> Flags.set_flow_uuid_display()
       |> Flags.set_roles_and_permission()
-      |> Flags.set_open_ai_auto_translation_enabled()
       |> Flags.set_auto_translation_enabled_for_google_trans()
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
@@ -1481,8 +1480,7 @@ defmodule Glific.Partners do
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
       "auto_translation_enabled" =>
-        Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization),
+        Flags.get_google_auto_translation_enabled(organization),
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),

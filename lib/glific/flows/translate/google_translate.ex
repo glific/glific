@@ -11,8 +11,6 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
     Settings
   }
 
-  require Logger
-
   @doc """
   Translate a list of strings from language 'src' to language 'dst'.
   Returns either {:ok, [String.t()]} with the translated list in the same order,
@@ -27,7 +25,6 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
           {:ok, [String.t()]} | {:error, String.t()}
   def translate(strings, src, dst, opts \\ []) do
     org_id = Keyword.get(opts, :org_id)
-    Settings.get_language_code(org_id)
     language_code = Settings.get_language_code(org_id)
 
     src_lang_code = Map.get(language_code, src, src)
@@ -40,26 +37,40 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
       "dst" => dst
     }
 
-    strings
-    |> Translate.check_large_strings(opts)
-    |> Task.async_stream(fn text -> do_translate(text, languages, org_id) end,
-      timeout: 300_000,
-      on_timeout: :kill_task
-    )
-    |> Enum.reduce([], fn response, acc ->
-      handle_async_response(response, acc)
-    end)
-    |> then(&{:ok, &1})
+    {texts, errors} =
+      strings
+      |> Translate.check_large_strings(opts)
+      |> Task.async_stream(fn text -> do_translate(text, languages, org_id) end,
+        timeout: 300_000,
+        on_timeout: :kill_task
+      )
+      |> Enum.reduce({[], []}, &handle_async_response/2)
+
+    if errors == [] do
+      {:ok, texts}
+    else
+      {:error, hd(errors)}
+    end
   end
 
-  # add the translated string into list of string if translated successfully
-  # add the empty string into list of string if translation timed out so it can be translated in next go
-  # This way successfully translated string will be updated in first go and leftover will be translated in second go
-  @spec handle_async_response(tuple(), [String.t()]) :: [String.t()]
-  defp handle_async_response({:ok, translated_text}, acc), do: [translated_text | acc]
-  defp handle_async_response({:exit, :timeout}, acc), do: ["" | acc]
+  # add the translated string into list of string if translated successfully.
+  # add the empty string into list of string if translation timed out or hit a hard API
+  # error, so it can be retried in the next go -- successfully translated strings are
+  # updated in the first go and leftovers translated in a second go. Both failure cases are
+  # tracked in `errors` so the caller can tell them apart from a genuine empty translation.
+  @spec handle_async_response(tuple(), {[String.t()], [String.t()]}) ::
+          {[String.t()], [String.t()]}
+  defp handle_async_response({:ok, {:ok, translated_text}}, {texts, errors}),
+    do: {[translated_text | texts], errors}
 
-  @spec do_translate(String.t(), map(), non_neg_integer()) :: String.t()
+  defp handle_async_response({:ok, {:error, reason}}, {texts, errors}),
+    do: {["" | texts], [reason | errors]}
+
+  defp handle_async_response({:exit, :timeout}, {texts, errors}),
+    do: {["" | texts], ["Translation request timed out" | errors]}
+
+  @spec do_translate(String.t(), map(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
   defp do_translate(strings, languages, org_id) do
     api_key = Glific.get_google_translate_key()
 
@@ -77,7 +88,7 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         }
         |> TranslateLog.create_translate_log()
 
-        result
+        {:ok, result}
 
       {:error, error} ->
         %{
@@ -91,8 +102,13 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         }
         |> TranslateLog.create_translate_log()
 
-        Logger.error("Error translating: #{error} String: #{strings}")
-        ""
+        Glific.log_error(
+          "Google Translate failed for org #{org_id} (#{languages["src"]} -> #{languages["dst"]}): #{error}",
+          true
+        )
+
+        {:error,
+         "Translation has failed. Please reach out to the Glific team as soon as possible."}
     end
   end
 end
