@@ -1635,4 +1635,46 @@ defmodule Glific.Flows.ActionTest do
       end
     end
   end
+
+  describe "validate_expressions/3 — action expression guard" do
+    setup %{organization_id: organization_id} do
+      %{flow: %{organization_id: organization_id}}
+    end
+
+    test "flags disallowed code in a set_run_result value", %{flow: flow} do
+      action = %Action{type: "set_run_result", value: ~s|<%= System.cmd("id", []) %>|}
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Action value has an unsupported expression"
+    end
+
+    test "flags disallowed code in enter_flow / interactive / template expressions", %{flow: flow} do
+      payload = ~s|<%= System.cmd("id", []) %>|
+
+      for {field, label} <- [
+            {:enter_flow_expression, "Enter flow expression"},
+            {:interactive_template_expression, "Interactive template expression"}
+          ] do
+        action = struct(Action, [{:type, "some_type"}, {field, payload}])
+        assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+        assert message =~ label
+      end
+
+      templating = %Glific.Flows.Templating{expression: payload}
+      action = %Action{type: "send_msg", templating: templating}
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Message template expression has an unsupported expression"
+    end
+
+    test "allows safe expressions and blank fields", %{flow: flow} do
+      safe = %Action{type: "set_run_result", value: "<%= 5 * 60 %>"}
+      assert Action.validate_expressions(safe, [], flow) == []
+
+      blank = %Action{type: "set_run_result", value: nil}
+      assert Action.validate_expressions(blank, [], flow) == []
+
+      plain = %Action{type: "set_run_result", value: "just some text"}
+      assert Action.validate_expressions(plain, [], flow) == []
+    end
+  end
 end
