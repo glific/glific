@@ -10,71 +10,76 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
   import Tesla.Mock
 
   setup_all do
-    mock_global(fn env ->
-      cond do
-        String.contains?(env.body, "HelloWorld") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "नमस्ते दुनिया"}
-                ]
-              }
-            },
-            status: 200
-          }
+    mock_global(&default_mock/1)
+    :ok
+  end
 
-        String.contains?(env.body, "nice to meet you") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "आपसे मिलकर अच्छा लगा"}
-                ]
-              }
-            },
-            status: 200
-          }
+  # `GoogleTranslate.translate/4` fires its HTTP calls from inside `Task.async_stream`-spawned
+  # processes, so `Tesla.Mock.mock/1` (process-local) never sees them -- only `mock_global/1`
+  # reaches those. Kept as a named function so error-path tests can restore it via `on_exit`
+  # after overriding the global mock for their own scenario.
+  defp default_mock(env) do
+    cond do
+      String.contains?(env.body, "HelloWorld") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "नमस्ते दुनिया"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "@contact.name is this youe name") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "@contact.name क्या यह आपका नाम है"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "nice to meet you") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "आपसे मिलकर अच्छा लगा"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        String.contains?(env.body, "@contact.name") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "@संपर्क नाम"}
-                ]
-              }
-            },
-            status: 200
-          }
+      String.contains?(env.body, "@contact.name is this youe name") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "@contact.name क्या यह आपका नाम है"}
+              ]
+            }
+          },
+          status: 200
+        }
 
-        true ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"}
-                ]
-              }
+      String.contains?(env.body, "@contact.name") ->
+        %Tesla.Env{
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "@संपर्क नाम"}
+              ]
+            }
+          },
+          status: 200
+        }
+
+      true ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            "data" => %{
+              "translations" => [
+                %{"translatedText" => "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"}
+              ]
             }
           }
-      end
-    end)
-
-    :ok
+        }
+    end
   end
 
   test "translate/3 basic translation test" do
@@ -99,10 +104,10 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     assert translated_text == ["नमस्ते दुनिया", "बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
   end
 
-  test "translate/3 test the possible errors" do
+  test "translate/3 returns an error instead of silently persisting a blank translation on a hard API failure" do
     org_id = Fixtures.get_org_id()
 
-    Tesla.Mock.mock(fn _env ->
+    Tesla.Mock.mock_global(fn _env ->
       %Tesla.Env{
         status: 500,
         body: %{
@@ -113,12 +118,44 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
       }
     end)
 
+    on_exit(fn -> Tesla.Mock.mock_global(&default_mock/1) end)
+
     string = ["Some text to translate"]
     src = "english"
     dst = "hindi"
 
-    {:ok, response} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
-    assert response == ["बड़े संदेशों के लिए अनुवाद उपलब्ध नहीं है"]
+    assert {:error, reason} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
+  end
+
+  test "translate/3 returns the generic failure message, not the raw Google 403 API_KEY_SERVICE_BLOCKED detail" do
+    org_id = Fixtures.get_org_id()
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 403,
+        body: %{
+          "error" => %{
+            "code" => 403,
+            "status" => "PERMISSION_DENIED",
+            "message" =>
+              "Requests to this API translate method google.cloud.translate.v2.TranslateService.TranslateText are blocked.",
+            "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
+          }
+        }
+      }
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_mock/1) end)
+
+    assert {:error, reason} =
+             GoogleTranslate.translate(["Some text to translate"], "english", "hindi",
+               org_id: org_id
+             )
+
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do
