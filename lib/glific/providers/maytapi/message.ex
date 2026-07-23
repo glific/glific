@@ -16,6 +16,7 @@ defmodule Glific.Providers.Maytapi.Message do
     Groups.WaGroupsCollections,
     Providers.Maytapi.Sender,
     Repo,
+    SafeLog,
     WAGroup.WAMessage,
     WAGroup.WaPoll,
     WAMessages
@@ -127,7 +128,7 @@ defmodule Glific.Providers.Maytapi.Message do
          organization_id: org_id
        }) do
     Glific.log_error(
-      "Maytapi send failed (collection): wa_group=#{inspect(wa_group_id)} group=#{inspect(group_id)} org=#{org_id} result=#{inspect(result)}"
+      "Maytapi send failed (collection): wa_group=#{SafeLog.safe_inspect(wa_group_id)} group=#{SafeLog.safe_inspect(group_id)} org=#{org_id} result=#{SafeLog.safe_inspect(result)}"
     )
 
     Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "collection"})
@@ -145,7 +146,7 @@ defmodule Glific.Providers.Maytapi.Message do
         _attrs
       ) do
     Glific.log_error(
-      "Maytapi collection: skipping group-level wa_message row (no primary phone) wa_group=#{inspect(wa_group.id)} org=#{org_id} collection=#{inspect(group_id)}"
+      "Maytapi collection: skipping group-level wa_message row (no primary phone) wa_group=#{SafeLog.safe_inspect(wa_group.id)} org=#{org_id} collection=#{SafeLog.safe_inspect(group_id)}"
     )
 
     {:error, :no_primary_phone}
@@ -173,7 +174,7 @@ defmodule Glific.Providers.Maytapi.Message do
 
       {:error, error} ->
         Glific.log_error(
-          "Maytapi collection: group-level wa_message insert failed collection=#{inspect(group.id)} org=#{group.organization_id} error=#{inspect(error)}"
+          "Maytapi collection: group-level wa_message insert failed collection=#{SafeLog.safe_inspect(group.id)} org=#{group.organization_id} error=#{SafeLog.safe_inspect(error)}"
         )
 
         {:error, error}

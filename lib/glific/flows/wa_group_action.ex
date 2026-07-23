@@ -12,6 +12,7 @@ defmodule Glific.Flows.WAGroupAction do
     Flows.MessageVarParser,
     Providers.Maytapi.Message,
     Repo,
+    SafeLog,
     WAGroup.WAMessage
   }
 
@@ -102,7 +103,7 @@ defmodule Glific.Flows.WAGroupAction do
 
   defp handle_message_result({:error, reason}, context, _messages, _attrs) do
     Glific.log_error(
-      "Maytapi send failed (flow action): wa_group=#{inspect(context.wa_group_id)} reason=#{inspect(reason)}"
+      "Maytapi send failed (flow action): wa_group=#{SafeLog.safe_inspect(context.wa_group_id)} reason=#{SafeLog.safe_inspect(reason)}"
     )
 
     Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "flow_action"})
