@@ -58,9 +58,59 @@ defmodule Glific.Sheets.GoogleSheets do
         body: %{majorDimension: "ROWS", values: data}
       ]
 
-      Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params)
+      case Spreadsheets.sheets_spreadsheets_values_append(conn, spreadsheet_id, range, params) do
+        {:ok, result} ->
+          {:ok, result}
+
+        {:error, %Tesla.Env{status: 403, body: body} = reason} ->
+          if sheets_api_disabled?(body) do
+            Glific.log_error(
+              "Google Sheets API is not enabled for organization #{org_id}. Enable it in the GCP console at https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=<project-id> then retry."
+            )
+
+            {:error, reason}
+          else
+            message =
+              "Google Sheets API write failed for organization #{org_id}, spreadsheet #{spreadsheet_id}: #{safe_inspect(reason)}"
+
+            Glific.log_error(message)
+            {:error, reason}
+          end
+
+        {:error, reason} ->
+          message =
+            "Google Sheets API write failed for organization #{org_id}, spreadsheet #{spreadsheet_id}: #{safe_inspect(reason)}"
+
+          Glific.log_error(message)
+          {:error, reason}
+      end
     end
   end
+
+  @spec sheets_api_disabled?(any()) :: boolean()
+  defp sheets_api_disabled?(body) when is_binary(body) do
+    disabled? =
+      body
+      |> String.downcase()
+      |> String.contains?(["has not been used in project", "it is disabled"])
+
+    if disabled? do
+      true
+    else
+      case Jason.decode(body) do
+        {:ok, decoded_body} -> sheets_api_disabled?(decoded_body)
+        {:error, _} -> false
+      end
+    end
+  end
+
+  defp sheets_api_disabled?(%{"error" => %{"message" => message}}) when is_binary(message) do
+    message
+    |> String.downcase()
+    |> String.contains?(["has not been used in project", "it is disabled"])
+  end
+
+  defp sheets_api_disabled?(_body), do: false
 
   @doc false
   @spec fetch_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
