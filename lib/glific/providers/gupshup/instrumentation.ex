@@ -3,27 +3,32 @@ defmodule Glific.Providers.Gupshup.Instrumentation do
   Gupshup instrumentation adapter.
 
   Inherits the standard provider counters (`track_send/2`, `track_receive/2`,
-  `track_status/2`, `track_action/3`) from
-  `Glific.Providers.Instrumentation`, and adds Gupshup's one bit of
-  custom classification: a frequency-capped 4xx is recorded under a
-  `frequency_capped` status rather than `error`, so throttled sends don't trip
-  send-failure alerts. HSM template sync is recorded via
-  `track_action("hsm_sync", ...)`.
+  `track_status/3`, `track_action/3`) from `Glific.Providers.Instrumentation`,
+  and adds Gupshup's frequency-cap classification: a capped send is recorded as
+  `frequency_capped` rather than `error`, both on the synchronous send response
+  (`classify_send/2`) and on the asynchronous failed delivery callback
+  (`classify_status/2`), so throttled traffic doesn't trip failure alerts. HSM
+  template sync is recorded via `track_action("hsm_sync", ...)`.
   """
 
   use Glific.Providers.Instrumentation, provider: "gupshup"
 
-  # NOTE: 472 is Gupshup's documented "Frequency Cap" code. The exact code(s) to
-  # exclude are an open question on the monitoring ticket — confirm against live
-  # payloads and adjust this list. Call sites and the generic framework stay
-  # untouched.
-  @frequency_cap_error_codes [472]
+  # 131049 is Meta's "not delivered to maintain healthy ecosystem engagement"
+  # code, surfaced by Gupshup at payload.payload.code on a failed callback —
+  # confirmed against a live frequency-capped payload.
+  @frequency_cap_error_codes [131_049]
 
   def classify_send(:error, context) do
     if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
   end
 
   def classify_send(status, context), do: super(status, context)
+
+  def classify_status(:error, context) do
+    if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
+  end
+
+  def classify_status(status, context), do: super(status, context)
 
   @doc """
   Whether a Gupshup error code represents a frequency-capped send. Accepts the

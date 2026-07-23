@@ -28,7 +28,8 @@ defmodule Glific.Providers.Instrumentation do
     * `provider_send_count` — outbound sends, tagged `status` (final, after
       classification) and `type` (`hsm` | `session`).
     * `provider_receive_count` — inbound messages, tagged `type`.
-    * `provider_status_count` — delivery-status callbacks, tagged `status`.
+    * `provider_status_count` — delivery-status callbacks, tagged `status`
+      (final, after classification).
     * `provider_action_count` — provider-specific named actions (e.g. Gupshup's
       `hsm_sync`), tagged `action` and `status` (`success` | `failure`).
 
@@ -63,8 +64,9 @@ defmodule Glific.Providers.Instrumentation do
   Injects provider-scoped instrumentation helpers into the caller.
 
   Requires `:provider` in `opts` and defines `provider/0`, `classify_send/2`
-  (overridable), and `track_send/2`, `track_receive/2`, `track_status/2`,
-  `track_action/3` that delegate to this module.
+  and `classify_status/2` (both overridable), and `track_send/2`,
+  `track_receive/2`, `track_status/3`, `track_action/3` that delegate to this
+  module.
   """
   defmacro __using__(opts) do
     provider = Keyword.fetch!(opts, :provider)
@@ -83,13 +85,27 @@ defmodule Glific.Providers.Instrumentation do
       `provider_send_count`.
 
       `status` is the raw outcome (`:success` | `:error` | `:timeout`); `context`
-      is whatever the call site passed to `track_send/2` (e.g. `%{error_code: 472}`).
+      is whatever the call site passed to `track_send/2` (e.g. `%{error_code: 131_049}`).
       Override to add provider-specific classification.
       """
       @spec classify_send(atom(), map()) :: atom()
       def classify_send(status, _context), do: status
 
       defoverridable classify_send: 2
+
+      @doc """
+      Reclassify a delivery-status callback into the final status recorded on
+      `provider_status_count`.
+
+      `status` is the raw callback status (`:enqueued` | `:sent` | `:delivered`
+      | `:read` | `:error`); `context` is whatever the call site passed as opts
+      to `track_status/3` (e.g. `%{error_code: 131_049}` from a failed callback).
+      Override to add provider-specific classification.
+      """
+      @spec classify_status(atom(), map()) :: atom()
+      def classify_status(status, _context), do: status
+
+      defoverridable classify_status: 2
 
       @doc "See `Glific.Providers.Instrumentation.track_send/3`."
       @spec track_send(Instrumentation.send_status(), keyword()) :: :ok
@@ -101,10 +117,10 @@ defmodule Glific.Providers.Instrumentation do
       def track_receive(type, organization_id),
         do: Instrumentation.track_receive(__MODULE__, type, organization_id)
 
-      @doc "See `Glific.Providers.Instrumentation.track_status/3`."
-      @spec track_status(atom(), non_neg_integer() | nil) :: :ok
-      def track_status(status, organization_id),
-        do: Instrumentation.track_status(__MODULE__, status, organization_id)
+      @doc "See `Glific.Providers.Instrumentation.track_status/4`."
+      @spec track_status(atom(), non_neg_integer() | nil, keyword()) :: :ok
+      def track_status(status, organization_id, opts \\ []),
+        do: Instrumentation.track_status(__MODULE__, status, organization_id, opts)
 
       @doc "See `Glific.Providers.Instrumentation.track_action/4`."
       @spec track_action(String.t(), Instrumentation.action_status(), non_neg_integer() | nil) ::
@@ -154,12 +170,15 @@ defmodule Glific.Providers.Instrumentation do
   @doc """
   Record a delivery-status callback (`:enqueued`, `:sent`, `:delivered`,
   `:read`, `:error`).
+
+  `opts` is passed to the adapter's `classify_status/2` as context (e.g.
+  `error_code:` from a failed callback), which may refine the raw status.
   """
-  @spec track_status(module(), atom(), non_neg_integer() | nil) :: :ok
-  def track_status(adapter, status, organization_id) do
+  @spec track_status(module(), atom(), non_neg_integer() | nil, keyword()) :: :ok
+  def track_status(adapter, status, organization_id, opts \\ []) do
     Appsignal.increment_counter("provider_status_count", 1, %{
       provider: adapter.provider(),
-      status: to_string(status),
+      status: to_string(adapter.classify_status(status, Map.new(opts))),
       organization_id: org_tag(organization_id)
     })
 
