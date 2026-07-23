@@ -85,7 +85,7 @@ defmodule Glific.Providers.Instrumentation do
       `provider_send_count`.
 
       `status` is the raw outcome (`:success` | `:error` | `:timeout`); `context`
-      is whatever the call site passed to `track_send/2` (e.g. `%{error_code: 472}`).
+      is whatever the call site passed to `track_send/2` (e.g. `%{error_code: 131_049}`).
       Override to add provider-specific classification.
       """
       @spec classify_send(atom(), map()) :: atom()
@@ -99,7 +99,7 @@ defmodule Glific.Providers.Instrumentation do
 
       `status` is the raw callback status (`:enqueued` | `:sent` | `:delivered`
       | `:read` | `:error`); `context` is whatever the call site passed as opts
-      to `track_status/3` (e.g. `%{error_code: 472}` from a failed callback).
+      to `track_status/3` (e.g. `%{error_code: 131_049}` from a failed callback).
       Override to add provider-specific classification.
       """
       @spec classify_status(atom(), map()) :: atom()

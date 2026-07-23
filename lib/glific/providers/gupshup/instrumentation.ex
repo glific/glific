@@ -13,11 +13,10 @@ defmodule Glific.Providers.Gupshup.Instrumentation do
 
   use Glific.Providers.Instrumentation, provider: "gupshup"
 
-  # NOTE: 472 is Gupshup's documented "Frequency Cap" code. The exact code(s) to
-  # exclude are an open question on the monitoring ticket — confirm against live
-  # payloads and adjust this list. Call sites and the generic framework stay
-  # untouched.
-  @frequency_cap_error_codes [472]
+  # 131049 is Meta's "not delivered to maintain healthy ecosystem engagement"
+  # code, surfaced by Gupshup at payload.payload.code on a failed callback —
+  # confirmed against a live frequency-capped payload.
+  @frequency_cap_error_codes [131_049]
 
   def classify_send(:error, context) do
     if frequency_capped?(context[:error_code]), do: :frequency_capped, else: :error
