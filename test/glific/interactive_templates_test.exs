@@ -528,179 +528,39 @@ defmodule Glific.InteractiveTemplatesTest do
   end
 
   setup_all do
-    Tesla.Mock.mock_global(fn env ->
-      cond do
-        String.contains?(env.body, "Test glific quick reply?") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Quick Reply Fixture") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Test 1") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "परीक्षण 1"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Test 2") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "परीक्षण 2"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "How was your experience with Glific?") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Quick Reply Test Text 2") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "त्वरित उत्तर स्थिरता"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Great") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "उत्कृष्ट"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Awesome") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "शानदार"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "please share your location") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "कृपया अपना स्थान साझा करें"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Glific Features") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "शानदार विशेषताएं"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "Excitement level") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "उत्साह का स्तर"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "glific") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "ग्लिफ़िक"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        String.contains?(env.body, "caption is footer") ->
-          %Tesla.Env{
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "कैप्शन पाद लेख है"}
-                ]
-              }
-            },
-            status: 200
-          }
-
-        true ->
-          %Tesla.Env{
-            status: 200,
-            body: %{
-              "data" => %{
-                "translations" => [
-                  %{"translatedText" => "अनुवाद उपलब्ध नहीं है"}
-                ]
-              }
-            }
-          }
-      end
-    end)
-
+    Tesla.Mock.mock_global(&default_translate_mock/1)
     :ok
+  end
+
+  # ordered same as the original `cond` this replaced -- first substring match wins, since
+  # some fixture bodies could otherwise match more than one entry (e.g. "glific" vs "Glific
+  # Features").
+  @translate_fixtures [
+    {"Test glific quick reply?", "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"},
+    {"Quick Reply Fixture", "त्वरित उत्तर स्थिरता"},
+    {"Test 1", "परीक्षण 1"},
+    {"Test 2", "परीक्षण 2"},
+    {"How was your experience with Glific?", "ग्लिफ़िक त्वरित उत्तर का परीक्षण करें?"},
+    {"Quick Reply Test Text 2", "त्वरित उत्तर स्थिरता"},
+    {"Great", "उत्कृष्ट"},
+    {"Awesome", "शानदार"},
+    {"please share your location", "कृपया अपना स्थान साझा करें"},
+    {"Glific Features", "शानदार विशेषताएं"},
+    {"Excitement level", "उत्साह का स्तर"},
+    {"glific", "ग्लिफ़िक"},
+    {"caption is footer", "कैप्शन पाद लेख है"}
+  ]
+
+  defp default_translate_mock(env) do
+    translated_text =
+      Enum.find_value(@translate_fixtures, "अनुवाद उपलब्ध नहीं है", fn {match, translation} ->
+        String.contains?(env.body, match) && translation
+      end)
+
+    %Tesla.Env{
+      status: 200,
+      body: %{"data" => %{"translations" => [%{"translatedText" => translated_text}]}}
+    }
   end
 
   test "translate_interactive_template/1 translates an interactive",
@@ -726,6 +586,69 @@ defmodule Glific.InteractiveTemplatesTest do
     assert {:ok, %InteractiveTemplate{translations: translations}, _message} = result
 
     assert translations == @valid_url_attrs[:translations]
+  end
+
+  test "translate_interactive_template/1 returns an error and does not persist blank translations on a hard Google Translate failure",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(attrs)
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 403,
+        body: %{
+          "error" => %{
+            "code" => 403,
+            "status" => "PERMISSION_DENIED",
+            "message" =>
+              "Requests to this API translate method google.cloud.translate.v2.TranslateService.TranslateText are blocked.",
+            "details" => [%{"reason" => "API_KEY_SERVICE_BLOCKED"}]
+          }
+        }
+      }
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
+
+    assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
+    assert reason =~ "Translation has failed"
+    assert reason =~ "reach out to the Glific team"
+
+    reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
+    assert reloaded.translations == interactive.translations
+  end
+
+  test "translate_interactive_template/1 returns an error for list-type templates on a hard Google Translate failure",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(Map.merge(@valid_list_attrs, attrs))
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{status: 500, body: %{"error" => %{"message" => "internal error"}}}
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
+
+    assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
+    assert reason =~ "Translation has failed"
+
+    reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
+    assert reloaded.translations == interactive.translations
+  end
+
+  test "translate_interactive_template/1 returns an error for location-request templates on a hard Google Translate failure",
+       %{organization_id: _organization_id} = attrs do
+    interactive = Fixtures.interactive_fixture(Map.merge(@valid_location_attrs, attrs))
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{status: 500, body: %{"error" => %{"message" => "internal error"}}}
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
+
+    assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
+    assert reason =~ "Translation has failed"
+
+    reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
+    assert reloaded.translations == interactive.translations
   end
 
   test "export the interactive template when add translation is true",
