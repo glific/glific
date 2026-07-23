@@ -50,12 +50,17 @@ defmodule Glific.Jobs.Instrumentation do
 
   @spec record(String.t(), status(), non_neg_integer() | nil, integer()) :: :ok
   defp record(job, status, organization_id, start) do
+    duration = duration_ms(start)
     tags = %{job: job, status: Atom.to_string(status), organization_id: org_tag(organization_id)}
 
     Appsignal.increment_counter("job_run_count", 1, tags)
-    Appsignal.add_distribution_value("job_run_latency", duration_ms(start), tags)
+    Appsignal.add_distribution_value("job_run_latency", duration, tags)
 
     :ok
+  rescue
+    # Metrics are best-effort: record/4 runs on track/3's success-return path, so a
+    # failure emitting them must never turn a healthy job into a failed one.
+    _exception -> :ok
   end
 
   @spec duration_ms(integer()) :: integer()
