@@ -46,7 +46,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:delete_test, GlificWeb.Schema, "assets/gql/organizations/delete_test.gql")
   load_gql(:get_app_usage, GlificWeb.Schema, "assets/gql/organizations/get_app_usage.gql")
 
-  load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
   load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
 
@@ -290,23 +289,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     organization = get_in(query_data, [:data, "updateOrganizationStatus", "organization"])
     assert organization["isActive"] == true
     assert organization["isApproved"] == true
-    assert organization["name"] == "Fixture Organization"
-  end
-
-  test "delete organization inactive organization", %{glific_admin: user} do
-    organization = Fixtures.organization_fixture(%{is_active: false})
-
-    result =
-      auth_query_gql_by(:delete_onboarded, user,
-        variables: %{
-          "deleteOrganizationId" => organization.id,
-          "isConfirmed" => true
-        }
-      )
-
-    assert {:ok, query_data} = result
-    organization = get_in(query_data, [:data, "deleteInactiveOrganization", "organization"])
-    assert organization["isActive"] == false
     assert organization["name"] == "Fixture Organization"
   end
 
@@ -847,34 +829,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
       # mutation operates on the caller's own org and succeeds
       assert get_in(query_data, [:errors]) == nil
       assert get_in(query_data, [:data, "deleteOrganizationTestData", "errors"]) == nil
-    end
-
-    test "delete_inactive_organization rejects admin, manager, and staff roles, but allows glific_admin",
-         %{
-           user: admin_user,
-           manager: manager_user,
-           staff: staff_user,
-           glific_admin: glific_admin_user
-         } do
-      for rejected_user <- [admin_user, manager_user, staff_user] do
-        {:ok, query_data} =
-          auth_query_gql_by(:delete_onboarded, rejected_user,
-            variables: %{"deleteOrganizationId" => 999_999_999, "isConfirmed" => false}
-          )
-
-        [error] = get_in(query_data, [:errors])
-        assert error.message == "Unauthorized"
-      end
-
-      # is_confirmed: false short-circuits before touching the database, so this
-      # only asserts that the glific_admin role clears the authorization gate
-      {:ok, query_data} =
-        auth_query_gql_by(:delete_onboarded, glific_admin_user,
-          variables: %{"deleteOrganizationId" => 999_999_999, "isConfirmed" => false}
-        )
-
-      [error] = get_in(query_data, [:errors])
-      assert error.message == "Cannot delete organization"
     end
 
     test "reset_organization rejects admin, manager, and staff roles, but allows glific_admin",

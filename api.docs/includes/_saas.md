@@ -112,69 +112,6 @@ mutation updateOrganizationStatus($updateOrganizationid: ID!, $isActive: Boolean
 | ---------------------------------------------------- | ------------------------------- |
 | <a href="#organizationresult">OrganizationResult</a> | The updated organization object |
 
-## Delete Organization with status as inactive
-
-```graphql
-mutation deleteInactiveOrganization($deleteOrganizationID: ID!, $isConfirmed: Boolean) {}
-  deleteInactiveOrganization(
-    deleteOrganizationID: $deleteOrganizationID,
-    isConfirmed: $isConfirmed) {
-    organization {
-      email
-      isActive
-      isApproved
-      name
-      shortcode
-    }
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": "1",
-  "input": {
-    "isConfirmed": true,
-    "deleteOrganizationId": 1,
-  }
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteInactiveOrganization": {
-      "errors": null,
-      "organization": {
-        "__typename": "Organization",
-        "email": "ADMIN@gmail.com",
-        "isActive": true,
-        "isApproved": true,
-        "name": "Glific",
-        "shortcode": "glific"
-      }
-    }
-  }
-}
-```
-
-### Query Parameters
-
-| Parameter | Type                                                           | Default  | Description |
-| --------- | -------------------------------------------------------------- | -------- | ----------- |
-| deleteOrganizationID         | <a href="#id">ID</a>!                                          | required |             |
-| isConfirmed | <a href="#boolean">Boolean</a> | required |             |
-
-### Return Parameters
-
-| Type                                                 | Description                     |
-| ---------------------------------------------------- | ------------------------------- |
-| <a href="#organizationresult">OrganizationResult</a> | The updated organization object |
-
 ## Reset selected tables from Organization
 
 Used to delete potential test and sample data. Currently only deletes entries from
