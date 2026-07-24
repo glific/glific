@@ -2096,6 +2096,109 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for the organizations table (SaaS dataset only), used to join cross-org
+  tables for the org name/status.
+
+  Excludes PII (email, team_emails), secrets (signature_phrase) and config blobs
+  (setting, fields, out_of_office, regx_flow).
+  """
+  @spec organization_schema :: list()
+  def organization_schema do
+    [
+      %{
+        description: "Unique ID for the organization",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the organization",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Shortcode of the organization",
+        name: "shortcode",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Current lifecycle status of the organization",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is active",
+        name: "is_active",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is approved",
+        name: "is_approved",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is suspended",
+        name: "is_suspended",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp until which the organization is suspended",
+        name: "suspended_until",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Whether the organization is a trial organization",
+        name: "is_trial_org",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Expiration date of the trial",
+        name: "trial_expiration_date",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Timestamp when the organization was soft-deleted",
+        name: "deleted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the organization was created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the organization was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Schema for message conversation table
   """
   @spec message_conversation_schema :: list()
