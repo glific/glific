@@ -29,13 +29,25 @@ defmodule Glific.Appsignal do
 
     if :rand.uniform() < sampling_rate / 100 do
       # oban telemetry measurements are in microseconds
-      queue_time_sec = Float.ceil(measurement.queue_time / 1_000_000, 2)
-
-      Appsignal.add_distribution_value("oban_job_latency", queue_time_sec, %{
+      tags = %{
         queue: meta.queue,
         worker: meta.worker,
         organization_id: organization_id_tag(meta.args)
-      })
+      }
+
+      # queue_time is how long the job waited before running; duration is how long
+      # it actually ran. Both come free here for every queued worker.
+      Appsignal.add_distribution_value(
+        "oban_job_latency",
+        Float.ceil(measurement.queue_time / 1_000_000, 2),
+        tags
+      )
+
+      Appsignal.add_distribution_value(
+        "oban_job_duration",
+        Float.ceil(measurement.duration / 1_000_000, 2),
+        tags
+      )
     end
   end
 
