@@ -1666,6 +1666,17 @@ defmodule Glific.Flows.ActionTest do
       assert message =~ "Message template expression has an unsupported expression"
     end
 
+    test "ignores non-string values (set_contact_profile stores a map)", %{flow: flow} do
+      # action.value is not always a string: set_contact_profile holds a map. It is
+      # never evaluated as an expression, so validating it must not flag the flow.
+      action = %Action{
+        type: "set_contact_profile",
+        value: %{"name" => "@results.name", "type" => "@results.role"}
+      }
+
+      assert Action.validate_expressions(action, [], flow) == []
+    end
+
     test "allows safe expressions and blank fields", %{flow: flow} do
       safe = %Action{type: "set_run_result", value: "<%= 5 * 60 %>"}
       assert Action.validate_expressions(safe, [], flow) == []

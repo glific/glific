@@ -17,7 +17,7 @@ defmodule Glific.Providers.Maytapi.InstrumentationTest do
     end
 
     test "does not reclassify Gupshup's frequency-cap code" do
-      assert Instrumentation.classify_send(:error, %{error_code: 472}) == :error
+      assert Instrumentation.classify_send(:error, %{error_code: 131_049}) == :error
     end
   end
 

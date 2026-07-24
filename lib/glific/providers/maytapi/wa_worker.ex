@@ -23,6 +23,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     Providers.Maytapi.Sender,
     Providers.Worker,
     Repo,
+    SafeLog,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -136,7 +137,7 @@ defmodule Glific.Providers.Maytapi.WAWorker do
 
   defp log_retry_skip(result, message, payload, org_id) do
     Glific.log_error(
-      "Maytapi send retry failed: wa_group=#{inspect(message["wa_group_id"])} phone_id=#{inspect(payload["phone_id"])} org=#{org_id} result=#{inspect(result)}"
+      "Maytapi send retry failed: wa_group=#{SafeLog.safe_inspect(message["wa_group_id"])} phone_id=#{SafeLog.safe_inspect(payload["phone_id"])} org=#{org_id} result=#{SafeLog.safe_inspect(result)}"
     )
 
     Appsignal.increment_counter("glific.maytapi.send_failed", 1, %{source: "worker_retry"})

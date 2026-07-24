@@ -620,21 +620,22 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t(), non_neg_integer()) ::
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
-    # Only touch the DB / cache once the flow is valid, so an invalid flow can
-    # never go live.
-    case Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id}) do
-      [] ->
-        case do_publish_flow(flow, user_id) do
-          {:ok, _revision} ->
-            Logger.info("Published Flow: flow_id: '#{flow.id}'")
-            {:ok, flow}
+    Logger.info("Published Flow: flow_id: '#{flow.id}'")
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    result = do_publish_flow(flow, user_id)
 
-          {:error, _} = result ->
-            Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
-            result
-        end
+    cond do
+      # if validate and published both worked
+      errors == [] && elem(result, 0) == :ok ->
+        {:ok, flow}
 
-      errors ->
+      # we had an error saving to the DB
+      elem(result, 0) == :error ->
+        Logger.info("Error while publishing the flow. #{SafeLog.safe_inspect(result)}")
+        result
+
+      # We had an error validating the flow
+      true ->
         {:errors, format_flow_errors(errors)}
     end
   end

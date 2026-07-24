@@ -59,7 +59,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   defp update_status(conn, params, status) do
     bsp_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
     Communications.Message.update_bsp_status(bsp_message_id, status, params)
-    Instrumentation.track_status(status, conn.assigns[:organization_id])
+
+    Instrumentation.track_status(status, conn.assigns[:organization_id],
+      error_code: get_in(params, ["payload", "payload", "code"])
+    )
+
     handler(conn, params, "Status updated")
   end
 end
