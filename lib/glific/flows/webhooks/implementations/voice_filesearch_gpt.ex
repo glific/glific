@@ -52,10 +52,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     case transcribe(fields["speech"], organization_id) do
-      {:ok, transcribed_text} ->
+      {:ok, transcribed_text, stt_ms, size_bucket} ->
         fields
         |> Map.put("question", transcribed_text)
-        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, voice_start_timestamp)
+        |> dispatch_llm(
+          organization_id,
+          flow_id,
+          contact_id,
+          api_key,
+          voice_start_timestamp,
+          stt_ms,
+          size_bucket
+        )
         |> KaapiWebhook.to_result()
 
       {:error, _error_type, _reason} = error ->
@@ -63,15 +71,24 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     end
   end
 
+  # The `stt` span is "download + STT": speech_to_text/2 does the Gupshup media download and the
+  # Gemini transcription, and the download is the size-sensitive part.
   @spec transcribe(any(), non_neg_integer()) ::
-          {:ok, String.t()} | {:error, ErrorType.t(), String.t()}
+          {:ok, String.t(), non_neg_integer(), String.t()} | {:error, ErrorType.t(), String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
-      case Gemini.speech_to_text(speech, organization_id) do
+      start = System.monotonic_time()
+      result = Gemini.speech_to_text(speech, organization_id)
+      stt_ms = Instrumentation.duration_ms(start)
+      size_bucket = Instrumentation.size_bucket(audio_byte_size(result))
+
+      case result do
         %{success: true, asr_response_text: transcribed_text} when is_binary(transcribed_text) ->
-          {:ok, transcribed_text}
+          track_stt(stt_ms, size_bucket, "success")
+          {:ok, transcribed_text, stt_ms, size_bucket}
 
         %{success: false} = failure ->
+          track_stt(stt_ms, size_bucket, "failure")
           detail = failure[:asr_response_text]
           {:error, KaapiWebhook.from_http_status(detail), stt_failure_reason(detail)}
 
@@ -80,6 +97,18 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           {:error, :unknown, stt_failure_reason(unexpected)}
       end
     end
+  end
+
+  @spec audio_byte_size(any()) :: non_neg_integer() | nil
+  defp audio_byte_size(%{audio_byte_size: bytes}) when is_integer(bytes), do: bytes
+  defp audio_byte_size(_result), do: nil
+
+  @spec track_stt(non_neg_integer(), String.t(), String.t()) :: :ok
+  defp track_stt(stt_ms, size_bucket, status) do
+    Instrumentation.track_voice_component(name(), "stt", stt_ms,
+      size_bucket: size_bucket,
+      status: status
+    )
   end
 
   # to_string/1 raises on a map; safe_inspect renders any shape
@@ -93,9 +122,20 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
-          integer()
+          integer(),
+          non_neg_integer(),
+          String.t()
         ) :: map()
-  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, voice_start_timestamp) do
+  defp dispatch_llm(
+         fields,
+         organization_id,
+         flow_id,
+         contact_id,
+         api_key,
+         voice_start_timestamp,
+         stt_ms,
+         size_bucket
+       ) do
     {callback_url, request_metadata} =
       KaapiWebhook.build_flow_resume_metadata(
         organization_id,
@@ -106,10 +146,15 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         voice_start_timestamp
       )
 
+    kaapi_dispatch_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
     request_metadata =
       Map.merge(request_metadata, %{
         call_type: "voice_llm",
         webhook_name: name(),
+        audio_size_bucket: size_bucket,
+        stt_latency_ms: stt_ms,
+        kaapi_dispatch_ts: kaapi_dispatch_ts,
         voice_post_process: %{
           source_language: fields["source_language"],
           target_language: fields["target_language"],
@@ -127,10 +172,37 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   @impl true
   @spec handle_callback(map(), map(), Behaviour.ctx()) :: map()
   def handle_callback(%{"success" => true}, response, %{organization_id: organization_id}) do
-    voice_post_process(organization_id, response)
+    tts_start = System.monotonic_time()
+
+    try do
+      voice_post_process(organization_id, response)
+    rescue
+      exception ->
+        # Record a (failure) latency sample even when NMT/TTS raises, so the stage isn't a blind
+        # gap; then re-raise.
+        record_tts_latency(response, tts_start, "failure")
+        reraise exception, __STACKTRACE__
+    else
+      voice_response ->
+        record_tts_latency(response, tts_start, "success")
+        voice_response
+    end
   end
 
-  def handle_callback(_result, response, _ctx), do: response
+  def handle_callback(_result, response, _ctx) do
+    # No TTS ran — nil skips the tts component (rather than a fake 0); filesearch + total still record.
+    Instrumentation.record_voice_latencies(response, nil, "failure")
+    response
+  end
+
+  @spec record_tts_latency(map(), integer(), String.t()) :: :ok
+  defp record_tts_latency(response, tts_start, status) do
+    Instrumentation.record_voice_latencies(
+      response,
+      Instrumentation.duration_ms(tts_start),
+      status
+    )
+  end
 
   @doc """
   Voice resume post-processing: applies NMT + TTS to the Kaapi LLM `response`, merging
