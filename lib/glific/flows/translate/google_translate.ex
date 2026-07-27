@@ -4,12 +4,17 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
   """
   @behaviour Glific.Flows.Translate.Translate
 
+  require Logger
+
   alias Glific.{
     Flows.Translate.Translate,
     Flows.Translate.TranslateLog,
     GoogleTranslate,
     Settings
   }
+
+  # Google flags an unsupported target language with a 400 whose message is one of these.
+  @unsupported_language_errors ["Bad language pair", "Invalid Value"]
 
   @doc """
   Translate a list of strings from language 'src' to language 'dst'.
@@ -102,13 +107,21 @@ defmodule Glific.Flows.Translate.GoogleTranslate do
         }
         |> TranslateLog.create_translate_log()
 
-        Glific.log_error(
-          "Google Translate failed for org #{org_id} (#{languages["src"]} -> #{languages["dst"]}): #{error}",
-          true
-        )
+        translate_error(error, languages, org_id)
+    end
+  end
 
-        {:error,
-         "Translation has failed. Please reach out to the Glific team as soon as possible."}
+  @spec translate_error(String.t(), map(), non_neg_integer()) :: {:error, String.t()}
+  defp translate_error(error, languages, org_id) do
+    log =
+      "Translation failed for org #{org_id} (#{languages["src"]} -> #{languages["dst"]}): #{error}"
+
+    if Enum.any?(@unsupported_language_errors, &String.contains?(error, &1)) do
+      Logger.warning(log)
+      {:error, "Auto-translation is not supported for #{languages["dst"]}."}
+    else
+      Glific.log_error(log)
+      {:error, "Translation failed. Please try again or contact the Glific team."}
     end
   end
 end

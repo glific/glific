@@ -125,11 +125,11 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
     dst = "hindi"
 
     assert {:error, reason} = GoogleTranslate.translate(string, src, dst, org_id: org_id)
-    assert reason =~ "Translation has failed"
-    assert reason =~ "reach out to the Glific team"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
   end
 
-  test "translate/3 returns the generic failure message, not the raw Google 403 API_KEY_SERVICE_BLOCKED detail" do
+  test "translate/3 returns a generic failure message on a hard API failure" do
     org_id = Fixtures.get_org_id()
 
     Tesla.Mock.mock_global(fn _env ->
@@ -154,8 +154,50 @@ defmodule Glific.Flows.Translate.GoogleTranslateTest do
                org_id: org_id
              )
 
-    assert reason =~ "Translation has failed"
-    assert reason =~ "reach out to the Glific team"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
+  end
+
+  test "translate/3 returns an unsupported-language message for a Bad language pair error" do
+    org_id = Fixtures.get_org_id()
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 400,
+        body: %{"error" => %{"message" => "Bad language pair: en|gon"}}
+      }
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_mock/1) end)
+
+    assert {:error, reason} =
+             GoogleTranslate.translate(["Some text to translate"], "english", "gondi",
+               org_id: org_id
+             )
+
+    assert reason =~ "not supported"
+    refute reason =~ ~r/google/i
+  end
+
+  test "translate/3 returns an unsupported-language message for an Invalid Value error" do
+    org_id = Fixtures.get_org_id()
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 400,
+        body: %{"error" => %{"message" => "Invalid Value"}}
+      }
+    end)
+
+    on_exit(fn -> Tesla.Mock.mock_global(&default_mock/1) end)
+
+    assert {:error, reason} =
+             GoogleTranslate.translate(["Some text to translate"], "english", "Sign Language",
+               org_id: org_id
+             )
+
+    assert reason =~ "not supported"
+    refute reason =~ ~r/google/i
   end
 
   test "check_large_strings/1 handles mix of short and long strings" do
