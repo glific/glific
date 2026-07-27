@@ -1203,6 +1203,78 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(Map.merge(attrs, @valid_attrs))
     end
 
+    test "create_contact/1 normalizes the phone to canonical form",
+         %{organization_id: _organization_id} = attrs do
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      assert contact.phone == "919917443992"
+    end
+
+    test "differently-formatted variants of one number resolve to a single contact",
+         %{organization_id: organization_id} = attrs do
+      {:ok, canonical} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      assert canonical.phone == "919917443992"
+
+      {:ok, plain} =
+        Contacts.upsert(%{
+          phone: "919917443992",
+          name: "plain form",
+          organization_id: organization_id
+        })
+
+      assert plain.id == canonical.id
+      assert plain.phone == "919917443992"
+
+      {:ok, spaced} =
+        Contacts.upsert(%{
+          phone: "91 99174 43992",
+          name: "spaced form",
+          organization_id: organization_id
+        })
+
+      assert spaced.id == canonical.id
+      assert spaced.phone == "919917443992"
+
+      assert Contacts.count_contacts(%{filter: %{phone: "919917443992"}}) == 1
+    end
+
+    test "create_contact/1 leaves simulator numbers unchanged",
+         %{organization_id: _organization_id} = attrs do
+      simulator_phone = "9876543210_7"
+
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: simulator_phone, name: "simulator"}))
+
+      assert contact.phone == simulator_phone
+    end
+
+    test "create_contact/1 leaves unparseable numbers untouched",
+         %{organization_id: _organization_id} = attrs do
+      {:ok, contact} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "not a number", name: "junk"}))
+
+      assert contact.phone == "not a number"
+    end
+
+    test "upsert/1 does not overwrite the canonical phone with an incoming variant",
+         %{organization_id: organization_id} = attrs do
+      {:ok, canonical} =
+        Contacts.create_contact(Map.merge(attrs, %{phone: "+919917443992", name: "plus form"}))
+
+      {:ok, upserted} =
+        Contacts.upsert(%{
+          phone: "919917443992",
+          name: "updated",
+          organization_id: organization_id
+        })
+
+      assert upserted.id == canonical.id
+      assert upserted.phone == "919917443992"
+    end
+
     test "ensure that contact returns the valid state for sending the message",
          %{organization_id: _organization_id} = attrs do
       contact =

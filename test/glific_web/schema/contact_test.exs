@@ -221,7 +221,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
     contact = get_in(query_data, [:data, "createContact", "contact"])
     assert Map.get(contact, "name") == name
-    assert Map.get(contact, "phone") == phone
+    # the phone is canonicalized to E.164 (without +) before storage
+    assert Map.get(contact, "phone") == "14155551212"
 
     # try creating the same contact twice
     _ =

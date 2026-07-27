@@ -6,6 +6,7 @@ defmodule Glific.Contacts.Contact do
   import Ecto.Changeset
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
@@ -133,9 +134,24 @@ defmodule Glific.Contacts.Contact do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_fields_map()
+    |> normalize_phone()
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:active_profile_id)
+  end
+
+  # Canonicalize the phone to E.164 (without +) so differently-formatted variants of the
+  # same number resolve to one contact. Simulator numbers (9876543210_N) and numbers that
+  # cannot be parsed are left untouched.
+  @spec normalize_phone(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp normalize_phone(changeset) do
+    with phone when is_binary(phone) <- get_change(changeset, :phone),
+         false <- Contacts.simulator_contact?(phone),
+         {:ok, normalized} <- Contacts.parse_phone_number(phone) do
+      put_change(changeset, :phone, normalized)
+    else
+      _ -> changeset
+    end
   end
 
   @doc false
