@@ -1,5 +1,9 @@
 defmodule Glific.Users.User do
-  @moduledoc false
+  @moduledoc """
+  The schema for a Glific staff user (as opposed to a `Contact`, who is a message
+  recipient) — login credentials via `Pow`, roles, and the `Contact`/`Organization`
+  they're linked to.
+  """
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
