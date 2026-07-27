@@ -165,10 +165,8 @@ jobs:
       - name: Setup cypress
         run: |
           cd glific-frontend
-          git clone https://github.com/glific/cypress-testing.git
-          cp -r cypress-testing/cypress ./cypress
-          cp cypress-testing/cypress.config.ts.example ./cypress.config.ts
-          yarn add cypress@15.15.0
+          git checkout feat/move_cypress_to_frontend
+          cp cypress.config.ts.example cypress.config.ts
 
       - name: Run glific frontend
         run: |
