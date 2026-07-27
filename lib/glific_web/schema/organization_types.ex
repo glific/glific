@@ -5,8 +5,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 

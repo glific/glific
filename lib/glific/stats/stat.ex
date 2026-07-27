@@ -7,8 +7,6 @@ defmodule Glific.Stats.Stat do
   import Ecto.Changeset
 
   alias __MODULE__
-  import Ecto.Query, warn: false
-
   alias Glific.{Partners.Organization}
 
   @type t() :: %__MODULE__{

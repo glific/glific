@@ -7,7 +7,6 @@ defmodule Glific.Triggers.Trigger do
   import Ecto.Changeset
 
   alias __MODULE__
-  import Ecto.Query, warn: false
 
   alias Glific.{
     AccessControl.Role,

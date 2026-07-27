@@ -5,7 +5,6 @@ defmodule Glific.WAGroup.WAMessage do
   data, delivery status, and links to the `WAGroup`, contact, and managed phone involved.
   """
   use Ecto.Schema
-  import Ecto.Query, warn: false
   alias Glific.Contacts.Location
   alias __MODULE__
 
