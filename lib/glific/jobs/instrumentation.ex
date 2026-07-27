@@ -2,16 +2,18 @@ defmodule Glific.Jobs.Instrumentation do
   @moduledoc """
   Success / error counters for periodic Oban jobs.
 
-  `instrument_oban: false` in `config/runtime.exs` disables AppSignal's built-in
-  per-job metrics, so periodic workers (GCS, BigQuery, assistants, AI evaluations)
-  opt in explicitly by wrapping their work in `track/3`. Each run emits a
-  `job_run_count` counter tagged `job` / `status` / `organization_id`, turning a
-  subsystem's success/error rate into a chartable, alertable metric rather than
-  only an exception report.
+  AppSignal's built-in Oban instrumentation (`instrument_oban: true`) covers
+  per-worker performance for *queued* jobs, but not a status-tagged
+  success / error / discard run count, nor the inline periodic sweeps
+  (`perform_periodic`, `poll_and_update`, `process_timeouts`) that run inside
+  `MinuteWorker` rather than as their own Oban jobs. Periodic workers opt in to
+  those by wrapping their work in `track/3`, which emits a `job_run_count` counter
+  tagged `job` / `status` / `organization_id` — turning a subsystem's success/error
+  rate into a chartable, alertable metric rather than only an exception report.
 
   Execution *latency* is not recorded here — it comes from the central
   `oban_job_duration` distribution emitted by `Glific.Appsignal`'s
-  `[:oban, :job, :stop]` handler, which already covers every queued worker.
+  `[:oban, :job, :stop]` handler.
 
   Modelled on `Glific.Flows.Webhooks.Instrumentation` (flow webhooks) and
   `Glific.Providers.Instrumentation` (BSP send/receive), which follow the same
