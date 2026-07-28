@@ -34,7 +34,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   @max_poll_duration_ms 20 * 60 * 1_000
   @initial_backoff_ms 5_000
   @max_backoff_ms 60_000
-  @text_native_extensions ~w(txt md markdown csv html htm)
+  @text_native_extensions ~w(txt md markdown csv html htm json)
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}

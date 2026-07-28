@@ -697,6 +697,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
           id: "file_csv",
           filename: "data.csv",
           content_chunks: [%{"type" => "text", "text" => "a,b,c"}]
+        },
+        %{
+          id: "file_json",
+          filename: "config.json",
+          content_chunks: [%{"type" => "text", "text" => "{\"a\": 1}"}]
         }
       ]
 
@@ -713,10 +718,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
         filenames = cloned_kb_filenames(assistant, 1)
 
-        assert length(filenames) == 3
+        assert length(filenames) == 4
         assert "Report.pdf.txt" in filenames
         assert "Notes.docx.txt" in filenames
         assert "data.csv" in filenames
+        assert "config.json" in filenames
       end
     end
 
