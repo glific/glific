@@ -3,10 +3,10 @@ defmodule Glific.Flows.Webhooks.Registry do
   Maps a webhook's name string (as it appears in flow JSON URLs) to the
   module that implements `Glific.Flows.Webhooks.Behaviour` for it.
 
-  Every flow-webhook node is registered here and routed, via `Glific.Flows.Webhook`'s
-  internal dispatch, to its `Glific.Flows.Webhooks` implementation module through
-  `Dispatcher.dispatch/3`. Org-specific webhook functions (per-org client modules)
-  fall through to `Glific.Clients.webhook/2` instead.
+  Every flow-webhook node is registered here and routed to its `Glific.Flows.Webhooks`
+  implementation module by `Glific.Flows.Webhook.dispatch_function/3` → `Dispatcher.dispatch/3`.
+  Org-specific webhook functions (per-org client modules) fall through to
+  `Glific.Clients.webhook/2` instead.
 
   ## Why Registry is separate from Dispatcher
 

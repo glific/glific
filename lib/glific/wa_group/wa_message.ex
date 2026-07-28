@@ -1,10 +1,7 @@
 defmodule Glific.WAGroup.WAMessage do
-  @moduledoc """
-  The schema for a message sent or received within a WhatsApp group (as opposed to
-  `Glific.Messages.Message`, which covers 1:1 conversations) — content, poll/reaction
-  data, delivery status, and links to the `WAGroup`, contact, and managed phone involved.
-  """
+  @moduledoc false
   use Ecto.Schema
+  import Ecto.Query, warn: false
   alias Glific.Contacts.Location
   alias __MODULE__
 

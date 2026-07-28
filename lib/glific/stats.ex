@@ -3,7 +3,8 @@ defmodule Glific.Stats do
   The stats manager and API to interface with the stat sub-system
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   use Publicist
 
   alias Glific.{

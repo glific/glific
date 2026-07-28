@@ -3,6 +3,7 @@ defmodule Glific.WhatsappForms.WhatsappFormResponse do
   Whatsapp Form Response schema.
   """
   use Ecto.Schema
+  import Ecto.Query, warn: false
   import Ecto.Changeset
 
   alias __MODULE__

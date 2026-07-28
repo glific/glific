@@ -6,7 +6,7 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,

@@ -2,7 +2,7 @@ defmodule Glific.Contacts do
   @moduledoc """
   The Contacts context.
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
   use Gettext, backend: GlificWeb.Gettext
 
   use Tesla

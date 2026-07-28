@@ -1,12 +1,11 @@
 defmodule Glific.Stats.Stat do
-  @moduledoc """
-  The schema for a single rolled-up usage snapshot (contacts, messages, flows, active
-  users, …) for an organization over a given `period` (hour/day/week/month).
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
 
   alias __MODULE__
+  import Ecto.Query, warn: false
+
   alias Glific.{Partners.Organization}
 
   @type t() :: %__MODULE__{

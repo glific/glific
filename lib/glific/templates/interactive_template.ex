@@ -1,9 +1,5 @@
 defmodule Glific.Templates.InteractiveTemplate do
-  @moduledoc """
-  The schema for an interactive message template (quick reply, list, or location
-  request) — its `type`, the provider-specific `interactive_content` payload, and
-  translations.
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
   alias __MODULE__

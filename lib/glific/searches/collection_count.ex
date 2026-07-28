@@ -3,7 +3,8 @@ defmodule Glific.Searches.CollectionCount do
   Module for checking collection count
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   use Publicist
 
   alias Glific.{

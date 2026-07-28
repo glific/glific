@@ -9,6 +9,7 @@ defmodule Glific.State do
   use GenServer
 
   require Logger
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Communications,

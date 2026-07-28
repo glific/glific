@@ -1,8 +1,5 @@
 defmodule Glific.WAGroup.WaPoll do
-  @moduledoc """
-  The schema for a poll sent to a WhatsApp group — its label, poll options
-  (`poll_content`), and whether multiple answers are allowed.
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
   alias __MODULE__

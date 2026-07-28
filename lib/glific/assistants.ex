@@ -854,8 +854,8 @@ defmodule Glific.Assistants do
       - callback_url: Optional. URL to call for transformation status updates
 
   ## Returns
-    - `{:ok, %{file_id: string, filename: string}}`
-    - `{:error, reason}`
+    - {:ok, %{file_id: string, filename: string}}
+    - {:error, reason}
   """
   @spec upload_file(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}

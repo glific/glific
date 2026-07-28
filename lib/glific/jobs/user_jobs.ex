@@ -2,7 +2,7 @@ defmodule Glific.Jobs.UserJob do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
-  import Ecto.Query
+  import Ecto.Query, warn: false
   alias __MODULE__
 
   alias Glific.{

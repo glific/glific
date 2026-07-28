@@ -4,6 +4,8 @@ defmodule Glific.Processor.ConsumerFlow do
   consumer_worker which is the main workhorse
   """
   @dialyzer {:nowarn_function, context_nil?: 1}
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Contacts.Contact,
     Flows,

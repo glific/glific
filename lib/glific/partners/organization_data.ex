@@ -1,8 +1,5 @@
 defmodule Glific.Partners.OrganizationData do
-  @moduledoc """
-  A generic key/value store scoped to an organization, used to persist ad-hoc
-  data (JSON or text) against a `key` without needing a dedicated schema/migration.
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -2,6 +2,9 @@ defmodule Glific.Providers.Maytapi.Message do
   @moduledoc """
   Message API layer between application and Maytapi
   """
+
+  import Ecto.Query, warn: false
+
   require Logger
 
   alias Glific.{

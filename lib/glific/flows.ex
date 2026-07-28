@@ -3,7 +3,7 @@ defmodule Glific.Flows do
   The Flows context.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
   use Gettext, backend: GlificWeb.Gettext
 
   require Logger

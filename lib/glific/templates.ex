@@ -2,7 +2,8 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 

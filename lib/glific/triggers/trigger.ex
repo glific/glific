@@ -1,12 +1,10 @@
 defmodule Glific.Triggers.Trigger do
-  @moduledoc """
-  The schema for a scheduled flow trigger — when a `Flow` should start (once or on a
-  repeating frequency/day/hour schedule) and which groups/contacts it targets.
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
 
   alias __MODULE__
+  import Ecto.Query, warn: false
 
   alias Glific.{
     AccessControl.Role,

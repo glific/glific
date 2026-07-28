@@ -5,6 +5,8 @@ defmodule Glific.Extensions.Extension do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.{

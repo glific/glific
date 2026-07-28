@@ -1,12 +1,11 @@
 defmodule Glific.Notifications.Notification do
-  @moduledoc """
-  The schema for an in-app notification surfaced to org admins — a category, severity,
-  free-form message, and the entity (as a map) the notification is about.
-  """
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
 
   alias __MODULE__
+  import Ecto.Query, warn: false
+
   alias Glific.{Partners.Organization}
 
   @type t() :: %__MODULE__{

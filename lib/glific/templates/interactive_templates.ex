@@ -11,7 +11,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Templates.InteractiveTemplate
   }
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   @doc """
   Returns the list of interactive templates

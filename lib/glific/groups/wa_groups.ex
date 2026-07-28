@@ -2,7 +2,8 @@ defmodule Glific.Groups.WAGroups do
   @moduledoc """
   Whatsapp groups context.
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   require Logger
 
   alias Glific.{

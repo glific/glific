@@ -3,7 +3,7 @@ defmodule Glific.Profiles do
   The Profiles context.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
   require Logger
 
   alias Glific.{

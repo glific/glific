@@ -2,7 +2,7 @@ defmodule Glific.WhatsappFormsResponses do
   @moduledoc """
   Module to handle WhatsApp Form Responses
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
   use Publicist
   require Logger
 

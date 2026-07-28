@@ -42,7 +42,8 @@ defmodule Glific.Providers.Instrumentation do
   silence check.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   alias Glific.{Messages.Message, Repo}
 
   # No inbound message across the whole platform within this window is treated as

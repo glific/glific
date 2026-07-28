@@ -3,7 +3,7 @@ defmodule Glific.WAManagedPhones do
   The WAGroup context.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,

@@ -2,6 +2,7 @@ defmodule Glific.Flows.Translate.TranslateLog do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
   alias __MODULE__
 
   alias Glific.{

@@ -4,7 +4,7 @@ defmodule Glific.Triggers do
   within Glific
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
   require Logger
 
   alias Glific.{

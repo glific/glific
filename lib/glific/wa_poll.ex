@@ -3,7 +3,7 @@ defmodule Glific.WaPoll do
   The whatsapp poll Context, which encapsulates and manages whatsapp poll
   """
   alias Glific.{Repo, WAGroup.WaPoll}
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   @doc """
   Creates an wa_poll

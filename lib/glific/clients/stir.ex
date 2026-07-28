@@ -14,7 +14,7 @@ defmodule Glific.Clients.Stir do
     Repo
   }
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   @priorities_list [
     {

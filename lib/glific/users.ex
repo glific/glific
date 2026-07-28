@@ -7,7 +7,7 @@ defmodule Glific.Users do
     repo: Glific.Repo,
     user: Glific.Users.User
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   alias Glific.{
     AccessControl.Role,

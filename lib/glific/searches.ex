@@ -3,7 +3,7 @@ defmodule Glific.Searches do
   The Searches context.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
   require Logger
 
   alias __MODULE__

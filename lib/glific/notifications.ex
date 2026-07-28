@@ -3,7 +3,7 @@ defmodule Glific.Notifications do
   The notifications manager and API to interface with the notification sub-system
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
   require Logger
 
   alias Glific.Mails.MailLog

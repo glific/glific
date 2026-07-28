@@ -2,7 +2,7 @@ defmodule Glific.Clients.MukkaMaar do
   @moduledoc """
   Custom webhook implementation specific to MukkaMaar usecase
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
   alias GoogleApi.BigQuery.V2.Api.Jobs
 
   alias Glific.{

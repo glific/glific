@@ -4,6 +4,8 @@ defmodule Glific.Trackers.Tracker do
   """
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.Partners.Organization

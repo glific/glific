@@ -3,7 +3,8 @@ defmodule Glific.Saas.Queries do
   Lets keep all the onboarding queries and validation here
   """
   use Gettext, backend: GlificWeb.Gettext
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   require Logger
 
   alias Glific.{

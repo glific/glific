@@ -2,7 +2,8 @@ defmodule Glific.Groups do
   @moduledoc """
   The Groups context.
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.{

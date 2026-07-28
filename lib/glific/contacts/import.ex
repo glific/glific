@@ -2,7 +2,8 @@ defmodule Glific.Contacts.Import do
   @moduledoc """
   The Contact Importer Module
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   alias Glific.Settings.Language
   alias GlificWeb.Schema.Middleware.Authorize
 

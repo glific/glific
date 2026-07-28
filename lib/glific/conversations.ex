@@ -9,7 +9,8 @@ defmodule Glific.Conversations do
   use Ecto.Schema
   require Logger
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
+
   alias Glific.{Contacts.Contact, Messages, Messages.Message, Repo, Search.Full}
 
   @doc """

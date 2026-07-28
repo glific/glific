@@ -2,7 +2,7 @@ defmodule Glific.Clients.Udhyam do
   @moduledoc """
   Custom implementation for Udhyam
   """
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Flows.Flow,

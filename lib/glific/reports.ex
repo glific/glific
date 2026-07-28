@@ -3,7 +3,7 @@ defmodule Glific.Reports do
   The Reports context.
   """
 
-  import Ecto.Query
+  import Ecto.Query, warn: false
 
   alias Glific.{
     BigQuery.BigQueryJob,
