@@ -53,17 +53,11 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
     case transcribe(fields["speech"], organization_id) do
       {:ok, transcribed_text, stt_ms, size_bucket} ->
+        timing = %{voice_start: voice_start_timestamp, stt_ms: stt_ms, size_bucket: size_bucket}
+
         fields
         |> Map.put("question", transcribed_text)
-        |> dispatch_llm(
-          organization_id,
-          flow_id,
-          contact_id,
-          api_key,
-          voice_start_timestamp,
-          stt_ms,
-          size_bucket
-        )
+        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, timing)
         |> KaapiWebhook.to_result()
 
       {:error, _error_type, _reason} = error ->
@@ -94,6 +88,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
 
         # catch-all: normalise an unusual passthrough instead of raising CaseClauseError
         unexpected ->
+          track_stt(stt_ms, size_bucket, "failure")
           {:error, :unknown, stt_failure_reason(unexpected)}
       end
     end
@@ -122,20 +117,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
-          integer(),
-          non_neg_integer(),
-          String.t()
+          %{voice_start: integer(), stt_ms: non_neg_integer(), size_bucket: String.t()}
         ) :: map()
-  defp dispatch_llm(
-         fields,
-         organization_id,
-         flow_id,
-         contact_id,
-         api_key,
-         voice_start_timestamp,
-         stt_ms,
-         size_bucket
-       ) do
+  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, timing) do
     {callback_url, request_metadata} =
       KaapiWebhook.build_flow_resume_metadata(
         organization_id,
@@ -143,7 +127,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         contact_id,
         fields,
         "/webhook/flow_resume",
-        voice_start_timestamp
+        timing.voice_start
       )
 
     kaapi_dispatch_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
@@ -152,8 +136,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       Map.merge(request_metadata, %{
         call_type: "voice_llm",
         webhook_name: name(),
-        audio_size_bucket: size_bucket,
-        stt_latency_ms: stt_ms,
+        audio_size_bucket: timing.size_bucket,
+        stt_latency_ms: timing.stt_ms,
         kaapi_dispatch_ts: kaapi_dispatch_ts,
         voice_post_process: %{
           source_language: fields["source_language"],
@@ -184,7 +168,8 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         reraise exception, __STACKTRACE__
     else
       voice_response ->
-        record_tts_latency(response, tts_start, "success")
+        tts_status = if voice_response["media_url"], do: "success", else: "failure"
+        record_tts_latency(response, tts_start, "success", tts_status)
         voice_response
     end
   end
@@ -195,12 +180,13 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     response
   end
 
-  @spec record_tts_latency(map(), integer(), String.t()) :: :ok
-  defp record_tts_latency(response, tts_start, status) do
+  @spec record_tts_latency(map(), integer(), String.t(), String.t() | nil) :: :ok
+  defp record_tts_latency(response, tts_start, status, tts_status \\ nil) do
     Instrumentation.record_voice_latencies(
       response,
       Instrumentation.duration_ms(tts_start),
-      status
+      status,
+      tts_status
     )
   end
 

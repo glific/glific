@@ -9,8 +9,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   alias Glific.Flows.Webhooks.{ErrorReporter, Errors, ErrorType}
   alias Glific.SafeLog
 
-  require Logger
-
   @type tags :: %{
           optional(:organization_id) => non_neg_integer() | nil,
           optional(:webhook_name) => String.t() | nil,
@@ -279,7 +277,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     :ok
   rescue
     exception ->
-      Logger.warning("voice_component_latency emit failed: #{Exception.message(exception)}")
+      Glific.log_exception(exception)
       :ok
   end
 
@@ -290,10 +288,13 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   `tts_ms` is `nil` on a failure callback (no TTS ran), so the `tts` component is skipped. The
   total is `stt + filesearch + tts` and carries a `complete` tag — `"false"` when the filesearch
   leg was missing (deploy window or clock skew) — so a partial total isn't mistaken for a fast one.
-  Observational — an emit failure is logged, never raised.
+
+  `tts_status` tags the `tts` component with its own outcome (defaults to `status`), so a TTS/NMT
+  failure that degrades the node to text-only still surfaces as a failed `tts` stage rather than
+  hiding under the node's success. Observational — an emit failure is logged, never raised.
   """
-  @spec record_voice_latencies(map(), number() | nil, String.t()) :: :ok
-  def record_voice_latencies(response, tts_ms, status) do
+  @spec record_voice_latencies(map(), number() | nil, String.t(), String.t() | nil) :: :ok
+  def record_voice_latencies(response, tts_ms, status, tts_status \\ nil) do
     webhook_name = response["webhook_name"] || "voice-filesearch-gpt"
     size_bucket = response["audio_size_bucket"] || "unknown"
     opts = [size_bucket: size_bucket, status: status]
@@ -304,7 +305,12 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
       do: track_voice_component(webhook_name, "filesearch", filesearch_ms, opts),
       else: maybe_count_stamp_unusable(response, webhook_name)
 
-    if is_number(tts_ms), do: track_voice_component(webhook_name, "tts", tts_ms, opts)
+    if is_number(tts_ms),
+      do:
+        track_voice_component(webhook_name, "tts", tts_ms,
+          size_bucket: size_bucket,
+          status: tts_status || status
+        )
 
     total_ms = numeric(response["stt_latency_ms"]) + (filesearch_ms || 0) + (tts_ms || 0)
 
@@ -318,7 +324,7 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     :ok
   rescue
     exception ->
-      Logger.warning("voice_node_latency emit failed: #{Exception.message(exception)}")
+      Glific.log_exception(exception)
       :ok
   end
 

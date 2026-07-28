@@ -182,6 +182,30 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
       assert {"voice_node_latency", 450.0, _tags} = total(distributions)
     end
 
+    test "tts_status tags the tts component distinctly while the total keeps the node status" do
+      response = %{
+        "webhook_name" => "voice-filesearch-gpt",
+        "audio_size_bucket" => "1-5MB",
+        "stt_latency_ms" => 100,
+        "kaapi_dispatch_ts" => 1_000_000,
+        "callback_received_ts" => 1_400_000
+      }
+
+      # Node succeeded (text-only degradation), but TTS itself failed.
+      %{distributions: distributions} =
+        capture(fn ->
+          Instrumentation.record_voice_latencies(response, 50, "success", "failure")
+        end)
+
+      assert {"voice_component_latency", 50, %{status: "failure"}} =
+               component(distributions, "tts")
+
+      assert {"voice_component_latency", _fs, %{status: "success"}} =
+               component(distributions, "filesearch")
+
+      assert {"voice_node_latency", _total, %{status: "success"}} = total(distributions)
+    end
+
     test "an emit failure is logged, never raised (the observational guarantee)" do
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
