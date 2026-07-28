@@ -325,6 +325,40 @@ defmodule Glific.Groups.WhatsappMessageTest do
     assert Message.receive_media(params) == expected_result
   end
 
+  test "receive_text/1 recovers the sender phone from the message id when user.phone is blank" do
+    for blank <- [nil, ""] do
+      params = %{
+        "message" => %{
+          "id" => "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
+          "_serialized" =>
+            "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_919642961343@c.us",
+          "text" => "Hello, World!",
+          "fromMe" => false
+        },
+        "user" => %{"phone" => blank, "name" => "John Doe"}
+      }
+
+      assert %{sender: %{phone: "919642961343"}} = Message.receive_text(params)
+    end
+  end
+
+  test "receive_media/1 leaves the sender phone nil for an unresolved LID participant" do
+    params = %{
+      "message" => %{
+        "id" => "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid",
+        "_serialized" =>
+          "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid",
+        "caption" => "A photo",
+        "url" => "http://example.com/photo.jpg",
+        "type" => "image",
+        "fromMe" => false
+      },
+      "user" => %{"phone" => nil, "name" => "Jane Doe"}
+    }
+
+    assert %{sender: %{phone: nil}} = Message.receive_media(params)
+  end
+
   test "send_message_to_wa_group_collection/2 check the possible error",
        attrs do
     group =

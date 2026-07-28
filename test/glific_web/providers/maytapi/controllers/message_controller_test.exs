@@ -332,15 +332,64 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming text message without phone should raise exception", %{conn: conn} do
-      text_msg_webhook = Map.delete(@text_message_webhook, "user")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+    test "Incoming text message without user.phone recovers the sender from the message id",
+         %{conn: conn} do
+      # LID group: user.phone is blank but the participant is a regular @c.us
+      # user, so the real number lives in the message _serialized id and must be
+      # recovered instead of crashing.
+      expected_phone = "919642961343"
 
-      text_msg_webhook = put_in(@text_message_webhook, ["user", "phone"], nil)
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+      blank_users = [Map.delete(@text_message_webhook, "user")]
 
-      text_msg_webhook = put_in(@text_message_webhook, ["user", "phone"], "")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", text_msg_webhook) end
+      blank_users =
+        blank_users ++
+          [
+            put_in(@text_message_webhook, ["user", "phone"], nil),
+            put_in(@text_message_webhook, ["user", "phone"], "")
+          ]
+
+      for text_msg_webhook <- blank_users do
+        text_msg_webhook = put_in(text_msg_webhook, ["message", "id"], Ecto.UUID.generate())
+
+        conn = post(conn, "/maytapi", text_msg_webhook)
+        assert conn.halted
+
+        {:ok, message} =
+          Repo.fetch_by(WAMessage, %{
+            bsp_id: get_in(text_msg_webhook, ["message", "id"]),
+            organization_id: conn.assigns[:organization_id]
+          })
+
+        message = Repo.preload(message, [:contact])
+        assert message.contact.phone == expected_phone
+      end
+    end
+
+    test "Incoming text message from an unresolved LID participant is skipped and acked",
+         %{conn: conn} do
+      # Genuine @lid participant: no @c.us number anywhere in the payload, so the
+      # phone can't be recovered. We ack the webhook (avoiding Maytapi retries)
+      # and drop the message rather than raising a 500.
+      bsp_id = Ecto.UUID.generate()
+
+      lid_webhook =
+        @text_message_webhook
+        |> Map.delete("user")
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_289473521@lid"
+        )
+
+      conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
     end
 
     test "Incoming text message should be stored in the database, new contact", %{conn: conn} do
@@ -601,15 +650,62 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming media message without phone should raise exception", %{conn: conn} do
-      media_msg_webhook = Map.delete(@media_message_webhook, "user")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+    test "Incoming media message without user.phone recovers the sender from the message id",
+         %{conn: conn} do
+      # LID group: user.phone is blank but the participant is a regular @c.us
+      # user, so the real number lives in the message _serialized id and must be
+      # recovered instead of crashing.
+      expected_phone = "919917443994"
 
-      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], nil)
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+      blank_users =
+        [Map.delete(@media_message_webhook, "user")] ++
+          [
+            put_in(@media_message_webhook, ["user", "phone"], nil),
+            put_in(@media_message_webhook, ["user", "phone"], "")
+          ]
 
-      media_msg_webhook = put_in(@media_message_webhook, ["user", "phone"], "")
-      assert_raise RuntimeError, fn -> post(conn, "/maytapi", media_msg_webhook) end
+      for media_msg_webhook <- blank_users do
+        media_msg_webhook = put_in(media_msg_webhook, ["message", "id"], Ecto.UUID.generate())
+
+        conn = post(conn, "/maytapi", media_msg_webhook)
+        assert conn.halted
+
+        {:ok, message} =
+          Repo.fetch_by(WAMessage, %{
+            bsp_id: get_in(media_msg_webhook, ["message", "id"]),
+            organization_id: conn.assigns[:organization_id]
+          })
+
+        message = Repo.preload(message, [:contact])
+        assert message.contact.phone == expected_phone
+      end
+    end
+
+    test "Incoming media message from an unresolved LID participant is skipped and acked",
+         %{conn: conn} do
+      # Genuine @lid participant: no @c.us number anywhere in the payload, so the
+      # phone can't be recovered. We ack the webhook (avoiding Maytapi retries)
+      # and drop the message rather than raising a 500.
+      bsp_id = Ecto.UUID.generate()
+
+      lid_webhook =
+        @media_message_webhook
+        |> Map.delete("user")
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363027326493365@g.us_0C623FCC2528444570C488FB229F7628_289473521@lid"
+        )
+
+      conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
     end
 
     test "Incoming media message should be stored in the database, new contact", %{conn: conn} do

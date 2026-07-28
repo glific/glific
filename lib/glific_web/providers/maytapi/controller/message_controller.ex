@@ -5,6 +5,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
   use GlificWeb, :controller
 
+  require Logger
+
   alias Glific.{
     Communications,
     Providers.Maytapi,
@@ -29,7 +31,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_text()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.GroupMessage.receive_message()
+    |> receive_or_skip(:text)
 
     handler(conn, params, "text handler")
   end
@@ -72,7 +74,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_poll()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.GroupMessage.receive_message(:poll)
+    |> receive_or_skip(:poll)
 
     handler(conn, params, "poll handler")
   end
@@ -85,7 +87,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_location()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.GroupMessage.receive_message(:location)
+    |> receive_or_skip(:location)
 
     handler(conn, params, "location handler")
   end
@@ -97,10 +99,25 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
     params
     |> Maytapi.Message.receive_media()
     |> update_message_params(conn.assigns[:organization_id], params)
-    |> Communications.GroupMessage.receive_message(type)
+    |> receive_or_skip(type)
 
     handler(conn, params, "media handler")
   end
+
+  # Maytapi delivers a blank sender phone for unresolved participants in
+  # privacy-enabled (LID) groups. Without a phone we can't create the sender
+  # contact, so we drop the message and still ack the webhook — a 5xx here
+  # would make Maytapi retry the same undeliverable payload repeatedly.
+  @spec receive_or_skip(map(), atom()) :: any()
+  defp receive_or_skip(%{sender: %{phone: phone}} = message_params, _type)
+       when phone in [nil, ""] do
+    Logger.info(
+      "Skipping Maytapi inbound with unresolved sender phone (LID group): bsp_id '#{message_params[:bsp_id]}'"
+    )
+  end
+
+  defp receive_or_skip(message_params, type),
+    do: Communications.GroupMessage.receive_message(message_params, type)
 
   @spec update_message_params(map(), non_neg_integer(), map()) :: map()
   defp update_message_params(
