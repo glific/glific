@@ -676,6 +676,110 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
+  describe "legacy clone file conversion" do
+    test "converts binary KB files to .txt and preserves text-native extensions", %{
+      assistant: assistant
+    } do
+      {:ok, kaapi_doc_counter} = Agent.start_link(fn -> 0 end)
+
+      files = [
+        %{
+          id: "file_pdf",
+          filename: "Report.pdf",
+          content_chunks: [%{"type" => "text", "text" => "pdf text"}]
+        },
+        %{
+          id: "file_docx",
+          filename: "Notes.docx",
+          content_chunks: [%{"type" => "text", "text" => "docx text"}]
+        },
+        %{
+          id: "file_csv",
+          filename: "data.csv",
+          content_chunks: [%{"type" => "text", "text" => "a,b,c"}]
+        }
+      ]
+
+      with_mock Req, get: openai_files_mock(files) do
+        Tesla.Mock.mock(kaapi_clone_success_mock(kaapi_doc_counter))
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
+                   organization_id: @org_id,
+                   is_legacy: true
+                 })
+
+        filenames = cloned_kb_filenames(assistant, 1)
+
+        assert length(filenames) == 3
+        assert "Report.pdf.txt" in filenames
+        assert "Notes.docx.txt" in filenames
+        assert "data.csv" in filenames
+      end
+    end
+
+    test "uses the .md fallback name without double-suffixing when OpenAI omits filename", %{
+      assistant: assistant
+    } do
+      {:ok, kaapi_doc_counter} = Agent.start_link(fn -> 0 end)
+
+      files = [
+        %{
+          id: "file_nofn",
+          filename: nil,
+          content_chunks: [%{"type" => "text", "text" => "content"}]
+        }
+      ]
+
+      with_mock Req, get: openai_files_mock(files) do
+        Tesla.Mock.mock(kaapi_clone_success_mock(kaapi_doc_counter))
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
+                   organization_id: @org_id,
+                   is_legacy: true
+                 })
+
+        assert cloned_kb_filenames(assistant, 1) == ["file_nofn.md"]
+      end
+    end
+
+    test "skips only the empty file and clones the rest", %{assistant: assistant} do
+      {:ok, kaapi_doc_counter} = Agent.start_link(fn -> 0 end)
+
+      files = [
+        %{
+          id: "file_good",
+          filename: "Good.pdf",
+          content_chunks: [%{"type" => "text", "text" => "real content"}]
+        },
+        %{
+          id: "file_empty",
+          filename: "Scanned.pdf",
+          content_chunks: [%{"type" => "image", "text" => nil}]
+        }
+      ]
+
+      with_mock Req, get: openai_files_mock(files) do
+        Tesla.Mock.mock(kaapi_clone_success_mock(kaapi_doc_counter))
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
+                   organization_id: @org_id,
+                   is_legacy: true
+                 })
+
+        assert cloned_kb_filenames(assistant, 1) == ["Good.pdf.txt"]
+      end
+    end
+  end
+
   describe "update_clone_status/2" do
     test "does not update updated_at when setting clone_status to completed", %{
       assistant: assistant,
@@ -991,5 +1095,98 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                  is_legacy: false
                })
     end
+  end
+
+  # Builds a Req.get/2 mock from a list of %{id, filename, content_chunks} describing
+  # the OpenAI vector-store files: the listing endpoint, per-file metadata (filename
+  # optional), and the parsed-text content endpoint.
+  defp openai_files_mock(files) do
+    fn url, _opts ->
+      cond do
+        String.contains?(url, "/content") ->
+          file = Enum.find(files, &String.contains?(url, &1.id))
+          {:ok, %{status: 200, body: %{"data" => file.content_chunks}}}
+
+        Enum.any?(files, &String.contains?(url, "/files/#{&1.id}")) ->
+          file = Enum.find(files, &String.contains?(url, "/files/#{&1.id}"))
+          body = if file.filename, do: %{"filename" => file.filename}, else: %{}
+          {:ok, %{status: 200, body: body}}
+
+        String.contains?(url, "/files") ->
+          {:ok,
+           %{
+             status: 200,
+             body: %{"data" => Enum.map(files, &%{"id" => &1.id}), "has_more" => false}
+           }}
+
+        true ->
+          {:ok, %{status: 404, body: %{}}}
+      end
+    end
+  end
+
+  # Tesla mock for a fully successful legacy clone. Each document upload returns a
+  # distinct Kaapi id (via the counter) so multi-file clones map to distinct KB entries.
+  defp kaapi_clone_success_mock(kaapi_doc_counter) do
+    fn
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, "documents") ->
+            index = Agent.get_and_update(kaapi_doc_counter, fn count -> {count, count + 1} end)
+
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                data: %{
+                  id: "kaapi_doc_#{index}",
+                  fname: "kaapi_doc_#{index}",
+                  inserted_at: "2026-03-23T12:00:00Z"
+                }
+              }
+            }
+
+          String.contains?(url, "collections") ->
+            %Tesla.Env{status: 200, body: %{data: %{job_id: "clone_job"}}}
+
+          String.contains?(url, "configs") ->
+            %Tesla.Env{
+              status: 200,
+              body: %{data: %{id: "cloned_kaapi_uuid", version: %{version: 1}}}
+            }
+        end
+
+      %{method: :get, url: url} ->
+        if String.contains?(url, "collections/jobs") do
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{status: "SUCCESSFUL", collection: %{knowledge_base_id: "cloned_kb_id"}}
+            }
+          }
+        end
+    end
+  end
+
+  # Returns the filenames stored on the cloned assistant's knowledge-base version.
+  defp cloned_kb_filenames(source_assistant, version_number) do
+    cloned =
+      Assistant
+      |> where([a], a.name == ^"Copy of #{source_assistant.name} Version #{version_number}")
+      |> Repo.one()
+
+    cloned_config =
+      AssistantConfigVersion
+      |> where([acv], acv.assistant_id == ^cloned.id)
+      |> Repo.one()
+
+    from(join in "assistant_config_version_knowledge_base_versions",
+      join: knowledge_base_version in KnowledgeBaseVersion,
+      on: knowledge_base_version.id == join.knowledge_base_version_id,
+      where: join.assistant_config_version_id == ^cloned_config.id,
+      select: knowledge_base_version.files
+    )
+    |> Repo.one()
+    |> Map.values()
+    |> Enum.map(& &1["filename"])
   end
 end
