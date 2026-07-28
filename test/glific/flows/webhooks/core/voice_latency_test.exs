@@ -1,7 +1,7 @@
 defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
   @moduledoc """
   Unit tests for the voice-node latency instrumentation (issue #5290): file-size bucketing and
-  the per-component (`stt`/`filesearch`/`tts`) + total distributions emitted for a voice callback.
+  the per-component (`stt`/`filesearch`/`tts`) distributions emitted for a voice callback.
   """
   use ExUnit.Case, async: false
 
@@ -67,16 +67,12 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
         _ -> false
       end)
 
-  defp total(distributions),
-    do: Enum.find(distributions, fn {name, _v, _t} -> name == "voice_node_latency" end)
-
-  describe "record_voice_latencies/3" do
-    test "emits filesearch, tts and total tagged by size bucket, total = stt + fs + tts" do
+  describe "record_voice_latencies/4" do
+    test "emits filesearch and tts components tagged by size bucket (no total — that's kaapi_llm_latency)" do
       # 500ms filesearch round-trip (arrival - dispatch, microseconds).
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
         "audio_size_bucket" => "1-5MB",
-        "stt_latency_ms" => 300,
         "kaapi_dispatch_ts" => 1_000_000,
         "callback_received_ts" => 1_500_000
       }
@@ -96,23 +92,12 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
 
       assert {"voice_component_latency", 200, _tts_tags} = component(distributions, "tts")
 
-      # total = stt (300) + filesearch (500) + tts (200); complete because filesearch landed.
-      assert {"voice_node_latency", 1000.0, total_tags} = total(distributions)
-
-      assert total_tags == %{
-               webhook_name: "voice-filesearch-gpt",
-               size_bucket: "1-5MB",
-               status: "success",
-               complete: "true"
-             }
+      # the end-to-end total lives in kaapi_llm_latency, not here
+      refute Enum.any?(distributions, fn {name, _v, _t} -> name == "voice_node_latency" end)
     end
 
-    test "marks the total complete=false when the round-trip stamps are absent (deploy window)" do
-      response = %{
-        "webhook_name" => "voice-filesearch-gpt",
-        "audio_size_bucket" => "0-1MB",
-        "stt_latency_ms" => 100
-      }
+    test "skips filesearch (no counter) when the round-trip stamps are absent (deploy window)" do
+      response = %{"webhook_name" => "voice-filesearch-gpt", "audio_size_bucket" => "0-1MB"}
 
       %{distributions: distributions, counters: counters} =
         capture(fn -> Instrumentation.record_voice_latencies(response, 50, "success") end)
@@ -120,17 +105,12 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
       assert component(distributions, "filesearch") == nil
       # absent stamps are not skew, so no unusable-stamp counter
       assert counters == []
-
-      # total = stt (100) + tts (50), no filesearch, flagged incomplete
-      assert {"voice_node_latency", 150, tags} = total(distributions)
-      assert tags.complete == "false"
     end
 
-    test "counts a skewed round-trip (arrival < dispatch) and drops the filesearch leg" do
+    test "counts a skewed round-trip (arrival < dispatch) and drops the filesearch component" do
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
         "audio_size_bucket" => "5-10MB",
-        "stt_latency_ms" => 100,
         # arrival precedes dispatch -> clock skew
         "kaapi_dispatch_ts" => 2_000_000,
         "callback_received_ts" => 1_000_000
@@ -143,15 +123,12 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
 
       assert {"voice_filesearch_stamp_unusable", 1, %{webhook_name: "voice-filesearch-gpt"}} =
                hd(counters)
-
-      assert {"voice_node_latency", _value, %{complete: "false"}} = total(distributions)
     end
 
     test "nil tts (failure callback) skips the tts component instead of emitting a synthetic 0" do
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
         "audio_size_bucket" => "unknown",
-        "stt_latency_ms" => 100,
         "kaapi_dispatch_ts" => 2_000_000,
         "callback_received_ts" => 2_400_000
       }
@@ -160,33 +137,15 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
         capture(fn -> Instrumentation.record_voice_latencies(response, nil, "failure") end)
 
       assert component(distributions, "tts") == nil
-      # total = stt (100) + filesearch (400) + no tts
-      assert {"voice_node_latency", 500.0, tags} = total(distributions)
-      assert tags.status == "failure"
+
+      assert {"voice_component_latency", 400.0, %{status: "failure"}} =
+               component(distributions, "filesearch")
     end
 
-    test "a non-numeric stt_latency_ms (whatever Kaapi echoes) never raises; coerced to 0" do
+    test "tts_status tags the tts component distinctly from the node status" do
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
         "audio_size_bucket" => "1-5MB",
-        # Kaapi echoed garbage — must not raise ArithmeticError into the callback
-        "stt_latency_ms" => "not-a-number",
-        "kaapi_dispatch_ts" => 1_000_000,
-        "callback_received_ts" => 1_400_000
-      }
-
-      %{distributions: distributions} =
-        capture(fn -> Instrumentation.record_voice_latencies(response, 50, "success") end)
-
-      # stt coerced to 0: total = 0 + filesearch (400) + tts (50)
-      assert {"voice_node_latency", 450.0, _tags} = total(distributions)
-    end
-
-    test "tts_status tags the tts component distinctly while the total keeps the node status" do
-      response = %{
-        "webhook_name" => "voice-filesearch-gpt",
-        "audio_size_bucket" => "1-5MB",
-        "stt_latency_ms" => 100,
         "kaapi_dispatch_ts" => 1_000_000,
         "callback_received_ts" => 1_400_000
       }
@@ -202,15 +161,12 @@ defmodule Glific.Flows.Webhooks.VoiceLatencyTest do
 
       assert {"voice_component_latency", _fs, %{status: "success"}} =
                component(distributions, "filesearch")
-
-      assert {"voice_node_latency", _total, %{status: "success"}} = total(distributions)
     end
 
     test "an emit failure is logged, never raised (the observational guarantee)" do
       response = %{
         "webhook_name" => "voice-filesearch-gpt",
         "audio_size_bucket" => "1-5MB",
-        "stt_latency_ms" => 100,
         "kaapi_dispatch_ts" => 1_000_000,
         "callback_received_ts" => 1_400_000
       }

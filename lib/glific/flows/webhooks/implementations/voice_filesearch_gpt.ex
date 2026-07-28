@@ -52,12 +52,12 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
     voice_start_timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
     case transcribe(fields["speech"], organization_id) do
-      {:ok, transcribed_text, stt_ms, size_bucket} ->
-        timing = %{voice_start: voice_start_timestamp, stt_ms: stt_ms, size_bucket: size_bucket}
+      {:ok, transcribed_text, size_bucket} ->
+        meta = %{voice_start: voice_start_timestamp, size_bucket: size_bucket}
 
         fields
         |> Map.put("question", transcribed_text)
-        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, timing)
+        |> dispatch_llm(organization_id, flow_id, contact_id, api_key, meta)
         |> KaapiWebhook.to_result()
 
       {:error, _error_type, _reason} = error ->
@@ -68,7 +68,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
   # The `stt` span is "download + STT": speech_to_text/2 does the Gupshup media download and the
   # Gemini transcription, and the download is the size-sensitive part.
   @spec transcribe(any(), non_neg_integer()) ::
-          {:ok, String.t(), non_neg_integer(), String.t()} | {:error, ErrorType.t(), String.t()}
+          {:ok, String.t(), String.t()} | {:error, ErrorType.t(), String.t()}
   defp transcribe(speech, organization_id) do
     with :ok <- KaapiWebhook.validate_media(speech) do
       start = System.monotonic_time()
@@ -79,7 +79,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       case result do
         %{success: true, asr_response_text: transcribed_text} when is_binary(transcribed_text) ->
           track_stt(stt_ms, size_bucket, "success")
-          {:ok, transcribed_text, stt_ms, size_bucket}
+          {:ok, transcribed_text, size_bucket}
 
         %{success: false} = failure ->
           track_stt(stt_ms, size_bucket, "failure")
@@ -117,9 +117,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
           non_neg_integer(),
           non_neg_integer(),
           String.t(),
-          %{voice_start: integer(), stt_ms: non_neg_integer(), size_bucket: String.t()}
+          %{voice_start: integer(), size_bucket: String.t()}
         ) :: map()
-  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, timing) do
+  defp dispatch_llm(fields, organization_id, flow_id, contact_id, api_key, meta) do
     {callback_url, request_metadata} =
       KaapiWebhook.build_flow_resume_metadata(
         organization_id,
@@ -127,7 +127,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
         contact_id,
         fields,
         "/webhook/flow_resume",
-        timing.voice_start
+        meta.voice_start
       )
 
     kaapi_dispatch_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
@@ -136,8 +136,7 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGpt do
       Map.merge(request_metadata, %{
         call_type: "voice_llm",
         webhook_name: name(),
-        audio_size_bucket: timing.size_bucket,
-        stt_latency_ms: timing.stt_ms,
+        audio_size_bucket: meta.size_bucket,
         kaapi_dispatch_ts: kaapi_dispatch_ts,
         voice_post_process: %{
           source_language: fields["source_language"],

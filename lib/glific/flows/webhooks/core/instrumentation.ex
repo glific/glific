@@ -237,11 +237,10 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
     :ok
   end
 
-  # --- voice-node component/total latency -----------------------
+  # --- voice-node component latency -----------------------
 
   @mb 1_000_000
   @voice_component_metric "voice_component_latency"
-  @voice_total_metric "voice_node_latency"
 
   @doc """
   Bucket an audio byte size into the coarse file-size ranges used for voice-latency baselining.
@@ -282,13 +281,11 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   end
 
   @doc """
-  Emit the voice-filesearch callback latencies — `filesearch`, `tts`, and the `voice_node_latency`
-  total — tagged by file-size bucket. STT is emitted earlier, in the worker.
+  Emit the voice-filesearch callback component latencies — `filesearch` and `tts` — tagged by
+  file-size bucket. STT is emitted earlier, in the worker; the end-to-end total is
+  `kaapi_llm_latency{call_type=voice_llm}` (which also includes queue + controller overhead).
 
-  `tts_ms` is `nil` on a failure callback (no TTS ran), so the `tts` component is skipped. The
-  total is `stt + filesearch + tts` and carries a `complete` tag — `"false"` when the filesearch
-  leg was missing (deploy window or clock skew) — so a partial total isn't mistaken for a fast one.
-
+  `tts_ms` is `nil` on a failure callback (no TTS ran), so the `tts` component is skipped.
   `tts_status` tags the `tts` component with its own outcome (defaults to `status`), so a TTS/NMT
   failure that degrades the node to text-only still surfaces as a failed `tts` stage rather than
   hiding under the node's success. Observational — an emit failure is logged, never raised.
@@ -297,12 +294,15 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   def record_voice_latencies(response, tts_ms, status, tts_status \\ nil) do
     webhook_name = response["webhook_name"] || "voice-filesearch-gpt"
     size_bucket = response["audio_size_bucket"] || "unknown"
-    opts = [size_bucket: size_bucket, status: status]
 
     filesearch_ms = voice_filesearch_ms(response)
 
     if is_number(filesearch_ms),
-      do: track_voice_component(webhook_name, "filesearch", filesearch_ms, opts),
+      do:
+        track_voice_component(webhook_name, "filesearch", filesearch_ms,
+          size_bucket: size_bucket,
+          status: status
+        ),
       else: maybe_count_stamp_unusable(response, webhook_name)
 
     if is_number(tts_ms),
@@ -311,15 +311,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
           size_bucket: size_bucket,
           status: tts_status || status
         )
-
-    total_ms = numeric(response["stt_latency_ms"]) + (filesearch_ms || 0) + (tts_ms || 0)
-
-    Appsignal.add_distribution_value(@voice_total_metric, total_ms, %{
-      webhook_name: webhook_name,
-      size_bucket: size_bucket,
-      status: status,
-      complete: to_string(is_number(filesearch_ms))
-    })
 
     :ok
   rescue
@@ -342,8 +333,8 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
   defp voice_filesearch_ms(_response), do: nil
 
   # Stamps present but unusable (wrong type, or skew inverting arrival/dispatch) — count it so a
-  # systematic skew that silently drops the filesearch leg stays visible. Match on presence, not
-  # type, so absent stamps (deploy window) aren't counted.
+  # systematic skew that silently drops the filesearch component stays visible. Match on presence,
+  # not type, so absent stamps (deploy window) aren't counted.
   @spec maybe_count_stamp_unusable(map(), String.t()) :: :ok
   defp maybe_count_stamp_unusable(response, webhook_name) do
     if Map.has_key?(response, "kaapi_dispatch_ts") and
@@ -355,12 +346,6 @@ defmodule Glific.Flows.Webhooks.Instrumentation do
 
     :ok
   end
-
-  # stt_latency_ms is echoed back by Kaapi — coerce a non-number to 0 rather than let `+` raise
-  # and strand the parked flow.
-  @spec numeric(any()) :: number()
-  defp numeric(value) when is_number(value), do: value
-  defp numeric(_value), do: 0
 
   @doc "Elapsed milliseconds since a `System.monotonic_time/0` start value."
   @spec duration_ms(integer()) :: non_neg_integer()

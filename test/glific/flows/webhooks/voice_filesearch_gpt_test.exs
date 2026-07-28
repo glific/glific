@@ -687,9 +687,9 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
     end
 
     # Guards the producer/consumer seam (#5290): the dispatch side writes atom keys
-    # (audio_size_bucket / stt_latency_ms / kaapi_dispatch_ts) that the callback later reads back
-    # as string keys after Kaapi echoes them through JSON. A typo on the write side would silently
-    # drop the metric in prod, so assert the keys actually land on the outbound request_metadata.
+    # (audio_size_bucket / kaapi_dispatch_ts) that the callback later reads back as string keys
+    # after Kaapi echoes them through JSON. A typo on the write side would silently drop the metric
+    # in prod, so assert the keys actually land on the outbound request_metadata.
     test "threads the latency metadata onto the outbound Kaapi request_metadata", %{
       conn: %{assigns: %{organization_id: org_id}} = _conn
     } do
@@ -743,7 +743,6 @@ defmodule Glific.Flows.Webhooks.VoiceFilesearchGptTest do
       metadata = body["request_metadata"]
 
       assert metadata["audio_size_bucket"] in ["0-1MB", "1-5MB", "5-10MB", "10-20MB", "20MB+"]
-      assert is_integer(metadata["stt_latency_ms"])
       assert is_integer(metadata["kaapi_dispatch_ts"])
     end
   end
