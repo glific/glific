@@ -385,9 +385,14 @@ defmodule Glific do
   Returns `:ok` or `{:error, reason}` so each node's validator can shape its own
   error tuple.
   """
-  @spec validate_flow_expression(String.t() | nil, non_neg_integer()) ::
-          :ok | {:error, String.t()}
-  def validate_flow_expression(expression, _organization_id) when expression in ["", nil], do: :ok
+  @spec validate_flow_expression(any(), non_neg_integer()) :: :ok | {:error, String.t()}
+  # Only string fields carry expressions. Some action `value` fields hold
+  # structured data instead — `set_contact_profile` stores a map — which is never
+  # evaluated as an expression and must not be validated as one.
+  def validate_flow_expression(expression, _organization_id) when not is_binary(expression),
+    do: :ok
+
+  def validate_flow_expression("", _organization_id), do: :ok
 
   def validate_flow_expression(expression, organization_id) do
     if safe_expressions_enabled?(organization_id),

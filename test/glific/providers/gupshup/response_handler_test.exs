@@ -41,7 +41,7 @@ defmodule Glific.Providers.Gupshup.ResponseHandlerTest do
       message = send_message(%{is_hsm: true})
 
       body =
-        Jason.encode!(%{"status" => "error", "code" => 472, "message" => "frequency capped"})
+        Jason.encode!(%{"status" => "error", "code" => 131_049, "message" => "frequency capped"})
 
       assert :ok =
                ResponseHandler.handle_response(

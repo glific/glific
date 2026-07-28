@@ -49,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.MessageConversation,
     Messages.MessageMedia,
     Partners,
+    Partners.Organization,
     Partners.Saas,
     Profiles.Profile,
     Repo,
@@ -126,6 +127,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     list_of_table =
       if(organization_id == Saas.organization_id()) do
+        # `organizations` is deliberately absent: its duplicates are the point. Each update
+        # appends a snapshot, so adding it here would dedup them away and lose that history.
         list_of_table ++ ["trial_users"]
       else
         list_of_table
@@ -308,6 +311,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
     do: query
 
   defp add_organization_id(query, "trial_users", _organization_id),
+    do: query
+
+  defp add_organization_id(query, "organizations", _organization_id),
     do: query
 
   defp add_organization_id(query, _table, organization_id),
@@ -1106,6 +1112,44 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contact_histories, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("organizations", organization_id, attrs) do
+    Logger.debug(
+      "fetching organizations data for org_id: #{organization_id} to send on bigquery with attrs: #{SafeLog.safe_inspect(attrs)}"
+    )
+
+    fetch_data("organizations", organization_id, attrs)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            shortcode: row.shortcode,
+            status: row.status,
+            is_active: row.is_active,
+            is_approved: row.is_approved,
+            is_suspended: row.is_suspended,
+            suspended_until: BigQuery.format_date(row.suspended_until, organization_id),
+            is_trial_org: row.is_trial_org,
+            trial_expiration_date:
+              BigQuery.format_date(row.trial_expiration_date, organization_id),
+            deleted_at: BigQuery.format_date(row.deleted_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :organizations, organization_id, attrs))
 
     :ok
   end
@@ -1933,6 +1977,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
+  # Unscoped on purpose: this syncs every org into the SaaS dataset.
+  defp get_query("organizations", _organization_id, attrs),
+    do:
+      Organization
+      |> apply_action_clause(attrs)
+      |> order_by([o], [o.inserted_at, o.id])
 
   defp get_query("speed_sends", organization_id, attrs),
     do:

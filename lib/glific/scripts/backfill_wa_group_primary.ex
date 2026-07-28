@@ -37,7 +37,8 @@ defmodule Glific.Scripts.BackfillWAGroupPrimary do
     Groups.WAGroupPhone,
     Groups.WAGroups,
     Partners,
-    Repo
+    Repo,
+    SafeLog
   }
 
   @typedoc "Result counters per org run."
@@ -81,7 +82,7 @@ defmodule Glific.Scripts.BackfillWAGroupPrimary do
         end
       end)
 
-    Logger.info("BackfillWAGroupPrimary org=#{org_id} #{inspect(result)}")
+    Logger.info("BackfillWAGroupPrimary org=#{org_id} #{SafeLog.safe_inspect(result)}")
     result
   end
 
@@ -115,7 +116,7 @@ defmodule Glific.Scripts.BackfillWAGroupPrimary do
 
           {:error, err} ->
             Logger.warning(
-              "Maytapi primary change failed (backfill): wa_group=#{wa_group.id} phone=#{phone.id} reason=#{inspect(err)}"
+              "Maytapi primary change failed (backfill): wa_group=#{wa_group.id} phone=#{phone.id} reason=#{SafeLog.safe_inspect(err)}"
             )
 
             :skip
