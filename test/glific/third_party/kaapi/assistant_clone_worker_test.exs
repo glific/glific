@@ -9,6 +9,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBaseVersion,
     Partners,
     Repo
   }
@@ -97,11 +98,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
 
   describe "perform/1" do
     test "successfully clones assistant end-to-end", %{assistant: assistant} do
-      # Create temp files to simulate downloaded files
-      clone_dir = Path.join(System.tmp_dir!(), "clone/#{@org_id}/#{assistant.name}")
-      File.mkdir_p!(clone_dir)
-      File.write!(Path.join(clone_dir, "doc.pdf"), "test content")
-
       with_mock Req,
         get: fn url, _opts ->
           cond do
@@ -198,6 +194,22 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert cloned_config.model == "gpt-4o"
         assert cloned_config.prompt == "You are a helpful assistant"
         assert cloned_config.status == :ready
+
+        cloned_files =
+          from(join in "assistant_config_version_knowledge_base_versions",
+            join: knowledge_base_version in KnowledgeBaseVersion,
+            on: knowledge_base_version.id == join.knowledge_base_version_id,
+            where: join.assistant_config_version_id == ^cloned_config.id,
+            select: knowledge_base_version.files
+          )
+          |> Repo.one()
+
+        cloned_filenames = cloned_files |> Map.values() |> Enum.map(& &1["filename"])
+
+        assert cloned_filenames != []
+
+        assert Enum.all?(cloned_filenames, &String.ends_with?(&1, ".txt")),
+               "cloned KB files must be stored with a text extension, got: #{inspect(cloned_filenames)}"
 
         refreshed = Repo.get!(Assistant, assistant.id)
         assert refreshed.clone_status == "completed"
@@ -315,6 +327,39 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         # Content download fails, so no files are saved.
         # upload_files_to_kaapi finds empty dir, returns [].
         # create_collection is called with empty file_ids and fails.
+        assert {:error, _} =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
+                   organization_id: @org_id,
+                   is_legacy: true
+                 })
+      end
+    end
+
+    test "skips files whose extracted text is empty", %{assistant: assistant} do
+      with_mock Req,
+        get: fn url, _opts ->
+          cond do
+            String.contains?(url, "/files/file_001/content") ->
+              {:ok, %{status: 200, body: %{"data" => [%{"type" => "image", "text" => nil}]}}}
+
+            String.contains?(url, "/files/file_001") ->
+              {:ok, %{status: 200, body: %{"filename" => "scanned.pdf"}}}
+
+            String.contains?(url, "/files") ->
+              {:ok,
+               %{status: 200, body: %{"data" => [%{"id" => "file_001"}], "has_more" => false}}}
+
+            true ->
+              {:ok, %{status: 404, body: %{}}}
+          end
+        end do
+        Tesla.Mock.mock(fn
+          %{method: :post} ->
+            %Tesla.Env{status: 500, body: %{error: "No documents provided"}}
+        end)
+
         assert {:error, _} =
                  perform_job(AssistantCloneWorker, %{
                    assistant_id: assistant.id,

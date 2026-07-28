@@ -34,6 +34,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   @max_poll_duration_ms 20 * 60 * 1_000
   @initial_backoff_ms 5_000
   @max_backoff_ms 60_000
+  @text_native_extensions ~w(txt md markdown csv html htm)
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()}
@@ -376,13 +377,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
           |> Enum.filter(&(&1["type"] == "text"))
           |> Enum.map_join("\n", & &1["text"])
 
-        dest =
-          Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}/#{filename}")
-
-        File.mkdir_p!(Path.dirname(dest))
-        File.write!(dest, content)
-        Logger.info("-> saved (#{byte_size(content)} bytes)")
-        :ok
+        save_extracted_text(content, filename, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
         # Handle the error case when file save fails
@@ -394,6 +389,35 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
         Logger.error("FAILED (content request error): #{Glific.SafeLog.safe_inspect(reason)}")
         :error
     end
+  end
+
+  # OpenAI's vector-store content endpoint returns only the parsed *text* of a file,
+  # never the original bytes. Persisting that text under the source extension (e.g. .pdf)
+  # makes Kaapi parse it as a corrupt PDF and reject it, so store it under a text
+  # extension and skip files whose extraction came back empty.
+  @spec save_extracted_text(String.t(), String.t(), String.t(), non_neg_integer()) :: :ok | :error
+  defp save_extracted_text(content, filename, assistant_name, organization_id) do
+    if String.trim(content) == "" do
+      Logger.error("FAILED (no text extracted for #{filename})")
+      :error
+    else
+      dest =
+        Path.join(
+          System.tmp_dir!(),
+          "clone/#{organization_id}/#{assistant_name}/#{text_safe_filename(filename)}"
+        )
+
+      File.mkdir_p!(Path.dirname(dest))
+      File.write!(dest, content)
+      Logger.info("-> saved (#{byte_size(content)} bytes)")
+      :ok
+    end
+  end
+
+  @spec text_safe_filename(String.t()) :: String.t()
+  defp text_safe_filename(filename) do
+    extension = filename |> Path.extname() |> String.trim_leading(".") |> String.downcase()
+    if extension in @text_native_extensions, do: filename, else: "#{filename}.txt"
   end
 
   @spec upload_files_to_kaapi(String.t(), non_neg_integer()) :: [map()]
