@@ -394,8 +394,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   # OpenAI's vector-store content endpoint returns only the parsed *text* of a file,
   # never the original bytes. Persisting that text under the source extension (e.g. .pdf)
   # makes Kaapi parse it as a corrupt PDF and reject it, so store it under a text
-  # extension, prefix the unique file_id so same-named files can't overwrite each
-  # other, and skip files whose extraction came back empty.
+  # extension. Names stay clean; the unique file_id is only prepended when two source
+  # files would otherwise resolve to the same path. Empty extractions are skipped.
   @spec save_extracted_text(String.t(), String.t(), String.t(), String.t(), non_neg_integer()) ::
           :ok | :error
   defp save_extracted_text(content, file_id, filename, assistant_name, organization_id) do
@@ -403,16 +403,17 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       Glific.log_error("AssistantCloneWorker: no text extracted for file #{filename}, skipping")
       :error
     else
-      dest =
-        Path.join(
-          System.tmp_dir!(),
-          "clone/#{organization_id}/#{assistant_name}/#{file_id}-#{text_safe_filename(filename)}"
-        )
-
-      File.mkdir_p!(Path.dirname(dest))
-      File.write!(dest, content)
+      dir = Path.join(System.tmp_dir!(), "clone/#{organization_id}/#{assistant_name}")
+      File.mkdir_p!(dir)
+      File.write!(unique_dest(dir, file_id, text_safe_filename(filename)), content)
       :ok
     end
+  end
+
+  @spec unique_dest(String.t(), String.t(), String.t()) :: String.t()
+  defp unique_dest(dir, file_id, name) do
+    dest = Path.join(dir, name)
+    if File.exists?(dest), do: Path.join(dir, "#{file_id}-#{name}"), else: dest
   end
 
   @spec text_safe_filename(String.t()) :: String.t()

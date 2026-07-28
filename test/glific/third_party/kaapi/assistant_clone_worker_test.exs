@@ -714,9 +714,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         filenames = cloned_kb_filenames(assistant, 1)
 
         assert length(filenames) == 3
-        assert Enum.any?(filenames, &String.ends_with?(&1, "Report.pdf.txt"))
-        assert Enum.any?(filenames, &String.ends_with?(&1, "Notes.docx.txt"))
-        assert Enum.any?(filenames, &String.ends_with?(&1, "data.csv"))
+        assert "Report.pdf.txt" in filenames
+        assert "Notes.docx.txt" in filenames
+        assert "data.csv" in filenames
       end
     end
 
@@ -744,7 +744,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["file_nofn-content.md"]
+        assert cloned_kb_filenames(assistant, 1) == ["content.md"]
       end
     end
 
@@ -775,7 +775,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["file_good-Good.pdf.txt"]
+        assert cloned_kb_filenames(assistant, 1) == ["Good.pdf.txt"]
       end
     end
 
@@ -811,6 +811,8 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         assert length(filenames) == 2
         assert filenames == Enum.uniq(filenames)
         assert Enum.all?(filenames, &String.ends_with?(&1, "guide.pdf.txt"))
+        assert "guide.pdf.txt" in filenames
+        assert "file_b-guide.pdf.txt" in filenames
       end
     end
   end
