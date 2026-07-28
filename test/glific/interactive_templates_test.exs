@@ -610,8 +610,8 @@ defmodule Glific.InteractiveTemplatesTest do
     on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
 
     assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
-    assert reason =~ "Translation has failed"
-    assert reason =~ "reach out to the Glific team"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
 
     reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
     assert reloaded.translations == interactive.translations
@@ -628,7 +628,8 @@ defmodule Glific.InteractiveTemplatesTest do
     on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
 
     assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
-    assert reason =~ "Translation has failed"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
 
     reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
     assert reloaded.translations == interactive.translations
@@ -645,7 +646,8 @@ defmodule Glific.InteractiveTemplatesTest do
     on_exit(fn -> Tesla.Mock.mock_global(&default_translate_mock/1) end)
 
     assert {:error, reason} = InteractiveTemplates.translate_interactive_template(interactive)
-    assert reason =~ "Translation has failed"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
 
     reloaded = InteractiveTemplates.get_interactive_template!(interactive.id)
     assert reloaded.translations == interactive.translations
