@@ -8,8 +8,7 @@ defmodule Glific.Flows.Translate.Translate do
 
   alias Glific.{
     Flags,
-    Flows.Translate.GoogleTranslate,
-    Flows.Translate.OpenAI
+    Flows.Translate.GoogleTranslate
   }
 
   @doc """
@@ -31,15 +30,10 @@ defmodule Glific.Flows.Translate.Translate do
 
   @spec impl(map()) :: module()
   defp impl(organization) do
-    cond do
-      Flags.get_open_ai_auto_translation_enabled(organization) ->
-        OpenAI
-
-      Flags.get_google_auto_translation_enabled(organization) ->
-        GoogleTranslate
-
-      true ->
-        Application.get_env(:glific, :adaptors)[:translators]
+    if Flags.get_google_auto_translation_enabled(organization) do
+      GoogleTranslate
+    else
+      Application.get_env(:glific, :adaptors)[:translators]
     end
   end
 

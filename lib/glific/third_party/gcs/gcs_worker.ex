@@ -211,7 +211,9 @@ defmodule Glific.GCS.GcsWorker do
     Repo.put_process_state(media["organization_id"])
     RepoReplica.put_process_state(media["organization_id"])
 
-    do_perform(media)
+    Jobs.Instrumentation.track("gcs_upload", media["organization_id"], fn ->
+      do_perform(media)
+    end)
   end
 
   @spec do_perform(map()) :: :ok | {:error, String.t()} | {:discard, String.t()}

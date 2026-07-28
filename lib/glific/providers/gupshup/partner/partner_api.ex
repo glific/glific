@@ -42,7 +42,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # Returns the raw media bytes directly (one-step, no decryption).
   @flow_media_path "/media/"
 
-  @modes ["ENQUEUED", "FAILED", "READ", "SENT", "DELIVERED", "OTHERS", "DELETE", "MESSAGE"]
+  @modes [
+    "ENQUEUED",
+    "FAILED",
+    "READ",
+    "SENT",
+    "DELIVERED",
+    "OTHERS",
+    "DELETE",
+    "MESSAGE",
+    "TEMPLATE"
+  ]
 
   @doc """
   Fetches Partner token and App Access token to get tier information

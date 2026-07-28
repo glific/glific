@@ -14,6 +14,7 @@ defmodule Glific.Providers.Maytapi.Sender do
     Groups.WAGroup,
     Groups.WAGroups,
     Notifications,
+    SafeLog,
     WAGroup.WAManagedPhone
   }
 
@@ -139,7 +140,7 @@ defmodule Glific.Providers.Maytapi.Sender do
 
       {:error, err} ->
         Glific.log_error(
-          "Maytapi primary change failed: wa_group=#{wa_group.id} candidate=#{candidate.id} reason=#{inspect(err)}"
+          "Maytapi primary change failed: wa_group=#{wa_group.id} candidate=#{candidate.id} reason=#{SafeLog.safe_inspect(err)}"
         )
 
         {:error, :promotion_failed}

@@ -17,6 +17,11 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       {"x-maytapi-key", token}
     ]
 
+  # getGroups on a phone in many/large groups routinely takes longer than the
+  # Hackney default 5s recv_timeout, so the GET would time out before Maytapi
+  # responded. Bump the read timeout to match the write path's intent.
+  @get_recv_timeout 30_000
+
   @doc """
   Making Tesla get call and adding api key in header
   """
@@ -25,7 +30,10 @@ defmodule Glific.Providers.Maytapi.ApiClient do
     do:
       :read
       |> client()
-      |> Tesla.get(url, headers: headers(token))
+      |> Tesla.get(url,
+        headers: headers(token),
+        opts: [adapter: [recv_timeout: @get_recv_timeout]]
+      )
       |> log_on_failure(url)
 
   # Group operations (createGroup, group/add, group/remove)
