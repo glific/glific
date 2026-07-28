@@ -398,7 +398,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   @spec save_extracted_text(String.t(), String.t(), String.t(), non_neg_integer()) :: :ok | :error
   defp save_extracted_text(content, filename, assistant_name, organization_id) do
     if String.trim(content) == "" do
-      Logger.error("FAILED (no text extracted for #{filename})")
+      Glific.log_error("AssistantCloneWorker: no text extracted for file #{filename}, skipping")
       :error
     else
       dest =
