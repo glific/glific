@@ -350,7 +350,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
 
       {:ok, %{status: 200}} ->
         # Fallback filename if "filename" key is missing
-        filename = "#{file_id}.md"
+        filename = "content.md"
         fetch_and_save(file_id, filename, vector_store_id, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
@@ -377,7 +377,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
           |> Enum.filter(&(&1["type"] == "text"))
           |> Enum.map_join("\n", & &1["text"])
 
-        save_extracted_text(content, filename, assistant_name, organization_id)
+        save_extracted_text(content, file_id, filename, assistant_name, organization_id)
 
       {:ok, %{status: status, body: body}} ->
         # Handle the error case when file save fails
@@ -394,9 +394,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
   # OpenAI's vector-store content endpoint returns only the parsed *text* of a file,
   # never the original bytes. Persisting that text under the source extension (e.g. .pdf)
   # makes Kaapi parse it as a corrupt PDF and reject it, so store it under a text
-  # extension and skip files whose extraction came back empty.
-  @spec save_extracted_text(String.t(), String.t(), String.t(), non_neg_integer()) :: :ok | :error
-  defp save_extracted_text(content, filename, assistant_name, organization_id) do
+  # extension, prefix the unique file_id so same-named files can't overwrite each
+  # other, and skip files whose extraction came back empty.
+  @spec save_extracted_text(String.t(), String.t(), String.t(), String.t(), non_neg_integer()) ::
+          :ok | :error
+  defp save_extracted_text(content, file_id, filename, assistant_name, organization_id) do
     if String.trim(content) == "" do
       Glific.log_error("AssistantCloneWorker: no text extracted for file #{filename}, skipping")
       :error
@@ -404,12 +406,11 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorker do
       dest =
         Path.join(
           System.tmp_dir!(),
-          "clone/#{organization_id}/#{assistant_name}/#{text_safe_filename(filename)}"
+          "clone/#{organization_id}/#{assistant_name}/#{file_id}-#{text_safe_filename(filename)}"
         )
 
       File.mkdir_p!(Path.dirname(dest))
       File.write!(dest, content)
-      Logger.info("-> saved (#{byte_size(content)} bytes)")
       :ok
     end
   end

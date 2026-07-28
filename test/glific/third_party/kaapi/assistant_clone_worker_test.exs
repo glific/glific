@@ -714,9 +714,9 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
         filenames = cloned_kb_filenames(assistant, 1)
 
         assert length(filenames) == 3
-        assert "Report.pdf.txt" in filenames
-        assert "Notes.docx.txt" in filenames
-        assert "data.csv" in filenames
+        assert Enum.any?(filenames, &String.ends_with?(&1, "Report.pdf.txt"))
+        assert Enum.any?(filenames, &String.ends_with?(&1, "Notes.docx.txt"))
+        assert Enum.any?(filenames, &String.ends_with?(&1, "data.csv"))
       end
     end
 
@@ -744,7 +744,7 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["file_nofn.md"]
+        assert cloned_kb_filenames(assistant, 1) == ["file_nofn-content.md"]
       end
     end
 
@@ -775,7 +775,42 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
                    is_legacy: true
                  })
 
-        assert cloned_kb_filenames(assistant, 1) == ["Good.pdf.txt"]
+        assert cloned_kb_filenames(assistant, 1) == ["file_good-Good.pdf.txt"]
+      end
+    end
+
+    test "keeps identically-named files distinct via the file id", %{assistant: assistant} do
+      {:ok, kaapi_doc_counter} = Agent.start_link(fn -> 0 end)
+
+      files = [
+        %{
+          id: "file_a",
+          filename: "guide.pdf",
+          content_chunks: [%{"type" => "text", "text" => "first document"}]
+        },
+        %{
+          id: "file_b",
+          filename: "guide.pdf",
+          content_chunks: [%{"type" => "text", "text" => "second document"}]
+        }
+      ]
+
+      with_mock Req, get: openai_files_mock(files) do
+        Tesla.Mock.mock(kaapi_clone_success_mock(kaapi_doc_counter))
+
+        assert :ok =
+                 perform_job(AssistantCloneWorker, %{
+                   assistant_id: assistant.id,
+                   version_id: assistant.active_config_version_id,
+                   organization_id: @org_id,
+                   is_legacy: true
+                 })
+
+        filenames = cloned_kb_filenames(assistant, 1)
+
+        assert length(filenames) == 2
+        assert filenames == Enum.uniq(filenames)
+        assert Enum.all?(filenames, &String.ends_with?(&1, "guide.pdf.txt"))
       end
     end
   end
@@ -1097,9 +1132,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
-  # Builds a Req.get/2 mock from a list of %{id, filename, content_chunks} describing
-  # the OpenAI vector-store files: the listing endpoint, per-file metadata (filename
-  # optional), and the parsed-text content endpoint.
   defp openai_files_mock(files) do
     fn url, _opts ->
       cond do
@@ -1125,8 +1157,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
-  # Tesla mock for a fully successful legacy clone. Each document upload returns a
-  # distinct Kaapi id (via the counter) so multi-file clones map to distinct KB entries.
   defp kaapi_clone_success_mock(kaapi_doc_counter) do
     fn
       %{method: :post, url: url} ->
@@ -1167,7 +1197,6 @@ defmodule Glific.ThirdParty.Kaapi.AssistantCloneWorkerTest do
     end
   end
 
-  # Returns the filenames stored on the cloned assistant's knowledge-base version.
   defp cloned_kb_filenames(source_assistant, version_number) do
     cloned =
       Assistant
