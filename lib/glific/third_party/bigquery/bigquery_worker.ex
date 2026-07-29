@@ -70,7 +70,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     WhatsappForms.WhatsappFormResponse
   }
 
-  @per_min_limit 500
+  @default_per_min_limit 500
+
+  @spec per_min_limit() :: pos_integer()
+  defp per_min_limit,
+    do: Application.get_env(:glific, :bigquery_per_min_limit, @default_per_min_limit)
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -220,7 +224,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.id > ^table_id)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], m.id)
-      |> limit(@per_min_limit)
+      |> limit(^per_min_limit())
       |> RepoReplica.aggregate(:max, :id)
 
     if is_nil(max_id),
@@ -228,28 +232,35 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
-  @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
-  defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
+  @spec insert_last_updated(String.t(), DateTime.t(), non_neg_integer, non_neg_integer) ::
+          %{updated_at: DateTime.t(), id: non_neg_integer} | nil
+  defp insert_last_updated(
+         table_name,
+         table_last_updated_at,
+         table_last_updated_id,
+         organization_id
+       ) do
     Logger.debug(
       "Checking for bigquery job for org_id: #{organization_id} table: #{table_name} since: #{table_last_updated_at}"
     )
 
-    max_last_update =
-      BigQuery.get_table_struct(table_name)
-      |> where([tb], tb.updated_at > ^table_last_updated_at)
-      |> where(
-        [tb],
-        ## Adding clause so that we don't pick the newly inserted rows.
-        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
-      )
-      |> add_organization_id(table_name, organization_id)
-      |> order_by([tb], [tb.updated_at, tb.id])
-      |> limit(@per_min_limit)
-      |> RepoReplica.aggregate(:max, :updated_at, timeout: 40_000)
-
-    if is_nil(max_last_update),
-      do: table_last_updated_at,
-      else: max_last_update
+    BigQuery.get_table_struct(table_name)
+    |> where(
+      [tb],
+      tb.updated_at > ^table_last_updated_at or
+        (tb.updated_at == ^table_last_updated_at and tb.id > ^table_last_updated_id)
+    )
+    |> where(
+      [tb],
+      ## Adding clause so that we don't pick the newly inserted rows.
+      fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+    )
+    |> add_organization_id(table_name, organization_id)
+    |> order_by([tb], [tb.updated_at, tb.id])
+    |> limit(^per_min_limit())
+    |> select([tb], %{updated_at: tb.updated_at, id: tb.id})
+    |> RepoReplica.all(timeout: 40_000)
+    |> List.last()
   end
 
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer, String.t()) ::
@@ -257,12 +268,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp insert_for_table(nil, _, _), do: nil
 
   defp insert_for_table(
-         %{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job,
+         %{
+           table: table,
+           table_id: table_id,
+           last_updated_at: table_last_updated_at,
+           last_updated_id: table_last_updated_id
+         } = _job,
          organization_id,
          action
        ) do
     if action == "update" do
-      insert_updated_records(table, table_last_updated_at, organization_id)
+      insert_updated_records(
+        table,
+        table_last_updated_at,
+        table_last_updated_id || 0,
+        organization_id
+      )
     else
       insert_new_records(table, table_id, table_last_updated_at, organization_id)
     end
@@ -286,20 +307,41 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec insert_updated_records(binary, DateTime.t() | nil, non_neg_integer) :: :ok
-  defp insert_updated_records(table, table_last_updated_at, organization_id) do
+  @spec insert_updated_records(binary, DateTime.t() | nil, non_neg_integer, non_neg_integer) ::
+          :ok
+  defp insert_updated_records(
+         table,
+         table_last_updated_at,
+         table_last_updated_id,
+         organization_id
+       ) do
     if table in BigQuery.ignore_updates_for_table() do
       :ok
     else
       table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-      last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-      queue_table_data(table, organization_id, %{
-        action: :update,
-        max_id: nil,
-        last_updated_at: last_updated_at,
-        table_last_updated_at: table_last_updated_at
-      })
+      # The cursor is the (updated_at, id) of the last row this tick will sync. Bounding the
+      # fetch by it — rather than by updated_at alone — keeps the row count at or under
+      # per_min_limit even when a bulk update stamped thousands of rows with one timestamp.
+      case insert_last_updated(
+             table,
+             table_last_updated_at,
+             table_last_updated_id,
+             organization_id
+           ) do
+        nil ->
+          :ok
+
+        %{updated_at: last_updated_at, id: last_updated_id} ->
+          queue_table_data(table, organization_id, %{
+            action: :update,
+            max_id: nil,
+            last_updated_at: last_updated_at,
+            last_updated_id: last_updated_id,
+            table_last_updated_at: table_last_updated_at,
+            table_last_updated_id: table_last_updated_id
+          })
+      end
     end
   end
 
@@ -1661,7 +1703,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     if is_nil(attrs[:last_updated_at]) == false,
       do:
         Jobs.update_bigquery_job(organization_id, table, %{
-          last_updated_at: attrs[:last_updated_at]
+          last_updated_at: attrs[:last_updated_at],
+          last_updated_id: attrs[:last_updated_id] || 0
         })
   end
 
@@ -1688,7 +1731,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      last_updated_id: attrs[:last_updated_id] || 0
     )
   end
 
@@ -1701,14 +1745,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
          %{
            action: :update,
            last_updated_at: last_updated_at,
-           table_last_updated_at: table_last_updated_at
+           last_updated_id: last_updated_id,
+           table_last_updated_at: table_last_updated_at,
+           table_last_updated_id: table_last_updated_id
          } = _attrs
        ),
        do:
          query
          |> where(
            [tb],
-           tb.updated_at > ^table_last_updated_at and tb.updated_at <= ^last_updated_at
+           (tb.updated_at > ^table_last_updated_at or
+              (tb.updated_at == ^table_last_updated_at and tb.id > ^table_last_updated_id)) and
+             (tb.updated_at < ^last_updated_at or
+                (tb.updated_at == ^last_updated_at and tb.id <= ^last_updated_id))
          )
          |> where(
            [tb],

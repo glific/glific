@@ -853,4 +853,94 @@ defmodule Glific.BigQueryTest do
       refute "organizations" in BigQuery.ignore_updates_for_table()
     end
   end
+
+  describe "update sync cursor with tied updated_at" do
+    @tied_rows 12
+    @tied_limit 5
+
+    setup %{organization_id: org_id} do
+      original = Application.get_env(:glific, :bigquery_per_min_limit)
+      Application.put_env(:glific, :bigquery_per_min_limit, @tied_limit)
+
+      on_exit(fn ->
+        if is_nil(original),
+          do: Application.delete_env(:glific, :bigquery_per_min_limit),
+          else: Application.put_env(:glific, :bigquery_per_min_limit, original)
+      end)
+
+      # A bulk update_all stamps every row with one identical updated_at. Placing it in the
+      # future keeps the seeded contacts out of the cursor range so the assertions below
+      # only see the tied rows.
+      tied_at = DateTime.utc_now() |> DateTime.add(3600, :second)
+
+      ids =
+        Enum.map(1..@tied_rows, fn n ->
+          contact_fixture(%{organization_id: org_id, phone: "9199000000#{n}"}).id
+        end)
+
+      # updated_at must sit a few seconds past inserted_at — the sync filters on the seconds
+      # component of age(updated_at, inserted_at), not the total interval.
+      {@tied_rows, nil} =
+        Contact
+        |> where([c], c.id in ^ids)
+        |> Repo.update_all(
+          set: [updated_at: tied_at, inserted_at: DateTime.add(tied_at, -5, :second)]
+        )
+
+      %{tied_ids: ids, tied_at: tied_at, start_at: DateTime.add(tied_at, -1, :second)}
+    end
+
+    test "bounds the fetch to per_min_limit instead of pulling every tied row", %{
+      organization_id: org_id,
+      start_at: start_at
+    } do
+      cursor = BigQueryWorker.insert_last_updated("contacts", start_at, 0, org_id)
+      assert %{id: _, updated_at: _} = cursor
+
+      rows =
+        BigQueryWorker.fetch_data("contacts", org_id, %{
+          action: :update,
+          last_updated_at: cursor.updated_at,
+          last_updated_id: cursor.id,
+          table_last_updated_at: start_at,
+          table_last_updated_id: 0
+        })
+
+      # Before the fix the cursor landed on the shared timestamp and the range predicate
+      # matched all @tied_rows at once, regardless of the limit.
+      assert length(rows) == @tied_limit
+    end
+
+    test "drains every tied row across ticks without skipping any", %{
+      organization_id: org_id,
+      tied_ids: tied_ids,
+      start_at: start_at
+    } do
+      {seen, ticks} = drain("contacts", org_id, start_at, 0, [], 0)
+
+      assert Enum.sort(seen) == Enum.sort(tied_ids)
+      assert length(seen) == @tied_rows, "expected no duplicates and no skipped rows"
+      assert ticks == ceil(@tied_rows / @tied_limit)
+    end
+
+    defp drain(table, org_id, at, id, seen, ticks) do
+      case BigQueryWorker.insert_last_updated(table, at, id, org_id) do
+        nil ->
+          {seen, ticks}
+
+        cursor ->
+          ids =
+            BigQueryWorker.fetch_data(table, org_id, %{
+              action: :update,
+              last_updated_at: cursor.updated_at,
+              last_updated_id: cursor.id,
+              table_last_updated_at: at,
+              table_last_updated_id: id
+            })
+            |> Enum.map(& &1.id)
+
+          drain(table, org_id, cursor.updated_at, cursor.id, seen ++ ids, ticks + 1)
+      end
+    end
+  end
 end

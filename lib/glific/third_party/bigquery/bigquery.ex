@@ -882,6 +882,7 @@ defmodule Glific.BigQuery do
   def make_insert_query(data, table, organization_id, attrs) do
     max_id = Keyword.get(attrs, :max_id)
     last_updated_at = Keyword.get(attrs, :last_updated_at)
+    last_updated_id = Keyword.get(attrs, :last_updated_id)
 
     Logger.info(
       "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
@@ -896,7 +897,8 @@ defmodule Glific.BigQuery do
     |> handle_insert_query_response(organization_id,
       table: table,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      last_updated_id: last_updated_id
     )
 
     :ok
@@ -945,7 +947,10 @@ defmodule Glific.BigQuery do
         )
 
       last_updated_at not in [nil, 0] ->
-        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
+        Jobs.update_bigquery_job(organization_id, table, %{
+          last_updated_at: last_updated_at,
+          last_updated_id: Keyword.get(opts, :last_updated_id, 0)
+        })
 
         Logger.info(
           "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{safe_inspect(res)}"
