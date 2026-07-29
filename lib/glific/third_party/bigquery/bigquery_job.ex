@@ -14,7 +14,7 @@ defmodule Glific.BigQuery.BigQueryJob do
   }
 
   @required_fields [:organization_id]
-  @optional_fields [:table_id, :table, :last_updated_at]
+  @optional_fields [:table_id, :table, :last_updated_at, :last_updated_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -25,13 +25,15 @@ defmodule Glific.BigQuery.BigQueryJob do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          last_updated_at: :utc_datetime_usec | nil
+          last_updated_at: :utc_datetime_usec | nil,
+          last_updated_id: non_neg_integer | nil
         }
 
   schema "bigquery_jobs" do
     field :table_id, :integer, default: 0
     field :table, :string
     field :last_updated_at, :utc_datetime_usec
+    field :last_updated_id, :integer, default: 0
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime)
   end
