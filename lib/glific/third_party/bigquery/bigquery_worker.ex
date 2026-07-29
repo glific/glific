@@ -259,7 +259,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> order_by([tb], [tb.updated_at, tb.id])
     |> limit(^per_min_limit())
     |> select([tb], %{updated_at: tb.updated_at, id: tb.id})
-    |> RepoReplica.all(timeout: 40_000)
+    # add_organization_id/3 is the only org scoping this query should get. Auto-scoping would
+    # inject organization_id into the cross-org tables it deliberately leaves unscoped —
+    # trial_users has no such column, and it would narrow trackers_all below the fetch's range.
+    |> RepoReplica.all(timeout: 40_000, skip_organization_id: true)
     |> List.last()
   end
 
