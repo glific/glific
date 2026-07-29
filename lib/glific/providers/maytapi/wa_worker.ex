@@ -210,13 +210,8 @@ defmodule Glific.Providers.Maytapi.WAWorker do
     :ok
   end
 
-  # "Maytapi is not active" (org not on Maytapi) and "No active phones available"
-  # (all phones down) are expected operational states, not code errors — phone
-  # health is alerted separately, so don't page on them here.
   @spec maybe_log_sync_failure(non_neg_integer(), any()) :: :ok
-  defp maybe_log_sync_failure(_org_id, reason)
-       when reason in ["Maytapi is not active", "No active phones available"],
-       do: :ok
+  defp maybe_log_sync_failure(_org_id, "Maytapi is not active"), do: :ok
 
   defp maybe_log_sync_failure(org_id, reason) do
     Glific.log_error(
