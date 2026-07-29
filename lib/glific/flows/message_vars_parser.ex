@@ -62,11 +62,22 @@ defmodule Glific.Flows.MessageVarParser do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      get_in(binding, String.split(var, "."))
+      safe_get_in(binding, String.split(var, "."))
       |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
+
+  # Walks a dot-separated path through nested maps, stopping and returning nil
+  # as soon as it hits a value that is not a map (instead of crashing like
+  # get_in/Access.get would when asked to descend into a non-container value)
+  @spec safe_get_in(term(), [String.t()]) :: term()
+  defp safe_get_in(value, []), do: value
+
+  defp safe_get_in(map, [key | rest]) when is_map(map),
+    do: safe_get_in(Map.get(map, key), rest)
+
+  defp safe_get_in(_value, _keys), do: nil
 
   # this is for the other fields like @contact.fields.name which is a map of (value)
   defp bound(substitution) when is_map(substitution) do
