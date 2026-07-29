@@ -12,9 +12,11 @@ defmodule Glific.BigQueryTest do
     BigQuery.Schema,
     Contacts.Contact,
     Flows.FlowResult,
+    Jobs,
     Partners,
     Partners.Saas,
     Repo,
+    RepoReplica,
     Seeds.SeedsDev
   }
 
@@ -854,76 +856,134 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  describe "update sync cursor with tied updated_at" do
-    @tied_rows 12
-    @tied_limit 5
+  describe "update records" do
+    @batch_count 12
+    @batch_size 5
 
-    setup %{organization_id: org_id} do
-      original = Application.get_env(:glific, :bigquery_per_min_limit)
-      Application.put_env(:glific, :bigquery_per_min_limit, @tied_limit)
+    setup %{organization_id: organization_id} do
+      original_limit = Application.get_env(:glific, :bigquery_per_min_limit)
+      Application.put_env(:glific, :bigquery_per_min_limit, @batch_size)
 
       on_exit(fn ->
-        if is_nil(original),
+        if is_nil(original_limit),
           do: Application.delete_env(:glific, :bigquery_per_min_limit),
-          else: Application.put_env(:glific, :bigquery_per_min_limit, original)
+          else: Application.put_env(:glific, :bigquery_per_min_limit, original_limit)
       end)
 
-      # A bulk update_all stamps every row with one identical updated_at. Placing it in the
-      # future keeps the seeded contacts out of the cursor range so the assertions below
-      # only see the tied rows.
-      tied_at = DateTime.utc_now() |> DateTime.add(3600, :second)
+      %{batch_ids: batch_ids, batch_updated_at: batch_updated_at} =
+        stamp_one_timestamp(organization_id, @batch_count, "9199000000")
 
-      ids =
-        Enum.map(1..@tied_rows, fn n ->
-          contact_fixture(%{organization_id: org_id, phone: "9199000000#{n}"}).id
-        end)
+      %{
+        batch_ids: batch_ids,
+        batch_updated_at: batch_updated_at,
+        synced_upto: DateTime.add(batch_updated_at, -1, :second)
+      }
+    end
 
-      # updated_at must sit a few seconds past inserted_at — the sync filters on the seconds
-      # component of age(updated_at, inserted_at), not the total interval.
-      {@tied_rows, nil} =
-        Contact
-        |> where([c], c.id in ^ids)
-        |> Repo.update_all(
-          set: [updated_at: tied_at, inserted_at: DateTime.add(tied_at, -5, :second)]
+    test "only syncs records upto batch size", %{
+      organization_id: organization_id,
+      synced_upto: synced_upto
+    } do
+      rows = fetch_one_batch("contacts", organization_id, synced_upto, 0)
+
+      # All @batch_count rows share one updated_at. Before the fix the cursor landed on that
+      # timestamp and the range predicate matched every one of them, ignoring the batch size.
+      assert length(rows) == @batch_size
+    end
+
+    test "completes syncs in multiple batches", %{
+      organization_id: organization_id,
+      batch_ids: batch_ids,
+      synced_upto: synced_upto
+    } do
+      {synced_ids, batches} = drain("contacts", organization_id, synced_upto, 0, [], 0)
+
+      assert Enum.sort(synced_ids) == Enum.sort(batch_ids)
+      assert length(synced_ids) == @batch_count, "expected no duplicates and no skipped rows"
+      assert batches == ceil(@batch_count / @batch_size)
+    end
+
+    test "batches are calculated per org", %{
+      organization_id: organization_id,
+      synced_upto: synced_upto
+    } do
+      other_organization = organization_fixture(%{shortcode: "other-org-batching"})
+
+      %{batch_ids: other_batch_ids} =
+        stamp_one_timestamp(other_organization.id, @batch_count, "9198000000")
+
+      # One org's tied rows must not eat into another org's batch, nor leak into its results.
+      # fetch_data/3 reads through RepoReplica, so both repos need the org context the worker sets.
+      put_org_context(other_organization.id)
+      other_rows = fetch_one_batch("contacts", other_organization.id, synced_upto, 0)
+
+      assert length(other_rows) == @batch_size
+      assert Enum.all?(other_rows, &(&1.id in other_batch_ids))
+
+      put_org_context(organization_id)
+      rows = fetch_one_batch("contacts", organization_id, synced_upto, 0)
+
+      assert length(rows) == @batch_size
+      refute Enum.any?(rows, &(&1.id in other_batch_ids))
+    end
+
+    test "does not resync records older than the stored cursor", %{
+      organization_id: organization_id,
+      batch_ids: batch_ids,
+      synced_upto: synced_upto
+    } do
+      # Existing jobs start at last_updated_id: 0 after the migration. That must not drag rows
+      # from before the stored last_updated_at back into the sync.
+      %{batch_ids: already_synced_ids} =
+        stamp_one_timestamp(
+          organization_id,
+          3,
+          "9197000000",
+          DateTime.add(synced_upto, -3600, :second)
         )
 
-      %{tied_ids: ids, tied_at: tied_at, start_at: DateTime.add(tied_at, -1, :second)}
+      {synced_ids, _batches} = drain("contacts", organization_id, synced_upto, 0, [], 0)
+
+      assert Enum.sort(synced_ids) == Enum.sort(batch_ids)
+
+      for already_synced_id <- already_synced_ids do
+        refute already_synced_id in synced_ids
+      end
     end
 
-    test "bounds the fetch to per_min_limit instead of pulling every tied row", %{
-      organization_id: org_id,
-      start_at: start_at
+    test "persists the last synced row id to the bigquery job", %{
+      organization_id: organization_id,
+      synced_upto: synced_upto
     } do
-      cursor = BigQueryWorker.insert_last_updated("contacts", start_at, 0, org_id)
-      assert %{id: _, updated_at: _} = cursor
+      Tesla.Mock.mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+      end)
 
-      rows =
-        BigQueryWorker.fetch_data("contacts", org_id, %{
-          action: :update,
-          last_updated_at: cursor.updated_at,
-          last_updated_id: cursor.id,
-          table_last_updated_at: start_at,
-          table_last_updated_id: 0
-        })
+      cursor = BigQueryWorker.insert_last_updated("contacts", synced_upto, 0, organization_id)
 
-      # Before the fix the cursor landed on the shared timestamp and the range predicate
-      # matched all @tied_rows at once, regardless of the limit.
-      assert length(rows) == @tied_limit
+      BigQueryWorker.queue_table_data("contacts", organization_id, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: cursor.updated_at,
+        last_updated_id: cursor.id,
+        table_last_updated_at: synced_upto,
+        table_last_updated_id: 0
+      })
+
+      job = Jobs.get_bigquery_job(organization_id, "contacts")
+
+      assert job.last_updated_id == cursor.id
+      assert DateTime.compare(job.last_updated_at, cursor.updated_at) == :eq
     end
 
-    test "drains every tied row across ticks without skipping any", %{
-      organization_id: org_id,
-      tied_ids: tied_ids,
-      start_at: start_at
-    } do
-      {seen, ticks} = drain("contacts", org_id, start_at, 0, [], 0)
-
-      assert Enum.sort(seen) == Enum.sort(tied_ids)
-      assert length(seen) == @tied_rows, "expected no duplicates and no skipped rows"
-      assert ticks == ceil(@tied_rows / @tied_limit)
-    end
-
-    test "holds for every table on the update path", %{organization_id: organization_id} do
+    test "builds a valid query for every synced table", %{organization_id: organization_id} do
       since = DateTime.add(DateTime.utc_now(), -86_400, :second)
 
       tables =
@@ -942,36 +1002,78 @@ defmodule Glific.BigQueryTest do
         )
       end
 
-      for table <- tables do
-        cursor = BigQueryWorker.insert_last_updated(table, since, 0, organization_id)
+      # Only a few tables have seed data, so the row-count assertion is vacuous for the rest.
+      # What this covers for all of them is that the cursor and fetch queries build valid SQL —
+      # trial_users has no organization_id column and raises if the cursor query is auto-scoped.
+      tables_with_rows =
+        Enum.count(tables, fn table ->
+          rows = fetch_one_batch(table, organization_id, since, 0)
+          assert length(rows) <= @batch_size, "#{table} fetched #{length(rows)} rows"
+          rows != []
+        end)
 
-        rows =
-          if cursor do
-            BigQueryWorker.fetch_data(table, organization_id, %{
-              action: :update,
-              last_updated_at: cursor.updated_at,
-              last_updated_id: cursor.id,
-              table_last_updated_at: since,
-              table_last_updated_id: 0
-            })
-          else
-            []
-          end
+      # Guards the above from silently degrading to "every table returned nothing".
+      assert tables_with_rows >= 3,
+             "only #{tables_with_rows} tables returned rows; seed data may have regressed"
+    end
 
-        # Every table must build valid SQL here — trial_users has no organization_id column,
-        # so an auto-scoped cursor query raises rather than returning an over-sized result.
-        assert length(rows) <= @tied_limit, "#{table} fetched #{length(rows)} rows"
+    defp stamp_one_timestamp(organization_id, count, phone_prefix, updated_at \\ nil) do
+      # A bulk update_all stamps every row with one identical updated_at. Defaulting it to the
+      # future keeps the seeded contacts out of the cursor range, so assertions see only these.
+      updated_at = updated_at || DateTime.add(DateTime.utc_now(), 3600, :second)
+
+      batch_ids =
+        Enum.map(1..count, fn n ->
+          contact_fixture(%{organization_id: organization_id, phone: "#{phone_prefix}#{n}"}).id
+        end)
+
+      # updated_at must sit a few seconds past inserted_at — the sync filters on the seconds
+      # component of age(updated_at, inserted_at), not the total interval.
+      {^count, nil} =
+        Contact
+        |> where([c], c.id in ^batch_ids)
+        |> Repo.update_all(
+          [set: [updated_at: updated_at, inserted_at: DateTime.add(updated_at, -5, :second)]],
+          skip_organization_id: true
+        )
+
+      %{batch_ids: batch_ids, batch_updated_at: updated_at}
+    end
+
+    defp put_org_context(organization_id) do
+      Repo.put_process_state(organization_id)
+      RepoReplica.put_process_state(organization_id)
+    end
+
+    defp fetch_one_batch(table, organization_id, synced_upto, synced_upto_id) do
+      case BigQueryWorker.insert_last_updated(table, synced_upto, synced_upto_id, organization_id) do
+        nil ->
+          []
+
+        cursor ->
+          BigQueryWorker.fetch_data(table, organization_id, %{
+            action: :update,
+            last_updated_at: cursor.updated_at,
+            last_updated_id: cursor.id,
+            table_last_updated_at: synced_upto,
+            table_last_updated_id: synced_upto_id
+          })
       end
     end
 
-    defp drain(table, org_id, at, id, seen, ticks) do
-      case BigQueryWorker.insert_last_updated(table, at, id, org_id) do
+    # Bounded so a regression that stalls cursor advancement fails the test instead of
+    # looping forever and hanging CI.
+    defp drain(_table, _organization_id, _at, _id, seen, batches) when batches > @batch_count,
+      do: flunk("cursor stopped advancing after #{batches} batches, synced #{length(seen)} rows")
+
+    defp drain(table, organization_id, at, id, seen, batches) do
+      case BigQueryWorker.insert_last_updated(table, at, id, organization_id) do
         nil ->
-          {seen, ticks}
+          {seen, batches}
 
         cursor ->
           ids =
-            BigQueryWorker.fetch_data(table, org_id, %{
+            BigQueryWorker.fetch_data(table, organization_id, %{
               action: :update,
               last_updated_at: cursor.updated_at,
               last_updated_id: cursor.id,
@@ -980,7 +1082,7 @@ defmodule Glific.BigQueryTest do
             })
             |> Enum.map(& &1.id)
 
-          drain(table, org_id, cursor.updated_at, cursor.id, seen ++ ids, ticks + 1)
+          drain(table, organization_id, cursor.updated_at, cursor.id, seen ++ ids, batches + 1)
       end
     end
   end
