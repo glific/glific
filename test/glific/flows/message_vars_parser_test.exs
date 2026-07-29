@@ -377,6 +377,12 @@ defmodule Glific.Flows.MessageVarParserTest do
     # Access.get/3 via the old get_in/2 based lookup.
     fields = %{"results" => %{"foo" => "just_a_string"}}
 
+    # Expected is "hello just_a_string.bar", not "hello @results.foo.bar":
+    # parse/2's 2-dot regex pass matches the full "@results.foo.bar" first and
+    # hits the safe nil-fallback (leaving the text unchanged), but the later
+    # 1-dot regex pass then independently matches and resolves the shorter
+    # "@results.foo" prefix within that unchanged text, leaving ".bar" behind
+    # as dangling literal text.
     assert MessageVarParser.parse("hello @results.foo.bar", fields) ==
              "hello just_a_string.bar"
   end
