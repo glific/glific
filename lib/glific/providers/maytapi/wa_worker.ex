@@ -204,18 +204,12 @@ defmodule Glific.Providers.Maytapi.WAWorker do
 
       {:error, reason} ->
         Instrumentation.track_action("contact_sync", :failure, org_id)
-        maybe_log_sync_failure(org_id, reason)
+
+        Glific.log_error(
+          "WhatsApp groups sync failed for organization #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
+        )
     end
 
     :ok
-  end
-
-  @spec maybe_log_sync_failure(non_neg_integer(), any()) :: :ok
-  defp maybe_log_sync_failure(_org_id, "Maytapi is not active"), do: :ok
-
-  defp maybe_log_sync_failure(org_id, reason) do
-    Glific.log_error(
-      "WhatsApp groups sync failed for organization #{org_id}: #{Glific.SafeLog.safe_inspect(reason)}"
-    )
   end
 end
