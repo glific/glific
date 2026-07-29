@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# notify-when-healthy - Procfile wrapper that reports whether the web process
+# actually came up after a Gigalixir release.
+#
+# THIS FILE BELONGS IN glific-frontend, NOT HERE.
+#
+# It execs bin/start-nginx-static, which only exists in the frontend repo's
+# static buildpack. It is kept in this repo purely so the deploy tooling lives
+# in one place; copy it across, then in glific-frontend:
+#
+#   chmod +x bin/notify-when-healthy
+#   echo 'web: bin/notify-when-healthy' > Procfile
+#   gigalixir config:set DISCORD_WEBHOOK_URL=... -a glific-frontend-staging
+#
+# This is the inside-the-container half of the story: it knows whether nginx
+# ever served a request. gigalixir-verify-deploy.sh is the outside half, and it
+# is the one that catches a rollback - a container that dies never gets to
+# report anything, which is exactly how the 1 July nginx failure stayed quiet.
+
+set -uo pipefail
+
+commit_sha="${GIGALIXIR__RELEASE_SHA:-unknown}"
+version="${GIGALIXIR__RELEASE_VERSION:-unknown}"
+app_name="${GIGALIXIR__APP_NAME:-unknown}"
+port="${PORT:-8080}"
+trailer="\`${version}\` (\`${commit_sha}\`) on $(hostname)"
+
+notify() {
+  local text="$1"
+  [ -n "${DISCORD_WEBHOOK_URL:-}" ] || return 0
+  curl -fsS -m 10 -X POST "$DISCORD_WEBHOOK_URL" \
+    -H 'Content-Type: application/json' \
+    -d "{\"content\": \"${text} - ${trailer}\"}" >/dev/null 2>&1 || true
+}
+
+# nginx runs in the foreground, so watch it from a backgrounded subshell.
+(
+  for _ in $(seq 1 60); do
+    # The XFP header avoids the http->https 301 in nginx.conf.erb, so a broken
+    # upstream shows up as a failure instead of hiding behind a redirect.
+    if curl -fsS -o /dev/null -m 2 -H 'X-Forwarded-Proto: https' \
+         "http://127.0.0.1:${port}/"; then
+      notify "✅ ${app_name} up and serving"
+      exit 0
+    fi
+    sleep 2
+  done
+  notify "⚠️ ${app_name} did not become healthy in 120s"
+) &
+
+exec bin/start-nginx-static

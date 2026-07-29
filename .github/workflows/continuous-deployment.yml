@@ -45,3 +45,34 @@ jobs:
       - name: remove unattended-upgrades
         run: sudo apt-get -y remove unattended-upgrades
 
+      # Gigalixir rolls a failed release back on its own and then reports healthy again,
+      # so a deploy that never took looks identical to one that worked. Everything below
+      # exists to make that difference visible: the job goes red if the app does not hold
+      # the new release for five minutes.
+      - name: Resolve deployed sha
+        id: deployed
+        run: echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Ensure gigalixir CLI is authenticated
+        env:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+        run: |
+          command -v gigalixir >/dev/null 2>&1 || pip install gigalixir
+          # The deploy action above normally leaves a usable ~/.netrc; only log in if not.
+          if ! gigalixir account >/dev/null 2>&1; then
+            gigalixir login -e "$GIGALIXIR_USERNAME" -p "$GIGALIXIR_PASSWORD" -y
+          fi
+          gigalixir account >/dev/null
+
+      - name: Verify deploy stayed healthy
+        timeout-minutes: 20
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          chmod +x bin/gigalixir-verify-deploy.sh
+          bin/gigalixir-verify-deploy.sh \
+            --ci \
+            --app "${{ secrets.GIGALIXIR_APPNAME }}" \
+            --sha "${{ steps.deployed.outputs.sha }}"
+
