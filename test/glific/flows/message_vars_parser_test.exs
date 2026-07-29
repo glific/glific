@@ -370,4 +370,14 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert MessageVarParser.parse(str, fields) == "Your school name is: abc"
     assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
   end
+
+  test "parse/2 does not crash on a plain string result (incident #2, #81)", _attrs do
+    # results["foo"] is a plain string, not a nested map, so asking for one
+    # level deeper ("bar") used to raise FunctionClauseError inside
+    # Access.get/3 via the old get_in/2 based lookup.
+    fields = %{"results" => %{"foo" => "just_a_string"}}
+
+    assert MessageVarParser.parse("hello @results.foo.bar", fields) ==
+             "hello just_a_string.bar"
+  end
 end
