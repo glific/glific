@@ -798,7 +798,7 @@ defmodule Glific.Erase do
     Notifications.create_notification(%{
       category: "Organization",
       message: message,
-      severity: severity,
+      severity: Notifications.types()[severity],
       organization_id: Glific.glific_organization_id(),
       entity: entity
     })

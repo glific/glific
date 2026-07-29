@@ -12,7 +12,6 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
-    Erase,
     ERP,
     Mails.NewPartnerOnboardedMail,
     Notion,
@@ -239,31 +238,6 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp update_organization_billing(organization), do: organization
-
-  @doc """
-  Soft delete an organization: deletes all related data and sets deleted_at timestamp.
-  Ensure that the confirmed flag is set since this is a destructive operation.
-  """
-  @spec delete(non_neg_integer, boolean) ::
-          {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
-  def delete(delete_organization_id, true) do
-    organization = Partners.get_organization!(delete_organization_id)
-
-    # ensure that the organization is not active, our last check before we
-    # delete its data
-    if organization.is_active do
-      {:error, "Organization is still active"}
-    else
-      # Soft-delete first so the org is immediately marked deleted even if data
-      # erasure fails — this prevents any new data being written to the org.
-      with {:ok, organization} <- Partners.delete_organization(organization),
-           :ok <- Erase.delete_all_organization_data(organization.id) do
-        {:ok, organization}
-      end
-    end
-  end
-
-  def delete(_delete_organization_id, false), do: {:error, "Cannot delete organization"}
 
   @doc """
   Reset a few tables and fields for an organization, so they can get rid of all the test data and experiments.
