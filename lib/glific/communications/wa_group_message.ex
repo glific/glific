@@ -392,8 +392,39 @@ defmodule Glific.Communications.GroupMessage do
         wa_msg.bsp_id == ^msg_id and
           wa_msg.organization_id == ^org_id
       )
-      |> Repo.one!()
+      |> Repo.one()
 
+    do_receive_reaction_msg(context_message, phone, reaction, bsp_msg_id, msg_id, org_id)
+  end
+
+  @spec do_receive_reaction_msg(
+          WAMessage.t() | nil,
+          String.t(),
+          String.t(),
+          String.t(),
+          String.t(),
+          non_neg_integer()
+        ) :: any()
+  defp do_receive_reaction_msg(nil, _phone, _reaction, _bsp_msg_id, msg_id, org_id) do
+    Glific.log_error(
+      "receive_reaction_msg: no WAMessage found for bsp_id #{msg_id}, org_id #{org_id}; skipping reaction"
+    )
+  end
+
+  defp do_receive_reaction_msg(
+         %{wa_group_id: nil} = context_message,
+         _phone,
+         _reaction,
+         _bsp_msg_id,
+         _msg_id,
+         org_id
+       ) do
+    Glific.log_error(
+      "receive_reaction_msg: WAMessage #{context_message.id} (org_id #{org_id}) has a nil wa_group_id; skipping reaction"
+    )
+  end
+
+  defp do_receive_reaction_msg(context_message, phone, reaction, bsp_msg_id, _msg_id, org_id) do
     contact_attrs = %{
       phone: phone,
       contact_type: "WA",
