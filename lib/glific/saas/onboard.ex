@@ -7,7 +7,7 @@ defmodule Glific.Saas.Onboard do
 
   require Logger
   use Gettext, backend: GlificWeb.Gettext
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Communications.Mailer,

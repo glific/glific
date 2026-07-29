@@ -3,8 +3,7 @@ defmodule Glific.AskGlific do
   Glific AskGlific context module for business logic.
   """
 
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
