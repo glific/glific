@@ -923,15 +923,44 @@ defmodule Glific.BigQueryTest do
       assert ticks == ceil(@tied_rows / @tied_limit)
     end
 
-    test "runs on the tables add_organization_id/3 leaves unscoped", %{organization_id: org_id} do
-      at = DateTime.add(DateTime.utc_now(), -86_400, :second)
+    test "holds for every table on the update path", %{organization_id: organization_id} do
+      since = DateTime.add(DateTime.utc_now(), -86_400, :second)
 
-      # These tables sync cross-org, so the cursor query must not pick up Repo auto-scoping —
-      # trial_users has no organization_id column at all and would raise.
-      for table <- ["organizations", "trial_users", "trackers_all"] do
-        assert BigQueryWorker.insert_last_updated(table, at, 0, org_id)
-               |> then(&(is_nil(&1) or match?(%{id: _, updated_at: _}, &1))),
-               "cursor query failed for #{table}"
+      tables =
+        Saas.organization_id()
+        |> BigQuery.bigquery_tables()
+        |> Map.keys()
+        |> Enum.reject(&(&1 in BigQuery.ignore_updates_for_table()))
+
+      # The sync skips rows whose age(updated_at, inserted_at) has a zero seconds component,
+      # and seeded rows have updated_at == inserted_at. Backdate so they are visible.
+      for table <- tables do
+        source = BigQuery.get_table_struct(table).__schema__(:source)
+
+        Repo.query!("UPDATE #{source} SET inserted_at = inserted_at - interval '10 seconds'", [],
+          skip_organization_id: true
+        )
+      end
+
+      for table <- tables do
+        cursor = BigQueryWorker.insert_last_updated(table, since, 0, organization_id)
+
+        rows =
+          if cursor do
+            BigQueryWorker.fetch_data(table, organization_id, %{
+              action: :update,
+              last_updated_at: cursor.updated_at,
+              last_updated_id: cursor.id,
+              table_last_updated_at: since,
+              table_last_updated_id: 0
+            })
+          else
+            []
+          end
+
+        # Every table must build valid SQL here — trial_users has no organization_id column,
+        # so an auto-scoped cursor query raises rather than returning an over-sized result.
+        assert length(rows) <= @tied_limit, "#{table} fetched #{length(rows)} rows"
       end
     end
 
