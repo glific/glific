@@ -60,8 +60,6 @@ jobs:
       - name: Clone frontend
         run: |
           git clone https://github.com/glific/glific-frontend.git
-          cd glific-frontend
-          git checkout feat/move_cypress_to_frontend
 
       - name: Use latest Node.js
         uses: actions/setup-node@v6
