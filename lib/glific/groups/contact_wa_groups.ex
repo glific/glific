@@ -16,8 +16,7 @@ defmodule Glific.Groups.ContactWAGroups do
   }
 
   use Ecto.Schema
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   @primary_key false
 
   @type t() :: %__MODULE__{
