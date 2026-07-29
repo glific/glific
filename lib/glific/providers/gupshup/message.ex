@@ -12,7 +12,6 @@ defmodule Glific.Providers.Gupshup.Message do
     Repo
   }
 
-  import Ecto.Query, warn: false
   require Logger
 
   @channel "whatsapp"

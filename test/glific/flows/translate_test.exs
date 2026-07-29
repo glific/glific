@@ -89,7 +89,6 @@ defmodule Glific.Flows.TranslateTest do
 
   test "export_localization/2 with add_translation false leaves the newly added translations blank",
        attrs do
-
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
     Flows.update_cached_flow(flow, "draft")
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
@@ -135,7 +134,8 @@ defmodule Glific.Flows.TranslateTest do
     flow = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
 
     assert {:error, reason} = Export.translate(flow)
-    assert reason =~ "Translation has failed"
+    assert reason =~ "Translation failed"
+    refute reason =~ ~r/google/i
 
     flow_after = Flows.get_complete_flow(attrs.organization_id, @help_flow_id)
     assert map_size(flow_after.definition["localization"]["hi"]) == 1
