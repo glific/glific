@@ -59,7 +59,7 @@ POLL=5 RELEASE_TIMEOUT=300 CONVERGE_TIMEOUT=300 STABLE_WINDOW=300
 FLAP_TOLERANCE=3 EXPECT_STATUS=200
 CI_MODE=0 DEBUG=0 PROBE=0 HTTP_CHECK=1
 
-usage() { sed -n '2,30p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
+usage() { sed -n '2,25p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
 die() {
   printf '%s\n' "error: $*" >&2
@@ -86,20 +86,25 @@ notify() {
     --data "$(jq -nc --arg c "$text" '{content: $c}')" >/dev/null 2>&1 || true
 }
 
+# A value-taking flag passed as the last token leaves no $2 to consume; `shift 2`
+# would then fail silently and the while-loop would spin on the same flag forever.
+# need "$@" asserts a value follows before we shift past it.
+need() { [ "$#" -ge 2 ] || die "missing value for $1"; }
+
 parse_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
-      --env) ENV_NAME="${2:-}"; shift 2 ;;
-      --app) APP="${2:-}"; shift 2 ;;
-      --sha) SHA="${2:-}"; shift 2 ;;
-      --app-version) APP_VERSION="${2:-}"; shift 2 ;;
-      --url) URL="${2:-}"; shift 2 ;;
-      --poll) POLL="${2:-}"; shift 2 ;;
-      --release-timeout) RELEASE_TIMEOUT="${2:-}"; shift 2 ;;
-      --converge-timeout) CONVERGE_TIMEOUT="${2:-}"; shift 2 ;;
-      --stable-window) STABLE_WINDOW="${2:-}"; shift 2 ;;
-      --flap-tolerance) FLAP_TOLERANCE="${2:-}"; shift 2 ;;
-      --expect-status) EXPECT_STATUS="${2:-}"; shift 2 ;;
+      --env) need "$@"; ENV_NAME="$2"; shift 2 ;;
+      --app) need "$@"; APP="$2"; shift 2 ;;
+      --sha) need "$@"; SHA="$2"; shift 2 ;;
+      --app-version) need "$@"; APP_VERSION="$2"; shift 2 ;;
+      --url) need "$@"; URL="$2"; shift 2 ;;
+      --poll) need "$@"; POLL="$2"; shift 2 ;;
+      --release-timeout) need "$@"; RELEASE_TIMEOUT="$2"; shift 2 ;;
+      --converge-timeout) need "$@"; CONVERGE_TIMEOUT="$2"; shift 2 ;;
+      --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
+      --flap-tolerance) need "$@"; FLAP_TOLERANCE="$2"; shift 2 ;;
+      --expect-status) need "$@"; EXPECT_STATUS="$2"; shift 2 ;;
       --no-http) HTTP_CHECK=0; shift ;;
       --ci) CI_MODE=1; shift ;;
       --debug) DEBUG=1; shift ;;

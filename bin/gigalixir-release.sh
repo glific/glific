@@ -38,7 +38,7 @@ STABLE_WINDOW=300
 CURRENT_VERSION="" VERSION_FILE="" PROJECT_KIND=""
 BRANCH="" PR_NUMBER="" DEPLOY_SHA=""
 
-usage() { sed -n '2,21p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
+usage() { sed -n '2,19p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
 die() {
   printf '\n%s\n' "error: $*" >&2
@@ -77,17 +77,22 @@ abort() {
   exit 1
 }
 
+# A value-taking flag passed as the last token leaves no $2 to consume; `shift 2`
+# would then fail silently and the while-loop would spin on the same flag forever.
+# need "$@" asserts a value follows before we shift past it.
+need() { [ "$#" -ge 2 ] || die "missing value for $1"; }
+
 parse_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
-      --env) ENV_NAME="${2:-}"; shift 2 ;;
-      --app) APP="${2:-}"; shift 2 ;;
-      --remote) REMOTE="${2:-}"; shift 2 ;;
-      --version) NEW_VERSION="${2:-}"; shift 2 ;;
-      --bump) BUMP="${2:-}"; shift 2 ;;
-      --title) RELEASE_TITLE="${2:-}"; shift 2 ;;
-      --base) BASE_BRANCH="${2:-}"; shift 2 ;;
-      --stable-window) STABLE_WINDOW="${2:-}"; shift 2 ;;
+      --env) need "$@"; ENV_NAME="$2"; shift 2 ;;
+      --app) need "$@"; APP="$2"; shift 2 ;;
+      --remote) need "$@"; REMOTE="$2"; shift 2 ;;
+      --version) need "$@"; NEW_VERSION="$2"; shift 2 ;;
+      --bump) need "$@"; BUMP="$2"; shift 2 ;;
+      --title) need "$@"; RELEASE_TITLE="$2"; shift 2 ;;
+      --base) need "$@"; BASE_BRANCH="$2"; shift 2 ;;
+      --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
       --skip-ci-wait) SKIP_CI_WAIT=1; shift ;;
       --skip-release) SKIP_RELEASE=1; shift ;;
       --skip-verify) SKIP_VERIFY=1; shift ;;
