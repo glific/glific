@@ -176,6 +176,7 @@ next_version() {
     major) printf '%d.0.0' "$((major + 1))" ;;
     minor) printf '%d.%d.0' "$major" "$((minor + 1))" ;;
     patch) printf '%d.%d.%d' "$major" "$minor" "$((patch + 1))" ;;
+    *) die "invalid bump '${part}' (use patch, minor or major)" ;;
   esac
 }
 
