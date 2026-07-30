@@ -1,0 +1,13 @@
+mutation createWaGroup($input: CreateWaGroupInput!) {
+  createWaGroup(input: $input) {
+    waGroup {
+      id
+      label
+      bspId
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

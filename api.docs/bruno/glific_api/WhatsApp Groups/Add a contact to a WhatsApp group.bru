@@ -1,0 +1,36 @@
+meta {
+  name: Add a contact to a WhatsApp group
+  type: graphql
+  seq: 14
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createContactWaGroup($input: ContactWaGroupInput!) {
+    createContactWaGroup(input: $input) {
+      contactWaGroup {
+        id
+        isAdmin
+        contact { id name }
+        waGroup { id label }
+      }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": { "contactId": 2, "waGroupId": 1, "isAdmin": false }
+  }
+}

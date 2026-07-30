@@ -1,16 +1,11 @@
 defmodule Glific.Flows.Webhooks.Kaapi do
   @moduledoc """
-  Shared Kaapi helpers for the async Kaapi webhook implementations
-  (`speech_to_text`, `text_to_speech`, `filesearch-gpt`, `voice-filesearch-gpt`).
-
-  This module owns the Kaapi-specific plumbing that used to live in
-  `Glific.Clients.CommonWebhook`: building the flow-resume callback URL +
-  signed `request_metadata`, looking up an assistant's Kaapi config, and
-  dispatching the unified LLM call. The per-webhook modules under
-  `Glific.Flows.Webhooks.*` call into here from their `call/2` (worker phase).
+  Shared Kaapi helpers for the async Kaapi webhook implementations (STT, TTS, filesearch-gpt,
+  voice-filesearch-gpt): callback URL/signed metadata, config lookup, and the unified LLM call.
   """
 
   alias Glific.Assistants.Assistant
+  alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Partners
   alias Glific.Repo
   alias Glific.SafeLog
@@ -19,21 +14,13 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
   require Logger
 
-  # Shared per-org rate limit for Kaapi STT/TTS dispatch (lifted from the former SttTtsWorker):
-  # STT and TTS share ONE per-org budget — at most @rate_limit_max dispatches per
-  # @rate_limit_window_ms combined — so both nodes call check_rate_limit/1 rather than keeping
-  # independent limiters (two buckets would double the effective limit).
+  # STT and TTS share ONE per-org rate-limit budget (not independent buckets, which would
+  # double the effective limit).
   @rate_limit_window_ms 60_000
   @rate_limit_max 10
   @rate_limit_snooze_seconds 5
 
-  @doc """
-  Check-and-consume the shared STT/TTS budget for `organization_id`.
-
-  `ExRated.check_rate/3` both checks and consumes a token: under the limit it returns `:ok` and
-  reserves this job's slot; over the limit it returns `{:snooze, seconds}` so the Oban worker
-  reschedules instead of hammering Kaapi.
-  """
+  @doc "Check-and-consume the shared STT/TTS rate-limit budget for `organization_id`."
   @spec check_rate_limit(non_neg_integer()) :: :ok | {:snooze, pos_integer()}
   def check_rate_limit(organization_id) do
     key = "kaapi_stt_tts:#{Partners.organization(organization_id).shortcode}"
@@ -44,14 +31,7 @@ defmodule Glific.Flows.Webhooks.Kaapi do
     end
   end
 
-  @doc """
-  Builds the callback URL and signed `request_metadata` map for a Kaapi async call.
-
-  Centralises signature generation and callback-URL construction shared by STT, TTS,
-  and the unified LLM calls. `callback_path` defaults to the standard flow-resume route;
-  the voice LLM path passes `"/kaapi/voice_flow_resume"`. `timestamp` may be supplied to
-  keep latency measurement consistent across a multi-step call.
-  """
+  @doc "Builds the callback URL and signed `request_metadata` map for a Kaapi async call."
   @spec build_flow_resume_metadata(
           non_neg_integer(),
           non_neg_integer(),
@@ -102,11 +82,8 @@ defmodule Glific.Flows.Webhooks.Kaapi do
   end
 
   @doc """
-  Dispatches the async unified LLM call to Kaapi (`/api/v1/llm/call`).
-
-  Expects the org Kaapi API key in `headers` as `X-API-KEY`. On success returns the
-  normalised Kaapi ack body (`%{success: true, ...}`); Kaapi POSTs the actual result to
-  the flow-resume callback later. On failure returns `%{success: false, reason: ...}`.
+  Dispatches the async unified LLM call to Kaapi (`/api/v1/llm/call`). Returns the normalised
+  ack body on success; Kaapi POSTs the actual result to the flow-resume callback later.
   """
   @spec call_llm(map(), list(), String.t(), map()) :: map()
   def call_llm(fields, headers, callback_url, request_metadata) do
@@ -126,58 +103,150 @@ defmodule Glific.Flows.Webhooks.Kaapi do
          {:ok, body} <- ApiClient.call_llm(payload, org_api_key) do
       Kaapi.normalize_kaapi_body(body)
     else
+      {:error, error_type, reason} when is_atom(error_type) ->
+        %{success: false, reason: reason, error_type: error_type}
+
       {:error, %{status: status, body: body}} ->
-        %{success: false, reason: Jason.encode!(body), http_status: status}
+        %{success: false, reason: Jason.encode!(body), http_status: status, error_type: :unknown}
 
       {:error, reason} when is_binary(reason) ->
-        %{success: false, reason: reason}
+        %{success: false, reason: reason, error_type: :unknown}
 
       {:error, reason} ->
-        %{success: false, reason: SafeLog.safe_inspect(reason)}
+        %{success: false, reason: SafeLog.safe_inspect(reason), error_type: :unknown}
+    end
+  end
+
+  # Upstream busy/overloaded/rate-limited → :service_unavailable (system), not config. Kept
+  # specific — a bare "try again" also appears in plenty of 4xx config errors.
+  @overloaded ~r/conversation_locked|Another process is currently operating|is overloaded|server_is_overloaded|rate limit/i
+
+  @code ~r/\(code:\s*(\d{3})|Status:\s*(\d{3})/
+
+  @doc """
+  Classifies a failed async Kaapi callback into an `ErrorType.t()`: overloaded/locked upstream
+  → `:service_unavailable`; otherwise the status is bucketed by `from_http_status/1`.
+  """
+  @spec classify(map()) :: ErrorType.t()
+  def classify(result) when is_map(result) do
+    reason = to_reason(result)
+    code = to_status(result["http_status"]) || provider_status(reason)
+
+    if reason =~ @overloaded do
+      :service_unavailable
+    else
+      from_http_status(code)
+    end
+  end
+
+  def classify(_result), do: :unknown
+
+  @doc """
+  Maps a raw HTTP status to an `ErrorType.t()`, so every webhook failure buckets a status the
+  same way: 429 → `:rate_limited`, 408 → `:service_unavailable`, other 4xx → `:invalid_input`,
+  everything else (5xx, transport atoms, nil) → `:unknown`. Lives here rather than in
+  `ErrorType` because it *decides* a type, whereas `ErrorType` only defines the vocabulary.
+  """
+  @spec from_http_status(any()) :: ErrorType.t()
+  def from_http_status(429), do: :rate_limited
+  def from_http_status(408), do: :service_unavailable
+  def from_http_status(status) when is_integer(status) and status in 400..499, do: :invalid_input
+  def from_http_status(_status), do: :unknown
+
+  @spec to_status(any()) :: integer() | nil
+  defp to_status(status) when is_integer(status), do: status
+
+  defp to_status(status) when is_binary(status) do
+    # Only a cleanly-parsed integer counts — Integer.parse/1 accepts prefixes ("404invalid" -> 404).
+    case status |> String.trim() |> Integer.parse() do
+      {code, ""} -> code
+      _ -> nil
+    end
+  end
+
+  defp to_status(_status), do: nil
+
+  @spec to_reason(map()) :: String.t()
+  defp to_reason(%{"reason" => reason}) when is_binary(reason), do: reason
+  defp to_reason(%{"error" => error}) when is_binary(error), do: error
+  defp to_reason(_result), do: ""
+
+  @spec provider_status(String.t()) :: integer() | nil
+  defp provider_status(reason) do
+    case Regex.run(@code, reason) do
+      [_, code] -> String.to_integer(code)
+      [_, _, code] -> String.to_integer(code)
+      _ -> nil
     end
   end
 
   @doc """
-  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. All three
-  are required (the Kaapi callback signature depends on them). Returns a tagged tuple so
-  callers route a malformed payload to the Failure branch rather than crashing the worker;
-  the error string intentionally omits the payload to avoid leaking user data into logs.
+  Converts a Kaapi ack map into the typed `call/2` result: success parks the flow (`{:ok, ack}`);
+  failure becomes `{:error, type, reason}`, folding `http_status` into the reason.
+  """
+  @spec to_result(map()) :: {:ok, map()} | {:error, ErrorType.t(), String.t()}
+  def to_result(%{success: true} = ack), do: {:ok, ack}
+
+  def to_result(%{success: false} = ack) do
+    {:error, ack_error_type(ack[:error_type]), ack_reason(ack)}
+  end
+
+  @spec ack_error_type(any()) :: ErrorType.t()
+  defp ack_error_type(error_type) when is_atom(error_type) do
+    if ErrorType.class(error_type), do: error_type, else: :unknown
+  end
+
+  defp ack_error_type(_error_type), do: :unknown
+
+  @spec ack_reason(map()) :: String.t()
+  defp ack_reason(ack) do
+    reason = ack[:reason] || ack[:error] || "Kaapi dispatch failure"
+    reason = if is_binary(reason), do: reason, else: SafeLog.safe_inspect(reason)
+
+    case ack[:http_status] do
+      status when is_integer(status) -> "#{reason} (HTTP #{status})"
+      _ -> reason
+    end
+  end
+
+  @doc """
+  Parses `{organization_id, flow_id, contact_id}` from a webhook fields map. Returns a tagged
+  tuple so callers route a malformed payload to Failure instead of crashing the worker; the
+  error string omits the payload to avoid leaking user data into logs.
   """
   @spec parse_flow_fields(map()) ::
           {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
-          | {:error, String.t()}
+          | {:error, ErrorType.t(), String.t()}
   def parse_flow_fields(fields) do
     with {:ok, organization_id} <- Glific.parse_maybe_integer(fields["organization_id"]),
          {:ok, flow_id} <- Glific.parse_maybe_integer(fields["flow_id"]),
          {:ok, contact_id} <- Glific.parse_maybe_integer(fields["contact_id"]) do
       {:ok, {organization_id, flow_id, contact_id}}
     else
-      _ -> {:error, "Invalid or missing flow metadata for Kaapi webhook"}
+      _ -> {:error, :invalid_input, "Invalid or missing flow metadata for Kaapi webhook"}
     end
   end
 
-  @doc """
-  Validates that a media URL is a well-formed https URL. Used by the STT webhook
-  before dispatching to Kaapi.
-  """
-  @spec validate_media(any()) :: :ok | {:error, String.t()}
+  @doc "Validates that a media URL is a well-formed https URL."
+  @spec validate_media(any()) :: :ok | {:error, ErrorType.t(), String.t()}
   def validate_media(url) when is_binary(url) do
     case URI.parse(url) do
       %URI{scheme: "https", host: host} when is_binary(host) and host != "" ->
         :ok
 
       _ ->
-        {:error, "Media URL is invalid"}
+        {:error, :invalid_media_url, "Media URL is invalid"}
     end
   end
 
-  def validate_media(_), do: {:error, "Media URL is needed"}
+  def validate_media(_), do: {:error, :invalid_media_url, "Media URL is needed"}
 
+  # An unresolvable assistant is a flow-author/config mistake → config.
   @spec lookup_kaapi_config(String.t() | nil, non_neg_integer()) ::
-          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+          {:ok, {String.t(), non_neg_integer()}} | {:error, ErrorType.t(), String.t()}
   defp lookup_kaapi_config(assistant_display_id, _organization_id)
        when is_nil(assistant_display_id),
-       do: {:error, "assistant_id is required"}
+       do: {:error, :invalid_input, "assistant_id is required"}
 
   defp lookup_kaapi_config(assistant_display_id, organization_id) do
     with {:ok, assistant} <-
@@ -192,16 +261,17 @@ defmodule Glific.Flows.Webhooks.Kaapi do
       {:ok, {kaapi_uuid, kaapi_version_number}}
     else
       {:error, :missing_kaapi_uuid} ->
-        {:error, "Assistant is still being set up"}
+        {:error, :invalid_input, "Assistant is still being set up"}
 
       {:error, _} ->
-        {:error, "Assistant not found: #{assistant_display_id}"}
+        {:error, :invalid_input, "Assistant not found: #{assistant_display_id}"}
 
       nil ->
-        {:error, "No active config version found for assistant #{assistant_display_id}"}
+        {:error, :invalid_input,
+         "No active config version found for assistant #{assistant_display_id}"}
 
       %{kaapi_version_number: nil} ->
-        {:error, "Kaapi version number not found"}
+        {:error, :invalid_input, "Kaapi version number not found"}
     end
   end
 

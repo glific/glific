@@ -185,6 +185,16 @@ defmodule Glific.Flows.Node do
         &Action.validate(&1, &2, flow)
       )
 
+    # Validate the expression-bearing fields on every action (value, enter-flow,
+    # interactive-template, message-template) — the type-specific Action.validate
+    # clauses above do not cover these.
+    errors =
+      node.actions
+      |> Enum.reduce(
+        errors,
+        &Action.validate_expressions(&1, &2, flow)
+      )
+
     errors =
       node.exits
       |> Enum.reduce(

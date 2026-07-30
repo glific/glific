@@ -204,7 +204,11 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           "model" => "gpt-4o"
         }
 
-        assert %{success: true, response: "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"} =
+        assert {:ok,
+                %{
+                  success: true,
+                  response: "```json\n{\n  \"steps\": 4,\n  \"answer\": 10\n}\n```"
+                }} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -237,7 +241,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           "response_format" => %{"type" => "json_object"}
         }
 
-        assert %{success: true, response: %{"steps" => 4, "answer" => 10}} =
+        assert {:ok, %{success: true, response: %{"steps" => 4, "answer" => 10}}} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -270,7 +274,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           "response_format" => %{"type" => "json_objectz"}
         }
 
-        assert "response_format type should be json_schema or json_object" =
+        assert {:error, _type, "response_format type should be json_schema or json_object"} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -320,7 +324,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           }
         }
 
-        assert %{success: true, response: %{"steps" => "4", "answer" => "10"}} =
+        assert {:ok, %{success: true, response: %{"steps" => "4", "answer" => "10"}}} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -374,7 +378,8 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           }
         }
 
-        assert "I'm sorry, but I can't provide the information from the document." =
+        assert {:error, _type,
+                "I'm sorry, but I can't provide the information from the document."} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -405,7 +410,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           "response_format" => %{"type" => "json_object"}
         }
 
-        assert %{success: true, response: %{"answer" => 10}} =
+        assert {:ok, %{success: true, response: %{"answer" => 10}}} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -423,7 +428,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           "organization_id" => "1"
         }
 
-        assert "Failed to download image for vision parsing" ==
+        assert {:error, _type, "Failed to download image for vision parsing"} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end
@@ -471,7 +476,7 @@ defmodule Glific.Flows.Webhooks.ParseViaGptVisionTest do
           }
         }
 
-        assert "Invalid schema for response_format" <> _ =
+        assert {:error, _type, "Invalid schema for response_format" <> _} =
                  Dispatcher.dispatch("parse_via_gpt_vision", fields)
       end
     end

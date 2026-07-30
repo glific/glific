@@ -390,6 +390,201 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
+    test "create_session_template/1 for HSM with blank label derives one from shortcode and language",
+         attrs do
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message",
+            "id" => "5c3b0b3a-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "otp_message_en"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "otp_message_en"
+    end
+
+    test "create_session_template/1 for HSM with blank label appends a suffix when the derived label is already taken",
+         attrs do
+      language = language_fixture()
+
+      # a different template that happens to already hold the label we'd otherwise derive.
+      session_template_fixture(
+        Map.merge(attrs, %{label: "otp_message_en", shortcode: "unrelated_shortcode"})
+      )
+
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message",
+            "id" => "6d4c1c4b-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "otp_message_en_2"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "otp_message_en_2"
+    end
+
+    test "create_session_template/1 for HSM with a non-blank label keeps it unchanged", attrs do
+      body =
+        Jason.encode!(%{
+          "status" => "success",
+          "token" => "new_partner_token",
+          "template" => %{
+            "category" => "AUTHENTICATION",
+            "createdOn" => 1_595_904_220_495,
+            "data" => "Your OTP is {{1}}",
+            "elementName" => "otp_message_custom",
+            "id" => "7e5d2d5c-97fa-454e-ac3b-8c9b94e53b4b",
+            "languageCode" => "en",
+            "languagePolicy" => "deterministic",
+            "master" => true,
+            "meta" => "{\"example\":\"Your OTP is [1234]\"}",
+            "modifiedOn" => 1_595_904_220_495,
+            "status" => "PENDING",
+            "templateType" => "TEXT",
+            "vertical" => "My Custom Title"
+          }
+        })
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: body}
+
+        %{method: :get} ->
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"token" => %{"token" => "Fake Token"}})}
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "My Custom Title",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message_custom",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.label == "My Custom Title"
+    end
+
+    test "create_session_template/1 for HSM with blank label and a non-existent language_id returns an error instead of raising",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: 999_999_999,
+        is_hsm: true,
+        type: :text,
+        shortcode: "otp_message_invalid_language",
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error, ["language_id", "does not exist"]} =
+               Templates.create_session_template(attrs)
+    end
+
+    test "create_session_template/1 for HSM with blank label and no shortcode falls back to the incomplete-data error",
+         attrs do
+      attrs = %{
+        body: "Your OTP is {{1}}",
+        label: "",
+        language_id: language_fixture().id,
+        is_hsm: true,
+        type: :text,
+        category: "AUTHENTICATION",
+        example: "Your OTP is [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "HSM approval",
+                "for HSM approval shortcode, category and example fields are required"
+              ]} = Templates.create_session_template(attrs)
+    end
+
     test "create_session_template/1 for HSM data with image url, should submit it for approval",
          attrs do
       whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
@@ -2522,5 +2717,73 @@ defmodule Glific.TemplatesTest do
              Templates.create_session_template(attrs)
 
     assert session_template.footer == "footer"
+  end
+
+  test "translate_session_template/2 translates body, footer, and buttons into the target language",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+
+    # GoogleTranslate.translate/4 fans each string out to its own Task via
+    # Task.async_stream, so a process-scoped Tesla.Mock.mock/1 (bound to this test
+    # process) would be invisible to those tasks; mock_global is required here.
+    Tesla.Mock.mock_global(fn env ->
+      translated =
+        cond do
+          String.contains?(env.body, "Thank you") -> "धन्यवाद"
+          String.contains?(env.body, "footer text") -> "पादलेख पाठ"
+          String.contains?(env.body, "Track Order") -> "आदेश को ट्रैक करें"
+          true -> "अनुवाद उपलब्ध नहीं है"
+        end
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => translated}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 language_id: language.id,
+                 body: "Thank you",
+                 footer: "footer text",
+                 buttons: ["Track Order"]
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "धन्यवाद"
+    assert result.footer == "पादलेख पाठ"
+    assert result.buttons == ["आदेश को ट्रैक करें"]
+  end
+
+  test "translate_session_template/2 returns nil footer and no buttons when none were provided",
+       attrs do
+    language = language_fixture(@valid_language_attrs_1)
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "अनुवादित"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+
+    assert result.body == "अनुवादित"
+    assert result.footer == nil
+    assert result.buttons == []
+  end
+
+  test "translate_session_template/2 returns an error for an unknown language", attrs do
+    assert {:error, ["Elixir.Glific.Settings.Language", "Resource not found"]} =
+             Templates.translate_session_template(
+               %{language_id: 999_999, body: "Hello"},
+               attrs.organization_id
+             )
   end
 end

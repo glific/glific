@@ -263,11 +263,10 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         assert log != nil
         assert log.error != nil
 
-        # Flow execution assertion — the webhook returns %{success: false, reason: ...}
-        # which handle/3 treats as a result map, so the flow advances on the success
-        # branch regardless. This proves the flow engine ran after the certificate job.
-        message = await_flow_message(context.contact_id, "@results.filesearch.message")
-        assert message.body == "@results.filesearch.message"
+        # Flow execution assertion — a generation failure returns a typed
+        # {:error, :unknown, reason}, so the flow routes to the Failure branch.
+        message = await_flow_message(context.contact_id, "failure")
+        assert message.body == "failure"
       end
     end
   end
@@ -354,8 +353,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
         result =
           Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))
 
-        assert result[:success] == false
-        assert result[:reason] == "Failed to download thumbnail url"
+        assert {:error, _type, "Failed to download thumbnail url"} = result
       end)
     end
 
@@ -416,9 +414,14 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
         contact = Fixtures.contact_fixture()
 
-        assert Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))[
-                 :success
-               ] == false
+        # A generation failure now returns a typed error → dispatcher yields the reason string.
+        assert {:error, _type, reason} =
+                 Dispatcher.dispatch(
+                   "create_certificate",
+                   cert_fields(certificate.id, contact.id)
+                 )
+
+        assert is_binary(reason)
       end)
     end
 
@@ -445,26 +448,27 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
 
         contact = Fixtures.contact_fixture()
 
-        result =
-          Dispatcher.dispatch("create_certificate", cert_fields(certificate.id, contact.id))
+        assert {:error, _type, reason} =
+                 Dispatcher.dispatch(
+                   "create_certificate",
+                   cert_fields(certificate.id, contact.id)
+                 )
 
-        assert result[:success] == false
-        assert result[:certificate_url] == nil
-        assert result[:reason] =~ "Failed to copy slide. Status: 400"
+        assert reason =~ "Failed to copy slide. Status: 400"
       end)
     end
 
     test "returns an error string when the certificate template doesn't exist" do
-      assert Dispatcher.dispatch("create_certificate", cert_fields(111, "123")) ==
-               "Certificate template not found for ID: 111"
+      assert {:error, _type, "Certificate template not found for ID: 111"} =
+               Dispatcher.dispatch("create_certificate", cert_fields(111, "123"))
     end
 
     test "returns a validation error string when required fields are missing/invalid" do
-      error = Dispatcher.dispatch("create_certificate", %{})
+      assert {:error, _type, error} = Dispatcher.dispatch("create_certificate", %{})
       assert is_binary(error)
       assert String.split(error, "is required") |> length() == 5
 
-      assert "replace_texts is invalid" =
+      assert {:error, _type, "replace_texts is invalid"} =
                Dispatcher.dispatch("create_certificate", %{
                  "certificate_id" => "1",
                  "organization_id" => 1,
@@ -472,7 +476,7 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
                  "replace_texts" => "John Doe"
                })
 
-      assert "contact is required" =
+      assert {:error, _type, "contact is required"} =
                Dispatcher.dispatch("create_certificate", %{
                  "certificate_id" => "1",
                  "organization_id" => 1,
@@ -489,8 +493,8 @@ defmodule Glific.Flows.Webhooks.CreateCertificateTest do
           "replace_texts" => %{"{1}" => "John Doe"}
         })
 
-      assert is_binary(result)
-      assert result =~ "certificate_id must be a valid integer"
+      assert {:error, _type, reason} = result
+      assert reason =~ "certificate_id must be a valid integer"
     end
   end
 end

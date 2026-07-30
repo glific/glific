@@ -1,0 +1,35 @@
+meta {
+  name: Update contacts in a WhatsApp group
+  type: graphql
+  seq: 15
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation updateContactWaGroups($input: UpdateContactWaGroupsInput!) {
+    updateContactWaGroups(input: $input) {
+      numberDeleted
+      waGroupContacts { id }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "waGroupId": 1,
+      "addWaContactIds": [2, 3],
+      "deleteWaContactIds": []
+    }
+  }
+}

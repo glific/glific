@@ -15,7 +15,7 @@ defmodule Glific.Partners do
 
   use Publicist
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
@@ -583,7 +583,6 @@ defmodule Glific.Partners do
       |> set_languages()
       |> Flags.set_flow_uuid_display()
       |> Flags.set_roles_and_permission()
-      |> Flags.set_open_ai_auto_translation_enabled()
       |> Flags.set_auto_translation_enabled_for_google_trans()
       |> Flags.set_contact_profile_enabled()
       |> Flags.set_whatsapp_group_enabled()
@@ -596,6 +595,7 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:high_trigger_tps_enabled)
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
       |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
+      |> Flags.set_flag_enabled(:is_template_v2_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1473,15 +1473,14 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
+      "maytapi" => organization.services["maytapi"] != nil,
       "flow_uuid_display" => Flags.get_flow_uuid_display(organization),
       "roles_and_permission" => Flags.get_roles_and_permission(organization),
       "contact_profile_enabled" => Flags.get_contact_profile_enabled(organization),
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
-      "auto_translation_enabled" =>
-        Flags.get_open_ai_auto_translation_enabled(organization) or
-          Flags.get_google_auto_translation_enabled(organization),
+      "auto_translation_enabled" => Flags.get_google_auto_translation_enabled(organization),
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
@@ -1495,7 +1494,8 @@ defmodule Glific.Partners do
       "superset_enabled" =>
         FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
       "prompt_generator_enabled" =>
-        Flags.get_flag_enabled(:is_prompt_generator_enabled, organization)
+        Flags.get_flag_enabled(:is_prompt_generator_enabled, organization),
+      "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization)
     }
   end
 
@@ -1519,6 +1519,7 @@ defmodule Glific.Partners do
           |> add_service("bigquery", service["bigquery"], org_id)
           |> add_service("google_cloud_storage", service["google_cloud_storage"], org_id)
           |> add_service("dialogflow", service["dialogflow"], org_id)
+          |> add_service("maytapi", service["maytapi"], org_id)
         end
       )
 

@@ -67,10 +67,13 @@ defmodule Glific.Flows.Wait do
   end
 
   @doc """
-  Validate a wait, this is a no-op
+  Validate a wait. Guards the dynamic `timeout.expression` path, which is
+  evaluated at runtime by `get_wait_timeout/2`.
   """
   @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(wait, errors, flow) do
+    errors = validate_expression(wait, errors, flow.organization_id)
+
     cond do
       is_nil(wait.seconds) ->
         errors
@@ -84,6 +87,17 @@ defmodule Glific.Flows.Wait do
 
       true ->
         errors
+    end
+  end
+
+  # The wait timeout expression is evaluated at runtime, so it must clear the same
+  # publish-time guard as every other flow expression. Runs regardless of
+  # `seconds` because a dynamic wait carries an expression with `seconds` nil.
+  @spec validate_expression(Wait.t(), Keyword.t(), non_neg_integer()) :: Keyword.t()
+  defp validate_expression(%{expression: expression}, errors, organization_id) do
+    case Glific.validate_flow_expression(expression, organization_id) do
+      :ok -> errors
+      {:error, _reason} -> [{EEx, "Wait timeout has unsupported expression", "Critical"} | errors]
     end
   end
 

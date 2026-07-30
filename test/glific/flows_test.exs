@@ -818,5 +818,10 @@ defmodule Glific.FLowsTest do
     assert Enum.count(errors, fn error ->
              error.category == "Critical" and String.contains?(error.message, "expression")
            end) == 2
+
+    # Validation errors are reported to the author but do not block publishing:
+    # do_publish_flow/2 still runs and stamps the revision with the user.
+    {:ok, revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
+    assert revision.user_id == user.id
   end
 end

@@ -3,7 +3,7 @@ defmodule Glific.Flows do
   The Flows context.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
 
   require Logger
@@ -631,7 +631,7 @@ defmodule Glific.Flows do
 
       # we had an error saving to the DB
       elem(result, 0) == :error ->
-        Logger.info("Error while publishing the flow. #{Glific.SafeLog.safe_inspect(result)}")
+        Logger.info("Error while publishing the flow. #{SafeLog.safe_inspect(result)}")
         result
 
       # We had an error validating the flow

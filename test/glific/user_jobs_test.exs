@@ -5,7 +5,9 @@ defmodule Glific.UserJobTest do
   alias Glific.{
     Fixtures,
     Jobs.UserJob,
-    Jobs.UserJobWorker
+    Jobs.UserJobWorker,
+    Notifications.Notification,
+    Repo
   }
 
   setup do
@@ -83,6 +85,27 @@ defmodule Glific.UserJobTest do
       user_job = UserJob.list_user_jobs(%{filter: %{organization_id: organization.id}})
       success_jobs = Enum.filter(user_job, &(&1.status == "success"))
       assert length(success_jobs) == 1
+    end
+
+    test "completes a wa_group_member_import with a WA Group Member Upload notification", %{
+      organization: organization
+    } do
+      UserJob.create_user_job(%{
+        status: "pending",
+        type: "wa_group_member_import",
+        total_tasks: 1,
+        tasks_done: 1,
+        organization_id: organization.id,
+        all_tasks_created: true
+      })
+
+      assert :ok == UserJobWorker.check_user_job_status(organization.id)
+
+      assert %Notification{message: "WhatsApp group member upload completed"} =
+               Repo.get_by(Notification, %{
+                 category: "WA Group Member Upload",
+                 organization_id: organization.id
+               })
     end
   end
 end

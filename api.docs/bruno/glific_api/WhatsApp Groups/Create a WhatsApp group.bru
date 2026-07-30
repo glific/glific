@@ -1,0 +1,35 @@
+meta {
+  name: Create a WhatsApp group
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation createWaGroup($input: CreateWaGroupInput!) {
+    createWaGroup(input: $input) {
+      waGroup { id label bspId }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "name": "My WhatsApp group",
+      "waManagedPhoneId": 1,
+      "importData": "phone,name\n919999999999,Alice\n"
+    }
+  }
+}
