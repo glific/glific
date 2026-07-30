@@ -78,12 +78,43 @@ fail_annotation() {
   return 0
 }
 
+# Posts a Discord embed (the rich card with a coloured sidebar), falling back to
+# nothing if no webhook is set. $1=ok|fail (sidebar colour), $2=title, $3=description.
+# Reads APP / SHA / TARGET_VERSION / POD_NODE from the surrounding run.
 notify() {
-  local text="$1"
   [ -n "${DISCORD_WEBHOOK_URL:-}" ] || return 0
+  local kind="$1" title="$2" desc="$3" color
+  case "$kind" in
+    ok) color=3066993 ;;    # green
+    fail) color=15158332 ;; # red
+    *) color=9807270 ;;     # grey
+  esac
+
+  local payload
+  payload=$(jq -nc \
+    --arg title "$title" \
+    --arg desc "$desc" \
+    --argjson color "$color" \
+    --arg app "${APP:-unknown}" \
+    --arg rel "${TARGET_VERSION:-unknown}" \
+    --arg node "${POD_NODE:-unknown}" \
+    --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    '{embeds:[{
+        title: $title,
+        description: $desc,
+        color: $color,
+        timestamp: $ts,
+        fields: [
+          {name: "🏷️ App",     value: $app,  inline: true},
+          {name: "📦 Release", value: $rel,  inline: true},
+          {name: "💻 Node",    value: $node, inline: false}
+        ],
+        footer: {text: "Gigalixir rolling deployment"}
+      }]}')
+
   curl -fsS -m 10 -X POST "$DISCORD_WEBHOOK_URL" \
     -H 'Content-Type: application/json' \
-    --data "$(jq -nc --arg c "$text" '{content: $c}')" >/dev/null 2>&1 || true
+    --data "$payload" >/dev/null 2>&1 || true
 }
 
 # A value-taking flag passed as the last token leaves no $2 to consume; `shift 2`
@@ -217,7 +248,7 @@ inspect_pods() {
   desired=$(printf '%s' "$counts" | cut -f2)
 
   POD_TOTAL=0 POD_AT_TARGET=0 POD_HEALTHY_AT_TARGET=0 POD_BEHIND=0 POD_AHEAD=0
-  POD_SUMMARY=""
+  POD_SUMMARY="" POD_NODE=""
 
   local name status version status_lc
   while IFS=$'\t' read -r name status version; do
@@ -228,7 +259,10 @@ inspect_pods() {
 
     if [ "$version" = "$target" ]; then
       POD_AT_TARGET=$((POD_AT_TARGET + 1))
-      [[ "$status_lc" =~ $HEALTHY_RE ]] && POD_HEALTHY_AT_TARGET=$((POD_HEALTHY_AT_TARGET + 1))
+      if [[ "$status_lc" =~ $HEALTHY_RE ]]; then
+        POD_HEALTHY_AT_TARGET=$((POD_HEALTHY_AT_TARGET + 1))
+        POD_NODE="$name"
+      fi
     elif [[ "$version" =~ ^[0-9]+$ ]] && [[ "$target" =~ ^[0-9]+$ ]]; then
       if [ "$version" -lt "$target" ]; then POD_BEHIND=$((POD_BEHIND + 1)); else POD_AHEAD=$((POD_AHEAD + 1)); fi
     fi
@@ -405,10 +439,10 @@ main() {
   if [ "$rc" -eq "$E_OK" ]; then wait_for_converge; rc=$?; fi
   if [ "$rc" -eq "$E_OK" ]; then watch_stability; rc=$?; fi
 
-  local trailer="\`${APP}\` v${TARGET_VERSION:-?} (\`${SHA:0:7}\`${TARGET_APPVER:+, ${TARGET_APPVER}})"
   if [ "$rc" -eq "$E_OK" ]; then
     log "VERIFIED: ${APP} is live on release v${TARGET_VERSION} and stable"
-    notify "✅ Deploy verified - ${trailer} live and stable for ${STABLE_WINDOW}s"
+    notify ok "🚀 Deployment Healthy" \
+      "A new revision has passed health checks and is now serving traffic (stable for ${STABLE_WINDOW}s)."
   else
     local reason
     case "$rc" in
@@ -423,7 +457,7 @@ main() {
     log "DEPLOY VERIFICATION FAILED (${reason})"
     log "investigate: gigalixir logs -a ${APP} | gigalixir ps -a ${APP} | gigalixir releases -a ${APP}"
     fail_annotation "${APP}: ${reason}"
-    notify "🚨 Deploy verification FAILED - ${trailer} - ${reason}"
+    notify fail "🚨 Deployment Failed" "$reason"
   fi
   exit "$rc"
 }
