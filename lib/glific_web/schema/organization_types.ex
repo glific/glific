@@ -5,8 +5,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
@@ -396,13 +395,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:status, :organization_status_enum)
       middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.update_organization_status/3)
-    end
-
-    field :delete_inactive_organization, :organization_result do
-      arg(:delete_organization_id, non_null(:id))
-      arg(:is_confirmed, non_null(:boolean))
-      middleware(Authorize, :glific_admin)
-      resolve(&Resolvers.Partners.delete_inactive_organization/3)
     end
 
     field :reset_organization, :string do

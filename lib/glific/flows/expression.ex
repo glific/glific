@@ -16,7 +16,8 @@ defmodule Glific.Flows.Expression do
   2. **Interpret, don't eval.** We never call `Code.eval_quoted/2`. A syntactic
      allowlist over the *pre-expansion* AST is unsound, because `alias` rebinds
      names during macro expansion: `alias System, as: Timex` makes a hostile
-     `Timex.cmd/2` node byte-identical to a legitimate `Timex.today/0` node.
+     call to `System.cmd/2` byte-identical, post-expansion, to a legitimate
+     call to `Timex.today/0`.
      Validating one representation and executing another is the bug. We walk and
      execute the same tree.
   3. **Fail closed.** `eval_node/2` implements only the allowed node types. `alias`,
