@@ -30,6 +30,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:errors, list_of(:input_error))
     field(:whatsapp_forms_enabled, :boolean)
     field(:ai_evaluations_enabled, :boolean)
+    field(:ai_evaluation_enabled, :boolean)
     field(:assistant_config_versions_enabled, :boolean)
     field(:copy_node_enabled, :boolean)
     field(:superset_enabled, :boolean)
