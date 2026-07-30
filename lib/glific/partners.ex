@@ -15,7 +15,7 @@ defmodule Glific.Partners do
 
   use Publicist
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   use Gettext, backend: GlificWeb.Gettext
   require Logger
 
