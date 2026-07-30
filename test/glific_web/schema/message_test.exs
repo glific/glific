@@ -214,6 +214,9 @@ defmodule GlificWeb.Schema.MessageTest do
     message_body = get_in(query_data, [:data, "message", "message", "body"])
     assert message_body == body
 
+    message_channel = get_in(query_data, [:data, "message", "message", "channel"])
+    assert message_channel == "whatsapp"
+
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
@@ -436,6 +439,37 @@ defmodule GlificWeb.Schema.MessageTest do
     message = get_in(query_data, [:data, "createAndSendMessage", "message"])
     assert message["body"] == "Message body"
     assert message["sendBy"] == "some name"
+    assert message["channel"] == "whatsapp"
+  end
+
+  test "create and send a message accepts an explicit channel input", %{staff: user} do
+    contact = Fixtures.contact_fixture()
+
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{
+        last_message_at: DateTime.utc_now(),
+        bsp_status: :session_and_hsm,
+        optin_time: DateTime.utc_now()
+      })
+
+    result =
+      auth_query_gql_by(:create_and_send_message, user,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "receiverId" => contact.id,
+            "senderId" => Partners.organization_contact_id(user.organization_id),
+            "type" => "TEXT",
+            "channel" => "whatsapp"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createAndSendMessage", "message"])
+    assert message["body"] == "Message body"
+    assert message["channel"] == "whatsapp"
   end
 
   test "create and send a message should parse the message body", %{staff: user} do

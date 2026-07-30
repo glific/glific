@@ -761,6 +761,45 @@ defmodule Glific.Flows.Action do
     raise(UndefinedFunctionError, message: "Unsupported action type #{action.type} for WA group")
   end
 
+  # --- Web-channel capability gating (safety net) ---
+  # A flow context whose triggering message came in over the web channel is
+  # restricted to plain-text sends: interactive messages, broadcasts, and
+  # templated/HSM sends have no web-socket equivalent (there is no BSP template
+  # approval, and interactive/broadcast payloads assume WhatsApp UI). Rather than
+  # raising or silently dropping the action, we surface a staff-facing
+  # notification and let the flow continue with the same success shape a normal
+  # `execute/3` clause returns. This mirrors (and backstops) the flow-validation
+  # gate for `:web_message` flows in `Glific.Flows.Flow`. These clauses must stay
+  # ordered before the generic `send_msg`/`send_interactive_msg`/`send_broadcast`
+  # clauses below so they take precedence for web contexts.
+  def execute(%{type: "send_interactive_msg"} = _action, %{channel: "web"} = context, messages) do
+    FlowContext.notification(
+      context,
+      "send_interactive_msg is not supported on the web channel"
+    )
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "send_broadcast"} = _action, %{channel: "web"} = context, messages) do
+    FlowContext.notification(context, "send_broadcast is not supported on the web channel")
+    {:ok, context, messages}
+  end
+
+  def execute(
+        %{type: "send_msg", templating: templating} = _action,
+        %{channel: "web"} = context,
+        messages
+      )
+      when not is_nil(templating) do
+    FlowContext.notification(
+      context,
+      "send_msg with a template (HSM) is not supported on the web channel"
+    )
+
+    {:ok, context, messages}
+  end
+
   def execute(%{type: "send_msg"} = action, context, messages) do
     templating = Templating.execute(action.templating, context, messages)
     action = Map.put(action, :templating, templating)

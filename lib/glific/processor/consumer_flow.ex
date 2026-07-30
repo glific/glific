@@ -148,7 +148,11 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.get_cached_flow(message.organization_id, flow_params)
     |> case do
       {:ok, flow} ->
-        opts = Keyword.put(opts, :flow_keyword, message.body)
+        opts =
+          opts
+          |> Keyword.put(:flow_keyword, message.body)
+          |> Keyword.put(:channel, message.channel)
+
         FlowContext.init_context(flow, message.contact, status, opts)
 
       {:error, _} ->
@@ -258,7 +262,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
     case Flows.get_cached_flow(message.organization_id, args) do
       {:ok, flow} when flow.is_active ->
-        FlowContext.init_context(flow, message.contact, @final_phrase, is_draft: false)
+        FlowContext.init_context(flow, message.contact, @final_phrase,
+          is_draft: false,
+          channel: message.channel
+        )
 
       _ ->
         nil

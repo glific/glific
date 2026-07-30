@@ -29,7 +29,7 @@ defmodule Glific.Enums.Constants do
         :set_contact_field
       ]
 
-      @flow_type_const [:message]
+      @flow_type_const [:message, :web_message]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]
@@ -65,6 +65,18 @@ defmodule Glific.Enums.Constants do
         :location_request_message,
         :poll,
         :whatsapp_form_response
+      ]
+
+      # the channel a message belongs to. Kept as a plain string column (no PG
+      # enum type / defenum) on purpose so new channels need no migration.
+      @message_channel_const [
+        :whatsapp,
+        :web,
+        :telegram,
+        :rcs,
+        :sms,
+        :fb_messenger,
+        :instagram
       ]
 
       # the different possible types of interactive message

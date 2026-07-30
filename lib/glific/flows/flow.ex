@@ -330,6 +330,7 @@ defmodule Glific.Flows.Flow do
           respond_no_response: f.respond_no_response,
           skip_validation: f.skip_validation,
           organization_id: f.organization_id,
+          flow_type: f.flow_type,
           definition: fr.definition,
           version: fr.version
         }
@@ -412,8 +413,48 @@ defmodule Glific.Flows.Flow do
       |> dangling_nodes(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
       |> missing_localization(flow, all_translation, action_to_node_map)
+      |> web_channel_capability_errors(flow)
     end
   end
+
+  # actions with no web-socket equivalent: no BSP template approval concept, and
+  # interactive/broadcast payloads assume WhatsApp-specific UI
+  @unsupported_web_channel_action_types ["send_interactive_msg", "send_broadcast"]
+
+  @doc false
+  @spec web_channel_capability_errors(list(), map()) :: list()
+  defp web_channel_capability_errors(errors, %{flow_type: :web_message} = flow) do
+    flow.definition["nodes"]
+    |> Enum.flat_map(fn node -> node["actions"] || [] end)
+    |> Enum.reduce(errors, fn action, acc ->
+      cond do
+        action["type"] in @unsupported_web_channel_action_types ->
+          [
+            {action["uuid"],
+             "Action '#{action["type"]}' is not supported on a web channel (:web_message) flow",
+             "Critical"}
+            | acc
+          ]
+
+        action["type"] == "send_msg" && templated_action?(action) ->
+          [
+            {action["uuid"],
+             "A templated (HSM) 'send_msg' is not supported on a web channel (:web_message) flow",
+             "Critical"}
+            | acc
+          ]
+
+        true ->
+          acc
+      end
+    end)
+  end
+
+  defp web_channel_capability_errors(errors, _flow), do: errors
+
+  @spec templated_action?(map()) :: boolean()
+  defp templated_action?(action),
+    do: is_map(action["templating"]) && map_size(action["templating"]) > 0
 
   @spec flow_objects(map(), atom()) :: MapSet.t()
   defp flow_objects(flow, type) do

@@ -3,6 +3,11 @@ import Config
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
 
+# PROTOTYPE: bypasses real SMS OTP delivery/verification for the public web channel auth
+# endpoint (accepts a hardcoded "9999" OTP). Remove once real SMS OTP lands. Must stay false
+# (unset) in config/prod.exs and config/runtime.exs.
+config :glific, web_channel_otp_bypass: true
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

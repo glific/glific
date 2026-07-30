@@ -2,6 +2,7 @@ fragment MessageFields on MessageResult {
   message {
     id
     body
+    channel
     sendBy
     sender {
       id

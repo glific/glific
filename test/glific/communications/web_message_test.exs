@@ -1,0 +1,106 @@
+defmodule Glific.Communications.WebMessageTest do
+  use Glific.DataCase
+  use Oban.Pro.Testing, repo: Glific.Repo
+
+  alias Glific.{
+    Communications.WebMessage,
+    Contacts,
+    Fixtures,
+    Messages,
+    Providers.Gupshup.Worker,
+    Seeds.SeedsDev
+  }
+
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.seed_contacts(organization)
+    :ok
+  end
+
+  describe "send_message/2" do
+    test "an outbound web send enqueues no gupshup Oban job", %{
+      organization_id: organization_id,
+      global_schema: global_schema
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      {:ok, _message} =
+        Messages.create_and_send_message(%{
+          body: "hello from the web",
+          type: :text,
+          channel: "web",
+          receiver_id: receiver.id,
+          organization_id: organization_id
+        })
+
+      refute_enqueued(worker: Worker, prefix: global_schema)
+    end
+
+    test "marks bsp_status :error when the contact's browser is not connected", %{
+      organization_id: organization_id
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      {:ok, message} =
+        Messages.create_and_send_message(%{
+          body: "hello from the web",
+          type: :text,
+          channel: "web",
+          receiver_id: receiver.id,
+          organization_id: organization_id
+        })
+
+      sent_message = Messages.get_message!(message.id)
+      assert sent_message.bsp_status == :error
+      assert sent_message.status == :sent
+      assert sent_message.channel == "web"
+    end
+
+    test "sends the message and publishes without error (sent_message topic)", %{
+      organization_id: organization_id
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      message =
+        Fixtures.message_fixture(%{
+          type: :text,
+          channel: "web",
+          flow: :outbound,
+          receiver_id: receiver.id,
+          organization_id: organization_id
+        })
+
+      # `WebMessage.send_message/2` calls `Communications.publish_data/3` with the existing
+      # `:sent_message` topic (same one Communications.Message uses for WhatsApp sends) so the
+      # staff inbox stays realtime for the web channel too. A successful `{:ok, _}` return here
+      # confirms that publish call executed without raising.
+      assert {:ok, sent_message} = WebMessage.send_message(message, %{})
+      assert sent_message.id == message.id
+    end
+  end
+
+  describe "receive_message/2" do
+    test "persists an inbound channel:web message and triggers processing", %{
+      organization_id: organization_id
+    } do
+      phone = Faker.Phone.EnUs.phone()
+
+      :ok =
+        WebMessage.receive_message(%{
+          sender: %{phone: phone, organization_id: organization_id},
+          organization_id: organization_id,
+          body: "hi there"
+        })
+
+      {:ok, contact} =
+        Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+
+      [message] = Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
+
+      assert message.body == "hi there"
+      assert message.channel == "web"
+      assert message.flow == :inbound
+      assert message.bsp_status == :delivered
+    end
+  end
+end

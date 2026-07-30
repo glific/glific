@@ -92,6 +92,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :is_template, :boolean
     field :skip_validation, :boolean
     field :description, :string
+    field :flow_type, :flow_type_enum
   end
 
   @desc "Filtering options for flows"

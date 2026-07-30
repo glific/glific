@@ -44,6 +44,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.message_type_const()
   [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker, :location_request_message, :poll, :whatsapp_form_response]
 
+  iex> Glific.Enums.message_channel_const()
+  [:whatsapp, :web, :telegram, :rcs, :sms, :fb_messenger, :instagram]
+
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
 
@@ -160,6 +163,9 @@ defmodule Glific.Enums do
 
   defmacro message_type_const,
     do: Macro.expand(@message_type_const, __CALLER__)
+
+  defmacro message_channel_const,
+    do: Macro.expand(@message_channel_const, __CALLER__)
 
   defmacro question_type_const,
     do: Macro.expand(@question_type_const, __CALLER__)

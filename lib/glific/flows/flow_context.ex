@@ -53,7 +53,8 @@ defmodule Glific.Flows.FlowContext do
     :profile_id,
     :reason,
     :node,
-    :wa_group_id
+    :wa_group_id,
+    :channel
   ]
 
   # we store one more than the number of messages specified here
@@ -80,6 +81,7 @@ defmodule Glific.Flows.FlowContext do
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           wa_group_id: non_neg_integer | nil,
           wa_group: WAGroup.t() | Ecto.Association.NotLoaded.t() | nil,
+          channel: String.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -113,6 +115,11 @@ defmodule Glific.Flows.FlowContext do
     field(:is_await_result, :boolean, default: false)
     field(:is_killed, :boolean, default: false)
     field(:reason, :string, default: nil)
+
+    # the channel (whatsapp, web, ...) of the message that triggered this context;
+    # propagated into the flow's outbound sends so replies route back over the
+    # originating channel (see Glific.Flows.ContactAction.do_send_message/4)
+    field(:channel, :string, default: "whatsapp")
 
     field(:delay, :integer, default: 0, virtual: true)
 
@@ -686,6 +693,7 @@ defmodule Glific.Flows.FlowContext do
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
     initial_results = Keyword.get(opts, :results, default_results(opts))
+    channel = Keyword.get(opts, :channel, "whatsapp")
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
@@ -708,7 +716,8 @@ defmodule Glific.Flows.FlowContext do
         uuid_map: flow.uuid_map,
         delay: delay,
         uuids_seen: uuids_seen,
-        wakeup_at: wakeup_at
+        wakeup_at: wakeup_at,
+        channel: channel
       })
 
     context =

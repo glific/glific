@@ -415,10 +415,17 @@ defmodule Glific.Communications.Message do
     nil
   end
 
-  @spec process_message(Message.t() | nil) :: any
-  defp process_message(nil), do: :ok
+  @doc """
+  Hand an inbound message to the flow engine via the poolboy consumer worker pool.
 
-  defp process_message(message) do
+  Public so other inbound entry points that don't route through this module's
+  `receive_message/2` (e.g. `Glific.Communications.WebMessage.receive_message/2`) can trigger
+  the same flow-processing path without duplicating the poolboy dispatch logic.
+  """
+  @spec process_message(Message.t() | nil) :: any
+  def process_message(nil), do: :ok
+
+  def process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
     process_state = {
       Repo.get_organization_id(),

@@ -48,6 +48,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :flow_label, :string
+    field :channel, :string
     field :bsp_message_id, :string
     field :status, :string
     field :errors, :json
@@ -213,6 +214,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_type_enum
     field :flow, :message_flow_enum
+    field :channel, :string
 
     field :sender_id, :id
     field :receiver_id, :id

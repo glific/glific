@@ -396,7 +396,10 @@ defmodule Glific.Flows.ContactAction do
       flow_id: context.flow_id,
       message_broadcast_id: context.message_broadcast_id,
       send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
-      is_optin_flow: Flows.optin_flow?(context.flow)
+      is_optin_flow: Flows.optin_flow?(context.flow),
+      # propagate the triggering channel so a reply on a web-triggered flow
+      # routes back over the web socket instead of the default BSP (Gupshup)
+      channel: context.channel
     }
 
     attrs

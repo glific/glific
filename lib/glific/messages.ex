@@ -10,6 +10,7 @@ defmodule Glific.Messages do
   alias Glific.{
     Caches,
     Communications,
+    Communications.WebMessage,
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
@@ -54,6 +55,24 @@ defmodule Glific.Messages do
   @spec count_messages(map()) :: integer
   def count_messages(args),
     do: Repo.count_filter(args, Message, &filter_with/2)
+
+  @doc """
+  Returns a page of a single contact's messages on a given channel, newest first.
+
+  Used by the web channel's `RoomChannel` to serve the initial (and "load more") message
+  history for a browser's own conversation.
+  """
+  @spec list_conversation_messages(non_neg_integer(), String.t(), map()) :: [Message.t()]
+  def list_conversation_messages(contact_id, channel, %{limit: limit, offset: offset}) do
+    Message
+    |> where([m], m.contact_id == ^contact_id and m.channel == ^channel)
+    |> order_by([m], desc: m.message_number)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+    |> Repo.preload(:media)
+    |> Enum.map(&put_clean_body/1)
+  end
 
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -306,9 +325,29 @@ defmodule Glific.Messages do
 
   defp check_for_interactive(attrs, _language_id), do: attrs
 
+  # Web channel outbound bypasses HSM/interactive/session-window checks entirely — delivery
+  # there is presence-dependent (no store-and-forward, no BSP), so none of the WhatsApp-specific
+  # send eligibility rules apply. Must be matched before the generic clause below.
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(
+         %{channel: "web", organization_id: organization_id} = attrs,
+         _contact
+       ) do
+    {:ok, message} =
+      attrs
+      |> Map.put_new(:type, :text)
+      |> Map.merge(%{
+        sender_id: Partners.organization_contact_id(organization_id),
+        flow: :outbound,
+        channel: "web"
+      })
+      |> create_message()
+
+    WebMessage.send_message(message, attrs)
+  end
+
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs

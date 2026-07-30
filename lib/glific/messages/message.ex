@@ -5,9 +5,12 @@ defmodule Glific.Messages.Message do
   flow, and group it belongs to.
   """
   use Ecto.Schema
-  import Ecto.Changeset
 
   alias __MODULE__
+
+  require Glific.Enums
+
+  import Ecto.Changeset
 
   alias Glific.{
     Contacts.Contact,
@@ -36,6 +39,7 @@ defmodule Glific.Messages.Message do
           template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
           flow_label: String.t() | nil,
+          channel: String.t() | nil,
           status: String.t() | nil,
           bsp_status: String.t() | nil,
           errors: map() | nil,
@@ -91,6 +95,7 @@ defmodule Glific.Messages.Message do
     :uuid,
     :body,
     :flow_label,
+    :channel,
     :clean_body,
     :publish?,
     :is_hsm,
@@ -123,6 +128,10 @@ defmodule Glific.Messages.Message do
     field(:flow, MessageFlow)
     field(:type, MessageType)
     field(:status, MessageStatus)
+
+    # discriminator for which channel this message belongs to (whatsapp, web, ...).
+    # Contacts are shared across channels; the channel lives on the message only.
+    field(:channel, :string, default: "whatsapp")
 
     field(:send_by, :string, virtual: true)
     # we keep the clean version of the body here for easy access by flows
@@ -189,6 +198,10 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields, empty_values: [[], nil])
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> validate_inclusion(
+      :channel,
+      Enum.map(Glific.Enums.message_channel_const(), &to_string/1)
+    )
     |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
