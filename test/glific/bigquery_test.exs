@@ -909,6 +909,17 @@ defmodule Glific.BigQueryTest do
     } do
       other_organization = organization_fixture(%{shortcode: "other-org-batching"})
 
+      # DataCase only fills the cache for org 1. Without this, put_process_state/1 below is a
+      # Cachex miss and its fallback runs a DB query from the Cachex process rather than the
+      # test's, which deadlocks against the SQL sandbox and hangs the rest of the suite.
+      Partners.fill_cache(other_organization)
+
+      # Cachex is global and is not rolled back with the sandbox transaction, so the entry has
+      # to go explicitly or later tests see an org that no longer exists in the database.
+      on_exit(fn ->
+        Partners.remove_organization_cache(other_organization.id, other_organization.shortcode)
+      end)
+
       %{batch_ids: other_batch_ids} =
         stamp_one_timestamp(other_organization.id, @batch_count, "9198000000")
 
