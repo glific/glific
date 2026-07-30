@@ -195,10 +195,11 @@ defmodule GlificWeb.Schema.UserTest do
   test "update current user cannot change email without a verified otp", %{manager: user} do
     Fixtures.otp_hsm_fixture()
     original_email = Repo.get!(User, user.id).email
+    new_email = "email-update-#{System.unique_integer([:positive])}@example.com"
 
     result =
       auth_query_gql_by(:update_current, user,
-        variables: %{"input" => %{"otp" => "000000", "email" => "demo@domain.com"}}
+        variables: %{"input" => %{"otp" => "000000", "email" => new_email}}
       )
 
     assert {:ok, query_data} = result
