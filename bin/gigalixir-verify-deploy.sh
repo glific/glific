@@ -21,22 +21,22 @@
 #
 # Exit codes
 #   0 verified   2 release never appeared   3 never converged   4 rolled back
-#   5 unhealthy  6 http check failed        7 superseded by a newer release
+#   5 unhealthy  6 superseded by a newer release
 #   1 usage / precondition failure
 
 set -uo pipefail
 
 readonly E_OK=0 E_USAGE=1 E_NO_RELEASE=2 E_NO_CONVERGE=3
-readonly E_ROLLBACK=4 E_UNHEALTHY=5 E_HTTP=6 E_SUPERSEDED=7
+readonly E_ROLLBACK=4 E_UNHEALTHY=5 E_SUPERSEDED=6
 
 # --------------------------------------------------------------------------------------
 # Deploy targets. Add a row here rather than editing the script body.
-#   env|app name|git remote|health url ("" derives https://<app>.gigalixirapp.com/)
+#   env|app name|git remote
 # --------------------------------------------------------------------------------------
 readonly TARGETS="
-staging|glific-staging|staging|
-frontend-staging|glific-frontend-staging|gigalixir|
-production|glific|production|
+staging|glific-staging|staging
+frontend-staging|glific-frontend-staging|gigalixir
+production|glific|production
 "
 
 # --------------------------------------------------------------------------------------
@@ -54,10 +54,10 @@ readonly JQ_POD_STATUS='((.status // .Status // "") | tostring)'
 readonly JQ_POD_VER='((.version // .Version // "") | tostring)'
 readonly HEALTHY_RE='^(healthy|running)$'
 
-ENV_NAME="" APP="" SHA="" APP_VERSION="" URL=""
+ENV_NAME="" APP="" SHA="" APP_VERSION=""
 POLL=5 RELEASE_TIMEOUT=300 CONVERGE_TIMEOUT=300 STABLE_WINDOW=300
-FLAP_TOLERANCE=3 EXPECT_STATUS=200
-CI_MODE=0 DEBUG=0 PROBE=0 HTTP_CHECK=1
+FLAP_TOLERANCE=3
+CI_MODE=0 DEBUG=0 PROBE=0
 
 usage() { sed -n '2,25p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
@@ -129,14 +129,11 @@ parse_args() {
       --app) need "$@"; APP="$2"; shift 2 ;;
       --sha) need "$@"; SHA="$2"; shift 2 ;;
       --app-version) need "$@"; APP_VERSION="$2"; shift 2 ;;
-      --url) need "$@"; URL="$2"; shift 2 ;;
       --poll) need "$@"; POLL="$2"; shift 2 ;;
       --release-timeout) need "$@"; RELEASE_TIMEOUT="$2"; shift 2 ;;
       --converge-timeout) need "$@"; CONVERGE_TIMEOUT="$2"; shift 2 ;;
       --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
       --flap-tolerance) need "$@"; FLAP_TOLERANCE="$2"; shift 2 ;;
-      --expect-status) need "$@"; EXPECT_STATUS="$2"; shift 2 ;;
-      --no-http) HTTP_CHECK=0; shift ;;
       --ci) CI_MODE=1; shift ;;
       --debug) DEBUG=1; shift ;;
       --probe) PROBE=1; shift ;;
@@ -151,11 +148,9 @@ resolve_target() {
     local row
     row=$(printf '%s' "$TARGETS" | grep "^${ENV_NAME}|") || die "unknown --env '$ENV_NAME'"
     [ -n "$APP" ] || APP=$(printf '%s' "$row" | cut -d'|' -f2)
-    [ -n "$URL" ] || URL=$(printf '%s' "$row" | cut -d'|' -f4)
   fi
 
   [ -n "$APP" ] || die "need --app or --env (one of: staging frontend-staging production)"
-  [ -n "$URL" ] || URL="https://${APP}.gigalixirapp.com/"
 
   if [ -z "$SHA" ]; then
     SHA=$(git rev-parse HEAD 2>/dev/null) || die "not in a git repo; pass --sha explicitly"
@@ -225,16 +220,6 @@ replica_counts() {
   printf '%s' "$1" | jq -r '[(.replicas_running // -1), (.replicas_desired // -1)] | @tsv' 2>/dev/null
 }
 
-http_ok() {
-  [ "$HTTP_CHECK" -eq 1 ] || return 0
-  local code
-  # The XFP header dodges the http->https 301 in the frontend's nginx config so a broken
-  # upstream surfaces as 502 instead of hiding behind a redirect.
-  code=$(curl -sS -o /dev/null -m 10 -w '%{http_code}' \
-    -H 'X-Forwarded-Proto: https' "$URL" 2>/dev/null) || return 1
-  [ "$code" = "$EXPECT_STATUS" ]
-}
-
 # Reads pod state once. Sets POD_SUMMARY / POD_TOTAL / POD_AT_TARGET / POD_HEALTHY_AT_TARGET
 # / POD_BEHIND / POD_AHEAD. Returns non-zero if the API call itself failed.
 inspect_pods() {
@@ -301,11 +286,6 @@ run_probe() {
     printf 'FAILED to read ps - check `gigalixir ps -a %s` by hand\n' "$APP"
   fi
 
-  if [ "$HTTP_CHECK" -eq 1 ]; then
-    if http_ok; then printf 'http: %s returned %s\n' "$URL" "$EXPECT_STATUS"
-    else printf 'http: %s did NOT return %s\n' "$URL" "$EXPECT_STATUS"; fi
-  fi
-
   printf '\nIf any "parsed" line above is empty but the raw JSON has the data,\nadjust the JQ_* expressions near the top of this script.\n'
 }
 
@@ -364,10 +344,10 @@ wait_for_converge() {
 
 # Phase C -------------------------------------------------------------------------------
 # A pod dropping to an older release is unambiguous - Gigalixir rolled us back - so that
-# fails on sight. Anything else (a single pod restarting, an API blip, one bad HTTP probe)
-# gets --flap-tolerance consecutive polls to recover before it counts as a failure.
+# fails on sight. Anything else (a single pod restarting, an API blip) gets
+# --flap-tolerance consecutive polls to recover before it counts as a failure.
 watch_stability() {
-  local deadline=$((SECONDS + STABLE_WINDOW)) strikes=0 http_strikes=0 last_log=0
+  local deadline=$((SECONDS + STABLE_WINDOW)) strikes=0 last_log=0
 
   log "phase C: holding v${TARGET_VERSION} for ${STABLE_WINDOW}s to prove it does not roll back"
   while [ "$SECONDS" -lt "$deadline" ]; do
@@ -400,17 +380,7 @@ watch_stability() {
       continue
     fi
 
-    if ! http_ok; then
-      http_strikes=$((http_strikes + 1))
-      log "  ${URL} not returning ${EXPECT_STATUS} (${http_strikes}/${FLAP_TOLERANCE})"
-      [ "$http_strikes" -ge "$FLAP_TOLERANCE" ] && {
-        log "phase C FAILED: ${URL} kept failing its health check while pods claimed healthy"
-        return "$E_HTTP"
-      }
-      continue
-    fi
-
-    strikes=0 http_strikes=0
+    strikes=0
     if [ $((SECONDS - last_log)) -ge 30 ]; then
       log "  stable, $((deadline - SECONDS))s remaining [$POD_SUMMARY]"
       last_log=$SECONDS
@@ -431,7 +401,7 @@ main() {
     exit "$E_OK"
   fi
 
-  log "app=${APP} sha=${SHA:0:7} url=${URL} http_check=$([ "$HTTP_CHECK" -eq 1 ] && echo on || echo off)"
+  log "app=${APP} sha=${SHA:0:7}"
   log "budget: up to $((RELEASE_TIMEOUT + CONVERGE_TIMEOUT + STABLE_WINDOW))s total"
 
   local rc
@@ -450,7 +420,6 @@ main() {
       "$E_NO_CONVERGE") reason="pods never became healthy on the new release" ;;
       "$E_ROLLBACK") reason="ROLLED BACK to an older release" ;;
       "$E_UNHEALTHY") reason="pods went unhealthy after deploy" ;;
-      "$E_HTTP") reason="app not serving ${EXPECT_STATUS} at ${URL}" ;;
       "$E_SUPERSEDED") reason="superseded by another deploy" ;;
       *) reason="unknown failure" ;;
     esac

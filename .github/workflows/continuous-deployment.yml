@@ -71,12 +71,8 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           chmod +x bin/gigalixir-verify-deploy.sh
-          # --no-http: this is the Phoenix backend; its root path returns 403, not 200,
-          # so pod health (release registered -> healthy -> held) is the deploy signal.
-          # The HTTP probe belongs to the frontend, where nginx serves 200 at /.
           bin/gigalixir-verify-deploy.sh \
             --ci \
-            --no-http \
             --app "${{ secrets.GIGALIXIR_APPNAME }}" \
             --sha "${{ steps.deployed.outputs.sha }}"
 
