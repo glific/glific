@@ -15,6 +15,7 @@ ENV LANG=C.UTF-8
 RUN apk add --no-cache --update \
     build-base git curl zsh vim inotify-tools openssl ncurses-libs npm \
     nodejs~${NODE_VERSION} \
+    postgresql15-client \
     postgresql15-dev
 
 # Create a directory for the app code
