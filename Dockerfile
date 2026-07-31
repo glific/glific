@@ -60,7 +60,8 @@ COPY mix.lock mix.exs .
 RUN mix deps.get
 RUN mix deps.compile
 
-# Lets make sure everything is in /app
-# COPY . .
+# Copy the application source (lib/, priv/, assets/). Required for a standalone
+# image build (Bunnyshell/CI) — local docker-compose mounts the source instead.
+COPY . .
 
 ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
