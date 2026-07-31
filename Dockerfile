@@ -16,8 +16,8 @@ ENV LANG=C.UTF-8
 # Install dependencies
 RUN apk add --no-cache --update \
     build-base git curl zsh vim inotify-tools openssl ncurses-libs npm \
-    nodejs-current~${NODE_VERSION} \
-    postgresql14-dev~${POSTGRES_VERSION}
+    nodejs~${NODE_VERSION} \
+    postgresql15-dev
 
 # Create a directory for the app code
 WORKDIR /app/glific
