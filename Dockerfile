@@ -6,8 +6,6 @@ FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VER
 
 # These two args need to stay here – otherwise they will be empty at RUN stage
 ARG NODE_VERSION
-ARG POSTGRES_VERSION
-
 ARG FP=DOES_NOT_EXIST
 ARG AUTH_KEY=DOES_NOT_EXIST
 
@@ -64,5 +62,5 @@ RUN mix deps.compile
 
 # Lets make sure everything is in /app
 # COPY . .
-    
+
 ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]

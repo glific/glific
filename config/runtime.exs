@@ -12,34 +12,51 @@ http_port = env!("HTTP_PORT", :integer, 4000)
 # Helper function to create SSL opts
 db_ssl_opts = fn db_type ->
   if Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true) do
-    pem = "#{db_type}_CACERT_ENCODED" |> env!(:string) |> Base.decode64!()
-    File.mkdir_p(Path.join(:code.priv_dir(:glific), "cert"))
+    cacert_env_var = "#{db_type}_CACERT_ENCODED"
 
-    cert_path =
-      Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
+    # Check if the CA cert env var is set; if not, skip SSL opts
+    case System.get_env(cacert_env_var) do
+      nil -> []
+      "" -> []
+      encoded ->
+        pem =
+          encoded
+          |> Base.decode64!()
 
-    File.write!(cert_path, pem)
+        File.mkdir_p!(Path.join(:code.priv_dir(:glific), "cert"))
 
-    [
-      cacertfile: cert_path,
-      verify: :verify_peer,
-      server_name_indication:
-        env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
-        |> String.to_charlist()
-    ]
+        cert_path =
+          Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
+
+        File.write!(cert_path, pem)
+
+        [
+          cacertfile: cert_path,
+          verify: :verify_peer,
+          server_name_indication:
+            env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
+            |> String.to_charlist()
+        ]
+    end
   else
-    false
+    []
   end
 end
 
 primary_url = env!("DATABASE_URL", :string!)
-primary_ssl_opts = db_ssl_opts.("PRIMARY")
+
+primary_ssl_opts =
+  if env!("ENABLE_DB_SSL", :boolean, true) do
+    db_ssl_opts.("PRIMARY")
+  else
+    []
+  end
 
 config :glific, Glific.Repo,
   url: primary_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: primary_ssl_opts,
+  ssl: primary_ssl_opts != [] && primary_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
@@ -52,7 +69,7 @@ config :glific, Glific.RepoReplica,
   url: replica_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: replica_ssl_opts,
+  ssl: replica_ssl_opts != [] && replica_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
