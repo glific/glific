@@ -96,6 +96,7 @@ notify() {
     --arg desc "$desc" \
     --argjson color "$color" \
     --arg app "${APP:-unknown}" \
+    --arg sha "${SHA:0:7}" \
     --arg rel "${TARGET_VERSION:-unknown}" \
     --arg node "${POD_NODE:-unknown}" \
     --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
@@ -106,6 +107,7 @@ notify() {
         timestamp: $ts,
         fields: [
           {name: "🏷️ App",     value: $app,  inline: true},
+          {name: "🔀 SHA",     value: $sha,  inline: true},
           {name: "📦 Release", value: $rel,  inline: true},
           {name: "💻 Node",    value: $node, inline: false}
         ],
@@ -424,7 +426,7 @@ main() {
       *) reason="unknown failure" ;;
     esac
     log "DEPLOY VERIFICATION FAILED (${reason})"
-    log "investigate: gigalixir logs -a ${APP} | gigalixir ps -a ${APP} | gigalixir releases -a ${APP}"
+    log "investigate: gigalixir logs -a ${APP} ; gigalixir ps -a ${APP} ; gigalixir releases -a ${APP}"
     fail_annotation "${APP}: ${reason}"
     notify fail "🚨 Deployment Failed" "$reason"
   fi
