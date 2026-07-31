@@ -64,4 +64,16 @@ RUN mix deps.compile
 # image build (Bunnyshell/CI) — local docker-compose mounts the source instead.
 COPY . .
 
+# Build-time only: runtime.exs is evaluated during `mix compile`, and the baked
+# .env.dev sets ENABLE_DB_SSL=true with a bogus CA cert. Force it off so the build
+# survives; the container runtime value comes from the deploy env either way.
+ENV ENABLE_DB_SSL=false
+
+# Precompile at build time, where the full dep tree is loaded, so compile-time
+# guards like `Code.ensure_loaded?(Ecto)` in lib/glific/flags/ecto.ex resolve true
+# and the module is actually built. Fail loudly if the guard still drops it.
+RUN mix compile
+RUN test -f _build/dev/lib/glific/ebin/Elixir.Glific.FunWithFlags.Store.Persistent.Ecto.beam \
+    || (echo "BUILD CHECK: Glific.FunWithFlags.Store.Persistent.Ecto beam MISSING after compile" && exit 1)
+
 ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
