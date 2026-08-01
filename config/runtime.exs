@@ -16,8 +16,12 @@ db_ssl_opts = fn db_type ->
 
     # Check if the CA cert env var is set; if not, skip SSL opts
     case System.get_env(cacert_env_var) do
-      nil -> []
-      "" -> []
+      nil ->
+        []
+
+      "" ->
+        []
+
       encoded ->
         pem =
           encoded
