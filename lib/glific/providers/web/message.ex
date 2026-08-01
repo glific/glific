@@ -13,6 +13,7 @@ defmodule Glific.Providers.Web.Message do
 
   alias Glific.Messages
   alias Glific.Messages.Message
+  alias GlificWeb.WebChannel.MessageSerializer
   alias GlificWeb.WebChannel.Presence
 
   require Logger
@@ -43,9 +44,8 @@ defmodule Glific.Providers.Web.Message do
     do: {:error, "Web channel does not support this message type"}
 
   @doc false
-  @spec send_interactive(Message.t(), map()) :: {:error, String.t()}
-  def send_interactive(_message, _attrs),
-    do: {:error, "Web channel does not support this message type"}
+  @spec send_interactive(Message.t(), map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs), do: deliver(message, attrs)
 
   # Web inbound never arrives via this provider — the browser posts it directly to
   # `GlificWeb.WebChannel.RoomChannel`, which calls `Glific.Communications.WebMessage.receive_message/2`.
@@ -77,7 +77,7 @@ defmodule Glific.Providers.Web.Message do
     topic = "web_channel:#{message.contact_id}"
 
     if connected?(topic) do
-      GlificWeb.Endpoint.broadcast(topic, "new_message", serialize(message))
+      GlificWeb.Endpoint.broadcast(topic, "new_message", MessageSerializer.serialize(message))
       Messages.update_message(message, %{status: :sent, bsp_status: :delivered})
     else
       Logger.info(
@@ -90,15 +90,4 @@ defmodule Glific.Providers.Web.Message do
 
   @spec connected?(String.t()) :: boolean()
   defp connected?(topic), do: Presence.list(topic) != %{}
-
-  @spec serialize(Message.t()) :: map()
-  defp serialize(message) do
-    %{
-      id: message.id,
-      body: message.body,
-      type: message.type,
-      flow: message.flow,
-      inserted_at: message.inserted_at
-    }
-  end
 end

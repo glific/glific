@@ -29,7 +29,10 @@ defmodule Glific.Communications.WebMessage do
     image: :send_image,
     audio: :send_audio,
     video: :send_video,
-    document: :send_document
+    document: :send_document,
+    list: :send_interactive,
+    quick_reply: :send_interactive,
+    location_request_message: :send_interactive
   }
 
   @doc """
@@ -54,7 +57,8 @@ defmodule Glific.Communications.WebMessage do
       {:ok, message}
     end
   rescue
-    _ ->
+    error ->
+      Glific.log_exception(error)
       log_error(message, "Could not send message to web channel contact")
   end
 

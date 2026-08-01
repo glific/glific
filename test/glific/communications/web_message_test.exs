@@ -77,6 +77,33 @@ defmodule Glific.Communications.WebMessageTest do
       assert {:ok, sent_message} = WebMessage.send_message(message, %{})
       assert sent_message.id == message.id
     end
+
+    test "an interactive-typed web message is delivered via send_interactive", %{
+      organization_id: organization_id
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{"type" => "text", "text" => "pick one"},
+        "options" => [%{"type" => "text", "title" => "yes"}, %{"type" => "text", "title" => "no"}]
+      }
+
+      message =
+        Fixtures.message_fixture(%{
+          type: :quick_reply,
+          interactive_content: interactive_content,
+          channel: "web",
+          flow: :outbound,
+          receiver_id: receiver.id,
+          organization_id: organization_id
+        })
+
+      # Before interactive support, :quick_reply had no @type_to_token entry, so this
+      # raised and fell to the rescue as {:error, _}. It now dispatches to send_interactive.
+      assert {:ok, sent_message} = WebMessage.send_message(message, %{})
+      assert sent_message.id == message.id
+    end
   end
 
   describe "receive_message/2" do

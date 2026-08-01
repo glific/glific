@@ -65,6 +65,38 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
       assert Enum.any?(messages, &(&1.id == message.id))
     end
+
+    test "serializes interactive_content and type in the join reply", %{contact: contact} do
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{"type" => "text", "text" => "pick one"},
+        "options" => [%{"type" => "text", "title" => "yes"}, %{"type" => "text", "title" => "no"}]
+      }
+
+      {:ok, message} =
+        Messages.create_message(%{
+          body: "pick one",
+          type: :quick_reply,
+          interactive_content: interactive_content,
+          flow: :outbound,
+          channel: "web",
+          sender_id: Partners.organization_contact_id(1),
+          contact_id: contact.id,
+          receiver_id: contact.id,
+          organization_id: 1,
+          bsp_status: :delivered,
+          status: :sent
+        })
+
+      socket = connect_socket(contact)
+
+      assert {:ok, %{messages: messages}, _socket} =
+               subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      serialized = Enum.find(messages, &(&1.id == message.id))
+      assert serialized.type == :quick_reply
+      assert serialized.interactive_content == interactive_content
+    end
   end
 
   describe "handle_in/3" do

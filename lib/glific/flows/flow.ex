@@ -418,8 +418,9 @@ defmodule Glific.Flows.Flow do
   end
 
   # actions with no web-socket equivalent: no BSP template approval concept, and
-  # interactive/broadcast payloads assume WhatsApp-specific UI
-  @unsupported_web_channel_action_types ["send_interactive_msg", "send_broadcast"]
+  # broadcast payloads assume WhatsApp-specific fan-out. Interactive messages are
+  # supported on the web channel (rendered by the widget), so they're not listed here.
+  @unsupported_web_channel_action_types ["send_broadcast"]
 
   @doc false
   @spec web_channel_capability_errors(list(), map()) :: list()

@@ -116,7 +116,10 @@ defmodule Glific.Flows.ContactAction do
         is_optin_flow: Flows.optin_flow?(context.flow),
         interactive_template_id: interactive_template.id,
         interactive_content: interactive_content,
-        media_id: media_id
+        media_id: media_id,
+        # propagate the triggering channel so an interactive send on a web-triggered
+        # flow routes to the web socket instead of the default BSP (mirrors do_send_message)
+        channel: context.channel
       }
 
       attrs

@@ -762,25 +762,17 @@ defmodule Glific.Flows.Action do
   end
 
   # --- Web-channel capability gating (safety net) ---
-  # A flow context whose triggering message came in over the web channel is
-  # restricted to plain-text sends: interactive messages, broadcasts, and
-  # templated/HSM sends have no web-socket equivalent (there is no BSP template
-  # approval, and interactive/broadcast payloads assume WhatsApp UI). Rather than
-  # raising or silently dropping the action, we surface a staff-facing
-  # notification and let the flow continue with the same success shape a normal
-  # `execute/3` clause returns. This mirrors (and backstops) the flow-validation
-  # gate for `:web_message` flows in `Glific.Flows.Flow`. These clauses must stay
-  # ordered before the generic `send_msg`/`send_interactive_msg`/`send_broadcast`
+  # A flow context whose triggering message came in over the web channel still
+  # can't broadcast or send templated/HSM messages: there is no BSP template
+  # approval, and broadcast payloads assume WhatsApp fan-out. Interactive messages
+  # (quick_reply/list/location_request_message) ARE supported — the widget renders
+  # them and a tap replies as plain text (see `Glific.Providers.Web.Message`).
+  # Rather than raising or silently dropping the unsupported action, we surface a
+  # staff-facing notification and let the flow continue with the same success shape
+  # a normal `execute/3` clause returns. This mirrors (and backstops) the
+  # flow-validation gate for `:web_message` flows in `Glific.Flows.Flow`. These
+  # clauses must stay ordered before the generic `send_msg`/`send_broadcast`
   # clauses below so they take precedence for web contexts.
-  def execute(%{type: "send_interactive_msg"} = _action, %{channel: "web"} = context, messages) do
-    FlowContext.notification(
-      context,
-      "send_interactive_msg is not supported on the web channel"
-    )
-
-    {:ok, context, messages}
-  end
-
   def execute(%{type: "send_broadcast"} = _action, %{channel: "web"} = context, messages) do
     FlowContext.notification(context, "send_broadcast is not supported on the web channel")
     {:ok, context, messages}

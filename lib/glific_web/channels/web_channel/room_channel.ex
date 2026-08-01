@@ -10,7 +10,8 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   use GlificWeb, :channel
 
-  alias Glific.{Communications.WebMessage, Contacts, Messages, Messages.Message, Repo}
+  alias Glific.{Communications.WebMessage, Contacts, Messages, Repo}
+  alias GlificWeb.WebChannel.MessageSerializer
   alias GlificWeb.WebChannel.Presence
 
   @page_size 100
@@ -35,7 +36,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
         |> String.to_integer()
         |> Messages.list_conversation_messages("web", %{limit: @page_size, offset: 0})
         |> Enum.reverse()
-        |> Enum.map(&serialize_message/1)
+        |> Enum.map(&MessageSerializer.serialize/1)
 
       {:ok, %{messages: messages}, socket}
     else
@@ -72,7 +73,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       contact_id
       |> Messages.list_conversation_messages("web", %{limit: @page_size, offset: offset})
       |> Enum.reverse()
-      |> Enum.map(&serialize_message/1)
+      |> Enum.map(&MessageSerializer.serialize/1)
 
     {:reply, {:ok, %{messages: messages}}, socket}
   end
@@ -120,21 +121,4 @@ defmodule GlificWeb.WebChannel.RoomChannel do
       end)
     end)
   end
-
-  @spec serialize_message(Message.t()) :: map()
-  defp serialize_message(message) do
-    %{
-      id: message.id,
-      body: message.body,
-      type: message.type,
-      flow: message.flow,
-      inserted_at: message.inserted_at,
-      media: media(message)
-    }
-  end
-
-  @spec media(Message.t()) :: map() | nil
-  defp media(%{media: %Ecto.Association.NotLoaded{}}), do: nil
-  defp media(%{media: nil}), do: nil
-  defp media(%{media: media}), do: %{url: media.url}
 end
