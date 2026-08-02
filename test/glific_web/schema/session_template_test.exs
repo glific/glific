@@ -585,6 +585,24 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "topic" => "welcome",
                   "usecase" => "onboarding",
                   "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "entry_without_category",
+                  "data" => "No category field at all",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "entry_without_topic",
+                  "category" => "UTILITY",
+                  "data" => "No topic field at all",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
                 }
               ]
             })
@@ -601,7 +619,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     element_names = Enum.map(entries, & &1["elementName"])
 
-    assert element_names == ["utility_welcome", "utility_hindi"]
+    assert element_names == ["utility_welcome", "utility_hindi", "entry_without_topic"]
   end
 
   test "template_library returns an error when the BSP call fails", %{staff: user} do
@@ -630,5 +648,47 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     assert [%{message: message}] = query_data.errors
     assert message == "Invalid industry filter"
+  end
+
+  test "template_library treats an explicit null filter the same as an absent one", %{
+    staff: user
+  } do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_null_filter",
+                  "category" => "UTILITY",
+                  "data" => "Hi {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    result = auth_query_gql_by(:template_library, user, variables: %{"filter" => nil})
+
+    assert {:ok, query_data} = result
+    entries = get_in(query_data, [:data, "templateLibrary"])
+
+    assert Enum.map(entries, & &1["elementName"]) == ["utility_null_filter"]
   end
 end

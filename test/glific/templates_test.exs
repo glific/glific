@@ -2852,4 +2852,55 @@ defmodule Glific.TemplatesTest do
 
     assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
   end
+
+  test "search_library_templates/2 serves an identical second call from cache instead of refetching",
+       attrs do
+    {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        Agent.update(counter, &(&1 + 1))
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_cache_hit",
+                  "category" => "UTILITY",
+                  "data" => "Hi {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, first_call} =
+             Templates.search_library_templates(attrs.organization_id, %{industry: "warehousing"})
+
+    assert {:ok, second_call} =
+             Templates.search_library_templates(attrs.organization_id, %{industry: "warehousing"})
+
+    assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
+    assert first_call == second_call
+
+    # the metalibrary endpoint must only be hit once - the second identical
+    # call is served from the {:ok, templates} -> {:ok, templates} cache branch
+    assert Agent.get(counter, & &1) == 1
+  end
 end
