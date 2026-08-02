@@ -2833,7 +2833,9 @@ defmodule Glific.TemplatesTest do
     end)
 
     assert {:ok, templates_before} =
-             Templates.search_library_templates(attrs.organization_id, %{industry: "retail"})
+             Templates.search_library_templates(attrs.organization_id, %{
+               industry: "manufacturing"
+             })
 
     assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
              ["utility_english", "utility_hindi"]
@@ -2844,7 +2846,9 @@ defmodule Glific.TemplatesTest do
              Partners.update_organization(organization, %{active_language_ids: [1]})
 
     assert {:ok, templates_after} =
-             Templates.search_library_templates(attrs.organization_id, %{industry: "retail"})
+             Templates.search_library_templates(attrs.organization_id, %{
+               industry: "manufacturing"
+             })
 
     assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
   end

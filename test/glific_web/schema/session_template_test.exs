@@ -593,7 +593,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     result =
       auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"industry" => "retail"}}
+        variables: %{"filter" => %{"industry" => "logistics"}}
       )
 
     assert {:ok, query_data} = result
