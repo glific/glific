@@ -23,6 +23,9 @@ defmodule Glific.Providers.Gupshup.Template do
     "Sign Language"
   ]
 
+  @library_category "UTILITY"
+  @library_excluded_topics ["PAYMENTS", "ORDER_MANAGEMENT"]
+
   import Ecto.Query
 
   alias Glific.{
@@ -382,6 +385,91 @@ defmodule Glific.Providers.Gupshup.Template do
     do: template |> Map.merge(%{buttons: attrs.buttons})
 
   defp append_buttons(template, _attrs), do: template
+
+  @doc """
+  Searches Meta's pre-approved WhatsApp template library, fetched live from
+  Gupshup's Partner API. Read-only passthrough — used to let the frontend browse
+  Meta's curated template catalog and prefill the create template form. Does
+  **not** create any `SessionTemplate` rows.
+
+  Results are narrowed to `#{@library_category}` category templates, exclude
+  the `PAYMENTS` and `ORDER_MANAGEMENT` topics, and are limited to languages
+  the organization has active.
+  """
+  @spec search_library_templates(non_neg_integer(), map()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def search_library_templates(org_id, filters) do
+    org_id
+    |> PartnerAPI.get_library_templates(to_gupshup_library_filters(filters))
+    |> case do
+      {:ok, %{"templates" => templates}} when is_list(templates) ->
+        Instrumentation.track_action("template_library_search", :success, org_id)
+        {:ok, templates |> filter_library_templates(org_id) |> Enum.map(&to_library_entry/1)}
+
+      {:ok, _response} ->
+        Instrumentation.track_action("template_library_search", :success, org_id)
+        {:ok, []}
+
+      {:error, reason} ->
+        Instrumentation.track_action("template_library_search", :failure, org_id)
+        {:error, reason}
+    end
+  end
+
+  @spec to_gupshup_library_filters(map()) :: map()
+  defp to_gupshup_library_filters(filters) do
+    %{
+      elementName: Map.get(filters, :element_name),
+      industry: Map.get(filters, :industry),
+      languageCode: Map.get(filters, :language_code),
+      topic: Map.get(filters, :topic),
+      usecase: Map.get(filters, :usecase)
+    }
+  end
+
+  @spec filter_library_templates(list(map()), non_neg_integer()) :: list(map())
+  defp filter_library_templates(templates, org_id) do
+    active_locales =
+      org_id
+      |> Partners.organization()
+      |> Map.get(:languages, [])
+      |> MapSet.new(& &1.locale)
+
+    Enum.filter(templates, &keep_library_template?(&1, active_locales))
+  end
+
+  @spec keep_library_template?(map(), MapSet.t()) :: boolean()
+  defp keep_library_template?(template, active_locales) do
+    utility_category?(template["category"]) and
+      allowed_topic?(template["topic"]) and
+      MapSet.member?(active_locales, template["languageCode"])
+  end
+
+  @spec utility_category?(String.t() | nil) :: boolean()
+  defp utility_category?(category) when is_binary(category),
+    do: String.upcase(category) == @library_category
+
+  defp utility_category?(_category), do: false
+
+  @spec allowed_topic?(String.t() | nil) :: boolean()
+  defp allowed_topic?(topic) when is_binary(topic),
+    do: String.upcase(topic) not in @library_excluded_topics
+
+  defp allowed_topic?(_topic), do: true
+
+  @spec to_library_entry(map()) :: map()
+  defp to_library_entry(template) do
+    %{
+      element_name: template["elementName"],
+      category: template["category"],
+      body: template["data"],
+      language_code: template["languageCode"],
+      industry: template["industry"],
+      topic: template["topic"],
+      usecase: template["usecase"],
+      container_meta: template["containerMeta"]
+    }
+  end
 
   @doc """
   Updating HSM templates for an organization

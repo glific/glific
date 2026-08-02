@@ -1,0 +1,12 @@
+query templateLibrary($filter: TemplateLibraryFilter) {
+  templateLibrary(filter: $filter) {
+    elementName
+    category
+    body
+    languageCode
+    industry
+    topic
+    usecase
+    containerMeta
+  }
+}

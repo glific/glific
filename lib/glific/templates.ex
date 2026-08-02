@@ -7,6 +7,7 @@ defmodule Glific.Templates do
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Caches,
     Communications.Mailer,
     Contacts.Contact,
     Flows.Translate.GoogleTranslate,
@@ -330,6 +331,46 @@ defmodule Glific.Templates do
   @spec bulk_apply_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def bulk_apply_templates(org_id, data) do
     Provider.bsp_module(org_id, :template).bulk_apply_templates(org_id, data)
+  end
+
+  @doc """
+  Searches Meta's pre-approved WhatsApp template library, fetched live from the
+  organization's BSP partner API. Read-only passthrough for the frontend to
+  browse Meta's curated template catalog and prefill the create template form —
+  it does **not** create any `SessionTemplate` rows.
+
+  Results are cached per organization/filter-combo for a short window, since the
+  same filters are commonly re-queried while a user browses the catalog and the
+  partner API is otherwise hit on every keystroke.
+  """
+  @spec search_library_templates(non_neg_integer(), map()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def search_library_templates(organization_id, filters) do
+    # Active languages are part of the cache key (not just invalidated after the
+    # fact) so a stale entry can never outlive an org's language settings change:
+    # changing active_language_ids yields a new key instead of serving old results.
+    active_language_ids = Partners.organization(organization_id).active_language_ids
+    cache_key = {:template_library, filters, active_language_ids}
+
+    case Caches.get(organization_id, cache_key, refresh_cache: false) do
+      {:ok, false} -> fetch_library_templates(organization_id, filters, cache_key)
+      {:ok, templates} -> {:ok, templates}
+    end
+  end
+
+  @spec fetch_library_templates(non_neg_integer(), map(), tuple()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  defp fetch_library_templates(organization_id, filters, cache_key) do
+    bsp_module = Provider.bsp_module(organization_id, :template)
+
+    case bsp_module.search_library_templates(organization_id, filters) do
+      {:ok, templates} = result ->
+        Caches.set(organization_id, cache_key, templates, ttl: :timer.minutes(20))
+        result
+
+      error ->
+        error
+    end
   end
 
   @doc """

@@ -358,6 +358,45 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Fetches Meta's pre-approved WhatsApp template library, live from Gupshup's
+  Partner API (`GET <app_url>/template/metalibrary`), using the requesting org's
+  own partner app token. This is a read-only passthrough for browsing Meta's
+  curated template catalog — it does not persist anything.
+
+  Supported filters (all optional, unknown/blank values are dropped):
+  `:elementName`, `:industry`, `:languageCode`, `:topic`, `:usecase`. Gupshup's
+  API does not support filtering by `category` — that's filtered client-side
+  in `Glific.Providers.Gupshup.Template.search_library_templates/2`.
+  """
+  @spec get_library_templates(non_neg_integer(), map()) :: {:ok, map()} | {:error, String.t()}
+  def get_library_templates(org_id, filters \\ %{}) do
+    query =
+      filters
+      |> Map.take([:elementName, :industry, :languageCode, :topic, :usecase])
+      |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
+
+    (app_url!(org_id) <> "/template/metalibrary")
+    |> get_request(org_id: org_id, query: query, raw_error: true)
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        case Jason.decode(body) do
+          {:ok, %{"message" => message}} -> {:error, message}
+          _ -> {:error, "Error while fetching the template library"}
+        end
+
+      unmatched_response ->
+        Logger.error(
+          "Error while fetching the template library. #{Glific.SafeLog.safe_inspect(unmatched_response)}"
+        )
+
+        {:error, "Error while fetching the template library"}
+    end
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
@@ -499,15 +538,28 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  # `:query` threads Tesla-native query params (e.g. for the template library search).
+  # `:raw_error` opts a caller into getting back the raw `%Tesla.Env{}` on a non-2xx
+  # response (mirroring `post_request/3`'s error shape) instead of the default
+  # safe-inspected string, so it can decode Gupshup's JSON error body itself
+  # (see `get_library_templates/2`). Defaults to `false` to keep every existing
+  # caller's `{:error, String.t()}` contract unchanged.
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
     req_headers =
       headers(Keyword.get(opts, :token_type, :app_token), opts)
 
-    get(url, headers: req_headers)
+    query = Keyword.get(opts, :query, [])
+
+    get(url, headers: req_headers, query: query)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
+
+      {:ok, resp} ->
+        if Keyword.get(opts, :raw_error, false),
+          do: {:error, resp},
+          else: {:error, "#{Glific.SafeLog.safe_inspect(resp)}"}
 
       err ->
         {:error, "#{Glific.SafeLog.safe_inspect(err)}"}

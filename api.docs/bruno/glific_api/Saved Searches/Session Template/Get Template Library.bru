@@ -1,0 +1,40 @@
+meta {
+  name: Get Template Library
+  type: graphql
+  seq: 8
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query templateLibrary($filter: TemplateLibraryFilter) {
+    templateLibrary(filter: $filter) {
+      elementName
+      category
+      body
+      languageCode
+      industry
+      topic
+      usecase
+      containerMeta
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "filter": {
+      "industry": "retail",
+      "languageCode": "en"
+    }
+  }
+}

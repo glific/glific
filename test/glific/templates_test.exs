@@ -2786,4 +2786,66 @@ defmodule Glific.TemplatesTest do
                attrs.organization_id
              )
   end
+
+  test "search_library_templates/2 stops serving a stale cache when the org's active languages change",
+       attrs do
+    organization = Partners.get_organization!(attrs.organization_id)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_english",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_hindi",
+                  "category" => "UTILITY",
+                  "data" => "Namaste {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "hi",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, templates_before} =
+             Templates.search_library_templates(attrs.organization_id, %{industry: "retail"})
+
+    assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
+             ["utility_english", "utility_hindi"]
+
+    # Dropping Hindi from the org's active languages must be reflected
+    # immediately, not after the 20-minute cache TTL expires.
+    assert {:ok, _updated_organization} =
+             Partners.update_organization(organization, %{active_language_ids: [1]})
+
+    assert {:ok, templates_after} =
+             Templates.search_library_templates(attrs.organization_id, %{industry: "retail"})
+
+    assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
+  end
 end

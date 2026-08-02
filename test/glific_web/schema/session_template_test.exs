@@ -38,6 +38,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     "assets/gql/session_templates/create_from_message.gql"
   )
 
+  load_gql(
+    :template_library,
+    GlificWeb.Schema,
+    "assets/gql/session_templates/template_library.gql"
+  )
+
   test "session templates field returns list of session_templates", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
@@ -445,5 +451,184 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "label"])
     assert label == "WA Form Template"
+  end
+
+  test "template_library returns Meta's template library entries and does not persist anything",
+       %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "welcome_offer",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}, welcome to our store!",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    session_template_count_before = Templates.count_session_templates(%{})
+
+    result =
+      auth_query_gql_by(:template_library, user,
+        variables: %{"filter" => %{"industry" => "retail"}}
+      )
+
+    assert {:ok, query_data} = result
+    [entry] = get_in(query_data, [:data, "templateLibrary"])
+
+    assert entry["elementName"] == "welcome_offer"
+    assert entry["category"] == "UTILITY"
+    assert entry["body"] == "Hello {{1}}, welcome to our store!"
+    assert entry["languageCode"] == "en"
+    assert entry["industry"] == "retail"
+    assert entry["topic"] == "welcome"
+    assert entry["usecase"] == "onboarding"
+
+    # read-only passthrough: no SessionTemplate row is created
+    assert Templates.count_session_templates(%{}) == session_template_count_before
+  end
+
+  test "template_library excludes non-Utility categories, excluded topics, and inactive-language entries",
+       %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_welcome",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}, your order is confirmed!",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "marketing_promo",
+                  "category" => "MARKETING",
+                  "data" => "Big sale this weekend!",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_payment_reminder",
+                  "category" => "UTILITY",
+                  "data" => "Your payment is due",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "PAYMENTS",
+                  "usecase" => "billing",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_order_update",
+                  "category" => "UTILITY",
+                  "data" => "Your order has shipped",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "ORDER_MANAGEMENT",
+                  "usecase" => "shipping",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_french",
+                  "category" => "UTILITY",
+                  "data" => "Bonjour {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "fr",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_hindi",
+                  "category" => "UTILITY",
+                  "data" => "Namaste {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "hi",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:template_library, user,
+        variables: %{"filter" => %{"industry" => "retail"}}
+      )
+
+    assert {:ok, query_data} = result
+    entries = get_in(query_data, [:data, "templateLibrary"])
+
+    element_names = Enum.map(entries, & &1["elementName"])
+
+    assert element_names == ["utility_welcome", "utility_hindi"]
+  end
+
+  test "template_library returns an error when the BSP call fails", %{staff: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 400,
+          body: Jason.encode!(%{"message" => "Invalid industry filter"})
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:template_library, user,
+        variables: %{"filter" => %{"industry" => "bogus"}}
+      )
+
+    assert {:ok, query_data} = result
+    assert [%{message: message}] = query_data.errors
+    assert message == "Invalid industry filter"
   end
 end
