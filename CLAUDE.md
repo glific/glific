@@ -8,7 +8,11 @@ An open source two-way communication platform for the social sector (WhatsApp-ba
 - **GraphQL API** via Absinthe (primary API) + REST endpoints for auth & webhooks
 - **Background Jobs**: Oban with 11+ specialized queues
 - **Deployment**: Gigalixir, CI/CD via GitHub Actions
-- **Monitoring**: AppSignal for APM, ExCoveralls for test coverage
+- **Monitoring**: AppSignal for APM (incl. Absinthe GraphQL instrumentation and provider
+  send/receive metrics — see `lib/glific/CLAUDE.md`), ExCoveralls for test coverage
+- **E2E Testing**: Cypress, run in CI via `.github/workflows/cypress-tests.yml` — checks out this
+  repo as the backend, clones `glific-frontend` + `cypress-testing` alongside it, and drives the
+  full stack through ngrok. Sharded 3-way; not run locally as part of `mix test`.
 
 ## Documentation map
 
