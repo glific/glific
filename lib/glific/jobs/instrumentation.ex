@@ -20,8 +20,22 @@ defmodule Glific.Jobs.Instrumentation do
   wrap-and-count shape for their domains.
   """
 
-  @typedoc "Final status recorded on `job_run_count`, derived from the wrapped work's return value."
-  @type status :: :success | :error | :discard
+  @typedoc """
+  Status recorded on `job_run_count`.
+
+  `track/3` derives `:success` / `:error` / `:discard` from the wrapped work's return
+  value. Callers that know their outcome more precisely than a return value can express
+  it — the BigQuery sync records `:schema_not_found`, `:permission_denied`, `:timeout`
+  and `:exception` via `record/4`. Anything other than `:success` is a failure.
+  """
+  @type status ::
+          :success
+          | :error
+          | :discard
+          | :exception
+          | :schema_not_found
+          | :permission_denied
+          | :timeout
 
   @doc """
   Wrap a periodic job's work, record its outcome, and return the wrapped value
@@ -43,19 +57,48 @@ defmodule Glific.Jobs.Instrumentation do
       reraise exception, __STACKTRACE__
   end
 
+  @doc """
+  Records `exception` for `job` if `fun` raises, then re-raises. Records nothing on success.
+
+  For jobs whose real outcome is not visible in the return value, so success cannot be
+  inferred there. The BigQuery sync is the case this exists for: its response handler
+  reacts to `NOT_FOUND`, `PERMISSION_DENIED` and `TIMEOUT` and then returns normally, so
+  `track/3` would classify all three as `:success` and report green while the sync is dead.
+  Those outcomes call `record/4` directly at the point they are known; this only covers the
+  paths that raise.
+  """
+  @spec track_exception(String.t(), non_neg_integer() | nil, map(), (-> result)) :: result
+        when result: var
+  def track_exception(job, organization_id, extra_tags, fun) when is_function(fun, 0) do
+    fun.()
+  rescue
+    exception ->
+      record(job, :exception, organization_id, extra_tags)
+      reraise exception, __STACKTRACE__
+  end
+
   @spec classify(any()) :: status()
   defp classify(:ok), do: :success
   defp classify({:ok, _}), do: :success
   defp classify({:discard, _}), do: :discard
   defp classify(_result), do: :error
 
-  @spec record(String.t(), status(), non_neg_integer() | nil) :: :ok
-  defp record(job, status, organization_id) do
-    Appsignal.increment_counter("job_run_count", 1, %{
-      job: job,
-      status: Atom.to_string(status),
-      organization_id: org_tag(organization_id)
-    })
+  @doc """
+  Records one `job_run_count` increment, merging any extra tags over the standard three.
+  """
+  @spec record(String.t(), status(), non_neg_integer() | nil, map()) :: :ok
+  def record(job, status, organization_id, extra_tags \\ %{}) do
+    tags =
+      Map.merge(
+        %{
+          job: job,
+          status: Atom.to_string(status),
+          organization_id: org_tag(organization_id)
+        },
+        stringify(extra_tags)
+      )
+
+    Appsignal.increment_counter("job_run_count", 1, tags)
 
     :ok
   rescue
@@ -63,6 +106,15 @@ defmodule Glific.Jobs.Instrumentation do
     # failure emitting them must never turn a healthy job into a failed one.
     _exception -> :ok
   end
+
+  @spec stringify(map()) :: map()
+  defp stringify(tags),
+    do: Map.new(tags, fn {key, value} -> {key, tag_value(value)} end)
+
+  @spec tag_value(any()) :: String.t()
+  defp tag_value(nil), do: "unknown"
+  defp tag_value(value) when is_atom(value), do: Atom.to_string(value)
+  defp tag_value(value), do: to_string(value)
 
   @spec org_tag(non_neg_integer() | nil) :: String.t()
   defp org_tag(nil), do: "unknown"
