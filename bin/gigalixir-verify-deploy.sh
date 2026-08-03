@@ -166,10 +166,11 @@ preflight() {
 }
 
 # The gigalixir CLI prepends a "new version available" banner to stdout, which is not
-# JSON and makes jq choke. Drop everything before the first [ or { so only the payload
-# reaches jq.
+# JSON and makes jq choke. Print from the first line that *starts* with [ or { (the JSON
+# opening) onward. Anchoring to the line start avoids matching a banner like
+# "update [1.2.3] available", whose bracket sits mid-line.
 strip_banner() {
-  sed -n '/[[{]/,$p'
+  sed -n '/^[[:space:]]*[[{]/,$p'
 }
 
 # Both fetchers echo raw JSON on stdout and return non-zero if the CLI failed or the
