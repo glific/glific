@@ -272,16 +272,6 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get OpenAI auto translation value for organization flag
-  """
-  @spec get_open_ai_auto_translation_enabled(map()) :: boolean
-  def get_open_ai_auto_translation_enabled(organization) do
-    FunWithFlags.enabled?(:is_open_ai_auto_translation_enabled,
-      for: %{organization_id: organization.id}
-    )
-  end
-
-  @doc """
   Get Google auto translation value for organization flag
   """
   @spec get_google_auto_translation_enabled(map()) :: boolean
@@ -413,18 +403,6 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Set fun_with_flag toggle for OpenAI auto translation for an organization
-  """
-  @spec set_open_ai_auto_translation_enabled(map()) :: map()
-  def set_open_ai_auto_translation_enabled(organization) do
-    Map.put(
-      organization,
-      :is_open_ai_auto_translation_enabled,
-      get_open_ai_auto_translation_enabled(organization)
-    )
-  end
-
-  @doc """
   Set fun_with_flag toggle for Google auto translation for an organization
   """
   @spec set_auto_translation_enabled_for_google_trans(map()) :: map()
@@ -537,7 +515,6 @@ defmodule Glific.Flags do
       :flow_uuid_display,
       :roles_and_permission,
       :is_ticketing_enabled,
-      :is_open_ai_auto_translation_enabled,
       :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled,
       :is_certificate_enabled,
@@ -547,7 +524,8 @@ defmodule Glific.Flags do
       :is_copy_node_enabled,
       :high_trigger_tps_enabled,
       :ai_evaluations,
-      :is_prompt_generator_enabled
+      :is_prompt_generator_enabled,
+      :is_template_v2_enabled
     ]
     |> Enum.each(fn flag ->
       if !FunWithFlags.enabled?(

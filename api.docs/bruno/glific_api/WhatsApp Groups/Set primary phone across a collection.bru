@@ -1,0 +1,33 @@
+meta {
+  name: Set primary phone across a collection
+  type: graphql
+  seq: 13
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation setPrimaryPhoneForCollection($collectionId: ID!, $waManagedPhoneId: ID!) {
+    setPrimaryPhoneForCollection(collectionId: $collectionId, waManagedPhoneId: $waManagedPhoneId) {
+      status
+      userJobId
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "collectionId": 1,
+    "waManagedPhoneId": 2
+  }
+}

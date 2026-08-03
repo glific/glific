@@ -1,0 +1,43 @@
+meta {
+  name: Get a WhatsApp group
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  query waGroup($id: ID!) {
+    waGroup(id: $id) {
+      waGroup {
+        id
+        label
+        bspId
+        lastCommunicationAt
+        primaryPhone { id phone label status }
+        phones {
+          id
+          isPrimary
+          isActive
+          waManagedPhone { id phone label status }
+        }
+      }
+      errors { key message }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": 1
+  }
+}

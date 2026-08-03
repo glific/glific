@@ -2,8 +2,7 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
-  import Ecto.Query, warn: false
-
+  import Ecto.Query
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 
@@ -12,6 +11,7 @@ defmodule Glific.Templates do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
+    Flows.Translate.GoogleTranslate,
     Mails.MailLog,
     Mails.ReportGupshupMail,
     Notifications,
@@ -584,6 +584,35 @@ defmodule Glific.Templates do
     end)
   end
 
+  @doc """
+  Applies a single HSM template status update pushed in real time by Gupshup's
+  `template-event` webhook (Meta approval / rejection), identified by the
+  template's `bsp_id`. Reuses the same reconciliation + notification path as the
+  periodic BSP sync, so an approval reflects within seconds instead of waiting
+  for the next daily sync.
+  """
+  @spec update_hsm_status(String.t(), non_neg_integer(), String.t(), String.t() | nil) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  def update_hsm_status(bsp_id, organization_id, status, reason \\ nil) do
+    case Repo.fetch_by(SessionTemplate, %{bsp_id: bsp_id, organization_id: organization_id}) do
+      {:ok, current_template} ->
+        template = %{
+          "bsp_id" => bsp_id,
+          "id" => bsp_id,
+          # the periodic sync stores status uppercase; the webhook sends it lowercase
+          "status" => String.upcase(status),
+          "category" => current_template.category,
+          "quality" => current_template.quality,
+          "reason" => reason
+        }
+
+        do_update_hsm(template, %{bsp_id => current_template})
+
+      _ ->
+        {:error, "Template with bsp_id #{bsp_id} not found"}
+    end
+  end
+
   @spec existing_template?(map(), map(), Organization.t()) :: boolean()
   defp existing_template?(db_templates, template, organization) do
     Enum.any?(db_templates, fn {_bsp_id, db_template} ->
@@ -849,7 +878,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "REJECTED", reason: bsp_template["reason"]}
+    %{status: "REJECTED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status("FAILED", db_template, bsp_template) do
@@ -866,7 +895,7 @@ defmodule Glific.Templates do
       }
     })
 
-    %{status: "FAILED", reason: bsp_template["reason"]}
+    %{status: "FAILED", reason: bsp_template["reason"], is_active: false}
   end
 
   defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
@@ -1061,6 +1090,35 @@ defmodule Glific.Templates do
          }) do
       {:ok, %{id: _id}} -> {:ok, %{message: "Successfully sent mail to Gupshup Support"}}
       error -> {:ok, %{message: error}}
+    end
+  end
+
+  @doc """
+  Machine-translates an HSM draft's body/footer/button text from English into
+  the target language, for the "Add new language" flow on an existing
+  template family. Returns translated strings only — it does not create or
+  update any SessionTemplate record, since each language of an HSM still has
+  to be submitted separately (via create_session_template) for BSP approval.
+  """
+  @spec translate_session_template(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def translate_session_template(params, organization_id) do
+    body = Map.get(params, :body) || ""
+    footer = Map.get(params, :footer)
+    buttons = Map.get(params, :buttons) || []
+    texts = [body, footer || ""] ++ buttons
+
+    with {:ok, language} <- Repo.fetch_by(Language, %{id: params.language_id}),
+         {:ok, translated} <-
+           GoogleTranslate.translate(texts, "English", language.label, org_id: organization_id) do
+      [translated_body, translated_footer | translated_buttons] = translated
+
+      {:ok,
+       %{
+         body: translated_body,
+         footer: if(footer, do: translated_footer, else: nil),
+         buttons: translated_buttons
+       }}
     end
   end
 

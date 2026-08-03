@@ -84,8 +84,8 @@ end
   adding it to config, not just the worker.
 - Scheduled work hangs off `Glific.Jobs.MinuteWorker` (the crontab fan-out) — most periodic jobs
   add a clause there rather than registering a new cron entry.
-- Rate-limited BSP sends use `ExRated.check_rate/3`; dynamic behavior uses
-  `FunWithFlags.enabled?/2`.
+- Rate-limited BSP sends use `ExRated.check_rate/3`; dynamic behavior uses per-org feature
+  flags via `Glific.Flags` (backed by `FunWithFlags`).
 - **AppSignal Check-in (heartbeat monitoring)**: Wrap critical cron branches with
   `Appsignal.CheckIn.cron("name", fn -> ... end)`. If the server is down when the scheduled
   window fires, AppSignal detects the missing start+finish heartbeat and alerts. See
@@ -119,6 +119,21 @@ end
 - Default TTL 24h. Invalidate via the reload-key pattern (`{org_id, :cache_reload_key}`).
 - Organization config is heavily cached — after changing partner/org data, expect to
   `Partners.fill_cache/1` (tests do this in setup).
+
+## Feature flags (`Glific.Flags`, backed by `FunWithFlags`)
+
+- **Don't call `FunWithFlags.enabled?/2` directly, and don't write a new per-flag
+  `get_x_enabled/1`/`set_x_enabled/1` wrapper either** — for a plain single-flag check, call
+  the generic `Glific.Flags.get_flag_enabled(flag, organization)` /
+  `set_flag_enabled(organization, flag)` inline at the call site instead. See
+  `high_trigger_tps_enabled`, `ai_evaluations_enabled`, `template_v2_enabled` in
+  `Partners.get_org_services_by_id/1` and the `set_flag_enabled` calls in the `Flags.set_*`
+  pipeline inside `Partners.fill_cache/1` (both in `lib/glific/partners.ex`) for the pattern.
+  Only write a dedicated per-flag function when there's real extra logic beyond the flag check
+  itself (e.g.
+  `get_whatsapp_forms_enabled?/1` also checks `Glific.trusted_env?/2`, `auto_translation_enabled`
+  OR's two separate flags together) — a wrapper that does nothing but forward to
+  `get_flag_enabled`/`set_flag_enabled` is redundant and should be removed/inlined.
 
 ## Webhook framework (`flows/webhooks/`)
 

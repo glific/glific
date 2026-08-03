@@ -11,7 +11,6 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
     Providers.Maytapi,
     Repo,
     SafeLog,
-    WAGroup.WAManagedPhone,
     WAGroup.WaPoll
   }
 
@@ -20,11 +19,6 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
           {:ok, map()} | {:error, ErrorType.t(), String.t()}
   def call(fields, _ctx) do
     with {:ok, fields} <- parse_wa_poll_params(fields),
-         {:ok, wa_phone} <-
-           Repo.fetch_by(WAManagedPhone, %{
-             id: fields.wa_group["wa_managed_phone_id"],
-             organization_id: fields.organization_id
-           }),
          {:ok, wa_group} <-
            Repo.fetch_by(WAGroup, %{
              id: fields.wa_group["id"],
@@ -36,7 +30,7 @@ defmodule Glific.Flows.Webhooks.SendWaGroupPoll do
              organization_id: fields.organization_id
            }),
          {:ok, wa_message} <-
-           Maytapi.Message.create_and_send_wa_message(wa_phone, wa_group, %{poll_id: wa_poll.id}) do
+           Maytapi.Message.create_and_send_wa_message(wa_group, %{poll_id: wa_poll.id}) do
       {:ok, %{success: true, poll: wa_message.poll_content}}
     else
       {:error, error_type, message} when is_atom(error_type) ->
