@@ -11,7 +11,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
+    Flags,
     Metrics,
+    Partners,
     Repo,
     ThirdParty.Kaapi
   }
@@ -103,12 +105,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       duplication_factor: factor
     }
 
+    organization = Partners.organization(user.organization_id)
+
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
          :ok <- validate_golden_qa_question_limit(row_count, factor),
-         {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+         {:ok, kaapi_dataset} <- upload_dataset(dataset, organization) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
       {:error, :timeout} ->
@@ -139,6 +143,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @spec upload_dataset(map(), map()) :: {:ok, map()} | {:error, any()}
+  defp upload_dataset(dataset, organization) do
+    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      Kaapi.upload_evaluation_dataset_v2(dataset, organization.id)
+    else
+      Kaapi.upload_evaluation_dataset(dataset, organization.id)
+    end
+  end
+
   @spec create_golden_qa_record(map(), String.t(), Plug.Upload.t(), integer(), map()) ::
           {:ok, %{golden_qa: GoldenQA.t()}} | {:ok, %{errors: [%{message: String.t()}]}}
   defp create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
@@ -147,7 +160,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            dataset_id: kaapi_dataset.dataset_id,
            duplication_factor: factor,
            file_name: file.filename,
-           organization_id: user.organization_id
+           organization_id: user.organization_id,
+           total_items: Map.get(kaapi_dataset, :total_items)
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}
@@ -282,6 +296,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           name: golden_qa.name,
           duplication_factor: golden_qa.duplication_factor,
           file_name: golden_qa.file_name,
+          total_items: golden_qa.total_items,
           inserted_at: golden_qa.inserted_at,
           updated_at: golden_qa.updated_at
         }
