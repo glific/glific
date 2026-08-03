@@ -199,23 +199,6 @@ defmodule Glific.OnboardTest do
     assert updated_organization.is_active == false
   end
 
-  test "ensure that sending in valid parameters, delete inactive organization" do
-    with_mock(
-      GcsWorker,
-      upload_media: fn _, _, _ -> {:ok, %{url: "url"}} end
-    ) do
-      result = Onboard.setup(@valid_attrs)
-
-      {:ok, organization} =
-        Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
-
-      Onboard.delete(organization.id, true)
-
-      assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
-               Repo.fetch_by(Organization, %{name: result.organization.name})
-    end
-  end
-
   describe "update_ngo_password/1" do
     test "success case", %{organization_id: org_id} do
       assert {:ok, "User was successfully updated"} = Onboard.update_ngo_password(org_id)

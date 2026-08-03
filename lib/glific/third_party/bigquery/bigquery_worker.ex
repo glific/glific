@@ -2096,7 +2096,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp fetch_data(table, organization_id, attrs) do
     query = get_query(table, organization_id, attrs)
 
-    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users"] do
+    if table in ["stats", "stats_all", "trackers", "trackers_all", "trial_users", "organizations"] do
       RepoReplica.all(query, skip_organization_id: true)
     else
       RepoReplica.all(query)

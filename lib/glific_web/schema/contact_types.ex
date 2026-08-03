@@ -5,7 +5,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   alias Glific.{
     Contacts.Contact,

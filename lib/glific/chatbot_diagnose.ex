@@ -5,7 +5,7 @@ defmodule Glific.ChatbotDiagnose do
   against the database with organization scoping, and returns results.
   """
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
   require Logger
 
   alias Glific.{
