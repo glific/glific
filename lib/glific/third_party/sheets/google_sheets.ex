@@ -82,15 +82,21 @@ defmodule Glific.Sheets.GoogleSheets do
   """
   @spec decode_credential(map(), non_neg_integer) :: {:ok, any} | {:error, any}
   def decode_credential(credentials, organization_id) do
-    case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, _service_account} ->
-        token = Partners.get_goth_token(organization_id, "google_sheets", scopes: @scopes)
+    case credentials.secrets["service_account"] do
+      service_account when is_binary(service_account) ->
+        case Jason.decode(service_account) do
+          {:ok, _service_account} ->
+            token = Partners.get_goth_token(organization_id, "google_sheets", scopes: @scopes)
 
-        if is_nil(token),
-          do: {:error, "Error fetching token with Service Account JSON"},
-          else: {:ok, %{conn: build_conn(token.token)}}
+            if is_nil(token),
+              do: {:error, "Error fetching token with Service Account JSON"},
+              else: {:ok, %{conn: build_conn(token.token)}}
 
-      {:error, _error} ->
+          {:error, _error} ->
+            {:error, "Invalid Service Account JSON"}
+        end
+
+      _ ->
         {:error, "Invalid Service Account JSON"}
     end
   end

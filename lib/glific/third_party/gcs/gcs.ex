@@ -191,18 +191,31 @@ defmodule Glific.GCS do
       Logger.info("no private bucket for org_id: #{organization_id}")
     else
       put_bucket_name(gcs_secrets["private_bucket"])
-      load_goth(Jason.decode!(gcs_secrets["service_account"]))
 
-      opts =
-        [signed: true, expires_in: 300]
-        |> Keyword.merge(opts)
+      case gcs_secrets["service_account"] do
+        service_account when is_binary(service_account) ->
+          case Jason.decode(service_account) do
+            {:ok, service_account} ->
+              load_goth(service_account)
 
-      CloudStorage.url(
-        Glific.Media,
-        :original,
-        {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-        opts
-      )
+              opts =
+                [signed: true, expires_in: 300]
+                |> Keyword.merge(opts)
+
+              CloudStorage.url(
+                Glific.Media,
+                :original,
+                {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+                opts
+              )
+
+            {:error, _error} ->
+              Logger.info("invalid service account JSON for org_id: #{organization_id}")
+          end
+
+        _ ->
+          Logger.info("no service account for org_id: #{organization_id}")
+      end
     end
   end
 

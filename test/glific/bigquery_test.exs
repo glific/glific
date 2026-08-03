@@ -323,6 +323,18 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "decode_bigquery_credential/3 returns error instead of raising when service_account is not a JSON string",
+       attrs do
+    credentials = %{secrets: %{"service_account" => nil}}
+
+    assert {:error, "Invalid Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(
+               credentials,
+               %{phone: "9989329297"},
+               attrs.organization_id
+             )
+  end
+
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     # we need to figure out how to check that this function did the right thing
