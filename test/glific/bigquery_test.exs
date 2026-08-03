@@ -15,6 +15,7 @@ defmodule Glific.BigQueryTest do
     Partners,
     Partners.Saas,
     Repo,
+    RepoReplica,
     Seeds.SeedsDev
   }
 
@@ -904,6 +905,21 @@ defmodule Glific.BigQueryTest do
       # orgs, and OUT of the dedup list so those re-syncs accumulate as a change log
       # rather than collapsing to one row per org.
       refute "organizations" in BigQuery.ignore_updates_for_table()
+    end
+
+    test "fetch_data/3 for organizations returns every org, not just the current process organization_id",
+         %{organization_id: organization_id} do
+      other_organization = organization_fixture()
+
+      Repo.put_process_state(organization_id)
+      RepoReplica.put_process_state(organization_id)
+
+      organization_ids =
+        BigQueryWorker.fetch_data("organizations", organization_id, %{})
+        |> Enum.map(& &1.id)
+
+      assert organization_id in organization_ids
+      assert other_organization.id in organization_ids
     end
   end
 end

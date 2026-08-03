@@ -462,8 +462,9 @@ defmodule Glific.Flows.Webhook do
     end)
   end
 
-  # Restores tenant context and validates the callback signature/contact BEFORE running fun — a
-  # forged/unsigned callback must not drive any log write, metric, or flow resume.
+  # Restores tenant context, validates the callback signature and resolves the
+  # contact BEFORE running `fun`. A forged/unsigned callback must not drive any
+  # log writes, metrics, or flow resume — so validation comes first.
   @spec with_validated_callback(non_neg_integer(), map(), String.t(), (Contact.t() -> any())) ::
           :ok
   defp with_validated_callback(organization_id, response, label, fun) do
