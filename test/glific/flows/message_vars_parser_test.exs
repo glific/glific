@@ -371,6 +371,14 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
   end
 
+  test "parse/2 falls back to the literal placeholder when @contact.language is not a map", _attrs do
+    # contact.fields.language is a plain string here instead of the usual
+    # %{"label" => ...} shape, so indexing ["label"] directly used to raise.
+    fields = %{"contact" => %{"fields" => %{"language" => "en"}}}
+
+    assert MessageVarParser.parse("@contact.language", fields) == "@contact.language"
+  end
+
   test "parse/2 does not crash on a plain string result (incident #2, #81)", _attrs do
     # results["foo"] is a plain string, not a nested map, so asking for one
     # level deeper ("bar") used to raise FunctionClauseError inside

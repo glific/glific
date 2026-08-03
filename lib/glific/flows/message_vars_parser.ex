@@ -46,8 +46,10 @@ defmodule Glific.Flows.MessageVarParser do
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
-    language = safe_get_in(binding, ["contact", "fields", "language"])
-    language["label"]
+    case safe_get_in(binding, ["contact", "fields", "language", "label"]) do
+      label when is_binary(label) -> label
+      _ -> "@contact.language"
+    end
   end
 
   defp bound("@contact.groups", binding),
@@ -68,9 +70,6 @@ defmodule Glific.Flows.MessageVarParser do
     if substitution == nil, do: "@#{var}", else: substitution
   end
 
-  # Walks a dot-separated path through nested maps, stopping and returning nil
-  # as soon as it hits a value that is not a map (instead of crashing like
-  # get_in/Access.get would when asked to descend into a non-container value)
   @spec safe_get_in(term(), [String.t()]) :: term()
   defp safe_get_in(value, []), do: value
 
