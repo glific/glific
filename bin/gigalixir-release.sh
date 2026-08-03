@@ -93,6 +93,7 @@ parse_args() {
       --title) need "$@"; RELEASE_TITLE="$2"; shift 2 ;;
       --base) need "$@"; BASE_BRANCH="$2"; shift 2 ;;
       --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
+      --discord-webhook) need "$@"; export DISCORD_WEBHOOK_URL="$2"; shift 2 ;;
       --skip-release) SKIP_RELEASE=1; shift ;;
       --skip-verify) SKIP_VERIFY=1; shift ;;
       --dry-run) DRY_RUN=1; shift ;;
@@ -298,7 +299,9 @@ EOF
 
   confirm "Merge PR #${PR_NUMBER}?" || abort "declined at the merge step"
 
-  run gh pr merge "$PR_NUMBER" --squash --delete-branch || die "gh pr merge failed"
+  # Always --admin: a version-bump PR does not wait for CI/reviews. Requires admin or
+  run gh pr merge "$PR_NUMBER" --squash --delete-branch --admin \
+    || die "gh pr merge failed (need admin/bypass permission on ${BASE_BRANCH})"
 
   run git checkout "$BASE_BRANCH" || die "could not switch back to ${BASE_BRANCH}"
   run git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"

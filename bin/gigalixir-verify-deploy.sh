@@ -78,16 +78,16 @@ fail_annotation() {
   return 0
 }
 
-# Posts a Discord embed (the rich card with a coloured sidebar), falling back to
-# nothing if no webhook is set. $1=ok|fail (sidebar colour), $2=title, $3=description.
-# Reads APP / SHA / TARGET_VERSION / POD_NODE from the surrounding run.
+# Posts a Discord embed, falling back to nothing if no webhook is set. $1=ok|fail,
+# $2=reason (failures only). Success stays terse - a 🟢 title and the facts; failures
+# carry the reason. Reads APP / SHA / TARGET_VERSION / POD_NODE from the surrounding run.
 notify() {
   [ -n "${DISCORD_WEBHOOK_URL:-}" ] || return 0
-  local kind="$1" title="$2" desc="$3" color
+  local kind="$1" desc="${2:-}" color title
   case "$kind" in
-    ok) color=3066993 ;;    # green
-    fail) color=15158332 ;; # red
-    *) color=9807270 ;;     # grey
+    ok) color=3066993; title="🟢 ${APP} deployment healthy" ;;
+    fail) color=15158332; title="🔴 ${APP} deployment failed" ;;
+    *) color=9807270; title="${APP} deployment" ;;
   esac
 
   local payload
@@ -95,24 +95,19 @@ notify() {
     --arg title "$title" \
     --arg desc "$desc" \
     --argjson color "$color" \
-    --arg app "${APP:-unknown}" \
     --arg sha "${SHA:0:7}" \
     --arg rel "${TARGET_VERSION:-unknown}" \
     --arg node "${POD_NODE:-unknown}" \
     --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-    '{embeds:[{
-        title: $title,
-        description: $desc,
-        color: $color,
-        timestamp: $ts,
-        fields: [
-          {name: "🏷️ App",     value: $app,  inline: true},
-          {name: "🔀 SHA",     value: $sha,  inline: true},
-          {name: "📦 Release", value: $rel,  inline: true},
-          {name: "💻 Node",    value: $node, inline: false}
-        ],
-        footer: {text: "Gigalixir rolling deployment"}
-      }]}')
+    '{embeds:[
+       ({ title: $title, color: $color, timestamp: $ts,
+          fields: [
+            {name: "Release", value: $rel,  inline: true},
+            {name: "SHA",     value: $sha,  inline: true},
+            {name: "Node",    value: $node, inline: false}
+          ]
+        } + (if $desc == "" then {} else {description: $desc} end))
+     ]}')
 
   curl -fsS -m 10 -X POST "$DISCORD_WEBHOOK_URL" \
     -H 'Content-Type: application/json' \
@@ -170,18 +165,25 @@ preflight() {
   [ "$POLL" -ge 1 ] || die "--poll must be at least 1"
 }
 
+# The gigalixir CLI prepends a "new version available" banner to stdout, which is not
+# JSON and makes jq choke. Drop everything before the first [ or { so only the payload
+# reaches jq.
+strip_banner() {
+  sed -n '/[[{]/,$p'
+}
+
 # Both fetchers echo raw JSON on stdout and return non-zero if the CLI failed or the
 # payload was not JSON, so a transient API blip is a skipped poll rather than a crash.
 fetch_releases() {
   local out
-  out=$(gigalixir releases -a "$APP" 2>/dev/null) || return 1
+  out=$(gigalixir releases -a "$APP" 2>/dev/null | strip_banner) || return 1
   printf '%s' "$out" | jq -e . >/dev/null 2>&1 || return 1
   printf '%s' "$out"
 }
 
 fetch_ps() {
   local out
-  out=$(gigalixir ps -a "$APP" 2>/dev/null) || return 1
+  out=$(gigalixir ps -a "$APP" 2>/dev/null | strip_banner) || return 1
   printf '%s' "$out" | jq -e . >/dev/null 2>&1 || return 1
   printf '%s' "$out"
 }
@@ -413,8 +415,7 @@ main() {
 
   if [ "$rc" -eq "$E_OK" ]; then
     log "VERIFIED: ${APP} is live on release v${TARGET_VERSION} and stable"
-    notify ok "🚀 Deployment Healthy" \
-      "A new revision has passed health checks and is now serving traffic (stable for ${STABLE_WINDOW}s)."
+    notify ok
   else
     local reason
     case "$rc" in
@@ -428,7 +429,7 @@ main() {
     log "DEPLOY VERIFICATION FAILED (${reason})"
     log "investigate: gigalixir logs -a ${APP} ; gigalixir ps -a ${APP} ; gigalixir releases -a ${APP}"
     fail_annotation "${APP}: ${reason}"
-    notify fail "🚨 Deployment Failed" "$reason"
+    notify fail "$reason"
   fi
   exit "$rc"
 }
