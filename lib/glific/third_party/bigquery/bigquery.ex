@@ -30,6 +30,7 @@ defmodule Glific.BigQuery do
 
   alias Glific.{
     BigQuery.BigQueryJob,
+    BigQuery.Instrumentation,
     BigQuery.Schema,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
@@ -896,7 +897,8 @@ defmodule Glific.BigQuery do
     |> handle_insert_query_response(organization_id,
       table: table,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      action: Keyword.get(attrs, :action)
     )
 
     :ok
@@ -955,6 +957,10 @@ defmodule Glific.BigQuery do
         Logger.info("Count not found the operation for bigquery insert and update")
     end
 
+    # The insertErrors branch above raises rather than reaching here, so it is counted as
+    # `exception` by BigQueryWorker.perform/1 instead — exactly one increment per job.
+    Instrumentation.record(table, :success, Keyword.get(opts, :action), organization_id)
+
     :ok
   end
 
@@ -967,12 +973,20 @@ defmodule Glific.BigQuery do
 
     {error, message} = bigquery_error_status(response)
 
+    action = Keyword.get(opts, :action)
+
     error
     |> case do
       "NOT_FOUND" ->
+        # Swallowed failures still have to be counted — otherwise the sync reports green
+        # while the schema is missing, the credential has just been disabled, or the
+        # request timed out.
+        Instrumentation.record(table, :schema_not_found, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
       "PERMISSION_DENIED" ->
+        Instrumentation.record(table, :permission_denied, action, organization_id)
+
         Partners.disable_credential(
           organization_id,
           "bigquery",
@@ -980,6 +994,7 @@ defmodule Glific.BigQuery do
         )
 
       "TIMEOUT" ->
+        Instrumentation.record(table, :timeout, action, organization_id)
         Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->

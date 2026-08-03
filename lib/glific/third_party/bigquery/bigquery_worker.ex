@@ -24,6 +24,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   alias Glific.{
     BigQuery,
+    BigQuery.Instrumentation,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
     Contacts,
@@ -186,7 +187,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo.put_process_state(organization_id)
     RepoReplica.put_process_state(organization_id)
     Logger.debug("removing duplicates for org_id: #{organization_id} table: #{table}")
-    BigQuery.make_job_to_remove_duplicate(table, organization_id)
+
+    Instrumentation.track(table, :remove_duplicates, organization_id, fn ->
+      BigQuery.make_job_to_remove_duplicate(table, organization_id)
+      Instrumentation.record(table, :success, :remove_duplicates, organization_id)
+    end)
+
     :ok
   end
 
@@ -198,8 +204,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Repo.put_process_state(organization_id)
     RepoReplica.put_process_state(organization_id)
 
-    Jobs.get_bigquery_job(organization_id, table)
-    |> insert_for_table(organization_id, action)
+    # Only wraps the raising failure paths. Outcomes BigQuery reports without raising are
+    # recorded inside BigQuery.handle_insert_query_response/3, where they are visible.
+    Instrumentation.track(table, action, organization_id, fn ->
+      Jobs.get_bigquery_job(organization_id, table)
+      |> insert_for_table(organization_id, action)
+    end)
   end
 
   @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()
