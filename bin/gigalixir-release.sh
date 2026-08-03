@@ -423,10 +423,21 @@ main() {
   detect_project
   [ "$DRY_RUN" -eq 1 ] && printf '\n*** DRY RUN - nothing will be changed, pushed or deployed ***\n'
   preflight
-  choose_version
-  open_pr
-  merge_pr
-  create_release
+
+  # Only production is a versioned release (bump -> PR -> merge -> GitHub release).
+  # staging / frontend-staging just deploy the current master and verify - no ceremony.
+  if [ "$ENV_NAME" = "production" ]; then
+    choose_version
+    open_pr
+    merge_pr
+    create_release
+  else
+    DEPLOY_SHA=$(git rev-parse HEAD)
+    NEW_VERSION="$CURRENT_VERSION"
+    step "Version"
+    log "no bump for ${ENV_NAME} - deploying current ${BASE_BRANCH} (${DEPLOY_SHA:0:7}) as ${CURRENT_VERSION}"
+  fi
+
   deploy
   verify
 }
