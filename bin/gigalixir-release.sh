@@ -37,6 +37,7 @@ STABLE_WINDOW=300
 
 CURRENT_VERSION="" VERSION_FILE="" PROJECT_KIND=""
 BRANCH="" PR_NUMBER="" DEPLOY_SHA=""
+DISCORD_WEBHOOK=""
 
 usage() { sed -n '2,19p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
@@ -93,7 +94,7 @@ parse_args() {
       --title) need "$@"; RELEASE_TITLE="$2"; shift 2 ;;
       --base) need "$@"; BASE_BRANCH="$2"; shift 2 ;;
       --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
-      --discord-webhook) need "$@"; export DISCORD_WEBHOOK_URL="$2"; shift 2 ;;
+      --discord-webhook) need "$@"; DISCORD_WEBHOOK="$2"; shift 2 ;;
       --skip-release) SKIP_RELEASE=1; shift ;;
       --skip-verify) SKIP_VERIFY=1; shift ;;
       --dry-run) DRY_RUN=1; shift ;;
@@ -381,8 +382,15 @@ verify() {
     return 0
   fi
 
-  "$VERIFIER" --app "$APP" --sha "$DEPLOY_SHA" --app-version "$NEW_VERSION" \
-    --stable-window "$STABLE_WINDOW"
+  # Scope the webhook to just this subprocess via an inline assignment, so git/gh (and
+  # anything they spawn) never inherit it. With no --discord-webhook, fall through to
+  # whatever DISCORD_WEBHOOK_URL is already in the environment.
+  local vargs=(--app "$APP" --sha "$DEPLOY_SHA" --app-version "$NEW_VERSION" --stable-window "$STABLE_WINDOW")
+  if [ -n "$DISCORD_WEBHOOK" ]; then
+    DISCORD_WEBHOOK_URL="$DISCORD_WEBHOOK" "$VERIFIER" "${vargs[@]}"
+  else
+    "$VERIFIER" "${vargs[@]}"
+  fi
   local rc=$?
 
   if [ "$rc" -ne 0 ]; then
