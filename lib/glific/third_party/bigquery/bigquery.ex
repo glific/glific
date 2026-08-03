@@ -926,6 +926,28 @@ defmodule Glific.BigQuery do
     )
   end
 
+  ## fetch_bigquery_credentials/1 returns {:ok, "BigQuery is not active"} when the org has
+  ## no bigquery service configured, so the {:ok, _} tag alone doesn't guarantee credentials.
+  defp do_make_insert_query({:ok, reason}, organization_id, _data, opts) do
+    table = Keyword.get(opts, :table)
+
+    Glific.log_error(
+      "BigQuery Insert skipped, credentials not available for org_id: #{organization_id}, table: #{table}, reason: #{safe_inspect(reason)}"
+    )
+
+    {:error, reason}
+  end
+
+  defp do_make_insert_query({:error, reason}, organization_id, _data, opts) do
+    table = Keyword.get(opts, :table)
+
+    Glific.log_error(
+      "BigQuery Insert Error while fetching credentials for org_id: #{organization_id}, table: #{table}, reason: #{safe_inspect(reason)}"
+    )
+
+    {:error, reason}
+  end
+
   @spec handle_insert_query_response(tuple(), non_neg_integer, Keyword.t()) :: :ok
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
@@ -983,8 +1005,10 @@ defmodule Glific.BigQuery do
         Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
+        Glific.log_error("BigQuery Insert Error for table #{table} #{safe_inspect(response)}")
     end
+
+    :ok
   end
 
   @spec bigquery_error_status(any()) :: {String.t() | atom(), String.t()}

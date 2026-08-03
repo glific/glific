@@ -159,15 +159,15 @@ defmodule Glific.BigQueryTest do
     end
   end
 
-  test "handle_insert_query_response/3 should raise error", attrs do
-    assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_query_response(
-        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
-        attrs.organization_id,
-        table: "messages",
-        max_id: 10
-      )
-    end
+  test "handle_insert_query_response/3 logs and returns :ok for an unrecognized error status",
+       attrs do
+    assert :ok ==
+             BigQuery.handle_insert_query_response(
+               {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
+               attrs.organization_id,
+               table: "messages",
+               max_id: 10
+             )
   end
 
   @delete_query """
@@ -256,6 +256,46 @@ defmodule Glific.BigQueryTest do
                table: "messages",
                max_id: nil
              )
+  end
+
+  test "make_insert_query/4 returns :ok without crashing when bigquery is not configured for the org" do
+    organization_without_bigquery = organization_fixture()
+
+    assert :ok ==
+             BigQuery.make_insert_query(
+               [%{"id" => 1}],
+               "contacts",
+               organization_without_bigquery.id,
+               max_id: 10,
+               last_updated_at: nil
+             )
+  end
+
+  test "make_insert_query/4 returns :ok without crashing when fetching credentials errors",
+       attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:error,
+             "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+          end
+        ]
+      }
+    ]) do
+      Glific.Caches.remove(attrs.organization_id, [{:provider_token, "bigquery"}])
+
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{"id" => 1}],
+                 "messages",
+                 attrs.organization_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+    end
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
