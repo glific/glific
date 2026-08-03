@@ -1712,7 +1712,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     BigQuery.make_insert_query(data, table, organization_id,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      action: attrs[:action]
     )
   end
 

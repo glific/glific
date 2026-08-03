@@ -476,6 +476,51 @@ defmodule Glific.BigQueryTest do
              BigQuery.format_date(DateTime.to_date(datetime) |> to_string, attrs.organization_id)
   end
 
+  test "make_job/4 tags the counter with the real action, not \"unknown\"" do
+    # Drives make_job -> make_insert_query -> handle_insert_query_response -> record so a
+    # regression in forwarding :action is caught. Asserting on handle_insert_query_response
+    # alone cannot see this — the action is dropped upstream of it.
+    parent = self()
+
+    with_mocks([
+      {Goth.Token, [:passthrough],
+       [
+         fetch: fn _ ->
+           {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+         end
+       ]},
+      {Appsignal, [:passthrough],
+       [
+         increment_counter: fn name, value, tags ->
+           send(parent, {:counter, name, value, tags})
+           :ok
+         end
+       ]}
+    ]) do
+      Tesla.Mock.mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+              kind: "bigquery#tableDataInsertAllResponse",
+              insertErrors: nil
+            })
+        }
+      end)
+
+      BigQueryWorker.make_job([%{json: %{id: 1}}], :contacts, 1, %{
+        action: :update,
+        max_id: nil,
+        last_updated_at: DateTime.utc_now()
+      })
+
+      assert_receive {:counter, "job_run_count", 1, tags}
+      assert tags.table == "contacts"
+      assert tags.action == "update", "expected action \"update\", got #{inspect(tags.action)}"
+      assert tags.status == "success"
+    end
+  end
+
   test "queue_table_data/3 should process and queue data correctly", %{organization_id: org_id} do
     with_mocks([
       {
