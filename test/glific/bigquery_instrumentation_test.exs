@@ -1,9 +1,9 @@
-defmodule Glific.Jobs.InstrumentationTest do
+defmodule Glific.BigQuery.InstrumentationTest do
   @moduledoc false
   use Glific.DataCase
   import Mock
 
-  alias Glific.Jobs.Instrumentation
+  alias Glific.BigQuery.Instrumentation
 
   # Appsignal.increment_counter/3 is a no-op NIF call in test, so the assertions capture the
   # arguments instead — the tag values are the contract an alert is built on.
@@ -33,13 +33,10 @@ defmodule Glific.Jobs.InstrumentationTest do
     test "emits bigquery_sync_count tagged with table, action, status and org" do
       counters =
         capture_counters(fn ->
-          Instrumentation.record("bigquery_sync", :success, 1, %{
-            table: "messages",
-            action: :insert
-          })
+          Instrumentation.record("messages", :success, :insert, 1)
         end)
 
-      assert [{"job_run_count", 1, tags}] = counters
+      assert [{"bigquery_sync_count", 1, tags}] = counters
       assert tags.table == "messages"
       assert tags.action == "insert"
       assert tags.status == "success"
@@ -49,20 +46,9 @@ defmodule Glific.Jobs.InstrumentationTest do
     test "tags each table distinctly so one broken table is not masked by healthy ones" do
       counters =
         capture_counters(fn ->
-          Instrumentation.record("bigquery_sync", :success, 1, %{
-            table: "messages",
-            action: :insert
-          })
-
-          Instrumentation.record("bigquery_sync", :permission_denied, 1, %{
-            table: "contacts",
-            action: :update
-          })
-
-          Instrumentation.record("bigquery_sync", :timeout, 2, %{
-            table: "flow_results",
-            action: :insert
-          })
+          Instrumentation.record("messages", :success, :insert, 1)
+          Instrumentation.record("contacts", :permission_denied, :update, 1)
+          Instrumentation.record("flow_results", :timeout, :insert, 2)
         end)
 
       assert Enum.map(counters, fn {_name, _value, tags} -> {tags.table, tags.status} end) == [
@@ -78,36 +64,25 @@ defmodule Glific.Jobs.InstrumentationTest do
     test "records every failure status the sync can produce" do
       for status <- [:schema_not_found, :permission_denied, :timeout, :exception] do
         counters =
-          capture_counters(fn ->
-            Instrumentation.record("bigquery_sync", status, 1, %{
-              table: "messages",
-              action: :insert
-            })
-          end)
+          capture_counters(fn -> Instrumentation.record("messages", status, :insert, 1) end)
 
-        assert [{"job_run_count", 1, tags}] = counters
+        assert [{"bigquery_sync_count", 1, tags}] = counters
         assert tags.status == Atom.to_string(status)
       end
     end
 
     test "falls back to unknown rather than crashing on missing action or org" do
       counters =
-        capture_counters(fn ->
-          Instrumentation.record("bigquery_sync", :success, nil, %{table: "messages", action: nil})
-        end)
+        capture_counters(fn -> Instrumentation.record("messages", :success, nil, nil) end)
 
-      assert [{"job_run_count", 1, tags}] = counters
+      assert [{"bigquery_sync_count", 1, tags}] = counters
       assert tags.action == "unknown"
       assert tags.organization_id == "unknown"
     end
 
     test "never propagates a metrics failure into the sync" do
       with_mock Appsignal, increment_counter: fn _n, _v, _t -> raise "appsignal down" end do
-        assert :ok ==
-                 Instrumentation.record("bigquery_sync", :success, 1, %{
-                   table: "messages",
-                   action: :insert
-                 })
+        assert :ok == Instrumentation.record("messages", :success, :insert, 1)
       end
     end
   end
@@ -132,7 +107,7 @@ defmodule Glific.Jobs.InstrumentationTest do
         end)
 
       assert Enum.any?(counters, fn {name, _v, tags} ->
-               name == "job_run_count" and tags.table == "messages" and
+               name == "bigquery_sync_count" and tags.table == "messages" and
                  tags.status == "permission_denied"
              end),
              "expected a permission_denied counter, got #{inspect(counters)}"
@@ -151,26 +126,23 @@ defmodule Glific.Jobs.InstrumentationTest do
         end)
 
       assert Enum.any?(counters, fn {name, _v, tags} ->
-               name == "job_run_count" and tags.table == "contacts" and
+               name == "bigquery_sync_count" and tags.table == "contacts" and
                  tags.status == "success"
              end),
              "expected a success counter, got #{inspect(counters)}"
     end
   end
 
-  describe "track_exception/4" do
+  describe "track/4" do
     test "does not emit a counter when the work succeeds" do
       counters =
         capture_counters(fn ->
-          assert :ok ==
-                   Instrumentation.track_exception("bigquery_sync", 1, %{table: "messages"}, fn ->
-                     :ok
-                   end)
+          assert :ok == Instrumentation.track("messages", :insert, 1, fn -> :ok end)
         end)
 
       # The success counter comes from handle_insert_query_response/3, where the BigQuery
-      # outcome is actually known. track_exception/4 only covers the raising paths, so
-      # counting here too would double every successful sync.
+      # outcome is actually known. track/4 only covers the raising paths, so counting here
+      # too would double every successful sync.
       assert counters == []
     end
 
@@ -178,16 +150,11 @@ defmodule Glific.Jobs.InstrumentationTest do
       counters =
         capture_counters(fn ->
           assert_raise RuntimeError, "boom", fn ->
-            Instrumentation.track_exception(
-              "bigquery_sync",
-              3,
-              %{table: "contacts", action: :update},
-              fn -> raise "boom" end
-            )
+            Instrumentation.track("contacts", :update, 3, fn -> raise "boom" end)
           end
         end)
 
-      assert [{"job_run_count", 1, tags}] = counters
+      assert [{"bigquery_sync_count", 1, tags}] = counters
       assert tags.table == "contacts"
       assert tags.action == "update"
       assert tags.status == "exception"

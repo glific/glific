@@ -24,6 +24,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   alias Glific.{
     BigQuery,
+    BigQuery.Instrumentation,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
     Contacts,
@@ -45,7 +46,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Jobs,
-    Jobs.Instrumentation,
     Messages.Message,
     Messages.MessageConversation,
     Messages.MessageMedia,
@@ -188,19 +188,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
     RepoReplica.put_process_state(organization_id)
     Logger.debug("removing duplicates for org_id: #{organization_id} table: #{table}")
 
-    Instrumentation.track_exception(
-      "bigquery_sync",
-      organization_id,
-      %{table: table, action: :remove_duplicates},
-      fn ->
-        BigQuery.make_job_to_remove_duplicate(table, organization_id)
-
-        Instrumentation.record("bigquery_sync", :success, organization_id, %{
-          table: table,
-          action: :remove_duplicates
-        })
-      end
-    )
+    Instrumentation.track(table, :remove_duplicates, organization_id, fn ->
+      BigQuery.make_job_to_remove_duplicate(table, organization_id)
+      Instrumentation.record(table, :success, :remove_duplicates, organization_id)
+    end)
 
     :ok
   end
@@ -215,15 +206,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     # Only wraps the raising failure paths. Outcomes BigQuery reports without raising are
     # recorded inside BigQuery.handle_insert_query_response/3, where they are visible.
-    Instrumentation.track_exception(
-      "bigquery_sync",
-      organization_id,
-      %{table: table, action: action},
-      fn ->
-        Jobs.get_bigquery_job(organization_id, table)
-        |> insert_for_table(organization_id, action)
-      end
-    )
+    Instrumentation.track(table, action, organization_id, fn ->
+      Jobs.get_bigquery_job(organization_id, table)
+      |> insert_for_table(organization_id, action)
+    end)
   end
 
   @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()

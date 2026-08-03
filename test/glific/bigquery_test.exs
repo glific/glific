@@ -476,10 +476,13 @@ defmodule Glific.BigQueryTest do
              BigQuery.format_date(DateTime.to_date(datetime) |> to_string, attrs.organization_id)
   end
 
-  test "make_job/4 tags the counter with the real action, not \"unknown\"" do
+  test "make_job/4 forwards the real action, not \"unknown\"" do
     # Drives make_job -> make_insert_query -> handle_insert_query_response -> record so a
     # regression in forwarding :action is caught. Asserting on handle_insert_query_response
     # alone cannot see this — the action is dropped upstream of it.
+    #
+    # Mocks our own Instrumentation module rather than Appsignal: Appsignal is called from
+    # every module in the app, so mocking it globally leaks into unrelated tests.
     parent = self()
 
     with_mocks([
@@ -489,10 +492,10 @@ defmodule Glific.BigQueryTest do
            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
          end
        ]},
-      {Appsignal, [:passthrough],
+      {Glific.BigQuery.Instrumentation, [:passthrough],
        [
-         increment_counter: fn name, value, tags ->
-           send(parent, {:counter, name, value, tags})
+         record: fn table, status, action, organization_id ->
+           send(parent, {:record, table, status, action, organization_id})
            :ok
          end
        ]}
@@ -514,10 +517,8 @@ defmodule Glific.BigQueryTest do
         last_updated_at: DateTime.utc_now()
       })
 
-      assert_receive {:counter, "job_run_count", 1, tags}
-      assert tags.table == "contacts"
-      assert tags.action == "update", "expected action \"update\", got #{inspect(tags.action)}"
-      assert tags.status == "success"
+      assert_receive {:record, "contacts", :success, action, 1}
+      assert action == :update, "expected action :update, got #{inspect(action)}"
     end
   end
 

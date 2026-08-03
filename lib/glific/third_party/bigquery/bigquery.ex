@@ -30,6 +30,7 @@ defmodule Glific.BigQuery do
 
   alias Glific.{
     BigQuery.BigQueryJob,
+    BigQuery.Instrumentation,
     BigQuery.Schema,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
@@ -49,7 +50,6 @@ defmodule Glific.BigQuery do
     Groups.WAGroupPhone,
     Groups.WAGroupsCollection,
     Jobs,
-    Jobs.Instrumentation,
     Messages.Message,
     Messages.MessageConversation,
     Messages.MessageMedia,
@@ -959,10 +959,7 @@ defmodule Glific.BigQuery do
 
     # The insertErrors branch above raises rather than reaching here, so it is counted as
     # `exception` by BigQueryWorker.perform/1 instead — exactly one increment per job.
-    Instrumentation.record("bigquery_sync", :success, organization_id, %{
-      table: table,
-      action: Keyword.get(opts, :action)
-    })
+    Instrumentation.record(table, :success, Keyword.get(opts, :action), organization_id)
 
     :ok
   end
@@ -984,18 +981,11 @@ defmodule Glific.BigQuery do
         # Swallowed failures still have to be counted — otherwise the sync reports green
         # while the schema is missing, the credential has just been disabled, or the
         # request timed out.
-        Instrumentation.record("bigquery_sync", :schema_not_found, organization_id, %{
-          table: table,
-          action: action
-        })
-
+        Instrumentation.record(table, :schema_not_found, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
       "PERMISSION_DENIED" ->
-        Instrumentation.record("bigquery_sync", :permission_denied, organization_id, %{
-          table: table,
-          action: action
-        })
+        Instrumentation.record(table, :permission_denied, action, organization_id)
 
         Partners.disable_credential(
           organization_id,
@@ -1004,11 +994,7 @@ defmodule Glific.BigQuery do
         )
 
       "TIMEOUT" ->
-        Instrumentation.record("bigquery_sync", :timeout, organization_id, %{
-          table: table,
-          action: action
-        })
-
+        Instrumentation.record(table, :timeout, action, organization_id)
         Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->
