@@ -365,15 +365,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   curated template catalog — it does not persist anything.
 
   Supported filters (all optional, unknown/blank values are dropped):
-  `:elementName`, `:industry`, `:languageCode`, `:topic`, `:usecase`. Gupshup's
-  API does not support filtering by `category` — that's filtered client-side
-  in `Glific.Providers.Gupshup.Template.search_library_templates/2`.
+  `:elementName`, `:languageCode`, `:usecase`. Gupshup's API does not support
+  filtering by `category` — that's filtered client-side in
+  `Glific.Providers.Gupshup.Template.search_library_templates/2`.
   """
   @spec get_library_templates(non_neg_integer(), map()) :: {:ok, map()} | {:error, String.t()}
   def get_library_templates(org_id, filters \\ %{}) do
     query =
       filters
-      |> Map.take([:elementName, :industry, :languageCode, :topic, :usecase])
+      |> Map.take([:elementName, :languageCode, :usecase])
       |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
 
     (app_url!(org_id) <> "/template/metalibrary")

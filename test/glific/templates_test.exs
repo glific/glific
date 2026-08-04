@@ -2834,7 +2834,7 @@ defmodule Glific.TemplatesTest do
 
     assert {:ok, templates_before} =
              Templates.search_library_templates(attrs.organization_id, %{
-               industry: "manufacturing"
+               usecase: "onboarding_manufacturing"
              })
 
     assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
@@ -2847,7 +2847,7 @@ defmodule Glific.TemplatesTest do
 
     assert {:ok, templates_after} =
              Templates.search_library_templates(attrs.organization_id, %{
-               industry: "manufacturing"
+               usecase: "onboarding_manufacturing"
              })
 
     assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
@@ -2891,10 +2891,14 @@ defmodule Glific.TemplatesTest do
     end)
 
     assert {:ok, first_call} =
-             Templates.search_library_templates(attrs.organization_id, %{industry: "warehousing"})
+             Templates.search_library_templates(attrs.organization_id, %{
+               usecase: "onboarding_warehousing"
+             })
 
     assert {:ok, second_call} =
-             Templates.search_library_templates(attrs.organization_id, %{industry: "warehousing"})
+             Templates.search_library_templates(attrs.organization_id, %{
+               usecase: "onboarding_warehousing"
+             })
 
     assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
     assert first_call == second_call

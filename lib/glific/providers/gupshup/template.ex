@@ -420,9 +420,7 @@ defmodule Glific.Providers.Gupshup.Template do
   defp to_gupshup_library_filters(filters) do
     %{
       elementName: Map.get(filters, :element_name),
-      industry: Map.get(filters, :industry),
       languageCode: Map.get(filters, :language_code),
-      topic: Map.get(filters, :topic),
       usecase: Map.get(filters, :usecase)
     }
   end

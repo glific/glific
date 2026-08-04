@@ -490,7 +490,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     result =
       auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"industry" => "retail"}}
+        variables: %{"filter" => %{"usecase" => "onboarding"}}
       )
 
     assert {:ok, query_data} = result
@@ -611,7 +611,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     result =
       auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"industry" => "logistics"}}
+        variables: %{"filter" => %{"usecase" => "onboarding_logistics"}}
       )
 
     assert {:ok, query_data} = result
@@ -636,18 +636,18 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       } ->
         %Tesla.Env{
           status: 400,
-          body: Jason.encode!(%{"message" => "Invalid industry filter"})
+          body: Jason.encode!(%{"message" => "Invalid usecase filter"})
         }
     end)
 
     result =
       auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"industry" => "bogus"}}
+        variables: %{"filter" => %{"usecase" => "bogus"}}
       )
 
     assert {:ok, query_data} = result
     assert [%{message: message}] = query_data.errors
-    assert message == "Invalid industry filter"
+    assert message == "Invalid usecase filter"
   end
 
   test "template_library treats an explicit null filter the same as an absent one", %{

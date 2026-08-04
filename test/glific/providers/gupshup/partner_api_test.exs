@@ -37,13 +37,16 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
       end)
 
       assert {:ok, %{"templates" => [template]}} =
-               PartnerAPI.get_library_templates(attrs.organization_id, %{industry: "retail"})
+               PartnerAPI.get_library_templates(attrs.organization_id, %{
+                 element_name: "welcome_offer"
+               })
 
       assert template["elementName"] == "welcome_offer"
       assert template["languageCode"] == "en"
     end
 
-    test "drops nil/blank filters before calling the partner API", attrs do
+    test "drops nil/blank filters, and ignores industry/topic since they're no longer supported filters",
+         attrs do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
           %Tesla.Env{
@@ -52,9 +55,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
           }
 
         %{method: :get, query: query} ->
-          # elementName/topic/usecase should have been dropped as nil/blank,
-          # only industry should remain in the query string.
-          assert Keyword.get(query, :industry) == "retail"
+          # elementName/languageCode should have been dropped as nil/blank;
+          # industry/topic are dropped unconditionally (unsupported filters,
+          # even with real values); only usecase should remain in the query.
+          assert Keyword.get(query, :usecase) == "onboarding"
           assert length(query) == 1
 
           %Tesla.Env{
@@ -65,10 +69,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
 
       assert {:ok, %{"templates" => []}} =
                PartnerAPI.get_library_templates(attrs.organization_id, %{
-                 industry: "retail",
+                 usecase: "onboarding",
                  elementName: nil,
-                 topic: "",
-                 usecase: nil
+                 languageCode: "",
+                 industry: "retail",
+                 topic: "welcome"
                })
     end
 
@@ -86,12 +91,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
         } ->
           %Tesla.Env{
             status: 400,
-            body: Jason.encode!(%{"message" => "Invalid industry filter"})
+            body: Jason.encode!(%{"message" => "Invalid usecase filter"})
           }
       end)
 
-      assert {:error, "Invalid industry filter"} =
-               PartnerAPI.get_library_templates(attrs.organization_id, %{industry: "bogus"})
+      assert {:error, "Invalid usecase filter"} =
+               PartnerAPI.get_library_templates(attrs.organization_id, %{usecase: "bogus"})
     end
 
     test "returns a generic error on an unexpected/malformed response", attrs do

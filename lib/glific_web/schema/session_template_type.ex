@@ -187,14 +187,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the template's element name"
     field :element_name, :string
 
-    @desc "Match the template's industry"
-    field :industry, :string
-
     @desc "Match the template's language code"
     field :language_code, :string
-
-    @desc "Match the template's topic"
-    field :topic, :string
 
     @desc "Match the template's usecase"
     field :usecase, :string
