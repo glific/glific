@@ -517,8 +517,11 @@ defmodule Glific.BigQueryTest do
         last_updated_at: DateTime.utc_now()
       })
 
-      assert_receive {:record, "contacts", :success, action, 1}
-      assert action == :update, "expected action :update, got #{inspect(action)}"
+      assert_receive {:record, "contacts", :success, :update, 1}
+
+      # The invariant is exactly one increment per job — assert_receive alone would pass
+      # with a duplicate success counter still sitting in the mailbox.
+      refute_received {:record, _, _, _, _}
     end
   end
 
