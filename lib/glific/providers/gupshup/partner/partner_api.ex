@@ -516,15 +516,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  # `:query` threads Tesla-native query params (e.g. for the template library search).
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
     req_headers =
       headers(Keyword.get(opts, :token_type, :app_token), opts)
 
-    query = Keyword.get(opts, :query, [])
-
-    get(url, headers: req_headers, query: query)
+    get(url, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
