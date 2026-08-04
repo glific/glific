@@ -456,9 +456,24 @@ defmodule Glific.Providers.Gupshup.Template do
       industry: template["industry"],
       topic: template["topic"],
       usecase: template["usecase"],
-      container_meta: template["containerMeta"]
+      container_meta: decode_container_meta(template["containerMeta"])
     }
   end
+
+  # Gupshup returns containerMeta as an already JSON-encoded string, not a
+  # decoded object. Passing that raw string straight through the `:json`
+  # scalar (which calls Poison.encode!/1 on whatever it's given) would encode
+  # it a second time, double-escaping the buttons/footer/etc it carries.
+  @spec decode_container_meta(String.t() | map() | nil) :: map()
+  defp decode_container_meta(container_meta) when is_binary(container_meta) do
+    case Jason.decode(container_meta) do
+      {:ok, decoded} when is_map(decoded) -> decoded
+      _ -> %{}
+    end
+  end
+
+  defp decode_container_meta(container_meta) when is_map(container_meta), do: container_meta
+  defp decode_container_meta(_container_meta), do: %{}
 
   @doc """
   Updating HSM templates for an organization

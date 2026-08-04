@@ -372,24 +372,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_library_templates(org_id) do
     (app_url!(org_id) <> "/template/metalibrary")
-    |> get_request(org_id: org_id, raw_error: true)
-    |> case do
-      {:ok, response} ->
-        {:ok, response}
-
-      {:error, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        case Jason.decode(body) do
-          {:ok, %{"message" => message}} -> {:error, message}
-          _ -> {:error, "Error while fetching the template library"}
-        end
-
-      unmatched_response ->
-        Logger.error(
-          "Error while fetching the template library. #{Glific.SafeLog.safe_inspect(unmatched_response)}"
-        )
-
-        {:error, "Error while fetching the template library"}
-    end
+    |> get_request(org_id: org_id)
   end
 
   @global_organization_id 0
@@ -534,11 +517,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   # `:query` threads Tesla-native query params (e.g. for the template library search).
-  # `:raw_error` opts a caller into getting back the raw `%Tesla.Env{}` on a non-2xx
-  # response (mirroring `post_request/3`'s error shape) instead of the default
-  # safe-inspected string, so it can decode Gupshup's JSON error body itself
-  # (see `get_library_templates/2`). Defaults to `false` to keep every existing
-  # caller's `{:error, String.t()}` contract unchanged.
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
     req_headers =
@@ -551,10 +529,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
 
-      {:ok, resp} ->
-        if Keyword.get(opts, :raw_error, false),
-          do: {:error, resp},
-          else: {:error, "#{Glific.SafeLog.safe_inspect(resp)}"}
+      {:ok, %Tesla.Env{body: body} = resp} ->
+        case Jason.decode(body) do
+          {:ok, %{"message" => message}} -> {:error, message}
+          _ -> {:error, "#{Glific.SafeLog.safe_inspect(resp)}"}
+        end
 
       err ->
         {:error, "#{Glific.SafeLog.safe_inspect(err)}"}

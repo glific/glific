@@ -84,7 +84,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
       assert {:error, "Invalid request"} = PartnerAPI.get_library_templates(attrs.organization_id)
     end
 
-    test "returns a generic error on an unexpected/malformed response", attrs do
+    test "falls back to a safe-inspected error when the response body isn't decodable JSON",
+         attrs do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
           %Tesla.Env{
@@ -99,8 +100,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
           %Tesla.Env{status: 500, body: "internal server error"}
       end)
 
-      assert {:error, "Error while fetching the template library"} =
-               PartnerAPI.get_library_templates(attrs.organization_id)
+      assert {:error, message} = PartnerAPI.get_library_templates(attrs.organization_id)
+      assert message =~ "500"
+      assert message =~ "internal server error"
     end
   end
 end

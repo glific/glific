@@ -484,7 +484,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
                   "languageCode" => "en",
                   "topic" => "welcome",
                   "usecase" => "onboarding",
-                  "containerMeta" => %{"buttons" => []}
+                  "containerMeta" =>
+                    Jason.encode!(%{
+                      "footer" => "Team support",
+                      "buttons" => [%{"type" => "QUICK_REPLY", "text" => "Report Outage"}]
+                    })
                 }
               ]
             })
@@ -505,6 +509,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert entry["industry"] == "retail"
     assert entry["topic"] == "welcome"
     assert entry["usecase"] == "onboarding"
+    assert entry["containerMeta"]["footer"] == "Team support"
+
+    assert entry["containerMeta"]["buttons"] == [
+             %{"type" => "QUICK_REPLY", "text" => "Report Outage"}
+           ]
 
     # read-only passthrough: no SessionTemplate row is created
     assert Templates.count_session_templates(%{}) == session_template_count_before
