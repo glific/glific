@@ -16,8 +16,8 @@ headers {
 }
 
 body:graphql {
-  query templateLibrary($filter: TemplateLibraryFilter) {
-    templateLibrary(filter: $filter) {
+  query templateLibrary {
+    templateLibrary {
       elementName
       category
       body
@@ -26,15 +26,6 @@ body:graphql {
       topic
       usecase
       containerMeta
-    }
-  }
-}
-
-body:graphql:vars {
-  {
-    "filter": {
-      "industry": "retail",
-      "languageCode": "en"
     }
   }
 }

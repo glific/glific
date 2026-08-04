@@ -364,20 +364,15 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   own partner app token. This is a read-only passthrough for browsing Meta's
   curated template catalog — it does not persist anything.
 
-  Supported filters (all optional, unknown/blank values are dropped):
-  `:elementName`, `:languageCode`, `:usecase`. Gupshup's API does not support
-  filtering by `category` — that's filtered client-side in
-  `Glific.Providers.Gupshup.Template.search_library_templates/2`.
+  Fetches the org's full eligible catalog with no query filters — the UI
+  searches/filters the cached result client-side instead of re-querying.
+  Category-narrowing happens client-side in
+  `Glific.Providers.Gupshup.Template.search_library_templates/1`.
   """
-  @spec get_library_templates(non_neg_integer(), map()) :: {:ok, map()} | {:error, String.t()}
-  def get_library_templates(org_id, filters \\ %{}) do
-    query =
-      filters
-      |> Map.take([:elementName, :languageCode, :usecase])
-      |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
-
+  @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
+  def get_library_templates(org_id) do
     (app_url!(org_id) <> "/template/metalibrary")
-    |> get_request(org_id: org_id, query: query, raw_error: true)
+    |> get_request(org_id: org_id, raw_error: true)
     |> case do
       {:ok, response} ->
         {:ok, response}

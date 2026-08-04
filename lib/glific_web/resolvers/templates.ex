@@ -50,8 +50,8 @@ defmodule GlificWeb.Resolvers.Templates do
   """
   @spec template_library(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, list(map())} | {:error, any}
-  def template_library(_, args, %{context: %{current_user: user}}) do
-    Templates.search_library_templates(user.organization_id, Map.get(args, :filter) || %{})
+  def template_library(_, _args, %{context: %{current_user: user}}) do
+    Templates.search_library_templates(user.organization_id)
   end
 
   @doc false

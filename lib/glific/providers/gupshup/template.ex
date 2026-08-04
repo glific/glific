@@ -396,11 +396,11 @@ defmodule Glific.Providers.Gupshup.Template do
   the `PAYMENTS` and `ORDER_MANAGEMENT` topics, and are limited to languages
   the organization has active.
   """
-  @spec search_library_templates(non_neg_integer(), map()) ::
+  @spec search_library_templates(non_neg_integer()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def search_library_templates(org_id, filters) do
+  def search_library_templates(org_id) do
     org_id
-    |> PartnerAPI.get_library_templates(to_gupshup_library_filters(filters))
+    |> PartnerAPI.get_library_templates()
     |> case do
       {:ok, %{"templates" => templates}} when is_list(templates) ->
         Instrumentation.track_action("template_library_search", :success, org_id)
@@ -414,15 +414,6 @@ defmodule Glific.Providers.Gupshup.Template do
         Instrumentation.track_action("template_library_search", :failure, org_id)
         {:error, reason}
     end
-  end
-
-  @spec to_gupshup_library_filters(map()) :: map()
-  defp to_gupshup_library_filters(filters) do
-    %{
-      elementName: Map.get(filters, :element_name),
-      languageCode: Map.get(filters, :language_code),
-      usecase: Map.get(filters, :usecase)
-    }
   end
 
   @spec filter_library_templates(list(map()), non_neg_integer()) :: list(map())

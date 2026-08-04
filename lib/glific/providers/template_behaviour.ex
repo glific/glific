@@ -18,6 +18,6 @@ defmodule Glific.Providers.TemplateBehaviour do
   @callback bulk_apply_templates(org_id :: non_neg_integer(), data :: String.t()) ::
               :ok | {:ok, any}
 
-  @callback search_library_templates(org_id :: non_neg_integer(), filters :: map()) ::
+  @callback search_library_templates(org_id :: non_neg_integer()) ::
               {:ok, list(map())} | {:error, String.t()}
 end

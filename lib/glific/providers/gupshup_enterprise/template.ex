@@ -53,9 +53,9 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   Searches Meta's pre-approved WhatsApp template library. Not available for
   GupshupEnterprise, which has no equivalent partner API.
   """
-  @spec search_library_templates(non_neg_integer(), map()) ::
+  @spec search_library_templates(non_neg_integer()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def search_library_templates(_organization_id, _filters), do: {:error, "Feature not available"}
+  def search_library_templates(_organization_id), do: {:error, "Feature not available"}
 
   @doc """
   Updating HSM templates for an organization

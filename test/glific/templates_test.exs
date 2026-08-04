@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Caches,
     Fixtures,
     Mails.MailLog,
     Messages,
@@ -25,6 +26,9 @@ defmodule Glific.TemplatesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.hsm_templates(organization)
+    active_language_ids = Partners.organization(organization.id).active_language_ids
+    Caches.remove(organization.id, [{:template_library, active_language_ids}])
+
     :ok
   end
 
@@ -2787,7 +2791,7 @@ defmodule Glific.TemplatesTest do
              )
   end
 
-  test "search_library_templates/2 stops serving a stale cache when the org's active languages change",
+  test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
        attrs do
     organization = Partners.get_organization!(attrs.organization_id)
 
@@ -2832,10 +2836,7 @@ defmodule Glific.TemplatesTest do
         }
     end)
 
-    assert {:ok, templates_before} =
-             Templates.search_library_templates(attrs.organization_id, %{
-               usecase: "onboarding_manufacturing"
-             })
+    assert {:ok, templates_before} = Templates.search_library_templates(attrs.organization_id)
 
     assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
              ["utility_english", "utility_hindi"]
@@ -2845,15 +2846,12 @@ defmodule Glific.TemplatesTest do
     assert {:ok, _updated_organization} =
              Partners.update_organization(organization, %{active_language_ids: [1]})
 
-    assert {:ok, templates_after} =
-             Templates.search_library_templates(attrs.organization_id, %{
-               usecase: "onboarding_manufacturing"
-             })
+    assert {:ok, templates_after} = Templates.search_library_templates(attrs.organization_id)
 
     assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
   end
 
-  test "search_library_templates/2 serves an identical second call from cache instead of refetching",
+  test "search_library_templates/1 serves an identical second call from cache instead of refetching",
        attrs do
     {:ok, counter} = Agent.start_link(fn -> 0 end)
 
@@ -2890,15 +2888,9 @@ defmodule Glific.TemplatesTest do
         }
     end)
 
-    assert {:ok, first_call} =
-             Templates.search_library_templates(attrs.organization_id, %{
-               usecase: "onboarding_warehousing"
-             })
+    assert {:ok, first_call} = Templates.search_library_templates(attrs.organization_id)
 
-    assert {:ok, second_call} =
-             Templates.search_library_templates(attrs.organization_id, %{
-               usecase: "onboarding_warehousing"
-             })
+    assert {:ok, second_call} = Templates.search_library_templates(attrs.organization_id)
 
     assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
     assert first_call == second_call

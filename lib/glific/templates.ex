@@ -339,31 +339,33 @@ defmodule Glific.Templates do
   browse Meta's curated template catalog and prefill the create template form —
   it does **not** create any `SessionTemplate` rows.
 
-  Results are cached per organization/filter-combo for a short window, since the
-  same filters are commonly re-queried while a user browses the catalog and the
-  partner API is otherwise hit on every keystroke.
+  There's no caller-facing filtering: the BSP module fetches the org's full
+  eligible catalog (already narrowed to Utility templates, excluded topics, and
+  the org's active languages) and the UI searches/filters that cached payload
+  client-side. Results are cached per organization for a short window, since
+  the same catalog is otherwise re-fetched on every catalog open.
   """
-  @spec search_library_templates(non_neg_integer(), map()) ::
+  @spec search_library_templates(non_neg_integer()) ::
           {:ok, list(map())} | {:error, String.t()}
-  def search_library_templates(organization_id, filters) do
+  def search_library_templates(organization_id) do
     # Active languages are part of the cache key (not just invalidated after the
     # fact) so a stale entry can never outlive an org's language settings change:
     # changing active_language_ids yields a new key instead of serving old results.
     active_language_ids = Partners.organization(organization_id).active_language_ids
-    cache_key = {:template_library, filters, active_language_ids}
+    cache_key = {:template_library, active_language_ids}
 
     case Caches.get(organization_id, cache_key, refresh_cache: false) do
-      {:ok, false} -> fetch_library_templates(organization_id, filters, cache_key)
+      {:ok, false} -> fetch_library_templates(organization_id, cache_key)
       {:ok, templates} -> {:ok, templates}
     end
   end
 
-  @spec fetch_library_templates(non_neg_integer(), map(), tuple()) ::
+  @spec fetch_library_templates(non_neg_integer(), tuple()) ::
           {:ok, list(map())} | {:error, String.t()}
-  defp fetch_library_templates(organization_id, filters, cache_key) do
+  defp fetch_library_templates(organization_id, cache_key) do
     bsp_module = Provider.bsp_module(organization_id, :template)
 
-    case bsp_module.search_library_templates(organization_id, filters) do
+    case bsp_module.search_library_templates(organization_id) do
       {:ok, templates} = result ->
         Caches.set(organization_id, cache_key, templates, ttl: :timer.minutes(20))
         result

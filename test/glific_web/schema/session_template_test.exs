@@ -4,8 +4,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Caches,
     Fixtures,
     Messages,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Templates,
@@ -21,6 +23,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     SeedsDev.seed_messages()
     SeedsDev.hsm_templates(organization)
     Fixtures.session_template_fixture()
+    active_language_ids = Partners.organization(organization.id).active_language_ids
+    Caches.remove(organization.id, [{:template_library, active_language_ids}])
+
     :ok
   end
 
@@ -488,10 +493,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     session_template_count_before = Templates.count_session_templates(%{})
 
-    result =
-      auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"usecase" => "onboarding"}}
-      )
+    result = auth_query_gql_by(:template_library, user)
 
     assert {:ok, query_data} = result
     [entry] = get_in(query_data, [:data, "templateLibrary"])
@@ -609,10 +611,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"usecase" => "onboarding_logistics"}}
-      )
+    result = auth_query_gql_by(:template_library, user)
 
     assert {:ok, query_data} = result
     entries = get_in(query_data, [:data, "templateLibrary"])
@@ -636,59 +635,14 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       } ->
         %Tesla.Env{
           status: 400,
-          body: Jason.encode!(%{"message" => "Invalid usecase filter"})
+          body: Jason.encode!(%{"message" => "Invalid request"})
         }
     end)
 
-    result =
-      auth_query_gql_by(:template_library, user,
-        variables: %{"filter" => %{"usecase" => "bogus"}}
-      )
+    result = auth_query_gql_by(:template_library, user)
 
     assert {:ok, query_data} = result
     assert [%{message: message}] = query_data.errors
-    assert message == "Invalid usecase filter"
-  end
-
-  test "template_library treats an explicit null filter the same as an absent one", %{
-    staff: user
-  } do
-    Tesla.Mock.mock(fn
-      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
-        %Tesla.Env{
-          status: 200,
-          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
-        }
-
-      %{
-        method: :get,
-        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
-      } ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "templates" => [
-                %{
-                  "elementName" => "utility_null_filter",
-                  "category" => "UTILITY",
-                  "data" => "Hi {{1}}",
-                  "industry" => "retail",
-                  "languageCode" => "en",
-                  "topic" => "welcome",
-                  "usecase" => "onboarding",
-                  "containerMeta" => %{"buttons" => []}
-                }
-              ]
-            })
-        }
-    end)
-
-    result = auth_query_gql_by(:template_library, user, variables: %{"filter" => nil})
-
-    assert {:ok, query_data} = result
-    entries = get_in(query_data, [:data, "templateLibrary"])
-
-    assert Enum.map(entries, & &1["elementName"]) == ["utility_null_filter"]
+    assert message == "Invalid request"
   end
 end

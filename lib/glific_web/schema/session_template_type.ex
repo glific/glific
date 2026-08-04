@@ -182,18 +182,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :container_meta, :json
   end
 
-  @desc "Filtering options for the template library search. All fields are optional."
-  input_object :template_library_filter do
-    @desc "Match the template's element name"
-    field :element_name, :string
-
-    @desc "Match the template's language code"
-    field :language_code, :string
-
-    @desc "Match the template's usecase"
-    field :usecase, :string
-  end
-
   object :session_template_queries do
     field :whatsapp_hsm_categories, list_of(:string) do
       middleware(Authorize, :manager)
@@ -227,7 +215,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Browse Meta's pre-approved WhatsApp template library, fetched live from the BSP partner API"
     field :template_library, list_of(:template_library_entry) do
-      arg(:filter, :template_library_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.template_library/3)
     end
