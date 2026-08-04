@@ -71,13 +71,17 @@ defmodule Glific.BigQuery.InstrumentationTest do
       end
     end
 
-    test "falls back to unknown rather than crashing on missing action or org" do
+    test "tags a missing action as unknown rather than crashing" do
+      # Only action can legitimately arrive nil — bigquery.ex reads it with Keyword.get/2.
+      # table and organization_id are always supplied by every call site.
       counters =
-        capture_counters(fn -> Instrumentation.record("messages", :success, nil, nil) end)
+        capture_counters(fn ->
+          Instrumentation.record("messages", :success, nil, 1)
+        end)
 
       assert [{"bigquery_sync_count", 1, tags}] = counters
       assert tags.action == "unknown"
-      assert tags.organization_id == "unknown"
+      assert tags.organization_id == "1"
     end
 
     test "never propagates a metrics failure into the sync" do

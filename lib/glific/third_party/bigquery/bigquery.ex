@@ -978,9 +978,7 @@ defmodule Glific.BigQuery do
     error
     |> case do
       "NOT_FOUND" ->
-        # Swallowed failures still have to be counted — otherwise the sync reports green
-        # while the schema is missing, the credential has just been disabled, or the
-        # request timed out.
+        # Counted even though nothing raises: otherwise the sync reports green.
         Instrumentation.record(table, :schema_not_found, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
@@ -1039,8 +1037,7 @@ defmodule Glific.BigQuery do
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
-        # No usable credentials means the dedup did not run. Counting it as success would
-        # report green for a table that is silently accumulating duplicates.
+        # No usable credentials means the dedup did not run.
         Instrumentation.record(table, :error, :remove_duplicates, organization_id)
         :ok
     end
