@@ -526,12 +526,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
 
-      {:ok, %Tesla.Env{body: body} = resp} ->
-        case Jason.decode(body) do
-          {:ok, %{"message" => message}} -> {:error, message}
-          _ -> {:error, "#{Glific.SafeLog.safe_inspect(resp)}"}
-        end
-
       err ->
         {:error, "#{Glific.SafeLog.safe_inspect(err)}"}
     end

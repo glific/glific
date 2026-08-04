@@ -3,6 +3,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   Module for handling template operations specific to Gupshup
   """
 
+  @behaviour Glific.Providers.TemplateBehaviour
   alias Glific.{
     Partners,
     Repo,
@@ -47,6 +48,14 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   def bulk_apply_templates(_organization_id, _data) do
     {:ok, %{message: "Feature not available"}}
   end
+
+  @doc """
+  Searches Meta's pre-approved WhatsApp template library. Not available for
+  GupshupEnterprise, which has no equivalent partner API.
+  """
+  @spec search_library_templates(non_neg_integer()) ::
+          {:ok, list(map())} | {:error, String.t()}
+  def search_library_templates(_organization_id), do: {:error, "Feature not available"}
 
   @doc """
   Updating HSM templates for an organization
