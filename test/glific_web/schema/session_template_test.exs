@@ -509,9 +509,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert entry["industry"] == "retail"
     assert entry["topic"] == "welcome"
     assert entry["usecase"] == "onboarding"
-    assert entry["containerMeta"]["footer"] == "Team support"
+    decoded_container_meta = Jason.decode!(entry["containerMeta"])
+    assert decoded_container_meta["footer"] == "Team support"
 
-    assert entry["containerMeta"]["buttons"] == [
+    assert decoded_container_meta["buttons"] == [
              %{"type" => "QUICK_REPLY", "text" => "Report Outage"}
            ]
 
@@ -652,6 +653,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert {:ok, query_data} = result
     assert [%{message: message}] = query_data.errors
-    assert message == "Invalid request"
+    # get_request/2 no longer decodes the error body - a non-2xx response
+    # falls back to a safe-inspected dump of the raw Tesla response/env.
+    assert message =~ "400"
+    assert message =~ "Invalid request"
   end
 end

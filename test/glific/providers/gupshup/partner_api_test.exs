@@ -63,7 +63,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
       assert {:ok, %{"templates" => []}} = PartnerAPI.get_library_templates(attrs.organization_id)
     end
 
-    test "returns Gupshup's decoded error message on a 4xx response", attrs do
+    test "returns a safe-inspected error on a 4xx response", attrs do
       Tesla.Mock.mock(fn
         %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
           %Tesla.Env{
@@ -81,7 +81,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
           }
       end)
 
-      assert {:error, "Invalid request"} = PartnerAPI.get_library_templates(attrs.organization_id)
+      assert {:error, message} = PartnerAPI.get_library_templates(attrs.organization_id)
+      assert message =~ "400"
+      assert message =~ "Invalid request"
     end
 
     test "falls back to a safe-inspected error when the response body isn't decodable JSON",
