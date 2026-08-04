@@ -1039,6 +1039,9 @@ defmodule Glific.BigQuery do
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
+        # No usable credentials means the dedup did not run. Counting it as success would
+        # report green for a table that is silently accumulating duplicates.
+        Instrumentation.record(table, :error, :remove_duplicates, organization_id)
         :ok
     end
   end
@@ -1073,14 +1076,19 @@ defmodule Glific.BigQuery do
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok
-  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
-    do:
-      Logger.info(
-        "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
-      )
+  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id) do
+    Instrumentation.record(table, :success, :remove_duplicates, organization_id)
 
-  ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.
-  defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
+    Logger.info(
+      "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
+    )
+  end
+
+  ## The delete result is deliberately not raised on — a failed dedup should not fail the job.
+  ## It is counted though: without this the caller records success for a dedup that did not run.
+  defp handle_duplicate_removal_job_error({:error, error}, table, _, organization_id) do
+    Instrumentation.record(table, :error, :remove_duplicates, organization_id)
+
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
     )

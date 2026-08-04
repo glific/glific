@@ -133,6 +133,42 @@ defmodule Glific.BigQuery.InstrumentationTest do
     end
   end
 
+  describe "make_job_to_remove_duplicate/2" do
+    test "counts a failed dedup as error, not success" do
+      # handle_duplicate_removal_job_error/4 logs the failure and returns without raising,
+      # so a caller that records success after calling it would report green for a dedup
+      # that never ran.
+      counters =
+        capture_counters(fn ->
+          Glific.BigQuery.handle_duplicate_removal_job_error(
+            {:error, "boom"},
+            "messages",
+            %{},
+            1
+          )
+        end)
+
+      assert Enum.any?(counters, fn {name, _v, tags} ->
+               name == "bigquery_sync_count" and tags.table == "messages" and
+                 tags.action == "remove_duplicates" and tags.status == "error"
+             end),
+             "expected an error counter, got #{inspect(counters)}"
+    end
+
+    test "counts a successful dedup" do
+      counters =
+        capture_counters(fn ->
+          Glific.BigQuery.handle_duplicate_removal_job_error({:ok, %{}}, "contacts", %{}, 1)
+        end)
+
+      assert Enum.any?(counters, fn {name, _v, tags} ->
+               name == "bigquery_sync_count" and tags.table == "contacts" and
+                 tags.action == "remove_duplicates" and tags.status == "success"
+             end),
+             "expected a success counter, got #{inspect(counters)}"
+    end
+  end
+
   describe "track/4" do
     test "does not emit a counter when the work succeeds" do
       counters =

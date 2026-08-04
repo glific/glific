@@ -33,7 +33,8 @@ defmodule Glific.BigQuery.Instrumentation do
 
     | status              | meaning                                          |
     | ------------------- | ------------------------------------------------ |
-    | `success`           | BigQuery accepted the rows                       |
+    | `success`           | BigQuery accepted the rows, or the dedup ran     |
+    | `error`             | dedup failed, or its credentials were unusable   |
     | `schema_not_found`  | table/dataset missing, schema re-sync triggered   |
     | `permission_denied` | credential rejected and now disabled             |
     | `timeout`           | request timed out                                |
@@ -49,7 +50,7 @@ defmodule Glific.BigQuery.Instrumentation do
 
   @typedoc "Outcome recorded on `bigquery_sync_count`."
   @type status ::
-          :success | :schema_not_found | :permission_denied | :timeout | :exception
+          :success | :error | :schema_not_found | :permission_denied | :timeout | :exception
 
   @doc """
   Records one sync outcome for a table.

@@ -190,7 +190,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     Instrumentation.track(table, :remove_duplicates, organization_id, fn ->
       BigQuery.make_job_to_remove_duplicate(table, organization_id)
-      Instrumentation.record(table, :success, :remove_duplicates, organization_id)
     end)
 
     :ok
