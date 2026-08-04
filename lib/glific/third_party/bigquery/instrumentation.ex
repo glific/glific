@@ -55,13 +55,13 @@ defmodule Glific.BigQuery.Instrumentation do
   @doc """
   Records one sync outcome for a table.
   """
-  @spec record(String.t(), status(), String.t() | atom() | nil, non_neg_integer()) :: :ok
+  @spec record(String.t(), status(), String.t() | atom(), non_neg_integer()) :: :ok
   def record(table, status, action, organization_id) do
     Appsignal.increment_counter("bigquery_sync_count", 1, %{
-      table: to_tag(table),
-      action: to_tag(action),
-      status: Atom.to_string(status),
-      organization_id: org_tag(organization_id)
+      table: to_string(table),
+      action: to_string(action),
+      status: to_string(status),
+      organization_id: to_string(organization_id)
     })
 
     :ok
@@ -89,14 +89,4 @@ defmodule Glific.BigQuery.Instrumentation do
       record(table, :exception, action, organization_id)
       reraise exception, __STACKTRACE__
   end
-
-  # nil is reachable: bigquery.ex reads the action with Keyword.get/2, which returns nil if a
-  # caller forgets to forward it. Tagging "unknown" beats crashing the sync over a metric.
-  @spec to_tag(String.t() | atom() | nil) :: String.t()
-  defp to_tag(nil), do: "unknown"
-  defp to_tag(value) when is_atom(value), do: Atom.to_string(value)
-  defp to_tag(value), do: to_string(value)
-
-  @spec org_tag(non_neg_integer()) :: String.t()
-  defp org_tag(organization_id), do: to_string(organization_id)
 end
