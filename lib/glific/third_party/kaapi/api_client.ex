@@ -248,18 +248,6 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> parse_kaapi_response()
   end
 
-  @spec evaluation_dataset_multipart(map()) :: Tesla.Multipart.t()
-  defp evaluation_dataset_multipart(params) do
-    Tesla.Multipart.new()
-    |> Tesla.Multipart.add_file(params.file.path,
-      name: "file",
-      filename: params.file.filename,
-      headers: [{"content-type", params.file.content_type}]
-    )
-    |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
-    |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
-  end
-
   @doc """
   Create an evaluation in Kaapi
   """
@@ -318,6 +306,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
       opts: [path_params: [dataset_id: dataset_id]]
     )
     |> parse_kaapi_response()
+  end
+
+  @spec evaluation_dataset_multipart(map()) :: Tesla.Multipart.t()
+  defp evaluation_dataset_multipart(params) do
+    Tesla.Multipart.new()
+    |> Tesla.Multipart.add_file(params.file.path,
+      name: "file",
+      filename: params.file.filename,
+      headers: [{"content-type", params.file.content_type}]
+    )
+    |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
+    |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
   end
 
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
