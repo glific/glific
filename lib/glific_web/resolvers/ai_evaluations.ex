@@ -54,6 +54,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
   @ai_evaluation_create_failure_metric "AI Evaluation Create Failure"
+  @improve_prompt_request_metric "AI Evaluation Improve Prompt Requested"
+  @improve_prompt_failure_metric "AI Evaluation Improve Prompt Request Failure"
 
   @doc """
   List AI evaluations from the database.
@@ -438,6 +440,59 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, _} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "An unknown error occurred, please contact Glific support."}
+    end
+  end
+
+  @doc """
+  Requests a v2 (native-judge) prompt improvement from Kaapi for a completed
+  evaluation. Returns `status: "pending"`; poll `get_improve_prompt/3` for the
+  result once Kaapi's callback lands and creates the new config version.
+  """
+  @spec improve_evaluation_prompt(map(), map(), map()) :: {:ok, map()}
+  def improve_evaluation_prompt(_, %{evaluation_id: evaluation_id}, %{
+        context: %{current_user: user}
+      }) do
+    case AIEvaluations.request_improve_prompt(evaluation_id, user.organization_id) do
+      {:ok, status} ->
+        Metrics.increment(@improve_prompt_request_metric, user.organization_id)
+        {:ok, %{improve_prompt: status}}
+
+      {:error, [_, "Resource not found"]} ->
+        {:ok, %{errors: [%{message: "Evaluation not found."}]}}
+
+      {:error, :timeout} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
+
+      {:error, %{body: %{:error => error}}} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: error}]}}
+
+      {:error, msg} when is_binary(msg) ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: msg}]}}
+
+      {:error, _} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+
+        {:ok,
+         %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
+    end
+  end
+
+  @doc """
+  Fetches the status of a v2 prompt improvement, scoped to the caller's org.
+  """
+  @spec get_improve_prompt(map(), map(), map()) :: {:ok, map()}
+  def get_improve_prompt(_, %{evaluation_id: evaluation_id}, %{
+        context: %{current_user: user}
+      }) do
+    case AIEvaluations.get_improve_prompt(evaluation_id, user.organization_id) do
+      {:ok, status} ->
+        {:ok, %{improve_prompt: status}}
+
+      {:error, _} ->
+        {:ok, %{errors: [%{message: "Evaluation not found."}]}}
     end
   end
 end

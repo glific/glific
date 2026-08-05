@@ -11,6 +11,9 @@ defmodule Glific.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants.Assistant,
+    Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBaseVersion,
     Metrics,
     Notifications,
     Partners,
@@ -280,4 +283,178 @@ defmodule Glific.AIEvaluations do
         where(query, [g], ilike(g.name, ^"%#{name}%"))
     end)
   end
+
+  @improve_prompt_commit_prefix "[AI Generated]"
+
+  @doc """
+  Dispatches a v2 (native-judge) prompt improvement request to Kaapi for a completed evaluation.
+  """
+  @spec request_improve_prompt(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def request_improve_prompt(evaluation_id, organization_id) do
+    with {:ok, evaluation} <-
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: organization_id}),
+         {:kaapi_id, true} <- {:kaapi_id, is_integer(evaluation.kaapi_evaluation_id)},
+         callback_url = build_improve_prompt_callback_url(organization_id),
+         {:ok, _} <-
+           Kaapi.improve_evaluation_prompt(
+             evaluation.kaapi_evaluation_id,
+             callback_url,
+             organization_id
+           ) do
+      {:ok, %{status: "pending"}}
+    else
+      {:kaapi_id, false} ->
+        {:error, "Evaluation does not have a Kaapi evaluation id yet."}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Returns `"ready"` if an improve-prompt config version exists for the evaluation's
+  assistant, `"not_requested"` otherwise.
+  """
+  @spec get_improve_prompt(non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def get_improve_prompt(evaluation_id, organization_id) do
+    with {:ok, evaluation} <-
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: organization_id}) do
+      evaluation = Repo.preload(evaluation, :assistant_config_version)
+
+      status =
+        evaluation.assistant_config_version.assistant_id
+        |> latest_improve_prompt_version()
+        |> improve_prompt_status()
+
+      {:ok, status}
+    end
+  end
+
+  @spec latest_improve_prompt_version(non_neg_integer()) :: AssistantConfigVersion.t() | nil
+  defp latest_improve_prompt_version(assistant_id) do
+    AssistantConfigVersion
+    |> where([v], v.assistant_id == ^assistant_id)
+    |> where([v], like(v.description, ^"#{@improve_prompt_commit_prefix}%"))
+    |> order_by([v], desc: v.id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @spec improve_prompt_status(AssistantConfigVersion.t() | nil) :: map()
+  defp improve_prompt_status(nil), do: %{status: "not_requested"}
+
+  defp improve_prompt_status(config_version) do
+    %{
+      status: "ready",
+      recommended_prompt: config_version.prompt,
+      commit_message: config_version.description,
+      assistant_config_version_id: config_version.id,
+      version_number: config_version.version_number
+    }
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes.
+  """
+  @spec handle_improve_prompt_callback(map()) ::
+          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, String.t()}
+  def handle_improve_prompt_callback(%{"data" => %{"status" => "SUCCESS"} = data}),
+    do: create_improve_prompt_config_version(data["config_version"] || %{})
+
+  def handle_improve_prompt_callback(%{"data" => %{"status" => "FAILED"} = data}) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Improve prompt failed",
+      reason: safe_inspect(data)
+    })
+
+    {:ok, :acknowledged}
+  end
+
+  # Non-terminal status (e.g. still PENDING) — nothing to do yet.
+  def handle_improve_prompt_callback(%{"data" => %{"status" => _}}),
+    do: {:ok, :acknowledged}
+
+  # Defensive catch-all: the callback endpoint is public, so a malformed body must not
+  # raise (the controller must still return 200).
+  def handle_improve_prompt_callback(params) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Unexpected improve prompt callback payload",
+      reason: safe_inspect(params)
+    })
+
+    {:error, "Unexpected improve prompt callback payload"}
+  end
+
+  @spec build_improve_prompt_callback_url(non_neg_integer()) :: String.t()
+  defp build_improve_prompt_callback_url(organization_id) do
+    organization = Partners.organization(organization_id)
+    Glific.api_callback_base(organization.shortcode) <> "/kaapi/improve_prompt"
+  end
+
+  @spec create_improve_prompt_config_version(map()) ::
+          {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp create_improve_prompt_config_version(config_version_data) do
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{kaapi_uuid: config_version_data["config_id"]}) do
+      completion = get_in(config_version_data, ["config_blob", "completion"]) || %{}
+      params = completion["params"] || %{}
+
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        organization_id: assistant.organization_id,
+        prompt: params["instructions"],
+        provider: completion["provider"] || "openai",
+        model: params["model"],
+        settings: %{"temperature" => params["temperature"]},
+        status: :ready,
+        kaapi_version_number: config_version_data["version"],
+        description: config_version_data["commit_message"]
+      })
+      |> Repo.insert()
+      |> link_improve_prompt_knowledge_bases(
+        params["knowledge_base_ids"],
+        assistant.organization_id
+      )
+    end
+  end
+
+  @spec link_improve_prompt_knowledge_bases(
+          {:ok, AssistantConfigVersion.t()} | {:error, any()},
+          [String.t()] | nil,
+          non_neg_integer()
+        ) :: {:ok, AssistantConfigVersion.t()} | {:error, any()}
+  defp link_improve_prompt_knowledge_bases({:error, _reason} = error, _llm_service_ids, _org_id),
+    do: error
+
+  defp link_improve_prompt_knowledge_bases({:ok, new_version}, llm_service_ids, organization_id)
+       when is_list(llm_service_ids) and llm_service_ids != [] do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    rows =
+      KnowledgeBaseVersion
+      |> where([kbv], kbv.llm_service_id in ^llm_service_ids)
+      |> Repo.all()
+      |> Enum.map(fn knowledge_base_version ->
+        %{
+          assistant_config_version_id: new_version.id,
+          knowledge_base_version_id: knowledge_base_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      end)
+
+    Repo.insert_all("assistant_config_version_knowledge_base_versions", rows)
+    {:ok, new_version}
+  end
+
+  defp link_improve_prompt_knowledge_bases(
+         {:ok, new_version},
+         _llm_service_ids,
+         _organization_id
+       ),
+       do: {:ok, new_version}
 end

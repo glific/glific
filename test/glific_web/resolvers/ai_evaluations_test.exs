@@ -1775,6 +1775,128 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     %{golden_qa: golden_qa}
   end
 
+  describe "improve_evaluation_prompt/3" do
+    setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
+
+    setup %{organization_id: organization_id, assistant_config_version: config_version} do
+      {:ok, golden_qa} =
+        Glific.AIEvaluations.create_golden_qa(%{
+          name: "improve_prompt_dataset",
+          dataset_id: 55_555,
+          duplication_factor: 1,
+          organization_id: organization_id
+        })
+
+      {:ok, evaluation} =
+        %AIEvaluation{}
+        |> AIEvaluation.changeset(%{
+          name: "test_evaluation_v2",
+          status: :completed,
+          kaapi_evaluation_id: 767,
+          golden_qa_id: golden_qa.id,
+          assistant_config_version_id: config_version.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      %{evaluation: evaluation}
+    end
+
+    test "dispatches to Kaapi and returns a :pending status", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/767/improve-prompt"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{job_id: "job-uuid-resolver", status: "PENDING"}}
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+      args = %{evaluation_id: evaluation.id}
+
+      assert {:ok, %{improve_prompt: %{status: "pending"}}} =
+               AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
+    end
+
+    test "returns an error when the evaluation does not exist", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+      args = %{evaluation_id: 999_999}
+
+      assert {:ok, %{errors: [%{message: "Evaluation not found."}]}} =
+               AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
+    end
+
+    test "returns a timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
+      Tesla.Mock.mock(fn %{method: :post} -> {:error, :timeout} end)
+
+      resolution = %{context: %{current_user: user}}
+      args = %{evaluation_id: evaluation.id}
+
+      assert {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}} =
+               AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
+    end
+  end
+
+  describe "get_improve_prompt/3" do
+    test "returns :ready with the recommended prompt once a config version is linked", %{
+      staff: user,
+      organization_id: organization_id
+    } do
+      config_version = create_config_version(%{organization_id: organization_id})
+      golden_qa = create_golden_qa_fixture(%{organization_id: organization_id})
+
+      {:ok, _new_config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: config_version.assistant_config_version.assistant_id,
+          prompt: "Improved prompt text",
+          description: "[AI Generated] improved prompt",
+          provider: "openai",
+          model: "gpt-4o",
+          settings: %{},
+          status: :ready,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      {:ok, evaluation} =
+        %AIEvaluation{}
+        |> AIEvaluation.changeset(%{
+          name: "test_evaluation_v2_get",
+          status: :completed,
+          kaapi_evaluation_id: 767,
+          golden_qa_id: golden_qa.golden_qa.id,
+          assistant_config_version_id: config_version.assistant_config_version.id,
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{improve_prompt: fetched}} =
+               AIEvaluations.get_improve_prompt(
+                 nil,
+                 %{evaluation_id: evaluation.id},
+                 resolution
+               )
+
+      assert fetched.status == "ready"
+      assert fetched.recommended_prompt == "Improved prompt text"
+      assert fetched.commit_message == "[AI Generated] improved prompt"
+    end
+
+    test "returns an error when the evaluation does not exist", %{staff: user} do
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: "Evaluation not found."}]}} =
+               AIEvaluations.get_improve_prompt(nil, %{evaluation_id: 999_999}, resolution)
+    end
+  end
+
   describe "request_ai_evaluation_access/3" do
     test "creates an eval access request and returns status requested", %{staff: user} do
       resolution = %{context: %{current_user: user}}

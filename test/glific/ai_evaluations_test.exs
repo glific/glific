@@ -457,4 +457,174 @@ defmodule Glific.AIEvaluationsTest do
 
     organization_id |> Partners.get_organization!() |> Partners.fill_cache()
   end
+
+  describe "request_improve_prompt/2" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+
+      evaluation =
+        create_evaluation(organization_id, config_version.id, %{
+          status: :completed,
+          kaapi_evaluation_id: 767
+        })
+
+      %{evaluation: evaluation}
+    end
+
+    test "dispatches to Kaapi and returns :pending without writing to the database", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/767/improve-prompt"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{job_id: "job-uuid-123", status: "PENDING"}}
+        }
+      end)
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:ok, %{status: "pending"}} =
+               AIEvaluations.request_improve_prompt(evaluation.id, organization_id)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
+    test "returns error when evaluation does not exist", %{organization_id: organization_id} do
+      assert {:error, [_, "Resource not found"]} =
+               AIEvaluations.request_improve_prompt(999_999, organization_id)
+    end
+
+    test "passes an upstream Kaapi error through unchanged", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               AIEvaluations.request_improve_prompt(evaluation.id, organization_id)
+    end
+  end
+
+  describe "handle_improve_prompt_callback/1" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+      assistant = Repo.get!(Assistant, config_version.assistant_id)
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.changeset(%{kaapi_uuid: "8a322023-2f28-4880-8bd3-bbe8611af901"})
+        |> Repo.update()
+
+      %{assistant: assistant, config_version: config_version}
+    end
+
+    test "success callback builds a new :ready config version entirely from the payload", %{
+      assistant: assistant,
+      config_version: config_version
+    } do
+      params = %{
+        "success" => true,
+        "data" => %{
+          "job_id" => "job-uuid-callback",
+          "status" => "SUCCESS",
+          "recommendation_type" => "prompt",
+          "config_version" => %{
+            "id" => "9ac7cda1-4c36-4ded-9c25-263326a6db73",
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "commit_message" => "[AI Generated] improved from config version v2",
+            "config_blob" => %{
+              "completion" => %{
+                "type" => "text",
+                "provider" => "openai",
+                "params" => %{
+                  "model" => "gpt-5.6-luna",
+                  "instructions" => "You are Seva Sakhi, the official AI assistant.",
+                  "temperature" => 0.4
+                }
+              }
+            }
+          },
+          "error_message" => nil
+        },
+        "error" => nil,
+        "errors" => nil,
+        "metadata" => nil
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:ok, new_config_version} =
+               AIEvaluations.handle_improve_prompt_callback(params)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before + 1
+      refute new_config_version.id == config_version.id
+
+      assert new_config_version.status == :ready
+      assert new_config_version.prompt == "You are Seva Sakhi, the official AI assistant."
+      assert new_config_version.description == "[AI Generated] improved from config version v2"
+      assert new_config_version.kaapi_version_number == 6
+      assert new_config_version.assistant_id == assistant.id
+      assert new_config_version.provider == "openai"
+      # Comes straight off the payload, not copied from the base/active config
+      # version — the recommendation may have been generated against a different
+      # config than whatever is currently live.
+      assert new_config_version.model == "gpt-5.6-luna"
+      assert new_config_version.settings == %{"temperature" => 0.4}
+    end
+
+    test "failure callback has no config_id to attribute to, so it just acknowledges", %{
+      organization_id: organization_id
+    } do
+      params = %{
+        "success" => true,
+        "data" => %{
+          "job_id" => "job-uuid-callback",
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
+      assert {:ok, :acknowledged} =
+               AIEvaluations.handle_improve_prompt_callback(params)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count
+    end
+
+    test "returns error when config_id in the payload matches no assistant" do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => "nonexistent-config-id",
+            "config_blob" => %{
+              "completion" => %{"params" => %{"instructions" => "text"}}
+            }
+          }
+        }
+      }
+
+      assert {:error, [_, "Resource not found"]} =
+               AIEvaluations.handle_improve_prompt_callback(params)
+    end
+
+    test "malformed payload is reported and does not crash" do
+      assert {:error, _reason} =
+               AIEvaluations.handle_improve_prompt_callback(%{"unexpected" => "shape"})
+    end
+  end
 end

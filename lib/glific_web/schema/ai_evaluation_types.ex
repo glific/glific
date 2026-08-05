@@ -101,6 +101,20 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :errors, list_of(:result_error)
   end
 
+  object :improve_prompt do
+    field :status, :string
+    field :recommended_prompt, :string
+    field :commit_message, :string
+    field :assistant_config_version_id, :id
+    field :version_number, :integer
+    field :failure_reason, :string
+  end
+
+  object :improve_prompt_result do
+    field :improve_prompt, :improve_prompt
+    field :errors, list_of(:result_error)
+  end
+
   object :ai_evaluation_queries do
     @desc "List AI Evaluations"
     field :ai_evaluations, list_of(:ai_evaluation) do
@@ -159,6 +173,15 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
     end
+
+    @desc "Get the status of a v2 prompt improvement"
+    field :improve_prompt, :improve_prompt_result do
+      arg(:evaluation_id, non_null(:id))
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
+      resolve(&Resolvers.AIEvaluations.get_improve_prompt/3)
+    end
   end
 
   object :org_eval_access_request do
@@ -192,6 +215,15 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_evaluation/3)
+    end
+
+    @desc "Request a v2 (native-judge) prompt improvement for a completed evaluation"
+    field :improve_evaluation_prompt, :improve_prompt_result do
+      arg(:evaluation_id, non_null(:id))
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
+      resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
     end
   end
 end
