@@ -6,7 +6,18 @@ defmodule GlificWeb.ExotelController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Contacts, Flows, Partners, Repo}
+  alias Glific.{Contacts, Flows, Partners, Repo, SafeLog}
+
+  defmodule Error do
+    @moduledoc """
+    Raised when an Exotel opt-in callback cannot be processed. NGOs cannot act on these
+    failures themselves, so they are reported to AppSignal. The low-cardinality `:message`
+    groups incidents; `:organization_id` and `:reason` carry per-occurrence context.
+    """
+    defexception [:message, :reason, :organization_id]
+  end
+
+  @optin_params ["CallFrom", "CallTo", "To"]
 
   @doc """
   First implementation of processing optin contact callback from exotel
@@ -24,14 +35,14 @@ defmodule GlificWeb.ExotelController do
           "To" => exotel_to
         } = params
       ) do
-    Logger.info("exotel #{Glific.SafeLog.safe_inspect(params)}")
+    Logger.info("exotel #{SafeLog.safe_inspect(params)}")
 
     organization = Partners.organization(organization_id)
     Repo.put_process_state(organization.id)
     credentials = organization.services["exotel"]
 
     if is_nil(credentials) do
-      log_error("exotel credentials missing")
+      log_error("Exotel credentials missing", organization_id)
     else
       keys = credentials.keys
 
@@ -60,10 +71,14 @@ defmodule GlificWeb.ExotelController do
             Flows.start_contact_flow(flow_id, contact)
 
           {:error, error} ->
-            log_error(error)
+            log_error("Exotel optin contact failed", organization_id, SafeLog.safe_inspect(error))
         end
       else
-        log_error("exotel credentials mismatch")
+        log_error(
+          "Exotel credentials mismatch",
+          organization_id,
+          "no flow configured for the exotel phone in this call"
+        )
       end
     end
 
@@ -72,7 +87,15 @@ defmodule GlificWeb.ExotelController do
   end
 
   def optin(conn, params) do
-    Logger.info("exotel unhandled #{Glific.SafeLog.safe_inspect(params)}")
+    organization_id = conn.assigns[:organization_id]
+    Logger.info("exotel unhandled #{SafeLog.safe_inspect(params)}")
+
+    log_error(
+      "Exotel optin request missing expected params",
+      organization_id,
+      "missing: #{param_names(@optin_params -- Map.keys(params))}, received: #{param_names(Map.keys(params))}"
+    )
+
     json(conn, "")
   end
 
@@ -85,12 +108,17 @@ defmodule GlificWeb.ExotelController do
 
   defp clean_phone(phone), do: phone
 
-  @spec log_error(String.t()) :: any
-  defp log_error(message) do
-    # log this error and send to appsignal also
-    Logger.error(message)
-    {_, stacktrace} = Process.info(self(), :current_stacktrace)
-    Appsignal.send_error(:error, message, stacktrace)
+  @spec param_names([String.t()]) :: String.t()
+  defp param_names([]), do: "none"
+  defp param_names(names), do: Enum.join(names, ", ")
+
+  @spec log_error(String.t(), non_neg_integer() | nil, String.t() | nil) :: :ok
+  defp log_error(message, organization_id, reason \\ nil) do
+    Glific.log_exception(
+      %Error{message: message, reason: reason, organization_id: organization_id},
+      namespace: "exotel",
+      tags: %{organization_id: organization_id, reason: reason}
+    )
   end
 
   @spec get_phone_flow_map(any) :: map()
