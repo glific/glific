@@ -169,6 +169,50 @@ Request headers are automatically scrubbed by `Glific.Flows.Webhook.HeaderRedact
 being persisted to `webhook_logs` — credentials (Authorization, X-Api-Key, etc.) are
 redacted. Do not special-case credential fields in individual webhook modules.
 
+## Flow expression safety (`Glific.execute_eex/1`)
+
+`Glific.execute_eex/1` is the sole runtime choke point for flow-authored `<%= ... %>`
+expressions (router operands, wait timeouts, templating, contact-field values). The per-org
+`:safe_expressions` flag picks the evaluator:
+
+- **Flag ON** — `Glific.Flows.Expression.eval/1`, a fail-closed AST interpreter with a fixed
+  `@mfa` allowlist. It never calls `EEx.eval_string/1` or `Code.eval_quoted/2`; a node type with
+  no matching clause falls to the catch-all and is rejected. This is the **only** security
+  boundary — nothing upstream (including publish-time validation) may be trusted to have
+  already filtered the expression.
+- **Flag OFF** — the legacy path: a `@not_allowed` substring denylist, then
+  `EEx.eval_string/1`. This denylist guards only the legacy path; it does not run when the
+  interpreter is active.
+
+`Flow.validate_flow/3` and `Glific.validate_flow_expression/2` run at publish/import time and
+are **advisory only** — errors are reported to the flow's author but must never block
+`do_publish_flow/2`. `Flows.publish_flow/2` always calls `do_publish_flow/2`; validation errors
+only affect what's returned to the caller, not whether the flow goes live. Do not reintroduce a
+`case validate_flow(...) do [] -> do_publish_flow(...) ...` guard — the interpreter above is the
+real security boundary, not the publish gate.
+
+`validate_flow_expression/2` skips non-string action values (`when not is_binary(...)`) — some
+action `value` fields hold structured data instead of an expression (e.g. `set_contact_profile`
+stores a map).
+
+## Provider instrumentation framework (`Providers.Instrumentation`)
+
+BSP send/receive/status/action telemetry is centralized in `Glific.Providers.Instrumentation`
+(distinct from the flow-webhooks `Instrumentation` above). A provider gets the counters
+(`provider_send_count`, `provider_receive_count`, `provider_status_count`,
+`provider_action_count`, all tagged `provider`) for free with a one-line adapter:
+
+```elixir
+defmodule Glific.Providers.MyBsp.Instrumentation do
+  use Glific.Providers.Instrumentation, provider: "my_bsp"
+end
+```
+
+Override `classify_send/2` only when a provider needs non-default classification (Gupshup
+reclassifies a frequency-capped 4xx as `frequency_capped`); Maytapi has no such case and uses
+the inherited identity implementation. See `Providers.Gupshup.Instrumentation` /
+`Providers.Maytapi.Instrumentation`.
+
 ## Large subsystems — read before touching
 
 These are old, dense, and pattern-divergent. Read the subtree and nearby tests **before**
@@ -179,7 +223,12 @@ editing or "cleaning up":
   `flows/webhooks/core/Dispatcher` — see the Webhook framework section above.
 - `providers/` (25 modules) — BSP integrations (Gupshup, Gupshup Enterprise, Maytapi). Outbound
   message sending, webhooks, workers. Tesla-based HTTP; mocked with `Tesla.Mock` in tests.
-- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc.
+- `third_party/` — BigQuery, Dialogflow, GCS, Gemini, Sheets, Kaapi, etc. BigQuery sync has two
+  modes, both in `bigquery_worker.ex`: most tables collapse to one row per id on re-sync
+  (`ignore_updates_for_table/0` + the `periodic_updates` dedup list). SaaS-only tables meant to
+  accumulate a change-log instead (e.g. `organizations`) are deliberately kept OUT of both —
+  don't "fix" that omission, it would silently collapse the accumulated history to one row per
+  org.
 - `partners.ex` / `partners/` — organizations, providers, credentials, billing. Central to
   multi-tenancy and caching.
 
