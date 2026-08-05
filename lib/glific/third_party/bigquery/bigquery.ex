@@ -30,6 +30,7 @@ defmodule Glific.BigQuery do
 
   alias Glific.{
     BigQuery.BigQueryJob,
+    BigQuery.Instrumentation,
     BigQuery.Schema,
     Certificates.CertificateTemplate,
     Certificates.IssuedCertificate,
@@ -896,7 +897,8 @@ defmodule Glific.BigQuery do
     |> handle_insert_query_response(organization_id,
       table: table,
       max_id: max_id,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      action: Keyword.get(attrs, :action)
     )
 
     :ok
@@ -955,6 +957,10 @@ defmodule Glific.BigQuery do
         Logger.info("Count not found the operation for bigquery insert and update")
     end
 
+    # The insertErrors branch above raises rather than reaching here, so it is counted as
+    # `exception` by BigQueryWorker.perform/1 instead — exactly one increment per job.
+    Instrumentation.record(table, :success, Keyword.get(opts, :action), organization_id)
+
     :ok
   end
 
@@ -967,12 +973,18 @@ defmodule Glific.BigQuery do
 
     {error, message} = bigquery_error_status(response)
 
+    action = Keyword.get(opts, :action)
+
     error
     |> case do
       "NOT_FOUND" ->
+        # Counted even though nothing raises: otherwise the sync reports green.
+        Instrumentation.record(table, :schema_not_found, action, organization_id)
         sync_schema_with_bigquery(organization_id)
 
       "PERMISSION_DENIED" ->
+        Instrumentation.record(table, :permission_denied, action, organization_id)
+
         Partners.disable_credential(
           organization_id,
           "bigquery",
@@ -980,6 +992,7 @@ defmodule Glific.BigQuery do
         )
 
       "TIMEOUT" ->
+        Instrumentation.record(table, :timeout, action, organization_id)
         Logger.info("Timeout while inserting the data. #{safe_inspect(response)}")
 
       _ ->
@@ -1024,6 +1037,8 @@ defmodule Glific.BigQuery do
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
+        # No usable credentials means the dedup did not run.
+        Instrumentation.record(table, :error, :remove_duplicates, organization_id)
         :ok
     end
   end
@@ -1058,14 +1073,19 @@ defmodule Glific.BigQuery do
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok
-  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
-    do:
-      Logger.info(
-        "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
-      )
+  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id) do
+    Instrumentation.record(table, :success, :remove_duplicates, organization_id)
 
-  ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.
-  defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
+    Logger.info(
+      "Duplicate entries have been removed for org_id: #{organization_id} from #{table} on bigquery "
+    )
+  end
+
+  ## The delete result is deliberately not raised on — a failed dedup should not fail the job.
+  ## It is counted though: without this the caller records success for a dedup that did not run.
+  defp handle_duplicate_removal_job_error({:error, error}, table, _, organization_id) do
+    Instrumentation.record(table, :error, :remove_duplicates, organization_id)
+
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{safe_inspect(error)}"
     )
