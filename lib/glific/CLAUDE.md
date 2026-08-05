@@ -86,10 +86,26 @@ end
   add a clause there rather than registering a new cron entry.
 - Rate-limited BSP sends use `ExRated.check_rate/3`; dynamic behavior uses per-org feature
   flags via `Glific.Flags` (backed by `FunWithFlags`).
+- **Scope `Partners.perform_all/4` dispatches by service.** When fanning a periodic job out to
+  all orgs, pass the relevant `services["<name>"]` id list (mirror `bigquery`/
+  `google_cloud_storage`/`maytapi` in `MinuteWorker`) instead of `[]`. An unscoped dispatch runs
+  the job for orgs that don't have the service configured, and each one logs a benign
+  "not active" failure as a real error — flooding Logger/AppSignal. Add the service to
+  `Partners.get_org_services_by_id/1` and `combine_services/2` (`lib/glific/partners.ex`) if it
+  isn't already tracked there.
 - **AppSignal Check-in (heartbeat monitoring)**: Wrap critical cron branches with
   `Appsignal.CheckIn.cron("name", fn -> ... end)`. If the server is down when the scheduled
   window fires, AppSignal detects the missing start+finish heartbeat and alerts. See
   `MinuteWorker` stats branch (`"glific_stats_hourly"`) as the canonical example.
+- **`Glific.Jobs.Instrumentation.track/3`**: wrap a periodic/inline job's work (e.g.
+  `perform_periodic`, `poll_and_update`, sweeps inside `MinuteWorker`, or an Oban `perform/1`
+  body) to emit a status-tagged `job_run_count` AppSignal counter (`:success` / `:error` /
+  `:discard`, tagged `job`/`status`/`organization_id`) without changing the wrapped return
+  value. This is separate from the queue-latency distributions AppSignal already emits for
+  Oban jobs (`oban_job_latency`/`oban_job_duration` in `Glific.Appsignal`) — use `track/3` when
+  you want a chartable success/error *rate* for a subsystem. See `GcsWorker.perform/1` for the
+  canonical example; mirrors the existing `Flows.Webhooks.Instrumentation` and
+  `Providers.Instrumentation` wrap-and-count modules.
 
 ## Error handling & logging
 
