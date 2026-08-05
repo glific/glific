@@ -127,6 +127,40 @@ defmodule Glific.Templates do
   def get_session_template!(id), do: Repo.get!(SessionTemplate, id)
 
   @doc """
+  Fetches the approved OTP authentication template for an organization.
+
+  An organization may have multiple `is_hsm`/`button_type: :otp` candidate
+  templates (e.g. different shortcodes submitted while awaiting BSP approval),
+  but only one is expected to be `APPROVED` at a time. Returns an error tuple
+  when none are approved yet, instead of silently sending an unapproved template.
+
+  ## Examples
+
+      iex> fetch_approved_otp_template(1)
+      {:ok, %SessionTemplate{}}
+
+      iex> fetch_approved_otp_template(1)
+      {:error, ["No approved OTP template found"]}
+
+  """
+  @spec fetch_approved_otp_template(non_neg_integer()) ::
+          {:ok, SessionTemplate.t()} | {:error, [String.t()]}
+  def fetch_approved_otp_template(organization_id) do
+    SessionTemplate
+    |> where([st], st.organization_id == ^organization_id)
+    |> where([st], st.is_hsm == true)
+    |> where([st], st.button_type == :otp)
+    |> where([st], st.status == "APPROVED")
+    |> order_by([st], asc: st.id)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, ["No approved OTP template found"]}
+      template -> {:ok, template}
+    end
+  end
+
+  @doc """
   Creates a session_template.
 
   ## Examples

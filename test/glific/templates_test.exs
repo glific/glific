@@ -2786,4 +2786,59 @@ defmodule Glific.TemplatesTest do
                attrs.organization_id
              )
   end
+
+  describe "fetch_approved_otp_template/1" do
+    @otp_template_attrs %{
+      label: "verify_otp",
+      shortcode: "verify_otp",
+      body: "{{1}} is your verification code.",
+      type: :text,
+      language_id: 1,
+      is_hsm: true,
+      button_type: :otp
+    }
+
+    test "returns the approved OTP template when one exists", attrs do
+      {:ok, template} =
+        @otp_template_attrs
+        |> Map.merge(%{organization_id: attrs.organization_id, status: "APPROVED"})
+        |> Templates.do_create_session_template()
+
+      assert {:ok, fetched_template} =
+               Templates.fetch_approved_otp_template(attrs.organization_id)
+
+      assert fetched_template.id == template.id
+    end
+
+    test "returns an error when no OTP template is approved", attrs do
+      {:ok, _template} =
+        @otp_template_attrs
+        |> Map.merge(%{organization_id: attrs.organization_id, status: "REJECTED"})
+        |> Templates.do_create_session_template()
+
+      assert {:error, _} = Templates.fetch_approved_otp_template(attrs.organization_id)
+    end
+
+    test "picks the approved variant among templates with different element names", attrs do
+      {:ok, _rejected_template} =
+        @otp_template_attrs
+        |> Map.merge(%{organization_id: attrs.organization_id, status: "REJECTED"})
+        |> Templates.do_create_session_template()
+
+      {:ok, approved_template} =
+        @otp_template_attrs
+        |> Map.merge(%{
+          organization_id: attrs.organization_id,
+          label: "verify_otp_v2",
+          shortcode: "verify_otp_v2",
+          status: "APPROVED"
+        })
+        |> Templates.do_create_session_template()
+
+      assert {:ok, fetched_template} =
+               Templates.fetch_approved_otp_template(attrs.organization_id)
+
+      assert fetched_template.id == approved_template.id
+    end
+  end
 end

@@ -16,6 +16,7 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
+    Templates,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
@@ -1808,6 +1809,39 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                "112233 is your verification code. For your security, do not share this code."
+    end
+
+    test "create_and_send_otp_template_message/2 sends the OTP via the approved template",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      {:ok, template} =
+        Templates.do_create_session_template(%{
+          label: "verify_otp",
+          shortcode: "verify_otp",
+          body: "{{1}} is your verification code.",
+          type: :text,
+          language_id: contact.language_id,
+          organization_id: attrs.organization_id,
+          is_hsm: true,
+          button_type: :otp,
+          status: "APPROVED",
+          number_parameters: 1
+        })
+
+      assert {:ok, %Message{} = message} =
+               Messages.create_and_send_otp_template_message(contact, "112233")
+
+      assert message.is_hsm == true
+      assert message.template_id == template.id
+    end
+
+    test "create_and_send_otp_template_message/2 returns an error when no OTP template is approved",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      assert {:error, _errors} =
+               Messages.create_and_send_otp_template_message(contact, "112233")
     end
   end
 end
