@@ -37,6 +37,7 @@ STABLE_WINDOW=300
 
 CURRENT_VERSION="" VERSION_FILE="" PROJECT_KIND=""
 BRANCH="" PR_NUMBER="" DEPLOY_SHA=""
+DISCORD_WEBHOOK=""
 
 usage() { sed -n '2,19p' "$0" | sed 's/^#\{1,2\} \{0,1\}//'; }
 
@@ -93,6 +94,7 @@ parse_args() {
       --title) need "$@"; RELEASE_TITLE="$2"; shift 2 ;;
       --base) need "$@"; BASE_BRANCH="$2"; shift 2 ;;
       --stable-window) need "$@"; STABLE_WINDOW="$2"; shift 2 ;;
+      --discord-webhook) need "$@"; DISCORD_WEBHOOK="$2"; shift 2 ;;
       --skip-release) SKIP_RELEASE=1; shift ;;
       --skip-verify) SKIP_VERIFY=1; shift ;;
       --dry-run) DRY_RUN=1; shift ;;
@@ -298,7 +300,9 @@ EOF
 
   confirm "Merge PR #${PR_NUMBER}?" || abort "declined at the merge step"
 
-  run gh pr merge "$PR_NUMBER" --squash --delete-branch || die "gh pr merge failed"
+  # Always --admin: a version-bump PR does not wait for CI/reviews. Requires admin or
+  run gh pr merge "$PR_NUMBER" --squash --delete-branch --admin \
+    || die "gh pr merge failed (need admin/bypass permission on ${BASE_BRANCH})"
 
   run git checkout "$BASE_BRANCH" || die "could not switch back to ${BASE_BRANCH}"
   run git pull --ff-only origin "$BASE_BRANCH" || die "git pull failed"
@@ -378,8 +382,15 @@ verify() {
     return 0
   fi
 
-  "$VERIFIER" --app "$APP" --sha "$DEPLOY_SHA" --app-version "$NEW_VERSION" \
-    --stable-window "$STABLE_WINDOW"
+  # Scope the webhook to just this subprocess via an inline assignment, so git/gh (and
+  # anything they spawn) never inherit it. With no --discord-webhook, fall through to
+  # whatever DISCORD_WEBHOOK_URL is already in the environment.
+  local vargs=(--app "$APP" --sha "$DEPLOY_SHA" --app-version "$NEW_VERSION" --stable-window "$STABLE_WINDOW")
+  if [ -n "$DISCORD_WEBHOOK" ]; then
+    DISCORD_WEBHOOK_URL="$DISCORD_WEBHOOK" "$VERIFIER" "${vargs[@]}"
+  else
+    "$VERIFIER" "${vargs[@]}"
+  fi
   local rc=$?
 
   if [ "$rc" -ne 0 ]; then
@@ -412,10 +423,21 @@ main() {
   detect_project
   [ "$DRY_RUN" -eq 1 ] && printf '\n*** DRY RUN - nothing will be changed, pushed or deployed ***\n'
   preflight
-  choose_version
-  open_pr
-  merge_pr
-  create_release
+
+  # Only production is a versioned release (bump -> PR -> merge -> GitHub release).
+  # staging / frontend-staging just deploy the current master and verify - no ceremony.
+  if [ "$ENV_NAME" = "production" ]; then
+    choose_version
+    open_pr
+    merge_pr
+    create_release
+  else
+    DEPLOY_SHA=$(git rev-parse HEAD)
+    NEW_VERSION="$CURRENT_VERSION"
+    step "Version"
+    log "no bump for ${ENV_NAME} - deploying current ${BASE_BRANCH} (${DEPLOY_SHA:0:7}) as ${CURRENT_VERSION}"
+  fi
+
   deploy
   verify
 }
