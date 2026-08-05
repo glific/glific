@@ -6,6 +6,7 @@ defmodule GlificWeb.ExotelController do
   use GlificWeb, :controller
 
   alias Glific.{Contacts, Flows, Partners, Repo, SafeLog}
+  alias Glific.Providers.Exotel.Instrumentation
 
   defmodule Error do
     @moduledoc """
@@ -17,7 +18,7 @@ defmodule GlificWeb.ExotelController do
   end
 
   @optin_params ["CallFrom", "CallTo", "To"]
-  @appsignal_group "exotel"
+  @appsignal_namespace "exotel"
 
   @doc """
   First implementation of processing optin contact callback from exotel
@@ -28,14 +29,12 @@ defmodule GlificWeb.ExotelController do
   """
   @spec optin(Plug.Conn.t(), map) :: Plug.Conn.t()
   def optin(%Plug.Conn{assigns: %{organization_id: organization_id}} = conn, params) do
-    log_callback(organization_id, params)
-
     case missing_optin_params(params) do
       [] ->
         process_optin(organization_id, params)
 
       missing ->
-        log_error(
+        report_failure(
           "Exotel optin request missing expected params",
           organization_id,
           "missing: #{param_names(missing)}, received: #{param_names(Map.keys(params))}"
@@ -47,23 +46,13 @@ defmodule GlificWeb.ExotelController do
   end
 
   def optin(conn, params) do
-    log_error(
+    report_failure(
       "Exotel optin request received without an organization",
       nil,
       "received: #{param_names(Map.keys(params))}"
     )
 
     json(conn, "")
-  end
-
-  # Appsignal.Logger's metadata argument is specced as the empty-map type, so passing
-  # metadata fails Dialyzer — the organization goes into the message instead.
-  @spec log_callback(non_neg_integer(), map()) :: :ok
-  defp log_callback(organization_id, params) do
-    Appsignal.Logger.info(
-      @appsignal_group,
-      "optin callback for org_id #{organization_id}: #{SafeLog.safe_inspect(params)}"
-    )
   end
 
   @spec missing_optin_params(map()) :: [String.t()]
@@ -82,48 +71,55 @@ defmodule GlificWeb.ExotelController do
     credentials = organization.services["exotel"]
 
     if is_nil(credentials),
-      do: log_error("Exotel credentials missing", organization_id),
+      do: report_failure("Exotel credentials missing", organization_id),
       else: optin_contact(organization_id, credentials, params)
   end
 
-  @spec optin_contact(non_neg_integer(), map(), map()) :: any()
-  defp optin_contact(organization_id, credentials, %{
-         "CallFrom" => exotel_from,
-         "To" => exotel_to
-       }) do
-    keys = credentials.keys
+  @spec optin_contact(non_neg_integer(), map(), map()) :: :ok
+  defp optin_contact(organization_id, credentials, params) do
+    {phone, ngo_exotel_phone} = call_phones(credentials.keys, params)
 
-    {phone, ngo_exotel_phone} =
-      if keys["direction"] == "incoming",
-        do: {exotel_from, exotel_to},
-        else: {exotel_to, exotel_from}
+    case Map.fetch(get_phone_flow_map(credentials), ngo_exotel_phone) do
+      {:ok, flow_to_start} ->
+        start_optin_flow(organization_id, phone, flow_to_start)
 
-    phone_flow_map = get_phone_flow_map(credentials)
+      :error ->
+        report_failure(
+          "Exotel credentials mismatch",
+          organization_id,
+          "no flow configured for the exotel phone in this call"
+        )
+    end
+  end
 
-    if Map.has_key?(phone_flow_map, ngo_exotel_phone) do
-      # first create and optin the contact
-      attrs = %{
-        phone: clean_phone(phone),
-        method: "Exotel",
-        organization_id: organization_id
-      }
+  # Phones stay `term()`: a bracketed query param (`?CallFrom[]=a`) reaches here as a
+  # list, which `clean_phone/1` passes through untouched.
+  @spec call_phones(map(), map()) :: {term(), term()}
+  defp call_phones(%{"direction" => "incoming"}, %{"CallFrom" => from, "To" => to}),
+    do: {from, to}
 
-      # then start  the intro flow
-      case Contacts.optin_contact(attrs) do
-        {:ok, contact} ->
-          flow_to_start = phone_flow_map[ngo_exotel_phone]
-          {:ok, flow_id} = Glific.parse_maybe_integer(flow_to_start)
-          Flows.start_contact_flow(flow_id, contact)
+  defp call_phones(_keys, %{"CallFrom" => from, "To" => to}), do: {to, from}
 
-        {:error, error} ->
-          log_error("Exotel optin contact failed", organization_id, SafeLog.safe_inspect(error))
-      end
-    else
-      log_error(
-        "Exotel credentials mismatch",
-        organization_id,
-        "no flow configured for the exotel phone in this call"
-      )
+  @spec start_optin_flow(non_neg_integer(), term(), String.t()) :: :ok
+  defp start_optin_flow(organization_id, phone, flow_to_start) do
+    attrs = %{
+      phone: clean_phone(phone),
+      method: "Exotel",
+      organization_id: organization_id
+    }
+
+    case Contacts.optin_contact(attrs) do
+      {:ok, contact} ->
+        {:ok, flow_id} = Glific.parse_maybe_integer(flow_to_start)
+        Flows.start_contact_flow(flow_id, contact)
+        Instrumentation.track_action("optin", :success, organization_id)
+
+      {:error, error} ->
+        report_failure(
+          "Exotel optin contact failed",
+          organization_id,
+          SafeLog.safe_inspect(error)
+        )
     end
   end
 
@@ -140,11 +136,13 @@ defmodule GlificWeb.ExotelController do
   defp param_names([]), do: "none"
   defp param_names(names), do: Enum.join(names, ", ")
 
-  @spec log_error(String.t(), non_neg_integer() | nil, String.t() | nil) :: :ok
-  defp log_error(message, organization_id, reason \\ nil) do
+  @spec report_failure(String.t(), non_neg_integer() | nil, String.t() | nil) :: :ok
+  defp report_failure(message, organization_id, reason \\ nil) do
+    Instrumentation.track_action("optin", :failure, organization_id)
+
     Glific.log_exception(
       %Error{message: message, reason: reason, organization_id: organization_id},
-      namespace: @appsignal_group,
+      namespace: @appsignal_namespace,
       tags: %{organization_id: organization_id, reason: reason}
     )
   end

@@ -42,10 +42,9 @@ defmodule GlificWeb.ExotelControllerTest do
     )
   end
 
-  defp reported_error(conn, params) when is_map(params),
-    do: reported_error(conn, &get(&1, "/webhook/exotel/optin", params))
-
-  defp reported_error(conn, request) when is_function(request, 1) do
+  # Captures both AppSignal sinks the controller writes to: `send_error/3` for the
+  # error incident and `increment_counter/3` for the optin success/failure counter.
+  defp with_appsignal(request) do
     test_process = self()
 
     with_mock Elixir.Appsignal,
@@ -53,10 +52,26 @@ defmodule GlificWeb.ExotelControllerTest do
               send_error: fn error, _metadata, _span_function ->
                 send(test_process, {:appsignal_error, error})
                 :ok
+              end,
+              increment_counter: fn metric, count, tags ->
+                send(test_process, {:appsignal_counter, metric, count, tags})
+                :ok
               end do
+      request.()
+    end
+  end
+
+  defp reported_error(conn, params) when is_map(params),
+    do: reported_error(conn, &get(&1, "/webhook/exotel/optin", params))
+
+  defp reported_error(conn, request) when is_function(request, 1) do
+    with_appsignal(fn ->
       conn = request.(conn)
       assert json_response(conn, 200) == ""
-    end
+    end)
+
+    assert_received {:appsignal_counter, "provider_action_count", 1,
+                     %{provider: "exotel", action: "optin", status: "failure"}}
 
     assert_received {:appsignal_error, %Error{} = error}
     error
@@ -70,17 +85,10 @@ defmodule GlificWeb.ExotelControllerTest do
       flow = Fixtures.flow_fixture(%{organization_id: organization_id})
       :ok = add_exotel_credential(organization_id, flow.id)
 
-      test_process = self()
-
-      with_mock Elixir.Appsignal,
-                [:passthrough],
-                send_error: fn error, _metadata, _span_function ->
-                  send(test_process, {:appsignal_error, error})
-                  :ok
-                end do
+      with_appsignal(fn ->
         conn = get(conn, "/webhook/exotel/optin", optin_params())
         assert json_response(conn, 200) == ""
-      end
+      end)
 
       {:ok, contact} =
         Repo.fetch_by(Contacts.Contact, %{
@@ -91,6 +99,17 @@ defmodule GlificWeb.ExotelControllerTest do
       assert contact.optin_status == true
       assert contact.optin_method == "Exotel"
 
+      organization_id_tag = to_string(organization_id)
+
+      assert_received {:appsignal_counter, "provider_action_count", 1,
+                       %{
+                         provider: "exotel",
+                         action: "optin",
+                         status: "success",
+                         organization_id: ^organization_id_tag
+                       }}
+
+      refute_received {:appsignal_counter, "provider_action_count", 1, %{status: "failure"}}
       refute_received {:appsignal_error, _error}
     end
 
