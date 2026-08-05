@@ -335,11 +335,45 @@ defmodule Glific.Groups.WhatsappMessageTest do
           "text" => "Hello, World!",
           "fromMe" => false
         },
+        "receiver" => "917834811114",
         "user" => %{"phone" => blank, "name" => "John Doe"}
       }
 
       assert %{sender: %{phone: "919642961343"}} = Message.receive_text(params)
     end
+  end
+
+  test "receive_text/1 leaves the sender phone nil when the message id carries our own number" do
+    params = %{
+      "message" => %{
+        "id" =>
+          "false_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "_serialized" =>
+          "false_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "text" => "Hello, World!",
+        "fromMe" => false
+      },
+      "receiver" => "917834811114",
+      "user" => %{"id" => "", "name" => "", "phone" => ""}
+    }
+
+    assert %{sender: %{phone: nil}} = Message.receive_text(params)
+  end
+
+  test "receive_text/1 keeps our own number as sender for an outbound echo" do
+    params = %{
+      "message" => %{
+        "id" => "true_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "_serialized" =>
+          "true_120363406836091575@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us",
+        "text" => "Hello, World!",
+        "fromMe" => true
+      },
+      "receiver" => "917834811114",
+      "user" => %{"id" => "", "name" => "", "phone" => ""}
+    }
+
+    assert %{sender: %{phone: "917834811114"}} = Message.receive_text(params)
   end
 
   test "receive_media/1 leaves the sender phone nil for an unresolved LID participant" do

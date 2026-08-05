@@ -105,14 +105,17 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   end
 
   # Maytapi delivers a blank sender phone for unresolved participants in
-  # privacy-enabled (LID) groups. Without a phone we can't create the sender
-  # contact, so we drop the message and still ack the webhook — a 5xx here
-  # would make Maytapi retry the same undeliverable payload repeatedly.
+  # privacy-enabled (LID) groups, and can echo our own managed phone back in the
+  # message id instead of the sender's. Either way there is no sender to
+  # attribute the message to, so we drop it and still ack the webhook — a 5xx
+  # here would make Maytapi retry the same undeliverable payload repeatedly.
   @spec receive_or_skip(map(), atom()) :: any()
   defp receive_or_skip(%{sender: %{phone: phone}} = message_params, _type)
        when phone in [nil, ""] do
+    Instrumentation.track_receive("skipped_unresolved_sender", message_params[:organization_id])
+
     Logger.info(
-      "Skipping Maytapi inbound with unresolved sender phone (LID group): bsp_id '#{message_params[:bsp_id]}'"
+      "Skipping Maytapi inbound with unresolved sender phone: bsp_id '#{message_params[:bsp_id]}', conversation '#{message_params[:wa_group_bsp_id]}', is_dm #{message_params[:is_dm]}"
     )
   end
 

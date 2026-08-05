@@ -370,18 +370,44 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       # Genuine @lid participant: no @c.us number anywhere in the payload, so the
       # phone can't be recovered. We ack the webhook (avoiding Maytapi retries)
       # and drop the message rather than raising a 500.
-      bsp_id = Ecto.UUID.generate()
+      lid_serialized = "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_289473521@lid"
 
       lid_webhook =
         @text_message_webhook
-        |> Map.delete("user")
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], lid_serialized)
+        |> put_in(["message", "_serialized"], lid_serialized)
+
+      conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: lid_serialized,
+                 organization_id: conn.assigns[:organization_id]
+               })
+    end
+
+    test "Incoming text message whose id carries our own managed phone is skipped and acked",
+         %{conn: conn} do
+      # Shape of the real LID-group payload from Maytapi: the user object arrives
+      # empty and the participant slot of the message id holds the receiving
+      # managed phone, not the sender. Recovering it would attribute a group
+      # member's message to the organization itself.
+      bsp_id = Ecto.UUID.generate()
+
+      own_number_webhook =
+        @text_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
         |> put_in(["message", "id"], bsp_id)
         |> put_in(
           ["message", "_serialized"],
-          "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_289473521@lid"
+          "false_120363213149844251@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us"
         )
+        |> put_in(["receiver"], "917834811114")
 
-      conn = post(conn, "/maytapi", lid_webhook)
+      conn = post(conn, "/maytapi", own_number_webhook)
       assert conn.halted
       assert conn.status == 200
 
@@ -690,7 +716,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
 
       lid_webhook =
         @media_message_webhook
-        |> Map.delete("user")
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
         |> put_in(["message", "id"], bsp_id)
         |> put_in(
           ["message", "_serialized"],
@@ -698,6 +724,33 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
         )
 
       conn = post(conn, "/maytapi", lid_webhook)
+      assert conn.halted
+      assert conn.status == 200
+
+      assert {:error, _} =
+               Repo.fetch_by(WAMessage, %{
+                 bsp_id: bsp_id,
+                 organization_id: conn.assigns[:organization_id]
+               })
+    end
+
+    test "Incoming media message whose id carries our own managed phone is skipped and acked",
+         %{conn: conn} do
+      # The reported incident was an image in a LID group: empty user object, and
+      # the message id's participant slot holding our own receiving number.
+      bsp_id = Ecto.UUID.generate()
+
+      own_number_webhook =
+        @media_message_webhook
+        |> put_in(["user"], %{"id" => "", "name" => "", "phone" => ""})
+        |> put_in(["message", "id"], bsp_id)
+        |> put_in(
+          ["message", "_serialized"],
+          "false_120363213149844251@g.us_A5CD1BC358BD90EA566453CDCD42077D_917834811114@c.us"
+        )
+        |> put_in(["receiver"], "917834811114")
+
+      conn = post(conn, "/maytapi", own_number_webhook)
       assert conn.halted
       assert conn.status == 200
 

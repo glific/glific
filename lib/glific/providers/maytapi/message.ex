@@ -261,10 +261,27 @@ defmodule Glific.Providers.Maytapi.Message do
   @spec resolve_sender_phone(map()) :: String.t() | nil
   defp resolve_sender_phone(params) do
     case params["user"]["phone"] do
-      phone when phone in [nil, ""] -> phone_from_message_id(params["message"])
+      phone when phone in [nil, ""] -> recovered_sender_phone(params)
       phone -> phone
     end
   end
+
+  @spec recovered_sender_phone(map()) :: String.t() | nil
+  defp recovered_sender_phone(params) do
+    phone = phone_from_message_id(params["message"])
+
+    if own_number?(phone, params), do: nil, else: phone
+  end
+
+  # Maytapi has been observed putting the receiving managed phone in the
+  # participant slot of the message id when it cannot resolve a LID sender. An
+  # inbound message never originates from our own number, so treat that as
+  # unresolved rather than attributing a group member's message to the
+  # organization itself.
+  @spec own_number?(String.t() | nil, map()) :: boolean()
+  defp own_number?(nil, _params), do: false
+  defp own_number?(_phone, %{"message" => %{"fromMe" => true}}), do: false
+  defp own_number?(phone, params), do: phone == params["receiver"]
 
   @spec phone_from_message_id(map()) :: String.t() | nil
   defp phone_from_message_id(payload) do
