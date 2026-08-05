@@ -406,46 +406,45 @@ defmodule Glific.Communications.GroupMessage do
   end
 
   @spec do_receive_reaction_msg(WAMessage.t() | nil, map()) :: any()
+  defp do_receive_reaction_msg(nil, reaction_attrs) do
+    Glific.log_error(
+      "receive_reaction_msg: no WAMessage found for bsp_id #{reaction_attrs.msg_id}, org_id #{reaction_attrs.org_id}; skipping reaction"
+    )
+  end
+
+  defp do_receive_reaction_msg(%{wa_group_id: nil} = context_message, reaction_attrs) do
+    Glific.log_error(
+      "receive_reaction_msg: WAMessage #{context_message.id} (org_id #{reaction_attrs.org_id}) has a nil wa_group_id; skipping reaction"
+    )
+  end
+
   defp do_receive_reaction_msg(context_message, reaction_attrs) do
-    case context_message do
-      nil ->
-        Glific.log_error(
-          "receive_reaction_msg: no WAMessage found for bsp_id #{reaction_attrs.msg_id}, org_id #{reaction_attrs.org_id}; skipping reaction"
-        )
+    contact_attrs = %{
+      phone: reaction_attrs.phone,
+      contact_type: "WA",
+      organization_id: reaction_attrs.org_id
+    }
 
-      %{wa_group_id: nil} ->
-        Glific.log_error(
-          "receive_reaction_msg: WAMessage #{context_message.id} (org_id #{reaction_attrs.org_id}) has a nil wa_group_id; skipping reaction"
-        )
+    {:ok, contact} =
+      Contacts.maybe_create_contact(contact_attrs)
 
-      _ ->
-        contact_attrs = %{
-          phone: reaction_attrs.phone,
-          contact_type: "WA",
-          organization_id: reaction_attrs.org_id
-        }
+    {:ok, _contact_wa_group} =
+      ContactWAGroups.create_contact_wa_group(%{
+        contact_id: contact.id,
+        wa_group_id: context_message.wa_group_id,
+        organization_id: reaction_attrs.org_id
+      })
 
-        {:ok, contact} =
-          Contacts.maybe_create_contact(contact_attrs)
+    attrs =
+      %{
+        reaction: reaction_attrs.reaction,
+        wa_message_id: context_message.id,
+        contact_id: contact.id,
+        bsp_id: reaction_attrs.bsp_msg_id,
+        organization_id: reaction_attrs.org_id
+      }
 
-        {:ok, _contact_wa_group} =
-          ContactWAGroups.create_contact_wa_group(%{
-            contact_id: contact.id,
-            wa_group_id: context_message.wa_group_id,
-            organization_id: reaction_attrs.org_id
-          })
-
-        attrs =
-          %{
-            reaction: reaction_attrs.reaction,
-            wa_message_id: context_message.id,
-            contact_id: contact.id,
-            bsp_id: reaction_attrs.bsp_msg_id,
-            organization_id: reaction_attrs.org_id
-          }
-
-        WaReaction.create_wa_reaction(attrs)
-    end
+    WaReaction.create_wa_reaction(attrs)
   end
 
   @doc """
