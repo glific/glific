@@ -86,10 +86,6 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     # guessed/duplicate value from the payload) could collide with a real BSP id or silently
     # drop the browser's own message on create_message/1 failure. Leave it nil — Postgres
     # allows many nulls under that unique index.
-    #
-    # TODO: media handling — this prototype is text-first. Once the frontend can upload
-    # media, extend this clause (or add a dedicated "new_media_message" event) to build the
-    # `message_media` record before calling receive_message/2 with the appropriate type.
     :ok =
       WebMessage.receive_message(
         %{
@@ -98,6 +94,52 @@ defmodule GlificWeb.WebChannel.RoomChannel do
           body: body
         },
         :text
+      )
+
+    {:reply, :ok, socket}
+  end
+
+  # The file was already uploaded to storage via POST /api/v1/web_channel/upload, so the payload
+  # carries only the resulting url — no file bytes travel over the socket. `type` selects the
+  # message type (and thus which flow case, e.g. has_audio/has_media, fires).
+  def handle_in("new_media_message", %{"type" => type, "url" => url} = params, socket)
+      when type in ~w(image audio video document) do
+    contact = socket.assigns.current_contact
+    caption = params["caption"]
+
+    :ok =
+      WebMessage.receive_message(
+        %{
+          sender: %{phone: contact.phone},
+          organization_id: contact.organization_id,
+          url: url,
+          source_url: url,
+          caption: caption,
+          content_type: params["content_type"],
+          body: caption || ""
+        },
+        String.to_existing_atom(type)
+      )
+
+    {:reply, :ok, socket}
+  end
+
+  def handle_in("new_media_message", _params, socket),
+    do: {:reply, {:error, %{reason: "unsupported media type"}}, socket}
+
+  def handle_in("new_location_message", %{"latitude" => lat, "longitude" => lng}, socket) do
+    contact = socket.assigns.current_contact
+
+    :ok =
+      WebMessage.receive_message(
+        %{
+          sender: %{phone: contact.phone},
+          organization_id: contact.organization_id,
+          longitude: lng,
+          latitude: lat,
+          body: "https://www.google.com/maps?q=#{lat},#{lng}"
+        },
+        :location
       )
 
     {:reply, :ok, socket}

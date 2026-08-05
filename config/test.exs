@@ -23,6 +23,9 @@ config :glific, :environment, :test
 # (unset) in config/prod.exs and config/runtime.exs.
 config :glific, web_channel_otp_bypass: true
 
+# PROTOTYPE: exercise the local-disk media fallback in tests (no GCS credential in test env).
+config :glific, web_channel_local_media: true
+
 config :glific, Oban,
   prefix: "global",
   crontab: false,

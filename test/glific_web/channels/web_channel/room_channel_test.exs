@@ -126,5 +126,65 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       updated_contact = Glific.Contacts.get_contact!(contact.id)
       assert updated_contact.name == "New Contact Name"
     end
+
+    test "new_media_message persists an inbound channel:web image message", %{contact: contact} do
+      socket = connect_socket(contact)
+
+      {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      ref =
+        push(socket, "new_media_message", %{
+          "type" => "image",
+          "url" => "http://example.com/x.jpg",
+          "content_type" => "image/jpeg",
+          "caption" => "look"
+        })
+
+      assert_reply(ref, :ok)
+
+      [message] = Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
+
+      assert message.channel == "web"
+      assert message.flow == :inbound
+      assert message.type == :image
+      refute is_nil(message.media_id)
+    end
+
+    test "new_media_message replies with an error for an unsupported type", %{contact: contact} do
+      socket = connect_socket(contact)
+
+      {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      ref =
+        push(socket, "new_media_message", %{
+          "type" => "sticker",
+          "url" => "http://example.com/x.webp"
+        })
+
+      assert_reply(ref, :error, %{reason: "unsupported media type"})
+    end
+
+    test "new_location_message persists an inbound channel:web location message", %{
+      contact: contact
+    } do
+      socket = connect_socket(contact)
+
+      {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      ref = push(socket, "new_location_message", %{"latitude" => 12.9, "longitude" => 77.5})
+      assert_reply(ref, :ok)
+
+      [message] = Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
+
+      assert message.channel == "web"
+      assert message.flow == :inbound
+      assert message.type == :location
+
+      location =
+        Repo.get_by!(Glific.Contacts.Location, contact_id: contact.id, message_id: message.id)
+
+      assert location.latitude == 12.9
+      assert location.longitude == 77.5
+    end
   end
 end

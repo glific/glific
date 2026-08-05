@@ -8,6 +8,11 @@ config :glific, :environment, :dev
 # (unset) in config/prod.exs and config/runtime.exs.
 config :glific, web_channel_otp_bypass: true
 
+# PROTOTYPE: when an org has no Google Cloud Storage credential, web-channel media uploads fall
+# back to writing under priv/static/uploads and serving them via Plug.Static, so audio/video/file
+# work locally without GCS. Must stay false (unset) in config/prod.exs and config/runtime.exs.
+config :glific, web_channel_local_media: true
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

@@ -100,12 +100,61 @@ defmodule Glific.Communications.WebMessage do
         status: :received
       })
 
-    message_params
-    |> Messages.create_message()
-    |> publish_data(:received_message, message_params.organization_id)
-    |> MessageCommunications.process_message()
+    case type do
+      t when t in [:text, :quick_reply, :list] -> receive_text(message_params)
+      :location -> receive_location(message_params)
+      _media -> receive_media(message_params)
+    end
 
     :ok
+  end
+
+  @spec receive_text(map()) :: Message.t() | nil
+  defp receive_text(message_params) do
+    message_params
+    |> Messages.create_message()
+    |> publish_and_process(message_params.organization_id)
+  end
+
+  # The media row and the message are created in one transaction so a failed message insert
+  # cannot leave an orphaned message_media row. Repo.transaction returns {:ok, message} /
+  # {:error, changeset} — exactly the shape publish_and_process/2 expects.
+  @spec receive_media(map()) :: Message.t() | nil
+  defp receive_media(message_params) do
+    Repo.transaction(fn ->
+      {:ok, media} =
+        message_params
+        |> Map.put_new(:flow, :inbound)
+        |> Messages.create_message_media()
+
+      case message_params |> Map.put(:media_id, media.id) |> Messages.create_message() do
+        {:ok, message} -> message
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+    |> publish_and_process(message_params.organization_id)
+  end
+
+  # A location message stores the coordinates in a separate `locations` row that references the
+  # message, so the message must be created first (Location.changeset requires message_id).
+  @spec receive_location(map()) :: Message.t() | nil
+  defp receive_location(message_params) do
+    {:ok, message} = Messages.create_message(message_params)
+
+    message_params
+    |> Map.put(:contact_id, message_params.sender_id)
+    |> Map.put(:message_id, message.id)
+    |> Contacts.create_location()
+
+    publish_and_process({:ok, message}, message_params.organization_id)
+  end
+
+  @spec publish_and_process({:ok, Message.t()} | {:error, any()}, non_neg_integer()) ::
+          Message.t() | nil
+  defp publish_and_process(result, organization_id) do
+    result
+    |> publish_data(:received_message, organization_id)
+    |> MessageCommunications.process_message()
   end
 
   @spec publish_data({:ok, Message.t()} | {:error, any()}, atom(), non_neg_integer()) ::

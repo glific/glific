@@ -8,6 +8,7 @@ defmodule Glific.Communications.WebMessageTest do
     Fixtures,
     Messages,
     Providers.Gupshup.Worker,
+    Repo,
     Seeds.SeedsDev
   }
 
@@ -128,6 +129,71 @@ defmodule Glific.Communications.WebMessageTest do
       assert message.channel == "web"
       assert message.flow == :inbound
       assert message.bsp_status == :delivered
+    end
+
+    test "persists an inbound :image message with a linked media row", %{
+      organization_id: organization_id
+    } do
+      phone = Faker.Phone.EnUs.phone()
+
+      :ok =
+        WebMessage.receive_message(
+          %{
+            sender: %{phone: phone, organization_id: organization_id},
+            organization_id: organization_id,
+            body: "a photo",
+            url: "http://example.com/photo.jpg",
+            source_url: "http://example.com/photo.jpg",
+            content_type: "image/jpeg"
+          },
+          :image
+        )
+
+      {:ok, contact} =
+        Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+
+      [message] = Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
+
+      assert message.channel == "web"
+      assert message.flow == :inbound
+      assert message.type == :image
+      refute is_nil(message.media_id)
+
+      media = Messages.get_message_media!(message.media_id)
+      assert media.url == "http://example.com/photo.jpg"
+    end
+
+    test "persists an inbound :location message with a location row", %{
+      organization_id: organization_id
+    } do
+      phone = Faker.Phone.EnUs.phone()
+
+      :ok =
+        WebMessage.receive_message(
+          %{
+            sender: %{phone: phone, organization_id: organization_id},
+            organization_id: organization_id,
+            body: "https://www.google.com/maps?q=12.9,77.5",
+            latitude: 12.9,
+            longitude: 77.5
+          },
+          :location
+        )
+
+      {:ok, contact} =
+        Contacts.maybe_create_contact(%{phone: phone, organization_id: organization_id})
+
+      [message] = Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
+
+      assert message.channel == "web"
+      assert message.flow == :inbound
+      assert message.type == :location
+
+      location =
+        Repo.get_by!(Glific.Contacts.Location, contact_id: contact.id, message_id: message.id)
+
+      assert location.latitude == 12.9
+      assert location.longitude == 77.5
     end
   end
 end
