@@ -140,7 +140,7 @@ defmodule Glific.Seeds.SeedsMigration do
       has_buttons: true,
       is_active: true,
       is_source: false,
-      language_id: 1,
+      language_id: 2,
       organization_id: org_id,
       button_type: :otp,
       buttons: [%{"type" => "OTP", "text" => "Copy code", "otp_type" => "COPY_CODE"}]
