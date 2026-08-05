@@ -5,8 +5,6 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
 
   use GlificWeb, :controller
 
-  require Logger
-
   alias Glific.{
     Communications,
     Providers.Maytapi,
@@ -114,7 +112,7 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
        when phone in [nil, ""] do
     Instrumentation.track_receive("skipped_unresolved_sender", message_params[:organization_id])
 
-    Logger.info(
+    Glific.log_error(
       "Skipping Maytapi inbound with unresolved sender phone: bsp_id '#{message_params[:bsp_id]}', conversation '#{message_params[:wa_group_bsp_id]}', is_dm #{message_params[:is_dm]}"
     )
   end
