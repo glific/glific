@@ -42,38 +42,67 @@ defmodule GlificWeb.ExotelControllerTest do
     )
   end
 
-  # Captures both AppSignal sinks the controller writes to: `send_error/3` for the
-  # error incident and `increment_counter/3` for the optin success/failure counter.
+  # Runs `request` with every AppSignal sink the controller writes to captured as a
+  # message: the error incident (`send_error/3`), the namespace and tags its span
+  # function applies, and the optin outcome counter (`increment_counter/3`).
   defp with_appsignal(request) do
     test_process = self()
 
-    with_mock Elixir.Appsignal,
-              [:passthrough],
-              send_error: fn error, _metadata, _span_function ->
-                send(test_process, {:appsignal_error, error})
-                :ok
-              end,
-              increment_counter: fn metric, count, tags ->
-                send(test_process, {:appsignal_counter, metric, count, tags})
-                :ok
-              end do
+    with_mocks([
+      {Elixir.Appsignal, [:passthrough],
+       [
+         send_error: fn error, _metadata, span_function ->
+           span_function.(:span)
+           send(test_process, {:appsignal_error, error})
+           :ok
+         end,
+         increment_counter: fn metric, count, tags ->
+           send(test_process, {:appsignal_counter, metric, count, tags})
+           :ok
+         end
+       ]},
+      {Elixir.Appsignal.Span, [:passthrough],
+       [
+         set_namespace: fn span, namespace ->
+           send(test_process, {:appsignal_namespace, namespace})
+           span
+         end,
+         set_sample_data: fn span, key, data ->
+           send(test_process, {:appsignal_sample_data, key, data})
+           span
+         end
+       ]}
+    ]) do
       request.()
     end
   end
 
-  defp reported_error(conn, params) when is_map(params),
-    do: reported_error(conn, &get(&1, "/webhook/exotel/optin", params))
-
-  defp reported_error(conn, request) when is_function(request, 1) do
+  # Issues the optin callback, asserts the response is still 200 with an empty body,
+  # and asserts the failure reached AppSignal as an incident under the `exotel`
+  # namespace, tagged with the org, plus a `failure` outcome counter. Returns the
+  # reported `%Error{}` so each test can assert on its message and reason.
+  defp reported_error(conn, params) do
     with_appsignal(fn ->
-      conn = request.(conn)
+      conn = get(conn, "/webhook/exotel/optin", params)
       assert json_response(conn, 200) == ""
     end)
 
-    assert_received {:appsignal_counter, "provider_action_count", 1,
-                     %{provider: "exotel", action: "optin", status: "failure"}}
-
     assert_received {:appsignal_error, %Error{} = error}
+    assert_received {:appsignal_namespace, "exotel"}
+
+    assert_received {:appsignal_sample_data, "tags", tags}
+    assert tags == %{organization_id: error.organization_id, reason: error.reason}
+
+    organization_id_tag = to_string(error.organization_id)
+
+    assert_received {:appsignal_counter, "provider_action_count", 1,
+                     %{
+                       provider: "exotel",
+                       action: "optin",
+                       status: "failure",
+                       organization_id: ^organization_id_tag
+                     }}
+
     error
   end
 
@@ -150,18 +179,6 @@ defmodule GlificWeb.ExotelControllerTest do
                  phone: "91" <> String.slice(@beneficiary_phone, -10, 10),
                  organization_id: organization_id
                })
-    end
-
-    test "reports an error when the request has no organization" do
-      error =
-        reported_error(
-          build_conn(),
-          &GlificWeb.ExotelController.optin(&1, %{"CallFrom" => @beneficiary_phone})
-        )
-
-      assert error.message == "Exotel optin request received without an organization"
-      assert is_nil(error.organization_id)
-      assert error.reason =~ "received: CallFrom"
     end
 
     test "reports an error when the exotel credentials are missing", %{

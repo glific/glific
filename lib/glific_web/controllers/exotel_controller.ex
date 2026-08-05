@@ -45,16 +45,6 @@ defmodule GlificWeb.ExotelController do
     json(conn, "")
   end
 
-  def optin(conn, params) do
-    report_failure(
-      "Exotel optin request received without an organization",
-      nil,
-      "received: #{param_names(Map.keys(params))}"
-    )
-
-    json(conn, "")
-  end
-
   @spec missing_optin_params(map()) :: [String.t()]
   defp missing_optin_params(params),
     do: Enum.filter(@optin_params, &blank?(Map.get(params, &1)))
@@ -136,7 +126,7 @@ defmodule GlificWeb.ExotelController do
   defp param_names([]), do: "none"
   defp param_names(names), do: Enum.join(names, ", ")
 
-  @spec report_failure(String.t(), non_neg_integer() | nil, String.t() | nil) :: :ok
+  @spec report_failure(String.t(), non_neg_integer(), String.t() | nil) :: :ok
   defp report_failure(message, organization_id, reason \\ nil) do
     Instrumentation.track_action("optin", :failure, organization_id)
 
