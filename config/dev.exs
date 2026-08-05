@@ -23,7 +23,7 @@ config :glific, GlificWeb.Endpoint,
   # EXPERIMENT TO get everyone to switch to https even for local development
   # So we can record audio etc, which requires ssl
   https: [
-    port: 4001,
+    port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
     cipher_suite: :strong,
     certfile: "priv/cert/glific.test+1.pem",
     keyfile: "priv/cert/glific.test+1-key.pem"
