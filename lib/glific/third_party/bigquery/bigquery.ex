@@ -936,7 +936,9 @@ defmodule Glific.BigQuery do
 
     cond do
       res.insertErrors != nil ->
-        raise("BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}")
+        Glific.log_error(
+          "BigQuery Insert Error for table #{table} with res: #{safe_inspect(res)}"
+        )
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
