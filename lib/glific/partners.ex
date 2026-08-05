@@ -1217,9 +1217,15 @@ defmodule Glific.Partners do
 
   @spec config(map()) :: map() | :error
   defp config(credentials) do
-    case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, config} -> config
-      _ -> :error
+    case credentials.secrets["service_account"] do
+      service_account when is_binary(service_account) ->
+        case Jason.decode(service_account) do
+          {:ok, config} -> config
+          _ -> :error
+        end
+
+      _ ->
+        :error
     end
   end
 
