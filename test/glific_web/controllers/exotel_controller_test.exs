@@ -1,4 +1,6 @@
 defmodule GlificWeb.ExotelControllerTest do
+  @moduledoc false
+
   use GlificWeb.ConnCase
 
   import Mock
@@ -40,7 +42,10 @@ defmodule GlificWeb.ExotelControllerTest do
     )
   end
 
-  defp reported_error(conn, params) do
+  defp reported_error(conn, params) when is_map(params),
+    do: reported_error(conn, &get(&1, "/webhook/exotel/optin", params))
+
+  defp reported_error(conn, request) when is_function(request, 1) do
     test_process = self()
 
     with_mock Elixir.Appsignal,
@@ -49,7 +54,7 @@ defmodule GlificWeb.ExotelControllerTest do
                 send(test_process, {:appsignal_error, error})
                 :ok
               end do
-      conn = get(conn, "/webhook/exotel/optin", params)
+      conn = request.(conn)
       assert json_response(conn, 200) == ""
     end
 
@@ -96,6 +101,38 @@ defmodule GlificWeb.ExotelControllerTest do
 
       assert error.message == "Exotel optin request missing expected params"
       assert error.reason =~ "received: none"
+    end
+
+    test "treats a blank expected param as missing", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+      :ok = add_exotel_credential(organization_id, flow.id)
+
+      error = reported_error(conn, optin_params(%{"CallFrom" => "  "}))
+
+      assert error.message == "Exotel optin request missing expected params"
+      assert error.reason =~ "missing: CallFrom"
+      refute error.reason =~ "missing: CallFrom, CallTo"
+
+      assert {:error, _} =
+               Repo.fetch_by(Contacts.Contact, %{
+                 phone: "91" <> String.slice(@beneficiary_phone, -10, 10),
+                 organization_id: organization_id
+               })
+    end
+
+    test "reports an error when the request has no organization" do
+      error =
+        reported_error(
+          build_conn(),
+          &GlificWeb.ExotelController.optin(&1, %{"CallFrom" => @beneficiary_phone})
+        )
+
+      assert error.message == "Exotel optin request received without an organization"
+      assert is_nil(error.organization_id)
+      assert error.reason =~ "received: CallFrom"
     end
 
     test "reports an error when the exotel credentials are missing", %{
