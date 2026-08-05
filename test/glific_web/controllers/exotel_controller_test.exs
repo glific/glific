@@ -70,9 +70,17 @@ defmodule GlificWeb.ExotelControllerTest do
       flow = Fixtures.flow_fixture(%{organization_id: organization_id})
       :ok = add_exotel_credential(organization_id, flow.id)
 
-      conn = get(conn, "/webhook/exotel/optin", optin_params())
+      test_process = self()
 
-      assert json_response(conn, 200) == ""
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                send_error: fn error, _metadata, _span_function ->
+                  send(test_process, {:appsignal_error, error})
+                  :ok
+                end do
+        conn = get(conn, "/webhook/exotel/optin", optin_params())
+        assert json_response(conn, 200) == ""
+      end
 
       {:ok, contact} =
         Repo.fetch_by(Contacts.Contact, %{
@@ -82,6 +90,8 @@ defmodule GlificWeb.ExotelControllerTest do
 
       assert contact.optin_status == true
       assert contact.optin_method == "Exotel"
+
+      refute_received {:appsignal_error, _error}
     end
 
     test "reports an error naming the org and the missing params", %{

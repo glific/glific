@@ -4,6 +4,7 @@ defmodule GlificWeb.ExotelController do
   """
 
   use GlificWeb, :controller
+  require Logger
 
   alias Glific.{Contacts, Flows, Partners, Repo, SafeLog}
 
@@ -17,6 +18,7 @@ defmodule GlificWeb.ExotelController do
   end
 
   @optin_params ["CallFrom", "CallTo", "To"]
+  @appsignal_group "exotel"
 
   @doc """
   First implementation of processing optin contact callback from exotel
@@ -27,7 +29,7 @@ defmodule GlificWeb.ExotelController do
   """
   @spec optin(Plug.Conn.t(), map) :: Plug.Conn.t()
   def optin(%Plug.Conn{assigns: %{organization_id: organization_id}} = conn, params) do
-    Glific.log_error("exotel optin callback: #{SafeLog.safe_inspect(params)}")
+    log_callback(organization_id, params)
 
     case missing_optin_params(params) do
       [] ->
@@ -53,6 +55,13 @@ defmodule GlificWeb.ExotelController do
     )
 
     json(conn, "")
+  end
+
+  @spec log_callback(non_neg_integer(), map()) :: :ok
+  defp log_callback(organization_id, params) do
+    message = "exotel optin callback: #{SafeLog.safe_inspect(params)}"
+    Logger.info(message)
+    Appsignal.Logger.info(@appsignal_group, message, %{organization_id: organization_id})
   end
 
   @spec missing_optin_params(map()) :: [String.t()]
@@ -133,7 +142,7 @@ defmodule GlificWeb.ExotelController do
   defp log_error(message, organization_id, reason \\ nil) do
     Glific.log_exception(
       %Error{message: message, reason: reason, organization_id: organization_id},
-      namespace: "exotel",
+      namespace: @appsignal_group,
       tags: %{organization_id: organization_id, reason: reason}
     )
   end
