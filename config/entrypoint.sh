@@ -50,4 +50,10 @@ else
     mix ecto.reset
 fi
 
-mix phx.server
+# Start as a named, distributed node so you can attach a remote console to THIS running
+# instance (no second app, no port clash, no duplicate Oban):
+#   iex --sname console --remsh "glific@$(hostname -s)"
+# No --cookie is passed: the VM auto-reads/creates ~/.erlang.cookie, and the console (same user,
+# same container) reads the same file, so the cookies match automatically.
+# `exec` replaces this shell with the BEAM so SIGTERM reaches the VM for graceful shutdown.
+exec elixir --sname glific -S mix phx.server
