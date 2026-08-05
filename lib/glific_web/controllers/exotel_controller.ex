@@ -4,7 +4,6 @@ defmodule GlificWeb.ExotelController do
   """
 
   use GlificWeb, :controller
-  require Logger
 
   alias Glific.{Contacts, Flows, Partners, Repo, SafeLog}
 
@@ -57,11 +56,14 @@ defmodule GlificWeb.ExotelController do
     json(conn, "")
   end
 
+  # Appsignal.Logger's metadata argument is specced as the empty-map type, so passing
+  # metadata fails Dialyzer — the organization goes into the message instead.
   @spec log_callback(non_neg_integer(), map()) :: :ok
   defp log_callback(organization_id, params) do
-    message = "exotel optin callback: #{SafeLog.safe_inspect(params)}"
-    Logger.info(message)
-    Appsignal.Logger.info(@appsignal_group, message, %{organization_id: organization_id})
+    Appsignal.Logger.info(
+      @appsignal_group,
+      "optin callback for org_id #{organization_id}: #{SafeLog.safe_inspect(params)}"
+    )
   end
 
   @spec missing_optin_params(map()) :: [String.t()]
