@@ -44,8 +44,29 @@ defmodule Glific.Providers.Gupshup.Template do
   @doc """
   Submitting HSM template for approval
   """
-  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  @spec submit_for_approval(map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()} | {:error, [String.t()]}
   def submit_for_approval(attrs) do
+    with {:ok, merged_attrs} <- submit_for_approval_attrs(attrs) do
+      merged_attrs
+      |> Templates.do_create_session_template()
+      |> tap(fn _resp -> cleanup_local_resource(merged_attrs) end)
+    end
+  end
+
+  @doc """
+  Calls the BSP Partner API only, without writing anything to the DB. Returns the attrs
+  merged with the BSP's response (`bsp_id`, `status`, etc.) so the caller can decide how
+  and when to persist them - e.g. `Templates.reapply_session_template/2`, which must not
+  touch the DB until the BSP call has succeeded.
+
+  The merged attrs also carry `:media_url`, the path of any local temp file built for this
+  submission - the caller is expected to pass it to `cleanup_local_resource/1` once its own
+  DB write (whatever shape it takes) has run, mirroring how `submit_for_approval/1` above
+  cleans it up only after `do_create_session_template/1` completes.
+  """
+  @spec submit_for_approval_attrs(map()) :: {:ok, map()} | {:error, [String.t()]}
+  def submit_for_approval_attrs(attrs) do
     organization = Partners.organization(attrs.organization_id)
 
     with {:ok, app_id} <- PartnerAPI.app_id(attrs.organization_id),
@@ -57,22 +78,35 @@ defmodule Glific.Providers.Gupshup.Template do
              # we don't need media_url for further processing
              Map.delete(body, :media_url)
            ) do
-      attrs
-      |> Map.merge(%{
-        number_parameters: Templates.template_parameters_count(attrs),
-        uuid: template["id"],
-        bsp_id: template["id"],
-        status: template["status"],
-        is_active: template["status"] == "APPROVED"
-      })
-      |> append_buttons(attrs)
-      |> Templates.do_create_session_template()
-      |> tap(fn _resp -> PartnerAPI.delete_local_resource(body[:media_url], attrs.shortcode) end)
+      merged_attrs =
+        attrs
+        |> Map.merge(%{
+          number_parameters: Templates.template_parameters_count(attrs),
+          uuid: template["id"],
+          bsp_id: template["id"],
+          status: template["status"],
+          is_active: template["status"] == "APPROVED",
+          media_url: body[:media_url]
+        })
+        |> append_buttons(attrs)
+
+      {:ok, merged_attrs}
     else
       {:error, error} ->
         Logger.error(error)
         {:error, ["BSP", "Couldn't submit for approval: " <> error]}
     end
+  end
+
+  @doc """
+  Deletes the local temp media file (if any) that was downloaded to build a
+  `submit_for_approval_attrs/1` request. Safe to call regardless of whether the caller's
+  subsequent DB write succeeded or failed - mirrors the unconditional cleanup this used to
+  get "for free" from `tap/2` back when the BSP call and the DB insert lived in one function.
+  """
+  @spec cleanup_local_resource(map()) :: :ok | {:error, atom()}
+  def cleanup_local_resource(attrs) do
+    PartnerAPI.delete_local_resource(Map.get(attrs, :media_url), attrs.shortcode)
   end
 
   @spec validate_app_id(String.t()) :: {:ok, String.t()} | {:error, String.t()}

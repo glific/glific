@@ -235,6 +235,14 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.delete_session_template/3)
     end
 
+    @desc "Atomically resubmit a rejected/failed HSM template for approval, replacing it with the newly approved template"
+    field :reapply_session_template, :session_template_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:session_template_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Templates.reapply_session_template/3)
+    end
+
     field :create_template_form_message, :session_template_result do
       arg(:message_id, non_null(:id))
       arg(:input, :message_to_template_input)

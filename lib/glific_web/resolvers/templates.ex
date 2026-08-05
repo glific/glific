@@ -87,6 +87,23 @@ defmodule GlificWeb.Resolvers.Templates do
   end
 
   @doc """
+  Atomically reapplies a rejected/failed HSM session template - resubmits it to the BSP for
+  approval and, on success, replaces the old template with the newly approved one.
+  """
+  @spec reapply_session_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def reapply_session_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
+         {:ok, new_session_template} <-
+           Templates.reapply_session_template(session_template, params) do
+      {:ok, %{session_template: new_session_template}}
+    end
+  end
+
+  @doc """
   Converting a message to message template
   """
   @spec create_template_from_message(

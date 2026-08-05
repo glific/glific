@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation reapplySessionTemplate($id: ID!, $input: SessionTemplateInput!) {
+  reapplySessionTemplate(id: $id, input: $input) {
+    ...SessionTemplateFields
+
+    ...ErrorFields
+  }
+}
