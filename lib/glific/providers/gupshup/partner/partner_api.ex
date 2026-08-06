@@ -358,6 +358,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Fetches Meta's pre-approved WhatsApp template library from Gupshup's
+  Partner API (`GET <app_url>/template/metalibrary`) — read-only, no query
+  filters; the UI searches/filters the cached result client-side instead.
+  """
+  @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
+  def get_library_templates(org_id) do
+    (app_url!(org_id) <> "/template/metalibrary")
+    |> get_request(org_id: org_id)
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do

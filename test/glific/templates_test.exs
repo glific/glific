@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
   use Oban.Pro.Testing, repo: Glific.Repo
 
   alias Glific.{
+    Caches,
     Fixtures,
     Mails.MailLog,
     Messages,
@@ -25,6 +26,9 @@ defmodule Glific.TemplatesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.hsm_templates(organization)
+    active_language_ids = Partners.organization(organization.id).active_language_ids
+    Caches.remove(organization.id, [{:template_library, active_language_ids}])
+
     :ok
   end
 
@@ -2785,5 +2789,114 @@ defmodule Glific.TemplatesTest do
                %{language_id: 999_999, body: "Hello"},
                attrs.organization_id
              )
+  end
+
+  test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
+       attrs do
+    organization = Partners.get_organization!(attrs.organization_id)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_english",
+                  "category" => "UTILITY",
+                  "data" => "Hello {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                },
+                %{
+                  "elementName" => "utility_hindi",
+                  "category" => "UTILITY",
+                  "data" => "Namaste {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "hi",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, templates_before} = Templates.search_library_templates(attrs.organization_id)
+
+    assert templates_before |> Enum.map(& &1.element_name) |> Enum.sort() ==
+             ["utility_english", "utility_hindi"]
+
+    # Dropping Hindi from the org's active languages must be reflected
+    # immediately, not after the 20-minute cache TTL expires.
+    assert {:ok, _updated_organization} =
+             Partners.update_organization(organization, %{active_language_ids: [1]})
+
+    assert {:ok, templates_after} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(templates_after, & &1.element_name) == ["utility_english"]
+  end
+
+  test "search_library_templates/1 serves an identical second call from cache instead of refetching",
+       attrs do
+    {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+        %Tesla.Env{
+          status: 200,
+          body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+        }
+
+      %{
+        method: :get,
+        url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+      } ->
+        Agent.update(counter, &(&1 + 1))
+
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "templates" => [
+                %{
+                  "elementName" => "utility_cache_hit",
+                  "category" => "UTILITY",
+                  "data" => "Hi {{1}}",
+                  "industry" => "retail",
+                  "languageCode" => "en",
+                  "topic" => "welcome",
+                  "usecase" => "onboarding",
+                  "containerMeta" => %{"buttons" => []}
+                }
+              ]
+            })
+        }
+    end)
+
+    assert {:ok, first_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert {:ok, second_call} = Templates.search_library_templates(attrs.organization_id)
+
+    assert Enum.map(first_call, & &1.element_name) == ["utility_cache_hit"]
+    assert first_call == second_call
+
+    # the metalibrary endpoint must only be hit once - the second identical
+    # call is served from the {:ok, templates} -> {:ok, templates} cache branch
+    assert Agent.get(counter, & &1) == 1
   end
 end
