@@ -332,11 +332,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming text message without user.phone recovers the sender from the message id",
+    test "Incoming text message with a blank user.phone recovers the sender number from the message id",
          %{conn: conn} do
-      # LID group: user.phone is blank but the participant is a regular @c.us
-      # user, so the real number lives in the message _serialized id and must be
-      # recovered instead of crashing.
       expected_phone = "919642961343"
 
       blank_users = [Map.delete(@text_message_webhook, "user")]
@@ -365,11 +362,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       end
     end
 
-    test "Incoming text message from an unresolved LID participant is skipped and acked",
+    test "Incoming text message from an unresolved @lid participant is acked and dropped rather than raising",
          %{conn: conn} do
-      # Genuine @lid participant: no @c.us number anywhere in the payload, so the
-      # phone can't be recovered. We ack the webhook (avoiding Maytapi retries)
-      # and drop the message rather than raising a 500.
       lid_serialized = "false_120363027326493365@g.us_3EB037B863B86D2AF69DD8_289473521@lid"
 
       lid_webhook =
@@ -389,12 +383,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                })
     end
 
-    test "Incoming text message whose id carries our own managed phone is skipped and acked",
+    test "Incoming text message whose id carries the receiving managed phone is dropped, not attributed to the organization",
          %{conn: conn} do
-      # Shape of the real LID-group payload from Maytapi: the user object arrives
-      # empty and the participant slot of the message id holds the receiving
-      # managed phone, not the sender. Recovering it would attribute a group
-      # member's message to the organization itself.
       bsp_id = Ecto.UUID.generate()
 
       own_number_webhook =
@@ -676,11 +666,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming media message without user.phone recovers the sender from the message id",
+    test "Incoming media message with a blank user.phone recovers the sender number from the message id",
          %{conn: conn} do
-      # LID group: user.phone is blank but the participant is a regular @c.us
-      # user, so the real number lives in the message _serialized id and must be
-      # recovered instead of crashing.
       expected_phone = "919917443994"
 
       blank_users =
@@ -707,11 +694,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
       end
     end
 
-    test "Incoming media message from an unresolved LID participant is skipped and acked",
+    test "Incoming media message from an unresolved @lid participant is acked and dropped rather than raising",
          %{conn: conn} do
-      # Genuine @lid participant: no @c.us number anywhere in the payload, so the
-      # phone can't be recovered. We ack the webhook (avoiding Maytapi retries)
-      # and drop the message rather than raising a 500.
       bsp_id = Ecto.UUID.generate()
 
       lid_webhook =
@@ -734,10 +718,8 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageControllerTest do
                })
     end
 
-    test "Incoming media message whose id carries our own managed phone is skipped and acked",
+    test "Incoming media message whose id carries the receiving managed phone is dropped, not attributed to the organization",
          %{conn: conn} do
-      # The reported incident was an image in a LID group: empty user object, and
-      # the message id's participant slot holding our own receiving number.
       bsp_id = Ecto.UUID.generate()
 
       own_number_webhook =
