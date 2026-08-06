@@ -6,6 +6,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   import Glific.SafeLog
 
+  alias Glific.Caches
   alias Glific.Partners
   alias Glific.Partners.Credential
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
@@ -806,6 +807,45 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @models_cache_ttl_hours 6
+  @models_provider "openai"
+
+  @doc """
+  List active Kaapi models for the (currently hardcoded) openai provider. Fetches all pages
+  and caches the result globally for #{@models_cache_ttl_hours}h, since the model catalog is
+  provider-wide, not org data.
+  """
+  @spec list_models(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_models(organization_id) do
+    cache_key = {:kaapi_models, @models_provider}
+
+    case Caches.get_global(cache_key) do
+      {:ok, models} when is_list(models) ->
+        {:ok, models}
+
+      _ ->
+        fetch_and_cache_models(organization_id, cache_key)
+    end
+  end
+
+  @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
+  defp fetch_and_cache_models(organization_id, cache_key) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, models} <- fetch_all_model_pages(secrets["api_key"]) do
+      # avoid caching a transient empty result for @models_cache_ttl_hours
+      if models != [], do: Caches.put_global(cache_key, models, @models_cache_ttl_hours)
+      {:ok, models}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi list_models failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+        })
+
+        {:error, reason}
+    end
+  end
+
   @spec handle_evaluation_dataset_v2_response(
           {:ok, map()} | {:error, map() | binary() | :timeout},
           non_neg_integer()
@@ -842,6 +882,25 @@ defmodule Glific.ThirdParty.Kaapi do
       },
       []
     )
+  end
+
+  @spec fetch_all_model_pages(String.t(), non_neg_integer(), list()) ::
+          {:ok, list(map())} | {:error, any()}
+  defp fetch_all_model_pages(api_key, skip \\ 0, acc \\ []) do
+    with {:ok, body} <-
+           ApiClient.list_models(%{provider: @models_provider, skip: skip, limit: 100}, api_key) do
+      case body do
+        %{data: %{data: page}, metadata: %{has_more: has_more}} ->
+          acc = acc ++ page
+
+          if has_more,
+            do: fetch_all_model_pages(api_key, skip + 100, acc),
+            else: {:ok, acc}
+
+        other ->
+          {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
+      end
+    end
   end
 
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
