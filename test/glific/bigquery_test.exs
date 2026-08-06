@@ -240,14 +240,15 @@ defmodule Glific.BigQueryTest do
     job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
     assert job_table2.table_id > job_table1.table_id
 
-    assert_raise RuntimeError, fn ->
-      BigQuery.handle_insert_query_response(
-        {:ok, %{insertErrors: %{error: "Some errors"}}},
-        attrs.organization_id,
-        table: "messages",
-        max_id: 10
-      )
-    end
+    # Incident #274: insertErrors used to raise and crash-loop the Oban job. It is now
+    # logged (see Glific.log_error/2) and the function falls through to its :ok return.
+    assert :ok ==
+             BigQuery.handle_insert_query_response(
+               {:ok, %{insertErrors: %{error: "Some errors"}}},
+               attrs.organization_id,
+               table: "messages",
+               max_id: 10
+             )
 
     assert :ok ==
              BigQuery.handle_insert_query_response(
@@ -256,6 +257,58 @@ defmodule Glific.BigQueryTest do
                table: "messages",
                max_id: nil
              )
+  end
+
+  test "make_insert_query/4 does not raise when BigQuery reports insertErrors (regression for incident #274)",
+       %{organization_id: org_id} do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url ->
+            {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+          end
+        ]
+      }
+    ]) do
+      url =
+        "https://bigquery.googleapis.com/bigquery/v2/projects/DEFAULTPROJECTID/datasets/917834811114/tables/messages/insertAll"
+
+      Tesla.Mock.mock(fn
+        %Tesla.Env{method: :post, url: ^url} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Poison.encode!(%GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponse{
+                kind: "bigquery#tableDataInsertAllResponse",
+                insertErrors: [
+                  %GoogleApi.BigQuery.V2.Model.TableDataInsertAllResponseInsertErrors{
+                    index: 0,
+                    errors: [
+                      %GoogleApi.BigQuery.V2.Model.ErrorProto{
+                        reason: "invalid",
+                        message: "Malformed row: missing required field"
+                      }
+                    ]
+                  }
+                ]
+              })
+          }
+      end)
+
+      # Previously (pre-incident-274-fix) this call raised a RuntimeError from inside
+      # handle_insert_query_response/3 and never returned, crash-looping the Oban job
+      # that called it. Now it should complete normally and return :ok.
+      assert :ok ==
+               BigQuery.make_insert_query(
+                 [%{json: %{id: 1, name: "test"}}],
+                 "messages",
+                 org_id,
+                 max_id: 10,
+                 last_updated_at: nil
+               )
+    end
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
