@@ -110,7 +110,11 @@ defmodule GlificWeb.Providers.Maytapi.Controllers.MessageController do
   @spec receive_or_skip(map(), atom()) :: any()
   defp receive_or_skip(%{sender: %{phone: phone}} = message_params, _type)
        when phone in [nil, ""] do
-    Instrumentation.track_receive("skipped_unresolved_sender", message_params[:organization_id])
+    Instrumentation.track_action(
+      "unresolved_sender_skip",
+      :failure,
+      message_params[:organization_id]
+    )
 
     Glific.log_error(
       "Skipping Maytapi inbound with unresolved sender phone: bsp_id '#{message_params[:bsp_id]}', conversation '#{message_params[:wa_group_bsp_id]}', is_dm #{message_params[:is_dm]}"
