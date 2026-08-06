@@ -242,6 +242,7 @@ defmodule Glific.Assistants do
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
+      settings: active_config_version.settings,
       model: active_config_version.model,
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
@@ -585,7 +586,7 @@ defmodule Glific.Assistants do
     user_params[:name] == assistant.name and
       user_params[:instructions] == active_config.prompt and
       user_params[:model] == active_config.model and
-      user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
+      build_settings(user_params) == (active_config.settings || %{}) and
       kb_unchanged
   end
 
@@ -593,7 +594,7 @@ defmodule Glific.Assistants do
   defp name_only_change?(user_params) do
     not is_nil(user_params[:name]) and
       not Enum.any?(
-        [:instructions, :model, :temperature, :knowledge_base_version_id],
+        [:instructions, :model, :temperature, :settings, :knowledge_base_version_id],
         &Map.has_key?(user_params, &1)
       )
   end
@@ -699,7 +700,7 @@ defmodule Glific.Assistants do
         else: []
 
     config = %{
-      temperature: user_params[:temperature] || 1,
+      settings: build_settings(user_params),
       model: user_params[:model] || @default_model,
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
@@ -710,6 +711,18 @@ defmodule Glific.Assistants do
 
     {:ok, config}
   end
+
+  # A model's tunable params vary (temperature/top_p for classic models,
+  # effort/summary for reasoning models) and don't overlap, so an explicit `settings`
+  # map is trusted as-is instead of a temperature default being merged onto it. The
+  # `temperature`-only fallback exists for callers that predate the generic `settings`
+  # field and never send one.
+  @spec build_settings(map()) :: map()
+  defp build_settings(%{settings: settings}) when is_map(settings) and settings != %{} do
+    Map.new(settings, fn {key, value} -> {to_string(key), value} end)
+  end
+
+  defp build_settings(user_params), do: %{"temperature" => user_params[:temperature] || 1}
 
   # If the KB is already completed (callback arrived before assistant creation),
   # register the config with Kaapi immediately since the deferred flow won't trigger.
@@ -803,7 +816,7 @@ defmodule Glific.Assistants do
       prompt: kaapi_config.prompt,
       model: kaapi_config.model,
       provider: "openai",
-      settings: %{temperature: kaapi_config.temperature},
+      settings: kaapi_config.settings,
       status: :in_progress,
       organization_id: kaapi_config.organization_id
     })
@@ -824,7 +837,7 @@ defmodule Glific.Assistants do
       prompt: kaapi_config.prompt,
       model: kaapi_config.model,
       provider: "openai",
-      settings: %{temperature: kaapi_config.temperature},
+      settings: kaapi_config.settings,
       status: status,
       organization_id: kaapi_config.organization_id
     })
@@ -1115,7 +1128,7 @@ defmodule Glific.Assistants do
       model: config_version.model,
       prompt: config_version.prompt,
       description: config_version.description || "Assistant configuration",
-      temperature: get_in(config_version.settings || %{}, ["temperature"]) || 1,
+      settings: config_version.settings || %{},
       knowledge_base_ids: [knowledge_base_version.llm_service_id],
       organization_id: assistant.organization_id
     }

@@ -321,12 +321,14 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec build_config_blob(map(), list(String.t())) :: map()
   defp build_config_blob(params, knowledge_base_ids) do
-    completion_params = %{
-      model: params.model || "gpt-4o",
-      instructions: params.prompt || "You are a helpful assistant",
-      temperature: params.temperature || 1.0,
-      knowledge_base_ids: knowledge_base_ids
+    base_params = %{
+      "model" => params.model || "gpt-4o",
+      "instructions" => params.prompt || "You are a helpful assistant",
+      "knowledge_base_ids" => knowledge_base_ids
     }
+
+    completion_params =
+      Map.merge(base_params, stringify_keys(params[:settings] || %{}))
 
     %{
       completion: %{
@@ -336,6 +338,9 @@ defmodule Glific.ThirdParty.Kaapi do
       }
     }
   end
+
+  @spec stringify_keys(map()) :: map()
+  defp stringify_keys(map), do: Map.new(map, fn {key, value} -> {to_string(key), value} end)
 
   # Error type strings surfaced in webhook logs and flow failure path.
   # Each string is checked as a substring of the Kaapi error message body.
