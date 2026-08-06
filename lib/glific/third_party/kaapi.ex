@@ -789,11 +789,12 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec upload_evaluation_dataset_v2(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
   def upload_evaluation_dataset_v2(params, organization_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id) do
-      params
-      |> ApiClient.upload_evaluation_dataset_v2(secrets["api_key"])
-      |> handle_evaluation_dataset_v2_response(organization_id)
-    else
+    case fetch_kaapi_creds(organization_id) do
+      {:ok, secrets} ->
+        params
+        |> ApiClient.upload_evaluation_dataset_v2(secrets["api_key"])
+        |> handle_evaluation_dataset_v2_response(organization_id)
+
       {:error, reason} ->
         send_kaapi_error(
           "Failed to upload evaluation dataset v2 to Kaapi",
@@ -831,7 +832,7 @@ defmodule Glific.ThirdParty.Kaapi do
     {:error, "An unknown error occurred, please contact Glific support."}
   end
 
-  @spec send_kaapi_error(String.t(), non_neg_integer(), term()) :: :ok
+  @spec send_kaapi_error(String.t(), non_neg_integer(), term()) :: Appsignal.Span.t() | nil
   defp send_kaapi_error(message, organization_id, reason) do
     Appsignal.send_error(
       %Error{
