@@ -819,7 +819,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "dataset_2024_v1"
     end
 
-    test "v1 path: uploads to the v1 endpoint and leaves total_items nil when the flag is off",
+    test "v1 path: uploads to the v1 endpoint and leaves total_items at default when the flag is off",
          %{staff: user, upload: upload} do
       Tesla.Mock.mock(fn
         %{method: :post, url: url} ->
@@ -846,7 +846,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert golden_qa.name == "v1_regression_dataset"
       assert golden_qa.dataset_id == 88_003
-      assert golden_qa.total_items == nil
+      assert golden_qa.total_items == 0
     end
   end
 

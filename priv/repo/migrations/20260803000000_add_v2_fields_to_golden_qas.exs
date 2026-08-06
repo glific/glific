@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddV2FieldsToGoldenQas do
 
   def change do
     alter table(:golden_qas) do
-      add :total_items, :integer, comment: "total items in the dataset"
+      add :total_items, :integer, default: 0, null: false, comment: "total items in the dataset"
     end
   end
 end

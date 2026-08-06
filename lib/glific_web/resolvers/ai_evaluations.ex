@@ -105,14 +105,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       duplication_factor: factor
     }
 
-    organization = Partners.organization(user.organization_id)
-
     with :ok <- validate_golden_qa_name(name),
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
          :ok <- validate_golden_qa_question_limit(row_count, factor),
-         {:ok, kaapi_dataset} <- upload_dataset(dataset, organization) do
+         {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
       {:error, :timeout} ->
@@ -143,8 +141,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec upload_dataset(map(), map()) :: {:ok, map()} | {:error, any()}
-  defp upload_dataset(dataset, organization) do
+  @spec upload_dataset(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  defp upload_dataset(dataset, organization_id) do
+    organization = Partners.organization(organization_id)
+
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
       Kaapi.upload_evaluation_dataset_v2(dataset, organization.id)
     else
@@ -161,7 +161,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            duplication_factor: factor,
            file_name: file.filename,
            organization_id: user.organization_id,
-           total_items: Map.get(kaapi_dataset, :total_items)
+           total_items: Map.get(kaapi_dataset, :total_items, 0)
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}
@@ -248,11 +248,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_name(name) do
-    if Regex.match?(~r/^[a-z0-9_]+$/, name) do
-      :ok
-    else
-      {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
-    end
+    if Regex.match?(~r/^[a-z0-9_]+$/, name),
+      do: :ok,
+      else: {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
   end
 
   @spec validate_duplication_factor(integer()) :: :ok | {:error, String.t()}
