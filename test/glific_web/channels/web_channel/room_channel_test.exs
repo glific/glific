@@ -115,7 +115,8 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       assert message.flow == :inbound
     end
 
-    test "update_name renames the contact", %{contact: contact} do
+    test "update_name renames the contact and mirrors into contact.fields.name",
+         %{contact: contact} do
       socket = connect_socket(contact)
 
       {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
@@ -125,6 +126,57 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
 
       updated_contact = Glific.Contacts.get_contact!(contact.id)
       assert updated_contact.name == "New Contact Name"
+
+      # mirrored into the JSONB fields as the string-keyed %{"value" => ...} shape a flow
+      # reads via @contact.fields.name (message_vars_parser resolves fields["name"]["value"])
+      assert updated_contact.fields["name"]["value"] == "New Contact Name"
+      assert updated_contact.fields["name"]["label"] == "Name"
+
+      # the org-level "name" field definition is upserted so it appears in the fields list
+      assert Repo.get_by(Glific.Contacts.ContactsField, %{shortcode: "name", scope: :contact})
+    end
+
+    test "update_name rejects a blank name without touching the contact", %{contact: contact} do
+      socket = connect_socket(contact)
+
+      {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      ref = push(socket, "update_name", %{"name" => "   "})
+      assert_reply(ref, :error, %{errors: %{name: ["can't be blank"]}})
+
+      assert Glific.Contacts.get_contact!(contact.id).name == contact.name
+    end
+
+    test "an outbound message delivery pushes contact_updated when a flow changed the name",
+         %{contact: contact} do
+      socket = connect_socket(contact)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      # The flow (running async) captured @contact.fields.name and committed it before sending its
+      # reply. Simulate that reply being delivered over the topic — handle_out re-resolves the name.
+      Glific.Flows.ContactField.do_add_contact_field(
+        contact,
+        "name",
+        "Name",
+        "Captured Name",
+        "string"
+      )
+
+      GlificWeb.Endpoint.broadcast("web_channel:#{contact.id}", "new_message", %{body: "hi there"})
+
+      assert_push("new_message", %{body: "hi there"})
+      assert_push("contact_updated", %{name: "Captured Name"})
+    end
+
+    test "an outbound message does not push contact_updated when the name is unchanged",
+         %{contact: contact} do
+      socket = connect_socket(contact)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
+
+      GlificWeb.Endpoint.broadcast("web_channel:#{contact.id}", "new_message", %{body: "hi there"})
+
+      assert_push("new_message", %{body: "hi there"})
+      refute_push("contact_updated", _, 200)
     end
 
     test "new_media_message persists an inbound channel:web image message", %{contact: contact} do

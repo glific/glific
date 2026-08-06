@@ -1,7 +1,7 @@
 defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
   use GlificWeb.ConnCase
 
-  alias Glific.{Contacts.Contact, Repo}
+  alias Glific.{Contacts, Contacts.Contact, Repo}
   alias GlificWeb.WebChannel.Token
 
   describe "request_otp/2" do
@@ -75,6 +75,57 @@ defmodule GlificWeb.API.V1.WebChannelAuthControllerTest do
 
       response = json_response(conn, 401)
       assert response["error"]["message"] == "Invalid OTP"
+    end
+  end
+
+  describe "verify_otp/2 display name resolution" do
+    test "prefers the flow-captured contact.fields.name over contact.name", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      phone = "919999900010"
+
+      {:ok, _contact} =
+        Contacts.create_contact(%{
+          phone: phone,
+          name: "WhatsApp Pushname",
+          fields: %{
+            "name" => %{"value" => "Priya", "label" => "Name", "type" => "string"}
+          },
+          organization_id: organization_id
+        })
+
+      conn = post(conn, "/api/v1/web_channel/verify-otp", %{"phone" => phone, "otp" => "9999"})
+
+      assert json_response(conn, 200)["data"]["name"] == "Priya"
+    end
+
+    test "falls back to contact.name when contact.fields.name is absent", %{
+      conn: conn,
+      organization_id: organization_id
+    } do
+      phone = "919999900011"
+
+      {:ok, _contact} =
+        Contacts.create_contact(%{
+          phone: phone,
+          name: "Ravi",
+          organization_id: organization_id
+        })
+
+      conn = post(conn, "/api/v1/web_channel/verify-otp", %{"phone" => phone, "otp" => "9999"})
+
+      assert json_response(conn, 200)["data"]["name"] == "Ravi"
+    end
+
+    test "returns a nil name when neither contact.fields.name nor contact.name is set", %{
+      conn: conn
+    } do
+      phone = "919999900012"
+
+      conn = post(conn, "/api/v1/web_channel/verify-otp", %{"phone" => phone, "otp" => "9999"})
+
+      assert json_response(conn, 200)["data"]["name"] == nil
     end
   end
 end

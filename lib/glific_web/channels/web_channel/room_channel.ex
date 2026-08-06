@@ -10,11 +10,26 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   use GlificWeb, :channel
 
-  alias Glific.{Communications.WebMessage, Contacts, Messages, Repo}
+  alias Glific.{
+    Communications.WebMessage,
+    Contacts,
+    Contacts.ContactsField,
+    Flows.ContactField,
+    Messages,
+    Repo
+  }
+
+  alias GlificWeb.WebChannel.DisplayName
   alias GlificWeb.WebChannel.MessageSerializer
   alias GlificWeb.WebChannel.Presence
 
   @page_size 100
+
+  # Intercept outbound "new_message" broadcasts so we can piggyback a live display-name sync on
+  # them (see handle_out/3). A flow runs asynchronously (Communications.Message.process_message/1
+  # hands off to a poolboy worker), so the name it captures isn't committed when the inbound
+  # handler returns — but it IS committed by the time the flow's reply is delivered here.
+  intercept(["new_message"])
 
   @impl true
   @spec join(String.t(), map(), Phoenix.Socket.t()) ::
@@ -38,6 +53,10 @@ defmodule GlificWeb.WebChannel.RoomChannel do
         |> Enum.reverse()
         |> Enum.map(&MessageSerializer.serialize/1)
 
+      # Seed the last-known display name so a later flow-driven change (e.g. the newcontact flow
+      # capturing @contact.fields.name) can be detected and pushed live — see maybe_push_display_name/1.
+      socket = assign(socket, :display_name, DisplayName.resolve(socket.assigns.current_contact))
+
       {:ok, %{messages: messages}, socket}
     else
       {:error, %{reason: "unauthorized"}}
@@ -59,9 +78,19 @@ defmodule GlificWeb.WebChannel.RoomChannel do
 
   # Glific.Processor.ConsumerWorkerMock (test env only) notifies the caller process once it
   # has "processed" a message handed off via Communications.Message.process_message/1 — the
-  # real ConsumerWorker does not. Since inbound flow-processing happens in this channel
-  # process, swallow that notification here rather than crash.
+  # real ConsumerWorker does not. process_message/1 captures self() (this channel process) as the
+  # caller, so the mock's notification lands here; swallow it rather than crash.
   def handle_info(:received_message_to_process, socket), do: {:noreply, socket}
+
+  @impl true
+  @spec handle_out(String.t(), map(), Phoenix.Socket.t()) :: {:noreply, Phoenix.Socket.t()}
+  def handle_out("new_message", payload, socket) do
+    # Forward the outbound message to the browser (the default behaviour we replaced by
+    # intercepting), then re-check the display name: a flow that just replied may have captured
+    # @contact.fields.name, and its write is committed by now. See maybe_push_display_name/1.
+    push(socket, "new_message", payload)
+    {:noreply, maybe_push_display_name(socket)}
+  end
 
   @impl true
   @spec handle_in(String.t(), map(), Phoenix.Socket.t()) ::
@@ -145,13 +174,72 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     {:reply, :ok, socket}
   end
 
-  def handle_in("update_name", %{"name" => name}, socket) do
+  def handle_in("update_name", %{"name" => name}, socket) when is_binary(name) do
+    # This is a public socket event; the widget guards against blanks but a raw client may not.
+    # Reject a blank name rather than writing "" into contact.name and contact.fields.name.
+    trimmed = String.trim(name)
+
+    if trimmed == "" do
+      {:reply, {:error, %{errors: %{name: ["can't be blank"]}}}, socket}
+    else
+      do_update_name(trimmed, socket)
+    end
+  end
+
+  def handle_in("update_name", _params, socket),
+    do: {:reply, {:error, %{errors: %{name: ["can't be blank"]}}}, socket}
+
+  @spec do_update_name(String.t(), Phoenix.Socket.t()) ::
+          {:reply, :ok | {:error, map()}, Phoenix.Socket.t()}
+  defp do_update_name(name, socket) do
     case Contacts.update_contact(socket.assigns.current_contact, %{name: name}) do
       {:ok, contact} ->
-        {:reply, :ok, assign(socket, :current_contact, contact)}
+        # Mirror the rename into contact.fields.name so flows (@contact.fields.name) see it.
+        # Gated behind the update_contact success branch: do_add_contact_field/5 raises on a
+        # bad changeset, so a rejected name must reply {:error, ...} rather than crash the channel.
+        # Reuse the org's existing "name" field label (default "Name") instead of hardcoding it —
+        # a hardcoded label would revert an org's renamed field org-wide via ContactField's
+        # update_all when this least-privileged surface fires.
+        label = name_field_label(contact.organization_id)
+        contact = ContactField.do_add_contact_field(contact, "name", label, name, "string")
+
+        # Keep :display_name in step with the rename so a following inbound message doesn't
+        # re-detect this as a change and push a redundant contact_updated event.
+        socket = socket |> assign(:current_contact, contact) |> assign(:display_name, name)
+        {:reply, :ok, socket}
 
       {:error, changeset} ->
         {:reply, {:error, %{errors: changeset_errors(changeset)}}, socket}
+    end
+  end
+
+  # After an inbound message is processed (flow runs synchronously in this channel process), the
+  # flow may have written @contact.fields.name — e.g. the newcontact flow capturing the name. Re-
+  # read the contact and, if the resolved display name changed since we last told the client, push
+  # it live so the widget header updates without a re-login.
+  @spec maybe_push_display_name(Phoenix.Socket.t()) :: Phoenix.Socket.t()
+  defp maybe_push_display_name(socket) do
+    contact = Contacts.get_contact!(socket.assigns.current_contact.id)
+    name = DisplayName.resolve(contact)
+    socket = assign(socket, :current_contact, contact)
+
+    if name != socket.assigns[:display_name] do
+      push(socket, "contact_updated", %{name: name})
+      assign(socket, :display_name, name)
+    else
+      socket
+    end
+  end
+
+  # Label for the org's "name" contact field, so mirroring a rename into contact.fields.name
+  # preserves an org-customized label instead of forcing it back to the default.
+  @spec name_field_label(non_neg_integer()) :: String.t()
+  defp name_field_label(organization_id) do
+    case Repo.get_by(ContactsField, %{shortcode: "name", scope: :contact},
+           organization_id: organization_id
+         ) do
+      %ContactsField{name: label} -> label
+      _ -> "Name"
     end
   end
 

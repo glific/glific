@@ -17,6 +17,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
   use GlificWeb, :controller
 
   alias Glific.Contacts
+  alias GlificWeb.WebChannel.DisplayName
   alias GlificWeb.WebChannel.Token
   alias Plug.Conn
 
@@ -53,7 +54,7 @@ defmodule GlificWeb.API.V1.WebChannelAuthController do
         data: %{
           token: token,
           contact_id: contact.id,
-          name: contact.name,
+          name: DisplayName.resolve(contact),
           phone: contact.phone
         }
       })

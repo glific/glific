@@ -77,6 +77,8 @@ defmodule GlificWeb.Router do
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
     post("/web_channel/request-otp", WebChannelAuthController, :request_otp)
     post("/web_channel/verify-otp", WebChannelAuthController, :verify_otp)
+    # Should be behind a protected scope but keeping here as web-channel auth is not
+    # yet implemented.
     post("/web_channel/upload", WebChannelMediaController, :upload)
   end
 
