@@ -789,37 +789,58 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec upload_evaluation_dataset_v2(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
   def upload_evaluation_dataset_v2(params, organization_id) do
-    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.upload_evaluation_dataset_v2(params, secrets["api_key"]) do
-      case result do
-        %{data: %{dataset_id: dataset_id, total_items: total_items}} ->
-          {:ok, %{dataset_id: dataset_id, total_items: total_items}}
-
-        error ->
-          Appsignal.send_error(
-            %Error{
-              message: "Got unexpected response from Kaapi while uploading evaluation dataset v2",
-              organization_id: organization_id,
-              reason: safe_inspect(error)
-            },
-            []
-          )
-
-          {:error, "An unknown error occurred, please contact Glific support."}
-      end
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id) do
+      params
+      |> ApiClient.upload_evaluation_dataset_v2(secrets["api_key"])
+      |> handle_evaluation_dataset_v2_response(organization_id)
     else
       {:error, reason} ->
-        Appsignal.send_error(
-          %Error{
-            message: "Failed to upload evaluation dataset v2 to Kaapi",
-            organization_id: organization_id,
-            reason: safe_inspect(reason)
-          },
-          []
+        send_kaapi_error(
+          "Failed to upload evaluation dataset v2 to Kaapi",
+          organization_id,
+          reason
         )
 
         {:error, reason}
     end
+  end
+
+  @spec handle_evaluation_dataset_v2_response(
+          {:ok, map()} | {:error, map() | binary()} | {:error, :timeout},
+          non_neg_integer()
+        ) :: {:ok, map()} | {:error, map() | binary()}
+  defp handle_evaluation_dataset_v2_response(
+         {:ok, %{data: %{dataset_id: dataset_id, total_items: total_items}}},
+         _organization_id
+       ) do
+    {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:error, reason}, organization_id) do
+    send_kaapi_error("Failed to upload evaluation dataset v2 to Kaapi", organization_id, reason)
+    {:error, reason}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:ok, result}, organization_id) do
+    send_kaapi_error(
+      "Got unexpected response from Kaapi while uploading evaluation dataset v2",
+      organization_id,
+      result
+    )
+
+    {:error, "An unknown error occurred, please contact Glific support."}
+  end
+
+  @spec send_kaapi_error(String.t(), non_neg_integer(), term()) :: :ok
+  defp send_kaapi_error(message, organization_id, reason) do
+    Appsignal.send_error(
+      %Error{
+        message: message,
+        organization_id: organization_id,
+        reason: safe_inspect(reason)
+      },
+      []
+    )
   end
 
   @spec insert_kaapi_provider(non_neg_integer(), String.t()) ::
