@@ -359,15 +359,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Fetches Meta's pre-approved WhatsApp template library, live from Gupshup's
-  Partner API (`GET <app_url>/template/metalibrary`), using the requesting org's
-  own partner app token. This is a read-only passthrough for browsing Meta's
-  curated template catalog — it does not persist anything.
-
-  Fetches the org's full eligible catalog with no query filters — the UI
-  searches/filters the cached result client-side instead of re-querying.
-  Category-narrowing happens client-side in
-  `Glific.Providers.Gupshup.Template.search_library_templates/1`.
+  Fetches Meta's pre-approved WhatsApp template library from Gupshup's
+  Partner API (`GET <app_url>/template/metalibrary`) — read-only, no query
+  filters; the UI searches/filters the cached result client-side instead.
   """
   @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_library_templates(org_id) do
