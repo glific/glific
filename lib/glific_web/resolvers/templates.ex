@@ -43,6 +43,17 @@ defmodule GlificWeb.Resolvers.Templates do
     {:ok, Templates.count_session_templates(args)}
   end
 
+  @doc """
+  Browse Meta's pre-approved WhatsApp template library, fetched live from the
+  organization's BSP partner API. Read-only passthrough — does not create any
+  session templates.
+  """
+  @spec template_library(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, list(map())} | {:error, any}
+  def template_library(_, _args, %{context: %{current_user: user}}) do
+    Templates.search_library_templates(user.organization_id)
+  end
+
   @doc false
   @spec create_session_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
