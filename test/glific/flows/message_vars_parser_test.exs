@@ -370,4 +370,28 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert MessageVarParser.parse(str, fields) == "Your school name is: abc"
     assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
   end
+
+  test "parse/2 falls back to the literal placeholder when @contact.language is not a map", _attrs do
+    # contact.fields.language is a plain string here instead of the usual
+    # %{"label" => ...} shape, so indexing ["label"] directly used to raise.
+    fields = %{"contact" => %{"fields" => %{"language" => "en"}}}
+
+    assert MessageVarParser.parse("@contact.language", fields) == "@contact.language"
+  end
+
+  test "parse/2 does not crash on a plain string result", _attrs do
+    # results["foo"] is a plain string, not a nested map, so asking for one
+    # level deeper ("bar") used to raise FunctionClauseError inside
+    # Access.get/3 via the old get_in/2 based lookup.
+    fields = %{"results" => %{"foo" => "just_a_string"}}
+
+    # Expected is "hello just_a_string.bar", not "hello @results.foo.bar":
+    # parse/2's 2-dot regex pass matches the full "@results.foo.bar" first and
+    # hits the safe nil-fallback (leaving the text unchanged), but the later
+    # 1-dot regex pass then independently matches and resolves the shorter
+    # "@results.foo" prefix within that unchanged text, leaving ".bar" behind
+    # as dangling literal text.
+    assert MessageVarParser.parse("hello @results.foo.bar", fields) ==
+             "hello just_a_string.bar"
+  end
 end
