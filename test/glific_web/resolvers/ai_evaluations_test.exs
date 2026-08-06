@@ -848,6 +848,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.dataset_id == 88_003
       assert golden_qa.total_items == nil
     end
+  end
+
+  describe "create_golden_qa/3 v2 (is_ai_evaluation_enabled)" do
+    setup [:enable_kaapi, :create_upload_file]
 
     test "v2 path: returns golden_qa with total_items and hits the v2 endpoint when is_ai_evaluation_enabled is on",
          %{staff: user, upload: upload} do
@@ -875,27 +879,25 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      try do
-        with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
-          assert {:ok, %{golden_qa: golden_qa}} =
-                   AIEvaluations.create_golden_qa(nil, args, resolution)
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{golden_qa: golden_qa}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
 
-          assert golden_qa.name == "valid_dataset_v2"
-          assert golden_qa.dataset_id == 88_004
-          assert golden_qa.total_items == 120
+        assert golden_qa.name == "valid_dataset_v2"
+        assert golden_qa.dataset_id == 88_004
+        assert golden_qa.total_items == 120
 
-          assert called(
-                   Glific.Metrics.increment(
-                     @create_golden_qa_success_metric,
-                     user.organization_id
-                   )
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_success_metric,
+                   user.organization_id
                  )
-        end
-      after
-        FunWithFlags.disable(:is_ai_evaluation_enabled,
-          for_actor: %{organization_id: user.organization_id}
-        )
+               )
       end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
     end
 
     test "v2 path: returns a generic error when the Kaapi response is missing total_items", %{
@@ -921,25 +923,23 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      try do
-        with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
-          assert {:ok, %{errors: [%{message: msg}]}} =
-                   AIEvaluations.create_golden_qa(nil, args, resolution)
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
 
-          assert msg == "An unknown error occurred, please contact Glific support."
+        assert msg == "An unknown error occurred, please contact Glific support."
 
-          assert called(
-                   Glific.Metrics.increment(
-                     @create_golden_qa_failure_metric,
-                     user.organization_id
-                   )
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
                  )
-        end
-      after
-        FunWithFlags.disable(:is_ai_evaluation_enabled,
-          for_actor: %{organization_id: user.organization_id}
-        )
+               )
       end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
     end
 
     test "v2 path: returns the Kaapi error message when dataset name already exists (409)", %{
@@ -977,26 +977,24 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      try do
-        with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
-          assert {:ok, %{errors: [%{message: msg}]}} =
-                   AIEvaluations.create_golden_qa(nil, args, resolution)
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
 
-          assert msg ==
-                   "Dataset with name 'tester' already exists in this organization and project. Please choose a different name."
+        assert msg ==
+                 "Dataset with name 'tester' already exists in this organization and project. Please choose a different name."
 
-          assert called(
-                   Glific.Metrics.increment(
-                     @create_golden_qa_failure_metric,
-                     user.organization_id
-                   )
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
                  )
-        end
-      after
-        FunWithFlags.disable(:is_ai_evaluation_enabled,
-          for_actor: %{organization_id: user.organization_id}
-        )
+               )
       end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
     end
   end
 
