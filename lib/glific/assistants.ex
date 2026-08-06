@@ -1009,6 +1009,145 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Sends a chat message to an assistant's live Kaapi config version (the "Try It Out"
+  sandbox). Dispatch is synchronous (Kaapi just queues the job and returns a `job_id`);
+  the actual reply arrives later via the `/kaapi/llm_call` callback and is published
+  over the `llm_call_response` GraphQL subscription — no chat history is persisted here,
+  multi-turn context is tracked by Kaapi's own `conversation` id.
+  """
+  @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def send_message(%{assistant_id: assistant_id, input: input} = params, organization_id, user_id) do
+    request_id = Ecto.UUID.generate()
+
+    with {:ok, {kaapi_uuid, kaapi_version_number}} <-
+           fetch_live_kaapi_config(assistant_id, organization_id),
+         payload =
+           build_llm_call_payload(
+             input,
+             params[:conversation_id],
+             kaapi_uuid,
+             kaapi_version_number,
+             organization_id,
+             user_id,
+             request_id
+           ),
+         {:ok, ack} <- Kaapi.llm_call(payload, organization_id) do
+      {:ok, %{job_id: ack.job_id, request_id: request_id, conversation_id: ack.conversation_id}}
+    end
+  end
+
+  @spec fetch_live_kaapi_config(non_neg_integer(), non_neg_integer()) ::
+          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+  defp fetch_live_kaapi_config(assistant_id, organization_id) do
+    case Repo.fetch_by(Assistant, %{id: assistant_id, organization_id: organization_id}) do
+      {:error, _} ->
+        {:error, "Assistant not found"}
+
+      {:ok, assistant} ->
+        assistant = Repo.preload(assistant, :active_config_version)
+
+        case {assistant.kaapi_uuid, assistant.active_config_version} do
+          {kaapi_uuid, %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}}
+          when not is_nil(kaapi_uuid) and not is_nil(kaapi_version_number) ->
+            {:ok, {kaapi_uuid, kaapi_version_number}}
+
+          _ ->
+            {:error, "Assistant does not have a live config version yet"}
+        end
+    end
+  end
+
+  @spec build_llm_call_payload(
+          String.t(),
+          String.t() | nil,
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) :: map()
+  defp build_llm_call_payload(
+         input,
+         conversation_id,
+         kaapi_uuid,
+         kaapi_version_number,
+         organization_id,
+         user_id,
+         request_id
+       ) do
+    %{
+      query: %{input: input, conversation: build_conversation(conversation_id)},
+      config: %{id: kaapi_uuid, version: kaapi_version_number},
+      callback_url: build_llm_call_callback_url(organization_id),
+      request_metadata: %{request_id: request_id, user_id: user_id}
+    }
+  end
+
+  @spec build_conversation(String.t() | nil) :: map()
+  defp build_conversation(nil), do: %{auto_create: true}
+  defp build_conversation(conversation_id), do: %{id: conversation_id}
+
+  @spec build_llm_call_callback_url(non_neg_integer()) :: String.t()
+  defp build_llm_call_callback_url(organization_id) do
+    organization = Partners.organization(organization_id)
+    Glific.api_callback_base(organization.shortcode) <> "/kaapi/llm_call"
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after an `llm_call/2` dispatch completes.
+  Publishes the result over the `llm_call_response` subscription on the
+  `"{organization_id}:{user_id}"` topic (`user_id` is echoed back via
+  `request_metadata`) — there is no server-side row to update.
+  """
+  @spec handle_llm_call_callback(non_neg_integer(), map()) :: :ok
+  def handle_llm_call_callback(
+        organization_id,
+        %{"metadata" => %{"request_id" => request_id, "user_id" => user_id}} = params
+      ) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      build_llm_call_response(params, request_id),
+      [{:llm_call_response, "#{organization_id}:#{user_id}"}]
+    )
+
+    :ok
+  end
+
+  def handle_llm_call_callback(organization_id, params) do
+    Glific.log_exception(%Error{
+      message: "Unexpected llm_call callback payload for org_id=#{organization_id}",
+      reason: Glific.SafeLog.safe_inspect(params),
+      organization_id: organization_id
+    })
+
+    :ok
+  end
+
+  @spec build_llm_call_response(map(), String.t()) :: map()
+  defp build_llm_call_response(%{"success" => true} = params, request_id) do
+    %{
+      request_id: request_id,
+      job_id: nil,
+      conversation_id: get_in(params, ["data", "conversation", "id"]),
+      answer: get_in(params, ["data", "response", "output", "content", "value"]),
+      errors: []
+    }
+  end
+
+  defp build_llm_call_response(params, request_id) do
+    error_message = params["error"] || Glific.SafeLog.safe_inspect(params["errors"])
+
+    %{
+      request_id: request_id,
+      job_id: nil,
+      conversation_id: nil,
+      answer: nil,
+      errors: [%{key: "error", message: error_message}]
+    }
+  end
+
+  @doc """
   Handles the callback from Kaapi for knowledge base creation.
   """
   @spec handle_knowledge_base_callback(map) ::

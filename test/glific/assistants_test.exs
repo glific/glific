@@ -2926,4 +2926,166 @@ defmodule Glific.AssistantsTest do
       )
     end
   end
+
+  describe "send_message/3" do
+    setup [:enable_kaapi]
+
+    defp create_live_assistant(organization_id) do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Chat Sandbox Assistant #{:rand.uniform(10_000)}",
+          organization_id: organization_id,
+          kaapi_uuid: "kaapi_uuid_001"
+        })
+        |> Repo.insert()
+
+      {:ok, config_version} =
+        %AssistantConfigVersion{}
+        |> AssistantConfigVersion.changeset(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          provider: "openai",
+          model: "gpt-4o",
+          prompt: "You are a helpful assistant",
+          settings: %{"temperature" => 1.0},
+          status: :ready,
+          kaapi_version_number: 3
+        })
+        |> Repo.insert()
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      assistant
+    end
+
+    test "dispatches the stored-config payload and returns the job_id",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["config"] == %{"id" => "kaapi_uuid_001", "version" => 3}
+
+        assert decoded["query"] == %{
+                 "input" => "Hello",
+                 "conversation" => %{"auto_create" => true}
+               }
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{job_id: "job_chat_001", conversation: %{id: "conv_001"}}}
+        }
+      end)
+
+      assert {:ok, %{job_id: "job_chat_001", request_id: request_id, conversation_id: "conv_001"}} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+
+      assert is_binary(request_id)
+    end
+
+    test "reuses an existing conversation_id when given one",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        decoded = Jason.decode!(body)
+        assert decoded["query"]["conversation"] == %{"id" => "conv_existing"}
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_chat_002"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_chat_002"}} =
+               Assistants.send_message(
+                 %{
+                   assistant_id: assistant.id,
+                   input: "Follow-up question",
+                   conversation_id: "conv_existing"
+                 },
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error for an assistant in another organization",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      assert {:error, _reason} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id + 1,
+                 1
+               )
+    end
+
+    test "returns an error when the assistant has no live config version yet",
+         %{organization_id: organization_id} do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{
+          name: "Provisioning Assistant",
+          organization_id: organization_id
+        })
+        |> Repo.insert()
+
+      assert {:error, _reason} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+
+    test "returns an error when Kaapi dispatch fails",
+         %{organization_id: organization_id} do
+      assistant = create_live_assistant(organization_id)
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
+      end)
+
+      assert {:error, _reason} =
+               Assistants.send_message(
+                 %{assistant_id: assistant.id, input: "Hello"},
+                 organization_id,
+                 1
+               )
+    end
+  end
+
+  describe "handle_llm_call_callback/2" do
+    test "publishes a successful reply", %{organization_id: organization_id} do
+      assert :ok =
+               Assistants.handle_llm_call_callback(organization_id, %{
+                 "success" => true,
+                 "metadata" => %{"request_id" => "req-1", "user_id" => "9"},
+                 "data" => %{
+                   "response" => %{"output" => %{"content" => %{"value" => "Hi there!"}}},
+                   "conversation" => %{"id" => "conv_001"}
+                 }
+               })
+    end
+
+    test "publishes a failure with the error message", %{organization_id: organization_id} do
+      assert :ok =
+               Assistants.handle_llm_call_callback(organization_id, %{
+                 "success" => false,
+                 "metadata" => %{"request_id" => "req-2", "user_id" => "9"},
+                 "error" => "LLM provider timed out"
+               })
+    end
+
+    test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
+      assert :ok = Assistants.handle_llm_call_callback(organization_id, %{"unexpected" => true})
+    end
+  end
 end

@@ -399,18 +399,37 @@ defmodule Glific.ThirdParty.Kaapi do
     - `organization_id` — used to look up the Kaapi API key via `fetch_kaapi_creds/1`.
   """
   @spec generate_prompt(map(), non_neg_integer()) ::
-          {:ok, %{job_id: String.t()}} | {:error, any()}
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
   def generate_prompt(payload, organization_id) do
+    dispatch_llm_job(payload, organization_id, "generate_prompt")
+  end
+
+  @doc """
+  Dispatches a "Mode 1: Stored Configuration" Kaapi LLM call for an assistant's saved config
+  version (e.g. the "Try It Out" chat sandbox). Distinct entry point from `generate_prompt/2`
+  so a `PromptGenerator`-shaped payload (ad-hoc config blob) is never confused with a
+  stored-config payload (`config: %{id:, version:}`) — same underlying dispatch, different
+  callers build very different payloads.
+  """
+  @spec llm_call(map(), non_neg_integer()) ::
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
+  def llm_call(payload, organization_id) do
+    dispatch_llm_job(payload, organization_id, "llm_call")
+  end
+
+  @spec dispatch_llm_job(map(), non_neg_integer(), String.t()) ::
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
+  defp dispatch_llm_job(payload, organization_id, caller) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
          {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
       case body do
-        %{data: %{job_id: job_id}} when is_binary(job_id) ->
-          {:ok, %{job_id: job_id}}
+        %{data: %{job_id: job_id} = data} when is_binary(job_id) ->
+          {:ok, %{job_id: job_id, conversation_id: get_in(data, [:conversation, :id])}}
 
         other ->
           Glific.log_exception(%Error{
             message:
-              "Kaapi generate_prompt returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
+              "Kaapi #{caller} returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
           })
 
           {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
@@ -419,7 +438,7 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Kaapi generate_prompt failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+            "Kaapi #{caller} failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
         })
 
         {:error, reason}

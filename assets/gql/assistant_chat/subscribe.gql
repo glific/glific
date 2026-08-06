@@ -1,0 +1,11 @@
+subscription llmCallResponse($organizationId: ID!) {
+  llmCallResponse(organizationId: $organizationId) {
+    requestId
+    conversationId
+    answer
+    errors {
+      key
+      message
+    }
+  }
+}
