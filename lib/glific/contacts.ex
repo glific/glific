@@ -256,8 +256,6 @@ defmodule Glific.Contacts do
   """
   @spec get_contact_by_phone!(String.t()) :: Contact.t()
   def get_contact_by_phone!(phone) do
-    phone = normalize_phone(phone)
-
     Contact
     |> where([c], c.phone == ^phone)
     |> Repo.add_permission(&Contacts.add_permission/2)
@@ -441,8 +439,7 @@ defmodule Glific.Contacts do
     map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
 
     if Map.get(map, :phone) == ["has already been taken"] do
-      # the stored row holds the canonical phone, so match a raw variant against it too
-      Repo.fetch_by(Contact, %{phone: normalize_phone(sender.phone)})
+      Repo.fetch_by(Contact, %{phone: sender.phone})
     else
       {:error, changeset}
     end
@@ -488,11 +485,9 @@ defmodule Glific.Contacts do
     {:error, "Phone number is missing"}
   end
 
-  def maybe_update_contact(%{phone: phone} = sender) do
-    phone = normalize_phone(phone)
-
-    case Repo.get_by(Contact, %{phone: phone}) do
-      nil -> {:error, "Contact #{phone} was not found and hence not added"}
+  def maybe_update_contact(sender) do
+    case Repo.get_by(Contact, %{phone: sender.phone}) do
+      nil -> {:error, "Contact #{sender.phone} was not found and hence not added"}
       contact -> update_contact(contact, sender)
     end
   end
@@ -514,8 +509,6 @@ defmodule Glific.Contacts do
   @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def contact_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts \\ []) do
-    phone = normalize_phone(phone)
-
     attrs = %{
       phone: phone,
       optin_time: utc_time,
@@ -593,8 +586,6 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t(), String.t()) :: :ok | :error
   def contact_opted_out(phone, organization_id, utc_time, method \\ "Glific Flows") do
-    phone = normalize_phone(phone)
-
     if simulator_contact?(phone) do
       :ok
     else
@@ -1105,7 +1096,7 @@ defmodule Glific.Contacts do
   @doc """
   Canonicalize a phone number to E.164 (without the leading +) so that differently-formatted
   variants of the same number map to a single value. Simulator numbers and numbers that cannot
-  be parsed are returned unchanged, so this is safe to apply on any lookup or write path.
+  be parsed are returned unchanged.
   """
   @spec normalize_phone(String.t()) :: String.t()
   def normalize_phone(phone) when is_binary(phone) do

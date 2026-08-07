@@ -46,6 +46,18 @@ defmodule Glific.ContactsTest do
     :ok
   end
 
+  # a contact stored before phone canonicalization: written straight to the table so the
+  # changeset does not canonicalize it on the way in
+  @spec legacy_contact!(String.t(), non_neg_integer()) :: Contact.t()
+  defp legacy_contact!(phone, organization_id) do
+    Repo.insert!(%Contact{
+      name: "legacy contact",
+      phone: phone,
+      language_id: 1,
+      organization_id: organization_id
+    })
+  end
+
   defp get_tmp_path(name \\ "fixture.csv") do
     System.tmp_dir!()
     |> Path.join(name)
@@ -1275,64 +1287,13 @@ defmodule Glific.ContactsTest do
       assert upserted.phone == "919917443992"
     end
 
-    test "maybe_create_contact/1 with a +-variant resolves to the existing canonical contact",
-         %{organization_id: organization_id} = attrs do
-      {:ok, canonical} =
-        Contacts.create_contact(Map.merge(attrs, %{phone: "919917443992", name: "canonical"}))
+    test "contacts created before canonicalization keep their phone when updated",
+         %{organization_id: organization_id} do
+      legacy = legacy_contact!("+919917443992", organization_id)
 
-      {:ok, resolved} =
-        Contacts.maybe_create_contact(%{
-          phone: "+919917443992",
-          name: "canonical",
-          organization_id: organization_id
-        })
+      {:ok, updated} = Contacts.update_contact(legacy, %{name: "new name"})
 
-      assert resolved.id == canonical.id
-    end
-
-    test "contact_opted_in/4 with a +-variant resolves to the existing canonical contact",
-         %{organization_id: organization_id} = attrs do
-      {:ok, canonical} =
-        Contacts.create_contact(Map.merge(attrs, %{phone: "919917443992", name: "canonical"}))
-
-      {:ok, opted_in} =
-        Contacts.contact_opted_in(%{phone: "+919917443992"}, organization_id, DateTime.utc_now())
-
-      assert opted_in.id == canonical.id
-      assert opted_in.optin_status == true
-    end
-
-    test "contact_opted_out/4 with a +-variant opts out the existing canonical contact",
-         %{organization_id: organization_id} = attrs do
-      {:ok, canonical} =
-        Contacts.create_contact(Map.merge(attrs, %{phone: "919917443992", name: "canonical"}))
-
-      assert :ok ==
-               Contacts.contact_opted_out("+919917443992", organization_id, DateTime.utc_now())
-
-      {:ok, reloaded} = Repo.fetch(Contact, canonical.id)
-      assert reloaded.optin_status == false
-      assert reloaded.status == :invalid
-    end
-
-    test "maybe_update_contact/1 with a +-variant updates the existing canonical contact",
-         %{organization_id: _organization_id} = attrs do
-      {:ok, canonical} =
-        Contacts.create_contact(Map.merge(attrs, %{phone: "919917443992", name: "canonical"}))
-
-      {:ok, updated} =
-        Contacts.maybe_update_contact(%{phone: "+919917443992", name: "updated name"})
-
-      assert updated.id == canonical.id
-      assert updated.name == "updated name"
-    end
-
-    test "get_contact_by_phone!/1 with a +-variant returns the existing canonical contact",
-         %{organization_id: _organization_id} = attrs do
-      {:ok, canonical} =
-        Contacts.create_contact(Map.merge(attrs, %{phone: "919917443992", name: "canonical"}))
-
-      assert Contacts.get_contact_by_phone!("+919917443992").id == canonical.id
+      assert updated.phone == "+919917443992"
     end
 
     test "normalize_phone/1 canonicalizes variants and leaves simulator/unparseable untouched" do

@@ -140,15 +140,18 @@ defmodule Glific.Contacts.Contact do
     |> foreign_key_constraint(:active_profile_id)
   end
 
-  # Canonicalize the phone before storage so differently-formatted variants of the same
-  # number resolve to one contact. The canonicalization rules live in Contacts.normalize_phone/1.
+  # Canonicalize the phone of new contacts so differently-formatted variants of the same number
+  # resolve to one contact. Existing rows are left alone: they were stored before
+  # canonicalization and every lookup still matches them on the string they hold.
   @spec put_normalized_phone(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp put_normalized_phone(changeset) do
+  defp put_normalized_phone(%Ecto.Changeset{data: %Contact{id: nil}} = changeset) do
     case get_change(changeset, :phone) do
       nil -> changeset
       phone -> put_change(changeset, :phone, Contacts.normalize_phone(phone))
     end
   end
+
+  defp put_normalized_phone(changeset), do: changeset
 
   @doc false
   @spec to_minimal_map(Contact.t()) :: map()

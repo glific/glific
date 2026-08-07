@@ -56,8 +56,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       conn = post(conn, "/gupshup", setup_config.message_params)
       response(conn, 200)
 
+      # the opt-in creates the contact, so its phone is stored canonicalized
       {:ok, contact} =
-        Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+        Repo.fetch_by(Contact, %{
+          phone: Contacts.normalize_phone(phone),
+          organization_id: conn.assigns[:organization_id]
+        })
 
       assert contact.optin_time != nil
       assert contact.status == :valid
