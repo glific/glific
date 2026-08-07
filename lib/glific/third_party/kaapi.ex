@@ -807,7 +807,7 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec handle_evaluation_dataset_v2_response(
-          {:ok, map()} | {:error, map() | binary() | :timeout}
+          {:ok, map()} | {:error, map() | binary() | :timeout},
           non_neg_integer()
         ) :: {:ok, map()} | {:error, map() | binary()}
   defp handle_evaluation_dataset_v2_response(
