@@ -7,6 +7,8 @@ defmodule Glific.AIEvaluations do
 
   require Logger
 
+  alias Ecto.Multi
+
   alias Glific.{
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
@@ -356,60 +358,77 @@ defmodule Glific.AIEvaluations do
       completion = get_in(config_version_data, ["config_blob", "completion"]) || %{}
       params = completion["params"] || %{}
 
-      %AssistantConfigVersion{}
-      |> AssistantConfigVersion.changeset(%{
-        assistant_id: assistant.id,
-        organization_id: assistant.organization_id,
-        prompt: params["instructions"],
-        provider: completion["provider"] || "openai",
-        model: params["model"],
-        settings: %{"temperature" => params["temperature"]},
-        status: :ready,
-        kaapi_version_number: config_version_data["version"],
-        description: config_version_data["commit_message"]
-      })
-      |> Repo.insert()
+      changeset =
+        AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+          assistant_id: assistant.id,
+          organization_id: assistant.organization_id,
+          prompt: params["instructions"],
+          provider: completion["provider"] || "openai",
+          model: params["model"],
+          settings: %{"temperature" => params["temperature"]},
+          status: :ready,
+          kaapi_version_number: config_version_data["version"],
+          description: config_version_data["commit_message"]
+        })
+
+      Multi.new()
+      |> Multi.insert(:config_version, changeset)
       |> link_improve_prompt_knowledge_bases(
         params["knowledge_base_ids"],
         assistant.organization_id
       )
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{config_version: config_version}} ->
+          {:ok, config_version}
+
+        {:error, :knowledge_base_version, reason, _changes} ->
+          {:error, reason}
+
+        {:error, _failed, changeset, _changes} ->
+          {:error, changeset}
+      end
     end
   end
 
-  @spec link_improve_prompt_knowledge_bases(
-          {:ok, AssistantConfigVersion.t()} | {:error, any()},
-          [String.t()] | nil,
-          non_neg_integer()
-        ) :: {:ok, AssistantConfigVersion.t()} | {:error, any()}
-  defp link_improve_prompt_knowledge_bases({:error, _reason} = error, _llm_service_ids, _org_id),
-    do: error
+  @spec link_improve_prompt_knowledge_bases(Multi.t(), [String.t()] | nil, non_neg_integer()) ::
+          Multi.t()
+  defp link_improve_prompt_knowledge_bases(multi, llm_service_ids, organization_id) do
+    case List.first(llm_service_ids || []) do
+      nil ->
+        multi
 
-  defp link_improve_prompt_knowledge_bases({:ok, new_version}, llm_service_ids, organization_id)
-       when is_list(llm_service_ids) and llm_service_ids != [] do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    rows =
-      KnowledgeBaseVersion
-      |> where([kbv], kbv.llm_service_id in ^llm_service_ids)
-      |> Repo.all()
-      |> Enum.map(fn knowledge_base_version ->
-        %{
-          assistant_config_version_id: new_version.id,
-          knowledge_base_version_id: knowledge_base_version.id,
-          organization_id: organization_id,
-          inserted_at: now,
-          updated_at: now
-        }
-      end)
-
-    Repo.insert_all("assistant_config_version_knowledge_base_versions", rows)
-    {:ok, new_version}
+      llm_service_id ->
+        do_link_improve_prompt_knowledge_base(multi, llm_service_id, organization_id)
+    end
   end
 
-  defp link_improve_prompt_knowledge_bases(
-         {:ok, new_version},
-         _llm_service_ids,
-         _organization_id
-       ),
-       do: {:ok, new_version}
+  @spec do_link_improve_prompt_knowledge_base(Multi.t(), String.t(), non_neg_integer()) ::
+          Multi.t()
+  defp do_link_improve_prompt_knowledge_base(multi, llm_service_id, organization_id) do
+    multi
+    |> Multi.run(:knowledge_base_version, fn _repo, _changes ->
+      case Repo.get_by(KnowledgeBaseVersion, llm_service_id: llm_service_id) do
+        nil -> {:error, "No matching knowledge base found for llm_service_id=#{llm_service_id}"}
+        knowledge_base_version -> {:ok, knowledge_base_version}
+      end
+    end)
+    |> Multi.insert_all(
+      :link_knowledge_base,
+      "assistant_config_version_knowledge_base_versions",
+      fn %{config_version: config_version, knowledge_base_version: knowledge_base_version} ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        [
+          %{
+            assistant_config_version_id: config_version.id,
+            knowledge_base_version_id: knowledge_base_version.id,
+            organization_id: organization_id,
+            inserted_at: now,
+            updated_at: now
+          }
+        ]
+      end
+    )
+  end
 end
