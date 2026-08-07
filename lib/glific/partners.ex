@@ -1479,8 +1479,7 @@ defmodule Glific.Partners do
       "ticketing_enabled" => Flags.get_ticketing_enabled(organization),
       "whatsapp_group_enabled" => Flags.get_whatsapp_group_enabled(organization),
       "whatsapp_forms_enabled" => Flags.get_whatsapp_forms_enabled?(organization),
-      "auto_translation_enabled" =>
-        Flags.get_google_auto_translation_enabled(organization),
+      "auto_translation_enabled" => Flags.get_google_auto_translation_enabled(organization),
       "certificate_enabled" => Flags.get_certificate_enabled(organization),
       "interactive_re_response_enabled" =>
         Flags.get_interactive_re_response_enabled(organization),
