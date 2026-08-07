@@ -580,7 +580,6 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: "some name",
       contact_id: contact.id,
-      # mirror the (normalized) contact phone so user.phone stays in sync with contact.phone
       phone: contact.phone,
       password: "Secret1234!",
       password_confirmation: "Secret1234!",

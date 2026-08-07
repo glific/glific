@@ -1277,7 +1277,7 @@ defmodule Glific.ContactsTest do
 
       {:ok, upserted} =
         Contacts.upsert(%{
-          phone: "919917443992",
+          phone: "+919917443992",
           name: "updated",
           organization_id: organization_id
         })

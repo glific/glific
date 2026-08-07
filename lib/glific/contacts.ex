@@ -1094,9 +1094,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Canonicalize a phone number to E.164 (without the leading +) so that differently-formatted
-  variants of the same number map to a single value. Simulator numbers and numbers that cannot
-  be parsed are returned unchanged.
+  Canonicalize a phone to E.164 without the leading +, leaving simulator and unparseable numbers as they are.
   """
   @spec normalize_phone(String.t()) :: String.t()
   def normalize_phone(phone) when is_binary(phone) do
