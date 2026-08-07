@@ -1295,6 +1295,36 @@ defmodule Glific.AssistantsTest do
 
       assert temperature == 1
     end
+
+    test "persists arbitrary model-specific settings alongside temperature",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Settings Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :in_progress,
+          llm_service_id: "vs_settings_test",
+          size: 0
+        })
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "GPT-5.1 Assistant",
+                 model: "gpt-5.1",
+                 settings: %{"effort" => "none", "summary" => "auto"},
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      assert config_version.settings == %{"effort" => "none", "summary" => "auto"}
+    end
   end
 
   describe "create_assistant with in-progress KB" do

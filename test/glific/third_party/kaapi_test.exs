@@ -76,6 +76,161 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "list_models/1" do
+    setup [:enable_kaapi_credential]
+
+    setup do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+      :ok
+    end
+
+    test "fetches every page and returns the combined model list" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        case query[:skip] do
+          0 ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                data: %{data: [%{provider: "openai", model_name: "gpt-4.1"}]},
+                metadata: %{has_more: true}
+              }
+            }
+
+          100 ->
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+                metadata: %{has_more: false}
+              }
+            }
+        end
+      end)
+
+      assert {:ok, models} = Kaapi.list_models(1)
+      assert Enum.map(models, & &1.model_name) == ["gpt-4.1", "gpt-4o"]
+    end
+
+    test "serves the cached list on a subsequent call without another Kaapi request" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      assert {:ok, _models} = Kaapi.list_models(1)
+
+      mock(fn %Tesla.Env{} -> raise "Kaapi should not be called again while cache is warm" end)
+
+      assert {:ok, models} = Kaapi.list_models(1)
+      assert Enum.map(models, & &1.model_name) == ["gpt-4o"]
+    end
+
+    test "returns error and does not cache when Kaapi returns an unexpected 200 body" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{data: []}, metadata: nil}}
+      end)
+
+      assert {:error, reason} = Kaapi.list_models(1)
+      assert reason =~ "Unexpected Kaapi list_models response"
+      assert Cachex.get(:glific_cache, {:global, {:kaapi_models, "openai"}}) == {:ok, nil}
+    end
+
+    test "returns an empty list without caching it when Kaapi has no active models" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{data: []}, metadata: %{has_more: false}}}
+      end)
+
+      assert {:ok, []} = Kaapi.list_models(1)
+      assert Cachex.get(:glific_cache, {:global, {:kaapi_models, "openai"}}) == {:ok, nil}
+    end
+  end
+
+  describe "list_models/1 without kaapi configured" do
+    test "returns error when Kaapi is not active for the organization" do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+
+      assert {:error, "Kaapi is not active"} = Kaapi.list_models(1)
+    end
+  end
+
+  describe "create_assistant_config/2 settings passthrough" do
+    setup [:enable_kaapi_credential]
+
+    test "forwards temperature/top_p settings as-is for a classic (non-reasoning) model" do
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        completion_params = Jason.decode!(body)["config_blob"]["completion"]["params"]
+
+        assert completion_params == %{
+                 "model" => "gpt-4.1",
+                 "instructions" => "You are a helpful assistant",
+                 "knowledge_base_ids" => [],
+                 "temperature" => 0.01,
+                 "top_p" => 1,
+                 "max_output_tokens" => 2048
+               }
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{id: "asst_1", version: %{version: 1}},
+            metadata: %{}
+          }
+        }
+      end)
+
+      params = %{
+        name: "GPT-4.1 Assistant",
+        model: "gpt-4.1",
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{"temperature" => 0.01, "top_p" => 1, "max_output_tokens" => 2048}
+      }
+
+      assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "forwards effort/summary settings for a reasoning model, without a stray temperature" do
+      mock(fn %Tesla.Env{method: :post, body: body} ->
+        completion_params = Jason.decode!(body)["config_blob"]["completion"]["params"]
+
+        assert completion_params == %{
+                 "model" => "gpt-5.1",
+                 "instructions" => "You are a helpful assistant",
+                 "knowledge_base_ids" => [],
+                 "effort" => "none",
+                 "summary" => "auto"
+               }
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{id: "asst_2", version: %{version: 1}},
+            metadata: %{}
+          }
+        }
+      end)
+
+      params = %{
+        name: "GPT-5.1 Assistant",
+        model: "gpt-5.1",
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{"effort" => "none", "summary" => "auto"}
+      }
+
+      assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)
+    end
+  end
+
   describe "normalize_kaapi_body/1" do
     test "treats a 200 body with success:false as a logical failure" do
       assert %{
