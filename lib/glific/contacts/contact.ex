@@ -140,8 +140,6 @@ defmodule Glific.Contacts.Contact do
     |> foreign_key_constraint(:active_profile_id)
   end
 
-  # Inserts only: rewriting an existing row would change a phone that lookups, the BSP and
-  # BigQuery already hold, and nothing here matches on the canonical form.
   @spec put_normalized_phone(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp put_normalized_phone(%Ecto.Changeset{data: %Contact{id: nil}} = changeset) do
     case get_change(changeset, :phone) do
