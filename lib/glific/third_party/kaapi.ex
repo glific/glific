@@ -798,18 +798,58 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec upload_evaluation_dataset_v2(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
   def upload_evaluation_dataset_v2(params, organization_id) do
-    upload_evaluation_dataset(
-      params,
-      organization_id,
-      &ApiClient.upload_evaluation_dataset_v2/2,
-      fn
-        %{data: %{dataset_id: dataset_id, total_items: total_items}} ->
-          {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+    case fetch_kaapi_creds(organization_id) do
+      {:ok, secrets} ->
+        params
+        |> ApiClient.upload_evaluation_dataset_v2(secrets["api_key"])
+        |> handle_evaluation_dataset_v2_response(organization_id)
 
-        other ->
-          {:unexpected, other}
-      end,
-      "dataset v2"
+      {:error, reason} ->
+        send_kaapi_error(
+          "Failed to upload evaluation dataset v2 to Kaapi",
+          organization_id,
+          reason
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @spec handle_evaluation_dataset_v2_response(
+          {:ok, map()} | {:error, map() | binary() | :timeout},
+          non_neg_integer()
+        ) :: {:ok, map()} | {:error, map() | binary()}
+  defp handle_evaluation_dataset_v2_response(
+         {:ok, %{data: %{dataset_id: dataset_id, total_items: total_items}}},
+         _organization_id
+       ) do
+    {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:error, reason}, organization_id) do
+    send_kaapi_error("Failed to upload evaluation dataset v2 to Kaapi", organization_id, reason)
+    {:error, reason}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:ok, result}, organization_id) do
+    send_kaapi_error(
+      "Got unexpected response from Kaapi while uploading evaluation dataset v2",
+      organization_id,
+      result
+    )
+
+    {:error, "An unknown error occurred, please contact Glific support."}
+  end
+
+  @spec send_kaapi_error(String.t(), non_neg_integer(), term()) :: Appsignal.Span.t() | nil
+  defp send_kaapi_error(message, organization_id, reason) do
+    Appsignal.send_error(
+      %Error{
+        message: message,
+        organization_id: organization_id,
+        reason: safe_inspect(reason)
+      },
+      []
     )
   end
 
