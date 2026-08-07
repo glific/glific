@@ -71,6 +71,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :dataset_id, :integer
     field :file_name, :string
     field :signed_url, :string
+    field :total_items, :integer
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
