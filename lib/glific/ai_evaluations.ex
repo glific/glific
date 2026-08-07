@@ -284,8 +284,6 @@ defmodule Glific.AIEvaluations do
     end)
   end
 
-  @improve_prompt_commit_prefix "[AI Generated]"
-
   @doc """
   Dispatches a v2 (native-judge) prompt improvement request to Kaapi for a completed evaluation.
   """
@@ -310,49 +308,6 @@ defmodule Glific.AIEvaluations do
       {:error, reason} ->
         {:error, reason}
     end
-  end
-
-  @doc """
-  Returns `"ready"` if an improve-prompt config version exists for the evaluation's
-  assistant, `"not_requested"` otherwise.
-  """
-  @spec get_improve_prompt(non_neg_integer(), non_neg_integer()) ::
-          {:ok, map()} | {:error, any()}
-  def get_improve_prompt(evaluation_id, organization_id) do
-    with {:ok, evaluation} <-
-           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: organization_id}) do
-      evaluation = Repo.preload(evaluation, :assistant_config_version)
-
-      status =
-        evaluation.assistant_config_version.assistant_id
-        |> latest_improve_prompt_version()
-        |> improve_prompt_status()
-
-      {:ok, status}
-    end
-  end
-
-  @spec latest_improve_prompt_version(non_neg_integer()) :: AssistantConfigVersion.t() | nil
-  defp latest_improve_prompt_version(assistant_id) do
-    AssistantConfigVersion
-    |> where([v], v.assistant_id == ^assistant_id)
-    |> where([v], like(v.description, ^"#{@improve_prompt_commit_prefix}%"))
-    |> order_by([v], desc: v.id)
-    |> limit(1)
-    |> Repo.one()
-  end
-
-  @spec improve_prompt_status(AssistantConfigVersion.t() | nil) :: map()
-  defp improve_prompt_status(nil), do: %{status: "not_requested"}
-
-  defp improve_prompt_status(config_version) do
-    %{
-      status: "ready",
-      recommended_prompt: config_version.prompt,
-      commit_message: config_version.description,
-      assistant_config_version_id: config_version.id,
-      version_number: config_version.version_number
-    }
   end
 
   @doc """

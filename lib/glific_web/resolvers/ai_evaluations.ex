@@ -445,8 +445,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @doc """
   Requests a v2 (native-judge) prompt improvement from Kaapi for a completed
-  evaluation. Returns `status: "pending"`; poll `get_improve_prompt/3` for the
-  result once Kaapi's callback lands and creates the new config version.
+  evaluation. Returns `status: "pending"`; Kaapi's callback creates the new
+  config version asynchronously.
   """
   @spec improve_evaluation_prompt(map(), map(), map()) :: {:ok, map()}
   def improve_evaluation_prompt(_, %{evaluation_id: evaluation_id}, %{
@@ -477,22 +477,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
         {:ok,
          %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
-    end
-  end
-
-  @doc """
-  Fetches the status of a v2 prompt improvement, scoped to the caller's org.
-  """
-  @spec get_improve_prompt(map(), map(), map()) :: {:ok, map()}
-  def get_improve_prompt(_, %{evaluation_id: evaluation_id}, %{
-        context: %{current_user: user}
-      }) do
-    case AIEvaluations.get_improve_prompt(evaluation_id, user.organization_id) do
-      {:ok, status} ->
-        {:ok, %{improve_prompt: status}}
-
-      {:error, _} ->
-        {:ok, %{errors: [%{message: "Evaluation not found."}]}}
     end
   end
 end

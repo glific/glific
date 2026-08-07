@@ -2,8 +2,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
   @moduledoc """
   GraphQL integration tests for the v2 evaluation prompt-improvement surface:
   - improveEvaluationPrompt mutation
-  - improvePrompt query (poll)
-  - full async loop (mutation -> callback -> poll)
+  - full async loop (mutation -> callback creates config version)
   """
 
   use GlificWeb.ConnCase
@@ -23,12 +22,6 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
     :improve,
     GlificWeb.Schema,
     "assets/gql/ai_evaluations/improve_prompt.gql"
-  )
-
-  load_gql(
-    :by_id,
-    GlificWeb.Schema,
-    "assets/gql/ai_evaluations/get_improve_prompt.gql"
   )
 
   defp enable_kaapi_and_v2(%{organization_id: org_id}) do
@@ -168,49 +161,10 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
     end
   end
 
-  describe "improvePrompt query" do
-    setup [:enable_kaapi_and_v2, :create_completed_evaluation]
-
-    test "staff user can poll status for an evaluation with no request yet", %{
-      staff: user,
-      evaluation: evaluation
-    } do
-      result = auth_query_gql_by(:by_id, user, variables: %{"evaluationId" => evaluation.id})
-
-      assert {:ok, query_data} = result
-
-      fetched =
-        get_in(query_data, [
-          :data,
-          "improvePrompt",
-          "improvePrompt"
-        ])
-
-      assert fetched["status"] == "not_requested"
-    end
-
-    test "non-existent evaluation id returns an error", %{staff: user} do
-      result = auth_query_gql_by(:by_id, user, variables: %{"evaluationId" => 999_999_999})
-
-      assert {:ok, query_data} = result
-
-      message =
-        get_in(query_data, [
-          :data,
-          "improvePrompt",
-          "errors",
-          Access.at(0),
-          "message"
-        ])
-
-      assert message == "Evaluation not found."
-    end
-  end
-
   describe "full async loop" do
     setup [:enable_kaapi_and_v2, :create_completed_evaluation]
 
-    test "improve -> callback -> poll returns status :ready with recommended_prompt", %{
+    test "improve -> callback creates a new :ready config version", %{
       staff: user,
       evaluation: evaluation,
       assistant: assistant
@@ -227,7 +181,7 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
                "status"
              ]) == "pending"
 
-      {:ok, _updated} =
+      {:ok, new_config_version} =
         AIEvaluations.handle_improve_prompt_callback(%{
           "success" => true,
           "data" => %{
@@ -248,19 +202,9 @@ defmodule GlificWeb.Schema.AIEvaluationImprovePromptTest do
           }
         })
 
-      {:ok, poll_data} =
-        auth_query_gql_by(:by_id, user, variables: %{"evaluationId" => evaluation.id})
-
-      fetched =
-        get_in(poll_data, [
-          :data,
-          "improvePrompt",
-          "improvePrompt"
-        ])
-
-      assert fetched["status"] == "ready"
-      assert fetched["recommendedPrompt"] == "Fully improved prompt"
-      assert fetched["commitMessage"] == "[AI Generated] improved prompt"
+      assert new_config_version.status == :ready
+      assert new_config_version.prompt == "Fully improved prompt"
+      assert new_config_version.description == "[AI Generated] improved prompt"
     end
   end
 end

@@ -103,11 +103,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   object :improve_prompt do
     field :status, :string
-    field :recommended_prompt, :string
-    field :commit_message, :string
-    field :assistant_config_version_id, :id
-    field :version_number, :integer
-    field :failure_reason, :string
   end
 
   object :improve_prompt_result do
@@ -172,15 +167,6 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
-    end
-
-    @desc "Get the status of a v2 prompt improvement"
-    field :improve_prompt, :improve_prompt_result do
-      arg(:evaluation_id, non_null(:id))
-      middleware(Authorize, :staff)
-      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
-      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
-      resolve(&Resolvers.AIEvaluations.get_improve_prompt/3)
     end
   end
 
