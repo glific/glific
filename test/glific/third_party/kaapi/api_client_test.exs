@@ -1,7 +1,6 @@
 defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
   use GlificWeb.ConnCase
   import Tesla.Mock
-  alias Glific.ThirdParty.Kaapi
   alias Glific.ThirdParty.Kaapi.ApiClient
 
   @params %{
@@ -466,22 +465,92 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
-  describe "normalize_kaapi_body/1" do
-    test "treats a 200 body with success:false as a logical failure" do
-      assert %{
-               success: false,
-               http_status: 200,
-               error_type: "kaapi_logical_failure",
-               reason: "boom"
-             } = Kaapi.normalize_kaapi_body(%{success: false, message: "boom"})
+  describe "upload_evaluation_dataset/2" do
+    setup [:create_dataset_upload_params]
+
+    test "successfully uploads the dataset to the v1 endpoint", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v1/evaluations/datasets"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{dataset_name: "valid_dataset", dataset_id: "88001"}}
+        }
+      end)
+
+      assert {:ok, %{data: %{dataset_id: "88001"}}} =
+               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
     end
 
-    test "falls back to the error key, then to a default reason" do
-      assert %{reason: "bad"} =
-               Kaapi.normalize_kaapi_body(%{success: false, error: "bad"})
+    test "returns error when kaapi returns error status", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid dataset format"}}
+      end)
 
-      assert %{reason: "Kaapi logical failure"} =
-               Kaapi.normalize_kaapi_body(%{success: false})
+      assert {:error, %{status: 422, body: %{error: "Invalid dataset format"}}} =
+               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
     end
+
+    test "returns error on transport failure/timeout", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.upload_evaluation_dataset(dataset_params, @org_kaapi_api_key)
+    end
+  end
+
+  describe "upload_evaluation_dataset_v2/2" do
+    setup [:create_dataset_upload_params]
+
+    test "successfully uploads the dataset to the v2 endpoint", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/datasets"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{dataset_id: "99001", total_items: 42}}
+        }
+      end)
+
+      assert {:ok, %{data: %{dataset_id: "99001", total_items: 42}}} =
+               ApiClient.upload_evaluation_dataset_v2(dataset_params, @org_kaapi_api_key)
+    end
+
+    test "returns error when kaapi returns error status", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
+      end)
+
+      assert {:error, %{status: 500, body: %{error: "Internal server error"}}} =
+               ApiClient.upload_evaluation_dataset_v2(dataset_params, @org_kaapi_api_key)
+    end
+
+    test "returns error on transport failure/timeout", %{dataset_params: dataset_params} do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.upload_evaluation_dataset_v2(dataset_params, @org_kaapi_api_key)
+    end
+  end
+
+  defp create_dataset_upload_params(_context) do
+    tmp_path =
+      Path.join(
+        System.tmp_dir!(),
+        "kaapi_dataset_test_#{System.unique_integer([:positive])}.csv"
+      )
+
+    File.write!(tmp_path, "question,answer\nWhat is Glific?,A communication platform\n")
+    on_exit(fn -> File.rm(tmp_path) end)
+
+    upload = %Plug.Upload{path: tmp_path, content_type: "text/csv", filename: "dataset.csv"}
+
+    %{
+      dataset_params: %{
+        file: upload,
+        dataset_name: "valid_dataset",
+        duplication_factor: 2
+      }
+    }
   end
 end
