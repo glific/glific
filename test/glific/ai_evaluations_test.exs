@@ -11,6 +11,8 @@ defmodule Glific.AIEvaluationsTest do
     AIEvaluations.OrganizationEvalRequest,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     Notifications,
     Notifications.Notification,
     Partners,
@@ -507,6 +509,20 @@ defmodule Glific.AIEvaluationsTest do
       assert {:error, :timeout} =
                AIEvaluations.request_improve_prompt(evaluation.id, organization_id)
     end
+
+    test "returns error when evaluation has no Kaapi evaluation id yet", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      no_kaapi_id_evaluation =
+        create_evaluation(organization_id, evaluation.assistant_config_version_id, %{
+          status: :completed,
+          kaapi_evaluation_id: nil
+        })
+
+      assert {:error, "Evaluation does not have a Kaapi evaluation id yet."} =
+               AIEvaluations.request_improve_prompt(no_kaapi_id_evaluation.id, organization_id)
+    end
   end
 
   describe "handle_improve_prompt_callback/1" do
@@ -626,5 +642,120 @@ defmodule Glific.AIEvaluationsTest do
       assert {:error, _reason} =
                AIEvaluations.handle_improve_prompt_callback(%{"unexpected" => "shape"})
     end
+
+    test "non-terminal status is acknowledged without creating a config version" do
+      params = %{"data" => %{"status" => "PENDING", "job_id" => "job-uuid-pending"}}
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
+    test "links the matching knowledge base version when knowledge_base_ids are present", %{
+      organization_id: organization_id,
+      assistant: assistant
+    } do
+      knowledge_base_version = create_knowledge_base_version(organization_id, "llm-service-abc")
+
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 7,
+            "commit_message" => "linked knowledge base",
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{
+                  "model" => "gpt-4o",
+                  "instructions" => "Answer using the knowledge base.",
+                  "knowledge_base_ids" => ["llm-service-abc"]
+                }
+              }
+            }
+          }
+        }
+      }
+
+      assert {:ok, new_config_version} = AIEvaluations.handle_improve_prompt_callback(params)
+
+      assert Repo.all(
+               from(link in "assistant_config_version_knowledge_base_versions",
+                 where: link.assistant_config_version_id == ^new_config_version.id,
+                 select: link.knowledge_base_version_id
+               )
+             ) == [knowledge_base_version.id]
+    end
+
+    test "rolls back the config version when no knowledge base matches the llm_service_id", %{
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 8,
+            "config_blob" => %{
+              "completion" => %{
+                "params" => %{
+                  "instructions" => "text",
+                  "model" => "gpt-4o",
+                  "knowledge_base_ids" => ["missing-llm-service"]
+                }
+              }
+            }
+          }
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:error, reason} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert reason =~ "No matching knowledge base found"
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
+    test "returns the changeset error when the config version data is invalid", %{
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 9,
+            "config_blob" => %{"completion" => %{"params" => %{}}}
+          }
+        }
+      }
+
+      assert {:error, %Ecto.Changeset{}} = AIEvaluations.handle_improve_prompt_callback(params)
+    end
+  end
+
+  defp create_knowledge_base_version(organization_id, llm_service_id) do
+    {:ok, knowledge_base} =
+      %KnowledgeBase{}
+      |> KnowledgeBase.changeset(%{
+        name: "test_kb_#{System.unique_integer([:positive])}",
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, knowledge_base_version} =
+      %KnowledgeBaseVersion{}
+      |> KnowledgeBaseVersion.changeset(%{
+        knowledge_base_id: knowledge_base.id,
+        organization_id: organization_id,
+        files: %{},
+        status: :completed,
+        llm_service_id: llm_service_id
+      })
+      |> Repo.insert()
+
+    knowledge_base_version
   end
 end
