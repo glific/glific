@@ -713,10 +713,7 @@ defmodule Glific.Assistants do
   end
 
   # A model's tunable params vary (temperature/top_p for classic models,
-  # effort/summary for reasoning models) and don't overlap, so an explicit `settings`
-  # map is trusted as-is instead of a temperature default being merged onto it. The
-  # `temperature`-only fallback exists for callers that predate the generic `settings`
-  # field and never send one.
+  # effort/summary for reasoning models) and don't overlap
   @spec build_settings(map()) :: map()
   defp build_settings(%{settings: settings}) when is_map(settings) and settings != %{} do
     Map.new(settings, fn {key, value} -> {to_string(key), value} end)
