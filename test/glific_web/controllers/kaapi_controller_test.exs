@@ -1,6 +1,8 @@
 defmodule GlificWeb.KaapiControllerTest do
   use GlificWeb.ConnCase
 
+  alias Glific.AIEvaluations
+  alias Glific.AIEvaluations.AIEvaluation
   alias Glific.Assistants
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
@@ -319,6 +321,140 @@ defmodule GlificWeb.KaapiControllerTest do
       conn = post(conn, "/kaapi/prompt_generation", params)
       assert response(conn, 200) == ""
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # improve_prompt_callback/2
+  # ---------------------------------------------------------------------------
+
+  describe "improve_prompt_callback/2" do
+    setup :setup_improve_prompt
+
+    test "returns 200 and creates a new :ready config version from the payload on success",
+         %{conn: conn, assistant: assistant, config_version: config_version} do
+      params = %{
+        "success" => true,
+        "data" => %{
+          "job_id" => "job_ctrl_001",
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "commit_message" => "[AI Generated] improved prompt",
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{"model" => "gpt-4o", "instructions" => "Improved system prompt"}
+              }
+            }
+          },
+          "error_message" => nil
+        },
+        "error" => nil,
+        "errors" => nil,
+        "metadata" => nil
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      conn = post(conn, "/kaapi/improve_prompt", params)
+
+      assert response(conn, 200) == ""
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before + 1
+
+      new_config_version =
+        Repo.get_by!(AssistantConfigVersion, kaapi_version_number: 6, assistant_id: assistant.id)
+
+      assert new_config_version.status == :ready
+      assert new_config_version.prompt == "Improved system prompt"
+      assert new_config_version.description == "[AI Generated] improved prompt"
+      refute new_config_version.id == config_version.id
+    end
+
+    test "returns 200 and creates no version on a failed callback", %{conn: conn} do
+      params = %{
+        "success" => true,
+        "data" => %{
+          "job_id" => "job_ctrl_001",
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      conn = post(conn, "/kaapi/improve_prompt", params)
+
+      assert response(conn, 200) == ""
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
+    test "returns 200 when config_id matches no assistant", %{conn: conn} do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => "nonexistent_config_id",
+            "config_blob" => %{"completion" => %{"params" => %{"instructions" => "text"}}}
+          }
+        }
+      }
+
+      conn = post(conn, "/kaapi/improve_prompt", params)
+      assert response(conn, 200) == ""
+    end
+  end
+
+  defp setup_improve_prompt(%{organization_id: organization_id}) do
+    {:ok, assistant} =
+      %Assistant{}
+      |> Assistant.changeset(%{
+        name: "Test Assistant",
+        kaapi_uuid: "8a322023-2f28-4880-8bd3-bbe8611af901",
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, config_version} =
+      %AssistantConfigVersion{}
+      |> AssistantConfigVersion.changeset(%{
+        assistant_id: assistant.id,
+        prompt: "You are a helpful assistant.",
+        provider: "openai",
+        model: "gpt-4o",
+        settings: %{},
+        status: :ready,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    {:ok, golden_qa} =
+      AIEvaluations.create_golden_qa(%{
+        name: "eval_improve_prompt_dataset",
+        dataset_id: 1,
+        organization_id: organization_id
+      })
+
+    {:ok, evaluation} =
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(%{
+        name: "test_evaluation_ctrl",
+        status: :completed,
+        kaapi_evaluation_id: 767,
+        golden_qa_id: golden_qa.id,
+        assistant_config_version_id: config_version.id,
+        organization_id: organization_id
+      })
+      |> Repo.insert()
+
+    %{
+      evaluation: evaluation,
+      assistant: assistant,
+      config_version: config_version,
+      organization_id: organization_id
+    }
   end
 
   defp setup_prompt_generation(%{organization_id: organization_id}) do
