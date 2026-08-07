@@ -46,8 +46,7 @@ defmodule Glific.ContactsTest do
     :ok
   end
 
-  # a contact stored before phone canonicalization: written straight to the table so the
-  # changeset does not canonicalize it on the way in
+  # bypasses changeset/2, the only way to get a non-canonical phone in now
   @spec legacy_contact!(String.t(), non_neg_integer()) :: Contact.t()
   defp legacy_contact!(phone, organization_id) do
     Repo.insert!(%Contact{
