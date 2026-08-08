@@ -8,6 +8,9 @@ defmodule GlificWeb.Resolvers.AssistantChat do
 
   alias Glific.Assistants
 
+  @doc """
+  Dispatches a chat message to an assistant's live Kaapi config version.
+  """
   @spec send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, map()} | {:error, any()}
   def send_message(_, %{input: params}, %{context: %{current_user: user}}) do
