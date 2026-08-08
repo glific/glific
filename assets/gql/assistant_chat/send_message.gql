@@ -1,0 +1,11 @@
+mutation sendAssistantMessage($input: LlmCallInput!) {
+  sendAssistantMessage(input: $input) {
+    jobId
+    requestId
+    conversationId
+    errors {
+      key
+      message
+    }
+  }
+}
