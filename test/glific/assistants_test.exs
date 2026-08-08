@@ -9,32 +9,13 @@ defmodule Glific.AssistantsTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Fixtures
   alias Glific.Notifications.Notification
   alias Glific.Partners
   alias Glific.Repo
 
   defp enable_kaapi(attrs) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: attrs.organization_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{
-          "api_key" => "sk_test_key"
-        }
-      })
-
-    valid_update_attrs = %{
-      keys: %{},
-      secrets: %{
-        "api_key" => "sk_test_key"
-      },
-      is_active: true,
-      organization_id: attrs.organization_id,
-      shortcode: "kaapi"
-    }
-
-    {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    Fixtures.kaapi_credential_fixture(%{organization_id: attrs.organization_id})
     :ok
   end
 
@@ -2931,37 +2912,11 @@ defmodule Glific.AssistantsTest do
     setup [:enable_kaapi]
 
     defp create_live_assistant(organization_id) do
-      {:ok, assistant} =
-        %Assistant{}
-        |> Assistant.changeset(%{
-          name: "Chat Sandbox Assistant #{:rand.uniform(10_000)}",
-          organization_id: organization_id,
-          kaapi_uuid: "kaapi_uuid_001"
-        })
-        |> Repo.insert()
-
-      {:ok, config_version} =
-        %AssistantConfigVersion{}
-        |> AssistantConfigVersion.changeset(%{
-          assistant_id: assistant.id,
-          organization_id: organization_id,
-          provider: "openai",
-          model: "gpt-4o",
-          prompt: "You are a helpful assistant",
-          settings: %{"temperature" => 1.0},
-          status: :ready,
-          kaapi_version_number: 3
-        })
-        |> Repo.insert()
-
-      {:ok, assistant} =
-        assistant
-        |> Assistant.set_active_config_version_changeset(%{
-          active_config_version_id: config_version.id
-        })
-        |> Repo.update()
-
-      assistant
+      Fixtures.live_assistant_fixture(%{
+        organization_id: organization_id,
+        kaapi_uuid: "kaapi_uuid_001",
+        kaapi_version_number: 3
+      })
     end
 
     test "dispatches the stored-config payload and returns the job_id",

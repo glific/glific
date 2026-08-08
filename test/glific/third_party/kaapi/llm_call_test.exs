@@ -6,7 +6,6 @@ defmodule Glific.ThirdParty.Kaapi.LlmCallTest do
   alias Glific.Partners
   alias Glific.ThirdParty.Kaapi
 
-  @org_id 1
   @api_key "sk_test_key"
 
   @payload %{
@@ -16,22 +15,24 @@ defmodule Glific.ThirdParty.Kaapi.LlmCallTest do
     request_metadata: %{request_id: "req-1", user_id: 9}
   }
 
-  setup do
+  setup %{organization_id: organization_id} do
     {:ok, _credential} =
       Partners.create_credential(%{
-        organization_id: @org_id,
+        organization_id: organization_id,
         shortcode: "kaapi",
         keys: %{},
         secrets: %{"api_key" => @api_key},
         is_active: true
       })
 
-    Partners.get_organization!(@org_id) |> Partners.fill_cache()
+    Partners.get_organization!(organization_id) |> Partners.fill_cache()
     :ok
   end
 
   describe "llm_call/2" do
-    test "returns job_id and conversation_id on a successful dispatch" do
+    test "returns job_id and conversation_id on a successful dispatch", %{
+      organization_id: organization_id
+    } do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{
           status: 200,
@@ -40,32 +41,36 @@ defmodule Glific.ThirdParty.Kaapi.LlmCallTest do
       end)
 
       assert {:ok, %{job_id: "job_001", conversation_id: "conv_001"}} =
-               Kaapi.llm_call(@payload, @org_id)
+               Kaapi.llm_call(@payload, organization_id)
     end
 
-    test "returns nil conversation_id when Kaapi doesn't echo one back" do
+    test "returns nil conversation_id when Kaapi doesn't echo one back", %{
+      organization_id: organization_id
+    } do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{status: 200, body: %{data: %{job_id: "job_002"}}}
       end)
 
       assert {:ok, %{job_id: "job_002", conversation_id: nil}} =
-               Kaapi.llm_call(@payload, @org_id)
+               Kaapi.llm_call(@payload, organization_id)
     end
 
-    test "returns an error for an unexpected 2xx body shape" do
+    test "returns an error for an unexpected 2xx body shape", %{organization_id: organization_id} do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{status: 200, body: %{unexpected: "shape"}}
       end)
 
-      assert {:error, _reason} = Kaapi.llm_call(@payload, @org_id)
+      assert {:error, _reason} = Kaapi.llm_call(@payload, organization_id)
     end
 
-    test "returns an error when Kaapi responds with a failure status" do
+    test "returns an error when Kaapi responds with a failure status", %{
+      organization_id: organization_id
+    } do
       mock(fn %Tesla.Env{method: :post} ->
         %Tesla.Env{status: 422, body: %{error: "invalid config"}}
       end)
 
-      assert {:error, _reason} = Kaapi.llm_call(@payload, @org_id)
+      assert {:error, _reason} = Kaapi.llm_call(@payload, organization_id)
     end
 
     test "returns an error when Kaapi is not configured for the org" do
