@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query templateRephrase($id: ID!) {
+  templateRephrase(id: $id) {
+    ...TemplateRephraseFields
+
+    ...ErrorFields
+  }
+}

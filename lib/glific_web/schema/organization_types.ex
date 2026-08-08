@@ -35,6 +35,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:superset_enabled, :boolean)
     field(:prompt_generator_enabled, :boolean)
     field(:template_v2_enabled, :boolean)
+    field(:template_ai_assist_enabled, :boolean)
   end
 
   object :organization_export_result do

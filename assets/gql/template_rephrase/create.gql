@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation rephraseTemplateBody($input: TemplateRephraseInput!) {
+  rephraseTemplateBody(input: $input) {
+    ...TemplateRephraseFields
+
+    ...ErrorFields
+  }
+}

@@ -1,0 +1,17 @@
+fragment TemplateRephraseFields on TemplateRephraseResult {
+  templateRephrase {
+    id
+    status
+    rephrasedText
+    errorMessage
+    originalText
+    action
+  }
+}
+
+fragment ErrorFields on TemplateRephraseResult {
+  errors {
+    key
+    message
+  }
+}

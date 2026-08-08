@@ -8,6 +8,7 @@ defmodule GlificWeb.KaapiController do
 
   alias Glific.Assistants
   alias Glific.PromptGenerator
+  alias Glific.TemplateRephrase
 
   @doc """
   Handles the callback from Kaapi upon successful or failure of collection creation.
@@ -28,6 +29,18 @@ defmodule GlificWeb.KaapiController do
   @spec prompt_generation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def prompt_generation_callback(conn, params) do
     PromptGenerator.handle_callback(params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after LLM-based template rephrasing completes.
+
+  Always returns 200 — Kaapi does not retry on non-2xx, and the request_id is treated as an
+  unguessable token (matching the auth posture of the knowledge_base_version callback above).
+  """
+  @spec template_rephrase_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def template_rephrase_callback(conn, params) do
+    TemplateRephrase.handle_callback(params)
     send_resp(conn, 200, "")
   end
 end
