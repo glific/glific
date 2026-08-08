@@ -10,16 +10,11 @@ defmodule GlificWeb.Resolvers.TemplateRephrase do
   alias Glific.Repo
   alias Glific.TemplateRephrase.TemplateRephraseRequest
 
-  # Per-org rate limit for template rephrase requests. Tighter than PromptGenerator's
-  # 10/60s since this is a per-click action rather than a one-time wizard submission.
-  # Window: 60 seconds; max: 20 requests per org.
   @rate_limit_window_ms 60_000
   @rate_limit_max 20
 
-  # WhatsApp HSM template body limit.
   @max_text_length 1_024
 
-  # Max length for the free-text custom rephrase instruction.
   @max_custom_prompt_length 300
 
   @doc """
@@ -71,10 +66,6 @@ defmodule GlificWeb.Resolvers.TemplateRephrase do
       {:ok, %{template_rephrase: request}}
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Private helpers
-  # ---------------------------------------------------------------------------
 
   @spec check_rate(String.t()) :: :ok | {:error, String.t()}
   defp check_rate(key) do

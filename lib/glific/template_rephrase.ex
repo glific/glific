@@ -46,7 +46,6 @@ defmodule Glific.TemplateRephrase do
     end
   end
 
-  # AppSignal namespace for template-rephrase errors (enables a dedicated error-rate trigger).
   @appsignal_namespace "template_rephrase"
 
   @placeholder_rule "Preserve every WhatsApp placeholder variable (e.g. {{1}}, {{2}}) exactly as given — never rename, remove, renumber, or add placeholders."
@@ -169,8 +168,6 @@ defmodule Glific.TemplateRephrase do
   @spec handle_callback(map()) ::
           {:ok, TemplateRephraseRequest.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def handle_callback(%{"metadata" => %{"request_id" => request_id}} = params) do
-    # Org context is set from the callback subdomain (same as the prompt-generation
-    # callback), so the lookup is scoped to the organization that owns the request.
     with {:ok, request} <- Repo.fetch_by(TemplateRephraseRequest, %{request_id: request_id}),
          {:ok, updated} <- apply_callback(request, params) do
       {:ok, updated}
@@ -187,9 +184,6 @@ defmodule Glific.TemplateRephrase do
     end
   end
 
-  # Defensive catch-all: the callback endpoint is public, so a malformed body must
-  # not raise (the controller must still return 200). Kaapi sends a well-formed payload
-  # with metadata.request_id; anything else is reported and ignored.
   def handle_callback(params) do
     log_callback_error("Unexpected template rephrase callback payload",
       reason: safe_inspect(params)
@@ -263,10 +257,6 @@ defmodule Glific.TemplateRephrase do
     """
   end
 
-  # ---------------------------------------------------------------------------
-  # Private helpers
-  # ---------------------------------------------------------------------------
-
   @spec create_rephrase_request(map()) ::
           {:ok, TemplateRephraseRequest.t()} | {:error, Ecto.Changeset.t()}
   defp create_rephrase_request(attrs) do
@@ -277,8 +267,6 @@ defmodule Glific.TemplateRephrase do
 
   @spec apply_callback(TemplateRephraseRequest.t(), map()) ::
           {:ok, TemplateRephraseRequest.t()} | {:error, Ecto.Changeset.t()}
-  # Terminal states are immutable: a late callback must not clobber a row that
-  # already reached :ready (losing the rephrased text) or :failed.
   defp apply_callback(%TemplateRephraseRequest{status: status} = request, _params)
        when status in [:ready, :failed],
        do: {:ok, request}
@@ -311,9 +299,6 @@ defmodule Glific.TemplateRephrase do
     |> record_outcome("failure")
   end
 
-  # Track rephrase latency (dispatch -> callback) and the success/failure count in
-  # AppSignal, mirroring PromptGenerator's telemetry. Only fires on a real transition —
-  # the terminal-state guard short-circuits duplicate callbacks.
   @spec record_outcome(
           {:ok, TemplateRephraseRequest.t()} | {:error, Ecto.Changeset.t()},
           String.t()

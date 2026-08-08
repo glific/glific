@@ -36,12 +36,9 @@ defmodule Glific.Repo.Migrations.CreateTemplateRephraseRequests do
       add :user_id, references(:users, on_delete: :nilify_all),
         comment: "User who initiated the rephrase request; nullable"
 
-      # microsecond precision so dispatch->callback latency (tracked in AppSignal) is accurate to ms
       timestamps(type: :utc_datetime_usec)
     end
 
-    # Org-scoped uniqueness on request_id — this is the real callback correlation key.
-    # Kaapi echoes it back as metadata.request_id in the async callback body.
     create unique_index(:template_rephrase_requests, [:request_id, :organization_id],
              name: :template_rephrase_requests_request_id_organization_id_index
            )

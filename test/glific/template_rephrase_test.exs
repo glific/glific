@@ -7,10 +7,6 @@ defmodule Glific.TemplateRephraseTest do
   alias Glific.TemplateRephrase
   alias Glific.TemplateRephrase.TemplateRephraseRequest
 
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
   defp enable_kaapi(%{organization_id: org_id}) do
     {:ok, credential} =
       Partners.create_credential(%{
@@ -33,10 +29,6 @@ defmodule Glific.TemplateRephraseTest do
   end
 
   @original_text "Hi {{1}}, your order {{2}} has shipped! Get 20% off your next order now!"
-
-  # ---------------------------------------------------------------------------
-  # instructions_for/2
-  # ---------------------------------------------------------------------------
 
   describe "instructions_for/2" do
     test "professional action returns the professional system prompt" do
@@ -65,10 +57,6 @@ defmodule Glific.TemplateRephraseTest do
       assert String.contains?(instructions, "Return only the rewritten message text")
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # build_llm_payload/5
-  # ---------------------------------------------------------------------------
 
   describe "build_llm_payload/5" do
     test "provider is 'openai'" do
@@ -192,10 +180,6 @@ defmodule Glific.TemplateRephraseTest do
       assert get_in(payload, [:query, :input]) == @original_text
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # rephrase/3
-  # ---------------------------------------------------------------------------
 
   describe "rephrase/3" do
     setup :enable_kaapi
@@ -332,10 +316,6 @@ defmodule Glific.TemplateRephraseTest do
       assert count_before == count_after
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # handle_callback/1 — real Kaapi callback shape
-  # ---------------------------------------------------------------------------
 
   describe "handle_callback/1" do
     setup :enable_kaapi

@@ -22,10 +22,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/template_rephrase/create.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/template_rephrase/by_id.gql")
 
-  # ---------------------------------------------------------------------------
-  # Setup helpers
-  # ---------------------------------------------------------------------------
-
   defp enable_kaapi(%{organization_id: org_id}) do
     {:ok, credential} =
       Partners.create_credential(%{
@@ -59,10 +55,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
     "text" => "Hi {{1}}, your order {{2}} has shipped!",
     "action" => "PROFESSIONAL"
   }
-
-  # ---------------------------------------------------------------------------
-  # rephraseTemplateBody mutation
-  # ---------------------------------------------------------------------------
 
   describe "rephraseTemplateBody mutation" do
     setup :enable_kaapi
@@ -208,10 +200,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # templateRephrase query (poll)
-  # ---------------------------------------------------------------------------
-
   describe "templateRephrase query" do
     setup :enable_kaapi
 
@@ -263,9 +251,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
         })
         |> Repo.insert()
 
-      # Simulate a staff user belonging to a *different* org by overriding organization_id.
-      # The Repo.fetch_by in the resolver scopes to user.organization_id, so org 2 cannot
-      # see org 1's request — this tests the resolver's explicit org-scoping.
       other_org_user = %{user | organization_id: org_id + 1}
 
       result = auth_query_gql_by(:by_id, other_org_user, variables: %{"id" => request.id})
@@ -279,10 +264,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Full async loop: mutation → callback → poll shows :ready
-  # ---------------------------------------------------------------------------
-
   describe "full async loop" do
     setup :enable_kaapi
 
@@ -290,7 +271,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
          %{staff: user} do
       kaapi_success_mock()
 
-      # Step 1: trigger rephrasing
       {:ok, mutation_data} =
         auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
 
@@ -299,7 +279,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
 
       assert template_rephrase_id != nil
 
-      # Step 2: look up the created row to get its request_id (the callback correlation key)
       {:ok, request} =
         Repo.fetch(TemplateRephraseRequest, String.to_integer(template_rephrase_id),
           skip_organization_id: true
@@ -307,7 +286,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
 
       assert is_binary(request.request_id)
 
-      # Step 3: simulate the Kaapi callback (real shape, correlated by request_id)
       {:ok, _updated} =
         TemplateRephrase.handle_callback(%{
           "success" => true,
@@ -321,7 +299,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTest do
           "metadata" => %{"request_id" => request.request_id}
         })
 
-      # Step 4: poll via GraphQL and assert :ready
       {:ok, poll_data} =
         auth_query_gql_by(:by_id, user,
           variables: %{"id" => String.to_integer(template_rephrase_id)}
