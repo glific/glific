@@ -1625,6 +1625,82 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
+  describe "create_evaluation/3 v2 (is_ai_evaluation_enabled)" do
+    setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
+
+    test "v2 path: hits the v2 endpoint and persists the returned status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          assert url =~ "/api/v2/evaluations"
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: 777, run_name: "test_experiment", status: "processing"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.status == :processing
+      assert evaluation.kaapi_evaluation_id == 777
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns an error instead of crashing on an unrecognized status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: 778, status: "queued"}}}
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_unrecognized",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "Unexpected evaluation status received from Kaapi: queued"
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+  end
+
   defp create_config_version(%{organization_id: organization_id}) do
     {:ok, assistant} =
       %Assistant{}

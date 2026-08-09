@@ -664,6 +664,27 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Create an evaluation on Kaapi via the v2 endpoint.
+  """
+  @spec create_evaluation_v2(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation_v2(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_evaluation_v2(params, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi evaluation v2 creation failed: evaluation_name=#{params[:experiment_name]}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
   @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::

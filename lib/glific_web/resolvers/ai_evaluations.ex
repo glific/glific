@@ -371,6 +371,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @known_ai_evaluation_statuses ~w(create_in_progress processing failed completed)
+
   @doc """
   Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
   and returning the evaluation.
@@ -399,11 +401,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
+         {:ok, %{data: data}} <- run_kaapi_evaluation(kaapi_input, user.organization_id),
+         {:status, {:ok, status}} <- {:status, parse_ai_evaluation_status(data.status)},
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
              name: input.evaluation_name,
-             status: String.to_existing_atom(data.status),
+             status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
              golden_qa_id: input.golden_qa_id,
@@ -423,6 +426,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error,
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
 
+      {:status, {:error, msg}} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        {:error, msg}
+
       {:error, :timeout} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "Timeout occurred, please try again."}
@@ -440,4 +447,22 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error, "An unknown error occurred, please contact Glific support."}
     end
   end
+
+  @spec run_kaapi_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  defp run_kaapi_evaluation(kaapi_input, organization_id) do
+    organization = Partners.organization(organization_id)
+
+    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      Kaapi.create_evaluation_v2(kaapi_input, organization_id)
+    else
+      Kaapi.create_evaluation(kaapi_input, organization_id)
+    end
+  end
+
+  @spec parse_ai_evaluation_status(String.t()) :: {:ok, atom()} | {:error, String.t()}
+  defp parse_ai_evaluation_status(status) when status in @known_ai_evaluation_statuses,
+    do: {:ok, String.to_existing_atom(status)}
+
+  defp parse_ai_evaluation_status(status),
+    do: {:error, "Unexpected evaluation status received from Kaapi: #{status}"}
 end

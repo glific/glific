@@ -260,6 +260,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create an evaluation in Kaapi (v2)
+  """
+  @spec create_evaluation_v2(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation_v2(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v2/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
   @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}

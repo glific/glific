@@ -76,6 +76,37 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "create_evaluation_v2/2" do
+    setup [:enable_kaapi_credential]
+
+    @evaluation_params %{
+      experiment_name: "antaratrial",
+      config_id: "d186d8eb-1211-4a7b-aa28-e8a22f8163c9",
+      config_version: 7,
+      dataset_id: 651
+    }
+
+    test "forwards a well-shaped v2 response unchanged", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{id: 777, run_name: "antaratrial", status: "processing"}}
+        }
+      end)
+
+      assert {:ok, %{data: %{id: 777, status: "processing"}}} =
+               Kaapi.create_evaluation_v2(@evaluation_params, organization_id)
+    end
+
+    test "passes an upstream error through unchanged", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = Kaapi.create_evaluation_v2(@evaluation_params, organization_id)
+    end
+  end
+
   describe "normalize_kaapi_body/1" do
     test "treats a 200 body with success:false as a logical failure" do
       assert %{
