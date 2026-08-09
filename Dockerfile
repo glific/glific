@@ -6,8 +6,6 @@ FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VER
 
 # These two args need to stay here – otherwise they will be empty at RUN stage
 ARG NODE_VERSION
-ARG POSTGRES_VERSION
-
 ARG FP=DOES_NOT_EXIST
 ARG AUTH_KEY=DOES_NOT_EXIST
 
@@ -16,8 +14,9 @@ ENV LANG=C.UTF-8
 # Install dependencies
 RUN apk add --no-cache --update \
     build-base git curl zsh vim inotify-tools openssl ncurses-libs npm \
-    nodejs-current~${NODE_VERSION} \
-    postgresql14-dev~${POSTGRES_VERSION}
+    nodejs~${NODE_VERSION} \
+    postgresql15-client \
+    postgresql15-dev
 
 # Create a directory for the app code
 WORKDIR /app/glific
@@ -62,7 +61,20 @@ COPY mix.lock mix.exs .
 RUN mix deps.get
 RUN mix deps.compile
 
-# Lets make sure everything is in /app
-# COPY . .
-    
+# Copy the application source (lib/, priv/, assets/). Required for a standalone
+# image build (Bunnyshell/CI) — local docker-compose mounts the source instead.
+COPY . .
+
+# Build-time only: runtime.exs is evaluated during `mix compile`, and the baked
+# .env.dev sets ENABLE_DB_SSL=true with a bogus CA cert. Force it off so the build
+# survives; the container runtime value comes from the deploy env either way.
+ENV ENABLE_DB_SSL=false
+
+# Precompile at build time, where the full dep tree is loaded, so compile-time
+# guards like `Code.ensure_loaded?(Ecto)` in lib/glific/flags/ecto.ex resolve true
+# and the module is actually built. Fail loudly if the guard still drops it.
+RUN mix compile
+RUN test -f _build/dev/lib/glific/ebin/Elixir.Glific.FunWithFlags.Store.Persistent.Ecto.beam \
+    || (echo "BUILD CHECK: Glific.FunWithFlags.Store.Persistent.Ecto beam MISSING after compile" && exit 1)
+
 ENTRYPOINT ["/bin/sh", "/app/glific/config/entrypoint.sh"]
