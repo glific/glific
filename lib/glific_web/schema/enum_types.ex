@@ -68,6 +68,13 @@ defmodule GlificWeb.Schema.EnumTypes do
     value(:desc)
   end
 
+  @desc "The template rephrase action enum"
+  enum :template_rephrase_action do
+    value(:professional)
+    value(:utility)
+    value(:custom)
+  end
+
   @desc "The Certificate template Types enum"
   enum(:certificate_template_type_enum, values: Glific.Enums.certificate_template_type_const())
 

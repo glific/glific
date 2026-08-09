@@ -11,12 +11,6 @@ defmodule GlificWeb.Schema.TemplateRephraseTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.{Authorize, RequireFeatureFlag}
 
-  enum :template_rephrase_action do
-    value(:professional)
-    value(:utility)
-    value(:custom)
-  end
-
   object :template_rephrase_result do
     field(:template_rephrase, :template_rephrase)
     field(:errors, list_of(:input_error))
