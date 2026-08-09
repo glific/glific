@@ -1,0 +1,161 @@
+# Bunnyshell ephemeral environment for Glific.
+#
+# Four components: a Postgres database, the Glific backend (Elixir/Phoenix, this repo), the
+# staff console (glific-frontend), and the web-channel widget (glific-web-channel). Each app
+# component builds from its OWN git repo/branch, so this single file assembles three repositories
+# into one shareable preview environment.
+#
+# ── How the pieces find each other ─────────────────────────────────────────────
+#   • App → DB: internal Kubernetes DNS = the component name. The backend reaches
+#     Postgres at host `db` on 5432 (no public URL involved).
+#   • Frontend → backend: each component gets a public URL. We reference the backend's
+#     BARE hostname via `{{ components.backend.ingress.hosts[0].hostname }}` and build the
+#     scheme/path ourselves. Vite inlines these at BUILD time, so they are `build.args`.
+#   • Backend trust: BACKEND_HOST makes GlificWeb.SubdomainPlug resolve the seeded "glific"
+#     org (see config/dev.exs), and CHECK_ORIGIN allow-lists the two frontends so their
+#     WebSocket handshakes pass Phoenix's check_origin.
+#
+# ── Before deploying ───────────────────────────────────────────────────────────
+#   1. Each component below builds from the DEFAULT branch of its repo (glific @ master,
+#      glific-frontend @ master, glific-web-channel @ main). The Dockerfiles/nginx configs this
+#      env needs currently live on the `bunnyshell` branch of each repo — merge those branches to
+#      their default branch first, OR temporarily set each `gitBranch` below to `bunnyshell` to
+#      spin up an environment before the merge.
+#   2. Set the secret/config env vars in the Bunnyshell environment (referenced below via
+#      {{ env.vars.NAME }}): POSTGRES_PASSWORD, OBAN_FINGERPRINT + OBAN_AUTH_KEY (the backend
+#      Dockerfile fetches deps from getoban.pro), OPEN_AI_KEY (for GPT/GPT-vision nodes), and
+#      KAAPI_ENDPOINT + KAAPI_API_KEY (for speech-to-text / TTS nodes).
+#   3. Confirm the backend build-arg VERSIONS below match your working local docker build
+#      (the Dockerfile ARGs have no defaults). Best-guess values are marked CONFIRM.
+#
+# NOTE: the web-channel widget requires the web-channel backend feature (routes + socket) which
+# is not yet on glific @ master. Until that feature merges, the widget component will deploy and
+# serve but its chat will not connect. The backend + staff console form a fully functional
+# generic Glific environment on their own.
+kind: Environment
+name: glific-ephemeral
+type: primary
+
+environmentVariables:
+  POSTGRES_DB: glific_dev
+  POSTGRES_USER: postgres
+
+components:
+  # ── Postgres ──────────────────────────────────────────────────────────────
+  - kind: Database
+    name: db
+    dockerCompose:
+      image: 'postgres:15-alpine'
+      environment:
+        POSTGRES_DB: '{{ env.vars.POSTGRES_DB }}'
+        POSTGRES_USER: '{{ env.vars.POSTGRES_USER }}'
+        POSTGRES_PASSWORD: '{{ env.vars.POSTGRES_PASSWORD }}'
+      ports:
+        - '5432:5432'
+    # Claim + mount the persistent disk declared at the environment level below.
+    # This is what keeps Postgres data across redeploys (PVC survives pod restarts).
+    volumes:
+      - name: pg-data
+        mount: /var/lib/postgresql/data
+
+  # ── Glific backend (Elixir/Phoenix, this repo) ───────────────────────────────
+  - kind: Application
+    name: backend
+    gitRepo: 'https://github.com/glific/glific.git'
+    gitBranch: master
+    gitApplicationPath: "lib"
+    dockerCompose:
+      build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          # CONFIRM these match your local `docker build` (Dockerfile ARGs have no defaults).
+          ELIXIR_VERSION: '1.18.3'
+          ERLANG_VERSION: '27.3.3'
+          ALPINE_VERSION: '3.22.4'
+          NODE_VERSION: '22'
+          POSTGRES_VERSION: '14'
+          # Oban Pro (getoban.pro) — FP is the public-key fingerprint, AUTH_KEY the token.
+          FP: '{{ env.vars.OBAN_FINGERPRINT }}'
+          AUTH_KEY: '{{ env.vars.OBAN_AUTH_KEY }}'
+      environment:
+        # Tenant + origin wiring consumed by config/dev.exs.
+        BACKEND_HOST: '{{ components.backend.ingress.hosts[0].hostname }}'
+        CHECK_ORIGIN: 'https://{{ components.web-channel.ingress.hosts[0].hostname }},https://{{ components.admin-console.ingress.hosts[0].hostname }}'
+        PORT: '4000'
+        DATABASE_URL: 'ecto://{{ env.vars.POSTGRES_USER }}:{{ env.vars.POSTGRES_PASSWORD }}@db:5432/{{ env.vars.POSTGRES_DB }}'
+        READ_REPLICA_DATABASE_URL: 'ecto://{{ env.vars.POSTGRES_USER }}:{{ env.vars.POSTGRES_PASSWORD }}@db:5432/{{ env.vars.POSTGRES_DB }}'
+        BASE_URL: '{{ components.backend.ingress.hosts[0].hostname }}'
+        REQUEST_ORIGIN: 'https://{{ components.backend.ingress.hosts[0].hostname }}'
+        REQUEST_ORIGIN_WILDCARD: '//*.bunnyenv.com'
+        # OpenAI key for GPT/GPT-vision flow nodes (config/runtime.exs reads OPEN_AI_KEY).
+        # Secret — set the value in the Bunnyshell environment, same as the DB/Oban secrets.
+        OPEN_AI_KEY: '{{ env.vars.OPEN_AI_KEY }}'
+        # Kaapi (speech-to-text / TTS) — endpoint is environment-specific, the api key is a
+        # secret. Both read by config/runtime.exs; set their values in the Bunnyshell environment.
+        KAAPI_ENDPOINT: '{{ env.vars.KAAPI_ENDPOINT }}'
+        KAAPI_API_KEY: '{{ env.vars.KAAPI_API_KEY }}'
+      ports:
+        - '4000:4000'
+    hosts:
+      - hostname: 'glific-backend-{{env.unique}}.bunnyenv.com'
+        path: /
+        servicePort: 4000
+        public: true
+    dependsOn:
+      - db
+
+  # ── Staff console (glific-frontend) ─────────────────────────────────────────
+  - kind: Application
+    name: admin-console
+    gitRepo: 'https://github.com/glific/glific-frontend.git'
+    gitBranch: master
+    gitApplicationPath: "src"
+    dockerCompose:
+      build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          # config/index.ts treats this as a BARE hostname (prepends https, appends /api|/socket).
+          VITE_GLIFIC_BACKEND_URL: '{{ components.backend.ingress.hosts[0].hostname }}'
+      ports:
+        - '80:80'
+    hosts:
+      - hostname: 'glific-console-{{env.unique}}.bunnyenv.com'
+        path: /
+        servicePort: 80
+        public: true
+    dependsOn:
+      - backend
+
+  # ── Web-channel widget (glific-web-channel) ──────────────────────────────────
+  - kind: Application
+    name: web-channel
+    gitRepo: 'https://github.com/glific/glific-web-channel.git'
+    gitBranch: main
+    gitApplicationPath: "src"
+    dockerCompose:
+      build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          # Absolute URLs baked into the bundle (no dev proxy in the container).
+          VITE_GLIFIC_API_URL: 'https://{{ components.backend.ingress.hosts[0].hostname }}/api'
+          VITE_WEB_SOCKET: 'wss://{{ components.backend.ingress.hosts[0].hostname }}/web_socket'
+      ports:
+        - '80:80'
+    hosts:
+      - hostname: 'glific-web-{{env.unique}}.bunnyenv.com'
+        path: /
+        servicePort: 80
+        public: true
+    dependsOn:
+      - backend
+
+# Environment-level volume DECLARATION (name/type/size only). It is claimed and
+# mounted by the `db` component above via its own `volumes:` block. `type: disk` is a
+# persistent ReadWriteOnce PVC, so Postgres data survives redeploys.
+volumes:
+  - name: pg-data
+    type: disk
+    size: 2Gi
