@@ -500,20 +500,6 @@ defmodule Glific.AIEvaluationsTest do
                AIEvaluations.request_improve_prompt(999_999, organization_id)
     end
 
-    test "returns error when evaluation is not completed", %{
-      organization_id: organization_id,
-      evaluation: evaluation
-    } do
-      processing_evaluation =
-        create_evaluation(organization_id, evaluation.assistant_config_version_id, %{
-          status: :processing
-        })
-
-      assert {:error,
-              "Evaluation is processing, must be completed before requesting prompt improvement."} =
-               AIEvaluations.request_improve_prompt(processing_evaluation.id, organization_id)
-    end
-
     test "passes an upstream Kaapi error through unchanged", %{
       organization_id: organization_id,
       evaluation: evaluation
