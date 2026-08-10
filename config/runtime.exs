@@ -9,52 +9,39 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 
 http_port = env!("HTTP_PORT", :integer, 4000)
 
-# Helper function to create SSL opts
+# Database SSL is on by default, but skipped entirely for the test env, when
+# ENABLE_DB_SSL=false (e.g. an in-cluster Postgres with no TLS), or when a DB's
+# CA cert env var is absent — so a certificate-less server still connects.
+# ENABLE_DB_SSL is read here, in one place.
+db_ssl_enabled =
+  Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true)
+
+# Build the SSL opts for a DB from its base64 CA cert env var; [] means "no SSL".
 db_ssl_opts = fn db_type ->
-  if Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true) do
-    cacert_env_var = "#{db_type}_CACERT_ENCODED"
+  case db_ssl_enabled && System.get_env("#{db_type}_CACERT_ENCODED") do
+    encoded when is_binary(encoded) and encoded != "" ->
+      File.mkdir_p!(Path.join(:code.priv_dir(:glific), "cert"))
 
-    # Check if the CA cert env var is set; if not, skip SSL opts
-    case System.get_env(cacert_env_var) do
-      nil ->
-        []
+      cert_path =
+        Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
 
-      "" ->
-        []
+      File.write!(cert_path, Base.decode64!(encoded))
 
-      encoded ->
-        pem =
-          encoded
-          |> Base.decode64!()
+      [
+        cacertfile: cert_path,
+        verify: :verify_peer,
+        server_name_indication:
+          env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
+          |> String.to_charlist()
+      ]
 
-        File.mkdir_p!(Path.join(:code.priv_dir(:glific), "cert"))
-
-        cert_path =
-          Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
-
-        File.write!(cert_path, pem)
-
-        [
-          cacertfile: cert_path,
-          verify: :verify_peer,
-          server_name_indication:
-            env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
-            |> String.to_charlist()
-        ]
-    end
-  else
-    []
+    _ ->
+      []
   end
 end
 
 primary_url = env!("DATABASE_URL", :string!)
-
-primary_ssl_opts =
-  if env!("ENABLE_DB_SSL", :boolean, true) do
-    db_ssl_opts.("PRIMARY")
-  else
-    []
-  end
+primary_ssl_opts = db_ssl_opts.("PRIMARY")
 
 config :glific, Glific.Repo,
   url: primary_url,
