@@ -13,7 +13,7 @@ config :glific, GlificWeb.Endpoint,
   # EXPERIMENT TO get everyone to switch to https even for local development
   # So we can record audio etc, which requires ssl
   https: [
-    port: String.to_integer(System.get_env("HTTPS_PORT", "4001")),
+    port: 4001,
     cipher_suite: :strong,
     certfile: "priv/cert/glific.test+1.pem",
     keyfile: "priv/cert/glific.test+1-key.pem"
@@ -24,25 +24,6 @@ config :glific, GlificWeb.Endpoint,
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
-
-# Preview/hosted deploys (e.g. Bunnyshell): the frontends live on different hostnames than
-# the backend and reach it directly (no Vite proxy). BACKEND_HOST sets the endpoint host so
-# GlificWeb.SubdomainPlug resolves the default "glific" org, and CHECK_ORIGIN allow-lists the
-# frontends' origins so their WebSocket handshakes are accepted. Absent these vars, local dev
-# behaves exactly as before.
-if backend_host = System.get_env("BACKEND_HOST") do
-  config :glific, GlificWeb.Endpoint,
-    url: [host: backend_host, scheme: "https", port: 443],
-    check_origin: String.split(System.get_env("CHECK_ORIGIN", ""), ",", trim: true),
-    http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT", "4000"))]
-
-  config :glific, Glific.Repo,
-    hostname: System.get_env("DATABASE_HOST", "localhost"),
-    username: System.get_env("DATABASE_USER", "postgres"),
-    password: System.get_env("DATABASE_PASSWORD", "postgres"),
-    database: System.get_env("DATABASE_NAME", "glific_dev"),
-    port: String.to_integer(System.get_env("DATABASE_PORT", "5432"))
-end
 
 # config :absinthe, Absinthe.Logger,
 #   pipeline: true,

@@ -1,17 +1,16 @@
 # Bunnyshell ephemeral environments
 
 `bunnyshell.yaml` (in this repo root) defines a shareable, on-demand Glific environment on
-[Bunnyshell](https://www.bunnyshell.com/). It assembles four components from three repositories:
+[Bunnyshell](https://www.bunnyshell.com/). It assembles three components from two repositories:
 
 | Component       | Repo / branch                     | What it is                            |
 |-----------------|-----------------------------------|---------------------------------------|
 | `db`            | `postgres:15-alpine` image        | Postgres 15 (persistent `pg-data` PVC)|
 | `backend`       | `glific` @ `master`               | Elixir/Phoenix API + socket           |
 | `admin-console` | `glific-frontend` @ `master`      | Staff console (Vite/React)            |
-| `web-channel`   | `glific-web-channel` @ `main`     | Embeddable chat widget (Vite/React)   |
 
-The backend builds from this repo's `Dockerfile` + `config/entrypoint.sh`; the two frontends
-build from their own repos' `Dockerfile` + `nginx.conf`.
+The backend builds from this repo's `Dockerfile` + `config/entrypoint.sh`; the staff console
+builds from its own repo's `Dockerfile` + `nginx.conf`.
 
 ## Prerequisites
 
@@ -30,22 +29,16 @@ build from their own repos' `Dockerfile` + `nginx.conf`.
 
 ## How it works
 
-- **Networking:** apps reach Postgres at the internal DNS name `db:5432`. The frontends receive
-  the backend's public hostname at *build* time (Vite inlines env into the bundle), so those are
-  `build.args`, not runtime env.
-- **Tenant + origins:** `BACKEND_HOST` lets `GlificWeb.SubdomainPlug` resolve the seeded `glific`
-  org, and `CHECK_ORIGIN` allow-lists the two frontends so their WebSocket handshakes pass
-  Phoenix's `check_origin`. See the env-guarded block in `config/dev.exs` (a no-op when
-  `BACKEND_HOST` is unset, so local dev is unchanged).
+- **Networking:** apps reach Postgres at the internal DNS name `db:5432`. The staff console
+  receives the backend's public hostname at *build* time (Vite inlines env into the bundle), so
+  that is a `build.arg`, not runtime env.
+- **Tenant + origins:** the backend uses the same `config/runtime.exs` path as production — no
+  dev-only config. `BASE_URL` is the endpoint host, which `GlificWeb.SubdomainPlug` matches as the
+  root host to resolve the seeded `glific` org; `REQUEST_ORIGIN` / `REQUEST_ORIGIN_WILDCARD`
+  allow-list the staff console so its WebSocket handshake passes Phoenix's `check_origin`.
 - **First boot vs redeploy:** `config/entrypoint.sh` waits for Postgres, then loads the schema
   and seeds on a *fresh* database (detected by querying the DB itself) and only runs migrations
   on later boots — so data on the `pg-data` volume survives redeploys.
-- **DB SSL:** `config/runtime.exs` treats DB SSL as optional (skipped when no CA cert env var is
-  set / `ENABLE_DB_SSL=false`), so the in-cluster Postgres works without certificates.
-
-## Caveat: web-channel widget
-
-The `web-channel` widget needs the web-channel backend feature (its REST + socket routes), which
-is not yet on `glific @ master`. Until that feature is merged, the widget deploys and serves but
-its chat will not connect. The `backend` + `admin-console` form a fully functional generic Glific
-environment on their own.
+- **DB SSL:** `config/runtime.exs` reads `ENABLE_DB_SSL` in one place; the manifest sets it to
+  `false` so the in-cluster Postgres (no TLS) works without certificates. Even left on, SSL is
+  skipped when a DB's CA cert env var is absent.
