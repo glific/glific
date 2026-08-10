@@ -323,10 +323,6 @@ defmodule GlificWeb.KaapiControllerTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # improve_prompt_callback/2
-  # ---------------------------------------------------------------------------
-
   describe "improve_prompt_callback/2" do
     setup :setup_improve_prompt
 

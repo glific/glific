@@ -566,12 +566,14 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
         %Tesla.Env{status: 404, body: response_body}
       end)
 
-      assert {:error, %{status: 404, body: ^response_body}} =
+      assert {:error, %{status: 404, body: ^response_body} = error} =
                ApiClient.improve_prompt_v2(
                  999,
                  %{callback_url: "https://example.com"},
                  @org_kaapi_api_key
                )
+
+      assert error.body.error == "Evaluation not found"
     end
 
     test "returns error on timeout" do

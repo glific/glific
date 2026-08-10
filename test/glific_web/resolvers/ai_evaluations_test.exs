@@ -1822,14 +1822,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
     end
 
-    test "returns an error when the evaluation does not exist", %{staff: user} do
-      resolution = %{context: %{current_user: user}}
-      args = %{evaluation_id: 999_999}
-
-      assert {:ok, %{errors: [%{message: "Evaluation not found."}]}} =
-               AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
-    end
-
     test "returns a timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
       Tesla.Mock.mock(fn %{method: :post} -> {:error, :timeout} end)
 
@@ -1855,14 +1847,14 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
     end
 
-    test "returns an error when the evaluation has no Kaapi evaluation id", %{
+    test "returns an error when the evaluation is not completed", %{
       staff: user,
       organization_id: organization_id,
       assistant_config_version: config_version
     } do
       {:ok, golden_qa} =
         Glific.AIEvaluations.create_golden_qa(%{
-          name: "improve_prompt_no_kaapi_id",
+          name: "improve_prompt_processing",
           dataset_id: 66_666,
           duplication_factor: 1,
           organization_id: organization_id
@@ -1871,9 +1863,9 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       {:ok, evaluation} =
         %AIEvaluation{}
         |> AIEvaluation.changeset(%{
-          name: "test_evaluation_no_kaapi_id",
-          status: :completed,
-          kaapi_evaluation_id: nil,
+          name: "test_evaluation_processing",
+          status: :processing,
+          kaapi_evaluation_id: 767,
           golden_qa_id: golden_qa.id,
           assistant_config_version_id: config_version.id,
           organization_id: organization_id
@@ -1885,7 +1877,12 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:ok,
               %{
-                errors: [%{message: "Evaluation does not have a Kaapi evaluation id yet."}]
+                errors: [
+                  %{
+                    message:
+                      "Evaluation is processing, must be completed before requesting prompt improvement."
+                  }
+                ]
               }} = AIEvaluations.improve_evaluation_prompt(nil, args, resolution)
     end
 
