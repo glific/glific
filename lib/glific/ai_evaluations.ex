@@ -294,7 +294,7 @@ defmodule Glific.AIEvaluations do
   def request_improve_prompt(evaluation_id, organization_id) do
     with {:ok, evaluation} <-
            Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: organization_id}),
-         {:kaapi_id, true} <- {:kaapi_id, is_integer(evaluation.kaapi_evaluation_id)},
+         {:status, :completed} <- {:status, evaluation.status},
          callback_url = build_improve_prompt_callback_url(organization_id),
          {:ok, _} <-
            Kaapi.improve_evaluation_prompt(
@@ -304,8 +304,9 @@ defmodule Glific.AIEvaluations do
            ) do
       {:ok, %{status: "pending"}}
     else
-      {:kaapi_id, false} ->
-        {:error, "Evaluation does not have a Kaapi evaluation id yet."}
+      {:status, status} ->
+        {:error,
+         "Evaluation is #{status}, must be completed before requesting prompt improvement."}
 
       {:error, reason} ->
         {:error, reason}
@@ -408,24 +409,25 @@ defmodule Glific.AIEvaluations do
   defp do_link_improve_prompt_knowledge_base(multi, llm_service_id, organization_id) do
     multi
     |> Multi.run(:knowledge_base_version, fn _repo, _changes ->
-      case Repo.get_by(KnowledgeBaseVersion, llm_service_id: llm_service_id) do
-        nil -> {:error, "No matching knowledge base found for llm_service_id=#{llm_service_id}"}
-        knowledge_base_version -> {:ok, knowledge_base_version}
+      case Repo.fetch_by(KnowledgeBaseVersion, llm_service_id: llm_service_id) do
+        {:error, _} ->
+          {:error, "No matching knowledge base found for llm_service_id=#{llm_service_id}"}
+
+        {:ok, knowledge_base_version} ->
+          {:ok, knowledge_base_version}
       end
     end)
     |> Multi.insert_all(
       :link_knowledge_base,
       "assistant_config_version_knowledge_base_versions",
       fn %{config_version: config_version, knowledge_base_version: knowledge_base_version} ->
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
-
         [
           %{
             assistant_config_version_id: config_version.id,
             knowledge_base_version_id: knowledge_base_version.id,
             organization_id: organization_id,
-            inserted_at: now,
-            updated_at: now
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now()
           }
         ]
       end
