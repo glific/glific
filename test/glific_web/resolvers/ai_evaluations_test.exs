@@ -746,10 +746,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
           "long_answer_#{System.unique_integer([:positive])}.csv"
         )
 
-      long_answer =
-        1..60
-        |> Enum.map(&"Line #{&1} of the answer")
-        |> Enum.join("\n")
+      long_answer = Enum.map_join(1..60, "\n", &"Line #{&1} of the answer")
 
       File.write!(csv_path, "question,answer\n\"What is X?\",\"#{long_answer}\"\n")
       on_exit(fn -> File.rm(csv_path) end)
