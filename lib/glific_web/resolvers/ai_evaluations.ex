@@ -193,7 +193,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   defp validate_csv_structure(%{path: path}) do
     path
     |> File.stream!()
-    |> CSV.decode(headers: false, escape_max_lines: 50)
+    |> CSV.decode(headers: false, escape_max_lines: 1_000_000)
     |> Enum.reduce_while({:await_header, 0}, fn
       {:ok, row}, {:await_header, _} ->
         if row == ["question", "answer"] do
