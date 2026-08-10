@@ -255,6 +255,10 @@ defmodule Glific.GCS.GcsWorker do
         {:discard, error}
 
       {:error, :timeout} ->
+        # A network timeout could self-correct on an immediate retry, but discarding
+        # here (rather than letting Oban raise and retry) is what stops this from
+        # flooding AppSignal on every attempt. gcs_url stays nil and no invalid-media
+        # marker is set, so the periodic sweep still re-attempts this media later.
         error =
           "GCSWORKER: GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"
 
