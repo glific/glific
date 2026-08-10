@@ -739,6 +739,41 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
+    test "accepts a properly quoted answer field spanning more than 50 lines", %{staff: user} do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "long_answer_#{System.unique_integer([:positive])}.csv"
+        )
+
+      long_answer = Enum.map_join(1..60, "\n", &"Line #{&1} of the answer")
+
+      File.write!(csv_path, "question,answer\n\"What is X?\",\"#{long_answer}\"\n")
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "long_answer.csv"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_name: "valid_name", dataset_id: "12345"}}
+          }
+      end)
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.name == "valid_name"
+    end
+
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
       staff: user
     } do
