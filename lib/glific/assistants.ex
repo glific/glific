@@ -1009,11 +1009,9 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Sends a chat message to an assistant's live Kaapi config version (the "Try It Out"
-  sandbox). Dispatch is synchronous (Kaapi just queues the job and returns a `job_id`);
-  the actual reply arrives later via the `/kaapi/llm_call` callback and is published
-  over the `llm_call_response` GraphQL subscription — no chat history is persisted here,
-  multi-turn context is tracked by Kaapi's own `conversation` id.
+  Dispatches a chat message to an assistant's live Kaapi config ("Try It Out" sandbox).
+  Kaapi just queues the job; the reply arrives via the `/kaapi/llm_call` callback and
+  is published over the `llm_call_response` subscription — no history is persisted here.
   """
   @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -1040,21 +1038,16 @@ defmodule Glific.Assistants do
   @spec fetch_live_kaapi_config(non_neg_integer(), non_neg_integer()) ::
           {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
   defp fetch_live_kaapi_config(assistant_id, organization_id) do
-    case Repo.fetch_by(Assistant, %{id: assistant_id, organization_id: organization_id}) do
-      {:error, _} ->
-        {:error, "Assistant not found"}
-
-      {:ok, assistant} ->
-        assistant = Repo.preload(assistant, :active_config_version)
-
-        case {assistant.kaapi_uuid, assistant.active_config_version} do
-          {kaapi_uuid, %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}}
-          when not is_nil(kaapi_uuid) and not is_nil(kaapi_version_number) ->
-            {:ok, {kaapi_uuid, kaapi_version_number}}
-
-          _ ->
-            {:error, "Assistant does not have a live config version yet"}
-        end
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{id: assistant_id, organization_id: organization_id}),
+         assistant <- Repo.preload(assistant, :active_config_version),
+         {kaapi_uuid, %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}}
+         when not is_nil(kaapi_uuid) and not is_nil(kaapi_version_number) <-
+           {assistant.kaapi_uuid, assistant.active_config_version} do
+      {:ok, {kaapi_uuid, kaapi_version_number}}
+    else
+      {:error, _} -> {:error, "Assistant not found"}
+      _ -> {:error, "Assistant does not have a live config version yet"}
     end
   end
 
@@ -1095,10 +1088,8 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Handles the async callback POSTed by Kaapi after an `llm_call/2` dispatch completes.
-  Publishes the result over the `llm_call_response` subscription on the
-  `"{organization_id}:{user_id}"` topic (`user_id` is echoed back via
-  `request_metadata`) — there is no server-side row to update.
+  Handles Kaapi's async `llm_call` callback, publishing the result over the
+  `llm_call_response` subscription on the `"{organization_id}:{user_id}"` topic.
   """
   @spec handle_llm_call_callback(non_neg_integer(), map()) :: :ok
   def handle_llm_call_callback(

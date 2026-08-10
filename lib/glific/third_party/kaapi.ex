@@ -387,29 +387,17 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Initiates async LLM prompt generation via Kaapi unified LLM API.
-
-  Receives an already-built payload (from `Glific.PromptGenerator.build_llm_payload/3`)
-  and dispatches it to Kaapi. On success, extracts and returns `{:ok, %{job_id: job_id}}`
-  for the caller to persist. On failure, logs the exception and returns `{:error, reason}`.
-
-  ## Parameters
-
-    - `payload` — the LLM call envelope built by `Glific.PromptGenerator.build_llm_payload/3`.
-    - `organization_id` — used to look up the Kaapi API key via `fetch_kaapi_creds/1`.
+  Sends an ad-hoc `PromptGenerator` payload for async LLM prompt generation via Kaapi.
   """
   @spec generate_prompt(map(), non_neg_integer()) ::
           {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
-  def generate_prompt(payload, organization_id) do
-    dispatch_llm_job(payload, organization_id, "generate_prompt")
-  end
+  def generate_prompt(payload, organization_id),
+    do: dispatch_llm_job(payload, organization_id, "generate_prompt")
 
   @doc """
-  Dispatches a "Mode 1: Stored Configuration" Kaapi LLM call for an assistant's saved config
-  version (e.g. the "Try It Out" chat sandbox). Distinct entry point from `generate_prompt/2`
-  so a `PromptGenerator`-shaped payload (ad-hoc config blob) is never confused with a
-  stored-config payload (`config: %{id:, version:}`) — same underlying dispatch, different
-  callers build very different payloads.
+  Sends a stored-config (`config: %{id:, version:}`) Kaapi LLM call, e.g. the
+  "Try It Out" chat sandbox. Distinct from `generate_prompt/2` so the two payload shapes
+  are never confused.
   """
   @spec llm_call(map(), non_neg_integer()) ::
           {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
@@ -421,19 +409,9 @@ defmodule Glific.ThirdParty.Kaapi do
           {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
   defp dispatch_llm_job(payload, organization_id, caller) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
-      case body do
-        %{data: %{job_id: job_id} = data} when is_binary(job_id) ->
-          {:ok, %{job_id: job_id, conversation_id: get_in(data, [:conversation, :id])}}
-
-        other ->
-          Glific.log_exception(%Error{
-            message:
-              "Kaapi #{caller} returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
-          })
-
-          {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
-      end
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]),
+         %{data: %{job_id: job_id} = data} when is_binary(job_id) <- body do
+      {:ok, %{job_id: job_id, conversation_id: get_in(data, [:conversation, :id])}}
     else
       {:error, reason} ->
         Glific.log_exception(%Error{
@@ -442,6 +420,14 @@ defmodule Glific.ThirdParty.Kaapi do
         })
 
         {:error, reason}
+
+      other ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi #{caller} returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
+        })
+
+        {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
     end
   end
 
