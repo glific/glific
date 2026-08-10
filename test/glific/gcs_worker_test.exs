@@ -139,6 +139,55 @@ defmodule Glific.GcsWorkerTest do
     end
   end
 
+  test "perform/1 discards (does not fail/retry) when the GCS download times out",
+       attrs do
+    # Simulates the AppSignal incident #292 flood: the download step times out on
+    # every attempt. Mocking Tesla to return {:error, :timeout} drives the worker
+    # through the exact same `download_file_to_temp/3` -> `do_perform/1` case clause
+    # that raised Oban.PerformError on every retry before the fix.
+    Tesla.Mock.mock(fn %{method: :get} -> {:error, :timeout} end)
+
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "mock_access_token", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      GCS.insert_gcs_jobs(attrs.organization_id)
+
+      media =
+        Fixtures.message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+        |> Ecto.Changeset.change(%{
+          inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second),
+          updated_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
+        })
+        |> Repo.update!()
+
+      assert :ok = GcsWorker.perform_periodic(attrs.organization_id, %{phase: "incremental"})
+      assert_enqueued(worker: GcsWorker, prefix: "global")
+
+      # Oban.drain_queue actually runs the enqueued job through `perform/1`, so this
+      # exercises the real Oban execution path (not a direct call to the private
+      # `do_perform/1`). A `{:discard, _}` return lands in `discard`, with `failure`
+      # at 0 and no retry left enqueued. Before the fix, `do_perform/1` returned
+      # `{:error, error}` here, which Oban treats as a job failure — this same
+      # assertion would instead see `failure: 1, discard: 0` and Oban would schedule
+      # a retry that re-raises Oban.PerformError on the next attempt too.
+      assert %{success: 0, failure: 0, snoozed: 0, discard: 1, cancelled: 0} ==
+               Oban.drain_queue(queue: :gcs)
+
+      refute_enqueued(worker: GcsWorker, prefix: "global")
+
+      assert %MessageMedia{gcs_error: gcs_error, gcs_url: nil} =
+               Repo.get!(MessageMedia, media.id)
+
+      assert gcs_error =~ "GCS Download timeout"
+    end
+  end
+
   test "perform_periodic/2, queuing only media_ids not older than a month, unsynced", attrs do
     with_mock(
       Goth.Token,
