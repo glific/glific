@@ -328,22 +328,34 @@ defmodule Glific.Messages do
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
-    {:ok, message} =
-      attrs
-      |> Map.put_new(:type, :text)
-      |> Map.merge(%{
-        sender_id: Partners.organization_contact_id(organization_id),
-        flow: :outbound
-      })
-      |> create_message()
+    # `create_and_send_message/1`'s top-level guard only rejects an empty body when the
+    # caller explicitly passes `type: :text`. Callers (e.g. `create_and_send_message` GraphQL
+    # mutations) that omit `type` entirely skip that guard and land here, where `type`
+    # defaults to `:text` via `Map.put_new/3` below. Re-check with the type resolved so we
+    # don't persist a `type: :text` message with a `nil`/empty body (see issue #4848).
+    attrs = Map.put_new(attrs, :type, :text)
 
-    result = Communications.Message.send_message(message, attrs)
+    if attrs.type == :text && attrs[:body] in ["", nil] do
+      reason = "Could not send message with empty body"
+      notify(attrs, reason)
+      {:error, reason}
+    else
+      {:ok, message} =
+        attrs
+        |> Map.merge(%{
+          sender_id: Partners.organization_contact_id(organization_id),
+          flow: :outbound
+        })
+        |> create_message()
 
-    if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
-      Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+      result = Communications.Message.send_message(message, attrs)
+
+      if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
+        Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+      end
+
+      result
     end
-
-    result
   end
 
   defp do_send_message({:error, reason}, attrs) do
