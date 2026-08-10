@@ -1488,6 +1488,8 @@ defmodule Glific.Partners do
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
+      "ai_evaluation_v2_enabled" =>
+        Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
       "copy_node_enabled" => Flags.get_copy_node_enabled(organization),

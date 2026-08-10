@@ -773,6 +773,184 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert golden_qa.name == "dataset_2024_v1"
     end
+
+    test "v1 path: uploads to the v1 endpoint and leaves total_items at default when the flag is off",
+         %{staff: user, upload: upload} do
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          assert url =~ "/api/v1/evaluations/datasets"
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_name: "v1_regression_dataset", dataset_id: "88003"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "v1_regression_dataset",
+          file: upload,
+          duplication_factor: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.name == "v1_regression_dataset"
+      assert golden_qa.dataset_id == 88_003
+      assert golden_qa.total_items == 0
+    end
+  end
+
+  describe "create_golden_qa/3 v2 (is_ai_evaluation_enabled)" do
+    setup [:enable_kaapi, :create_upload_file]
+
+    test "v2 path: returns golden_qa with total_items and hits the v2 endpoint when is_ai_evaluation_enabled is on",
+         %{staff: user, upload: upload} do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          assert url =~ "/api/v2/evaluations/datasets"
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_id: "88004", total_items: 120}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "valid_dataset_v2",
+          file: upload,
+          duplication_factor: 3
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{golden_qa: golden_qa}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
+
+        assert golden_qa.name == "valid_dataset_v2"
+        assert golden_qa.dataset_id == 88_004
+        assert golden_qa.total_items == 120
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_success_metric,
+                   user.organization_id
+                 )
+               )
+      end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "v2 path: returns a generic error when the Kaapi response is missing total_items", %{
+      staff: user,
+      upload: upload
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{dataset_id: "88005"}}}
+      end)
+
+      args = %{
+        input: %{
+          name: "valid_dataset_v2_bad_shape",
+          file: upload,
+          duplication_factor: 2
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
+
+        assert msg == "An unknown error occurred, please contact Glific support."
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
+                 )
+               )
+      end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "v2 path: returns the Kaapi error message when dataset name already exists (409)", %{
+      staff: user,
+      upload: upload
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          assert url =~ "/api/v2/evaluations/datasets"
+
+          %Tesla.Env{
+            status: 409,
+            body: %{
+              success: false,
+              data: nil,
+              error:
+                "Dataset with name 'tester' already exists in this organization and project. Please choose a different name.",
+              errors: nil,
+              metadata: nil
+            }
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "tester",
+          file: upload,
+          duplication_factor: 3
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
+
+        assert msg ==
+                 "Dataset with name 'tester' already exists in this organization and project. Please choose a different name."
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
+                 )
+               )
+      end
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
   end
 
   describe "get_golden_qa/3" do
@@ -826,6 +1004,23 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert dataset.id == golden_qa.id
       assert dataset.name == golden_qa.name
       assert dataset.signed_url == "https://storage.example.com/signed-url-token-12345"
+    end
+
+    test "returns total_items when present on the underlying record", %{staff: user} do
+      {:ok, golden_qa_with_total_items} =
+        Glific.AIEvaluations.create_golden_qa(%{
+          name: "test_dataset_with_total_items",
+          dataset_id: 55_001,
+          duplication_factor: 2,
+          total_items: 240,
+          organization_id: user.organization_id
+        })
+
+      args = %{id: golden_qa_with_total_items.id, include_signed_url: false}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: dataset}} = AIEvaluations.get_golden_qa(nil, args, resolution)
+      assert dataset.total_items == 240
     end
 
     test "returns error when golden_qa does not exist", %{staff: user} do
