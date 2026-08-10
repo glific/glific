@@ -204,7 +204,7 @@ defmodule Glific.GCS.GcsWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
+  @spec perform(Oban.Job.t()) :: :ok | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
     Logger.info("GCSWORKER: Performing gcs media for media id: #{media["id"]}")
 
@@ -216,7 +216,7 @@ defmodule Glific.GCS.GcsWorker do
     end)
   end
 
-  @spec do_perform(map()) :: :ok | {:error, String.t()} | {:discard, String.t()}
+  @spec do_perform(map()) :: :ok | {:discard, String.t()}
   defp do_perform(media) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
@@ -260,7 +260,7 @@ defmodule Glific.GCS.GcsWorker do
 
         Logger.info(error)
         add_message_media_error(media, error)
-        {:error, error}
+        {:discard, error}
 
       {:error, error} ->
         error =
