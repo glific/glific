@@ -777,6 +777,36 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "valid_name"
     end
 
+    test "returns error when a field's line count exceeds escape_max_lines even though a closing quote exists later",
+         %{staff: user} do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "exceeds_escape_cap_#{System.unique_integer([:positive])}.csv"
+        )
+
+      padding = String.duplicate("\n", 1_000_001)
+      File.write!(csv_path, "question,answer\n\"What is X?\",\"#{padding}closing text\"\n")
+      on_exit(fn -> File.rm(csv_path) end)
+
+      assert {:ok, %{size: size}} = File.stat(csv_path)
+      assert size <= 1024 * 1024
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "exceeds_escape_cap.csv"
+      }
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg == "Unable to parse the uploaded CSV file"
+    end
+
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
       staff: user
     } do
