@@ -6,8 +6,12 @@ Single consolidated technical design for the web channel — an NGO-branded, bro
 that reuses Glific's contacts, `messages` table, and flow engine, with a channel discriminator on the
 message and a presence-gated websocket transport.
 
-**Companion doc:** [Frontend hosting decision](./frontend-hosting-decision.md) — the full provider
-comparison behind the Vercel choice below.
+**Companion docs:**
+[Frontend hosting decision](./frontend-hosting-decision.md) — the full provider
+comparison behind the Vercel choice below ·
+[Custom UI messages](./custom-ui-design.md) — org-rendered rich components (carousels, image
+panels, forms) on the web channel: the JSON envelope contract, authoring model, and the
+cross-channel direction for future channels (RCS/Telegram).
 
 ---
 
