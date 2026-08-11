@@ -770,6 +770,18 @@ defmodule Glific.MessagesTest do
       assert error == "Could not send message with empty body"
     end
 
+    test "create and send message with an explicit type: :text and an empty body should also error out",
+         attrs do
+      # Explicit `type: :text` must go through the same resolved-type validation path as
+      # the omitted-type case above, so both hit `notify/2` and return the same error.
+      message_attrs =
+        %{flow: :outbound, type: :text, body: ""}
+        |> Map.merge(foreign_key_constraint(attrs))
+
+      assert {:error, error} = Messages.create_and_send_message(message_attrs)
+      assert error == "Could not send message with empty body"
+    end
+
     test "create and send message should send message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
