@@ -1,4 +1,4 @@
-mutation sendAssistantMessage($input: LlmCallInput!) {
+mutation sendAssistantMessage($input: AssistantChatInput!) {
   sendAssistantMessage(input: $input) {
     jobId
     requestId

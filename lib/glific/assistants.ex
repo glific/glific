@@ -1010,8 +1010,8 @@ defmodule Glific.Assistants do
 
   @doc """
   Dispatches a chat message to an assistant's live Kaapi config ("Try It Out" sandbox).
-  Kaapi just queues the job; the reply arrives via the `/kaapi/llm_call` callback and
-  is published over the `llm_call_response` subscription — no history is persisted here.
+  Kaapi just queues the job; the reply arrives via the `/kaapi/assistant_chat` callback and
+  is published over the `assistant_chat_response` subscription — no history is persisted here.
   """
   @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -1021,7 +1021,7 @@ defmodule Glific.Assistants do
     with {:ok, {kaapi_uuid, kaapi_version_number}} <-
            fetch_live_kaapi_config(assistant_id, organization_id),
          payload =
-           build_llm_call_payload(
+           build_assistant_chat_payload(
              input,
              params[:conversation_id],
              kaapi_uuid,
@@ -1051,7 +1051,7 @@ defmodule Glific.Assistants do
     end
   end
 
-  @spec build_llm_call_payload(
+  @spec build_assistant_chat_payload(
           String.t(),
           String.t() | nil,
           String.t(),
@@ -1060,7 +1060,7 @@ defmodule Glific.Assistants do
           non_neg_integer(),
           String.t()
         ) :: map()
-  defp build_llm_call_payload(
+  defp build_assistant_chat_payload(
          input,
          conversation_id,
          kaapi_uuid,
@@ -1072,7 +1072,7 @@ defmodule Glific.Assistants do
     %{
       query: %{input: input, conversation: build_conversation(conversation_id)},
       config: %{id: kaapi_uuid, version: kaapi_version_number},
-      callback_url: build_llm_call_callback_url(organization_id),
+      callback_url: build_assistant_chat_callback_url(organization_id),
       request_metadata: %{request_id: request_id, user_id: user_id}
     }
   end
@@ -1081,33 +1081,33 @@ defmodule Glific.Assistants do
   defp build_conversation(nil), do: %{auto_create: true}
   defp build_conversation(conversation_id), do: %{id: conversation_id}
 
-  @spec build_llm_call_callback_url(non_neg_integer()) :: String.t()
-  defp build_llm_call_callback_url(organization_id) do
+  @spec build_assistant_chat_callback_url(non_neg_integer()) :: String.t()
+  defp build_assistant_chat_callback_url(organization_id) do
     organization = Partners.organization(organization_id)
-    Glific.api_callback_base(organization.shortcode) <> "/kaapi/llm_call"
+    Glific.api_callback_base(organization.shortcode) <> "/kaapi/assistant_chat"
   end
 
   @doc """
-  Handles Kaapi's async `llm_call` callback, publishing the result over the
-  `llm_call_response` subscription on the `"{organization_id}:{user_id}"` topic.
+  Handles Kaapi's async assistant chat callback, publishing the result over the
+  `assistant_chat_response` subscription on the `"{organization_id}:{user_id}"` topic.
   """
-  @spec handle_llm_call_callback(non_neg_integer(), map()) :: :ok
-  def handle_llm_call_callback(
+  @spec handle_assistant_chat_callback(non_neg_integer(), map()) :: :ok
+  def handle_assistant_chat_callback(
         organization_id,
         %{"metadata" => %{"request_id" => request_id, "user_id" => user_id}} = params
       ) do
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
-      build_llm_call_response(params, request_id),
-      [{:llm_call_response, "#{organization_id}:#{user_id}"}]
+      build_assistant_chat_response(params, request_id),
+      [{:assistant_chat_response, "#{organization_id}:#{user_id}"}]
     )
 
     :ok
   end
 
-  def handle_llm_call_callback(organization_id, params) do
+  def handle_assistant_chat_callback(organization_id, params) do
     Glific.log_exception(%Error{
-      message: "Unexpected llm_call callback payload for org_id=#{organization_id}",
+      message: "Unexpected assistant_chat callback payload for org_id=#{organization_id}",
       reason: Glific.SafeLog.safe_inspect(params),
       organization_id: organization_id
     })
@@ -1115,8 +1115,8 @@ defmodule Glific.Assistants do
     :ok
   end
 
-  @spec build_llm_call_response(map(), String.t()) :: map()
-  defp build_llm_call_response(%{"success" => true} = params, request_id) do
+  @spec build_assistant_chat_response(map(), String.t()) :: map()
+  defp build_assistant_chat_response(%{"success" => true} = params, request_id) do
     %{
       request_id: request_id,
       conversation_id: get_in(params, ["data", "response", "conversation_id"]),
@@ -1125,7 +1125,7 @@ defmodule Glific.Assistants do
     }
   end
 
-  defp build_llm_call_response(params, request_id) do
+  defp build_assistant_chat_response(params, request_id) do
     error_message = params["error"] || Glific.SafeLog.safe_inspect(params["errors"])
 
     %{

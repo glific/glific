@@ -2,7 +2,7 @@ defmodule GlificWeb.Resolvers.AssistantChat do
   @moduledoc """
   Resolver for sending a chat message to an assistant's live Kaapi config version
   (the "Try It Out" sandbox). Dispatch is synchronous (Kaapi just queues the job);
-  the reply arrives later via the `llm_call_response` subscription once Kaapi's
+  the reply arrives later via the `assistant_chat_response` subscription once Kaapi's
   callback fires.
   """
 

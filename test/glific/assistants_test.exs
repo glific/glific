@@ -3017,10 +3017,10 @@ defmodule Glific.AssistantsTest do
     end
   end
 
-  describe "handle_llm_call_callback/2" do
+  describe "handle_assistant_chat_callback/2" do
     test "publishes a successful reply", %{organization_id: organization_id} do
       assert :ok =
-               Assistants.handle_llm_call_callback(organization_id, %{
+               Assistants.handle_assistant_chat_callback(organization_id, %{
                  "success" => true,
                  "metadata" => %{"request_id" => "req-1", "user_id" => "9"},
                  "data" => %{
@@ -3034,7 +3034,7 @@ defmodule Glific.AssistantsTest do
 
     test "publishes a failure with the error message", %{organization_id: organization_id} do
       assert :ok =
-               Assistants.handle_llm_call_callback(organization_id, %{
+               Assistants.handle_assistant_chat_callback(organization_id, %{
                  "success" => false,
                  "metadata" => %{"request_id" => "req-2", "user_id" => "9"},
                  "error" => "LLM provider timed out"
@@ -3042,7 +3042,8 @@ defmodule Glific.AssistantsTest do
     end
 
     test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
-      assert :ok = Assistants.handle_llm_call_callback(organization_id, %{"unexpected" => true})
+      assert :ok =
+               Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
     end
   end
 end

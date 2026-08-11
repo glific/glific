@@ -135,7 +135,7 @@ defmodule GlificWeb.Router do
   scope "/kaapi", GlificWeb do
     post("/knowledge_base_version", KaapiController, :knowledge_base_version_creation_callback)
     post("/prompt_generation", KaapiController, :prompt_generation_callback)
-    post("/llm_call", KaapiController, :llm_call_callback)
+    post("/assistant_chat", KaapiController, :assistant_chat_callback)
   end
 
   # Dify chatbot callback routes.

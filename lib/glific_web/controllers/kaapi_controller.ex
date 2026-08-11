@@ -32,12 +32,15 @@ defmodule GlificWeb.KaapiController do
   end
 
   @doc """
-  Handles the async callback POSTed by Kaapi after an assistant `llm_call/2` dispatch
-  completes. Always returns 200 — same posture as `prompt_generation_callback/2`.
+  Handles the async callback POSTed by Kaapi after an assistant chat `send_message/3`
+  dispatch completes. Always returns 200 — same posture as `prompt_generation_callback/2`.
   """
-  @spec llm_call_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def llm_call_callback(%Plug.Conn{assigns: %{organization_id: organization_id}} = conn, params) do
-    Assistants.handle_llm_call_callback(organization_id, params)
+  @spec assistant_chat_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def assistant_chat_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    Assistants.handle_assistant_chat_callback(organization_id, params)
     send_resp(conn, 200, "")
   end
 end

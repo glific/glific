@@ -1,5 +1,5 @@
-subscription llmCallResponse($organizationId: ID!) {
-  llmCallResponse(organizationId: $organizationId) {
+subscription assistantChatResponse {
+  assistantChatResponse {
     requestId
     conversationId
     answer
