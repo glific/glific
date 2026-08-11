@@ -1,8 +1,16 @@
 defmodule Glific.ThirdParty.KaapiTest do
   use GlificWeb.ConnCase
   import Tesla.Mock
+  alias Glific.Fixtures
   alias Glific.Partners
   alias Glific.ThirdParty.Kaapi
+
+  @llm_call_payload %{
+    query: %{input: "Hello", conversation: %{auto_create: true}},
+    config: %{id: "kaapi_uuid", version: 1},
+    callback_url: "https://api.glific.glific.com/kaapi/llm_call",
+    request_metadata: %{request_id: "req-1", user_id: 9}
+  }
 
   describe "upload_evaluation_dataset/2" do
     setup [:enable_kaapi_credential, :create_dataset_upload_params]
@@ -73,6 +81,93 @@ defmodule Glific.ThirdParty.KaapiTest do
 
       assert {:error, "An unknown error occurred, please contact Glific support."} =
                Kaapi.upload_evaluation_dataset_v2(dataset_params, organization_id)
+    end
+  end
+
+  describe "llm_call/2" do
+    setup [:enable_kaapi_credential]
+
+    test "returns job_id and conversation_id on a successful dispatch", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{job_id: "job_001", conversation: %{id: "conv_001"}}}
+        }
+      end)
+
+      assert {:ok, %{job_id: "job_001", conversation_id: "conv_001"}} =
+               Kaapi.llm_call(@llm_call_payload, organization_id)
+    end
+
+    test "returns nil conversation_id when Kaapi doesn't echo one back", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 200, body: %{data: %{job_id: "job_002"}}}
+      end)
+
+      assert {:ok, %{job_id: "job_002", conversation_id: nil}} =
+               Kaapi.llm_call(@llm_call_payload, organization_id)
+    end
+
+    test "returns an error for an unexpected 2xx body shape", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 200, body: %{unexpected: "shape"}}
+      end)
+
+      assert {:error, _reason} = Kaapi.llm_call(@llm_call_payload, organization_id)
+    end
+
+    test "returns an error when Kaapi is not configured for the org" do
+      organization = Fixtures.organization_fixture()
+
+      assert {:error, "\"Kaapi is not active\""} =
+               Kaapi.llm_call(@llm_call_payload, organization.id)
+    end
+
+    test "returns the Kaapi error message on a config-not-found 422", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 422,
+          body: %{
+            success: false,
+            data: nil,
+            error: "Failed to retrieve stored configuration: config with id 'bad-id' not found",
+            errors: nil,
+            metadata: %{}
+          }
+        }
+      end)
+
+      assert {:error,
+              "Failed to retrieve stored configuration: config with id 'bad-id' not found"} =
+               Kaapi.llm_call(%{}, organization_id)
+    end
+
+    test "returns the field-level message on a validation-failed 422", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 422,
+          body: %{
+            success: false,
+            data: nil,
+            error: "Validation failed",
+            errors: [
+              %{field: "config.id", message: "Input should be a valid UUID"}
+            ],
+            metadata: nil
+          }
+        }
+      end)
+
+      assert {:error, "config.id: Input should be a valid UUID"} =
+               Kaapi.llm_call(%{}, organization_id)
     end
   end
 
