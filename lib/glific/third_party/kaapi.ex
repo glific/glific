@@ -710,6 +710,33 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Request a v2 prompt-improvement recommendation from Kaapi for a completed evaluation.
+  """
+  @spec improve_evaluation_prompt(non_neg_integer(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def improve_evaluation_prompt(kaapi_evaluation_id, callback_url, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{data: data}} <-
+           ApiClient.improve_prompt_v2(
+             kaapi_evaluation_id,
+             %{callback_url: callback_url},
+             secrets["api_key"]
+           ) do
+      {:ok, data}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi improve_evaluation_prompt failed for kaapi_evaluation_id=#{kaapi_evaluation_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Get dataset details from Kaapi with optional signed URL.
   """
   @spec get_dataset(non_neg_integer(), non_neg_integer(), boolean()) ::
