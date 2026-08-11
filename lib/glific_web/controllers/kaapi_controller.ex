@@ -42,6 +42,7 @@ defmodule GlificWeb.KaapiController do
         params
       ) do
     Assistants.handle_assistant_chat_callback(organization_id, params)
+    send_resp(conn, 200, "")
   end
 
   @doc """
