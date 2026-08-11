@@ -739,23 +739,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
-    test "accepts a properly quoted answer field spanning more than 50 lines", %{staff: user} do
-      csv_path =
-        Path.join(
-          System.tmp_dir!(),
-          "long_answer_#{System.unique_integer([:positive])}.csv"
-        )
-
-      long_answer = Enum.map_join(1..60, "\n", &"Line #{&1} of the answer")
-
-      File.write!(csv_path, "question,answer\n\"What is X?\",\"#{long_answer}\"\n")
-      on_exit(fn -> File.rm(csv_path) end)
-
-      upload = %Plug.Upload{
-        path: csv_path,
-        content_type: "text/csv",
-        filename: "long_answer.csv"
-      }
+    test "accepts a properly quoted answer field with exactly escape_max_lines (1000) embedded line breaks (boundary)",
+         %{staff: user} do
+      upload = write_golden_qa_csv_with_long_answer(1000)
+      on_exit(fn -> File.rm(upload.path) end)
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -772,6 +759,20 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
       assert golden_qa.name == "valid_name"
+    end
+
+    test "returns an error when a quoted answer field exceeds escape_max_lines (1001 embedded line breaks)",
+         %{staff: user} do
+      upload = write_golden_qa_csv_with_long_answer(1001)
+      on_exit(fn -> File.rm(upload.path) end)
+
+      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg == "Unable to parse the uploaded CSV file"
     end
 
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
@@ -1776,6 +1777,19 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     content = Enum.join(["question,answer" | rows], "\n") <> "\n"
     File.write!(path, content)
     path
+  end
+
+  defp write_golden_qa_csv_with_long_answer(line_break_count) do
+    csv_path =
+      Path.join(
+        System.tmp_dir!(),
+        "long_answer_#{System.unique_integer([:positive])}.csv"
+      )
+
+    long_answer = Enum.map_join(1..(line_break_count + 1), "\n", &"Line #{&1} of the answer")
+    File.write!(csv_path, "question,answer\n\"What is X?\",\"#{long_answer}\"\n")
+
+    %Plug.Upload{path: csv_path, content_type: "text/csv", filename: "long_answer.csv"}
   end
 
   # Creates a file of size (megabytes) MB for testing file size validation.
