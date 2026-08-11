@@ -1119,7 +1119,6 @@ defmodule Glific.Assistants do
   defp build_llm_call_response(%{"success" => true} = params, request_id) do
     %{
       request_id: request_id,
-      job_id: nil,
       conversation_id: get_in(params, ["data", "response", "conversation_id"]),
       answer: get_in(params, ["data", "response", "output", "content", "value"]),
       errors: []
@@ -1131,7 +1130,6 @@ defmodule Glific.Assistants do
 
     %{
       request_id: request_id,
-      job_id: nil,
       conversation_id: nil,
       answer: nil,
       errors: [%{key: "error", message: error_message}]
