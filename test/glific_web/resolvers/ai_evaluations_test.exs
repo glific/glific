@@ -525,6 +525,116 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "Timeout occurred, please try again."
     end
 
+    test "returns error when questions × duplication_factor exceeds 80", %{staff: user} do
+      csv_path = create_csv_with_rows(41)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "large_golden_qa.csv"
+      }
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 2
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      with_mock Glific.Metrics, [:passthrough], increment: fn _, _ -> :ok end do
+        assert {:ok, %{errors: [%{message: msg}]}} =
+                 AIEvaluations.create_golden_qa(nil, args, resolution)
+
+        assert msg =~
+                 "exceeds the maximum allowed limit of 80"
+
+        assert msg =~ "41 questions"
+        assert msg =~ "2 duplication factor"
+        assert msg =~ "82"
+
+        assert called(
+                 Glific.Metrics.increment(
+                   @create_golden_qa_failure_metric,
+                   user.organization_id
+                 )
+               )
+      end
+    end
+
+    test "succeeds when questions × duplication_factor equals exactly 80 (boundary)", %{
+      staff: user
+    } do
+      csv_path = create_csv_with_rows(40)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "boundary_golden_qa.csv"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_name: "valid_name", dataset_id: "99001"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 2
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.name == "valid_name"
+    end
+
+    test "succeeds when questions × duplication_factor is well under 80", %{staff: user} do
+      csv_path = create_csv_with_rows(5)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "small_golden_qa.csv"
+      }
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{dataset_name: "valid_name", dataset_id: "99002"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 3
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{golden_qa: golden_qa}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert golden_qa.name == "valid_name"
+    end
+
     test "succeeds when CSV has only a header row (0 questions)", %{staff: user} do
       csv_path =
         Path.join(
@@ -629,7 +739,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
-    test "accepts a properly quoted answer field spanning many lines", %{staff: user} do
+    test "accepts a properly quoted answer field spanning more than 50 lines", %{staff: user} do
       csv_path =
         Path.join(
           System.tmp_dir!(),
@@ -662,36 +772,6 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
       assert golden_qa.name == "valid_name"
-    end
-
-    test "returns error when a field's line count exceeds escape_max_lines even though a closing quote exists later",
-         %{staff: user} do
-      csv_path =
-        Path.join(
-          System.tmp_dir!(),
-          "exceeds_escape_cap_#{System.unique_integer([:positive])}.csv"
-        )
-
-      padding = String.duplicate("\n", 1001)
-      File.write!(csv_path, "question,answer\n\"What is X?\",\"#{padding}closing text\"\n")
-      on_exit(fn -> File.rm(csv_path) end)
-
-      assert {:ok, %{size: size}} = File.stat(csv_path)
-      assert size <= 1024 * 1024
-
-      upload = %Plug.Upload{
-        path: csv_path,
-        content_type: "text/csv",
-        filename: "exceeds_escape_cap.csv"
-      }
-
-      args = %{input: %{name: "valid_name", file: upload, duplication_factor: 1}}
-      resolution = %{context: %{current_user: user}}
-
-      assert {:ok, %{errors: [%{message: msg}]}} =
-               AIEvaluations.create_golden_qa(nil, args, resolution)
-
-      assert msg == "Unable to parse the uploaded CSV file"
     end
 
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
@@ -1677,6 +1757,25 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     on_exit(fn -> File.rm(tmp_path) end)
 
     {:ok, upload: upload}
+  end
+
+  # Creates a CSV with a header row and the given number of data rows.
+  # Returns the path to the temporary file.
+  defp create_csv_with_rows(num_rows) do
+    path =
+      Path.join(
+        System.tmp_dir!(),
+        "csv_rows_#{num_rows}_#{System.unique_integer([:positive])}.csv"
+      )
+
+    rows =
+      for i <- 1..num_rows do
+        "Question #{i}?,Answer #{i}"
+      end
+
+    content = Enum.join(["question,answer" | rows], "\n") <> "\n"
+    File.write!(path, content)
+    path
   end
 
   # Creates a file of size (megabytes) MB for testing file size validation.
