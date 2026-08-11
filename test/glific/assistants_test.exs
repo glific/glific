@@ -497,6 +497,36 @@ defmodule Glific.AssistantsTest do
       assert get_in(new_config_version.settings, ["temperature"]) == 0.5
     end
 
+    test "creates a new config version when effort changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_effort", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 effort: "high",
+                 organization_id: organization_id
+               })
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert get_in(new_config_version.settings, ["effort"]) == "high"
+    end
+
     test "creates a new config version when model changes",
          %{organization_id: organization_id, assistant: assistant} do
       Tesla.Mock.mock(fn

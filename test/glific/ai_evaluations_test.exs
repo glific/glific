@@ -580,6 +580,35 @@ defmodule Glific.AIEvaluationsTest do
       assert new_config_version.settings == %{"temperature" => 0.4}
     end
 
+    test "success callback for a reasoning model carries effort, not temperature", %{
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 1,
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{
+                  "model" => "gpt-5.6-luna",
+                  "instructions" => "You are a helpful assistant.",
+                  "effort" => "high"
+                }
+              }
+            }
+          }
+        }
+      }
+
+      assert {:ok, new_config_version} =
+               AIEvaluations.handle_improve_prompt_callback(params)
+
+      assert new_config_version.settings == %{"effort" => "high"}
+    end
+
     test "failure callback has no config_id to attribute to, so it just acknowledges", %{
       organization_id: organization_id
     } do

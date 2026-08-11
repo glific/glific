@@ -242,6 +242,7 @@ defmodule Glific.Assistants do
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
+      effort: get_in(active_config_version.settings || %{}, ["effort"]),
       settings: active_config_version.settings,
       model: active_config_version.model,
       instructions: active_config_version.prompt,
@@ -594,7 +595,7 @@ defmodule Glific.Assistants do
   defp name_only_change?(user_params) do
     not is_nil(user_params[:name]) and
       not Enum.any?(
-        [:instructions, :model, :temperature, :settings, :knowledge_base_version_id],
+        [:instructions, :model, :temperature, :effort, :settings, :knowledge_base_version_id],
         &Map.has_key?(user_params, &1)
       )
   end
@@ -719,6 +720,7 @@ defmodule Glific.Assistants do
     Map.new(settings, fn {key, value} -> {to_string(key), value} end)
   end
 
+  defp build_settings(%{effort: effort}) when not is_nil(effort), do: %{"effort" => effort}
   defp build_settings(user_params), do: %{"temperature" => user_params[:temperature] || 1}
 
   # If the KB is already completed (callback arrived before assistant creation),
