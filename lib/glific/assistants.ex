@@ -1120,7 +1120,7 @@ defmodule Glific.Assistants do
     %{
       request_id: request_id,
       job_id: nil,
-      conversation_id: get_in(params, ["data", "conversation", "id"]),
+      conversation_id: get_in(params, ["data", "response", "conversation_id"]),
       answer: get_in(params, ["data", "response", "output", "content", "value"]),
       errors: []
     }

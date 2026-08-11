@@ -76,6 +76,52 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "llm_call/2" do
+    setup [:enable_kaapi_credential]
+
+    test "returns the Kaapi error message on a config-not-found 422", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 422,
+          body: %{
+            success: false,
+            data: nil,
+            error: "Failed to retrieve stored configuration: config with id 'bad-id' not found",
+            errors: nil,
+            metadata: %{}
+          }
+        }
+      end)
+
+      assert {:error, "Failed to retrieve stored configuration: config with id 'bad-id' not found"} =
+               Kaapi.llm_call(%{}, organization_id)
+    end
+
+    test "returns the field-level message on a validation-failed 422", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{
+          status: 422,
+          body: %{
+            success: false,
+            data: nil,
+            error: "Validation failed",
+            errors: [
+              %{field: "config.id", message: "Input should be a valid UUID"}
+            ],
+            metadata: nil
+          }
+        }
+      end)
+
+      assert {:error, "config.id: Input should be a valid UUID"} =
+               Kaapi.llm_call(%{}, organization_id)
+    end
+  end
+
   describe "normalize_kaapi_body/1" do
     test "treats a 200 body with success:false as a logical failure" do
       assert %{

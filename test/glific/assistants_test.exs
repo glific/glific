@@ -3024,8 +3024,10 @@ defmodule Glific.AssistantsTest do
                  "success" => true,
                  "metadata" => %{"request_id" => "req-1", "user_id" => "9"},
                  "data" => %{
-                   "response" => %{"output" => %{"content" => %{"value" => "Hi there!"}}},
-                   "conversation" => %{"id" => "conv_001"}
+                   "response" => %{
+                     "conversation_id" => "conv_001",
+                     "output" => %{"content" => %{"value" => "Hi there!"}}
+                   }
                  }
                })
     end

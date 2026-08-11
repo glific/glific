@@ -413,13 +413,22 @@ defmodule Glific.ThirdParty.Kaapi do
          %{data: %{job_id: job_id} = data} when is_binary(job_id) <- body do
       {:ok, %{job_id: job_id, conversation_id: get_in(data, [:conversation, :id])}}
     else
+      {:error, %{status: status, body: %{success: false} = body}} ->
+        message = extract_error_message(body)
+
+        Glific.log_error(
+          "Kaapi #{caller} rejected request for org_id=#{organization_id}, status=#{status}, reason=#{message}"
+        )
+
+        {:error, message}
+
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
             "Kaapi #{caller} failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
         })
 
-        {:error, reason}
+        {:error, safe_inspect(reason)}
 
       other ->
         Glific.log_exception(%Error{
@@ -521,8 +530,14 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec extract_error_message(map() | any()) :: String.t()
+  # when payload has a list of field-level errors
+  # {"error":"Validation failed","errors":[{"field":"config.id","message":"Input should be a valid UUID..."}]}
+  defp extract_error_message(%{errors: errors}) when is_list(errors) and errors != [] do
+    Enum.map_join(errors, "; ", &"#{&1[:field]}: #{&1[:message]}")
+  end
+
   defp extract_error_message(body) when is_map(body),
-    do: body["error"] || body["message"] || safe_inspect(body)
+    do: body[:error] || body[:message] || safe_inspect(body)
 
   defp extract_error_message(body), do: safe_inspect(body)
 
