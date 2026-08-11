@@ -257,9 +257,6 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
-  def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
-    do: {:error, "Could not send message with empty body"}
-
   def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
     contact = Contacts.get_contact(receiver_id)
 
