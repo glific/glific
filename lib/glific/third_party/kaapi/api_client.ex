@@ -274,6 +274,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Request a v2 prompt-improvement recommendation for a completed evaluation in Kaapi.
+  """
+  @spec improve_prompt_v2(non_neg_integer(), map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def improve_prompt_v2(evaluation_id, body, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v2/evaluations/:evaluation_id/improve-prompt", body,
+      opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Get dataset details from Kaapi with optional signed URL.
   """
   @spec get_dataset(non_neg_integer(), String.t(), boolean()) :: {:ok, map()} | {:error, any()}

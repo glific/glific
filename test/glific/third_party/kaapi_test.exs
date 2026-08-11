@@ -76,6 +76,42 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "improve_evaluation_prompt/3" do
+    setup [:enable_kaapi_credential]
+
+    test "extracts job_id from a well-shaped v2 response", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/767/improve-prompt"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{job_id: "a8f2be70-4ac6-42af-ada7-c28ac46fd834", status: "PENDING"}
+          }
+        }
+      end)
+
+      assert {:ok, %{job_id: "a8f2be70-4ac6-42af-ada7-c28ac46fd834"}} =
+               Kaapi.improve_evaluation_prompt(
+                 767,
+                 "https://example.com/kaapi/improve_prompt",
+                 organization_id
+               )
+    end
+
+    test "passes an upstream error through unchanged", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               Kaapi.improve_evaluation_prompt(
+                 767,
+                 "https://example.com/kaapi/improve_prompt",
+                 organization_id
+               )
+    end
+  end
+
   describe "list_models/1" do
     setup [:enable_kaapi_credential]
 
@@ -173,7 +209,6 @@ defmodule Glific.ThirdParty.KaapiTest do
                  "top_p" => 1,
                  "max_output_tokens" => 2048
                }
-
         %Tesla.Env{
           status: 200,
           body: %{
