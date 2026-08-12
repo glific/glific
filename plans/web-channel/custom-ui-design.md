@@ -147,10 +147,10 @@ existing *Send Interactive Message* node. That reuses, unchanged: template stora
 (`interactive_templates.interactive_content`), per-language translations, whole-map variable
 substitution, and the flow editor itself (**zero floweditor fork changes**).
 
-The v0 authoring form ([interactive mockup][mockup], reviewable in-browser):
+The v0 authoring form:
 
-1. **Type**: "Custom UI" — badged *web-only for now*, with an inline hint that flows serving
-   WhatsApp contacts should route them around it (publishing warns if they don't).
+1. **Type**: "Custom UI" — listed under the **Web only** compatibility group, with an inline hint
+   that adding it to a flow makes that flow web-only (publishing derives this and warns — §5).
 2. **Start from** — a preset gallery seeded with the built-in blocks (Image panel / Carousel /
    Form) plus Blank. Block presets pre-fill valid `glific/*` payloads that the widget renders
    richly as-is; Blank starts an org-namespace payload.
@@ -162,7 +162,12 @@ The v0 authoring form ([interactive mockup][mockup], reviewable in-browser):
    ("Interactive · ‹component›", fallback text, collapsible payload, text input) — and the
    answered state (dimmed card + "✓ Answered" + response summary).
 
-[mockup]: https://claude.ai/code/artifact/564d091f-4386-47fe-9932-1475312b3952
+**Templates are grouped by channel compatibility.** The Interactive Messages list and the type
+picker group every template under the channels it renders natively on — **Web + WhatsApp** (reply
+buttons, lists), **Web only** (Custom UI, both `glific/*` blocks and org namespaces), and later
+**RCS only** and similar. Compatibility is *derived* from the template's type and content, never
+chosen by the author, and shows as a badge on the template. Picking from a narrower group is a
+flow-level commitment — see §5.
 
 A visual **block builder** (compose blocks from a form instead of writing JSON) remains v1 — it
 emits the same `glific/*` payloads, so nothing in this contract changes when it arrives.
@@ -199,6 +204,20 @@ exists.
   whether a block renderer, an org renderer, or the fallback card answered.
 
 ## 5. Channel model — how this survives RCS / Telegram / Signal
+
+**Flows are omni-channel by default; content is what narrows them.** A flow makes no channel
+commitment until a channel-specific node gives it one — e.g. a Send Interactive Message carrying a
+Web-only Custom UI template. At publish, Glific derives the flow's channel compatibility from its
+content, and when it has narrowed it **warns the author: "this flow is now web-only — update the
+flow's channel configuration"** (the `supported_channels` / flow-type model tracked in the
+[parent design](./tech-design.md)'s open questions). The warning rides the publish-time validation
+pipeline the flow editor already surfaces, so there are no floweditor fork changes. Two honest
+outcomes follow:
+
+- the author updates the flow configuration → entry points (keywords, triggers, broadcasts) stop
+  routing non-web contacts into the flow;
+- the author deliberately keeps the flow omni-channel → the runtime degradation below (fallback
+  text + staff notification) is the safety net for non-web contacts that reach the node.
 
 Everything is named and gated **channel-neutrally from day one**, even though only web renders it
 in v0:
@@ -251,8 +270,8 @@ follows the platform baseline (Slack mandates verifying interaction payloads ser
 
 | Repo | Changes |
 |------|---------|
-| **glific** (backend) | Enum migration adding `:custom_ui` + `:custom_ui_response`; `ChannelCapability` module; envelope validation on template save and response receipt + block-schema validation for `glific/*` (catalog module with published block schemas); `send_interactive_msg` path handles the custom template type (fallback-text body, unsupported-channel fallback send + notification); publish-time flow validation warning; one router clause (response → results, mirroring `whatsapp_form_response`); socket `handle_in("custom_ui_response")` with correlation checks; answered-state persistence on the outbound message; serializer passes envelope + answered state through. |
-| **glific-frontend** (staff console) | "Custom UI" type in the Interactive Messages page: block preset gallery, JSON editor + per-namespace validation, required translatable fallback field, per-namespace preview (§3). Staff Chat inbox + flow simulator render the generic fallback card and answered states (native block rendering in staff surfaces can follow later). |
+| **glific** (backend) | Enum migration adding `:custom_ui` + `:custom_ui_response`; `ChannelCapability` module; envelope validation on template save and response receipt + block-schema validation for `glific/*` (catalog module with published block schemas); `send_interactive_msg` path handles the custom template type (fallback-text body, unsupported-channel fallback send + notification); publish-time flow channel-compatibility derivation + narrowing warning; one router clause (response → results, mirroring `whatsapp_form_response`); socket `handle_in("custom_ui_response")` with correlation checks; answered-state persistence on the outbound message; serializer passes envelope + answered state through. |
+| **glific-frontend** (staff console) | "Custom UI" type in the Interactive Messages page: block preset gallery, JSON editor + per-namespace validation, required translatable fallback field, per-namespace preview (§3); channel-compatibility grouping + badges on the template list and type picker. Staff Chat inbox + flow simulator render the generic fallback card and answered states (native block rendering in staff surfaces can follow later). |
 | **glific-web-channel** (widget) | Built-in renderers for `glific/image_panel`, `glific/carousel`, `glific/form` (shared primitive components: text/image/input/option); renderer registry (`register(component, fn)`) for org namespaces, resolved before the generic fallback card; auto-built summaries for block responses; lenient typed-response input on the fallback card; answered/disabled rendering in history; `custom_ui_response` socket push. |
 | **floweditor** (fork) | **None.** The existing Send Interactive Message node carries the new template type; no new node, no fork release. |
 
@@ -322,6 +341,14 @@ the simplest shape that fits single-valued flow results: a flat envelope and sin
 - **Single Responded exit** — *Alternatives:* routing on a summary-as-body string (rejected in
   favour of the whatsapp-form precedent; `summary` still gives inbox readability); new JSON case
   operators (rejected: fork UI + router surface for power split-by-expression already has).
+- **Flows are omni-channel by default; content narrows them, loudly** — the flow's channel
+  compatibility is derived from its nodes' templates at publish; adding a web-only template
+  triggers a "this flow is now web-only — update the flow configuration" warning, and runtime
+  fallback remains the safety net for flows deliberately left omni-channel. *Alternatives:*
+  a hard publish block on narrowed flows (rejected: kills the add-web-richness-to-an-existing-
+  WhatsApp-flow migration story); silent degradation only (rejected: orgs would never learn their
+  WhatsApp contacts get downgraded text); making authors declare channels up front (rejected:
+  channel is a property of what the flow *contains*, not a form field to keep in sync with it).
 - **Fallback text sent on unsupported channels** — supersedes an earlier warn-and-skip position;
   once `fallback` became a required envelope field, sending it costs nothing and no flow parks
   silently. *Alternative:* skip + park at wait (rejected: dead silence for WhatsApp contacts in
@@ -341,6 +368,7 @@ the simplest shape that fits single-valued flow results: a flat envelope and sin
 | Custom namespaces | Full support: opaque payloads, org renderers via registry, enforced fallback | Possible org-shared renderer packages |
 | Authoring | Custom UI type: block preset gallery + JSON editor + fallback; per-namespace preview | Visual block builder emitting the same `glific/*` payloads; channel-rendering tabs |
 | Channels | Web renders; all others send fallback text | RCS / Telegram capability declarations + block translators; template channel variants |
+| Flow compatibility | Derived at publish + narrowing warning; author updates flow configuration manually | Entry-point enforcement from `supported_channels` (triggers/keywords/broadcasts filter by channel automatically) |
 | Fields | `@results` only | Possible template-allowlisted contact-field auto-apply |
 
 ## 11. Open questions
@@ -360,3 +388,7 @@ the simplest shape that fits single-valued flow results: a flat envelope and sin
    org developers.
 6. **History depth for answered state** — whether answered-state updates re-broadcast to open
    sockets or only apply on next history fetch.
+7. **Flow channel-configuration model** — what exactly the author updates when a flow narrows:
+   this must land together with the parent design's open question on `supported_channels` array vs
+   a `flow_type` enum, and decide whether entry points enforce the configuration automatically or
+   it stays advisory.
