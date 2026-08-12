@@ -238,7 +238,9 @@ defmodule Glific.Messages.Message do
         :list,
         :quick_reply,
         :location_request_message,
-        :whatsapp_form_response
+        :whatsapp_form_response,
+        :custom_ui,
+        :custom_ui_response
       ] ->
         changeset
 

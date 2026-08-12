@@ -22,7 +22,8 @@ defmodule Glific.Flows.Flow do
     Partners.Organization,
     Repo,
     Settings,
-    Tags.Tag
+    Tags.Tag,
+    Templates.InteractiveTemplate
   }
 
   @required_fields [:name, :uuid, :organization_id]
@@ -414,6 +415,7 @@ defmodule Glific.Flows.Flow do
       |> missing_flow_context_nodes(flow, all_nodes)
       |> missing_localization(flow, all_translation, action_to_node_map)
       |> web_channel_capability_errors(flow)
+      |> custom_ui_channel_narrowing_errors(flow)
     end
   end
 
@@ -452,6 +454,52 @@ defmodule Glific.Flows.Flow do
   end
 
   defp web_channel_capability_errors(errors, _flow), do: errors
+
+  # A flow that is NOT already declared web-only (`flow_type: :web_message`) but contains a
+  # `send_interactive_msg` action referencing a `:custom_ui` template has silently narrowed to
+  # web-only: nothing else renders that template. Warn the author so they can update the flow's
+  # channel configuration, rather than let non-web contacts hit the runtime fallback silently.
+  #
+  # This is the inverse of `web_channel_capability_errors/2` above (which gates actions that
+  # are NOT supported on an already-declared web-only flow) so it is a sibling function, not a
+  # clause bolted onto it. The error is keyed by the offending node's `uuid` (not the action's)
+  # because the flow editor's issues tab drops any issue whose key matches no node.
+  @spec custom_ui_channel_narrowing_errors(list(), map()) :: list()
+  defp custom_ui_channel_narrowing_errors(errors, %{flow_type: :web_message}), do: errors
+
+  defp custom_ui_channel_narrowing_errors(errors, flow) do
+    flow.definition["nodes"]
+    |> Enum.reduce(errors, fn node, acc ->
+      (node["actions"] || [])
+      |> Enum.reduce(acc, fn action, node_acc ->
+        if custom_ui_template_action?(action, flow.organization_id) do
+          [
+            {node["uuid"], "This flow is now web-only — update the flow's channel configuration",
+             "Warning"}
+            | node_acc
+          ]
+        else
+          node_acc
+        end
+      end)
+    end)
+  end
+
+  # Only statically-referenced templates (`action["id"]`) can be checked at publish time; a
+  # dynamically-resolved `interactive_template_expression` is not known until runtime.
+  @spec custom_ui_template_action?(map(), non_neg_integer()) :: boolean()
+  defp custom_ui_template_action?(
+         %{"type" => "send_interactive_msg", "id" => id},
+         organization_id
+       )
+       when is_integer(id) do
+    case Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: organization_id}) do
+      {:ok, %{type: :custom_ui}} -> true
+      _ -> false
+    end
+  end
+
+  defp custom_ui_template_action?(_action, _organization_id), do: false
 
   @spec templated_action?(map()) :: boolean()
   defp templated_action?(action),

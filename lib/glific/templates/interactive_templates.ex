@@ -8,6 +8,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     Repo,
     Settings,
     Tags.Tag,
+    Templates.CustomUi,
     Templates.InteractiveTemplate
   }
 
@@ -114,12 +115,40 @@ defmodule Glific.Templates.InteractiveTemplates do
           {:ok, InteractiveTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
     with :ok <- contains_markdown_syntax?(attrs),
-         :ok <- validate_interactive_content_length(attrs) do
+         :ok <- validate_interactive_content_length(attrs),
+         :ok <- validate_custom_ui_payload(attrs) do
       %InteractiveTemplate{}
       |> InteractiveTemplate.changeset(attrs)
       |> Repo.insert()
     end
   end
+
+  # Custom UI templates are not WhatsApp-shaped (no "content"/"options"/"items" keys), so
+  # `contains_markdown_syntax?/1` and `validate_interactive_content_length/1` above no-op on
+  # them via their catch-all clauses. This is where custom_ui's own envelope + block-schema
+  # validation (contract §6, §7) replaces that silently-bypassed length guard.
+  @spec validate_custom_ui_payload(map()) :: :ok | {:error, String.t()}
+  defp validate_custom_ui_payload(
+         %{interactive_content: %{"type" => "custom_ui"} = content} = attrs
+       ) do
+    with :ok <- CustomUi.validate_payload(content) do
+      validate_custom_ui_translations(attrs)
+    end
+  end
+
+  defp validate_custom_ui_payload(_attrs), do: :ok
+
+  @spec validate_custom_ui_translations(map()) :: :ok | {:error, String.t()}
+  defp validate_custom_ui_translations(%{translations: translations}) when is_map(translations) do
+    Enum.reduce_while(translations, :ok, fn {_language_id, translation}, :ok ->
+      case CustomUi.validate_payload(translation) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp validate_custom_ui_translations(_attrs), do: :ok
 
   @spec contains_markdown_syntax?(map()) :: :ok | {:error, String.t()}
   defp contains_markdown_syntax?(attrs) do
@@ -281,6 +310,7 @@ defmodule Glific.Templates.InteractiveTemplates do
     updated_attrs = Map.put(attrs, :translations, trimmed_contents)
 
     with :ok <- contains_markdown_syntax?(updated_attrs),
+         :ok <- validate_custom_ui_payload(updated_attrs),
          {:ok, updated_interactive} <-
            interactive
            |> InteractiveTemplate.changeset(updated_attrs)
@@ -499,6 +529,12 @@ defmodule Glific.Templates.InteractiveTemplates do
   defp do_get_interactive_body(interactive_content, "location_request_message", _)
        when is_map(interactive_content),
        do: interactive_content["body"]["text"]
+
+  # The custom_ui envelope has no "content"/"body" keys — its message body IS the required
+  # `fallback` text (contract §2), so this is where the message row's `body` comes from.
+  defp do_get_interactive_body(interactive_content, "custom_ui", _)
+       when is_map(interactive_content),
+       do: interactive_content["fallback"] || ""
 
   defp do_get_interactive_body(_, _, _), do: ""
 
@@ -752,6 +788,20 @@ defmodule Glific.Templates.InteractiveTemplates do
     )
   end
 
+  # Only `fallback` is translated — `props` are not auto-translated (v0 choice: auto-translating
+  # arbitrary block/org props reliably isn't straightforward; authors can hand-edit translated
+  # `props` strings per-language via the JSON editor same as they hand-edit `props` itself).
+  defp translate_interactive_content(
+         "custom_ui",
+         interactive_content,
+         active_languages,
+         language_code_map,
+         organization_id,
+         _label
+       ) do
+    translate_custom_ui(interactive_content, active_languages, language_code_map, organization_id)
+  end
+
   @spec translate_quick_reply(map(), map(), map(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, String.t()}
   defp translate_quick_reply(content, active_languages, language_code_map, organization_id, label) do
@@ -863,6 +913,40 @@ defmodule Glific.Templates.InteractiveTemplates do
             "body" => %{"text" => translated_text, "type" => content["body"]["type"]},
             "type" => content["type"]
           }
+
+          {:cont,
+           Map.put(
+             acc,
+             Integer.to_string(Map.get(language_code_map, lang_code)),
+             translated_template
+           )}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
+      end
+    end)
+    |> wrap_translated_contents()
+  end
+
+  @spec translate_custom_ui(map(), map(), map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp translate_custom_ui(content, active_languages, language_code_map, organization_id) do
+    Enum.reduce_while(active_languages, %{}, fn {lang_name, lang_code}, acc ->
+      translation =
+        if lang_name == "English" do
+          {:ok, content["fallback"]}
+        else
+          case GoogleTranslate.translate([content["fallback"]], "English", lang_name,
+                 org_id: organization_id
+               ) do
+            {:ok, [translated_fallback]} -> {:ok, translated_fallback}
+            {:error, reason} -> {:error, reason}
+          end
+        end
+
+      case translation do
+        {:ok, translated_fallback} ->
+          translated_template = Map.put(content, "fallback", translated_fallback)
 
           {:cont,
            Map.put(
@@ -1058,6 +1142,7 @@ defmodule Glific.Templates.InteractiveTemplates do
         "list" -> build_list_csv_data(translations, language_codes)
         "quick_reply" -> build_quick_reply_csv_data(translations, language_codes)
         "location_request_message" -> build_location_csv_data(translations, language_codes)
+        "custom_ui" -> build_custom_ui_csv_data(translations, language_codes)
       end
 
     data =
@@ -1272,6 +1357,25 @@ defmodule Glific.Templates.InteractiveTemplates do
     ]
   end
 
+  @spec build_custom_ui_csv_data(map(), list(String.t())) :: list()
+  defp build_custom_ui_csv_data(translations, language_codes) do
+    headers = ["Attribute" | get_language_names(language_codes)]
+    body = build_custom_ui_csv_body(translations, language_codes)
+    [headers | body]
+  end
+
+  # Only `fallback` is exported/imported for translation — see `translate_custom_ui/4` for why
+  # `props` is not.
+  @spec build_custom_ui_csv_body(map(), list(String.t())) :: list()
+  defp build_custom_ui_csv_body(translations, language_codes) do
+    [
+      [
+        "Fallback"
+        | Enum.map(language_codes, fn code -> translations[code]["fallback"] end)
+      ]
+    ]
+  end
+
   @spec get_language_names(list(String.t())) :: list(String.t())
   defp get_language_names(language_codes) do
     language_map = Settings.get_language_id_local_map()
@@ -1306,6 +1410,9 @@ defmodule Glific.Templates.InteractiveTemplates do
 
         "location_request_message" ->
           import_location_message(translations, content, language_codes, lang_index)
+
+        "custom_ui" ->
+          import_custom_ui(translations, content, language_codes, lang_index)
       end
 
     update_interactive_template(interactive_template, %{translations: imported_data})
@@ -1387,6 +1494,18 @@ defmodule Glific.Templates.InteractiveTemplates do
         "body" => %{"text" => translated_text, "type" => content["body"]["type"]},
         "type" => content["type"]
       }
+
+      lang_code = Enum.at(language_codes, idx)
+      Map.put(acc, lang_code, translated_template)
+    end)
+  end
+
+  @spec import_custom_ui(list(String.t()), map(), list(), map()) :: map()
+  defp import_custom_ui(translations, content, language_codes, lang_index) do
+    Enum.reduce(lang_index, %{}, fn {_lang, idx}, acc ->
+      translated_data = translations |> Enum.map(&Enum.at(&1, idx + 1))
+      [fallback | _rest] = translated_data
+      translated_template = Map.put(content, "fallback", fallback)
 
       lang_code = Enum.at(language_codes, idx)
       Map.put(acc, lang_code, translated_template)

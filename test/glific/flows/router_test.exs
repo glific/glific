@@ -497,4 +497,59 @@ defmodule Glific.Flows.RouterTest do
 
     {:ok, _, _} = Router.execute(router, context, [])
   end
+
+  test "router with custom_ui_response copies the whole values map into results plus summary/component" do
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [%{"uuid" => exit_uuid, "destination_uuid" => nil}]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    # mirrors location_request_message: zero cases, a single "Responded" category that is the
+    # router's default — find_category/3 falls through to it for any custom_ui_response.
+    json = %{
+      "operand" => "@input.text",
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "picker",
+      "categories" => [
+        %{"uuid" => "Default Cat UUID", "exit_uuid" => exit_uuid, "name" => "Responded"}
+      ],
+      "cases" => []
+    }
+
+    {router, uuid_map} = Router.process(json, uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    message =
+      Messages.create_temp_message(
+        Fixtures.get_org_id(),
+        "Picked Digital skills",
+        type: :custom_ui_response,
+        interactive_content: %{
+          "type" => "custom_ui_response",
+          "component" => "glific/image_panel",
+          "values" => %{"course" => "c2"},
+          "summary" => "Picked Digital skills",
+          "context" => %{}
+        }
+      )
+
+    {:ok, _, _} = Router.execute(router, context, [message])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+
+    assert updated_context.results["picker"]["course"] == "c2"
+    assert updated_context.results["picker"]["summary"] == "Picked Digital skills"
+    assert updated_context.results["picker"]["component"] == "glific/image_panel"
+    assert updated_context.results["picker"]["input"] == "Picked Digital skills"
+    assert updated_context.results["picker"]["category"] == "Responded"
+  end
 end

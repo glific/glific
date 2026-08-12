@@ -348,6 +348,24 @@ defmodule Glific.Messages do
     WebMessage.send_message(message, attrs)
   end
 
+  # A custom_ui send on a channel that doesn't render it (only "web" does in v0 — see
+  # `Glific.Channels.ChannelCapability`) must not fall through to
+  # `Communications.Message.send_message/2`: its `@type_to_token` has no `:custom_ui` entry and
+  # no catch-all, so it would raise. Send the envelope's required `fallback` text as a plain
+  # text message instead, and leave a staff-facing trail via a flow notification (contract §8).
+  # Must stay ordered before the generic clause below, and after the `channel: "web"` clause
+  # above (which already routes any web-channel custom_ui send, including this type, to
+  # `WebMessage.send_message/2`) — so this clause is only ever reached for a channel that does
+  # not support `:custom_ui`. It sends the fallback unconditionally rather than branching on
+  # `ChannelCapability.supports?/2`: this is the only send path available here regardless, and
+  # failing safe to plain text (rather than a `MatchError` on a hypothetical future channel that
+  # both registers support and reaches this clause) is the correct default either way.
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(%{type: "custom_ui"} = attrs, contact),
+    do: send_custom_ui_fallback(attrs, contact)
+
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs
@@ -359,6 +377,41 @@ defmodule Glific.Messages do
       |> do_send_message(attrs)
     end
   end
+
+  @spec send_custom_ui_fallback(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp send_custom_ui_fallback(attrs, contact) do
+    fallback_text = get_in(attrs, [:interactive_content, "fallback"]) || attrs[:body] || ""
+
+    notify_custom_ui_fallback(attrs)
+
+    text_attrs =
+      attrs
+      |> Map.drop([:interactive_template_id, :interactive_content, :media_id])
+      |> Map.merge(%{type: :text, body: fallback_text})
+
+    contact
+    |> Contacts.can_send_message_to?(Map.get(text_attrs, :is_hsm, false), text_attrs)
+    |> do_send_message(text_attrs)
+  end
+
+  @spec notify_custom_ui_fallback(map()) :: nil
+  defp notify_custom_ui_fallback(%{flow_id: flow_id, organization_id: organization_id} = attrs)
+       when not is_nil(flow_id) do
+    %FlowContext{
+      flow_id: flow_id,
+      organization_id: organization_id,
+      contact_id: attrs[:receiver_id],
+      node_uuid: attrs[:uuid]
+    }
+    |> FlowContext.notification(
+      "Custom UI message sent as fallback text: channel '#{attrs[:channel]}' does not support Custom UI"
+    )
+
+    nil
+  end
+
+  defp notify_custom_ui_fallback(_attrs), do: nil
 
   @doc false
   @spec do_send_message({:ok | :error, any()}, map()) ::

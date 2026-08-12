@@ -11,6 +11,7 @@ defmodule Glific.Communications.WebMessage do
   """
 
   require Logger
+  import Ecto.Query
 
   alias Glific.Communications.Message, as: MessageCommunications
 
@@ -21,7 +22,8 @@ defmodule Glific.Communications.WebMessage do
     Messages,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    Templates.CustomUi
   }
 
   @type_to_token %{
@@ -32,7 +34,8 @@ defmodule Glific.Communications.WebMessage do
     document: :send_document,
     list: :send_interactive,
     quick_reply: :send_interactive,
-    location_request_message: :send_interactive
+    location_request_message: :send_interactive,
+    custom_ui: :send_custom_ui
   }
 
   @doc """
@@ -75,7 +78,7 @@ defmodule Glific.Communications.WebMessage do
   way WhatsApp inbound does, it just never touches `Contacts.set_session_status/2` (that's a
   WhatsApp session-window concept that doesn't apply to the web channel).
   """
-  @spec receive_message(map(), atom()) :: :ok
+  @spec receive_message(map(), atom()) :: :ok | {:ok, Message.t()} | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     {:ok, contact} =
       message_params.sender
@@ -85,7 +88,15 @@ defmodule Glific.Communications.WebMessage do
     do_receive_message(contact, message_params, type)
   end
 
-  @spec do_receive_message(Contact.t(), map(), atom()) :: :ok
+  # A `custom_ui_response` is a correlated reply to a specific outbound message (contract §4),
+  # not a free-standing inbound message like text/media/location — it needs its own path so it
+  # never falls into `receive_media/1` (the generic catch-all below), which would misinterpret
+  # it as a media upload.
+  @spec do_receive_message(Contact.t(), map(), atom()) ::
+          :ok | {:ok, Message.t()} | {:error, String.t()}
+  defp do_receive_message(contact, message_params, :custom_ui_response),
+    do: receive_custom_ui_response(contact, message_params)
+
   defp do_receive_message(contact, message_params, type) do
     metadata = create_message_metadata(contact, message_params)
 
@@ -107,6 +118,125 @@ defmodule Glific.Communications.WebMessage do
     end
 
     :ok
+  end
+
+  # Acceptance order per contract §7: (1) the contact owns `message_id` and it is an unanswered
+  # `:custom_ui` message, (2) envelope validation. Single-submit is enforced by the guarded
+  # `update_all` in `mark_answered/2` — the WHERE clause re-checks "unanswered" at write time
+  # and the caller acts on the returned row count, not on the earlier read, so two concurrent
+  # responses to the same message can't both win.
+  @spec receive_custom_ui_response(Contact.t(), map()) ::
+          {:ok, Message.t()} | {:error, String.t()}
+  defp receive_custom_ui_response(contact, %{"message_id" => message_id} = message_params)
+       when is_integer(message_id) do
+    with {:ok, outbound} <- fetch_unanswered_custom_ui_message(message_id, contact),
+         # `message_params` carries the Glific-internal `:sender`/`:organization_id` keys
+         # (added by the caller, mirroring every other `receive_message/2` type) alongside the
+         # raw wire-format string keys — strip them before validating so the inbound size cap
+         # measures the response the client actually sent, not our own bookkeeping additions.
+         :ok <-
+           message_params
+           |> Map.drop([:sender, :organization_id])
+           |> CustomUi.validate_response(outbound.interactive_content),
+         {:ok, _count} <- mark_answered(outbound, message_params) do
+      create_custom_ui_response_message(contact, outbound, message_params)
+    end
+  end
+
+  defp receive_custom_ui_response(_contact, _message_params),
+    do: {:error, "message_id is required"}
+
+  @spec fetch_unanswered_custom_ui_message(non_neg_integer(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, String.t()}
+  defp fetch_unanswered_custom_ui_message(message_id, contact) do
+    # Scoped to this contact's own outbound message: an id belonging to another contact, or one
+    # that isn't a `:custom_ui` send, or one already answered, is indistinguishable from "not
+    # found" to the caller (contract §6 security: unknown ids, duplicates, and late responses
+    # are all rejected the same way).
+    case Repo.get_by(Message, id: message_id, receiver_id: contact.id, type: :custom_ui) do
+      %Message{} = message ->
+        if answered?(message),
+          do: {:error, "Custom UI message not found or already answered"},
+          else: {:ok, message}
+
+      nil ->
+        {:error, "Custom UI message not found or already answered"}
+    end
+  end
+
+  @spec answered?(Message.t()) :: boolean()
+  defp answered?(%{interactive_content: content}), do: content["answered"] == true
+
+  @spec mark_answered(Message.t(), map()) :: {:ok, non_neg_integer()} | {:error, String.t()}
+  defp mark_answered(outbound, message_params) do
+    # `type(^merge_map, :map)` (not a pre-`Jason.encode!`'d string) is deliberate: Postgrex's
+    # jsonb encoder JSON-encodes whatever Elixir term it's handed for a `:map`-typed parameter,
+    # so handing it an already-encoded JSON *string* double-encodes it into a jsonb scalar
+    # string. `a::jsonb || "a jsonb string"` is not an object merge — jsonb's `||` only merges
+    # keys when both sides are objects, otherwise it returns an array — so a double-encoded RHS
+    # silently turns "merge answered into the envelope" into "wrap the envelope and the string in
+    # an array", corrupting `interactive_content`. Passing the map directly avoids that.
+    merge_map = %{"answered" => true, "answer_summary" => message_params["summary"]}
+
+    query =
+      from(m in Message,
+        where: m.id == ^outbound.id,
+        where: m.receiver_id == ^outbound.receiver_id,
+        where: m.type == :custom_ui,
+        where:
+          fragment("coalesce((?->>'answered')::boolean, false) = false", m.interactive_content),
+        update: [
+          set: [
+            interactive_content: fragment("? || ?", m.interactive_content, type(^merge_map, :map))
+          ]
+        ]
+      )
+
+    case Repo.update_all(query, []) do
+      {1, _} -> {:ok, 1}
+      {0, _} -> {:error, "Custom UI message not found or already answered"}
+    end
+  end
+
+  @spec create_custom_ui_response_message(Contact.t(), Message.t(), map()) ::
+          {:ok, Message.t()} | {:error, String.t()}
+  defp create_custom_ui_response_message(contact, outbound, message_params) do
+    metadata = create_message_metadata(contact, message_params)
+
+    attrs =
+      Map.merge(metadata, %{
+        type: :custom_ui_response,
+        body: message_params["summary"],
+        context_message_id: outbound.id,
+        channel: "web",
+        flow: :inbound,
+        bsp_status: :delivered,
+        status: :received,
+        interactive_content: %{
+          "type" => "custom_ui_response",
+          "component" => message_params["component"],
+          "values" => message_params["values"],
+          "summary" => message_params["summary"],
+          "context" => message_params["context"]
+        }
+      })
+
+    case Messages.create_message(attrs) do
+      {:ok, message} = result ->
+        # `publish_and_process/2` fans out to the staff inbox and hands the message to the
+        # flow engine (the poolboy consumer) asynchronously — it does not resolve to the
+        # message itself, so the message this function returns is the one just created above,
+        # not whatever `publish_and_process/2` returns.
+        publish_and_process(result, contact.organization_id)
+        {:ok, message}
+
+      {:error, changeset} ->
+        Glific.log_error(
+          "Could not persist Custom UI response: #{Glific.SafeLog.safe_inspect(changeset.errors)}"
+        )
+
+        {:error, "Could not persist Custom UI response"}
+    end
   end
 
   @spec receive_text(map()) :: Message.t() | nil

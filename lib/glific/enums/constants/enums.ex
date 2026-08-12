@@ -64,7 +64,9 @@ defmodule Glific.Enums.Constants do
         :sticker,
         :location_request_message,
         :poll,
-        :whatsapp_form_response
+        :whatsapp_form_response,
+        :custom_ui,
+        :custom_ui_response
       ]
 
       # the channel a message belongs to. Kept as a plain string column (no PG
@@ -80,7 +82,12 @@ defmodule Glific.Enums.Constants do
       ]
 
       # the different possible types of interactive message
-      @interactive_message_type_const [:list, :quick_reply, :location_request_message]
+      @interactive_message_type_const [
+        :list,
+        :quick_reply,
+        :location_request_message,
+        :custom_ui
+      ]
 
       # the different possible types of import contact types
       @import_contacts_type_const [:file_path, :url, :data]

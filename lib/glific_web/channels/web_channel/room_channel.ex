@@ -174,6 +174,27 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     {:reply, :ok, socket}
   end
 
+  # The widget (or an org's custom renderer) answering an outbound `:custom_ui` message
+  # (contract §4). All correlation/single-submit/envelope checks live in
+  # `WebMessage.receive_custom_ui_response/2`; this handler only shapes the socket reply.
+  def handle_in("custom_ui_response", %{"message_id" => _message_id} = params, socket) do
+    contact = socket.assigns.current_contact
+
+    message_params =
+      Map.merge(params, %{
+        sender: %{phone: contact.phone},
+        organization_id: contact.organization_id
+      })
+
+    case WebMessage.receive_message(message_params, :custom_ui_response) do
+      {:ok, _message} -> {:reply, :ok, socket}
+      {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  def handle_in("custom_ui_response", _params, socket),
+    do: {:reply, {:error, %{reason: "message_id is required"}}, socket}
+
   def handle_in("update_name", %{"name" => name}, socket) when is_binary(name) do
     # This is a public socket event; the widget guards against blanks but a raw client may not.
     # Reject a blank name rather than writing "" into contact.name and contact.fields.name.

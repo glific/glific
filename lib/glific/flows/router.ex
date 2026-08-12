@@ -21,7 +21,8 @@ defmodule Glific.Flows.Router do
     FlowContext,
     Localization,
     Node,
-    Wait
+    Wait,
+    Webhook
   }
 
   @required_fields [:type, :operand, :default_category_uuid, :cases, :categories]
@@ -377,6 +378,20 @@ defmodule Glific.Flows.Router do
             default_results
             |> Map.merge(msg.extra)
             |> Map.put("interactive", msg.interactive_content)
+
+          %{key => json}
+
+        # A Custom UI response's whole `values` map lands in `@results` in one shot (contract
+        # §5), normalized the same way webhook responses are: nested maps kept, lists become
+        # index-keyed maps (`Webhook.format_response/1`). No new case operator/routing is
+        # needed — `find_category/3` already falls through to `router.default_category_uuid`
+        # when (as here) no case matches, which is how the single "Responded" exit fires.
+        msg.type in [:custom_ui_response] ->
+          json =
+            default_results
+            |> Map.merge(Webhook.format_response(msg.interactive_content["values"] || %{}))
+            |> Map.put("summary", msg.interactive_content["summary"])
+            |> Map.put("component", msg.interactive_content["component"])
 
           %{key => json}
 

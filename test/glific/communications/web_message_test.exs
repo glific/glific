@@ -7,6 +7,7 @@ defmodule Glific.Communications.WebMessageTest do
     Contacts,
     Fixtures,
     Messages,
+    Notifications,
     Providers.Gupshup.Worker,
     Repo,
     Seeds.SeedsDev
@@ -104,6 +105,216 @@ defmodule Glific.Communications.WebMessageTest do
       # raised and fell to the rescue as {:error, _}. It now dispatches to send_interactive.
       assert {:ok, sent_message} = WebMessage.send_message(message, %{})
       assert sent_message.id == message.id
+    end
+
+    test "a custom_ui-typed web message is delivered via send_custom_ui", %{
+      organization_id: organization_id
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      interactive_content = %{
+        "type" => "custom_ui",
+        "version" => "1",
+        "component" => "glific/image_panel",
+        "props" => %{
+          "id" => "course",
+          "options" => [%{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}]
+        },
+        "fallback" => "Reply with a course"
+      }
+
+      message =
+        Fixtures.message_fixture(%{
+          type: :custom_ui,
+          interactive_content: interactive_content,
+          channel: "web",
+          flow: :outbound,
+          receiver_id: receiver.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, sent_message} = WebMessage.send_message(message, %{})
+      assert sent_message.id == message.id
+    end
+  end
+
+  describe "custom_ui unsupported-channel fallback (Messages.create_and_send_message/1)" do
+    test "sends the envelope's fallback text as plain text and raises a flow notification", %{
+      organization_id: organization_id
+    } do
+      receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
+      flow = Fixtures.flow_fixture(%{organization_id: organization_id})
+
+      {:ok, message} =
+        Messages.create_and_send_message(%{
+          type: "custom_ui",
+          body: "Reply with a course",
+          channel: "whatsapp",
+          receiver_id: receiver.id,
+          organization_id: organization_id,
+          flow_id: flow.id,
+          uuid: Ecto.UUID.generate(),
+          interactive_content: %{
+            "type" => "custom_ui",
+            "version" => "1",
+            "component" => "glific/image_panel",
+            "props" => %{
+              "id" => "course",
+              "options" => [
+                %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
+              ]
+            },
+            "fallback" => "Reply with a course"
+          }
+        })
+
+      assert message.type == :text
+      assert message.body == "Reply with a course"
+
+      notifications =
+        Notifications.list_notifications(%{filter: %{organization_id: organization_id}})
+
+      assert Enum.any?(
+               notifications,
+               &String.contains?(&1.message, "does not support Custom UI")
+             )
+    end
+  end
+
+  describe "receive_message/2 — custom_ui_response" do
+    setup %{organization_id: organization_id} do
+      contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      interactive_content = %{
+        "type" => "custom_ui",
+        "version" => "1",
+        "component" => "glific/image_panel",
+        "props" => %{
+          "id" => "course",
+          "options" => [
+            %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"},
+            %{"id" => "c2", "image" => "https://example.com/2.png", "label" => "Digital skills"}
+          ]
+        },
+        "fallback" => "Reply with a course"
+      }
+
+      outbound =
+        Fixtures.message_fixture(%{
+          type: :custom_ui,
+          interactive_content: interactive_content,
+          channel: "web",
+          flow: :outbound,
+          receiver_id: contact.id,
+          organization_id: organization_id
+        })
+
+      %{contact: contact, outbound: outbound}
+    end
+
+    test "accepts a valid response, persists it, and marks the outbound message answered", %{
+      organization_id: organization_id,
+      contact: contact,
+      outbound: outbound
+    } do
+      assert {:ok, inbound} =
+               WebMessage.receive_message(
+                 %{
+                   "message_id" => outbound.id,
+                   "component" => "glific/image_panel",
+                   "values" => %{"course" => "c2"},
+                   "summary" => "Picked Digital skills",
+                   sender: %{phone: contact.phone},
+                   organization_id: organization_id
+                 },
+                 :custom_ui_response
+               )
+
+      assert inbound.type == :custom_ui_response
+      assert inbound.body == "Picked Digital skills"
+      assert inbound.context_message_id == outbound.id
+      assert inbound.channel == "web"
+      assert inbound.flow == :inbound
+
+      answered_outbound = Messages.get_message!(outbound.id)
+      assert answered_outbound.interactive_content["answered"] == true
+      assert answered_outbound.interactive_content["answer_summary"] == "Picked Digital skills"
+    end
+
+    test "rejects a duplicate response to an already-answered message", %{
+      organization_id: organization_id,
+      contact: contact,
+      outbound: outbound
+    } do
+      params = %{
+        "message_id" => outbound.id,
+        "component" => "glific/image_panel",
+        "values" => %{"course" => "c2"},
+        "summary" => "Picked Digital skills",
+        sender: %{phone: contact.phone},
+        organization_id: organization_id
+      }
+
+      assert {:ok, _first_response} = WebMessage.receive_message(params, :custom_ui_response)
+      assert {:error, _reason} = WebMessage.receive_message(params, :custom_ui_response)
+    end
+
+    test "rejects a response for a message belonging to another contact", %{
+      organization_id: organization_id,
+      outbound: outbound
+    } do
+      other_contact = Fixtures.contact_fixture(%{organization_id: organization_id})
+
+      assert {:error, _reason} =
+               WebMessage.receive_message(
+                 %{
+                   "message_id" => outbound.id,
+                   "component" => "glific/image_panel",
+                   "values" => %{"course" => "c2"},
+                   "summary" => "Picked Digital skills",
+                   sender: %{phone: other_contact.phone},
+                   organization_id: organization_id
+                 },
+                 :custom_ui_response
+               )
+    end
+
+    test "rejects an oversized/invalid response and does not consume the single-submit slot", %{
+      organization_id: organization_id,
+      contact: contact,
+      outbound: outbound
+    } do
+      assert {:error, reason} =
+               WebMessage.receive_message(
+                 %{
+                   "message_id" => outbound.id,
+                   "component" => "glific/image_panel",
+                   "values" => %{"course" => "c2"},
+                   "summary" => String.duplicate("x", 501),
+                   sender: %{phone: contact.phone},
+                   organization_id: organization_id
+                 },
+                 :custom_ui_response
+               )
+
+      assert reason =~ "exceeds"
+
+      still_unanswered = Messages.get_message!(outbound.id)
+      refute still_unanswered.interactive_content["answered"] == true
+
+      # The slot must still be usable with a valid response.
+      assert {:ok, _inbound} =
+               WebMessage.receive_message(
+                 %{
+                   "message_id" => outbound.id,
+                   "component" => "glific/image_panel",
+                   "values" => %{"course" => "c2"},
+                   "summary" => "Picked Digital skills",
+                   sender: %{phone: contact.phone},
+                   organization_id: organization_id
+                 },
+                 :custom_ui_response
+               )
     end
   end
 

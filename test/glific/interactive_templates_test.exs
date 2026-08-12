@@ -840,4 +840,87 @@ defmodule Glific.InteractiveTemplatesTest do
 
     assert imported_translation == translation
   end
+
+  describe "custom_ui" do
+    @custom_ui_envelope %{
+      "type" => "custom_ui",
+      "version" => "1",
+      "component" => "glific/image_panel",
+      "props" => %{
+        "id" => "course",
+        "options" => [
+          %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"}
+        ]
+      },
+      "fallback" => "please share your location"
+    }
+
+    @custom_ui_attrs %{
+      label: "Custom UI Fixture",
+      type: :custom_ui,
+      language_id: 1,
+      interactive_content: @custom_ui_envelope
+    }
+
+    test "get_interactive_body/1 returns the envelope's fallback text" do
+      assert InteractiveTemplates.get_interactive_body(@custom_ui_envelope) ==
+               "please share your location"
+    end
+
+    test "create_interactive_template/1 rejects an invalid custom_ui envelope", attrs do
+      invalid_attrs =
+        @custom_ui_attrs
+        |> Map.put(:interactive_content, Map.delete(@custom_ui_envelope, "fallback"))
+        |> Map.merge(attrs)
+
+      assert {:error, reason} = InteractiveTemplates.create_interactive_template(invalid_attrs)
+      assert reason =~ "fallback"
+    end
+
+    test "create_interactive_template/1 accepts a valid custom_ui envelope", attrs do
+      valid_attrs = Map.merge(@custom_ui_attrs, attrs)
+
+      assert {:ok, %InteractiveTemplate{type: :custom_ui}} =
+               InteractiveTemplates.create_interactive_template(valid_attrs)
+    end
+
+    test "translate_interactive_template/1 translates only the fallback text, leaving props untouched",
+         %{organization_id: _organization_id} = attrs do
+      interactive = Fixtures.interactive_fixture(Map.merge(@custom_ui_attrs, attrs))
+
+      assert {:ok, %InteractiveTemplate{translations: translations}, _message} =
+               InteractiveTemplates.translate_interactive_template(interactive)
+
+      assert Map.has_key?(translations, "2")
+      assert translations["2"]["fallback"] != "please share your location"
+      assert translations["2"]["component"] == "glific/image_panel"
+      assert translations["2"]["props"] == @custom_ui_envelope["props"]
+    end
+
+    test "export/import round-trip a custom_ui template's fallback translation",
+         %{organization_id: _organization_id} = attrs do
+      interactive = Fixtures.interactive_fixture(Map.merge(@custom_ui_attrs, attrs))
+
+      expected_export_data = """
+      Attribute,en,hi
+      Fallback,please share your location,कृपया अपना स्थान साझा करें
+      """
+
+      {:ok, %{export_data: export_data}} =
+        InteractiveTemplates.export_interactive_template(interactive, true)
+
+      assert String.trim(export_data) == String.trim(expected_export_data)
+
+      translated_data = [
+        ["Attribute", "en", "hi"],
+        ["Fallback", "please share your location", "कृपया अपना स्थान साझा करें"]
+      ]
+
+      {:ok, imported_temp, _message} =
+        InteractiveTemplates.import_interactive_template(translated_data, interactive)
+
+      assert imported_temp.translations["2"]["fallback"] == "कृपया अपना स्थान साझा करें"
+      assert imported_temp.translations["2"]["component"] == "glific/image_panel"
+    end
+  end
 end
