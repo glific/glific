@@ -142,6 +142,19 @@ Component names must match `^[a-z0-9_]+/[a-z0-9_]+$`. The `glific/` namespace is
 a `glific/<name>` not in this catalog is rejected at template save. Any other namespace
 (`tap/*`) is opaque — envelope validation only.
 
+**Rules that apply to every `glific/*` block** (all three repos must agree — these were the
+drift found in cross-repo review):
+
+- Every key shown below is REQUIRED unless explicitly marked OPTIONAL. In particular `image` is
+  required on `image_panel` options and on `carousel` cards — these blocks exist to show images.
+- **Unknown keys are rejected** in `props` and in each item, for both the console's editor-side
+  validation and the backend's save-side validation. Same rule, same error.
+- **Item ids must be unique** within a block (`options[].id`, `cards[].id`, `fields[].id`).
+  Non-negotiable: the widget keys React elements and the `values` map by these ids, so duplicates
+  silently lose data.
+- Renderers stay tolerant of a missing optional value at runtime (defence in depth), but the
+  console and backend both reject it at save.
+
 ### `glific/image_panel`
 
 ```jsonc
@@ -210,10 +223,10 @@ Applied at template save (staff console + backend) and on response receipt (back
 
 | Rule | Value |
 |------|-------|
-| Outbound envelope size | ≤ 64 KB serialized |
-| Inbound response size | ≤ 16 KB serialized |
-| `summary` length | ≤ 500 chars |
-| JSON depth | ≤ 10 |
+| Outbound envelope size | ≤ 64 KB — measured on the **assembled envelope, compactly encoded** (not the pretty-printed editor text, and including `type`/`version`/`fallback`) |
+| Inbound response size | ≤ 16 KB, same measurement rule |
+| `summary` length | ≤ 500 chars; clamping must not split a UTF-16 surrogate pair |
+| JSON depth | ≤ 10, where a **scalar is depth 0** and each enclosing object/array adds 1 (so `{"a": 1}` is depth 1). Every implementation must use this same base. |
 | `component` format | `^[a-z0-9_]+/[a-z0-9_]+$` |
 | `glific/*` names | must exist in the catalog above |
 | `fallback` | required, non-blank, on every template and every translation |
@@ -224,6 +237,12 @@ Response acceptance additionally requires, in this order:
 1. the socket's authenticated contact owns `message_id`;
 2. that message is `type: :custom_ui` and **not yet answered**;
 3. envelope validation above.
+
+**A `:custom_ui` / `:custom_ui_response` message may only be created through the paths that
+validate it** — the interactive-template send path and the socket response handler. Any other
+route into message creation (notably the `createMessage` / `createAndSendMessage` GraphQL
+mutations, whose `type` input accepts every `message_type_enum` value) must reject these two
+types rather than let an unvalidated envelope reach a contact.
 
 Single-submit must be **atomic** — a guarded `update_all` that only marks unanswered messages
 and acts on the returned row count, not a read-then-write check.
