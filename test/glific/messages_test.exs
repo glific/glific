@@ -1400,6 +1400,114 @@ defmodule Glific.MessagesTest do
       assert updated_hsm_template.body ==
                "Your OTP for param1 is param2. This is valid for param3."
     end
+
+    test "create and send message rejects a bare `type: :custom_ui` send on a whatsapp channel with no template",
+         attrs do
+      valid_attrs = %{
+        body: "irrelevant",
+        flow: :outbound,
+        type: :custom_ui
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+
+      assert {:error, reason} = Messages.create_and_send_message(message_attrs)
+      refute reason =~ "Gupshup"
+
+      refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
+             |> Enum.any?(&(&1.type == :custom_ui))
+    end
+
+    test "create and send message rejects a bare `type: :custom_ui` send on the web channel with no template",
+         attrs do
+      valid_attrs = %{
+        body: "irrelevant",
+        flow: :outbound,
+        type: :custom_ui,
+        channel: "web"
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+
+      assert {:error, _reason} = Messages.create_and_send_message(message_attrs)
+
+      refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
+             |> Enum.any?(&(&1.type == :custom_ui))
+    end
+
+    test "create and send message still sends a template-driven custom_ui message on the web channel",
+         %{organization_id: organization_id} = attrs do
+      interactive_content = %{
+        "type" => "custom_ui",
+        "version" => "1",
+        "component" => "glific/image_panel",
+        "props" => %{
+          "id" => "course",
+          "options" => [
+            %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"}
+          ]
+        },
+        "fallback" => "Pick a course: Spoken English"
+      }
+
+      interactive_template =
+        Fixtures.interactive_fixture(%{
+          organization_id: organization_id,
+          type: :custom_ui,
+          interactive_content: interactive_content
+        })
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        channel: "web"
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+
+      assert message.type == :custom_ui
+      assert message.body == "Pick a course: Spoken English"
+      assert message.interactive_content["component"] == "glific/image_panel"
+    end
+
+    test "create and send message downgrades a template-driven custom_ui message to fallback text on an unsupported channel",
+         %{organization_id: organization_id} = attrs do
+      interactive_content = %{
+        "type" => "custom_ui",
+        "version" => "1",
+        "component" => "glific/image_panel",
+        "props" => %{
+          "id" => "course",
+          "options" => [
+            %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"}
+          ]
+        },
+        "fallback" => "Pick a course: Spoken English"
+      }
+
+      interactive_template =
+        Fixtures.interactive_fixture(%{
+          organization_id: organization_id,
+          type: :custom_ui,
+          interactive_content: interactive_content
+        })
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+
+      assert message.type == :text
+      assert message.body == "Pick a course: Spoken English"
+    end
   end
 
   describe "message_media" do

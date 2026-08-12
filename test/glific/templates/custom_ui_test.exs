@@ -147,6 +147,47 @@ defmodule Glific.Templates.CustomUiTest do
       assert {:error, reason} = CustomUi.validate_payload(payload)
       assert reason =~ "unknown key"
     end
+
+    test "rejects an option missing the required 'image' key" do
+      options = [%{"id" => "c1", "label" => "Spoken English"}]
+      payload = put_in(@image_panel_envelope, ["props", "options"], options)
+      assert {:error, reason} = CustomUi.validate_payload(payload)
+      assert reason =~ "missing required key"
+    end
+
+    test "rejects an option with an unknown key" do
+      options = [
+        %{"id" => "c1", "image" => "https://x/1.png", "label" => "A", "unexpected" => "nope"}
+      ]
+
+      payload = put_in(@image_panel_envelope, ["props", "options"], options)
+      assert {:error, reason} = CustomUi.validate_payload(payload)
+      assert reason =~ "unknown key"
+    end
+  end
+
+  describe "validate_payload/1 — glific/carousel props" do
+    test "rejects a card missing the required 'image' key" do
+      cards = [%{"id" => "p1", "title" => "Course A"}]
+      payload = put_in(@carousel_envelope, ["props", "cards"], cards)
+      assert {:error, reason} = CustomUi.validate_payload(payload)
+      assert reason =~ "missing required key"
+    end
+
+    test "rejects a card with an unknown key" do
+      cards = [
+        %{
+          "id" => "p1",
+          "image" => "https://x/1.png",
+          "title" => "Course A",
+          "unexpected" => "nope"
+        }
+      ]
+
+      payload = put_in(@carousel_envelope, ["props", "cards"], cards)
+      assert {:error, reason} = CustomUi.validate_payload(payload)
+      assert reason =~ "unknown key"
+    end
   end
 
   describe "validate_payload/1 — glific/form props" do
@@ -159,6 +200,22 @@ defmodule Glific.Templates.CustomUiTest do
       payload = put_in(@form_envelope, ["props", "fields"], fields)
       assert {:error, reason} = CustomUi.validate_payload(payload)
       assert reason =~ "between 1 and 10"
+    end
+
+    test "accepts a field with the optional 'placeholder' and 'required' keys" do
+      fields = [
+        %{"id" => "name", "label" => "Your name", "placeholder" => "Asha", "required" => true}
+      ]
+
+      payload = put_in(@form_envelope, ["props", "fields"], fields)
+      assert :ok == CustomUi.validate_payload(payload)
+    end
+
+    test "rejects a field with an unknown key" do
+      fields = [%{"id" => "name", "label" => "Your name", "unexpected" => "nope"}]
+      payload = put_in(@form_envelope, ["props", "fields"], fields)
+      assert {:error, reason} = CustomUi.validate_payload(payload)
+      assert reason =~ "unknown key"
     end
   end
 
@@ -334,6 +391,31 @@ defmodule Glific.Templates.CustomUiTest do
 
     test "returns nil for an org namespace" do
       assert CustomUi.auto_summary("tap/course_picker", %{}, %{}) == nil
+    end
+
+    test "skips fields the contact left empty" do
+      props = %{
+        "fields" => [
+          %{"id" => "name", "label" => "Your name"},
+          %{"id" => "email", "label" => "Your email"}
+        ]
+      }
+
+      assert CustomUi.auto_summary("glific/form", props, %{"name" => "Asha", "email" => ""}) ==
+               "Your name: Asha"
+    end
+
+    test "never returns a blank summary when every field was left empty" do
+      props = %{
+        "fields" => [
+          %{"id" => "name", "label" => "Your name"},
+          %{"id" => "email", "label" => "Your email"}
+        ]
+      }
+
+      summary = CustomUi.auto_summary("glific/form", props, %{"name" => "", "email" => ""})
+      assert summary != ""
+      assert is_binary(summary)
     end
   end
 end

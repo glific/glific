@@ -51,10 +51,27 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_message(_, %{input: params}, _) do
-    with {:ok, message} <- Messages.create_message(params) do
+    with :ok <- reject_custom_ui_type(params),
+         {:ok, message} <- Messages.create_message(params) do
       {:ok, %{message: message}}
     end
   end
+
+  # Belt-and-braces per contract §7: a `:custom_ui` / `:custom_ui_response` message may only be
+  # created through the paths that validate its envelope (the interactive-template send path,
+  # and the socket response handler) — neither of which is `createMessage` /
+  # `createAndSendMessage`. The staff console never sends these types directly (it always sends
+  # `type: TEXT` alongside `interactiveTemplateId` and lets the backend derive the real type from
+  # the validated template), so rejecting them here is not a behavior change for legitimate
+  # callers. `Messages.create_and_send_message/1` enforces the same rule independently (see
+  # `check_for_hsm_message/2`) — that guard is the one that matters when this mutation's `type`
+  # input is bypassed by a future internal caller; this one exists so the public API surface
+  # rejects the input up front with a clear error instead of a downstream one.
+  @spec reject_custom_ui_type(map()) :: :ok | {:error, String.t()}
+  defp reject_custom_ui_type(%{type: type}) when type in [:custom_ui, :custom_ui_response],
+    do: {:error, "#{type} messages cannot be created directly"}
+
+  defp reject_custom_ui_type(_params), do: :ok
 
   @doc false
   @spec update_message(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
@@ -94,7 +111,8 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{message: Message.t()}}
   def create_and_send_message(_, %{input: params}, %{context: %{current_user: current_user}}) do
-    with {:ok, message} <-
+    with :ok <- reject_custom_ui_type(params),
+         {:ok, message} <-
            params
            |> Map.merge(%{user_id: current_user.id})
            |> Messages.create_and_send_message(),

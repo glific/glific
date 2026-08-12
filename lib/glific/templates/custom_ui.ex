@@ -272,7 +272,7 @@ defmodule Glific.Templates.CustomUi do
   def validate_image_panel_props(%{"id" => id, "options" => options} = props) do
     with :ok <- validate_non_blank_string(id, "options.id"),
          :ok <- validate_optional_string(props["body"], "body") do
-      validate_options(options, ["id", "image", "label"], ["id"])
+      validate_options(options, ["id", "image", "label"], ["id", "image"])
     end
   end
 
@@ -283,7 +283,7 @@ defmodule Glific.Templates.CustomUi do
   def validate_carousel_props(%{"id" => id, "cards" => cards} = props) do
     with :ok <- validate_non_blank_string(id, "cards.id"),
          :ok <- validate_optional_string(props["body"], "body") do
-      validate_options(cards, ["id", "image", "title", "description"], ["id", "title"])
+      validate_options(cards, ["id", "image", "title", "description"], ["id", "image", "title"])
     end
   end
 
@@ -302,7 +302,7 @@ defmodule Glific.Templates.CustomUi do
   def validate_form_props(_props), do: {:error, "glific/form props are invalid"}
 
   @spec validate_options([map()], [String.t()], [String.t()]) :: :ok | {:error, String.t()}
-  defp validate_options(options, _allowed_keys, required_keys) when is_list(options) do
+  defp validate_options(options, allowed_keys, required_keys) when is_list(options) do
     count = length(options)
 
     cond do
@@ -315,8 +315,10 @@ defmodule Glific.Templates.CustomUi do
       true ->
         options
         |> Enum.reduce_while(:ok, fn option, :ok ->
-          case validate_required_keys(option, required_keys, "option") do
-            :ok -> {:cont, :ok}
+          with :ok <- validate_required_keys(option, required_keys, "option"),
+               :ok <- validate_known_keys(option, allowed_keys, "option") do
+            {:cont, :ok}
+          else
             error -> {:halt, error}
           end
         end)
@@ -353,8 +355,15 @@ defmodule Glific.Templates.CustomUi do
       true ->
         fields
         |> Enum.reduce_while(:ok, fn field, :ok ->
-          case validate_required_keys(field, ["id", "label"], "field") do
-            :ok -> {:cont, :ok}
+          with :ok <- validate_required_keys(field, ["id", "label"], "field"),
+               :ok <-
+                 validate_known_keys(
+                   field,
+                   ["id", "label", "placeholder", "required"],
+                   "field"
+                 ) do
+            {:cont, :ok}
+          else
             error -> {:halt, error}
           end
         end)
@@ -449,15 +458,28 @@ defmodule Glific.Templates.CustomUi do
     end
   end
 
+  # Contract §6: fields the contact left empty are skipped entirely (not just shown blank), and
+  # a summary is never blank — `summary` becomes the persisted message `body`, so an all-empty
+  # form must still substitute a non-empty stand-in.
   @doc false
   @spec auto_summary_form(map(), map()) :: String.t()
   def auto_summary_form(props, values) do
-    props
-    |> Map.get("fields", [])
-    |> Enum.map_join(", ", fn field ->
-      label = Map.get(field, "label", Map.get(field, "id"))
-      value = Map.get(values, Map.get(field, "id"), "")
-      "#{label}: #{value}"
-    end)
+    summary =
+      props
+      |> Map.get("fields", [])
+      |> Enum.reduce([], fn field, acc ->
+        value = Map.get(values, Map.get(field, "id"), "")
+
+        if value in ["", nil] do
+          acc
+        else
+          label = Map.get(field, "label", Map.get(field, "id"))
+          ["#{label}: #{value}" | acc]
+        end
+      end)
+      |> Enum.reverse()
+      |> Enum.join(", ")
+
+    if summary == "", do: "Form submitted with no responses", else: summary
   end
 end

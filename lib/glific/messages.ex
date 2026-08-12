@@ -9,6 +9,7 @@ defmodule Glific.Messages do
 
   alias Glific.{
     Caches,
+    Channels.ChannelCapability,
     Communications,
     Communications.WebMessage,
     Contacts,
@@ -27,6 +28,7 @@ defmodule Glific.Messages do
     Tags.MessageTag,
     Tags.Tag,
     Templates,
+    Templates.CustomUi,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -325,46 +327,50 @@ defmodule Glific.Messages do
 
   defp check_for_interactive(attrs, _language_id), do: attrs
 
+  # `:custom_ui_response` is inbound-only — it is created exclusively by
+  # `Communications.WebMessage.receive_custom_ui_response/2`, which validates the response
+  # against the outbound envelope it answers before persisting it (contract §4, §7). It must
+  # never be reachable through this generic outbound path (e.g. `createAndSendMessage`), so
+  # reject it unconditionally here regardless of caller. Must be matched before the generic
+  # clause below.
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(%{type: type}, _contact)
+       when type in [:custom_ui_response, "custom_ui_response"],
+       do: {:error, "custom_ui_response messages cannot be created directly"}
+
+  # A `:custom_ui` send may only reach a contact carrying an envelope that has already passed
+  # `CustomUi.validate_payload/1` (contract §7 — "may only be created through the paths that
+  # validate it"). `check_for_interactive/2` derives `type: interactive_content["type"]` (a
+  # *string*, since it round-trips through the stored JSONB payload) from a validated template,
+  # while Absinthe hands back the *atom* `:custom_ui` for a bare `type: CUSTOM_UI` input with no
+  # `interactive_template_id` — matching both forms here, instead of only the string, closes the
+  # gap that let an unvalidated envelope (`interactive_content: nil` or `%{}`) slip through.
+  #
+  # Must be matched before the `channel: "web"` clause below, which otherwise routes *any*
+  # web-channel send straight to `WebMessage.send_message/2` regardless of type — that's how an
+  # unvalidated `custom_ui` message previously reached the browser with an empty
+  # `interactive_content`.
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(%{type: type} = attrs, contact)
+       when type in [:custom_ui, "custom_ui"] do
+    case CustomUi.validate_payload(attrs[:interactive_content] || %{}) do
+      :ok -> route_custom_ui_message(attrs, contact)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # Web channel outbound bypasses HSM/interactive/session-window checks entirely — delivery
   # there is presence-dependent (no store-and-forward, no BSP), so none of the WhatsApp-specific
   # send eligibility rules apply. Must be matched before the generic clause below.
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp check_for_hsm_message(
-         %{channel: "web", organization_id: organization_id} = attrs,
-         _contact
-       ) do
-    {:ok, message} =
-      attrs
-      |> Map.put_new(:type, :text)
-      |> Map.merge(%{
-        sender_id: Partners.organization_contact_id(organization_id),
-        flow: :outbound,
-        channel: "web"
-      })
-      |> create_message()
-
-    WebMessage.send_message(message, attrs)
-  end
-
-  # A custom_ui send on a channel that doesn't render it (only "web" does in v0 — see
-  # `Glific.Channels.ChannelCapability`) must not fall through to
-  # `Communications.Message.send_message/2`: its `@type_to_token` has no `:custom_ui` entry and
-  # no catch-all, so it would raise. Send the envelope's required `fallback` text as a plain
-  # text message instead, and leave a staff-facing trail via a flow notification (contract §8).
-  # Must stay ordered before the generic clause below, and after the `channel: "web"` clause
-  # above (which already routes any web-channel custom_ui send, including this type, to
-  # `WebMessage.send_message/2`) — so this clause is only ever reached for a channel that does
-  # not support `:custom_ui`. It sends the fallback unconditionally rather than branching on
-  # `ChannelCapability.supports?/2`: this is the only send path available here regardless, and
-  # failing safe to plain text (rather than a `MatchError` on a hypothetical future channel that
-  # both registers support and reaches this clause) is the correct default either way.
-  @doc false
-  @spec check_for_hsm_message(map(), Contact.t()) ::
-          {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp check_for_hsm_message(%{type: "custom_ui"} = attrs, contact),
-    do: send_custom_ui_fallback(attrs, contact)
+  defp check_for_hsm_message(%{channel: "web"} = attrs, _contact),
+    do: send_web_channel_message(attrs)
 
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
@@ -376,6 +382,38 @@ defmodule Glific.Messages do
       Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
       |> do_send_message(attrs)
     end
+  end
+
+  # A validated `:custom_ui` envelope is sent as-is on a channel that renders it (only "web" in
+  # v0, contract §8) and downgraded to plain fallback text everywhere else — this must intercept
+  # BEFORE `Communications.Message.@type_to_token`, which has no `:custom_ui` entry and no
+  # catch-all, and would raise.
+  @spec route_custom_ui_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp route_custom_ui_message(%{channel: channel} = attrs, contact) do
+    if ChannelCapability.supports?(channel, :custom_ui) do
+      send_web_channel_message(attrs)
+    else
+      send_custom_ui_fallback(attrs, contact)
+    end
+  end
+
+  defp route_custom_ui_message(attrs, contact),
+    do: send_custom_ui_fallback(attrs, contact)
+
+  @spec send_web_channel_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp send_web_channel_message(%{organization_id: organization_id} = attrs) do
+    {:ok, message} =
+      attrs
+      |> Map.put_new(:type, :text)
+      |> Map.merge(%{
+        sender_id: Partners.organization_contact_id(organization_id),
+        flow: :outbound,
+        channel: "web"
+      })
+      |> create_message()
+
+    WebMessage.send_message(message, attrs)
   end
 
   @spec send_custom_ui_fallback(map(), Contact.t()) ::
