@@ -303,6 +303,19 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message =~ "Sender_id: is invalid"
   end
 
+  test "update a message rejects retyping it to custom_ui", %{user: user} do
+    body = "Default message body"
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{"id" => message.id, "input" => %{"type" => "CUSTOM_UI"}}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "custom_ui"
+  end
+
   test "delete a message", %{user: user} do
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
@@ -355,6 +368,26 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     contact_ids = get_in(query_data, [:data, "createAndSendMessageToGroup", "contactIds"])
     assert length(contact_ids) >= 2
+  end
+
+  test "send message to a group rejects a bare `type: CUSTOM_UI` input", %{staff: user} = attrs do
+    [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
+
+    result =
+      auth_query_gql_by(:create_and_send_message_to_group, user,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "type" => "CUSTOM_UI",
+            "sender_id" => Partners.organization_contact_id(user.organization_id)
+          },
+          "group_id" => cg1.group_id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "custom_ui"
   end
 
   test "send hsm message to a group", %{staff: user} = attrs do

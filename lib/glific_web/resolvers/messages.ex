@@ -59,14 +59,16 @@ defmodule GlificWeb.Resolvers.Messages do
 
   # Belt-and-braces per contract §7: a `:custom_ui` / `:custom_ui_response` message may only be
   # created through the paths that validate its envelope (the interactive-template send path,
-  # and the socket response handler) — neither of which is `createMessage` /
-  # `createAndSendMessage`. The staff console never sends these types directly (it always sends
-  # `type: TEXT` alongside `interactiveTemplateId` and lets the backend derive the real type from
-  # the validated template), so rejecting them here is not a behavior change for legitimate
-  # callers. `Messages.create_and_send_message/1` enforces the same rule independently (see
-  # `check_for_hsm_message/2`) — that guard is the one that matters when this mutation's `type`
-  # input is bypassed by a future internal caller; this one exists so the public API surface
-  # rejects the input up front with a clear error instead of a downstream one.
+  # and the socket response handler) — none of which are these `:message_input`-driven
+  # mutations (`createMessage`, `createAndSendMessage`, `updateMessage`,
+  # `createAndSendMessageToGroup`, `sendHsmMessageToGroup` — every entry point in this module
+  # that accepts a caller-supplied `type` calls this). The staff console never sends these types
+  # directly (it always sends `type: TEXT` alongside `interactiveTemplateId` and lets the backend
+  # derive the real type from the validated template), so rejecting them here is not a behavior
+  # change for legitimate callers. `Messages.create_and_send_message/1` enforces the same rule
+  # independently for the per-contact send path (see `check_for_hsm_message/2`) — but the group
+  # mutations' "meta" group-listing row (`Messages.create_group_message/1`) is written directly,
+  # bypassing that guard, so this resolver-level check is the one that matters there.
   @spec reject_custom_ui_type(map()) :: :ok | {:error, String.t()}
   defp reject_custom_ui_type(%{type: type}) when type in [:custom_ui, :custom_ui_response],
     do: {:error, "#{type} messages cannot be created directly"}
@@ -77,7 +79,8 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec update_message(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_message(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with {:ok, message} <-
+    with :ok <- reject_custom_ui_type(params),
+         {:ok, message} <-
            Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
          {:ok, message} <- Messages.update_message(message, params) do
       {:ok, %{message: message}}
@@ -122,7 +125,8 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_message_to_group(map(), non_neg_integer, User.t(), atom()) ::
           {:ok | :error, map()}
   defp send_message_to_group(attrs, group_id, user, type) do
-    with {:ok, group} <-
+    with :ok <- reject_custom_ui_type(attrs),
+         {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
          {:ok, true} <- validate_group_members(group),
          {:ok, contact_ids} <-
