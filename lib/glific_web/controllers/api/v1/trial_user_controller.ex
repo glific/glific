@@ -6,17 +6,18 @@ defmodule GlificWeb.API.V1.TrialUsersController do
   require Logger
   alias Glific.Metrics
 
-  alias PasswordlessAuth
   alias Plug.Conn
 
   alias Glific.{
     Communications.Mailer,
     Contacts,
     Mails.TrialAccountMail,
+    OTP,
     Partners,
     Partners.Saas,
     Repo,
-    TrialUsers
+    TrialUsers,
+    Users.User
   }
 
   import Ecto.Query
@@ -126,7 +127,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
   @spec send_otp_to_trial_user(TrialUsers.t(), String.t()) ::
           {:ok, term()} | {:error, :email_send_failed, term()}
   defp send_otp_to_trial_user(trial_user, username) do
-    code = PasswordlessAuth.generate_code(trial_user.phone)
+    code = OTP.generate_code(:trial, trial_user.phone)
     org = Saas.organization_id() |> Partners.get_organization!()
 
     case TrialAccountMail.otp_verification_mail(org, trial_user.email, code, username)

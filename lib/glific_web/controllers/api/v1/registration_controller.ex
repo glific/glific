@@ -10,7 +10,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
   require Logger
 
   alias Ecto.Changeset
-  alias PasswordlessAuth
   alias Plug.Conn
 
   alias GlificWeb.{
@@ -21,6 +20,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    OTP,
     Partners,
     Partners.Saas,
     Providers.Gupshup.PartnerAPI,
@@ -49,14 +49,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc """
-  verify the otp
+  verify an otp minted by one of the phone-based authentication flows
   """
   @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, [String.t()]}
   def verify_otp(phone, otp) do
-    case PasswordlessAuth.verify_code(phone, otp) do
+    case OTP.verify_code(:auth, phone, otp) do
       :ok ->
-        # Remove otp code
-        PasswordlessAuth.remove_code(phone)
         {:ok, "verified"}
 
       {:error, error} ->
@@ -232,7 +230,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   """
   @spec create_and_send_verification_code(Contact.t()) :: {:ok, String.t()}
   def create_and_send_verification_code(contact) do
-    code = PasswordlessAuth.generate_code(contact.phone)
+    code = OTP.generate_code(:auth, contact.phone)
     Glific.Messages.create_and_send_otp_verification_message(contact, code)
     {:ok, code}
   end
