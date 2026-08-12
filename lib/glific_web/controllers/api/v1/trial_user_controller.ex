@@ -16,8 +16,7 @@ defmodule GlificWeb.API.V1.TrialUsersController do
     Partners,
     Partners.Saas,
     Repo,
-    TrialUsers,
-    Users.User
+    TrialUsers
   }
 
   import Ecto.Query

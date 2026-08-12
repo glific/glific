@@ -621,7 +621,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
-      IO.inspect(conn)
       assert json = json_response(conn, 500)
       assert json["error"]["status"] == 500
       assert json["error"]["message"] == "Couldn't update user password"

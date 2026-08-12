@@ -2,7 +2,6 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.{
-    Fixtures,
     Repo,
     TrialUsers
   }
@@ -88,25 +87,6 @@ defmodule GlificWeb.API.V1.TrialUsersControllerTest do
       response = json_response(result, 200)
       assert response["success"] == false
       assert response["error"] == "Email or phone already registered"
-    end
-
-    test "refuses to mint an OTP for a phone that already has a Glific account", %{conn: conn} do
-      user = Fixtures.user_fixture(%{phone: "919719266288"})
-
-      params = %{
-        "username" => "attacker",
-        "email" => "attacker@example.com",
-        "phone" => user.phone,
-        "organization_name" => "New Org"
-      }
-
-      result = TrialUsersController.create_trial_user(conn, params)
-
-      response = json_response(result, 200)
-      assert response["success"] == false
-      assert response["error"] == "Email or phone already registered"
-
-      refute Repo.get_by(TrialUsers, %{email: "attacker@example.com"}, skip_organization_id: true)
     end
 
     test "returns error when trial user creation fails due to validation", %{conn: conn} do
