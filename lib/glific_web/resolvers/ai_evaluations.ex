@@ -205,7 +205,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end)
   end
 
-  @golden_qa_csv_escape_max_lines 10
+  @golden_qa_csv_escape_max_lines 1000
 
   @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
   defp validate_csv_structure(%{path: path}) do
