@@ -57,10 +57,11 @@ defmodule GlificWeb.Resolvers.Users do
 
   @spec update_password_params(User.t(), map()) :: {:ok, map()} | {:error, any}
   defp update_password_params(user, params) do
-    with false <- is_nil(params[:password]) || is_nil(params[:otp]),
-         :ok <- PasswordlessAuth.verify_code(user.phone, params.otp) do
+    with false <-
+           is_nil(params[:email]) && (is_nil(params[:password]) || is_nil(params[:otp])),
+         :ok <- PasswordlessAuth.verify_code(user.phone, params[:otp]) do
       PasswordlessAuth.remove_code(user.phone)
-      params = Map.merge(params, %{password_confirmation: params.password})
+      params = Map.merge(params, %{password_confirmation: params[:password]})
       {:ok, params}
     else
       true ->
