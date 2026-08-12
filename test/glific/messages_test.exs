@@ -1413,6 +1413,7 @@ defmodule Glific.MessagesTest do
 
       assert {:error, reason} = Messages.create_and_send_message(message_attrs)
       refute reason =~ "Gupshup"
+      assert reason == "custom_ui messages must be sent via an interactive template"
 
       refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
              |> Enum.any?(&(&1.type == :custom_ui))
@@ -1429,7 +1430,8 @@ defmodule Glific.MessagesTest do
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
-      assert {:error, _reason} = Messages.create_and_send_message(message_attrs)
+      assert {:error, reason} = Messages.create_and_send_message(message_attrs)
+      assert reason == "custom_ui messages must be sent via an interactive template"
 
       refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
              |> Enum.any?(&(&1.type == :custom_ui))

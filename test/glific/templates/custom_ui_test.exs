@@ -1,6 +1,7 @@
 defmodule Glific.Templates.CustomUiTest do
   use ExUnit.Case, async: true
 
+  alias Glific.Flows.MessageVarParser
   alias Glific.Templates.CustomUi
 
   @image_panel_envelope %{
@@ -216,6 +217,46 @@ defmodule Glific.Templates.CustomUiTest do
       payload = put_in(@form_envelope, ["props", "fields"], fields)
       assert {:error, reason} = CustomUi.validate_payload(payload)
       assert reason =~ "unknown key"
+    end
+  end
+
+  describe "validate_payload/1 — envelope survives Flows.MessageVarParser.parse_map/2" do
+    # `contact_action.ex` runs a flow's outbound `interactive_content` through
+    # `MessageVarParser.parse_map/2` before it ever reaches `Messages.check_for_hsm_message/2`'s
+    # `CustomUi.validate_payload/1` guard. `parse_map/2` recurses over the map/list, running
+    # `parse/2` on every string leaf (and key) — these tests pin that a flow-parsed envelope
+    # still validates: keys are untouched, non-string leaves (`required: true`) pass through
+    # unchanged, and a `@contact...` reference inside a string leaf resolves without breaking
+    # the surrounding structure.
+    test "a flow-parsed glific/image_panel envelope with a body variable still validates" do
+      envelope =
+        put_in(@image_panel_envelope, ["props", "body"], "Hi @contact.fields.name, pick a course")
+
+      parsed =
+        MessageVarParser.parse_map(envelope, %{"contact" => %{"fields" => %{"name" => "Asha"}}})
+
+      assert parsed["props"]["body"] == "Hi Asha, pick a course"
+      assert :ok == CustomUi.validate_payload(parsed)
+    end
+
+    test "a flow-parsed glific/carousel envelope still validates" do
+      parsed = MessageVarParser.parse_map(@carousel_envelope, %{})
+      assert :ok == CustomUi.validate_payload(parsed)
+    end
+
+    test "a flow-parsed glific/form envelope with placeholder/required fields still validates" do
+      envelope =
+        put_in(@form_envelope, ["props", "fields"], [
+          %{
+            "id" => "name",
+            "label" => "Your name",
+            "placeholder" => "e.g. Asha",
+            "required" => true
+          }
+        ])
+
+      parsed = MessageVarParser.parse_map(envelope, %{})
+      assert :ok == CustomUi.validate_payload(parsed)
     end
   end
 

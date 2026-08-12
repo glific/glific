@@ -357,9 +357,20 @@ defmodule Glific.Messages do
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(%{type: type} = attrs, contact)
        when type in [:custom_ui, "custom_ui"] do
-    case CustomUi.validate_payload(attrs[:interactive_content] || %{}) do
-      :ok -> route_custom_ui_message(attrs, contact)
-      {:error, reason} -> {:error, reason}
+    # A caller with no envelope at all (typically `type: CUSTOM_UI` with no
+    # `interactive_template_id`, since that's the only thing that populates
+    # `interactive_content`) gets a public-contract error here rather than
+    # `CustomUi.validate_payload/1`'s internal envelope vocabulary ("missing required field
+    # 'component'") — that message is meant for template authors, not this caller.
+    case attrs[:interactive_content] do
+      content when content in [nil, %{}] ->
+        {:error, "custom_ui messages must be sent via an interactive template"}
+
+      envelope ->
+        case CustomUi.validate_payload(envelope) do
+          :ok -> route_custom_ui_message(attrs, contact)
+          {:error, reason} -> {:error, reason}
+        end
     end
   end
 
