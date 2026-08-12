@@ -1,4 +1,5 @@
 defmodule Glific.OTPTest do
+  @moduledoc false
   use Glific.DataCase
 
   alias Glific.OTP
@@ -24,9 +25,10 @@ defmodule Glific.OTPTest do
 
     test "a code for one scope leaves another scope's code untouched", %{phone: phone} do
       auth_code = OTP.generate_code(:auth, phone)
-      _trial_code = OTP.generate_code(:trial, phone)
+      trial_code = OTP.generate_code(:trial, phone)
 
       assert :ok == OTP.verify_code(:auth, phone, auth_code)
+      assert :ok == OTP.verify_code(:trial, phone, trial_code)
     end
 
     test "consumes the code so it cannot be replayed", %{phone: phone} do

@@ -23,16 +23,12 @@ defmodule Glific.OTP do
 
   @scopes [:auth, :trial]
 
-  @doc """
-  Generates and stores an OTP for the given phone under the given scope.
-  """
+  @doc "Generates and stores an OTP for the given phone under the given scope."
   @spec generate_code(scope(), String.t()) :: String.t()
   def generate_code(scope, phone) when scope in @scopes,
     do: PasswordlessAuth.generate_code(key(scope, phone))
 
-  @doc """
-  Verifies an OTP against the given scope, consuming the code once it matches.
-  """
+  @doc "Verifies an OTP against the given scope, consuming the code once it matches."
   @spec verify_code(scope(), String.t(), String.t()) ::
           :ok | {:error, :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code}
   def verify_code(scope, phone, attempt_code) when scope in @scopes do

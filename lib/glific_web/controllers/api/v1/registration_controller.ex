@@ -48,9 +48,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @doc """
-  verify an otp minted by one of the phone-based authentication flows
-  """
+  @doc "Verifies an OTP minted by one of the phone-based authentication flows."
   @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, [String.t()]}
   def verify_otp(phone, otp) do
     case OTP.verify_code(:auth, phone, otp) do
