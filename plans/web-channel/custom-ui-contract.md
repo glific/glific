@@ -162,6 +162,7 @@ drift found in cross-repo review):
   "id": "course",                        // REQUIRED — the key the answer lands under
   "body": "Hi @contact.fields.name, pick a course",   // OPTIONAL prompt text
   "options": [                           // REQUIRED, 1..10
+    // per option: id, image and label are all REQUIRED
     { "id": "c1", "image": "https://…/english.png", "label": "Spoken English" },
     { "id": "c2", "image": "https://…/digital.png", "label": "Digital skills" }
   ]
@@ -178,8 +179,10 @@ drift found in cross-repo review):
   "id": "product",
   "body": "Browse our courses",          // OPTIONAL
   "cards": [                             // REQUIRED, 1..10
-    { "id": "p1", "image": "https://…/a.png", "title": "Course A",
-      "description": "Six weeks, evenings" }
+    { "id": "p1",                        // REQUIRED
+      "image": "https://…/a.png",        // REQUIRED
+      "title": "Course A",               // REQUIRED
+      "description": "Six weeks, evenings" }   // OPTIONAL
   ]
 }
 ```
@@ -194,7 +197,10 @@ drift found in cross-repo review):
   "id": "signup",                        // OPTIONAL (fields carry their own ids)
   "body": "Tell us about yourself",      // OPTIONAL
   "fields": [                            // REQUIRED, 1..10
-    { "id": "name", "label": "Your name", "placeholder": "…", "required": true }
+    { "id": "name",                      // REQUIRED
+      "label": "Your name",              // REQUIRED
+      "placeholder": "…",                // OPTIONAL
+      "required": true }                 // OPTIONAL (boolean, not a string)
   ],
   "submit_label": "Submit"               // OPTIONAL, defaults to "Submit"
 }
@@ -216,6 +222,9 @@ drift found in cross-repo review):
   an empty string for untouched fields.
 - A summary is clamped to 500 chars (§7) and must never be blank — a block that would produce an
   empty summary substitutes a non-empty stand-in, because `summary` becomes the message `body`.
+  The stand-in wording is implementation-local and need not match between widget and backend: in
+  practice `glific/*` responses carry the widget's summary, and the backend's own
+  `auto_summary/2` only serves server-side surfaces.
 
 ## 7. Validation and limits
 
