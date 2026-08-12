@@ -87,7 +87,9 @@ Socket event name: **`custom_ui_response`** on topic `web_channel:<contact_id>`.
   "message_id": 4211,                    // the outbound custom_ui message being answered
   "component": "glific/image_panel",     // echo
   "values": { "course": "c2" },          // keyed by ids from props
-  "summary": "Picked Digital skills",    // REQUIRED plain string
+  "summary": "Digital skills",           // REQUIRED plain string; for glific/* blocks this is
+                                         // the auto-built summary defined in §6 (no prefix —
+                                         // §6 is normative, this example is illustrative)
   "context": { }                         // OPTIONAL echo
 }
 ```
@@ -192,6 +194,15 @@ a `glific/<name>` not in this catalog is rejected at template save. Any other na
 
 `text` (static copy), `image` (url + alt), `input` (text entry, v0 text only),
 `option` (id + label + optional image). Not independently addressable as components in v0.
+
+### Summary rules (all blocks)
+
+- The auto-built summary is exactly the value named above (the option `label`, the card `title`,
+  the form's `label: value` pairs) — **no prefix text**.
+- Form summaries skip fields the contact left empty; `values` still carries every field id, with
+  an empty string for untouched fields.
+- A summary is clamped to 500 chars (§7) and must never be blank — a block that would produce an
+  empty summary substitutes a non-empty stand-in, because `summary` becomes the message `body`.
 
 ## 7. Validation and limits
 
