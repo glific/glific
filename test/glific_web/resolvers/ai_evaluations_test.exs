@@ -702,10 +702,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
-    test "returns error when CSV contains malformed rows (escape sequence errors)", %{
-      staff: user
-    } do
-      # Unclosed quote triggers {:error, _} from CSV.decode; reduce_while halts immediately
+    test "returns error naming the row when CSV has a malformed quoted field (unclosed quote)",
+         %{staff: user} do
       csv_path =
         Path.join(
           System.tmp_dir!(),
@@ -736,7 +734,45 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Unable to parse the uploaded CSV file"
+      assert msg =~ "Row 7"
+      assert msg =~ "malformed"
+      assert msg =~ "missing closing quote"
+    end
+
+    test "returns error naming the row when CSV has a stray escape character inside a field", %{
+      staff: user
+    } do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "stray_escape_csv_#{System.unique_integer([:positive])}.csv"
+        )
+
+      content = "question,answer\nWhat is Glific?,A \"quick\" answer\n"
+      File.write!(csv_path, content)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "stray_escape.csv"
+      }
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg =~ "Row 2"
+      assert msg =~ "unescaped"
     end
 
     test "accepts a properly quoted answer field with exactly escape_max_lines (1000) embedded line breaks (boundary)",
@@ -772,7 +808,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Unable to parse the uploaded CSV file"
+      assert msg =~ "spans more than 1000 lines"
+      assert msg =~ "malformed"
     end
 
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
