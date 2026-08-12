@@ -9,9 +9,10 @@ message and a presence-gated websocket transport.
 **Companion docs:**
 [Frontend hosting decision](./frontend-hosting-decision.md) — the full provider
 comparison behind the Vercel choice below ·
-[Custom UI messages](./custom-ui-design.md) — org-rendered rich components (carousels, image
-panels, forms) on the web channel: the JSON envelope contract, authoring model, and the
-cross-channel direction for future channels (RCS/Telegram).
+[Custom UI messages](./custom-ui-design.md) — rich UI as JSON on the web channel: built-in
+`glific/*` blocks (image panel, carousel, form) pre-rendered by the widget, plus opaque
+org-namespace components (`tap/*`) rendered by the org's own client; the envelope contract,
+authoring model, and the cross-channel direction for future channels (RCS/Telegram).
 
 ---
 
