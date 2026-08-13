@@ -385,6 +385,8 @@ a non-web trigger.
 
 > Walk the payload in document order; concatenate the `value` of each `kind: "text"` node,
 > joined with `" — "`, clamped to 500 chars. **`kind: "alt"` nodes are skipped** — see §2.1.
+> **Text nodes whose value is empty or whitespace-only are dropped before the join**, so a blank
+> authored field never produces a leading, trailing or doubled `" — "`.
 
 The derivation itself returns `""` when a payload has no text nodes. Substituting a readable
 placeholder is the *render site's* job (the floweditor canvas must never render blank), so that the
