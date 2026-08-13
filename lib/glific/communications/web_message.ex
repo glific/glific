@@ -44,7 +44,7 @@ defmodule Glific.Communications.WebMessage do
   """
   @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
   def send_message(message, attrs) do
-    message = Repo.preload(message, [:receiver, :sender, :media])
+    message = Repo.preload(message, [:receiver, :sender, :contact, :media])
 
     Logger.info(
       "Sending web message: type: '#{message.type}', contact_id: '#{message.receiver_id}', message_id: '#{message.id}'"
@@ -56,7 +56,10 @@ defmodule Glific.Communications.WebMessage do
              @type_to_token[message.type],
              [message, attrs]
            ) do
-      Communications.publish_data(message, :sent_message, message.organization_id)
+      message
+      |> Communications.publish_data(:sent_message, message.organization_id)
+      |> Communications.publish_simulator(:sent_message)
+
       {:ok, message}
     end
   rescue
@@ -78,7 +81,8 @@ defmodule Glific.Communications.WebMessage do
   way WhatsApp inbound does, it just never touches `Contacts.set_session_status/2` (that's a
   WhatsApp session-window concept that doesn't apply to the web channel).
   """
-  @spec receive_message(map(), atom()) :: :ok | {:ok, Message.t()} | {:error, String.t()}
+  @spec receive_message(map(), atom()) ::
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t() | String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     {:ok, contact} =
       message_params.sender
@@ -93,7 +97,7 @@ defmodule Glific.Communications.WebMessage do
   # never falls into `receive_media/1` (the generic catch-all below), which would misinterpret
   # it as a media upload.
   @spec do_receive_message(Contact.t(), map(), atom()) ::
-          :ok | {:ok, Message.t()} | {:error, String.t()}
+          {:ok, Message.t()} | {:error, Ecto.Changeset.t() | String.t()}
   defp do_receive_message(contact, message_params, :blocks_response),
     do: receive_blocks_response(contact, message_params)
 
@@ -116,8 +120,6 @@ defmodule Glific.Communications.WebMessage do
       :location -> receive_location(message_params)
       _media -> receive_media(message_params)
     end
-
-    :ok
   end
 
   # Acceptance order per contract §7: (1) the contact owns `message_id` and it is an unanswered
@@ -239,35 +241,39 @@ defmodule Glific.Communications.WebMessage do
     end
   end
 
-  @spec receive_text(map()) :: Message.t() | nil
+  @spec receive_text(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   defp receive_text(message_params) do
-    message_params
-    |> Messages.create_message()
-    |> publish_and_process(message_params.organization_id)
+    result = Messages.create_message(message_params)
+    publish_and_process(result, message_params.organization_id)
+    result
   end
 
   # The media row and the message are created in one transaction so a failed message insert
   # cannot leave an orphaned message_media row. Repo.transaction returns {:ok, message} /
-  # {:error, changeset} — exactly the shape publish_and_process/2 expects.
-  @spec receive_media(map()) :: Message.t() | nil
+  # {:error, changeset} — exactly the shape publish_and_process/2 expects, and the shape this
+  # function returns to its own caller.
+  @spec receive_media(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   defp receive_media(message_params) do
-    Repo.transaction(fn ->
-      {:ok, media} =
-        message_params
-        |> Map.put_new(:flow, :inbound)
-        |> Messages.create_message_media()
+    result =
+      Repo.transaction(fn ->
+        {:ok, media} =
+          message_params
+          |> Map.put_new(:flow, :inbound)
+          |> Messages.create_message_media()
 
-      case message_params |> Map.put(:media_id, media.id) |> Messages.create_message() do
-        {:ok, message} -> message
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end)
-    |> publish_and_process(message_params.organization_id)
+        case message_params |> Map.put(:media_id, media.id) |> Messages.create_message() do
+          {:ok, message} -> message
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    publish_and_process(result, message_params.organization_id)
+    result
   end
 
   # A location message stores the coordinates in a separate `locations` row that references the
   # message, so the message must be created first (Location.changeset requires message_id).
-  @spec receive_location(map()) :: Message.t() | nil
+  @spec receive_location(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   defp receive_location(message_params) do
     {:ok, message} = Messages.create_message(message_params)
 
@@ -277,6 +283,7 @@ defmodule Glific.Communications.WebMessage do
     |> Contacts.create_location()
 
     publish_and_process({:ok, message}, message_params.organization_id)
+    {:ok, message}
   end
 
   @spec publish_and_process({:ok, Message.t()} | {:error, any()}, non_neg_integer()) ::
@@ -297,8 +304,12 @@ defmodule Glific.Communications.WebMessage do
     nil
   end
 
-  defp publish_data({:ok, message}, data_type, organization_id),
-    do: Communications.publish_data(message, data_type, organization_id)
+  defp publish_data({:ok, message}, data_type, organization_id) do
+    message
+    |> Repo.preload(:contact)
+    |> Communications.publish_data(data_type, organization_id)
+    |> Communications.publish_simulator(data_type)
+  end
 
   @spec create_message_metadata(Contact.t(), map()) :: map()
   defp create_message_metadata(contact, message_params) do

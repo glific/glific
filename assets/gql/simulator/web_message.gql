@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation simulatorWebMessage($input: SimulatorWebMessageInput!) {
+  simulatorWebMessage(input: $input) {
+    ...SimulatorWebMessageFields
+
+    ...ErrorFields
+  }
+}

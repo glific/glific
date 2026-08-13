@@ -3,7 +3,7 @@ defmodule Glific.Communications do
   Glific interface for all provider communication
   """
 
-  alias Glific.Partners
+  alias Glific.{Contacts, Messages.Message, Partners}
   require Logger
 
   @doc """
@@ -50,4 +50,25 @@ defmodule Glific.Communications do
 
     data
   end
+
+  @doc """
+  Publish an extra `sent_simulator_message` / `received_simulator_message` subscription event
+  when `message.contact` (must be preloaded) is a simulator contact, so the console's simulator
+  view gets a live feed regardless of which channel (WhatsApp or web) the message travels on.
+  """
+  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
+  def publish_simulator(message, type) when type in [:sent_message, :received_message] do
+    if Contacts.simulator_contact?(message.contact.phone) do
+      message_type =
+        if type == :sent_message,
+          do: :sent_simulator_message,
+          else: :received_simulator_message
+
+      publish_data(message, message_type, message.organization_id)
+    end
+
+    message
+  end
+
+  def publish_simulator(message, _type), do: message
 end

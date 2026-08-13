@@ -115,7 +115,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     # guessed/duplicate value from the payload) could collide with a real BSP id or silently
     # drop the browser's own message on create_message/1 failure. Leave it nil — Postgres
     # allows many nulls under that unique index.
-    :ok =
+    {:ok, _message} =
       WebMessage.receive_message(
         %{
           sender: %{phone: contact.phone},
@@ -136,7 +136,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     contact = socket.assigns.current_contact
     caption = params["caption"]
 
-    :ok =
+    {:ok, _message} =
       WebMessage.receive_message(
         %{
           sender: %{phone: contact.phone},
@@ -159,7 +159,7 @@ defmodule GlificWeb.WebChannel.RoomChannel do
   def handle_in("new_location_message", %{"latitude" => lat, "longitude" => lng}, socket) do
     contact = socket.assigns.current_contact
 
-    :ok =
+    {:ok, _message} =
       WebMessage.receive_message(
         %{
           sender: %{phone: contact.phone},

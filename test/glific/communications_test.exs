@@ -521,4 +521,36 @@ defmodule Glific.CommunicationsTest do
              }) == 1
     end
   end
+
+  describe "publish_simulator/2" do
+    test "returns the message unchanged for a non-simulator contact", attrs do
+      contact = Fixtures.contact_fixture(%{organization_id: attrs.organization_id})
+      message = Fixtures.message_fixture(%{receiver_id: contact.id}) |> Repo.preload(:contact)
+
+      assert Communications.publish_simulator(message, :sent_message) == message
+    end
+
+    test "returns the message unchanged for a simulator contact (fan-out is a side effect)",
+         attrs do
+      simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
+      {:ok, simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
+
+      message =
+        Fixtures.message_fixture(%{
+          receiver_id: simulator.id,
+          organization_id: attrs.organization_id
+        })
+        |> Repo.preload(:contact)
+
+      assert Communications.publish_simulator(message, :sent_message) == message
+      assert Communications.publish_simulator(message, :received_message) == message
+    end
+
+    test "is a no-op for a data type outside sent/received_message", attrs do
+      contact = Fixtures.contact_fixture(%{organization_id: attrs.organization_id})
+      message = Fixtures.message_fixture(%{receiver_id: contact.id}) |> Repo.preload(:contact)
+
+      assert Communications.publish_simulator(message, :some_other_topic) == message
+    end
+  end
 end

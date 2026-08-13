@@ -11,6 +11,7 @@ defmodule Glific.Providers.Web.Message do
 
   @behaviour Glific.Providers.MessageBehaviour
 
+  alias Glific.Contacts
   alias Glific.Messages
   alias Glific.Messages.Message
   alias GlificWeb.WebChannel.MessageSerializer
@@ -80,15 +81,24 @@ defmodule Glific.Providers.Web.Message do
   defp deliver(message, _attrs) do
     topic = "web_channel:#{message.contact_id}"
 
-    if connected?(topic) do
-      GlificWeb.Endpoint.broadcast(topic, "new_message", MessageSerializer.serialize(message))
-      Messages.update_message(message, %{status: :sent, bsp_status: :delivered})
-    else
-      Logger.info(
-        "Web channel contact #{message.contact_id} not connected; message #{message.id} stored undelivered"
-      )
+    cond do
+      connected?(topic) ->
+        GlificWeb.Endpoint.broadcast(topic, "new_message", MessageSerializer.serialize(message))
+        Messages.update_message(message, %{status: :sent, bsp_status: :delivered})
 
-      Messages.update_message(message, %{status: :sent, bsp_status: :error})
+      Contacts.simulator_contact?(message.contact.phone) ->
+        # The flow preview simulator (contract §13) drives this message through the
+        # `simulatorWebMessage` mutation and watches it via the `sentSimulatorMessage` /
+        # `receivedSimulatorMessage` subscriptions — a console tab never joins this topic's
+        # Presence, so an empty presence list here is expected, not a real delivery failure.
+        Messages.update_message(message, %{status: :sent, bsp_status: :delivered})
+
+      true ->
+        Logger.info(
+          "Web channel contact #{message.contact_id} not connected; message #{message.id} stored undelivered"
+        )
+
+        Messages.update_message(message, %{status: :sent, bsp_status: :error})
     end
   end
 

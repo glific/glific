@@ -138,6 +138,45 @@ defmodule Glific.Communications.WebMessageTest do
     end
   end
 
+  describe "simulator contacts (contract §13.3)" do
+    test "an outbound send to a simulator contact is marked delivered, not error", %{
+      organization_id: organization_id
+    } do
+      simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
+      {:ok, simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
+
+      {:ok, message} =
+        Messages.create_and_send_message(%{
+          body: "hello simulator",
+          type: :text,
+          channel: "web",
+          receiver_id: simulator.id,
+          organization_id: organization_id
+        })
+
+      sent_message = Messages.get_message!(message.id)
+      assert sent_message.bsp_status == :delivered
+      assert sent_message.status == :sent
+    end
+
+    test "an inbound web message from a simulator contact is persisted normally", %{
+      organization_id: organization_id
+    } do
+      simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
+
+      {:ok, message} =
+        WebMessage.receive_message(%{
+          sender: %{phone: simulator_phone},
+          organization_id: organization_id,
+          body: "hi from simulator"
+        })
+
+      assert message.body == "hi from simulator"
+      assert message.channel == "web"
+      assert message.flow == :inbound
+    end
+  end
+
   describe "blocks unsupported-channel fallback (Messages.create_and_send_message/1)" do
     test "sends the derived body as plain text and raises a flow notification", %{
       organization_id: organization_id
@@ -322,7 +361,7 @@ defmodule Glific.Communications.WebMessageTest do
     } do
       phone = Faker.Phone.EnUs.phone()
 
-      :ok =
+      {:ok, _message} =
         WebMessage.receive_message(%{
           sender: %{phone: phone, organization_id: organization_id},
           organization_id: organization_id,
@@ -345,7 +384,7 @@ defmodule Glific.Communications.WebMessageTest do
     } do
       phone = Faker.Phone.EnUs.phone()
 
-      :ok =
+      {:ok, _message} =
         WebMessage.receive_message(
           %{
             sender: %{phone: phone, organization_id: organization_id},
@@ -377,7 +416,7 @@ defmodule Glific.Communications.WebMessageTest do
     } do
       phone = Faker.Phone.EnUs.phone()
 
-      :ok =
+      {:ok, _message} =
         WebMessage.receive_message(
           %{
             sender: %{phone: phone, organization_id: organization_id},

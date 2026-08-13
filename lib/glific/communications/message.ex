@@ -371,29 +371,8 @@ defmodule Glific.Communications.Message do
       data_type,
       message.organization_id
     )
-    |> publish_simulator(data_type)
+    |> Communications.publish_simulator(data_type)
   end
-
-  # check if the contact is simulator and send another subscription only for it
-  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
-  defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
-    if Contacts.simulator_contact?(message.contact.phone) do
-      message_type =
-        if type == :sent_message,
-          do: :sent_simulator_message,
-          else: :received_simulator_message
-
-      Communications.publish_data(
-        message,
-        message_type,
-        message.organization_id
-      )
-    end
-
-    message
-  end
-
-  defp publish_simulator(message, _type), do: message
 
   # lets have a default timeout of 5 seconds for each call
   @timeout 5000

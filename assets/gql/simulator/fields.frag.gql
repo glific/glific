@@ -1,0 +1,20 @@
+fragment SimulatorWebMessageFields on SimulatorWebMessageResult {
+  message {
+    id
+    body
+    type
+    channel
+    interactiveContent
+    contact {
+      id
+      phone
+    }
+  }
+}
+
+fragment ErrorFields on SimulatorWebMessageResult {
+  errors {
+    key
+    message
+  }
+}
