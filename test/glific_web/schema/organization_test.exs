@@ -643,6 +643,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert services["whatsapp_forms_enabled"] == false
     assert services["certificate_enabled"] == false
     assert services["template_v2_enabled"] == false
+    assert services["template_library_enabled"] == false
+    assert services["ai_evaluation_v2_enabled"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do

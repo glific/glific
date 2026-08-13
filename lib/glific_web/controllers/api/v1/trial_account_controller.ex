@@ -13,6 +13,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
     Contacts,
     Contacts.Contact,
     Mails.TrialAccountMail,
+    OTP,
     Partners,
     Partners.Organization,
     Partners.Saas,
@@ -24,7 +25,6 @@ defmodule GlificWeb.API.V1.TrialAccountController do
 
   alias Ecto.Multi
   alias Glific.Metrics
-  alias GlificWeb.API.V1.RegistrationController
 
   import Ecto.Query
 
@@ -35,8 +35,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
   def trial(conn, params) do
     phone = params["phone"]
 
-    with {:ok, _message} <-
-           RegistrationController.verify_otp(phone, params["otp"]),
+    with :ok <- OTP.verify_code(:trial, phone, params["otp"]),
          {:ok, result} <- allocate_trial_account(phone, params) do
       organization = result.update_organization
 
@@ -50,7 +49,7 @@ defmodule GlificWeb.API.V1.TrialAccountController do
         }
       })
     else
-      {:error, error_list} when is_list(error_list) ->
+      {:error, reason} when is_atom(reason) ->
         conn
         |> put_status(400)
         |> json(%{

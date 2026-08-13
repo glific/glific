@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   alias Glific.Templates
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+  alias GlificWeb.Schema.Middleware.RequireFeatureFlag
 
   object :session_template_result do
     field :session_template, :session_template
@@ -170,6 +171,18 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :language_id, :id
   end
 
+  @desc "An entry from Meta's pre-approved WhatsApp template library (Gupshup partner API passthrough). Read-only — not a persisted SessionTemplate."
+  object :template_library_entry do
+    field :element_name, :string
+    field :category, :string
+    field :body, :string
+    field :language_code, :string
+    field :industry, :string
+    field :topic, :string
+    field :usecase, :string
+    field :container_meta, :json
+  end
+
   object :session_template_queries do
     field :whatsapp_hsm_categories, list_of(:string) do
       middleware(Authorize, :manager)
@@ -199,6 +212,13 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:filter, :session_template_filter)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Templates.count_session_templates/3)
+    end
+
+    @desc "Browse Meta's pre-approved WhatsApp template library, fetched live from the BSP partner API"
+    field :template_library, list_of(:template_library_entry) do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:is_template_library_enabled, "Template Library"})
+      resolve(&Resolvers.Templates.template_library/3)
     end
   end
 

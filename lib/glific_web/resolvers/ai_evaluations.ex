@@ -11,7 +11,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     Assistants.AssistantConfigVersion,
+    Flags,
     Metrics,
+    Partners,
     Repo,
     ThirdParty.Kaapi
   }
@@ -52,6 +54,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
   @ai_evaluation_create_failure_metric "AI Evaluation Create Failure"
+  @improve_prompt_request_metric "AI Evaluation Improve Prompt Requested"
+  @improve_prompt_failure_metric "AI Evaluation Improve Prompt Request Failure"
 
   @doc """
   List AI evaluations from the database.
@@ -108,7 +112,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
          :ok <- validate_golden_qa_question_limit(row_count, factor),
-         {:ok, kaapi_dataset} <- Kaapi.upload_evaluation_dataset(dataset, user.organization_id) do
+         {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
       {:error, :timeout} ->
@@ -139,6 +143,17 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @spec upload_dataset(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  defp upload_dataset(dataset, organization_id) do
+    organization = Partners.organization(organization_id)
+
+    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      Kaapi.upload_evaluation_dataset_v2(dataset, organization.id)
+    else
+      Kaapi.upload_evaluation_dataset(dataset, organization.id)
+    end
+  end
+
   @spec create_golden_qa_record(map(), String.t(), Plug.Upload.t(), integer(), map()) ::
           {:ok, %{golden_qa: GoldenQA.t()}} | {:ok, %{errors: [%{message: String.t()}]}}
   defp create_golden_qa_record(kaapi_dataset, name, file, factor, user) do
@@ -147,7 +162,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            dataset_id: kaapi_dataset.dataset_id,
            duplication_factor: factor,
            file_name: file.filename,
-           organization_id: user.organization_id
+           organization_id: user.organization_id,
+           total_items: Map.get(kaapi_dataset, :total_items, 0)
          }) do
       {:ok, golden_qa} ->
         {:ok, %{golden_qa: golden_qa}}
@@ -193,7 +209,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   defp validate_csv_structure(%{path: path}) do
     path
     |> File.stream!()
-    |> CSV.decode(headers: false, escape_max_lines: 50)
+    |> CSV.decode(headers: false, escape_max_lines: 1000)
     |> Enum.reduce_while({:await_header, 0}, fn
       {:ok, row}, {:await_header, _} ->
         if row == ["question", "answer"] do
@@ -234,11 +250,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   @spec validate_golden_qa_name(String.t()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_name(name) do
-    if Regex.match?(~r/^[a-z0-9_]+$/, name) do
-      :ok
-    else
-      {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
-    end
+    if Regex.match?(~r/^[a-z0-9_]+$/, name),
+      do: :ok,
+      else: {:error, "Name can only contain lowercase alphanumeric characters and underscores"}
   end
 
   @spec validate_duplication_factor(integer()) :: :ok | {:error, String.t()}
@@ -282,6 +296,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
           name: golden_qa.name,
           duplication_factor: golden_qa.duplication_factor,
           file_name: golden_qa.file_name,
+          total_items: golden_qa.total_items,
           inserted_at: golden_qa.inserted_at,
           updated_at: golden_qa.updated_at
         }
@@ -425,6 +440,43 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, _} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "An unknown error occurred, please contact Glific support."}
+    end
+  end
+
+  @doc """
+  Requests a v2 (native-judge) prompt improvement from Kaapi for a completed
+  evaluation. Returns `status: "pending"`; Kaapi's callback creates the new
+  config version asynchronously.
+  """
+  @spec improve_evaluation_prompt(map(), map(), map()) :: {:ok, map()}
+  def improve_evaluation_prompt(_, %{evaluation_id: evaluation_id}, %{
+        context: %{current_user: user}
+      }) do
+    case AIEvaluations.request_improve_prompt(evaluation_id, user.organization_id) do
+      {:ok, status} ->
+        Metrics.increment(@improve_prompt_request_metric, user.organization_id)
+        {:ok, %{improve_prompt: status}}
+
+      {:error, [_, "Resource not found"]} ->
+        {:ok, %{errors: [%{message: "Evaluation not found."}]}}
+
+      {:error, :timeout} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: "Timeout occurred, please try again."}]}}
+
+      {:error, %{body: %{:error => error}}} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: error}]}}
+
+      {:error, msg} when is_binary(msg) ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+        {:ok, %{errors: [%{message: msg}]}}
+
+      {:error, _} ->
+        Metrics.increment(@improve_prompt_failure_metric, user.organization_id)
+
+        {:ok,
+         %{errors: [%{message: "An unknown error occurred, please contact Glific support."}]}}
     end
   end
 end

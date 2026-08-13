@@ -71,6 +71,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :dataset_id, :integer
     field :file_name, :string
     field :signed_url, :string
+    field :total_items, :integer
     field :inserted_at, :datetime
     field :updated_at, :datetime
   end
@@ -97,6 +98,15 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
 
   object :evaluation_scores_result do
     field :scores, :json
+    field :errors, list_of(:result_error)
+  end
+
+  object :improve_prompt do
+    field :status, :string
+  end
+
+  object :improve_prompt_result do
+    field :improve_prompt, :improve_prompt
     field :errors, list_of(:result_error)
   end
 
@@ -191,6 +201,15 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.create_evaluation/3)
+    end
+
+    @desc "Request a v2 (native-judge) prompt improvement for a completed evaluation"
+    field :improve_evaluation_prompt, :improve_prompt_result do
+      arg(:evaluation_id, non_null(:id))
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
+      resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
     end
   end
 end
