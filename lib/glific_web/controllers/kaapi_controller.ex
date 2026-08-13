@@ -6,6 +6,7 @@ defmodule GlificWeb.KaapiController do
   use GlificWeb, :controller
   require Logger
 
+  alias Glific.AIEvaluations
   alias Glific.Assistants
   alias Glific.PromptGenerator
 
@@ -28,6 +29,31 @@ defmodule GlificWeb.KaapiController do
   @spec prompt_generation_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def prompt_generation_callback(conn, params) do
     PromptGenerator.handle_callback(params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after an assistant chat `send_message/3`
+  dispatch completes. Always returns 200 — same posture as `prompt_generation_callback/2`.
+  """
+  @spec assistant_chat_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def assistant_chat_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    Assistants.handle_assistant_chat_callback(organization_id, params)
+    send_resp(conn, 200, "")
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi after v2 evaluation prompt-improvement completes.
+
+  Always returns 200 — Kaapi does not retry on non-2xx, and job_id is treated as an
+  unguessable token (matching the auth posture of the other Kaapi callbacks above).
+  """
+  @spec improve_prompt_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def improve_prompt_callback(conn, params) do
+    AIEvaluations.handle_improve_prompt_callback(params)
     send_resp(conn, 200, "")
   end
 end

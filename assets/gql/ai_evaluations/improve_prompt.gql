@@ -1,0 +1,10 @@
+mutation improveEvaluationPrompt($evaluationId: ID!) {
+  improveEvaluationPrompt(evaluationId: $evaluationId) {
+    improvePrompt {
+      status
+    }
+    errors {
+      message
+    }
+  }
+}
