@@ -100,9 +100,9 @@ defmodule Glific.Templates.Blocks do
   def unwrap(envelope), do: envelope
 
   @spec unwrap_node(term()) :: term()
-  defp unwrap_node(%{"kind" => _kind, "value" => value} = node) do
-    if Map.keys(node) -- @typed_node_keys == [] do
-      unwrap_node(value)
+  defp unwrap_node(%{"kind" => _kind} = node) do
+    if typed_node?(node) do
+      unwrap_node(node["value"])
     else
       Map.new(node, fn {k, v} -> {k, unwrap_node(v)} end)
     end
@@ -111,6 +111,17 @@ defmodule Glific.Templates.Blocks do
   defp unwrap_node(map) when is_map(map), do: Map.new(map, fn {k, v} -> {k, unwrap_node(v)} end)
   defp unwrap_node(list) when is_list(list), do: Enum.map(list, &unwrap_node/1)
   defp unwrap_node(value), do: value
+
+  # A map counts as a typed node (contract §2.2) only when its keys are a subset of
+  # {kind, value, translate} — a "kind"-carrying map with extra keys (e.g. a near-miss the
+  # §2.1 validator would reject at save) is walked into as a plain map instead. `unwrap_node/1`
+  # and `collect_text_values/1` (used by `derive_body/1`, contract §9) both call this so they
+  # can't drift from each other, the way they did before this predicate was factored out.
+  @spec typed_node?(term()) :: boolean()
+  defp typed_node?(%{"kind" => _kind, "value" => _value} = node),
+    do: Map.keys(node) -- @typed_node_keys == []
+
+  defp typed_node?(_node), do: false
 
   @doc """
   The derived message body (contract §9), replacing the removed `fallback` field.
@@ -136,27 +147,32 @@ defmodule Glific.Templates.Blocks do
   def derive_body(_content), do: ""
 
   @spec collect_text_values(term()) :: [String.t()]
-  defp collect_text_values(%{"kind" => "text", "value" => value}) when is_binary(value),
-    do: [value]
-
-  defp collect_text_values(%{"kind" => "list", "value" => value}) when is_list(value),
-    do: collect_text_values(value)
-
-  defp collect_text_values(%{"kind" => _other_kind}), do: []
-
   defp collect_text_values(map) when is_map(map) do
-    # Sorted, not authored, key order (contract §9): authored order cannot survive jsonb
-    # normalisation on write plus Elixir's flatmap decode on read, so sorted order is the only
-    # rule all four repos can implement identically.
-    map
-    |> Enum.sort_by(fn {key, _value} -> key end)
-    |> Enum.flat_map(fn {_key, value} -> collect_text_values(value) end)
+    if typed_node?(map) do
+      collect_typed_node_text(map)
+    else
+      # Sorted, not authored, key order (contract §9): authored order cannot survive jsonb
+      # normalisation on write plus Elixir's flatmap decode on read, so sorted order is the
+      # only rule all four repos can implement identically.
+      map
+      |> Enum.sort_by(fn {key, _value} -> key end)
+      |> Enum.flat_map(fn {_key, value} -> collect_text_values(value) end)
+    end
   end
 
   defp collect_text_values(list) when is_list(list),
     do: Enum.flat_map(list, &collect_text_values/1)
 
   defp collect_text_values(_scalar), do: []
+
+  @spec collect_typed_node_text(map()) :: [String.t()]
+  defp collect_typed_node_text(%{"kind" => "text", "value" => value}) when is_binary(value),
+    do: [value]
+
+  defp collect_typed_node_text(%{"kind" => "list", "value" => value}) when is_list(value),
+    do: collect_text_values(value)
+
+  defp collect_typed_node_text(%{"kind" => _other_kind}), do: []
 
   @doc """
   Collect every `text`/`alt` typed node under `content["props"]`, paired with its path (contract
@@ -828,6 +844,10 @@ defmodule Glific.Templates.Blocks do
     if summary == "", do: "Form submitted with no responses", else: summary
   end
 
+  # `String.length/1` and `String.slice/3` count graphemes; the two TS implementations count
+  # UTF-16 code units. This is an accepted, documented divergence (contract §9), not a bug to
+  # close — it only surfaces on a >500-char body with a combining sequence at the truncation
+  # boundary, and only the backend's value is persisted.
   @spec clamp(String.t(), non_neg_integer()) :: String.t()
   defp clamp(text, max_length) when is_binary(text) do
     if String.length(text) > max_length,

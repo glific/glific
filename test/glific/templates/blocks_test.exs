@@ -742,6 +742,47 @@ defmodule Glific.Templates.BlocksTest do
 
       assert String.length(Blocks.derive_body(envelope)) == 500
     end
+
+    # A near-miss node (kind + value, plus an extra key) is not a typed node under §2.2's
+    # predicate, so it is walked into as a plain map instead of read as a text leaf — matching
+    # `unwrap/1`'s behaviour and the two TS derivations, which both recurse rather than collapse.
+    test "walks into a near-miss typed node as a plain map instead of reading its own 'value'" do
+      envelope =
+        put_in(@org_envelope, ["props", "outer"], %{
+          "kind" => "text",
+          "value" => "skipped",
+          "extra" => 1,
+          "inner" => %{"kind" => "text", "value" => "kept"}
+        })
+
+      assert Blocks.derive_body(envelope) == "kept"
+    end
+
+    # Pins the exact regression the floweditor agent found: `unwrap/1` and `derive_body/1` must
+    # agree on which nodes are typed, since two of the three implementations of this predicate
+    # (the TS ones) run on payloads the backend never validated.
+    test "agrees with unwrap/1 on whether a near-miss node is a typed leaf or a plain map" do
+      near_miss_node = %{
+        "kind" => "text",
+        "value" => "skipped",
+        "extra" => 1,
+        "inner" => %{"kind" => "text", "value" => "kept"}
+      }
+
+      envelope = put_in(@org_envelope, ["props", "outer"], near_miss_node)
+
+      # `unwrap/1` recurses into the near-miss node as a plain map too — its nested typed
+      # "inner" node collapses to its own value, proving the outer node itself was walked, not
+      # read for its own "kind"/"value".
+      assert Blocks.derive_body(envelope) == "kept"
+
+      assert Blocks.unwrap(envelope)["props"]["outer"] == %{
+               "kind" => "text",
+               "value" => "skipped",
+               "extra" => 1,
+               "inner" => "kept"
+             }
+    end
   end
 
   describe "collect_translatable_nodes/1 and put_translated_nodes/2" do
