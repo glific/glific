@@ -606,7 +606,10 @@ defmodule Glific.AIEvaluationsTest do
       assert {:ok, new_config_version} =
                AIEvaluations.handle_improve_prompt_callback(params)
 
+      assert new_config_version.model == "gpt-5.6-luna"
+      assert new_config_version.prompt == "You are a helpful assistant."
       assert new_config_version.settings == %{"effort" => "high"}
+      refute Map.has_key?(new_config_version.settings, "temperature")
     end
 
     test "failure callback has no config_id to attribute to, so it just acknowledges", %{

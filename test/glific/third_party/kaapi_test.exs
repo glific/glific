@@ -286,6 +286,7 @@ defmodule Glific.ThirdParty.KaapiTest do
                  "top_p" => 1,
                  "max_output_tokens" => 2048
                }
+
         %Tesla.Env{
           status: 200,
           body: %{
@@ -308,7 +309,7 @@ defmodule Glific.ThirdParty.KaapiTest do
       assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)
     end
 
-    test "forwards effort/summary settings for a reasoning model, without a stray temperature" do
+    test "forwards effort settings for a reasoning model, without a stray temperature" do
       mock(fn %Tesla.Env{method: :post, body: body} ->
         completion_params = Jason.decode!(body)["config_blob"]["completion"]["params"]
 
@@ -316,8 +317,7 @@ defmodule Glific.ThirdParty.KaapiTest do
                  "model" => "gpt-5.1",
                  "instructions" => "You are a helpful assistant",
                  "knowledge_base_ids" => [],
-                 "effort" => "none",
-                 "summary" => "auto"
+                 "effort" => "none"
                }
 
         %Tesla.Env{
@@ -336,7 +336,7 @@ defmodule Glific.ThirdParty.KaapiTest do
         prompt: "You are a helpful assistant",
         description: "Assistant configuration",
         knowledge_base_ids: [],
-        settings: %{"effort" => "none", "summary" => "auto"}
+        settings: %{"effort" => "none"}
       }
 
       assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)

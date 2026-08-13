@@ -883,7 +883,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
   defp fetch_and_cache_models(organization_id, cache_key) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, models} <- fetch_all_model_pages(secrets["api_key"]) do
+         {:ok, models} <- fetch_all_models(secrets["api_key"]) do
       # avoid caching a transient empty result for @models_cache_ttl_hours
       if models != [], do: Caches.put_global(cache_key, models, @models_cache_ttl_hours)
       {:ok, models}
@@ -936,14 +936,15 @@ defmodule Glific.ThirdParty.Kaapi do
     )
   end
 
-  @spec fetch_all_model_pages(String.t()) :: {:ok, list(map())} | {:error, any()}
-  defp fetch_all_model_pages(api_key) do
+  @spec fetch_all_models(String.t()) :: {:ok, list(map())} | {:error, any()}
+  defp fetch_all_models(api_key) do
     with {:ok, body} <-
-           ApiClient.list_models(%{provider: @models_provider, skip: 0, limit: 100}, api_key) do
-      case body do
-        %{data: %{data: page}} -> {:ok, page}
-        other -> {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
-      end
+           ApiClient.list_models(%{provider: @models_provider}, api_key),
+         %{data: %{data: page}} <- body do
+      {:ok, page}
+    else
+      {:error, reason} -> {:error, reason}
+      other -> {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
     end
   end
 
