@@ -409,10 +409,21 @@ a non-web trigger.
 `fallback` is gone. Authors no longer write WhatsApp plain text for a web-only message. The
 `messages.body` column is still populated, by **derivation from the typed payload**:
 
-> Walk the payload in document order; concatenate the `value` of each `kind: "text"` node,
+> Walk `props` in **sorted key order** — at each map level, visit keys sorted bytewise ascending;
+> list elements keep their array order. Concatenate the `value` of each `kind: "text"` node,
 > joined with `" — "`, clamped to 500 chars. **`kind: "alt"` nodes are skipped** — see §2.1.
 > **Text nodes whose value is empty or whitespace-only are dropped before the join**, so a blank
 > authored field never produces a leading, trailing or doubled `" — "`.
+
+**Why sorted order and not authored order.** Authored key order cannot survive the round trip, so
+no implementation can honour it. `interactive_templates.interactive_content` is `jsonb`, which
+normalises object keys on write (length, then bytewise). Postgrex then decodes into an Elixir map,
+and a map of ≤32 keys is a flatmap iterating in Erlang term order — bytewise ascending — which is
+also the order `Jason` re-emits when the API serialises it. Three layers, three orderings, none of
+them the author's. Sorted order is the one rule all four repos can implement identically, and it is
+what the backend already produces. The visible cost is that a carousel derives
+`"Six weeks, evenings — Course A"` rather than title-first; the alternative is a preview that
+disagrees with the inbox, which is worse.
 
 The derivation itself returns `""` when a payload has no text nodes. Substituting a readable
 placeholder is the *render site's* job (the floweditor canvas must never render blank), so that the
