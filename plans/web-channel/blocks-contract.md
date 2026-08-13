@@ -542,3 +542,95 @@ Elsewhere:
 - jsonb writes: do **not** `Jason.encode!` before handing a map to Postgrex for a jsonb column —
   it stores the string as a jsonb scalar. Bit us once on `mark_answered/2`.
 - `ChatConversations/MessageType` in the console — closed set naming enum members.
+
+## 13. Flow preview simulator (dual-channel)
+
+The floweditor's Preview button opens a draggable panel with **two tabs, WhatsApp and Web**, so an
+author can exercise a flow on either channel. Tabs are enabled from the flow's derived channels
+(§11): a `:web_message` flow disables the WhatsApp tab, and a flow whose derivation says WhatsApp-
+only disables the Web tab.
+
+### 13.1 Why a mutation and not a socket
+
+The engine's channel fork is driven entirely by the **inbound message's `channel` column**:
+`message.channel` → `ConsumerFlow.start_new_flow` → `FlowContext.init_context` →
+`ContactAction` → `Messages.check_for_hsm_message` → `route_blocks_message`. So a single inbound
+message with `channel: "web"` makes the whole flow take the web branch and a `blocks` node fire.
+
+The WhatsApp simulator produces inbound by **forging a Gupshup BSP webhook**
+(`axios.post(GUPSHUP_CALLBACK_URL, …)`), which by construction can only ever yield WhatsApp inbound.
+The only other producer of web inbound is `RoomChannel.handle_in/3`, which needs a **contact** token
+while the console holds a **staff** token.
+
+Rather than mint contact tokens for staff sessions — a 24h credential that can read a contact's
+whole history and post arbitrary inbound — the console gets a staff-authenticated mutation that
+funnels into the **same** `Communications.WebMessage.receive_message/2`. Blocks correlation, the
+atomic single-submit and envelope validation all live *below* the channel layer, so this duplicates
+no business logic. What the simulator then does not exercise is the socket transport, `Presence`,
+and `MessageSerializer` — none of which is what a flow author is previewing.
+
+### 13.2 The frozen mutation interface
+
+```graphql
+input SimulatorWebMessageInput {
+  contactId: ID!            # must be a simulator contact of the caller's org
+  type: MessageTypeEnum!    # TEXT | IMAGE | AUDIO | VIDEO | DOCUMENT | LOCATION | BLOCKS_RESPONSE
+  body: String              # text body, or media caption
+  url: String               # media only — an already-hosted URL (staff `uploadMedia` returns one)
+  contentType: String       # media only
+  latitude: Float           # location only
+  longitude: Float          # location only
+  messageId: ID             # blocks_response only — the outbound :blocks message being answered
+  component: String         # blocks_response only
+  values: Json              # blocks_response only
+  summary: String           # blocks_response only
+  context: Json             # blocks_response only
+}
+
+simulatorWebMessage(input: SimulatorWebMessageInput!): SimulatorWebMessageResult
+# → { message: Message, errors: [InputError] }   — standard Glific mutation shape
+```
+
+`Json` is the existing scalar at `generic_types.ex:69`. The resolver **must** reject a
+`contactId` that is not `Contacts.simulator_contact?/1` in the caller's org, and mirror
+`RoomChannel.handle_in/3` clause-for-clause rather than adding logic.
+
+### 13.3 Supporting backend changes
+
+- **Simulator fan-out on the web path.** `publish_simulator/2` lives only in
+  `Communications.Message`; `WebMessage` publishes through the bare `Communications.publish_data/3`,
+  so a web message to a simulator contact never emits `sentSimulatorMessage` /
+  `receivedSimulatorMessage` and the console would see nothing. Extract it and call it from
+  `WebMessage`'s publish sites.
+- **No false delivery errors.** `Providers.Web.Message.deliver/2` marks a message
+  `bsp_status: :error` when `Presence.list(topic)` is empty, which is always true for a console tab
+  with no browser attached. Suppress for simulator contacts.
+- **`channel` on the simulator fragment.** `SIMULATOR_MESSAGE_FRAGMENT` omits `channel`, so the two
+  tabs cannot filter their own transcripts and would show a merged history. Add it.
+
+### 13.4 Tab switching resets the simulator
+
+`channel` is fixed when a flow context is created (`init_context`) and never updated, so a flow
+started on one tab keeps that channel for its whole life. Switching tabs mid-flow would send web
+inbound into a WhatsApp-channelled context, where a blocks node silently takes the §8 plain-text
+fallback. **A tab switch therefore clears the simulator** via the existing `clearMessages` mutation
+(`Messages.clear_messages/1` deletes messages, resets contact fields, and completes open flows),
+behind a confirm, because it wipes the other tab's transcript.
+
+Both tabs share one simulator contact — the pool in `Glific.State.Simulator` is phone-prefix based
+and has no per-channel notion.
+
+### 13.5 Deliberate difference between the tabs
+
+The WhatsApp tab answers a blocks message with its **summary text**, because that is all the BSP
+callback shape can carry — the existing documented stopgap. The Web tab answers through the real
+`blocks_response` path, so `@results.<key>.<field>` is populated properly. The two tabs therefore
+prove different things, and only the Web tab proves the blocks response contract.
+
+### 13.6 Real attachments replace canned media
+
+The WhatsApp simulator's paperclip currently sends five **hardcoded sample URLs**
+(`SAMPLE_MEDIA_FOR_SIMULATOR`). The shared composer uses the staff `uploadMedia` mutation and file
+picker instead — no contact token needed, and it returns a hosted URL that both the Gupshup callback
+payload and `SimulatorWebMessageInput.url` accept. This fixes the canned-media limitation in the
+WhatsApp tab as a side effect.
