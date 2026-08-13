@@ -425,6 +425,20 @@ what the backend already produces. The visible cost is that a carousel derives
 `"Six weeks, evenings — Course A"` rather than title-first; the alternative is a preview that
 disagrees with the inbox, which is worse.
 
+**The derivation uses the same node predicate as §2.2** — a map counts as a typed node only when
+its keys are a subset of `{kind, value, translate}`. A near-miss map carrying `kind` alongside other
+keys is walked into as a plain map, exactly as the unwrapper does, so all four repos treat
+`{"kind":"text","value":"a","inner":T("b")}` identically. (§2.1 already rejects such a payload at
+save, so this is defence in depth — but the three derivations must agree regardless, since two of
+them run on payloads the backend never validated.)
+
+**Accepted divergence: clamp units.** The 500-char clamp is graphemes in Elixir (`String.slice/2`)
+and UTF-16 code units in the two TS implementations. These agree for all ASCII and diverge only for
+a body that both exceeds 500 characters and has a combining sequence straddling the boundary, where
+the two may differ by a character or two at the truncation point. Only the backend's value is
+persisted; the TS ones are previews. Not worth an `Intl.Segmenter` dependency in floweditor's
+toolchain to close.
+
 The derivation itself returns `""` when a payload has no text nodes. Substituting a readable
 placeholder is the *render site's* job (the floweditor canvas must never render blank), so that the
 derivation stays byte-identical across all four repos.
