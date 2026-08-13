@@ -199,8 +199,8 @@ New clause in `router.ex`'s `update_context_results/4` cond, alongside `[:quick_
 ```elixir
 msg.type in [:blocks_response] ->
   json =
-    default_results                                  # "input" (= summary), "category", "inserted_at"
-    |> Map.merge(normalized_values)                  # the values map, flattened in
+    normalized_values                                # the values map, flattened in
+    |> Map.merge(default_results)                    # "input" (= summary), "category", "inserted_at"
     |> Map.put("summary", summary)
     |> Map.put("component", component)
 
@@ -223,6 +223,16 @@ The one that actually bites is `input`: it silently replaces what a bare `@resul
 resolves to, so the author's summary vanishes with no error. `value` is the second — `bound/1` in
 `MessageVarParser` unwraps a map result to `substitution["value"]`. Validated in **both** the
 backend (`Glific.Templates.Blocks`) and the console editor, with the same message.
+
+**This check applies at template save, to author-chosen ids only. It is NOT applied to inbound
+response `values` keys.** A Custom Block's renderer is written by the org, and rejecting a
+widget-generated key would refuse the answer outright and re-open the block with an error — the
+widget's own `FallbackCard` legitimately emits `values: {"input": …}`. Inbound safety comes from
+merge order instead: `default_results` is merged **after** `normalized_values` (see the snippet
+above), so the reserved keys always win. `@results.<key>.input` is therefore always the summary and
+`.category` always the router category, whatever an org's renderer sends. The full inbound payload
+is preserved verbatim in `messages.interactive_content` regardless, so nothing is lost — an org
+that needs a colliding key in flow results renames it on their side.
 
 ### 5.2 Expression-parser limits (`MessageVarParser`)
 
@@ -349,7 +359,7 @@ Applied at template save (console + backend) and on response receipt (backend):
 | `component` format | the DNS regex in §6 |
 | `glific/*` names | must exist in the §6 catalog |
 | typed nodes | `kind` in the §2.1 set; `value` matches the kind; no keys beyond `kind`/`value`/`translate` |
-| ids | strings, unique within a block, not in the §5.1 reserved set |
+| ids | strings, unique within a block, not in the §5.1 reserved set — **at template save only**, never applied to inbound `values` keys (§5.1) |
 | `glific/*` props | validated against the block schema at save |
 | `glific/*` values | validated against the block's values shape on response |
 
