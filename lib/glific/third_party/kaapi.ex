@@ -916,21 +916,13 @@ defmodule Glific.ThirdParty.Kaapi do
     )
   end
 
-  @spec fetch_all_model_pages(String.t(), non_neg_integer(), list()) ::
-          {:ok, list(map())} | {:error, any()}
-  defp fetch_all_model_pages(api_key, skip \\ 0, acc \\ []) do
+  @spec fetch_all_model_pages(String.t()) :: {:ok, list(map())} | {:error, any()}
+  defp fetch_all_model_pages(api_key) do
     with {:ok, body} <-
-           ApiClient.list_models(%{provider: @models_provider, skip: skip, limit: 100}, api_key) do
+           ApiClient.list_models(%{provider: @models_provider, skip: 0, limit: 100}, api_key) do
       case body do
-        %{data: %{data: page}, metadata: %{has_more: has_more}} ->
-          acc = acc ++ page
-
-          if has_more,
-            do: fetch_all_model_pages(api_key, skip + 100, acc),
-            else: {:ok, acc}
-
-        other ->
-          {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
+        %{data: %{data: page}} -> {:ok, page}
+        other -> {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
       end
     end
   end

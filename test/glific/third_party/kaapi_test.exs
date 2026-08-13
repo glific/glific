@@ -120,41 +120,23 @@ defmodule Glific.ThirdParty.KaapiTest do
       :ok
     end
 
-    test "fetches every page and returns the combined model list" do
-      mock(fn %Tesla.Env{method: :get, query: query} ->
-        case query[:skip] do
-          0 ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                data: %{data: [%{provider: "openai", model_name: "gpt-4.1"}]},
-                metadata: %{has_more: true}
-              }
-            }
-
-          100 ->
-            %Tesla.Env{
-              status: 200,
-              body: %{
-                data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
-                metadata: %{has_more: false}
-              }
-            }
-        end
+    test "fetches and returns the model list" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{data: [%{provider: "openai", model_name: "gpt-4.1"}]}}
+        }
       end)
 
       assert {:ok, models} = Kaapi.list_models(1)
-      assert Enum.map(models, & &1.model_name) == ["gpt-4.1", "gpt-4o"]
+      assert Enum.map(models, & &1.model_name) == ["gpt-4.1"]
     end
 
     test "serves the cached list on a subsequent call without another Kaapi request" do
       mock(fn %Tesla.Env{method: :get} ->
         %Tesla.Env{
           status: 200,
-          body: %{
-            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
-            metadata: %{has_more: false}
-          }
+          body: %{data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]}}
         }
       end)
 
@@ -168,7 +150,7 @@ defmodule Glific.ThirdParty.KaapiTest do
 
     test "returns error and does not cache when Kaapi returns an unexpected 200 body" do
       mock(fn %Tesla.Env{method: :get} ->
-        %Tesla.Env{status: 200, body: %{data: %{data: []}, metadata: nil}}
+        %Tesla.Env{status: 200, body: %{unexpected: "shape"}}
       end)
 
       assert {:error, reason} = Kaapi.list_models(1)
@@ -178,7 +160,7 @@ defmodule Glific.ThirdParty.KaapiTest do
 
     test "returns an empty list without caching it when Kaapi has no active models" do
       mock(fn %Tesla.Env{method: :get} ->
-        %Tesla.Env{status: 200, body: %{data: %{data: []}, metadata: %{has_more: false}}}
+        %Tesla.Env{status: 200, body: %{data: %{data: []}}}
       end)
 
       assert {:ok, []} = Kaapi.list_models(1)
