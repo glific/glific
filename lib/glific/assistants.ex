@@ -1021,6 +1021,134 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Dispatches a chat message to an assistant's live Kaapi config ("Try It Out" sandbox).
+  Kaapi just queues the job; the reply arrives via the `/kaapi/assistant_chat` callback and
+  is published over the `assistant_chat_response` subscription — no history is persisted here.
+  """
+  @spec send_message(map(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def send_message(%{assistant_id: assistant_id, input: input} = params, organization_id, user_id) do
+    request_id = Ecto.UUID.generate()
+
+    with {:ok, {kaapi_uuid, kaapi_version_number}} <-
+           fetch_live_kaapi_config(assistant_id, organization_id),
+         payload =
+           build_assistant_chat_payload(
+             input,
+             params[:conversation_id],
+             kaapi_uuid,
+             kaapi_version_number,
+             organization_id,
+             user_id,
+             request_id
+           ),
+         {:ok, ack} <- Kaapi.llm_call(payload, organization_id) do
+      {:ok, %{job_id: ack.job_id, request_id: request_id, conversation_id: ack.conversation_id}}
+    end
+  end
+
+  @spec fetch_live_kaapi_config(non_neg_integer(), non_neg_integer()) ::
+          {:ok, {String.t(), non_neg_integer()}} | {:error, String.t()}
+  defp fetch_live_kaapi_config(assistant_id, organization_id) do
+    with {:ok, assistant} <-
+           Repo.fetch_by(Assistant, %{id: assistant_id, organization_id: organization_id}),
+         assistant <- Repo.preload(assistant, :active_config_version),
+         {kaapi_uuid, %AssistantConfigVersion{kaapi_version_number: kaapi_version_number}}
+         when not is_nil(kaapi_uuid) and not is_nil(kaapi_version_number) <-
+           {assistant.kaapi_uuid, assistant.active_config_version} do
+      {:ok, {kaapi_uuid, kaapi_version_number}}
+    else
+      {:error, _} -> {:error, "Assistant not found"}
+      _ -> {:error, "Assistant does not have a live config version yet"}
+    end
+  end
+
+  @spec build_assistant_chat_payload(
+          String.t(),
+          String.t() | nil,
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) :: map()
+  defp build_assistant_chat_payload(
+         input,
+         conversation_id,
+         kaapi_uuid,
+         kaapi_version_number,
+         organization_id,
+         user_id,
+         request_id
+       ) do
+    %{
+      query: %{input: input, conversation: build_conversation(conversation_id)},
+      config: %{id: kaapi_uuid, version: kaapi_version_number},
+      callback_url: build_assistant_chat_callback_url(organization_id),
+      request_metadata: %{request_id: request_id, user_id: user_id}
+    }
+  end
+
+  @spec build_conversation(String.t() | nil) :: map()
+  defp build_conversation(nil), do: %{auto_create: true}
+  defp build_conversation(conversation_id), do: %{id: conversation_id}
+
+  @spec build_assistant_chat_callback_url(non_neg_integer()) :: String.t()
+  defp build_assistant_chat_callback_url(organization_id) do
+    organization = Partners.organization(organization_id)
+    Glific.api_callback_base(organization.shortcode) <> "/kaapi/assistant_chat"
+  end
+
+  @doc """
+  Handles Kaapi's async assistant chat callback, publishing the result over the
+  `assistant_chat_response` subscription on the `"{organization_id}:{user_id}"` topic.
+  """
+  @spec handle_assistant_chat_callback(non_neg_integer(), map()) :: :ok
+  def handle_assistant_chat_callback(
+        organization_id,
+        %{"metadata" => %{"request_id" => request_id, "user_id" => user_id}} = params
+      ) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      build_assistant_chat_response(params, request_id),
+      [{:assistant_chat_response, "#{organization_id}:#{user_id}"}]
+    )
+
+    :ok
+  end
+
+  def handle_assistant_chat_callback(organization_id, params) do
+    Glific.log_exception(%Error{
+      message: "Unexpected assistant_chat callback payload for org_id=#{organization_id}",
+      reason: Glific.SafeLog.safe_inspect(params),
+      organization_id: organization_id
+    })
+
+    :ok
+  end
+
+  @spec build_assistant_chat_response(map(), String.t()) :: map()
+  defp build_assistant_chat_response(%{"success" => true} = params, request_id) do
+    %{
+      request_id: request_id,
+      conversation_id: get_in(params, ["data", "response", "conversation_id"]),
+      answer: get_in(params, ["data", "response", "output", "content", "value"]),
+      errors: []
+    }
+  end
+
+  defp build_assistant_chat_response(params, request_id) do
+    error_message = params["error"] || Glific.SafeLog.safe_inspect(params["errors"])
+
+    %{
+      request_id: request_id,
+      conversation_id: nil,
+      answer: nil,
+      errors: [%{key: "error", message: error_message}]
+    }
+  end
+
+  @doc """
   Handles the callback from Kaapi for knowledge base creation.
   """
   @spec handle_knowledge_base_callback(map) ::
