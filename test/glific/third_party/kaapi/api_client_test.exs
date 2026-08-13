@@ -572,6 +572,61 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "improve_prompt_v2/3" do
+    test "successfully dispatches the v2 improve-prompt request" do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/767/improve-prompt"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              job_id: "a8f2be70-4ac6-42af-ada7-c28ac46fd834",
+              status: "PENDING",
+              message: "Prompt recommendation is running"
+            },
+            error: nil
+          }
+        }
+      end)
+
+      body = %{callback_url: "https://example.com/kaapi/improve_prompt"}
+
+      assert {:ok, resp} = ApiClient.improve_prompt_v2(767, body, @org_kaapi_api_key)
+      assert resp.data.job_id == "a8f2be70-4ac6-42af-ada7-c28ac46fd834"
+      assert resp.data.status == "PENDING"
+    end
+
+    test "returns error when kaapi returns error status" do
+      response_body = %{error: "Evaluation not found", data: %{}, success: false}
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 404, body: response_body}
+      end)
+
+      assert {:error, %{status: 404, body: ^response_body} = error} =
+               ApiClient.improve_prompt_v2(
+                 999,
+                 %{callback_url: "https://example.com"},
+                 @org_kaapi_api_key
+               )
+
+      assert error.body.error == "Evaluation not found"
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.improve_prompt_v2(
+                 767,
+                 %{callback_url: "https://example.com"},
+                 @org_kaapi_api_key
+               )
+    end
+  end
+
   defp create_dataset_upload_params(_context) do
     tmp_path =
       Path.join(

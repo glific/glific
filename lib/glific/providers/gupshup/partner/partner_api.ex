@@ -41,6 +41,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # Final URL: <app_url><app_id><@flow_media_path><media_id>
   # Returns the raw media bytes directly (one-step, no decryption).
   @flow_media_path "/media/"
+  @library_templates_recv_timeout 30_000
 
   @modes [
     "ENQUEUED",
@@ -366,7 +367,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_library_templates(non_neg_integer()) :: {:ok, map()} | {:error, String.t()}
   def get_library_templates(org_id) do
     (app_url!(org_id) <> "/template/metalibrary")
-    |> get_request(org_id: org_id)
+    |> get_request(org_id: org_id, adapter: [recv_timeout: @library_templates_recv_timeout])
   end
 
   @global_organization_id 0
@@ -512,13 +513,21 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
-    req_headers =
-      headers(Keyword.get(opts, :token_type, :app_token), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
-    get(url, headers: req_headers)
+    request_opts =
+      case Keyword.get(opts, :adapter, []) do
+        [] -> [headers: req_headers]
+        adapter_opts -> [headers: req_headers, opts: [adapter: adapter_opts]]
+      end
+
+    get(url, request_opts)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
+
+      {:error, :timeout} ->
+        {:error, "Gupshup partner API request timed out, please try again"}
 
       err ->
         {:error, "#{Glific.SafeLog.safe_inspect(err)}"}

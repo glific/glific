@@ -25,6 +25,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Fixtures.session_template_fixture()
     active_language_ids = Partners.organization(organization.id).active_language_ids
     Caches.remove(organization.id, [{:template_library, active_language_ids}])
+    FunWithFlags.enable(:is_template_library_enabled, for_actor: %{organization_id: organization.id})
 
     :ok
   end
@@ -657,5 +658,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     # falls back to a safe-inspected dump of the raw Tesla response/env.
     assert message =~ "400"
     assert message =~ "Invalid request"
+  end
+
+  test "template_library is rejected when the :is_template_library_enabled flag is off for the org",
+       %{staff: user, organization_id: org_id} do
+    FunWithFlags.disable(:is_template_library_enabled, for_actor: %{organization_id: org_id})
+
+    result = auth_query_gql_by(:template_library, user)
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "not enabled"
   end
 end
