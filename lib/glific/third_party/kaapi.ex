@@ -328,7 +328,7 @@ defmodule Glific.ThirdParty.Kaapi do
     }
 
     completion_params =
-      Map.merge(base_params, stringify_keys(params[:settings] || %{}))
+      Map.merge(stringify_keys(params[:settings] || %{}), base_params)
 
     %{
       completion: %{
