@@ -498,7 +498,7 @@ defmodule Glific.Flows.RouterTest do
     {:ok, _, _} = Router.execute(router, context, [])
   end
 
-  test "router with custom_ui_response copies the whole values map into results plus summary/component" do
+  defp blocks_response_router(result_name) do
     flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
@@ -512,12 +512,12 @@ defmodule Glific.Flows.RouterTest do
     {node, uuid_map} = Node.process(json, uuid_map, flow)
 
     # mirrors location_request_message: zero cases, a single "Responded" category that is the
-    # router's default — find_category/3 falls through to it for any custom_ui_response.
+    # router's default — find_category/3 falls through to it for any blocks_response.
     json = %{
       "operand" => "@input.text",
       "type" => "switch",
       "default_category_uuid" => "Default Cat UUID",
-      "result_name" => "picker",
+      "result_name" => result_name,
       "categories" => [
         %{"uuid" => "Default Cat UUID", "exit_uuid" => exit_uuid, "name" => "Responded"}
       ],
@@ -525,17 +525,21 @@ defmodule Glific.Flows.RouterTest do
     }
 
     {router, uuid_map} = Router.process(json, uuid_map, node)
+    {router, uuid_map}
+  end
 
+  test "router with blocks_response copies the whole values map into results plus summary/component" do
+    {router, uuid_map} = blocks_response_router("picker")
     context = flow_context_fixture(%{uuid_map: uuid_map})
 
     message =
       Messages.create_temp_message(
         Fixtures.get_org_id(),
         "Picked Digital skills",
-        type: :custom_ui_response,
+        type: :blocks_response,
         interactive_content: %{
-          "type" => "custom_ui_response",
-          "component" => "glific/image_panel",
+          "type" => "blocks_response",
+          "component" => "glific/image-panel",
           "values" => %{"course" => "c2"},
           "summary" => "Picked Digital skills",
           "context" => %{}
@@ -548,8 +552,64 @@ defmodule Glific.Flows.RouterTest do
 
     assert updated_context.results["picker"]["course"] == "c2"
     assert updated_context.results["picker"]["summary"] == "Picked Digital skills"
-    assert updated_context.results["picker"]["component"] == "glific/image_panel"
+    assert updated_context.results["picker"]["component"] == "glific/image-panel"
     assert updated_context.results["picker"]["input"] == "Picked Digital skills"
     assert updated_context.results["picker"]["category"] == "Responded"
+  end
+
+  test "router with blocks_response never lets an inbound values map clobber reserved keys" do
+    {router, uuid_map} = blocks_response_router("picker")
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    # A Custom Block's own renderer (e.g. the widget's FallbackCard) can legitimately send
+    # `values: {"input" => ...}` — the reserved-id check only guards author-chosen ids at
+    # template save (contract §5.1 amendment), not inbound response keys. Merge order is what
+    # protects `@results.picker.input`/`.category` here instead.
+    message =
+      Messages.create_temp_message(
+        Fixtures.get_org_id(),
+        "The real summary",
+        type: :blocks_response,
+        interactive_content: %{
+          "type" => "blocks_response",
+          "component" => "tap/fallback-card",
+          "values" => %{"input" => "attacker-controlled", "category" => "attacker-controlled"},
+          "summary" => "The real summary",
+          "context" => %{}
+        }
+      )
+
+    {:ok, _, _} = Router.execute(router, context, [message])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+
+    assert updated_context.results["picker"]["input"] == "The real summary"
+    assert updated_context.results["picker"]["category"] == "Responded"
+  end
+
+  test "router with blocks_response stringifies numeric/boolean values so bound/1 never crashes" do
+    {router, uuid_map} = blocks_response_router("counter")
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    message =
+      Messages.create_temp_message(
+        Fixtures.get_org_id(),
+        "Submitted",
+        type: :blocks_response,
+        interactive_content: %{
+          "type" => "blocks_response",
+          "component" => "tap/counter",
+          "values" => %{"count" => 999, "confirmed" => true},
+          "summary" => "Submitted",
+          "context" => %{}
+        }
+      )
+
+    {:ok, _, _} = Router.execute(router, context, [message])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+
+    assert updated_context.results["counter"]["count"] == "999"
+    assert updated_context.results["counter"]["confirmed"] == "true"
   end
 end

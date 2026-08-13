@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddCustomUiToMessageTypeEnum do
+defmodule Glific.Repo.Migrations.AddBlocksToMessageTypeEnum do
   use Ecto.Migration
 
   # ALTER TYPE ... ADD VALUE cannot run inside the migration's default transaction,
@@ -7,8 +7,8 @@ defmodule Glific.Repo.Migrations.AddCustomUiToMessageTypeEnum do
   @disable_migration_lock true
 
   def up do
-    execute("ALTER TYPE message_type_enum ADD VALUE IF NOT EXISTS 'custom_ui'")
-    execute("ALTER TYPE message_type_enum ADD VALUE IF NOT EXISTS 'custom_ui_response'")
+    execute("ALTER TYPE message_type_enum ADD VALUE IF NOT EXISTS 'blocks'")
+    execute("ALTER TYPE message_type_enum ADD VALUE IF NOT EXISTS 'blocks_response'")
   end
 
   # Postgres cannot drop a value from an enum type, so there is nothing to

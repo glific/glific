@@ -418,7 +418,7 @@ defmodule Glific.Flows.Webhook do
   are kept as-is, lists become index-keyed maps (so `@results.x.0`, `@results.x.1`, … resolve),
   and scalars pass through unchanged. Shared by webhook responses and any other flow-engine
   source that copies a JSON value into `@results` (e.g. `Router.update_context_results/4` for
-  a `custom_ui_response`) so the same value shape resolves the same way everywhere.
+  a `blocks_response`) so the same value shape resolves the same way everywhere.
   """
   @spec format_response(any()) :: any()
   def format_response(response_json) when is_list(response_json) do

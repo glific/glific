@@ -107,25 +107,25 @@ defmodule Glific.Communications.WebMessageTest do
       assert sent_message.id == message.id
     end
 
-    test "a custom_ui-typed web message is delivered via send_custom_ui", %{
+    test "a blocks-typed web message is delivered via send_blocks", %{
       organization_id: organization_id
     } do
       receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
 
+      # Stored as the widget/messages.interactive_content shape sees it: unwrapped.
       interactive_content = %{
-        "type" => "custom_ui",
-        "version" => "1",
-        "component" => "glific/image_panel",
+        "type" => "blocks",
+        "version" => 1,
+        "component" => "glific/image-panel",
         "props" => %{
           "id" => "course",
           "options" => [%{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}]
-        },
-        "fallback" => "Reply with a course"
+        }
       }
 
       message =
         Fixtures.message_fixture(%{
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: interactive_content,
           channel: "web",
           flow: :outbound,
@@ -138,8 +138,8 @@ defmodule Glific.Communications.WebMessageTest do
     end
   end
 
-  describe "custom_ui unsupported-channel fallback (Messages.create_and_send_message/1)" do
-    test "sends the envelope's fallback text as plain text and raises a flow notification", %{
+  describe "blocks unsupported-channel fallback (Messages.create_and_send_message/1)" do
+    test "sends the derived body as plain text and raises a flow notification", %{
       organization_id: organization_id
     } do
       receiver = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -147,7 +147,7 @@ defmodule Glific.Communications.WebMessageTest do
 
       {:ok, message} =
         Messages.create_and_send_message(%{
-          type: "custom_ui",
+          type: "blocks",
           body: "Reply with a course",
           channel: "whatsapp",
           receiver_id: receiver.id,
@@ -155,16 +155,15 @@ defmodule Glific.Communications.WebMessageTest do
           flow_id: flow.id,
           uuid: Ecto.UUID.generate(),
           interactive_content: %{
-            "type" => "custom_ui",
-            "version" => "1",
-            "component" => "glific/image_panel",
+            "type" => "blocks",
+            "version" => 1,
+            "component" => "glific/image-panel",
             "props" => %{
               "id" => "course",
               "options" => [
                 %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
               ]
-            },
-            "fallback" => "Reply with a course"
+            }
           }
         })
 
@@ -176,32 +175,31 @@ defmodule Glific.Communications.WebMessageTest do
 
       assert Enum.any?(
                notifications,
-               &String.contains?(&1.message, "does not support Custom UI")
+               &String.contains?(&1.message, "does not support Blocks")
              )
     end
   end
 
-  describe "receive_message/2 — custom_ui_response" do
+  describe "receive_message/2 — blocks_response" do
     setup %{organization_id: organization_id} do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
 
       interactive_content = %{
-        "type" => "custom_ui",
-        "version" => "1",
-        "component" => "glific/image_panel",
+        "type" => "blocks",
+        "version" => 1,
+        "component" => "glific/image-panel",
         "props" => %{
           "id" => "course",
           "options" => [
             %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"},
             %{"id" => "c2", "image" => "https://example.com/2.png", "label" => "Digital skills"}
           ]
-        },
-        "fallback" => "Reply with a course"
+        }
       }
 
       outbound =
         Fixtures.message_fixture(%{
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: interactive_content,
           channel: "web",
           flow: :outbound,
@@ -221,16 +219,16 @@ defmodule Glific.Communications.WebMessageTest do
                WebMessage.receive_message(
                  %{
                    "message_id" => outbound.id,
-                   "component" => "glific/image_panel",
+                   "component" => "glific/image-panel",
                    "values" => %{"course" => "c2"},
                    "summary" => "Picked Digital skills",
                    sender: %{phone: contact.phone},
                    organization_id: organization_id
                  },
-                 :custom_ui_response
+                 :blocks_response
                )
 
-      assert inbound.type == :custom_ui_response
+      assert inbound.type == :blocks_response
       assert inbound.body == "Picked Digital skills"
       assert inbound.context_message_id == outbound.id
       assert inbound.channel == "web"
@@ -248,15 +246,15 @@ defmodule Glific.Communications.WebMessageTest do
     } do
       params = %{
         "message_id" => outbound.id,
-        "component" => "glific/image_panel",
+        "component" => "glific/image-panel",
         "values" => %{"course" => "c2"},
         "summary" => "Picked Digital skills",
         sender: %{phone: contact.phone},
         organization_id: organization_id
       }
 
-      assert {:ok, _first_response} = WebMessage.receive_message(params, :custom_ui_response)
-      assert {:error, _reason} = WebMessage.receive_message(params, :custom_ui_response)
+      assert {:ok, _first_response} = WebMessage.receive_message(params, :blocks_response)
+      assert {:error, _reason} = WebMessage.receive_message(params, :blocks_response)
     end
 
     test "rejects a response for a message belonging to another contact", %{
@@ -269,13 +267,13 @@ defmodule Glific.Communications.WebMessageTest do
                WebMessage.receive_message(
                  %{
                    "message_id" => outbound.id,
-                   "component" => "glific/image_panel",
+                   "component" => "glific/image-panel",
                    "values" => %{"course" => "c2"},
                    "summary" => "Picked Digital skills",
                    sender: %{phone: other_contact.phone},
                    organization_id: organization_id
                  },
-                 :custom_ui_response
+                 :blocks_response
                )
     end
 
@@ -288,13 +286,13 @@ defmodule Glific.Communications.WebMessageTest do
                WebMessage.receive_message(
                  %{
                    "message_id" => outbound.id,
-                   "component" => "glific/image_panel",
+                   "component" => "glific/image-panel",
                    "values" => %{"course" => "c2"},
                    "summary" => String.duplicate("x", 501),
                    sender: %{phone: contact.phone},
                    organization_id: organization_id
                  },
-                 :custom_ui_response
+                 :blocks_response
                )
 
       assert reason =~ "exceeds"
@@ -307,13 +305,13 @@ defmodule Glific.Communications.WebMessageTest do
                WebMessage.receive_message(
                  %{
                    "message_id" => outbound.id,
-                   "component" => "glific/image_panel",
+                   "component" => "glific/image-panel",
                    "values" => %{"course" => "c2"},
                    "summary" => "Picked Digital skills",
                    sender: %{phone: contact.phone},
                    organization_id: organization_id
                  },
-                 :custom_ui_response
+                 :blocks_response
                )
     end
   end

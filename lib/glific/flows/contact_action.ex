@@ -11,6 +11,7 @@ defmodule Glific.Flows.ContactAction do
     Messages,
     Messages.Message,
     Repo,
+    Templates.Blocks,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -101,6 +102,13 @@ defmodule Glific.Flows.ContactAction do
 
     ## since we have flow context here, we have to replace parse the results as well.
     interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
+
+    # Collapse a Blocks typed tree to its plain wire value (contract §2.2) — the widget, and
+    # every other consumer of `messages.interactive_content`, only ever sees the unwrapped
+    # shape. Order matters: translation → dynamic params → parse_map → unwrap → validate →
+    # persist. Unwrap is a no-op on the other interactive types (list/quick_reply/location),
+    # whose envelopes contain no `%{"kind" => _, "value" => _}` nodes.
+    interactive_content = Blocks.unwrap(interactive_content)
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{

@@ -1611,6 +1611,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         errors: BigQuery.format_json(row.errors),
+        interactive_content: BigQuery.format_json(row.interactive_content),
         message_broadcast_id: row.message_broadcast_id,
         bsp_status: row.bsp_status,
         group_id: row.group_id,

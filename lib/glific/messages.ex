@@ -28,7 +28,7 @@ defmodule Glific.Messages do
     Tags.MessageTag,
     Tags.Tag,
     Templates,
-    Templates.CustomUi,
+    Templates.Blocks,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -317,6 +317,12 @@ defmodule Glific.Messages do
         {attrs[:interactive_content], attrs[:body], attrs[:media_id]}
       end
 
+    # Blocks.unwrap/1 is idempotent (a no-op on content that's already unwrapped, e.g. a
+    # flow-originated send whose interactive_content already passed through
+    # `ContactAction.do_send_interactive_message/4`) and a no-op on every non-Blocks
+    # interactive type, so it's safe to call unconditionally here rather than branch on type.
+    interactive_content = Blocks.unwrap(interactive_content)
+
     Map.merge(attrs, %{
       body: body,
       interactive_content: interactive_content,
@@ -327,8 +333,8 @@ defmodule Glific.Messages do
 
   defp check_for_interactive(attrs, _language_id), do: attrs
 
-  # `:custom_ui_response` is inbound-only — it is created exclusively by
-  # `Communications.WebMessage.receive_custom_ui_response/2`, which validates the response
+  # `:blocks_response` is inbound-only — it is created exclusively by
+  # `Communications.WebMessage.receive_blocks_response/2`, which validates the response
   # against the outbound envelope it answers before persisting it (contract §4, §7). It must
   # never be reachable through this generic outbound path (e.g. `createAndSendMessage`), so
   # reject it unconditionally here regardless of caller. Must be matched before the generic
@@ -337,38 +343,42 @@ defmodule Glific.Messages do
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(%{type: type}, _contact)
-       when type in [:custom_ui_response, "custom_ui_response"],
-       do: {:error, "custom_ui_response messages cannot be created directly"}
+       when type in [:blocks_response, "blocks_response"],
+       do: {:error, "blocks_response messages cannot be created directly"}
 
-  # A `:custom_ui` send may only reach a contact carrying an envelope that has already passed
-  # `CustomUi.validate_payload/1` (contract §7 — "may only be created through the paths that
-  # validate it"). `check_for_interactive/2` derives `type: interactive_content["type"]` (a
-  # *string*, since it round-trips through the stored JSONB payload) from a validated template,
-  # while Absinthe hands back the *atom* `:custom_ui` for a bare `type: CUSTOM_UI` input with no
+  # A `:blocks` send may only reach a contact carrying an envelope that has already passed
+  # `Blocks.validate_payload/1` — at template save (contract §7 — "may only be created through
+  # the paths that validate it") — and, by this point, has already been `unwrap/1`'d by the
+  # trusted producer path (`ContactAction.do_send_interactive_message/4` or
+  # `check_for_interactive/2` above). `Blocks.validate_outbound_envelope/1` re-checks the
+  # unwrapped wire shape (contract §3) as a belt-and-braces guard, not the typed one.
+  # `check_for_interactive/2` derives `type: interactive_content["type"]` (a *string*, since it
+  # round-trips through the stored JSONB payload) from a validated template, while Absinthe
+  # hands back the *atom* `:blocks` for a bare `type: BLOCKS` input with no
   # `interactive_template_id` — matching both forms here, instead of only the string, closes the
   # gap that let an unvalidated envelope (`interactive_content: nil` or `%{}`) slip through.
   #
   # Must be matched before the `channel: "web"` clause below, which otherwise routes *any*
   # web-channel send straight to `WebMessage.send_message/2` regardless of type — that's how an
-  # unvalidated `custom_ui` message previously reached the browser with an empty
+  # unvalidated `blocks` message previously reached the browser with an empty
   # `interactive_content`.
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(%{type: type} = attrs, contact)
-       when type in [:custom_ui, "custom_ui"] do
-    # A caller with no envelope at all (typically `type: CUSTOM_UI` with no
+       when type in [:blocks, "blocks"] do
+    # A caller with no envelope at all (typically `type: BLOCKS` with no
     # `interactive_template_id`, since that's the only thing that populates
     # `interactive_content`) gets a public-contract error here rather than
-    # `CustomUi.validate_payload/1`'s internal envelope vocabulary ("missing required field
-    # 'component'") — that message is meant for template authors, not this caller.
+    # `Blocks.validate_outbound_envelope/1`'s internal envelope vocabulary ("missing required
+    # field 'component'") — that message is meant for template authors, not this caller.
     case attrs[:interactive_content] do
       content when content in [nil, %{}] ->
-        {:error, "custom_ui messages must be sent via an interactive template"}
+        {:error, "blocks messages must be sent via an interactive template"}
 
       envelope ->
-        case CustomUi.validate_payload(envelope) do
-          :ok -> route_custom_ui_message(attrs, contact)
+        case Blocks.validate_outbound_envelope(envelope) do
+          :ok -> route_blocks_message(attrs, contact)
           {:error, reason} -> {:error, reason}
         end
     end
@@ -395,22 +405,22 @@ defmodule Glific.Messages do
     end
   end
 
-  # A validated `:custom_ui` envelope is sent as-is on a channel that renders it (only "web" in
-  # v0, contract §8) and downgraded to plain fallback text everywhere else — this must intercept
-  # BEFORE `Communications.Message.@type_to_token`, which has no `:custom_ui` entry and no
-  # catch-all, and would raise.
-  @spec route_custom_ui_message(map(), Contact.t()) ::
+  # A validated `:blocks` envelope is sent as-is on a channel that renders it (only "web" in
+  # v1, contract §8) and downgraded to plain derived-body text everywhere else — this must
+  # intercept BEFORE `Communications.Message.@type_to_token`, which has no `:blocks` entry and
+  # no catch-all, and would raise.
+  @spec route_blocks_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp route_custom_ui_message(%{channel: channel} = attrs, contact) do
-    if ChannelCapability.supports?(channel, :custom_ui) do
+  defp route_blocks_message(%{channel: channel} = attrs, contact) do
+    if ChannelCapability.supports?(channel, :blocks) do
       send_web_channel_message(attrs)
     else
-      send_custom_ui_fallback(attrs, contact)
+      send_blocks_fallback(attrs, contact)
     end
   end
 
-  defp route_custom_ui_message(attrs, contact),
-    do: send_custom_ui_fallback(attrs, contact)
+  defp route_blocks_message(attrs, contact),
+    do: send_blocks_fallback(attrs, contact)
 
   @spec send_web_channel_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   defp send_web_channel_message(%{organization_id: organization_id} = attrs) do
@@ -427,25 +437,26 @@ defmodule Glific.Messages do
     WebMessage.send_message(message, attrs)
   end
 
-  @spec send_custom_ui_fallback(map(), Contact.t()) ::
+  # The derived body (contract §9) — computed upstream (`check_for_interactive/2` or
+  # `ContactAction.do_send_interactive_message/4`) and already sitting in `attrs[:body]` — is
+  # sent as plain text. There is no `fallback` field to fall back to any more.
+  @spec send_blocks_fallback(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp send_custom_ui_fallback(attrs, contact) do
-    fallback_text = get_in(attrs, [:interactive_content, "fallback"]) || attrs[:body] || ""
-
-    notify_custom_ui_fallback(attrs)
+  defp send_blocks_fallback(attrs, contact) do
+    notify_blocks_fallback(attrs)
 
     text_attrs =
       attrs
       |> Map.drop([:interactive_template_id, :interactive_content, :media_id])
-      |> Map.merge(%{type: :text, body: fallback_text})
+      |> Map.merge(%{type: :text, body: attrs[:body] || ""})
 
     contact
     |> Contacts.can_send_message_to?(Map.get(text_attrs, :is_hsm, false), text_attrs)
     |> do_send_message(text_attrs)
   end
 
-  @spec notify_custom_ui_fallback(map()) :: nil
-  defp notify_custom_ui_fallback(%{flow_id: flow_id, organization_id: organization_id} = attrs)
+  @spec notify_blocks_fallback(map()) :: nil
+  defp notify_blocks_fallback(%{flow_id: flow_id, organization_id: organization_id} = attrs)
        when not is_nil(flow_id) do
     %FlowContext{
       flow_id: flow_id,
@@ -454,13 +465,13 @@ defmodule Glific.Messages do
       node_uuid: attrs[:uuid]
     }
     |> FlowContext.notification(
-      "Custom UI message sent as fallback text: channel '#{attrs[:channel]}' does not support Custom UI"
+      "Blocks message sent as plain text: channel '#{attrs[:channel]}' does not support Blocks"
     )
 
     nil
   end
 
-  defp notify_custom_ui_fallback(_attrs), do: nil
+  defp notify_blocks_fallback(_attrs), do: nil
 
   @doc false
   @spec do_send_message({:ok | :error, any()}, map()) ::

@@ -174,10 +174,10 @@ defmodule GlificWeb.WebChannel.RoomChannel do
     {:reply, :ok, socket}
   end
 
-  # The widget (or an org's custom renderer) answering an outbound `:custom_ui` message
+  # The widget (or an org's custom renderer) answering an outbound `:blocks` message
   # (contract §4). All correlation/single-submit/envelope checks live in
-  # `WebMessage.receive_custom_ui_response/2`; this handler only shapes the socket reply.
-  def handle_in("custom_ui_response", %{"message_id" => _message_id} = params, socket) do
+  # `WebMessage.receive_blocks_response/2`; this handler only shapes the socket reply.
+  def handle_in("blocks_response", %{"message_id" => _message_id} = params, socket) do
     contact = socket.assigns.current_contact
 
     message_params =
@@ -186,13 +186,13 @@ defmodule GlificWeb.WebChannel.RoomChannel do
         organization_id: contact.organization_id
       })
 
-    case WebMessage.receive_message(message_params, :custom_ui_response) do
+    case WebMessage.receive_message(message_params, :blocks_response) do
       {:ok, _message} -> {:reply, :ok, socket}
       {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
     end
   end
 
-  def handle_in("custom_ui_response", _params, socket),
+  def handle_in("blocks_response", _params, socket),
     do: {:reply, {:error, %{reason: "message_id is required"}}, socket}
 
   def handle_in("update_name", %{"name" => name}, socket) when is_binary(name) do

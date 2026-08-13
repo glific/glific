@@ -3,9 +3,9 @@ defmodule Glific.Channels.ChannelCapability do
   Declares which message channel (`"web"`, `"whatsapp"`, …) can render which
   channel-neutral capability.
 
-  Introduced for Custom UI messages: everything about `:custom_ui` is named and gated
+  Introduced for Blocks messages: everything about `:blocks` is named and gated
   channel-neutrally from day one — enum values, this module — even though only the web
-  channel renders it in v0. A future channel (RCS, Telegram, …) adds one declaration here,
+  channel renders it in v1. A future channel (RCS, Telegram, …) adds one declaration here,
   never a rename, migration, or flow change. Replaces hardcoded `channel == "web"` checks for
   capabilities that are conceptually about *what a channel can render*, not *is this the web
   channel*.
@@ -13,7 +13,7 @@ defmodule Glific.Channels.ChannelCapability do
 
   # capability => set of channels that support it
   @capabilities %{
-    custom_ui: MapSet.new(["web"])
+    blocks: MapSet.new(["web"])
   }
 
   @doc """
@@ -21,10 +21,10 @@ defmodule Glific.Channels.ChannelCapability do
 
   ## Examples
 
-      iex> Glific.Channels.ChannelCapability.supports?("web", :custom_ui)
+      iex> Glific.Channels.ChannelCapability.supports?("web", :blocks)
       true
 
-      iex> Glific.Channels.ChannelCapability.supports?("whatsapp", :custom_ui)
+      iex> Glific.Channels.ChannelCapability.supports?("whatsapp", :blocks)
       false
 
       iex> Glific.Channels.ChannelCapability.supports?("web", :unknown_capability)

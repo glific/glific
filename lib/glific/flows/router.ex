@@ -381,15 +381,23 @@ defmodule Glific.Flows.Router do
 
           %{key => json}
 
-        # A Custom UI response's whole `values` map lands in `@results` in one shot (contract
-        # §5), normalized the same way webhook responses are: nested maps kept, lists become
+        # A Blocks response's whole `values` map lands in `@results` in one shot (contract §5),
+        # normalized the same way webhook responses are: nested maps kept, lists become
         # index-keyed maps (`Webhook.format_response/1`). No new case operator/routing is
         # needed — `find_category/3` already falls through to `router.default_category_uuid`
         # when (as here) no case matches, which is how the single "Responded" exit fires.
-        msg.type in [:custom_ui_response] ->
+        #
+        # `default_results` merges AFTER the (org-controlled) normalized values, not before
+        # (contract §5.1 amendment) — an inbound `values` map is never reserved-id-checked (a
+        # Custom Block's own `FallbackCard` legitimately sends `values: {"input": <text>}`), so
+        # the *merge order* is what guarantees `@results.<key>.input`/`.category` always resolve
+        # to the router's own summary/category, whatever an org's renderer sends.
+        msg.type in [:blocks_response] ->
           json =
-            default_results
-            |> Map.merge(Webhook.format_response(msg.interactive_content["values"] || %{}))
+            (msg.interactive_content["values"] || %{})
+            |> Webhook.format_response()
+            |> stringify_result_leaves()
+            |> Map.merge(default_results)
             |> Map.put("summary", msg.interactive_content["summary"])
             |> Map.put("component", msg.interactive_content["component"])
 
@@ -426,6 +434,18 @@ defmodule Glific.Flows.Router do
 
     FlowContext.update_results(context, results)
   end
+
+  # `MessageVarParser.bound/1` returns a flow-result leaf's raw term straight into
+  # `String.replace/4`, which treats it as iodata — an integer `16` renders as byte `0x10` and
+  # `999` raises `ArgumentError`, crashing the flow (contract §5.2). A Blocks `values` map can
+  # carry `number`/`boolean` leaves (a Custom Block's own props may use them), so every leaf is
+  # stringified before merging into flow results. `Webhook.format_response/1` has already turned
+  # any list into an index-keyed map, so only maps need recursing into here.
+  @spec stringify_result_leaves(map()) :: map()
+  defp stringify_result_leaves(map) when is_map(map),
+    do: Map.new(map, fn {key, value} -> {key, stringify_result_leaves(value)} end)
+
+  defp stringify_result_leaves(value), do: to_string(value)
 
   ## Format operand and replace @fields. to @contact.fields. so that system can parse it automatically.
   ## for other router operand we are handling everything in a same way.

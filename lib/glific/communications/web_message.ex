@@ -23,7 +23,7 @@ defmodule Glific.Communications.WebMessage do
     Messages.Message,
     Partners,
     Repo,
-    Templates.CustomUi
+    Templates.Blocks
   }
 
   @type_to_token %{
@@ -35,7 +35,7 @@ defmodule Glific.Communications.WebMessage do
     list: :send_interactive,
     quick_reply: :send_interactive,
     location_request_message: :send_interactive,
-    custom_ui: :send_custom_ui
+    blocks: :send_blocks
   }
 
   @doc """
@@ -88,14 +88,14 @@ defmodule Glific.Communications.WebMessage do
     do_receive_message(contact, message_params, type)
   end
 
-  # A `custom_ui_response` is a correlated reply to a specific outbound message (contract §4),
+  # A `blocks_response` is a correlated reply to a specific outbound message (contract §4),
   # not a free-standing inbound message like text/media/location — it needs its own path so it
   # never falls into `receive_media/1` (the generic catch-all below), which would misinterpret
   # it as a media upload.
   @spec do_receive_message(Contact.t(), map(), atom()) ::
           :ok | {:ok, Message.t()} | {:error, String.t()}
-  defp do_receive_message(contact, message_params, :custom_ui_response),
-    do: receive_custom_ui_response(contact, message_params)
+  defp do_receive_message(contact, message_params, :blocks_response),
+    do: receive_blocks_response(contact, message_params)
 
   defp do_receive_message(contact, message_params, type) do
     metadata = create_message_metadata(contact, message_params)
@@ -121,15 +121,15 @@ defmodule Glific.Communications.WebMessage do
   end
 
   # Acceptance order per contract §7: (1) the contact owns `message_id` and it is an unanswered
-  # `:custom_ui` message, (2) envelope validation. Single-submit is enforced by the guarded
+  # `:blocks` message, (2) envelope validation. Single-submit is enforced by the guarded
   # `update_all` in `mark_answered/2` — the WHERE clause re-checks "unanswered" at write time
   # and the caller acts on the returned row count, not on the earlier read, so two concurrent
   # responses to the same message can't both win.
-  @spec receive_custom_ui_response(Contact.t(), map()) ::
+  @spec receive_blocks_response(Contact.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp receive_custom_ui_response(contact, %{"message_id" => message_id} = message_params)
+  defp receive_blocks_response(contact, %{"message_id" => message_id} = message_params)
        when is_integer(message_id) do
-    with {:ok, outbound} <- fetch_unanswered_custom_ui_message(message_id, contact),
+    with {:ok, outbound} <- fetch_unanswered_blocks_message(message_id, contact),
          # `message_params` carries the Glific-internal `:sender`/`:organization_id` keys
          # (added by the caller, mirroring every other `receive_message/2` type) alongside the
          # raw wire-format string keys — strip them before validating so the inbound size cap
@@ -137,30 +137,30 @@ defmodule Glific.Communications.WebMessage do
          :ok <-
            message_params
            |> Map.drop([:sender, :organization_id])
-           |> CustomUi.validate_response(outbound.interactive_content),
+           |> Blocks.validate_response(outbound.interactive_content),
          {:ok, _count} <- mark_answered(outbound, message_params) do
-      create_custom_ui_response_message(contact, outbound, message_params)
+      create_blocks_response_message(contact, outbound, message_params)
     end
   end
 
-  defp receive_custom_ui_response(_contact, _message_params),
+  defp receive_blocks_response(_contact, _message_params),
     do: {:error, "message_id is required"}
 
-  @spec fetch_unanswered_custom_ui_message(non_neg_integer(), Contact.t()) ::
+  @spec fetch_unanswered_blocks_message(non_neg_integer(), Contact.t()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp fetch_unanswered_custom_ui_message(message_id, contact) do
+  defp fetch_unanswered_blocks_message(message_id, contact) do
     # Scoped to this contact's own outbound message: an id belonging to another contact, or one
-    # that isn't a `:custom_ui` send, or one already answered, is indistinguishable from "not
+    # that isn't a `:blocks` send, or one already answered, is indistinguishable from "not
     # found" to the caller (contract §6 security: unknown ids, duplicates, and late responses
     # are all rejected the same way).
-    case Repo.get_by(Message, id: message_id, receiver_id: contact.id, type: :custom_ui) do
+    case Repo.get_by(Message, id: message_id, receiver_id: contact.id, type: :blocks) do
       %Message{} = message ->
         if answered?(message),
-          do: {:error, "Custom UI message not found or already answered"},
+          do: {:error, "Blocks message not found or already answered"},
           else: {:ok, message}
 
       nil ->
-        {:error, "Custom UI message not found or already answered"}
+        {:error, "Blocks message not found or already answered"}
     end
   end
 
@@ -182,7 +182,7 @@ defmodule Glific.Communications.WebMessage do
       from(m in Message,
         where: m.id == ^outbound.id,
         where: m.receiver_id == ^outbound.receiver_id,
-        where: m.type == :custom_ui,
+        where: m.type == :blocks,
         where:
           fragment("coalesce((?->>'answered')::boolean, false) = false", m.interactive_content),
         update: [
@@ -194,18 +194,18 @@ defmodule Glific.Communications.WebMessage do
 
     case Repo.update_all(query, []) do
       {1, _} -> {:ok, 1}
-      {0, _} -> {:error, "Custom UI message not found or already answered"}
+      {0, _} -> {:error, "Blocks message not found or already answered"}
     end
   end
 
-  @spec create_custom_ui_response_message(Contact.t(), Message.t(), map()) ::
+  @spec create_blocks_response_message(Contact.t(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  defp create_custom_ui_response_message(contact, outbound, message_params) do
+  defp create_blocks_response_message(contact, outbound, message_params) do
     metadata = create_message_metadata(contact, message_params)
 
     attrs =
       Map.merge(metadata, %{
-        type: :custom_ui_response,
+        type: :blocks_response,
         body: message_params["summary"],
         context_message_id: outbound.id,
         channel: "web",
@@ -213,7 +213,7 @@ defmodule Glific.Communications.WebMessage do
         bsp_status: :delivered,
         status: :received,
         interactive_content: %{
-          "type" => "custom_ui_response",
+          "type" => "blocks_response",
           "component" => message_params["component"],
           "values" => message_params["values"],
           "summary" => message_params["summary"],
@@ -232,10 +232,10 @@ defmodule Glific.Communications.WebMessage do
 
       {:error, changeset} ->
         Glific.log_error(
-          "Could not persist Custom UI response: #{Glific.SafeLog.safe_inspect(changeset.errors)}"
+          "Could not persist Blocks response: #{Glific.SafeLog.safe_inspect(changeset.errors)}"
         )
 
-        {:error, "Could not persist Custom UI response"}
+        {:error, "Could not persist Blocks response"}
     end
   end
 

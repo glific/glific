@@ -1401,61 +1401,67 @@ defmodule Glific.MessagesTest do
                "Your OTP for param1 is param2. This is valid for param3."
     end
 
-    test "create and send message rejects a bare `type: :custom_ui` send on a whatsapp channel with no template",
+    test "create and send message rejects a bare `type: :blocks` send on a whatsapp channel with no template",
          attrs do
       valid_attrs = %{
         body: "irrelevant",
         flow: :outbound,
-        type: :custom_ui
+        type: :blocks
       }
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:error, reason} = Messages.create_and_send_message(message_attrs)
       refute reason =~ "Gupshup"
-      assert reason == "custom_ui messages must be sent via an interactive template"
+      assert reason == "blocks messages must be sent via an interactive template"
 
       refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
-             |> Enum.any?(&(&1.type == :custom_ui))
+             |> Enum.any?(&(&1.type == :blocks))
     end
 
-    test "create and send message rejects a bare `type: :custom_ui` send on the web channel with no template",
+    test "create and send message rejects a bare `type: :blocks` send on the web channel with no template",
          attrs do
       valid_attrs = %{
         body: "irrelevant",
         flow: :outbound,
-        type: :custom_ui,
+        type: :blocks,
         channel: "web"
       }
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:error, reason} = Messages.create_and_send_message(message_attrs)
-      assert reason == "custom_ui messages must be sent via an interactive template"
+      assert reason == "blocks messages must be sent via an interactive template"
 
       refute Messages.list_messages(%{filter: %{organization_id: attrs.organization_id}})
-             |> Enum.any?(&(&1.type == :custom_ui))
+             |> Enum.any?(&(&1.type == :blocks))
     end
 
-    test "create and send message still sends a template-driven custom_ui message on the web channel",
+    test "create and send message still sends a template-driven blocks message on the web channel",
          %{organization_id: organization_id} = attrs do
       interactive_content = %{
-        "type" => "custom_ui",
-        "version" => "1",
-        "component" => "glific/image_panel",
+        "type" => "blocks",
+        "version" => 1,
+        "component" => "glific/image-panel",
         "props" => %{
           "id" => "course",
-          "options" => [
-            %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"}
-          ]
-        },
-        "fallback" => "Pick a course: Spoken English"
+          "options" => %{
+            "kind" => "list",
+            "value" => [
+              %{
+                "id" => "c1",
+                "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                "label" => %{"kind" => "text", "value" => "Pick a course: Spoken English"}
+              }
+            ]
+          }
+        }
       }
 
       interactive_template =
         Fixtures.interactive_fixture(%{
           organization_id: organization_id,
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: interactive_content
         })
 
@@ -1470,30 +1476,44 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
 
-      assert message.type == :custom_ui
+      assert message.type == :blocks
       assert message.body == "Pick a course: Spoken English"
-      assert message.interactive_content["component"] == "glific/image_panel"
+      assert message.interactive_content["component"] == "glific/image-panel"
+      # persisted unwrapped, not typed
+      assert message.interactive_content["props"]["options"] == [
+               %{
+                 "id" => "c1",
+                 "image" => "https://example.com/1.png",
+                 "label" => "Pick a course: Spoken English"
+               }
+             ]
     end
 
-    test "create and send message downgrades a template-driven custom_ui message to fallback text on an unsupported channel",
+    test "create and send message downgrades a template-driven blocks message to the derived body on an unsupported channel",
          %{organization_id: organization_id} = attrs do
       interactive_content = %{
-        "type" => "custom_ui",
-        "version" => "1",
-        "component" => "glific/image_panel",
+        "type" => "blocks",
+        "version" => 1,
+        "component" => "glific/image-panel",
         "props" => %{
           "id" => "course",
-          "options" => [
-            %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "Spoken English"}
-          ]
-        },
-        "fallback" => "Pick a course: Spoken English"
+          "options" => %{
+            "kind" => "list",
+            "value" => [
+              %{
+                "id" => "c1",
+                "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                "label" => %{"kind" => "text", "value" => "Pick a course: Spoken English"}
+              }
+            ]
+          }
+        }
       }
 
       interactive_template =
         Fixtures.interactive_fixture(%{
           organization_id: organization_id,
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: interactive_content
         })
 

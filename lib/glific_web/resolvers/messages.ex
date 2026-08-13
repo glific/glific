@@ -51,13 +51,13 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_message(_, %{input: params}, _) do
-    with :ok <- reject_custom_ui_type(params),
+    with :ok <- reject_blocks_type(params),
          {:ok, message} <- Messages.create_message(params) do
       {:ok, %{message: message}}
     end
   end
 
-  # Belt-and-braces per contract §7: a `:custom_ui` / `:custom_ui_response` message may only be
+  # Belt-and-braces per contract §7: a `:blocks` / `:blocks_response` message may only be
   # created through the paths that validate its envelope (the interactive-template send path,
   # and the socket response handler) — none of which are these `:message_input`-driven
   # mutations (`createMessage`, `createAndSendMessage`, `updateMessage`,
@@ -69,17 +69,20 @@ defmodule GlificWeb.Resolvers.Messages do
   # independently for the per-contact send path (see `check_for_hsm_message/2`) — but the group
   # mutations' "meta" group-listing row (`Messages.create_group_message/1`) is written directly,
   # bypassing that guard, so this resolver-level check is the one that matters there.
-  @spec reject_custom_ui_type(map()) :: :ok | {:error, String.t()}
-  defp reject_custom_ui_type(%{type: type}) when type in [:custom_ui, :custom_ui_response],
+  #
+  # Absinthe yields the *atom* `:blocks` for a `type: BLOCKS` input, never the string — guard on
+  # the atom (a confirmed v0 security defect was matching only the string form).
+  @spec reject_blocks_type(map()) :: :ok | {:error, String.t()}
+  defp reject_blocks_type(%{type: type}) when type in [:blocks, :blocks_response],
     do: {:error, "#{type} messages cannot be created directly"}
 
-  defp reject_custom_ui_type(_params), do: :ok
+  defp reject_blocks_type(_params), do: :ok
 
   @doc false
   @spec update_message(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_message(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with :ok <- reject_custom_ui_type(params),
+    with :ok <- reject_blocks_type(params),
          {:ok, message} <-
            Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
          {:ok, message} <- Messages.update_message(message, params) do
@@ -114,7 +117,7 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{message: Message.t()}}
   def create_and_send_message(_, %{input: params}, %{context: %{current_user: current_user}}) do
-    with :ok <- reject_custom_ui_type(params),
+    with :ok <- reject_blocks_type(params),
          {:ok, message} <-
            params
            |> Map.merge(%{user_id: current_user.id})
@@ -125,7 +128,7 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_message_to_group(map(), non_neg_integer, User.t(), atom()) ::
           {:ok | :error, map()}
   defp send_message_to_group(attrs, group_id, user, type) do
-    with :ok <- reject_custom_ui_type(attrs),
+    with :ok <- reject_blocks_type(attrs),
          {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
          {:ok, true} <- validate_group_members(group),

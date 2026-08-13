@@ -239,24 +239,23 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       assert location.longitude == 77.5
     end
 
-    test "custom_ui_response accepts a valid response to the contact's own outbound message", %{
+    test "blocks_response accepts a valid response to the contact's own outbound message", %{
       contact: contact
     } do
       {:ok, outbound} =
         Messages.create_message(%{
           body: "Reply with a course",
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: %{
-            "type" => "custom_ui",
-            "version" => "1",
-            "component" => "glific/image_panel",
+            "type" => "blocks",
+            "version" => 1,
+            "component" => "glific/image-panel",
             "props" => %{
               "id" => "course",
               "options" => [
                 %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
               ]
-            },
-            "fallback" => "Reply with a course"
+            }
           },
           flow: :outbound,
           channel: "web",
@@ -272,9 +271,9 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
 
       ref =
-        push(socket, "custom_ui_response", %{
+        push(socket, "blocks_response", %{
           "message_id" => outbound.id,
-          "component" => "glific/image_panel",
+          "component" => "glific/image-panel",
           "values" => %{"course" => "c1"},
           "summary" => "Picked A"
         })
@@ -284,12 +283,12 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       [inbound | _] =
         Messages.list_conversation_messages(contact.id, "web", %{limit: 10, offset: 0})
 
-      assert inbound.type == :custom_ui_response
+      assert inbound.type == :blocks_response
       assert inbound.body == "Picked A"
       assert inbound.context_message_id == outbound.id
     end
 
-    test "custom_ui_response replies with an error for an id it does not own", %{
+    test "blocks_response replies with an error for an id it does not own", %{
       contact: contact
     } do
       other_contact = Fixtures.contact_fixture(%{organization_id: 1})
@@ -297,18 +296,17 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       {:ok, outbound} =
         Messages.create_message(%{
           body: "Reply with a course",
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: %{
-            "type" => "custom_ui",
-            "version" => "1",
-            "component" => "glific/image_panel",
+            "type" => "blocks",
+            "version" => 1,
+            "component" => "glific/image-panel",
             "props" => %{
               "id" => "course",
               "options" => [
                 %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
               ]
-            },
-            "fallback" => "Reply with a course"
+            }
           },
           flow: :outbound,
           channel: "web",
@@ -324,9 +322,9 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
 
       ref =
-        push(socket, "custom_ui_response", %{
+        push(socket, "blocks_response", %{
           "message_id" => outbound.id,
-          "component" => "glific/image_panel",
+          "component" => "glific/image-panel",
           "values" => %{"course" => "c1"},
           "summary" => "Picked A"
         })
@@ -334,13 +332,13 @@ defmodule GlificWeb.WebChannel.RoomChannelTest do
       assert_reply(ref, :error, %{reason: _reason})
     end
 
-    test "custom_ui_response replies with an error when message_id is missing", %{
+    test "blocks_response replies with an error when message_id is missing", %{
       contact: contact
     } do
       socket = connect_socket(contact)
       {:ok, _reply, socket} = subscribe_and_join(socket, "web_channel:#{contact.id}", %{})
 
-      ref = push(socket, "custom_ui_response", %{"component" => "glific/image_panel"})
+      ref = push(socket, "blocks_response", %{"component" => "glific/image-panel"})
 
       assert_reply(ref, :error, %{reason: "message_id is required"})
     end

@@ -173,11 +173,11 @@ defmodule Glific.Flows.WebChannelGatingTest do
     end
   end
 
-  describe "custom_ui channel-narrowing warning (Flow.validate_flow/3)" do
+  describe "blocks channel-narrowing warning (Flow.validate_flow/3)" do
     # "Test Workflow" (seeded by SeedsDev.seed_test_flows/0) already carries a
     # send_interactive_msg action on node "33555b1e-008d-412d-a5b5-cec6d003731b" (action uuid
     # "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5") referencing an interactive template by static id.
-    # Repointing that one field at a :custom_ui template exercises the warning without hand-
+    # Repointing that one field at a :blocks template exercises the warning without hand-
     # building a synthetic (and easily inconsistent) flow definition from scratch.
     @node_uuid "33555b1e-008d-412d-a5b5-cec6d003731b"
     @action_uuid "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5"
@@ -213,30 +213,36 @@ defmodule Glific.Flows.WebChannelGatingTest do
       :ok
     end
 
-    test "a :message flow with a send_interactive_msg pointing at a custom_ui template is flagged, keyed by the node's uuid",
+    test "a :message flow with a send_interactive_msg pointing at a blocks template is flagged, keyed by the node's uuid",
          attrs do
       SeedsDev.seed_test_flows()
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
-      custom_ui_template =
+      blocks_template =
         Fixtures.interactive_fixture(%{
           organization_id: attrs.organization_id,
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: %{
-            "type" => "custom_ui",
-            "version" => "1",
-            "component" => "glific/image_panel",
+            "type" => "blocks",
+            "version" => 1,
+            "component" => "glific/image-panel",
             "props" => %{
               "id" => "course",
-              "options" => [
-                %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
-              ]
-            },
-            "fallback" => "Pick a course"
+              "options" => %{
+                "kind" => "list",
+                "value" => [
+                  %{
+                    "id" => "c1",
+                    "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                    "label" => %{"kind" => "text", "value" => "A"}
+                  }
+                ]
+              }
+            }
           }
         })
 
-      :ok = point_action_at_template(flow, custom_ui_template.id)
+      :ok = point_action_at_template(flow, blocks_template.id)
 
       errors = Flow.validate_flow(flow.organization_id, "published", %{id: flow.id})
 
@@ -251,32 +257,38 @@ defmodule Glific.Flows.WebChannelGatingTest do
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
       {:ok, flow} = Flows.update_flow(flow, %{flow_type: :web_message})
 
-      custom_ui_template =
+      blocks_template =
         Fixtures.interactive_fixture(%{
           organization_id: attrs.organization_id,
-          type: :custom_ui,
+          type: :blocks,
           interactive_content: %{
-            "type" => "custom_ui",
-            "version" => "1",
-            "component" => "glific/image_panel",
+            "type" => "blocks",
+            "version" => 1,
+            "component" => "glific/image-panel",
             "props" => %{
               "id" => "course",
-              "options" => [
-                %{"id" => "c1", "image" => "https://example.com/1.png", "label" => "A"}
-              ]
-            },
-            "fallback" => "Pick a course"
+              "options" => %{
+                "kind" => "list",
+                "value" => [
+                  %{
+                    "id" => "c1",
+                    "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                    "label" => %{"kind" => "text", "value" => "A"}
+                  }
+                ]
+              }
+            }
           }
         })
 
-      :ok = point_action_at_template(flow, custom_ui_template.id)
+      :ok = point_action_at_template(flow, blocks_template.id)
 
       errors = Flow.validate_flow(flow.organization_id, "published", %{id: flow.id})
 
       refute Enum.any?(errors, fn {_key, message, _severity} -> message =~ "web-only" end)
     end
 
-    test "a :message flow whose send_interactive_msg still points at a non-custom_ui template is not flagged",
+    test "a :message flow whose send_interactive_msg still points at a non-blocks template is not flagged",
          attrs do
       SeedsDev.seed_test_flows()
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})

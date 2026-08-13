@@ -303,17 +303,17 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message =~ "Sender_id: is invalid"
   end
 
-  test "update a message rejects retyping it to custom_ui", %{user: user} do
+  test "update a message rejects retyping it to blocks", %{user: user} do
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
-        variables: %{"id" => message.id, "input" => %{"type" => "CUSTOM_UI"}}
+        variables: %{"id" => message.id, "input" => %{"type" => "BLOCKS"}}
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "custom_ui"
+    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "blocks"
   end
 
   test "delete a message", %{user: user} do
@@ -370,7 +370,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert length(contact_ids) >= 2
   end
 
-  test "send message to a group rejects a bare `type: CUSTOM_UI` input", %{staff: user} = attrs do
+  test "send message to a group rejects a bare `type: BLOCKS` input", %{staff: user} = attrs do
     [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
 
     result =
@@ -379,7 +379,7 @@ defmodule GlificWeb.Schema.MessageTest do
           "input" => %{
             "body" => "Message body",
             "flow" => "OUTBOUND",
-            "type" => "CUSTOM_UI",
+            "type" => "BLOCKS",
             "sender_id" => Partners.organization_contact_id(user.organization_id)
           },
           "group_id" => cg1.group_id
@@ -387,7 +387,7 @@ defmodule GlificWeb.Schema.MessageTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "custom_ui"
+    assert get_in(query_data, [:errors, Access.at(0), :message]) =~ "blocks"
   end
 
   test "send hsm message to a group", %{staff: user} = attrs do

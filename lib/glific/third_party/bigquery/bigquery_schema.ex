@@ -316,6 +316,13 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description:
+          "Interactive content of the message stored in the form of JSON — populated for interactive message types (e.g. Blocks), where `body` carries only the derived text summary",
+        name: "interactive_content",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Contact number of the sender of the message",
         name: "sender_phone",
         type: "STRING",

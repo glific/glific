@@ -48,8 +48,8 @@ defmodule Glific.Providers.Web.Message do
   def send_interactive(message, attrs), do: deliver(message, attrs)
 
   @doc false
-  @spec send_custom_ui(Message.t(), map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def send_custom_ui(message, attrs), do: deliver(message, attrs)
+  @spec send_blocks(Message.t(), map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  def send_blocks(message, attrs), do: deliver(message, attrs)
 
   # Web inbound never arrives via this provider — the browser posts it directly to
   # `GlificWeb.WebChannel.RoomChannel`, which calls `Glific.Communications.WebMessage.receive_message/2`.
