@@ -77,6 +77,14 @@ There is **no `fallback` field.** It is removed in v1 — see §9 for what repla
 A **typed node** is a JSON object containing exactly the key `kind`, the key `value`, and
 optionally `translate`. No other keys. Anything else is a plain value.
 
+**A map that carries `kind` but is not a valid node is a validation ERROR, not a plain value.**
+The unwrap walker and the validator deliberately disagree here: the walker is permissive (a
+non-matching map is just a map, so it recurses), while the validator rejects anything that looks
+like a near-miss typed node — `{"kind":"text","val":"x"}`, `{"kind":"text"}`, an unknown `kind`.
+Without this rule a typo silently ships the raw object to the widget as props, where it renders as
+nothing. The permissive walker is what keeps unwrapping total; the strict validator is what stops
+malformed payloads being saved in the first place.
+
 | `kind` | `value` must be | Translated? |
 |---|---|---|
 | `text` | string | yes (unless `translate: false`) |
@@ -107,12 +115,20 @@ is the point: it makes the unwrapped output byte-identical to what the widget al
 the widget needs no change for typing.
 
 ```
-unwrap(m) when m is a map with keys ⊆ {kind, value, translate} and both kind and value present
-  → unwrap(m.value)
-unwrap(m) when m is a map    → map over values
-unwrap(l) when l is a list   → map over elements
-unwrap(v)                    → v
+unwrap(envelope)             → %{envelope | props: unwrap_node(envelope.props)}   # context untouched
+
+unwrap_node(m) when m is a map with keys ⊆ {kind, value, translate} and both kind and value present
+  → unwrap_node(m.value)
+unwrap_node(m) when m is a map   → map over values
+unwrap_node(l) when l is a list  → map over elements
+unwrap_node(v)                   → v
 ```
+
+**`context` is never walked.** §2 promises it is echoed back verbatim, and the walker is
+shape-based, not key-based — so an org that happens to put a `{"kind": …, "value": …}`-shaped map
+in `context` would otherwise have it silently collapsed on the way out and get something different
+back than it sent. Unwrapping is scoped to `props`; `type`, `version`, `component` and `context`
+pass through untouched.
 
 This is why the node key is `kind` and not `type`. The walker descends the whole payload; were the
 key `type`, the envelope itself (`{"type": "blocks", "component": …}`) would match as a typed node
