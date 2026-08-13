@@ -373,7 +373,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @known_ai_evaluation_statuses ~w(create_in_progress processing failed completed)
+  @known_ai_evaluation_statuses ~w(processing failed completed)
 
   @doc """
   Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
@@ -389,7 +389,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
             })},
          {:assistant_config_version, {:ok, config_version}} <-
            {:assistant_config_version,
-            Repo.fetch_by(AssistantConfigVersion, %{id: input.config_id})},
+            Repo.fetch_by(AssistantConfigVersion, %{
+              id: input.config_id,
+              organization_id: user.organization_id
+            })},
          config_version = Repo.preload(config_version, :assistant),
          {:golden_qa, {:ok, golden_qa}} <-
            {:golden_qa,
