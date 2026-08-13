@@ -144,7 +144,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_assistant_config(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_assistant_config(params, organization_id) do
-    config_blob = build_config_blob(params, params.knowledge_base_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids, organization_id)
 
     body = %{
       name: params.name,
@@ -180,7 +180,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_config_version(binary(), map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_config_version(config_id, params, organization_id) do
-    config_blob = build_config_blob(params, params.knowledge_base_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids, organization_id)
 
     body = %{
       commit_message: params[:description] || "",
@@ -319,16 +319,21 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  @spec build_config_blob(map(), list(String.t())) :: map()
-  defp build_config_blob(params, knowledge_base_ids) do
+  @spec build_config_blob(map(), list(String.t()), non_neg_integer()) :: map()
+  defp build_config_blob(params, knowledge_base_ids, organization_id) do
+    model = params.model || "gpt-4o"
+
     base_params = %{
-      "model" => params.model || "gpt-4o",
+      "model" => model,
       "instructions" => params.prompt || "You are a helpful assistant",
       "knowledge_base_ids" => knowledge_base_ids
     }
 
     completion_params =
-      Map.merge(stringify_keys(params[:settings] || %{}), base_params)
+      (params[:settings] || %{})
+      |> stringify_keys()
+      |> put_default_tunable_param(model, organization_id)
+      |> Map.merge(base_params)
 
     %{
       completion: %{
@@ -337,6 +342,25 @@ defmodule Glific.ThirdParty.Kaapi do
         params: completion_params
       }
     }
+  end
+
+  # Default comes from the model's own Kaapi config
+  @spec put_default_tunable_param(map(), String.t(), non_neg_integer()) :: map()
+  defp put_default_tunable_param(settings, model, organization_id) do
+    if Map.has_key?(settings, "temperature") or Map.has_key?(settings, "effort") do
+      settings
+    else
+      with {:ok, models} <- list_models(organization_id),
+           %{config: config} <- Enum.find(models, &(&1.model_name == model)) do
+        cond do
+          Map.has_key?(config, :effort) -> Map.put(settings, "effort", "low")
+          Map.has_key?(config, :temperature) -> Map.put(settings, "temperature", 0)
+          true -> settings
+        end
+      else
+        _ -> settings
+      end
+    end
   end
 
   @spec stringify_keys(map()) :: map()

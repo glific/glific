@@ -276,9 +276,12 @@ defmodule Glific.ThirdParty.KaapiTest do
 
     test "forwards temperature/top_p settings as-is for a classic (non-reasoning) model" do
       mock(fn %Tesla.Env{method: :post, body: body} ->
-        completion_params = Jason.decode!(body)["config_blob"]["completion"]["params"]
+        decoded_body = Jason.decode!(body)
 
-        assert completion_params == %{
+        assert decoded_body["name"] == "GPT-4.1 Assistant"
+        assert decoded_body["commit_message"] == "Assistant configuration"
+
+        assert decoded_body["config_blob"]["completion"]["params"] == %{
                  "model" => "gpt-4.1",
                  "instructions" => "You are a helpful assistant",
                  "knowledge_base_ids" => [],
@@ -306,14 +309,18 @@ defmodule Glific.ThirdParty.KaapiTest do
         settings: %{"temperature" => 0.01, "top_p" => 1, "max_output_tokens" => 2048}
       }
 
-      assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)
+      assert {:ok, %{success: true, data: %{id: "asst_1", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
     end
 
     test "forwards effort settings for a reasoning model, without a stray temperature" do
       mock(fn %Tesla.Env{method: :post, body: body} ->
-        completion_params = Jason.decode!(body)["config_blob"]["completion"]["params"]
+        decoded_body = Jason.decode!(body)
 
-        assert completion_params == %{
+        assert decoded_body["name"] == "GPT-5.1 Assistant"
+        assert decoded_body["commit_message"] == "Assistant configuration"
+
+        assert decoded_body["config_blob"]["completion"]["params"] == %{
                  "model" => "gpt-5.1",
                  "instructions" => "You are a helpful assistant",
                  "knowledge_base_ids" => [],
@@ -339,7 +346,154 @@ defmodule Glific.ThirdParty.KaapiTest do
         settings: %{"effort" => "none"}
       }
 
-      assert {:ok, _result} = Kaapi.create_assistant_config(params, 1)
+      assert {:ok, %{success: true, data: %{id: "asst_2", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "defaults temperature to 0 for a classic model when no tunable setting is given" do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                data: [
+                  %{
+                    provider: "openai",
+                    model_name: "gpt-4o",
+                    config: %{temperature: %{default: 1}}
+                  }
+                ]
+              }
+            }
+          }
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["completion"]["params"] == %{
+                   "model" => "gpt-4o",
+                   "instructions" => "You are a helpful assistant",
+                   "knowledge_base_ids" => [],
+                   "temperature" => 0
+                 }
+
+          %Tesla.Env{
+            status: 200,
+            body: %{success: true, data: %{id: "asst_3", version: %{version: 1}}, metadata: %{}}
+          }
+      end)
+
+      params = %{
+        name: "GPT-4o Assistant",
+        model: "gpt-4o",
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{}
+      }
+
+      assert {:ok, %{success: true, data: %{id: "asst_3", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "defaults effort to low for a reasoning model when no tunable setting is given" do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                data: [
+                  %{
+                    provider: "openai",
+                    model_name: "gpt-5.1",
+                    config: %{effort: %{default: "medium"}}
+                  }
+                ]
+              }
+            }
+          }
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["completion"]["params"] == %{
+                   "model" => "gpt-5.1",
+                   "instructions" => "You are a helpful assistant",
+                   "knowledge_base_ids" => [],
+                   "effort" => "low"
+                 }
+
+          %Tesla.Env{
+            status: 200,
+            body: %{success: true, data: %{id: "asst_4", version: %{version: 1}}, metadata: %{}}
+          }
+      end)
+
+      params = %{
+        name: "GPT-5.1 Assistant",
+        model: "gpt-5.1",
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{}
+      }
+
+      assert {:ok, %{success: true, data: %{id: "asst_4", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
+    end
+
+    test "adds neither temperature nor effort for a model whose config supports neither" do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+
+      mock(fn
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                data: [
+                  %{
+                    provider: "openai",
+                    model_name: "gpt-5.2-pro",
+                    config: %{summary: %{default: "auto"}}
+                  }
+                ]
+              }
+            }
+          }
+
+        %Tesla.Env{method: :post, body: body} ->
+          decoded_body = Jason.decode!(body)
+
+          assert decoded_body["config_blob"]["completion"]["params"] == %{
+                   "model" => "gpt-5.2-pro",
+                   "instructions" => "You are a helpful assistant",
+                   "knowledge_base_ids" => []
+                 }
+
+          %Tesla.Env{
+            status: 200,
+            body: %{success: true, data: %{id: "asst_5", version: %{version: 1}}, metadata: %{}}
+          }
+      end)
+
+      params = %{
+        name: "GPT-5.2 Pro Assistant",
+        model: "gpt-5.2-pro",
+        prompt: "You are a helpful assistant",
+        description: "Assistant configuration",
+        knowledge_base_ids: [],
+        settings: %{}
+      }
+
+      assert {:ok, %{success: true, data: %{id: "asst_5", version: %{version: 1}}}} =
+               Kaapi.create_assistant_config(params, 1)
     end
   end
 
