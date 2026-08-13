@@ -484,8 +484,11 @@ defmodule Glific.Flows.Flow do
     template_ids =
       definition
       |> Map.get("nodes", [])
+      |> List.wrap()
       |> Enum.flat_map(&(&1["actions"] || []))
-      |> Enum.filter(&(&1["type"] == "send_interactive_msg"))
+      |> Enum.filter(
+        &(&1["type"] == "send_interactive_msg" and (is_integer(&1["id"]) or is_binary(&1["id"])))
+      )
       |> Enum.map(&Glific.parse_maybe_integer(&1["id"]))
       |> Enum.flat_map(fn
         {:ok, id} when is_integer(id) -> [id]

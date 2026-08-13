@@ -489,12 +489,23 @@ defmodule Glific.Flows do
   (`create_flow_revision/2` above), `copy_flow/2`, `update_flow_localization/2` and
   `import_flow/2` — so a web-only flow's channel can never be missed, and a `flow_type` set
   through GraphQL (deprecated on `:flow_input`, stripped by the resolver) can never stick.
+
+  Writes with a bare `Ecto.Changeset.change/2`, not `update_flow/2` — this is a system-derived
+  write, not an author edit, so it must not re-run `Flow.changeset/2`'s author-facing validations
+  (`validate_keywords/2`'s cross-flow keyword query, the name/uuid `unique_constraint`s). Those
+  can legitimately fail on a flow whose other fields are already in a conflicting state, and this
+  path (autosave, import, copy) must not fail because of them — always returns `{:ok, Flow.t()}`.
   """
   @spec maybe_update_flow_type(Flow.t(), map()) :: {:ok, Flow.t()}
   def maybe_update_flow_type(flow, definition) do
     case Flow.derive_flow_type(flow.flow_type, definition, flow.organization_id) do
-      derived_flow_type when derived_flow_type == flow.flow_type -> {:ok, flow}
-      derived_flow_type -> update_flow(flow, %{flow_type: derived_flow_type})
+      derived_flow_type when derived_flow_type == flow.flow_type ->
+        {:ok, flow}
+
+      derived_flow_type ->
+        flow
+        |> Ecto.Changeset.change(flow_type: derived_flow_type)
+        |> Repo.update()
     end
   end
 
