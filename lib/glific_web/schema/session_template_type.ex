@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   alias Glific.Templates
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+  alias GlificWeb.Schema.Middleware.RequireFeatureFlag
 
   object :session_template_result do
     field :session_template, :session_template
@@ -216,6 +217,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Browse Meta's pre-approved WhatsApp template library, fetched live from the BSP partner API"
     field :template_library, list_of(:template_library_entry) do
       middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:is_template_library_enabled, "Template Library"})
       resolve(&Resolvers.Templates.template_library/3)
     end
   end
