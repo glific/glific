@@ -231,14 +231,17 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   rescue
     e in CSV.StrayEscapeCharacterError ->
       {:error,
-       "Row #{e.line} of the CSV has an unescaped \" character inside a field. " <>
-         "Either remove it or escape it by doubling it up (e.g. \"\"), or wrap the whole field in quotes."}
+       "Row #{e.line} of the CSV has an unescaped \" character inside a field, for example: " <>
+         "He said \"hi\" to me. Wrap the whole field in quotes and double up the inner quotes " <>
+         "to fix it, for example: \"He said \"\"hi\"\" to me\"."}
 
     e in CSV.EscapeSequenceError ->
       {:error,
-       "Row #{escape_sequence_error_row(e)} of the CSV has a quoted field that is malformed " <>
-         "or spans more than #{@golden_qa_csv_escape_max_lines} lines. " <>
-         "Check for a missing closing quote."}
+       "Row #{escape_sequence_error_row(e)} of the CSV has a malformed quoted field (a value " <>
+         "wrapped in double quotes, for example: \"This is an answer\") — check for a missing " <>
+         "closing quote, for example: \"This answer never closes. If the field is legitimately " <>
+         "longer than #{@golden_qa_csv_escape_max_lines} lines, please reduce it to under " <>
+         "#{@golden_qa_csv_escape_max_lines} lines."}
 
     _ ->
       {:error, "Unable to parse the uploaded CSV file"}

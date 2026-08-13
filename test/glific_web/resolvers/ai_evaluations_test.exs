@@ -808,8 +808,9 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg =~ "spans more than 1000 lines"
       assert msg =~ "malformed"
+      assert msg =~ "longer than 1000 lines"
+      assert msg =~ "reduce it"
     end
 
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
