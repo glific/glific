@@ -78,25 +78,39 @@ defmodule Glific.Templates.Blocks do
   def catalog, do: @catalog
 
   @doc """
-  Collapse a typed node tree to its plain wire value (contract §2.2).
+  Collapse a Blocks envelope's `props` to their plain wire value (contract §2.2).
 
-  Every typed node — a map whose keys are a subset of `kind`/`value`/`translate` and that
-  carries both `kind` and `value` — collapses to exactly its `value`, recursively. This makes
-  the unwrapped output byte-identical to what the widget renders, so the widget needs no change
-  for typing.
+  Unwrapping is scoped to `props` — `type`, `version`, `component` and `context` pass through
+  untouched. `context` is promised echoed back verbatim (contract §2), and the walker is
+  shape-based rather than key-based, so an org that happens to put a `{"kind": …, "value": …}`
+  -shaped map in `context` would otherwise have it silently collapsed on the way out and get
+  something different back than it sent.
+
+  Within `props`, every typed node — a map whose keys are a subset of `kind`/`value`/`translate`
+  and that carries both `kind` and `value` — collapses to exactly its `value`, recursively. This
+  makes the unwrapped output byte-identical to what the widget renders, so the widget needs no
+  change for typing. A map that carries `kind` but is *not* a valid typed node (an unrecognized
+  `kind`, a missing `value`, or an extra key) is a near-miss, not a typed node — the walker
+  deliberately stays permissive here and just recurses into it as a plain map, because rejecting
+  malformed payloads is `validate_payload/1`'s job at save time, not this function's at send
+  time (contract §2.1, §7).
   """
-  @spec unwrap(term()) :: term()
-  def unwrap(%{"kind" => _kind, "value" => value} = node) do
+  @spec unwrap(map()) :: map()
+  def unwrap(%{"props" => props} = envelope), do: %{envelope | "props" => unwrap_node(props)}
+  def unwrap(envelope), do: envelope
+
+  @spec unwrap_node(term()) :: term()
+  defp unwrap_node(%{"kind" => _kind, "value" => value} = node) do
     if Map.keys(node) -- @typed_node_keys == [] do
-      unwrap(value)
+      unwrap_node(value)
     else
-      Map.new(node, fn {k, v} -> {k, unwrap(v)} end)
+      Map.new(node, fn {k, v} -> {k, unwrap_node(v)} end)
     end
   end
 
-  def unwrap(map) when is_map(map), do: Map.new(map, fn {k, v} -> {k, unwrap(v)} end)
-  def unwrap(list) when is_list(list), do: Enum.map(list, &unwrap/1)
-  def unwrap(value), do: value
+  defp unwrap_node(map) when is_map(map), do: Map.new(map, fn {k, v} -> {k, unwrap_node(v)} end)
+  defp unwrap_node(list) when is_list(list), do: Enum.map(list, &unwrap_node/1)
+  defp unwrap_node(value), do: value
 
   @doc """
   The derived message body (contract §9), replacing the removed `fallback` field.

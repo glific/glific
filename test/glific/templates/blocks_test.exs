@@ -211,6 +211,34 @@ defmodule Glific.Templates.BlocksTest do
     end
   end
 
+  # §2.1 calls a map with extra keys "a plain value", while §7 requires typed nodes to have
+  # none of them. The resolution: the validator rejects anything carrying `kind` that is not a
+  # fully valid node, so a typo can never be saved and later ship to the widget as a raw,
+  # unrenderable object. The walker (see the `unwrap/1` describe block below) stays permissive
+  # instead — it just recurses into a near-miss as a plain map — because rejecting malformed
+  # payloads is validate_payload/1's job at save time, not unwrap/1's at send time.
+  describe "validate_payload/1 — near-miss typed nodes are a validation error (§2.1/§7)" do
+    test "rejects a node with a misspelled 'value' key ('val' instead)" do
+      payload = put_in(@org_envelope, ["props", "anything"], %{"kind" => "text", "val" => "x"})
+      assert {:error, reason} = Blocks.validate_payload(payload)
+      assert reason =~ "unknown key"
+    end
+
+    test "rejects a node with 'kind' but no 'value' at all" do
+      payload = put_in(@org_envelope, ["props", "anything"], %{"kind" => "text"})
+      assert {:error, reason} = Blocks.validate_payload(payload)
+      assert reason =~ "value"
+    end
+
+    test "rejects a node with an unrecognized 'kind'" do
+      payload =
+        put_in(@org_envelope, ["props", "anything"], %{"kind" => "richtext", "value" => "x"})
+
+      assert {:error, reason} = Blocks.validate_payload(payload)
+      assert reason =~ "kind"
+    end
+  end
+
   describe "validate_payload/1 — reserved ids (§5.1)" do
     test "rejects props.id equal to a reserved key" do
       payload = put_in(@carousel_envelope, ["props", "id"], "input")
@@ -577,17 +605,21 @@ defmodule Glific.Templates.BlocksTest do
   end
 
   describe "unwrap/1" do
-    test "collapses a typed node to its value" do
-      assert Blocks.unwrap(%{"kind" => "text", "value" => "hello"}) == "hello"
+    test "collapses a typed node found inside props to its value" do
+      envelope =
+        put_in(@org_envelope, ["props", "greeting"], %{"kind" => "text", "value" => "hello"})
+
+      assert Blocks.unwrap(envelope)["props"]["greeting"] == "hello"
     end
 
-    test "collapses a typed list node recursively" do
-      typed = %{
-        "kind" => "list",
-        "value" => [%{"id" => "c1", "label" => %{"kind" => "text", "value" => "A"}}]
-      }
+    test "collapses a typed list node inside props recursively" do
+      envelope =
+        put_in(@org_envelope, ["props", "items"], %{
+          "kind" => "list",
+          "value" => [%{"id" => "c1", "label" => %{"kind" => "text", "value" => "A"}}]
+        })
 
-      assert Blocks.unwrap(typed) == [%{"id" => "c1", "label" => "A"}]
+      assert Blocks.unwrap(envelope)["props"]["items"] == [%{"id" => "c1", "label" => "A"}]
     end
 
     test "unwraps a full envelope's props uniformly" do
@@ -609,13 +641,40 @@ defmodule Glific.Templates.BlocksTest do
              }
     end
 
-    test "leaves a plain (non-typed) map untouched" do
+    test "leaves type/version/component untouched" do
+      unwrapped = Blocks.unwrap(@image_panel_envelope)
+      assert unwrapped["type"] == "blocks"
+      assert unwrapped["version"] == 1
+      assert unwrapped["component"] == "glific/image-panel"
+    end
+
+    # contract §2 promises context is echoed back verbatim; the walker is shape-based, not
+    # key-based, so scoping unwrap to props (rather than walking the whole envelope) is what
+    # keeps a {kind, value}-shaped map an org happens to put in context from being silently
+    # collapsed into something different from what it sent.
+    test "leaves a {kind, value}-shaped map inside context untouched" do
+      envelope =
+        Map.put(@org_envelope, "context", %{
+          "kind" => "text",
+          "value" => "not a typed node here"
+        })
+
+      assert Blocks.unwrap(envelope)["context"] == %{
+               "kind" => "text",
+               "value" => "not a typed node here"
+             }
+    end
+
+    test "passes through an envelope with no 'props' key" do
       assert Blocks.unwrap(%{"a" => 1, "b" => "c"}) == %{"a" => 1, "b" => "c"}
     end
 
-    test "passes scalars through" do
-      assert Blocks.unwrap(5) == 5
-      assert Blocks.unwrap(nil) == nil
+    # The walker stays permissive on a near-miss typed node (unlike the strict validator, see
+    # the "near-miss typed nodes" describe block above) — it recurses into it as a plain map
+    # rather than collapsing or raising, so unwrapping is always total.
+    test "recurses into a near-miss typed node inside props instead of collapsing or raising" do
+      envelope = put_in(@org_envelope, ["props", "broken"], %{"kind" => "text", "val" => "x"})
+      assert Blocks.unwrap(envelope)["props"]["broken"] == %{"kind" => "text", "val" => "x"}
     end
   end
 
