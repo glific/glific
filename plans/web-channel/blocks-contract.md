@@ -516,6 +516,37 @@ Auto-translation only in v1 (decision C).
   an MUI reimplementation of the widget's renderer. Best-effort fidelity. The same MUI renderer is
   reused in the staff Chat thread.
 
+### 11.1 A flow's channels are a derived SET of three states
+
+A flow reaches every channel its nodes allow. That is a **set**, not a discriminator, and it has
+three reachable states — the console shows one badge or two, and §13 gates the preview tabs on it.
+
+| State | Derived from | Badges |
+|---|---|---|
+| web only | any node sends a `blocks` interactive template | `Web` |
+| WhatsApp only | any node is `send_broadcast`, or a `send_msg` carrying an HSM template | `WhatsApp` |
+| omnichannel (default) | neither of the above | `WhatsApp` `Web` |
+
+Both signals already exist: the web-only test is `Flow.derive_flow_type/3`, and the WhatsApp-only
+test is exactly the set `web_channel_capability_errors/2` already uses to reject those actions on a
+`:web_message` flow (`@unsupported_web_channel_action_types` plus the HSM `send_msg` clause). A flow
+matching **both** is a genuine conflict and must already fail publish via that same function.
+
+**`flows.flow_type` cannot express this.** It is a binary enum (`:message | :web_message`) and it
+also drives engine behaviour, so widening it would mean auditing every closed set that names its
+members — the landmine class §12 exists to record. Instead, store the derived set in its own
+`flows.channels` column (a string array), written at the same choke point as `flow_type`
+(`Flows.maybe_update_flow_type/2`) and exposed as a plain GraphQL field.
+
+A stored column rather than a resolver-computed field is deliberate: the flow **list** renders these
+badges per row, and computing them there would mean parsing every flow's definition on every page
+load. Derivation already runs on autosave, so the column is at most one save stale.
+
+**Web-only remains monotonic** (once set, never cleared) because absence of a blocks node does not
+prove a flow is not web — a text-only web flow has no blocks node to detect, and auto-downgrading
+would silently break existing web-channel flows. WhatsApp-only carries no such ambiguity: the
+actions that cause it are directly observable, so it may be recomputed in both directions.
+
 ## 12. Known landmines (all must be handled)
 
 In `lib/glific/templates/interactive_templates.ex`:
