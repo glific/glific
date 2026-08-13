@@ -716,7 +716,7 @@ defmodule Glific.Assistants do
   # A model's tunable params vary (temperature/top_p for classic models,
   # effort/summary for reasoning models) and don't overlap
   @spec build_settings(map()) :: map()
-  defp build_settings(%{settings: settings}) when is_map(settings) and settings != %{} do
+  defp build_settings(%{settings: settings}) when map_size(settings) > 0 do
     Map.new(settings, fn {key, value} -> {to_string(key), value} end)
   end
 

@@ -346,20 +346,21 @@ defmodule Glific.ThirdParty.Kaapi do
 
   # Default comes from the model's own Kaapi config
   @spec put_default_tunable_param(map(), String.t(), non_neg_integer()) :: map()
+  defp put_default_tunable_param(settings, _model, _organization_id)
+       when is_map_key(settings, "temperature") or is_map_key(settings, "effort"),
+       do: settings
+
+  # Set default temperature as 1 for models that support it, or effort as "low" for models that support it.
   defp put_default_tunable_param(settings, model, organization_id) do
-    if Map.has_key?(settings, "temperature") or Map.has_key?(settings, "effort") do
-      settings
-    else
-      with {:ok, models} <- list_models(organization_id),
-           %{config: config} <- Enum.find(models, &(&1.model_name == model)) do
-        cond do
-          Map.has_key?(config, :effort) -> Map.put(settings, "effort", "low")
-          Map.has_key?(config, :temperature) -> Map.put(settings, "temperature", 0)
-          true -> settings
-        end
-      else
-        _ -> settings
+    with {:ok, models} <- list_models(organization_id),
+         %{config: config} <- Enum.find(models, &(&1.model_name == model)) do
+      cond do
+        is_map_key(config, :effort) -> Map.put(settings, "effort", "low")
+        is_map_key(config, :temperature) -> Map.put(settings, "temperature", 1)
+        true -> settings
       end
+    else
+      _ -> settings
     end
   end
 
