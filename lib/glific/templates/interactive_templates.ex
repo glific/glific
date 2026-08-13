@@ -204,6 +204,12 @@ defmodule Glific.Templates.InteractiveTemplates do
     check_options_for_markdown(options_lists)
   end
 
+  # A blocks envelope has neither "options" nor "items" — it is web-only and renders as HTML, so
+  # the WhatsApp-markdown guard this function exists for does not apply. Matched explicitly (not
+  # left to the catch-all below) so this is a deliberate decision, not the landmine described in
+  # contract §12.
+  defp check_options(%{"type" => "blocks"}), do: :ok
+
   defp check_options(_), do: :ok
 
   @spec check_options_for_markdown(list()) :: :ok | {:error, String.t()}

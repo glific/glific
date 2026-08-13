@@ -145,6 +145,9 @@ defmodule Glific.Templates.Blocks do
   defp collect_text_values(%{"kind" => _other_kind}), do: []
 
   defp collect_text_values(map) when is_map(map) do
+    # Sorted, not authored, key order (contract §9): authored order cannot survive jsonb
+    # normalisation on write plus Elixir's flatmap decode on read, so sorted order is the only
+    # rule all four repos can implement identically.
     map
     |> Enum.sort_by(fn {key, _value} -> key end)
     |> Enum.flat_map(fn {_key, value} -> collect_text_values(value) end)
@@ -486,7 +489,10 @@ defmodule Glific.Templates.Blocks do
     do: {:error, "Blocks '#{kind}' node value must be a string"}
 
   defp validate_kind_value(kind, value) when kind in ["image", "url"] and is_binary(value) do
-    if Regex.match?(~r{^https?://}, value),
+    # Mirrors the console's client-side check (`/^https?:\/\/\S+$/i`) exactly, so a payload the
+    # console lets an author save never fails here, and vice versa: case-insensitive scheme, and
+    # at least one non-whitespace character after it (a bare "http://" is not a URL).
+    if Regex.match?(~r{^https?://\S+$}i, value),
       do: :ok,
       else: {:error, "Blocks '#{kind}' node value must be an absolute http(s) URL"}
   end

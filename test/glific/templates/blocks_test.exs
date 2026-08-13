@@ -178,6 +178,24 @@ defmodule Glific.Templates.BlocksTest do
       assert reason =~ "http(s)"
     end
 
+    test "rejects a scheme with no host, matching the console's stricter check" do
+      payload =
+        put_in(@org_envelope, ["props", "anything"], %{"kind" => "url", "value" => "http://"})
+
+      assert {:error, reason} = Blocks.validate_payload(payload)
+      assert reason =~ "http(s)"
+    end
+
+    test "accepts an upper-case scheme, matching the console's case-insensitive check" do
+      payload =
+        put_in(@org_envelope, ["props", "anything"], %{
+          "kind" => "url",
+          "value" => "HTTP://example.com/a.png"
+        })
+
+      assert :ok == Blocks.validate_payload(payload)
+    end
+
     test "accepts translate: false on a text node" do
       payload =
         put_in(@org_envelope, ["props", "anything"], %{

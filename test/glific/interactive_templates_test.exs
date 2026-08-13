@@ -898,6 +898,20 @@ defmodule Glific.InteractiveTemplatesTest do
                InteractiveTemplates.create_interactive_template(valid_attrs)
     end
 
+    test "create_interactive_template/1 does not apply the WhatsApp markdown guard to a blocks envelope",
+         attrs do
+      envelope_with_markdown =
+        put_in(@blocks_envelope, ["props", "body", "value"], "**bold** _italic_ text")
+
+      valid_attrs =
+        @blocks_attrs
+        |> Map.put(:interactive_content, envelope_with_markdown)
+        |> Map.merge(attrs)
+
+      assert {:ok, %InteractiveTemplate{type: :blocks}} =
+               InteractiveTemplates.create_interactive_template(valid_attrs)
+    end
+
     test "translate_interactive_template/1 translates every text/alt node, reinserted by path, leaving structural keys untouched",
          %{organization_id: _organization_id} = attrs do
       interactive = Fixtures.interactive_fixture(Map.merge(@blocks_attrs, attrs))
