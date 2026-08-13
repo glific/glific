@@ -80,11 +80,18 @@ optionally `translate`. No other keys. Anything else is a plain value.
 | `kind` | `value` must be | Translated? |
 |---|---|---|
 | `text` | string | yes (unless `translate: false`) |
+| `alt` | string | yes (unless `translate: false`) |
 | `image` | string, an absolute `http(s)` URL | no |
 | `url` | string, an absolute `http(s)` URL | no |
 | `number` | JSON number | no |
 | `boolean` | JSON boolean | no |
 | `list` | JSON array; each element is a plain object whose leaves may be typed nodes | recurses |
+
+`alt` is a distinct kind, not a flavour of `text`, precisely so the body derivation (§9) can skip
+it. Alternative text is accessibility metadata, not body copy: were it `text`, every carousel's
+`messages.body` — and therefore the staff conversation-list preview and the message search index —
+would read `Browse our courses — Course A — Students at desks — Six weeks, evenings`. Kinds carry
+semantics, so the walker stays key-agnostic rather than special-casing the key name `image_alt`.
 
 `translate: false` is **accepted and validated in v1 but has no effect** — v1 translates every
 `text` node. It exists now so brand names and codes do not require re-validating stored payloads
@@ -251,8 +258,8 @@ cross-repo review):
 - Renderers stay tolerant of a missing optional value at runtime; console and backend both reject
   it at save.
 
-Schemas are shown in **stored (typed)** form. `T(x)` abbreviates `{"kind":"text","value":x}` and
-`I(x)` abbreviates `{"kind":"image","value":x}`.
+Schemas are shown in **stored (typed)** form. `T(x)` abbreviates `{"kind":"text","value":x}`,
+`I(x)` abbreviates `{"kind":"image","value":x}`, and `A(x)` abbreviates `{"kind":"alt","value":x}`.
 
 ### `glific/image-panel`
 
@@ -263,7 +270,7 @@ Schemas are shown in **stored (typed)** form. `T(x)` abbreviates `{"kind":"text"
   "options": { "kind": "list", "value": [           // REQUIRED, 1..10
     { "id": "c1",                                   // REQUIRED
       "image":     I("https://…/english.png"),      // REQUIRED
-      "image_alt": T("Adult English class"),        // OPTIONAL
+      "image_alt": A("Adult English class"),        // OPTIONAL
       "label":     T("Spoken English") }            // REQUIRED
   ]}
 }
@@ -281,7 +288,7 @@ Schemas are shown in **stored (typed)** form. `T(x)` abbreviates `{"kind":"text"
   "cards": { "kind": "list", "value": [             // REQUIRED, 1..10
     { "id": "p1",                                   // REQUIRED
       "image":       I("https://…/a.png"),          // REQUIRED
-      "image_alt":   T("Students at desks"),        // OPTIONAL
+      "image_alt":   A("Students at desks"),        // OPTIONAL
       "title":       T("Course A"),                 // REQUIRED
       "description": T("Six weeks, evenings") }     // OPTIONAL
   ]}
@@ -377,7 +384,11 @@ a non-web trigger.
 `messages.body` column is still populated, by **derivation from the typed payload**:
 
 > Walk the payload in document order; concatenate the `value` of each `kind: "text"` node,
-> joined with `" — "`, clamped to 500 chars.
+> joined with `" — "`, clamped to 500 chars. **`kind: "alt"` nodes are skipped** — see §2.1.
+
+The derivation itself returns `""` when a payload has no text nodes. Substituting a readable
+placeholder is the *render site's* job (the floweditor canvas must never render blank), so that the
+derivation stays byte-identical across all four repos.
 
 Applied uniformly:
 
