@@ -48,7 +48,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec create_flow(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_flow(_, %{input: params}, _) do
-    with {:ok, flow} <- Flows.create_flow(params) do
+    with {:ok, flow} <- Flows.create_flow(strip_flow_type(params)) do
       {:ok, %{flow: flow}}
     end
   end
@@ -58,10 +58,16 @@ defmodule GlificWeb.Resolvers.Flows do
           {:ok, any} | {:error, any}
   def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         {:ok, flow} <- Flows.update_flow(flow, params) do
+         {:ok, flow} <- Flows.update_flow(flow, strip_flow_type(params)) do
       {:ok, %{flow: flow}}
     end
   end
+
+  # `flow_type` is deprecated on `:flow_input` (derived from the flow's nodes, see
+  # `Glific.Flows.Flow.derive_flow_type/3`) — an author-supplied value is silently ignored
+  # rather than rejected, so an old client that still sends it keeps working.
+  @spec strip_flow_type(map()) :: map()
+  defp strip_flow_type(params), do: Map.delete(params, :flow_type)
 
   @doc false
   @spec export_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -331,7 +337,7 @@ defmodule GlificWeb.Resolvers.Flows do
       Glific.Metrics.increment("Template flows on UI", org_id)
     end
 
-    do_copy_flow(id, params, &Flows.copy_flow/2)
+    do_copy_flow(id, strip_flow_type(params), &Flows.copy_flow/2)
   end
 
   @spec do_copy_flow(

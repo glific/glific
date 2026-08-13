@@ -463,6 +463,7 @@ defmodule Glific.Flows do
   @spec create_flow_revision(map(), non_neg_integer()) :: FlowRevision.t()
   def create_flow_revision(definition, user_id) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
+    {:ok, flow} = maybe_update_flow_type(flow, definition)
 
     {:ok, revision} =
       %FlowRevision{}
@@ -480,6 +481,21 @@ defmodule Glific.Flows do
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
 
     revision
+  end
+
+  @doc """
+  Derive `flow_type` from a flow definition and persist it if it changed (`Flow.derive_flow_type/3`).
+  The single choke point for every path that writes a flow definition — editor autosave
+  (`create_flow_revision/2` above), `copy_flow/2`, `update_flow_localization/2` and
+  `import_flow/2` — so a web-only flow's channel can never be missed, and a `flow_type` set
+  through GraphQL (deprecated on `:flow_input`, stripped by the resolver) can never stick.
+  """
+  @spec maybe_update_flow_type(Flow.t(), map()) :: {:ok, Flow.t()}
+  def maybe_update_flow_type(flow, definition) do
+    case Flow.derive_flow_type(flow.flow_type, definition, flow.organization_id) do
+      derived_flow_type when derived_flow_type == flow.flow_type -> {:ok, flow}
+      derived_flow_type -> update_flow(flow, %{flow_type: derived_flow_type})
+    end
   end
 
   defp check_field(json, field, acc),
@@ -621,6 +637,12 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, any()} | {:errors, list()}
   def publish_flow(%Flow{} = flow, user_id) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+    # Derive `flow_type` from the draft being published, before validating it, so
+    # `web_channel_capability_errors/2` sees the up-to-date type — a flow whose only blocks
+    # node ships alongside a `send_broadcast` should fail publish, not silently succeed because
+    # the derived type hadn't landed yet. This is a defense-in-depth re-derivation: the editor
+    # autosave path (`create_flow_revision/2`) already derives on every save.
+    flow = derive_flow_type_before_publish(flow)
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
     result = do_publish_flow(flow, user_id)
 
@@ -637,6 +659,17 @@ defmodule Glific.Flows do
       # We had an error validating the flow
       true ->
         {:errors, format_flow_errors(errors)}
+    end
+  end
+
+  @spec derive_flow_type_before_publish(Flow.t()) :: Flow.t()
+  defp derive_flow_type_before_publish(flow) do
+    with {:ok, draft_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}),
+         {:ok, flow} <- maybe_update_flow_type(flow, draft_revision.definition) do
+      flow
+    else
+      _ -> flow
     end
   end
 
@@ -838,6 +871,8 @@ defmodule Glific.Flows do
         latest_flow_revision.definition
         |> Map.merge(%{"uuid" => flow_copy.uuid})
 
+      {:ok, _flow_copy} = maybe_update_flow_type(flow_copy, definition_copy)
+
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: definition_copy,
@@ -862,6 +897,8 @@ defmodule Glific.Flows do
       definition_copy =
         latest_flow_revision.definition
         |> Map.merge(%{"localization" => localization})
+
+      {:ok, flow} = maybe_update_flow_type(flow, definition_copy)
 
       # lets ensure we clean up the caches
       remove_flow_cache(flow)
@@ -1045,6 +1082,7 @@ defmodule Glific.Flows do
                interactive_template_list,
                organization_id
              ),
+           {:ok, flow} <- maybe_update_flow_type(flow, cleaned_definition),
            {:ok, _flow_revision} <-
              FlowRevision.create_flow_revision(%{
                definition: cleaned_definition,

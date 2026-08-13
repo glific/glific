@@ -415,7 +415,6 @@ defmodule Glific.Flows.Flow do
       |> missing_flow_context_nodes(flow, all_nodes)
       |> missing_localization(flow, all_translation, action_to_node_map)
       |> web_channel_capability_errors(flow)
-      |> blocks_channel_narrowing_errors(flow)
     end
   end
 
@@ -455,51 +454,52 @@ defmodule Glific.Flows.Flow do
 
   defp web_channel_capability_errors(errors, _flow), do: errors
 
-  # A flow that is NOT already declared web-only (`flow_type: :web_message`) but contains a
-  # `send_interactive_msg` action referencing a `:blocks` template has silently narrowed to
-  # web-only: nothing else renders that template. Warn the author so they can update the flow's
-  # channel configuration, rather than let non-web contacts hit the runtime fallback silently.
-  #
-  # This is the inverse of `web_channel_capability_errors/2` above (which gates actions that
-  # are NOT supported on an already-declared web-only flow) so it is a sibling function, not a
-  # clause bolted onto it. The error is keyed by the offending node's `uuid` (not the action's)
-  # because the flow editor's issues tab drops any issue whose key matches no node.
-  @spec blocks_channel_narrowing_errors(list(), map()) :: list()
-  defp blocks_channel_narrowing_errors(errors, %{flow_type: :web_message}), do: errors
+  @doc """
+  Derive a flow's channel type from its definition, rather than trusting an author-set value.
 
-  defp blocks_channel_narrowing_errors(errors, flow) do
-    flow.definition["nodes"]
-    |> Enum.reduce(errors, fn node, acc ->
-      (node["actions"] || [])
-      |> Enum.reduce(acc, fn action, node_acc ->
-        if blocks_template_action?(action, flow.organization_id) do
-          [
-            {node["uuid"], "This flow is now web-only — update the flow's channel configuration",
-             "Warning"}
-            | node_acc
-          ]
-        else
-          node_acc
-        end
+  `flow_type` is not editable by an author (`:flow_input` deprecates the field and the resolver
+  strips it) — a flow is omnichannel (`:message`) by default and becomes web-only the moment any
+  node sends a `:blocks` interactive template, which nothing but the widget can render. The
+  commitment is irreversible: once a flow is `:web_message` it stays that way even if the blocks
+  node is later removed, matching `web_channel_capability_errors/2` above (the inverse gate, which
+  treats `:web_message` as a hard fact about the flow, not a hint). Call this at every point a
+  flow definition is written — see `Glific.Flows.maybe_update_flow_type/2`, its single caller.
+  """
+  @spec derive_flow_type(atom() | nil, map(), non_neg_integer()) :: atom() | nil
+  def derive_flow_type(:web_message, _definition, _organization_id), do: :web_message
+
+  def derive_flow_type(current_flow_type, definition, organization_id) do
+    if web_only_node?(definition, organization_id),
+      do: :web_message,
+      else: current_flow_type
+  end
+
+  # Only statically-referenced templates (`action["id"]`) can be checked here; a
+  # dynamically-resolved `interactive_template_expression` is not known until runtime, and such a
+  # flow relies on the runtime unsupported-channel fallback (contract §8) instead. One query
+  # covers every `send_interactive_msg` action in the definition, rather than one per action —
+  # this runs on every floweditor autosave.
+  @spec web_only_node?(map(), non_neg_integer()) :: boolean()
+  defp web_only_node?(definition, organization_id) do
+    template_ids =
+      definition
+      |> Map.get("nodes", [])
+      |> Enum.flat_map(&(&1["actions"] || []))
+      |> Enum.filter(&(&1["type"] == "send_interactive_msg"))
+      |> Enum.map(&Glific.parse_maybe_integer(&1["id"]))
+      |> Enum.flat_map(fn
+        {:ok, id} when is_integer(id) -> [id]
+        _ -> []
       end)
-    end)
-  end
 
-  # Only statically-referenced templates (`action["id"]`) can be checked at publish time; a
-  # dynamically-resolved `interactive_template_expression` is not known until runtime.
-  @spec blocks_template_action?(map(), non_neg_integer()) :: boolean()
-  defp blocks_template_action?(
-         %{"type" => "send_interactive_msg", "id" => id},
-         organization_id
-       )
-       when is_integer(id) do
-    case Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: organization_id}) do
-      {:ok, %{type: :blocks}} -> true
-      _ -> false
-    end
+    template_ids != [] &&
+      Repo.exists?(
+        from(t in InteractiveTemplate,
+          where:
+            t.id in ^template_ids and t.type == :blocks and t.organization_id == ^organization_id
+        )
+      )
   end
-
-  defp blocks_template_action?(_action, _organization_id), do: false
 
   @spec templated_action?(map()) :: boolean()
   defp templated_action?(action),

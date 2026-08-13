@@ -2,6 +2,7 @@ defmodule Glific.Flows.RouterTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Communications.WebMessage,
     Fixtures,
     Groups,
     Messages
@@ -611,5 +612,67 @@ defmodule Glific.Flows.RouterTest do
 
     assert updated_context.results["counter"]["count"] == "999"
     assert updated_context.results["counter"]["confirmed"] == "true"
+  end
+
+  test "router with a glific/form blocks_response flattens every field individually, driven through WebMessage.receive_message/2" do
+    {router, uuid_map} = blocks_response_router("signup")
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+
+    interactive_content = %{
+      "type" => "blocks",
+      "version" => 1,
+      "component" => "glific/form",
+      "props" => %{
+        "id" => "signup",
+        "fields" => [
+          %{"id" => "name", "label" => "Your name"},
+          %{"id" => "city", "label" => "Your city"}
+        ]
+      }
+    }
+
+    outbound =
+      Fixtures.message_fixture(%{
+        type: :blocks,
+        interactive_content: interactive_content,
+        channel: "web",
+        flow: :outbound,
+        receiver_id: context.contact_id,
+        organization_id: context.organization_id
+      })
+
+    assert {:ok, inbound} =
+             WebMessage.receive_message(
+               %{
+                 "message_id" => outbound.id,
+                 "component" => "glific/form",
+                 "values" => %{"name" => "Asha", "city" => "Pune"},
+                 "summary" => "Your name: Asha, Your city: Pune",
+                 sender: %{phone: context.contact.phone},
+                 organization_id: context.organization_id
+               },
+               :blocks_response
+             )
+
+    assert inbound.type == :blocks_response
+
+    {:ok, _, _} = Router.execute(router, context, [inbound])
+
+    updated_context = Repo.get!(FlowContext, context.id)
+    results = updated_context.results["signup"]
+
+    # Every field the contact filled in resolves individually — `@results.signup.name` and
+    # `@results.signup.city` — alongside the reserved keys, exactly per contract §5. `input` and
+    # `summary` both carry the auto summary; `category`/`inserted_at` come from `default_results`.
+    assert results["name"] == "Asha"
+    assert results["city"] == "Pune"
+    assert results["summary"] == "Your name: Asha, Your city: Pune"
+    assert results["input"] == "Your name: Asha, Your city: Pune"
+    assert results["component"] == "glific/form"
+    assert results["category"] == "Responded"
+    assert {:ok, _datetime, _offset} = DateTime.from_iso8601(results["inserted_at"])
+
+    assert Map.keys(results) |> Enum.sort() ==
+             ~w(category city component input inserted_at name summary)
   end
 end

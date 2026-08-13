@@ -401,8 +401,23 @@ When a blocks send targets an unsupported channel, send the **derived body (§9)
 message** and raise a `FlowContext.notification`. This must intercept BEFORE
 `Communications.Message.@type_to_token`, which has no catch-all and would raise on `:blocks`.
 
-Publish-time derivation in `flow.ex` warns when a flow containing a blocks node is reachable from
-a non-web trigger.
+`flows.flow_type` is **derived, not author-set** — matching §11's "derived, read-only,
+informational" channel badges on the frontend, this is what makes that true on the backend. A flow
+is omnichannel (`:message`) by default; it becomes web-only (`:web_message`) the moment any node's
+`send_interactive_msg` statically references a `:blocks` template
+(`Glific.Flows.Flow.derive_flow_type/3`). The commitment is **irreversible** — removing the blocks
+node later does not revert the flow, mirroring `web_channel_capability_errors/2` (the inverse
+gate), which treats `:web_message` as a fact about the flow rather than a hint. A dynamically
+resolved `interactive_template_expression` cannot be checked at save time and falls through to the
+runtime unsupported-channel fallback above instead.
+
+Derivation runs at every path that writes a flow definition — editor autosave
+(`Glific.Flows.create_flow_revision/2`), `import_flow/2`, `copy_flow/2`, and
+`update_flow_localization/2` — via the single choke point `Glific.Flows.maybe_update_flow_type/2`,
+and again at `publish_flow/2` (before validation, so `web_channel_capability_errors/2` sees the
+up-to-date type when a blocks node and an unsupported action, e.g. `send_broadcast`, land in the
+same save). GraphQL's `:flow_input.flow_type` is deprecated and silently ignored by
+`GlificWeb.Resolvers.Flows` — there is no author-facing way to set or override it.
 
 ## 9. The derived body (replaces `fallback`)
 

@@ -173,21 +173,23 @@ defmodule Glific.Flows.WebChannelGatingTest do
     end
   end
 
-  describe "blocks channel-narrowing warning (Flow.validate_flow/3)" do
+  describe "flow_type derivation from blocks nodes (Glific.Flows.maybe_update_flow_type/2)" do
     # "Test Workflow" (seeded by SeedsDev.seed_test_flows/0) already carries a
     # send_interactive_msg action on node "33555b1e-008d-412d-a5b5-cec6d003731b" (action uuid
     # "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5") referencing an interactive template by static id.
-    # Repointing that one field at a :blocks template exercises the warning without hand-
-    # building a synthetic (and easily inconsistent) flow definition from scratch.
+    # Repointing that one field at a :blocks template exercises derivation without hand-building
+    # a synthetic (and easily inconsistent) flow definition from scratch.
     @node_uuid "33555b1e-008d-412d-a5b5-cec6d003731b"
     @action_uuid "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5"
 
-    @spec point_action_at_template(Flow.t(), non_neg_integer()) :: :ok
-    defp point_action_at_template(flow, interactive_template_id) do
-      revision = Repo.get_by!(FlowRevision, flow_id: flow.id, status: "published")
+    @spec published_definition(Flow.t()) :: map()
+    defp published_definition(flow),
+      do: Repo.get_by!(FlowRevision, flow_id: flow.id, status: "published").definition
 
+    @spec definition_pointing_at_template(map(), non_neg_integer()) :: map()
+    defp definition_pointing_at_template(definition, interactive_template_id) do
       updated_nodes =
-        Enum.map(revision.definition["nodes"], fn
+        Enum.map(definition["nodes"], fn
           %{"uuid" => @node_uuid} = node ->
             updated_actions =
               Enum.map(node["actions"], fn
@@ -204,100 +206,131 @@ defmodule Glific.Flows.WebChannelGatingTest do
             node
         end)
 
-      updated_definition = Map.put(revision.definition, "nodes", updated_nodes)
-
-      revision
-      |> Ecto.Changeset.change(definition: updated_definition)
-      |> Repo.update!()
-
-      :ok
+      Map.put(definition, "nodes", updated_nodes)
     end
 
-    test "a :message flow with a send_interactive_msg pointing at a blocks template is flagged, keyed by the node's uuid",
-         attrs do
-      SeedsDev.seed_test_flows()
-      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
-
-      blocks_template =
-        Fixtures.interactive_fixture(%{
-          organization_id: attrs.organization_id,
-          type: :blocks,
-          interactive_content: %{
-            "type" => "blocks",
-            "version" => 1,
-            "component" => "glific/image-panel",
-            "props" => %{
-              "id" => "course",
-              "options" => %{
-                "kind" => "list",
-                "value" => [
-                  %{
-                    "id" => "c1",
-                    "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
-                    "label" => %{"kind" => "text", "value" => "A"}
-                  }
-                ]
-              }
+    @spec blocks_template_fixture(non_neg_integer()) :: InteractiveTemplate.t()
+    defp blocks_template_fixture(organization_id) do
+      Fixtures.interactive_fixture(%{
+        organization_id: organization_id,
+        type: :blocks,
+        interactive_content: %{
+          "type" => "blocks",
+          "version" => 1,
+          "component" => "glific/image-panel",
+          "props" => %{
+            "id" => "course",
+            "options" => %{
+              "kind" => "list",
+              "value" => [
+                %{
+                  "id" => "c1",
+                  "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                  "label" => %{"kind" => "text", "value" => "A"}
+                }
+              ]
             }
           }
-        })
-
-      :ok = point_action_at_template(flow, blocks_template.id)
-
-      errors = Flow.validate_flow(flow.organization_id, "published", %{id: flow.id})
-
-      assert Enum.any?(errors, fn {key, message, _severity} ->
-               key == @node_uuid and message =~ "web-only"
-             end)
+        }
+      })
     end
 
-    test "an already :web_message flow is not flagged (it has already made the channel commitment)",
+    test "saving a draft revision with a blocks node derives flow_type to :web_message", attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+      assert flow.flow_type == :message
+
+      blocks_template = blocks_template_fixture(attrs.organization_id)
+
+      definition =
+        flow
+        |> published_definition()
+        |> definition_pointing_at_template(blocks_template.id)
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(definition, user.id)
+
+      updated_flow = Repo.get!(Flow, flow.id)
+      assert updated_flow.flow_type == :web_message
+    end
+
+    test "removing the blocks node afterwards does not revert flow_type — the commitment is irreversible",
          attrs do
       SeedsDev.seed_test_flows()
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
-      {:ok, flow} = Flows.update_flow(flow, %{flow_type: :web_message})
 
-      blocks_template =
-        Fixtures.interactive_fixture(%{
-          organization_id: attrs.organization_id,
-          type: :blocks,
-          interactive_content: %{
-            "type" => "blocks",
-            "version" => 1,
-            "component" => "glific/image-panel",
-            "props" => %{
-              "id" => "course",
-              "options" => %{
-                "kind" => "list",
-                "value" => [
-                  %{
-                    "id" => "c1",
-                    "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
-                    "label" => %{"kind" => "text", "value" => "A"}
-                  }
-                ]
-              }
-            }
-          }
-        })
+      blocks_template = blocks_template_fixture(attrs.organization_id)
+      original_definition = published_definition(flow)
+      blocks_definition = definition_pointing_at_template(original_definition, blocks_template.id)
 
-      :ok = point_action_at_template(flow, blocks_template.id)
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(blocks_definition, user.id)
+      flow = Repo.get!(Flow, flow.id)
+      assert flow.flow_type == :web_message
 
-      errors = Flow.validate_flow(flow.organization_id, "published", %{id: flow.id})
+      # Saving the original (non-blocks) definition again must not revert the flow.
+      _revision = Flows.create_flow_revision(original_definition, user.id)
 
-      refute Enum.any?(errors, fn {_key, message, _severity} -> message =~ "web-only" end)
+      reverted_flow = Repo.get!(Flow, flow.id)
+      assert reverted_flow.flow_type == :web_message
     end
 
-    test "a :message flow whose send_interactive_msg still points at a non-blocks template is not flagged",
+    test "a :message flow whose send_interactive_msg still points at a non-blocks template stays :message",
          attrs do
       SeedsDev.seed_test_flows()
       {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(published_definition(flow), user.id)
+
+      unchanged_flow = Repo.get!(Flow, flow.id)
+      assert unchanged_flow.flow_type == :message
 
       refute attrs |> Map.get(:organization_id) |> is_nil()
+    end
 
-      errors = Flow.validate_flow(flow.organization_id, "published", %{id: flow.id})
+    test "publish_flow/2 derives flow_type before validating, so a blocks node alongside a send_broadcast fails publish",
+         attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
-      refute Enum.any?(errors, fn {_key, message, _severity} -> message =~ "web-only" end)
+      blocks_template = blocks_template_fixture(attrs.organization_id)
+
+      definition =
+        flow
+        |> published_definition()
+        |> definition_pointing_at_template(blocks_template.id)
+
+      updated_nodes =
+        Enum.map(definition["nodes"], fn
+          %{"uuid" => @node_uuid} = node ->
+            broadcast_action = %{
+              "uuid" => Ecto.UUID.generate(),
+              "type" => "send_broadcast",
+              "text" => "Broadcast message",
+              "contacts" => []
+            }
+
+            Map.put(node, "actions", node["actions"] ++ [broadcast_action])
+
+          node ->
+            node
+        end)
+
+      definition = Map.put(definition, "nodes", updated_nodes)
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(definition, user.id)
+
+      flow = Repo.get!(Flow, flow.id)
+      assert flow.flow_type == :web_message
+
+      assert {:errors, errors} = Flows.publish_flow(flow, user.id)
+
+      assert Enum.any?(
+               errors,
+               &String.contains?(&1.message, "send_broadcast' is not supported on a web channel")
+             )
     end
   end
 end
