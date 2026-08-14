@@ -205,24 +205,23 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end)
   end
 
+  @golden_qa_csv_escape_max_lines 1000
+
   @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
   defp validate_csv_structure(%{path: path}) do
     path
     |> File.stream!()
-    |> CSV.decode(headers: false, escape_max_lines: 1000)
+    |> CSV.decode!(headers: false, escape_max_lines: @golden_qa_csv_escape_max_lines)
     |> Enum.reduce_while({:await_header, 0}, fn
-      {:ok, row}, {:await_header, _} ->
+      row, {:await_header, _} ->
         if row == ["question", "answer"] do
           {:cont, {:count, 0}}
         else
           {:halt, {:error, "CSV must have exactly two columns: 'question' and 'answer'"}}
         end
 
-      {:ok, _row}, {:count, n} ->
+      _row, {:count, n} ->
         {:cont, {:count, n + 1}}
-
-      {:error, _reason}, _acc ->
-        {:halt, {:error, "Unable to parse the uploaded CSV file"}}
     end)
     |> case do
       {:count, n} -> {:ok, n}
@@ -230,7 +229,30 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, _} = err -> err
     end
   rescue
-    _ -> {:error, "Unable to parse the uploaded CSV file"}
+    e in CSV.StrayEscapeCharacterError ->
+      {:error,
+       "Row #{e.line} of the CSV has an unescaped \" character inside a field, for example: " <>
+         "He said \"hi\" to me. Wrap the whole field in quotes and double up the inner quotes " <>
+         "to fix it, for example: \"He said \"\"hi\"\" to me\"."}
+
+    e in CSV.EscapeSequenceError ->
+      {:error,
+       "Row #{escape_sequence_error_row(e)} of the CSV has a malformed quoted field (a value " <>
+         "wrapped in double quotes, for example: \"This is an answer\") — check for a missing " <>
+         "closing quote, for example: \"This answer never closes. If the field is legitimately " <>
+         "longer than #{@golden_qa_csv_escape_max_lines} lines, please reduce it to under " <>
+         "#{@golden_qa_csv_escape_max_lines} lines."}
+
+    _ ->
+      {:error, "Unable to parse the uploaded CSV file"}
+  end
+
+  @spec escape_sequence_error_row(Exception.t()) :: String.t()
+  defp escape_sequence_error_row(%CSV.EscapeSequenceError{message: message}) do
+    case Regex.run(~r/on line (\d+)/, message) do
+      [_match, row] -> row
+      _ -> "unknown"
+    end
   end
 
   @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
