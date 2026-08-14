@@ -428,7 +428,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         {:ok, %{data: data}} <- run_kaapi_evaluation(kaapi_input, user.organization_id),
+         {:ok, kaapi_response} <- run_kaapi_evaluation(kaapi_input, user.organization_id),
+         {:kaapi_response, {:ok, data}} <-
+           {:kaapi_response, validate_kaapi_evaluation_response(kaapi_response)},
          {:status, {:ok, status}} <- {:status, parse_ai_evaluation_status(data.status)},
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
@@ -452,6 +454,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:golden_qa, {:error, _}} ->
         {:error,
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
+
+      {:kaapi_response, {:error, msg}} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        {:error, msg}
 
       {:status, {:error, msg}} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
@@ -492,6 +498,19 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   defp parse_ai_evaluation_status(status),
     do: {:error, "Unexpected evaluation status received from Kaapi: #{status}"}
+
+  @spec validate_kaapi_evaluation_response(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_kaapi_evaluation_response(%{data: %{status: _status, id: _id} = data}),
+    do: {:ok, data}
+
+  defp validate_kaapi_evaluation_response(response) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Kaapi evaluation creation returned an unexpected response shape",
+      reason: safe_inspect(response)
+    })
+
+    {:error, "Invalid evaluation response received from Kaapi."}
+  end
 
   @doc """
   Requests a v2 (native-judge) prompt improvement from Kaapi for a completed

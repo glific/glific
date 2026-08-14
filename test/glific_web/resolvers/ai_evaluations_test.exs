@@ -1773,6 +1773,111 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         for_actor: %{organization_id: user.organization_id}
       )
     end
+
+    test "returns a controlled error when Kaapi response is missing data", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_data_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns a controlled error when Kaapi response is missing status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{data: %{id: 779}}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_status_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns a controlled error when Kaapi response is missing id", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_id_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
   end
 
   defp create_config_version(%{organization_id: organization_id}) do
