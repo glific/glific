@@ -1375,6 +1375,32 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
     end
   end
 
+  describe "list_kaapi_models/3" do
+    setup [:enable_kaapi]
+
+    setup do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+      :ok
+    end
+
+    test "returns the models fetched from Kaapi", %{staff: user} do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, [model]} = AIEvaluations.list_kaapi_models(nil, %{}, resolution)
+      assert model.model_name == "gpt-4o"
+    end
+  end
+
   describe "create_evaluation/3" do
     setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
 
