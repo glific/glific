@@ -2791,6 +2791,46 @@ defmodule Glific.TemplatesTest do
              )
   end
 
+  test "translate_session_template/2 uses the anchor's actual language locale as the source instead of always assuming English",
+       attrs do
+    source_language = language_fixture(@valid_language_attrs_1)
+    target_language = language_fixture()
+
+    Tesla.Mock.mock_global(fn env ->
+      decoded = Jason.decode!(env.body)
+      assert decoded["source"] == source_language.locale
+      assert decoded["target"] == target_language.locale
+
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 language_id: target_language.id,
+                 source_language_id: source_language.id,
+                 body: "Namaste"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+  end
+
+  test "translate_session_template/2 returns a clear error when source and target languages are the same",
+       attrs do
+    language = language_fixture()
+
+    assert {:error, "Source and target language cannot be the same."} =
+             Templates.translate_session_template(
+               %{language_id: language.id, source_language_id: language.id, body: "Hello"},
+               attrs.organization_id
+             )
+  end
+
   test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
        attrs do
     organization = Partners.get_organization!(attrs.organization_id)
