@@ -465,6 +465,38 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "list_models/2" do
+    test "returns the model page and sends provider/skip/limit as query params" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:provider] == "openai"
+        assert query[:skip] == 0
+        assert query[:limit] == 100
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      assert {:ok, %{data: %{data: [model]}, metadata: %{has_more: false}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
+
+      assert model.model_name == "gpt-4o"
+    end
+
+    test "returns error tuple on 422 from Kaapi" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid provider"}}
+      end)
+
+      assert {:error, %{status: 422, body: %{error: "Invalid provider"}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
+    end
+  end
+
   describe "upload_evaluation_dataset/2" do
     setup [:create_dataset_upload_params]
 

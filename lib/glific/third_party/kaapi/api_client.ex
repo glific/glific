@@ -344,6 +344,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
   end
 
+  @doc """
+  List active models from Kaapi for a provider. Paginated via skip/limit.
+  """
+  @spec list_models(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def list_models(params, org_api_key) do
+    query = [provider: params.provider, skip: params[:skip] || 0, limit: params[:limit] || 100]
+
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/models", query: query)
+    |> parse_kaapi_response()
+  end
+
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
   defp add_optional_fields(multipart, params) do
     [

@@ -47,6 +47,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @doc """
+  List active Kaapi models available to the organization.
+  """
+  @spec list_kaapi_models(map(), map(), map()) :: {:ok, list(map())} | {:error, any()}
+  def list_kaapi_models(_, _args, %{context: %{current_user: user}}) do
+    Kaapi.list_models(user.organization_id)
+  end
+
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
   @max_golden_qa_evaluations 80
