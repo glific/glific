@@ -173,7 +173,7 @@ defmodule Glific.Flows.WebChannelGatingTest do
     end
   end
 
-  describe "flow_type derivation from blocks nodes (Glific.Flows.maybe_update_flow_type/2)" do
+  describe "flow_type derivation from blocks nodes (Glific.Flows.maybe_update_flow_type_and_channels/2)" do
     # "Test Workflow" (seeded by SeedsDev.seed_test_flows/0) already carries a
     # send_interactive_msg action on node "33555b1e-008d-412d-a5b5-cec6d003731b" (action uuid
     # "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5") referencing an interactive template by static id.
@@ -331,6 +331,178 @@ defmodule Glific.Flows.WebChannelGatingTest do
                errors,
                &String.contains?(&1.message, "send_broadcast' is not supported on a web channel")
              )
+
+      # §11.1: a flow matching both signals is a genuine conflict, already rejected above by
+      # `web_channel_capability_errors/2` — `derive_channels/2` does not need a second error
+      # path, it simply favors web (matching `derive_flow_type/3`'s own priority).
+      flow = Repo.get!(Flow, flow.id)
+      assert flow.channels == ["web"]
+    end
+  end
+
+  describe "channels derivation (§11.1, Glific.Flows.Flow.derive_channels/2)" do
+    # Reuses @node_uuid/@action_uuid and published_definition/1, definition_pointing_at_template/2,
+    # blocks_template_fixture/1 defined above in this module.
+
+    @spec add_action_to_node(map(), map()) :: map()
+    defp add_action_to_node(definition, action) do
+      updated_nodes =
+        Enum.map(definition["nodes"], fn
+          %{"uuid" => @node_uuid} = node -> Map.put(node, "actions", node["actions"] ++ [action])
+          node -> node
+        end)
+
+      Map.put(definition, "nodes", updated_nodes)
+    end
+
+    # "Test Workflow" (priv/data/flows/test.json) already carries its own `send_broadcast`
+    # actions and a templated `send_msg`, so it is whatsapp-only on its own merits. Strip those
+    # out to get a clean omnichannel baseline that isolates the signal each test adds.
+    @spec strip_whatsapp_only_signals(map()) :: map()
+    defp strip_whatsapp_only_signals(definition) do
+      updated_nodes =
+        Enum.map(definition["nodes"], fn node ->
+          actions =
+            node["actions"]
+            |> Enum.reject(&(&1["type"] == "send_broadcast"))
+            |> Enum.map(fn
+              %{"type" => "send_msg"} = action -> Map.put(action, "templating", %{})
+              action -> action
+            end)
+
+          Map.put(node, "actions", actions)
+        end)
+
+      Map.put(definition, "nodes", updated_nodes)
+    end
+
+    @spec add_broadcast_action(map()) :: map()
+    defp add_broadcast_action(definition) do
+      add_action_to_node(definition, %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "send_broadcast",
+        "text" => "Broadcast message",
+        "contacts" => []
+      })
+    end
+
+    @spec add_templated_send_msg_action(map()) :: map()
+    defp add_templated_send_msg_action(definition) do
+      add_action_to_node(definition, %{
+        "uuid" => Ecto.UUID.generate(),
+        "type" => "send_msg",
+        "text" => "Templated message",
+        "templating" => %{"expression" => "some expression"}
+      })
+    end
+
+    test "a fresh flow defaults to the omnichannel channels set", attrs do
+      SeedsDev.seed_test_flows()
+
+      {:ok, flow} =
+        Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: attrs.organization_id})
+
+      assert flow.channels == ["whatsapp", "web"]
+    end
+
+    test "saving a draft revision with a blocks node derives channels to web-only", attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      blocks_template = blocks_template_fixture(attrs.organization_id)
+
+      definition =
+        flow
+        |> published_definition()
+        |> definition_pointing_at_template(blocks_template.id)
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(definition, user.id)
+
+      updated_flow = Repo.get!(Flow, flow.id)
+      assert updated_flow.channels == ["web"]
+    end
+
+    test "removing the blocks node afterwards does not revert channels — web-only is monotonic",
+         attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      blocks_template = blocks_template_fixture(attrs.organization_id)
+      original_definition = published_definition(flow)
+      blocks_definition = definition_pointing_at_template(original_definition, blocks_template.id)
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(blocks_definition, user.id)
+      flow = Repo.get!(Flow, flow.id)
+      assert flow.channels == ["web"]
+
+      # Saving the original (non-blocks) definition again must not revert the flow's channels.
+      _revision = Flows.create_flow_revision(original_definition, user.id)
+
+      reverted_flow = Repo.get!(Flow, flow.id)
+      assert reverted_flow.channels == ["web"]
+    end
+
+    test "a send_broadcast action derives channels to whatsapp-only", attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      definition =
+        flow
+        |> published_definition()
+        |> strip_whatsapp_only_signals()
+        |> add_broadcast_action()
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(definition, user.id)
+
+      updated_flow = Repo.get!(Flow, flow.id)
+      assert updated_flow.channels == ["whatsapp"]
+
+      refute attrs |> Map.get(:organization_id) |> is_nil()
+    end
+
+    test "a templated (HSM) send_msg action also derives channels to whatsapp-only", attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      definition =
+        flow
+        |> published_definition()
+        |> strip_whatsapp_only_signals()
+        |> add_templated_send_msg_action()
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(definition, user.id)
+
+      updated_flow = Repo.get!(Flow, flow.id)
+      assert updated_flow.channels == ["whatsapp"]
+
+      refute attrs |> Map.get(:organization_id) |> is_nil()
+    end
+
+    test "removing the send_broadcast action recomputes channels back to omnichannel — whatsapp-only is bidirectional",
+         attrs do
+      SeedsDev.seed_test_flows()
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+      clean_definition = flow |> published_definition() |> strip_whatsapp_only_signals()
+      broadcast_definition = add_broadcast_action(clean_definition)
+
+      user = Repo.get_current_user()
+      _revision = Flows.create_flow_revision(broadcast_definition, user.id)
+      flow = Repo.get!(Flow, flow.id)
+      assert flow.channels == ["whatsapp"]
+
+      # Saving the broadcast-free definition again recomputes the set back to omnichannel —
+      # unlike web-only, this signal is not locked in.
+      _revision = Flows.create_flow_revision(clean_definition, user.id)
+
+      reverted_flow = Repo.get!(Flow, flow.id)
+      assert reverted_flow.channels == ["whatsapp", "web"]
+
+      refute attrs |> Map.get(:organization_id) |> is_nil()
     end
   end
 end

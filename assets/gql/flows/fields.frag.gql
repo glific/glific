@@ -4,6 +4,7 @@ fragment FlowFields on FlowResult {
     name
     keywords
     flowType
+    channels
     isBackground
     isPinned
     isTemplate

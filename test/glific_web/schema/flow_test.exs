@@ -90,6 +90,92 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(flow, ["id"]) > 0
   end
 
+  test "flows field serializes channels as a lowercase whatsapp/web set", %{manager: user} do
+    result = auth_query_gql_by(:list, user)
+    assert {:ok, query_data} = result
+
+    flows = get_in(query_data, [:data, "flows"])
+    assert length(flows) > 0
+
+    Enum.each(flows, fn flow ->
+      channels = get_in(flow, ["channels"])
+      assert is_list(channels)
+      assert channels != []
+      assert Enum.all?(channels, &(&1 in ["whatsapp", "web"]))
+    end)
+
+    name = "Test Workflow"
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: user.organization_id})
+    assert flow.channels == ["whatsapp", "web"]
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"uuid" => flow.uuid}})
+    assert {:ok, query_data} = result
+
+    channels = get_in(query_data, [:data, "flows", Access.at(0), "channels"])
+    assert channels == ["whatsapp", "web"]
+  end
+
+  test "flow query serializes a derived web-only channels set as exactly [\"web\"]", %{
+    manager: user
+  } do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    blocks_template =
+      Fixtures.interactive_fixture(%{
+        organization_id: user.organization_id,
+        type: :blocks,
+        interactive_content: %{
+          "type" => "blocks",
+          "version" => 1,
+          "component" => "glific/image-panel",
+          "props" => %{
+            "id" => "course",
+            "options" => %{
+              "kind" => "list",
+              "value" => [
+                %{
+                  "id" => "c1",
+                  "image" => %{"kind" => "image", "value" => "https://example.com/1.png"},
+                  "label" => %{"kind" => "text", "value" => "A"}
+                }
+              ]
+            }
+          }
+        }
+      })
+
+    node_uuid = "33555b1e-008d-412d-a5b5-cec6d003731b"
+    action_uuid = "fbe89505-8ba8-4b1a-9d6a-7e659d6b38b5"
+
+    definition =
+      Repo.get_by!(FlowRevision, flow_id: flow.id, status: "published").definition
+
+    updated_nodes =
+      Enum.map(definition["nodes"], fn
+        %{"uuid" => ^node_uuid} = node ->
+          updated_actions =
+            Enum.map(node["actions"], fn
+              %{"uuid" => ^action_uuid} = action -> Map.put(action, "id", blocks_template.id)
+              action -> action
+            end)
+
+          Map.put(node, "actions", updated_actions)
+
+        node ->
+          node
+      end)
+
+    definition = Map.put(definition, "nodes", updated_nodes)
+
+    _revision = Flows.create_flow_revision(definition, user.id)
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "flow", "flow", "channels"]) == ["web"]
+  end
+
   test "flows field returns list of filtered flows", %{manager: user} do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"keyword" => "help"}})
     assert {:ok, query_data} = result

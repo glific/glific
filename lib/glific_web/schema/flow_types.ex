@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :skip_validation, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
+    field :channels, list_of(:string)
     field :inserted_at, :datetime
     field :updated_at, :datetime
     field :last_published_at, :datetime

@@ -536,7 +536,17 @@ matching **both** is a genuine conflict and must already fail publish via that s
 also drives engine behaviour, so widening it would mean auditing every closed set that names its
 members — the landmine class §12 exists to record. Instead, store the derived set in its own
 `flows.channels` column (a string array), written at the same choke point as `flow_type`
-(`Flows.maybe_update_flow_type/2`) and exposed as a plain GraphQL field.
+(`Flows.maybe_update_flow_type/2`, renamed `maybe_update_flow_type_and_channels/2`) and exposed as
+a plain GraphQL field:
+
+```graphql
+type Flow { channels: [String] }   # lowercase, ordered: ["whatsapp","web"] | ["web"] | ["whatsapp"]
+```
+
+Never nil, never empty. `channels` is **not** castable through `Flow.changeset/2` and is absent from
+`:flow_input` — derived-only, never author-settable. `derive_channels/2` takes the already-derived
+`flow_type` rather than recomputing web-only independently, which both saves a `web_only_node?`
+query per autosave and makes `flow_type`/`channels` disagreement structurally impossible.
 
 A stored column rather than a resolver-computed field is deliberate: the flow **list** renders these
 badges per row, and computing them there would mean parsing every flow's definition on every page
@@ -622,7 +632,15 @@ simulatorWebMessage(input: SimulatorWebMessageInput!): SimulatorWebMessageResult
 # → { message: Message, errors: [InputError] }   — standard Glific mutation shape
 ```
 
-`Json` is the existing scalar at `generic_types.ex:69`. The resolver **must** reject a
+`Json` is the existing scalar at `generic_types.ex:69`. **Its `parse/1` accepts only an
+`Absinthe.Blueprint.Input.String`** — so `values` and `context` cross the wire as
+`JSON.stringify(…)`, never as objects. An object reaches the scalar as an `Input.Object`, matches no
+clause, and fails validation key by key (`In field "city": Unknown field.`) before the resolver ever
+runs. The scalar decodes it back to a map, so the resolver still sees `params[:values]` as a map —
+the encoding is invisible above and below the transport, which is exactly why a mock written against
+the object shape passes forever.
+
+The resolver **must** reject a
 `contactId` that is not `Contacts.simulator_contact?/1` in the caller's org, and mirror
 `RoomChannel.handle_in/3` clause-for-clause rather than adding logic.
 
@@ -665,3 +683,35 @@ The WhatsApp simulator's paperclip currently sends five **hardcoded sample URLs*
 picker instead — no contact token needed, and it returns a hosted URL that both the Gupshup callback
 payload and `SimulatorWebMessageInput.url` accept. This fixes the canned-media limitation in the
 WhatsApp tab as a side effect.
+
+### 13.7 One container everywhere, not a flow-editor panel
+
+The dual-tab panel generalises into a **single draggable container used at every simulator call
+site**, so any message can be viewed in either channel's chrome. `Simulator.tsx` keeps only the
+WhatsApp phone body; the container owns the drag, the tabs, reset and close.
+
+Header order is fixed: tabs left, then `[reset][close]` — reset to the **left** of close. Reset
+always renders; close renders only where the container is dismissable.
+
+| Call site | Mode | Enabled channels | Close |
+|---|---|---|---|
+| `FlowEditor` | live | the flow's `channels` field (§11.1) | yes |
+| `ChatInterface` | live | both | yes |
+| `HSM`, `WaPolls` | preview | WhatsApp | no |
+| `InteractiveMessage` | preview | `getSupportedChannels(templateType)` | no |
+
+**Live vs preview is load-bearing, not cosmetic.** Live mode allocates a contact from the
+phone-prefix pool in `Glific.State.Simulator` and watches the release subscription. Preview mode
+must do **neither** — the three preview pages allocate nothing today, and inheriting allocation
+would make merely opening the HSM form occupy an org-wide pooled resource and fire timeout
+notifications.
+
+**Channel value casing crosses a repo boundary.** The GraphQL field emits lowercase
+`"whatsapp"` / `"web"`; the console's `CHANNEL_WHATSAPP` / `CHANNEL_WEB` are display-cased
+(`'WhatsApp'` / `'Web'`) because they double as tab labels. Map at the boundary. A mismatch
+disables both tabs and no repo's own suite catches it.
+
+**Gating must update while the panel is open.** `FlowEditor` skipped `refetchFlowDetails()`
+whenever the simulator was open — precisely the case that needs it. Saving a flow re-derives
+`channels`, so an open panel must re-gate its tabs without being reopened, and move off a tab that
+has just become disabled.

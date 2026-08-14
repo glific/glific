@@ -463,7 +463,7 @@ defmodule Glific.Flows do
   @spec create_flow_revision(map(), non_neg_integer()) :: FlowRevision.t()
   def create_flow_revision(definition, user_id) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
-    {:ok, flow} = maybe_update_flow_type(flow, definition)
+    {:ok, flow} = maybe_update_flow_type_and_channels(flow, definition)
 
     {:ok, revision} =
       %FlowRevision{}
@@ -484,11 +484,12 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Derive `flow_type` from a flow definition and persist it if it changed (`Flow.derive_flow_type/3`).
-  The single choke point for every path that writes a flow definition — editor autosave
-  (`create_flow_revision/2` above), `copy_flow/2`, `update_flow_localization/2` and
-  `import_flow/2` — so a web-only flow's channel can never be missed, and a `flow_type` set
-  through GraphQL (deprecated on `:flow_input`, stripped by the resolver) can never stick.
+  Derive `flow_type` (`Flow.derive_flow_type/3`) and `channels` (`Flow.derive_channels/2`) from a
+  flow definition and persist whichever changed. The single choke point for every path that
+  writes a flow definition — editor autosave (`create_flow_revision/2` above), `copy_flow/2`,
+  `update_flow_localization/2`, `import_flow/2`, and `derive_flow_type_before_publish/1` — so a
+  web-only flow's channel can never be missed, and a `flow_type` set through GraphQL (deprecated
+  on `:flow_input`, stripped by the resolver) can never stick.
 
   Writes with a bare `Ecto.Changeset.change/2`, not `update_flow/2` — this is a system-derived
   write, not an author edit, so it must not re-run `Flow.changeset/2`'s author-facing validations
@@ -496,18 +497,28 @@ defmodule Glific.Flows do
   can legitimately fail on a flow whose other fields are already in a conflicting state, and this
   path (autosave, import, copy) must not fail because of them — always returns `{:ok, Flow.t()}`.
   """
-  @spec maybe_update_flow_type(Flow.t(), map()) :: {:ok, Flow.t()}
-  def maybe_update_flow_type(flow, definition) do
-    case Flow.derive_flow_type(flow.flow_type, definition, flow.organization_id) do
-      derived_flow_type when derived_flow_type == flow.flow_type ->
-        {:ok, flow}
+  @spec maybe_update_flow_type_and_channels(Flow.t(), map()) :: {:ok, Flow.t()}
+  def maybe_update_flow_type_and_channels(flow, definition) do
+    derived_flow_type = Flow.derive_flow_type(flow.flow_type, definition, flow.organization_id)
+    derived_channels = Flow.derive_channels(derived_flow_type, definition)
 
-      derived_flow_type ->
-        flow
-        |> Ecto.Changeset.change(flow_type: derived_flow_type)
-        |> Repo.update()
+    changes =
+      %{}
+      |> maybe_put_change(:flow_type, flow.flow_type, derived_flow_type)
+      |> maybe_put_change(:channels, flow.channels, derived_channels)
+
+    if changes == %{} do
+      {:ok, flow}
+    else
+      flow
+      |> Ecto.Changeset.change(changes)
+      |> Repo.update()
     end
   end
+
+  @spec maybe_put_change(map(), atom(), term(), term()) :: map()
+  defp maybe_put_change(changes, _key, same, same), do: changes
+  defp maybe_put_change(changes, key, _old, new), do: Map.put(changes, key, new)
 
   defp check_field(json, field, acc),
     do: if(Map.has_key?(json, field), do: acc, else: [field | acc])
@@ -677,7 +688,7 @@ defmodule Glific.Flows do
   defp derive_flow_type_before_publish(flow) do
     with {:ok, draft_revision} <-
            Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}),
-         {:ok, flow} <- maybe_update_flow_type(flow, draft_revision.definition) do
+         {:ok, flow} <- maybe_update_flow_type_and_channels(flow, draft_revision.definition) do
       flow
     else
       _ -> flow
@@ -866,6 +877,11 @@ defmodule Glific.Flows do
            |> Flow.changeset(attrs)
            |> Repo.insert() do
       Glific.State.reset_flows(flow.organization_id)
+      # `flow_type: flow.flow_type` above seeds the copy already locked if the source was
+      # `:web_message`, and `copy_flow_revision/2` below immediately runs
+      # `maybe_update_flow_type_and_channels/2` against it — `channels` needs no separate
+      # copying, it re-derives to `["web"]` from that locked `flow_type` alone (§11.1), even for
+      # a text-only web flow with no blocks node in `definition_copy` to re-detect.
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
@@ -882,7 +898,7 @@ defmodule Glific.Flows do
         latest_flow_revision.definition
         |> Map.merge(%{"uuid" => flow_copy.uuid})
 
-      {:ok, _flow_copy} = maybe_update_flow_type(flow_copy, definition_copy)
+      {:ok, _flow_copy} = maybe_update_flow_type_and_channels(flow_copy, definition_copy)
 
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
@@ -909,7 +925,7 @@ defmodule Glific.Flows do
         latest_flow_revision.definition
         |> Map.merge(%{"localization" => localization})
 
-      {:ok, flow} = maybe_update_flow_type(flow, definition_copy)
+      {:ok, flow} = maybe_update_flow_type_and_channels(flow, definition_copy)
 
       # lets ensure we clean up the caches
       remove_flow_cache(flow)
@@ -1093,7 +1109,7 @@ defmodule Glific.Flows do
                interactive_template_list,
                organization_id
              ),
-           {:ok, flow} <- maybe_update_flow_type(flow, cleaned_definition),
+           {:ok, flow} <- maybe_update_flow_type_and_channels(flow, cleaned_definition),
            {:ok, _flow_revision} <-
              FlowRevision.create_flow_revision(%{
                definition: cleaned_definition,

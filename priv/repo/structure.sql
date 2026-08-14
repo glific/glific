@@ -2,12 +2,15 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.3 (Homebrew)
--- Dumped by pg_dump version 15.3 (Homebrew)
+\restrict H2xfx7ERE4SrIeMiG3eYz7cFVhmyRKWtNmIzcMpTKJGeXmb5eiMQgq1gUC0CEim
+
+-- Dumped from database version 17.7 (Postgres.app)
+-- Dumped by pg_dump version 17.7 (Postgres.app)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -21,13 +24,6 @@ SET row_security = off;
 --
 
 CREATE SCHEMA global;
-
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
--- *not* creating schema, since initdb creates it
 
 
 --
@@ -64,12 +60,25 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
 
 CREATE TYPE global.oban_job_state AS ENUM (
     'available',
+    'suspended',
     'scheduled',
     'executing',
     'retryable',
     'completed',
     'discarded',
     'cancelled'
+);
+
+
+--
+-- Name: ai_evaluation_status_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.ai_evaluation_status_enum AS ENUM (
+    'create_in_progress',
+    'processing',
+    'failed',
+    'completed'
 );
 
 
@@ -84,12 +93,33 @@ CREATE TYPE public.api_status_enum AS ENUM (
 
 
 --
+-- Name: assistant_config_version_status_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.assistant_config_version_status_enum AS ENUM (
+    'in_progress',
+    'ready',
+    'failed'
+);
+
+
+--
+-- Name: certificate_template_type_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.certificate_template_type_enum AS ENUM (
+    'slides'
+);
+
+
+--
 -- Name: contact_field_scope_enum; Type: TYPE; Schema: public; Owner: -
 --
 
 CREATE TYPE public.contact_field_scope_enum AS ENUM (
     'contact',
-    'globals'
+    'globals',
+    'wa_group'
 );
 
 
@@ -167,7 +197,8 @@ CREATE TYPE public.flow_router_enum AS ENUM (
 --
 
 CREATE TYPE public.flow_type_enum AS ENUM (
-    'message'
+    'message',
+    'web_message'
 );
 
 
@@ -189,7 +220,19 @@ CREATE TYPE public.import_contacts_type_enum AS ENUM (
 CREATE TYPE public.interactive_message_type_enum AS ENUM (
     'list',
     'quick_reply',
-    'location_request_message'
+    'location_request_message',
+    'blocks'
+);
+
+
+--
+-- Name: knowledge_base_status_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.knowledge_base_status_enum AS ENUM (
+    'in_progress',
+    'completed',
+    'failed'
 );
 
 
@@ -214,7 +257,11 @@ CREATE TYPE public.message_status_enum AS ENUM (
     'error',
     'read',
     'received',
-    'contact_opt_out'
+    'contact_opt_out',
+    'reached',
+    'seen',
+    'played',
+    'deleted'
 );
 
 
@@ -234,7 +281,11 @@ CREATE TYPE public.message_type_enum AS ENUM (
     'text',
     'video',
     'sticker',
-    'location_request_message'
+    'location_request_message',
+    'poll',
+    'whatsapp_form_response',
+    'blocks',
+    'blocks_response'
 );
 
 
@@ -247,7 +298,8 @@ CREATE TYPE public.organization_status_enum AS ENUM (
     'approved',
     'active',
     'suspended',
-    'ready_to_delete'
+    'ready_to_delete',
+    'forced_suspension'
 );
 
 
@@ -259,6 +311,16 @@ CREATE TYPE public.question_type_enum AS ENUM (
     'text',
     'numeric',
     'date'
+);
+
+
+--
+-- Name: sheet_sync_status_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.sheet_sync_status_enum AS ENUM (
+    'success',
+    'failed'
 );
 
 
@@ -278,7 +340,9 @@ CREATE TYPE public.sort_order_enum AS ENUM (
 
 CREATE TYPE public.template_button_type_enum AS ENUM (
     'call_to_action',
-    'quick_reply'
+    'quick_reply',
+    'otp',
+    'whatsapp_form'
 );
 
 
@@ -296,25 +360,48 @@ CREATE TYPE public.user_roles_enum AS ENUM (
 
 
 --
--- Name: oban_jobs_notify(); Type: FUNCTION; Schema: global; Owner: -
+-- Name: whatsapp_forms_category_enum; Type: TYPE; Schema: public; Owner: -
 --
 
-CREATE FUNCTION global.oban_jobs_notify() RETURNS trigger
-    LANGUAGE plpgsql
+CREATE TYPE public.whatsapp_forms_category_enum AS ENUM (
+    'sign_up',
+    'sign_in',
+    'appointment_booking',
+    'lead_generation',
+    'contact_us',
+    'customer_support',
+    'survey',
+    'other'
+);
+
+
+--
+-- Name: whatsapp_forms_status_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.whatsapp_forms_status_enum AS ENUM (
+    'draft',
+    'published',
+    'inactive'
+);
+
+
+--
+-- Name: oban_state_to_bit(global.oban_job_state); Type: FUNCTION; Schema: global; Owner: -
+--
+
+CREATE FUNCTION global.oban_state_to_bit(state global.oban_job_state) RETURNS jsonb
+    LANGUAGE sql IMMUTABLE STRICT
     AS $$
-DECLARE
-  channel text;
-  notice json;
-BEGIN
-  IF NEW.state = 'available' THEN
-    channel = 'global.oban_insert';
-    notice = json_build_object('queue', NEW.queue);
-
-    PERFORM pg_notify(channel, notice::text);
-  END IF;
-
-  RETURN NULL;
-END;
+SELECT CASE
+       WHEN state = 'scheduled' THEN '0'::jsonb
+       WHEN state = 'available' THEN '1'::jsonb
+       WHEN state = 'executing' THEN '2'::jsonb
+       WHEN state = 'retryable' THEN '3'::jsonb
+       WHEN state = 'completed' THEN '4'::jsonb
+       WHEN state = 'cancelled' THEN '5'::jsonb
+       WHEN state = 'discarded' THEN '6'::jsonb
+       END;
 $$;
 
 
@@ -461,6 +548,69 @@ CREATE FUNCTION public.remove_old_history() RETURNS trigger
      RETURN NEW;
   END;
 
+$$;
+
+
+--
+-- Name: set_assistant_config_version_number(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_assistant_config_version_number() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM id FROM assistants WHERE id = NEW.assistant_id FOR UPDATE;
+
+  SELECT COALESCE(MAX(version_number), 0) + 1
+  INTO NEW.version_number
+  FROM assistant_config_versions
+  WHERE assistant_id = NEW.assistant_id;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: set_knowledge_base_version_number(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_knowledge_base_version_number() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+
+  PERFORM id FROM knowledge_bases WHERE id = NEW.knowledge_base_id FOR UPDATE;
+  SELECT COALESCE(MAX(version_number), 0) + 1
+  INTO NEW.version_number
+  FROM knowledge_base_versions
+  WHERE knowledge_base_id = NEW.knowledge_base_id;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: set_whatsapp_form_revision_number(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.set_whatsapp_form_revision_number() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  next_revision_number INTEGER;
+BEGIN
+  IF NEW.revision_number IS NULL THEN
+    SELECT COALESCE(MAX(revision_number), 0) + 1
+    INTO next_revision_number
+    FROM whatsapp_form_revisions
+    WHERE whatsapp_form_id = NEW.whatsapp_form_id;
+
+    NEW.revision_number := next_revision_number;
+  END IF;
+  RETURN NEW;
+END;
 $$;
 
 
@@ -765,6 +915,65 @@ END;
 $$;
 
 
+--
+-- Name: wa_message_after_insert_callback(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.wa_message_after_insert_callback() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  UPDATE organizations SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.organization_id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: wa_message_before_insert_callback(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.wa_message_before_insert_callback() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE now TIMESTAMP WITH TIME ZONE;
+DECLARE var_message_number BIGINT;
+DECLARE var_context_id BIGINT;
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+  IF (TG_OP = 'INSERT') THEN
+    now := (CURRENT_TIMESTAMP at time zone 'utc');
+      SELECT last_message_number INTO var_message_number
+      FROM wa_groups WHERE organization_id = NEW.organization_id AND id = NEW.wa_group_id LIMIT 1;
+      var_message_number = var_message_number + 1;
+      IF (NEW.flow = 'inbound') THEN
+        IF (NEW.context_id IS NOT NULL) THEN
+          SELECT id INTO var_context_id
+          FROM wa_messages
+          WHERE bsp_id = NEW.context_id;
+          NEW.context_message_id = var_context_id;
+        END IF;
+        UPDATE wa_groups SET
+            last_communication_at = now,
+            last_message_number = var_message_number,
+            updated_at = now
+            WHERE id = NEW.wa_group_id;
+      ELSE
+        UPDATE wa_groups
+          SET
+            last_communication_at = now,
+            last_message_number = var_message_number,
+            updated_at = now
+          WHERE id = NEW.wa_group_id;
+      END IF;
+      NEW.message_number = var_message_number;
+    RETURN NEW;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -880,6 +1089,23 @@ ALTER SEQUENCE global.languages_id_seq OWNED BY global.languages.id;
 
 
 --
+-- Name: oban_crons; Type: TABLE; Schema: global; Owner: -
+--
+
+CREATE TABLE global.oban_crons (
+    name text NOT NULL,
+    expression text NOT NULL,
+    worker text NOT NULL,
+    opts jsonb NOT NULL,
+    insertions timestamp without time zone[] DEFAULT ARRAY[]::timestamp without time zone[] NOT NULL,
+    paused boolean DEFAULT false NOT NULL,
+    lock_version integer DEFAULT 1,
+    inserted_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+
+--
 -- Name: oban_jobs; Type: TABLE; Schema: global; Owner: -
 --
 
@@ -902,9 +1128,18 @@ CREATE TABLE global.oban_jobs (
     tags character varying(255)[] DEFAULT ARRAY[]::character varying[],
     meta jsonb DEFAULT '{}'::jsonb,
     cancelled_at timestamp without time zone,
+    uniq_key text GENERATED ALWAYS AS (
+CASE
+    WHEN ((meta -> 'uniq_bmp'::text) @> global.oban_state_to_bit(state)) THEN (meta ->> 'uniq_key'::text)
+    ELSE NULL::text
+END) STORED,
+    partition_key text GENERATED ALWAYS AS (
+CASE
+    WHEN (meta ? 'partition_key'::text) THEN (meta ->> 'partition_key'::text)
+    ELSE NULL::text
+END) STORED,
     CONSTRAINT attempt_range CHECK (((attempt >= 0) AND (attempt <= max_attempts))),
     CONSTRAINT positive_max_attempts CHECK ((max_attempts > 0)),
-    CONSTRAINT priority_range CHECK (((priority >= 0) AND (priority <= 3))),
     CONSTRAINT queue_length CHECK (((char_length(queue) > 0) AND (char_length(queue) < 128))),
     CONSTRAINT worker_length CHECK (((char_length(worker) > 0) AND (char_length(worker) < 128)))
 );
@@ -914,7 +1149,7 @@ CREATE TABLE global.oban_jobs (
 -- Name: TABLE oban_jobs; Type: COMMENT; Schema: global; Owner: -
 --
 
-COMMENT ON TABLE global.oban_jobs IS '11';
+COMMENT ON TABLE global.oban_jobs IS '14';
 
 
 --
@@ -960,6 +1195,28 @@ CREATE UNLOGGED TABLE global.oban_producers (
     meta jsonb DEFAULT '{}'::jsonb NOT NULL,
     started_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+
+--
+-- Name: TABLE oban_producers; Type: COMMENT; Schema: global; Owner: -
+--
+
+COMMENT ON TABLE global.oban_producers IS '1.6.0-schemas,1.6.0-indexes';
+
+
+--
+-- Name: oban_queues; Type: TABLE; Schema: global; Owner: -
+--
+
+CREATE TABLE global.oban_queues (
+    name text NOT NULL,
+    opts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    "only" jsonb DEFAULT '{}'::jsonb NOT NULL,
+    lock_version integer DEFAULT 1,
+    inserted_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    hash text
 );
 
 
@@ -1067,6 +1324,329 @@ ALTER SEQUENCE global.providers_id_seq OWNED BY global.providers.id;
 
 
 --
+-- Name: ai_evaluations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_evaluations (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    status public.ai_evaluation_status_enum DEFAULT 'create_in_progress'::public.ai_evaluation_status_enum NOT NULL,
+    failure_reason character varying(255),
+    results jsonb DEFAULT '{}'::jsonb,
+    kaapi_evaluation_id integer,
+    assistant_config_version_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    golden_qa_id bigint NOT NULL
+);
+
+
+--
+-- Name: ai_evaluations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ai_evaluations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ai_evaluations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ai_evaluations_id_seq OWNED BY public.ai_evaluations.id;
+
+
+--
+-- Name: ask_glific_conversations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ask_glific_conversations (
+    id bigint NOT NULL,
+    conversation_id character varying(255) NOT NULL,
+    user_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: ask_glific_conversations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ask_glific_conversations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ask_glific_conversations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ask_glific_conversations_id_seq OWNED BY public.ask_glific_conversations.id;
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assistant_config_version_knowledge_base_versions (
+    id bigint NOT NULL,
+    assistant_config_version_id bigint NOT NULL,
+    knowledge_base_version_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN assistant_config_version_knowledge_base_versions.assistant_config_version_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_version_knowledge_base_versions.assistant_config_version_id IS 'Assistant config version id';
+
+
+--
+-- Name: COLUMN assistant_config_version_knowledge_base_versions.knowledge_base_version_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_version_knowledge_base_versions.knowledge_base_version_id IS 'Knowledge base version id';
+
+
+--
+-- Name: COLUMN assistant_config_version_knowledge_base_versions.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_version_knowledge_base_versions.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.assistant_config_version_knowledge_base_versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.assistant_config_version_knowledge_base_versions_id_seq OWNED BY public.assistant_config_version_knowledge_base_versions.id;
+
+
+--
+-- Name: assistant_config_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assistant_config_versions (
+    id bigint NOT NULL,
+    version_number integer NOT NULL,
+    description text,
+    prompt text NOT NULL,
+    provider character varying(255) DEFAULT 'openai'::character varying NOT NULL,
+    model character varying(255) NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb,
+    status public.assistant_config_version_status_enum DEFAULT 'in_progress'::public.assistant_config_version_status_enum NOT NULL,
+    failure_reason text,
+    deleted_at timestamp(0) without time zone,
+    organization_id bigint NOT NULL,
+    assistant_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    kaapi_version_number integer
+);
+
+
+--
+-- Name: COLUMN assistant_config_versions.version_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.version_number IS 'Monotonically increasing config version per assistant';
+
+
+--
+-- Name: COLUMN assistant_config_versions.description; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.description IS 'Description for this version';
+
+
+--
+-- Name: COLUMN assistant_config_versions.prompt; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.prompt IS 'Prompt/instructions for this version';
+
+
+--
+-- Name: COLUMN assistant_config_versions.provider; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.provider IS 'LLM provider for this version';
+
+
+--
+-- Name: COLUMN assistant_config_versions.model; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.model IS 'Model used by this version';
+
+
+--
+-- Name: COLUMN assistant_config_versions.settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.settings IS 'Provider-specific settings like temperature, etc.';
+
+
+--
+-- Name: COLUMN assistant_config_versions.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.status IS 'Status of this version - in_progress, ready, failed';
+
+
+--
+-- Name: COLUMN assistant_config_versions.failure_reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.failure_reason IS 'Failure reason if status is failed';
+
+
+--
+-- Name: COLUMN assistant_config_versions.deleted_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.deleted_at IS 'Soft-delete timestamp';
+
+
+--
+-- Name: COLUMN assistant_config_versions.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: COLUMN assistant_config_versions.assistant_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistant_config_versions.assistant_id IS 'Assistant this configuration belongs to';
+
+
+--
+-- Name: assistant_config_versions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.assistant_config_versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: assistant_config_versions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.assistant_config_versions_id_seq OWNED BY public.assistant_config_versions.id;
+
+
+--
+-- Name: assistants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assistants (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    assistant_display_id character varying(255),
+    kaapi_uuid character varying(255),
+    active_config_version_id bigint,
+    clone_status character varying(255) DEFAULT 'none'::character varying
+);
+
+
+--
+-- Name: COLUMN assistants.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.name IS 'Name of the assistant';
+
+
+--
+-- Name: COLUMN assistants.description; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.description IS 'Description of the assistant';
+
+
+--
+-- Name: COLUMN assistants.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: COLUMN assistants.assistant_display_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.assistant_display_id IS 'OpenAI-style assistant ID to display in the UI';
+
+
+--
+-- Name: COLUMN assistants.kaapi_uuid; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.kaapi_uuid IS 'Kaapi UUID for the config';
+
+
+--
+-- Name: COLUMN assistants.active_config_version_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.assistants.active_config_version_id IS 'Reference to the currently active configuration version';
+
+
+--
+-- Name: assistants_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.assistants_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: assistants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.assistants_id_seq OWNED BY public.assistants.id;
+
+
+--
 -- Name: bigquery_jobs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1077,7 +1657,7 @@ CREATE TABLE public.bigquery_jobs (
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
-    last_updated_at timestamp without time zone
+    last_updated_at timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1236,6 +1816,76 @@ CREATE SEQUENCE public.billings_id_seq
 --
 
 ALTER SEQUENCE public.billings_id_seq OWNED BY public.billings.id;
+
+
+--
+-- Name: certificate_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.certificate_templates (
+    id bigint NOT NULL,
+    label character varying(255) NOT NULL,
+    url character varying(255) NOT NULL,
+    description text,
+    type public.certificate_template_type_enum DEFAULT 'slides'::public.certificate_template_type_enum,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN certificate_templates.label; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.certificate_templates.label IS 'Title of the certificate template';
+
+
+--
+-- Name: COLUMN certificate_templates.url; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.certificate_templates.url IS 'Url of the certificate template';
+
+
+--
+-- Name: COLUMN certificate_templates.description; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.certificate_templates.description IS 'Details about the certificate template';
+
+
+--
+-- Name: COLUMN certificate_templates.type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.certificate_templates.type IS 'Format of template used for ex: slides, pdf etc..';
+
+
+--
+-- Name: COLUMN certificate_templates.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.certificate_templates.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: certificate_templates_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.certificate_templates_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: certificate_templates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.certificate_templates_id_seq OWNED BY public.certificate_templates.id;
 
 
 --
@@ -1432,7 +2082,9 @@ CREATE TABLE public.contacts (
     is_contact_replied boolean DEFAULT true,
     last_message_number integer DEFAULT 0,
     optout_method character varying(255),
-    active_profile_id bigint
+    active_profile_id bigint,
+    first_message_number integer DEFAULT 1,
+    contact_type character varying(255)
 );
 
 
@@ -1596,6 +2248,13 @@ COMMENT ON COLUMN public.contacts.optout_method IS 'possible options include: UR
 
 
 --
+-- Name: COLUMN contacts.contact_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.contacts.contact_type IS 'one of WABA, WA, WABA+WA';
+
+
+--
 -- Name: contacts_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1736,6 +2395,61 @@ ALTER SEQUENCE public.contacts_tags_id_seq OWNED BY public.contacts_tags.id;
 
 
 --
+-- Name: contacts_wa_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contacts_wa_groups (
+    id bigint NOT NULL,
+    wa_group_id bigint NOT NULL,
+    contact_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    is_admin boolean DEFAULT false,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN contacts_wa_groups.wa_group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.contacts_wa_groups.wa_group_id IS 'WA group the WhatsApp group is linked to';
+
+
+--
+-- Name: COLUMN contacts_wa_groups.contact_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.contacts_wa_groups.contact_id IS 'contact id of the user who is added in the wa group';
+
+
+--
+-- Name: COLUMN contacts_wa_groups.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.contacts_wa_groups.organization_id IS 'Unique organization ID';
+
+
+--
+-- Name: contacts_wa_groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contacts_wa_groups_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: contacts_wa_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contacts_wa_groups_id_seq OWNED BY public.contacts_wa_groups.id;
+
+
+--
 -- Name: credentials; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1854,7 +2568,8 @@ CREATE TABLE public.message_broadcast_contacts (
     organization_id bigint NOT NULL,
     processed_at timestamp(0) without time zone DEFAULT NULL::timestamp without time zone,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    group_ids integer[] DEFAULT ARRAY[]::integer[]
 );
 
 
@@ -1901,7 +2616,8 @@ CREATE TABLE public.message_broadcasts (
     updated_at timestamp(0) without time zone NOT NULL,
     type character varying(255),
     message_params jsonb,
-    default_results jsonb
+    default_results jsonb,
+    group_ids integer[] DEFAULT ARRAY[]::integer[]
 );
 
 
@@ -1981,7 +2697,7 @@ CREATE TABLE public.flow_contexts (
     id bigint NOT NULL,
     node_uuid uuid,
     flow_uuid uuid NOT NULL,
-    contact_id bigint NOT NULL,
+    contact_id bigint,
     flow_id bigint NOT NULL,
     results jsonb DEFAULT '{}'::jsonb,
     parent_id bigint,
@@ -1999,7 +2715,9 @@ CREATE TABLE public.flow_contexts (
     is_await_result boolean DEFAULT false,
     is_killed boolean DEFAULT false,
     profile_id bigint,
-    reason character varying(255)
+    reason character varying(255),
+    wa_group_id bigint,
+    channel character varying(255) DEFAULT 'whatsapp'::character varying NOT NULL
 );
 
 
@@ -2043,6 +2761,20 @@ COMMENT ON COLUMN public.flow_contexts.is_await_result IS 'Is this flow context 
 --
 
 COMMENT ON COLUMN public.flow_contexts.is_killed IS 'Did we kill this flow?';
+
+
+--
+-- Name: COLUMN flow_contexts.wa_group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.flow_contexts.wa_group_id IS 'ID of WA group messages are sent/received from';
+
+
+--
+-- Name: COLUMN flow_contexts.channel; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.flow_contexts.channel IS 'The channel (whatsapp, web, ...) of the message that triggered this flow context; propagated into the flow''s outbound sends so replies route back over the originating channel.';
 
 
 --
@@ -2402,7 +3134,11 @@ CREATE TABLE public.flows (
     is_active boolean DEFAULT true,
     is_background boolean DEFAULT false,
     is_pinned boolean DEFAULT false,
-    tag_id bigint
+    tag_id bigint,
+    description text,
+    is_template boolean DEFAULT false,
+    skip_validation boolean DEFAULT false,
+    channels character varying(255)[] DEFAULT ARRAY['whatsapp'::character varying, 'web'::character varying] NOT NULL
 );
 
 
@@ -2491,6 +3227,20 @@ COMMENT ON COLUMN public.flows.is_pinned IS 'This is for showing the pinned flow
 
 
 --
+-- Name: COLUMN flows.skip_validation; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.flows.skip_validation IS 'Allow users to skip validation for variables coming from resumeContact apis';
+
+
+--
+-- Name: COLUMN flows.channels; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.flows.channels IS 'Derived set of channels this flow reaches (contract §11.1): ["web"] once any node sends a blocks interactive template (monotonic — never cleared), ["whatsapp"] when any node is send_broadcast or a templated (HSM) send_msg, or the omnichannel default ["whatsapp", "web"]. Recomputed at Glific.Flows.maybe_update_flow_type_and_channels/2.';
+
+
+--
 -- Name: flows_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -2518,8 +3268,16 @@ CREATE TABLE public.gcs_jobs (
     message_media_id bigint,
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    type character varying(255) DEFAULT 'incremental'::character varying
 );
+
+
+--
+-- Name: COLUMN gcs_jobs.type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.gcs_jobs.type IS 'can be incremental or unsynced. incremental for normal backup of files to GCS and unsynced to ensure the unsynced files are also backedup later time of day when traffic is low';
 
 
 --
@@ -2539,6 +3297,41 @@ CREATE SEQUENCE public.gcs_jobs_id_seq
 --
 
 ALTER SEQUENCE public.gcs_jobs_id_seq OWNED BY public.gcs_jobs.id;
+
+
+--
+-- Name: golden_qas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.golden_qas (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    dataset_id integer NOT NULL,
+    duplication_factor integer DEFAULT 1,
+    file_name character varying(255),
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: golden_qas_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.golden_qas_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: golden_qas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.golden_qas_id_seq OWNED BY public.golden_qas.id;
 
 
 --
@@ -2585,7 +3378,8 @@ CREATE TABLE public.groups (
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
     last_communication_at timestamp(0) without time zone,
-    last_message_number integer DEFAULT 0
+    last_message_number integer DEFAULT 0,
+    group_type character varying(255)
 );
 
 
@@ -2629,6 +3423,13 @@ COMMENT ON COLUMN public.groups.last_communication_at IS 'Timestamp of the most 
 --
 
 COMMENT ON COLUMN public.groups.last_message_number IS 'The max message number sent via this group';
+
+
+--
+-- Name: COLUMN groups.group_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.groups.group_type IS 'one of WABA, WA';
 
 
 --
@@ -2895,18 +3696,229 @@ ALTER SEQUENCE public.invoices_id_seq OWNED BY public.invoices.id;
 
 
 --
+-- Name: issued_certificates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.issued_certificates (
+    id bigint NOT NULL,
+    certificate_template_id bigint NOT NULL,
+    contact_id bigint NOT NULL,
+    gcs_url character varying(255),
+    errors jsonb DEFAULT '{}'::jsonb,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN issued_certificates.certificate_template_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.issued_certificates.certificate_template_id IS 'Unique certificate template ID';
+
+
+--
+-- Name: COLUMN issued_certificates.contact_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.issued_certificates.contact_id IS 'Unique contact ID';
+
+
+--
+-- Name: COLUMN issued_certificates.gcs_url; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.issued_certificates.gcs_url IS 'GCS url of the final generated certificate';
+
+
+--
+-- Name: COLUMN issued_certificates.errors; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.issued_certificates.errors IS 'Error and reason during certificate generation';
+
+
+--
+-- Name: COLUMN issued_certificates.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.issued_certificates.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: issued_certificates_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.issued_certificates_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: issued_certificates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.issued_certificates_id_seq OWNED BY public.issued_certificates.id;
+
+
+--
+-- Name: knowledge_base_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.knowledge_base_versions (
+    id bigint NOT NULL,
+    version_number integer NOT NULL,
+    llm_service_id character varying(255),
+    kaapi_job_id character varying(255),
+    files jsonb DEFAULT '{}'::jsonb,
+    size bigint DEFAULT 0,
+    status public.knowledge_base_status_enum DEFAULT 'in_progress'::public.knowledge_base_status_enum NOT NULL,
+    organization_id bigint NOT NULL,
+    knowledge_base_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN knowledge_base_versions.version_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.version_number IS 'Monotonically increasing version per knowledge base';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.llm_service_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.llm_service_id IS 'Provider-side vector store identifier (if available)';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.kaapi_job_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.kaapi_job_id IS 'Async job id returned by Kaapi during knowledge base creation';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.files; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.files IS 'Files metadata for this knowledge base version';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.size; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.size IS 'Size of this knowledge base version';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.status IS 'Status of knowledge base creation - in_progress, completed, failed';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: COLUMN knowledge_base_versions.knowledge_base_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_base_versions.knowledge_base_id IS 'Knowledge base this version belongs to';
+
+
+--
+-- Name: knowledge_base_versions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.knowledge_base_versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: knowledge_base_versions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.knowledge_base_versions_id_seq OWNED BY public.knowledge_base_versions.id;
+
+
+--
+-- Name: knowledge_bases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.knowledge_bases (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN knowledge_bases.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_bases.name IS 'Name of the knowledge base';
+
+
+--
+-- Name: COLUMN knowledge_bases.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.knowledge_bases.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: knowledge_bases_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.knowledge_bases_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: knowledge_bases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.knowledge_bases_id_seq OWNED BY public.knowledge_bases.id;
+
+
+--
 -- Name: locations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.locations (
     id bigint NOT NULL,
     contact_id bigint NOT NULL,
-    message_id bigint NOT NULL,
+    message_id bigint,
     longitude double precision NOT NULL,
     latitude double precision NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
-    organization_id bigint NOT NULL
+    organization_id bigint NOT NULL,
+    wa_message_id bigint
 );
 
 
@@ -2936,6 +3948,13 @@ COMMENT ON COLUMN public.locations.longitude IS 'Location longitude';
 --
 
 COMMENT ON COLUMN public.locations.latitude IS 'Location latitude';
+
+
+--
+-- Name: COLUMN locations.wa_message_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.locations.wa_message_id IS 'ID of WA group';
 
 
 --
@@ -3036,7 +4055,9 @@ CREATE TABLE public.messages (
     template_id bigint,
     interactive_template_id bigint,
     message_broadcast_id bigint,
-    profile_id bigint
+    profile_id bigint,
+    whatsapp_form_response_id bigint,
+    channel character varying(255) DEFAULT 'whatsapp'::character varying NOT NULL
 );
 
 
@@ -3336,12 +4357,14 @@ CREATE TABLE public.messages_media (
     source_url text NOT NULL,
     thumbnail text,
     caption text,
-    provider_media_id character varying(255),
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
     gcs_url text,
     organization_id bigint NOT NULL,
-    content_type character varying(255)
+    content_type character varying(255),
+    flow public.message_flow_enum,
+    is_template_media boolean,
+    gcs_error text
 );
 
 
@@ -3374,17 +4397,17 @@ COMMENT ON COLUMN public.messages_media.caption IS 'Media caption';
 
 
 --
--- Name: COLUMN messages_media.provider_media_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.messages_media.provider_media_id IS 'Whatsapp message ID';
-
-
---
 -- Name: COLUMN messages_media.content_type; Type: COMMENT; Schema: public; Owner: -
 --
 
 COMMENT ON COLUMN public.messages_media.content_type IS 'Content Type for the media message sent by WABA';
+
+
+--
+-- Name: COLUMN messages_media.gcs_error; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.messages_media.gcs_error IS 'Failure reason while trying to sync to gcs';
 
 
 --
@@ -3538,7 +4561,7 @@ CREATE TABLE public.organization_data (
     id bigint NOT NULL,
     key character varying(255) NOT NULL,
     description character varying(255),
-    json jsonb DEFAULT '{}'::jsonb,
+    "json" jsonb DEFAULT '{}'::jsonb,
     text text,
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
@@ -3573,6 +4596,38 @@ ALTER SEQUENCE public.organization_data_id_seq OWNED BY public.organization_data
 
 
 --
+-- Name: organization_eval_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.organization_eval_requests (
+    id bigint NOT NULL,
+    status character varying(255) DEFAULT 'requested'::character varying NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: organization_eval_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.organization_eval_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: organization_eval_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.organization_eval_requests_id_seq OWNED BY public.organization_eval_requests.id;
+
+
+--
 -- Name: organizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3580,7 +4635,7 @@ CREATE TABLE public.organizations (
     id bigint NOT NULL,
     name character varying(255) NOT NULL,
     shortcode character varying(255) NOT NULL,
-    email character varying(255) NOT NULL,
+    email character varying(255),
     bsp_id bigint NOT NULL,
     default_language_id bigint NOT NULL,
     active_language_ids integer[] DEFAULT ARRAY[]::integer[],
@@ -3601,7 +4656,13 @@ CREATE TABLE public.organizations (
     is_suspended boolean DEFAULT false,
     suspended_until timestamp(0) without time zone,
     regx_flow jsonb,
-    optin_flow_id bigint
+    optin_flow_id bigint,
+    team_emails jsonb,
+    parent_org character varying,
+    setting jsonb DEFAULT '{}'::jsonb,
+    is_trial_org boolean DEFAULT false,
+    trial_expiration_date timestamp(0) without time zone DEFAULT NULL::timestamp without time zone,
+    deleted_at timestamp(0) without time zone
 );
 
 
@@ -3746,6 +4807,20 @@ COMMENT ON COLUMN public.organizations.optin_flow_id IS 'Flow which will trigger
 
 
 --
+-- Name: COLUMN organizations.is_trial_org; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.organizations.is_trial_org IS 'whether this is a trial org';
+
+
+--
+-- Name: COLUMN organizations.trial_expiration_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.organizations.trial_expiration_date IS 'When the trial period for this org ends';
+
+
+--
 -- Name: organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -3777,7 +4852,9 @@ CREATE TABLE public.profiles (
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
     fields jsonb,
-    type character varying(255)
+    type character varying(255),
+    is_active boolean DEFAULT true,
+    is_default boolean DEFAULT false
 );
 
 
@@ -3824,6 +4901,13 @@ COMMENT ON COLUMN public.profiles.type IS 'This is optional and depends on NGO u
 
 
 --
+-- Name: COLUMN profiles.is_active; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.profiles.is_active IS 'if the profile is deactivated then the value would be false else true';
+
+
+--
 -- Name: profiles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -3840,6 +4924,242 @@ CREATE SEQUENCE public.profiles_id_seq
 --
 
 ALTER SEQUENCE public.profiles_id_seq OWNED BY public.profiles.id;
+
+
+--
+-- Name: prompt_generation_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.prompt_generation_requests (
+    id bigint NOT NULL,
+    inputs jsonb NOT NULL,
+    generated_prompt text,
+    status character varying(255) DEFAULT 'in_progress'::character varying NOT NULL,
+    request_id character varying(255) NOT NULL,
+    error_message text,
+    organization_id bigint NOT NULL,
+    user_id bigint,
+    inserted_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN prompt_generation_requests.inputs; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.inputs IS 'The 9 NGO answers used to generate the prompt (keyed by field name)';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.generated_prompt; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.generated_prompt IS 'The LLM-generated system prompt; nil until status is ready';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.status IS 'Lifecycle status: in_progress | ready | failed';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.request_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.request_id IS 'Correlation id we send to Kaapi in request_metadata; echoed back in the callback metadata';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.error_message; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.error_message IS 'Error detail from Kaapi callback when status is failed';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.organization_id IS 'Organization scope';
+
+
+--
+-- Name: COLUMN prompt_generation_requests.user_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.prompt_generation_requests.user_id IS 'User who initiated the generation request; nullable';
+
+
+--
+-- Name: prompt_generation_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.prompt_generation_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: prompt_generation_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.prompt_generation_requests_id_seq OWNED BY public.prompt_generation_requests.id;
+
+
+--
+-- Name: registrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.registrations (
+    id bigint NOT NULL,
+    org_details jsonb,
+    platform_details jsonb,
+    billing_frequency character varying(255) DEFAULT 'monthly'::character varying,
+    finance_poc jsonb,
+    submitter jsonb,
+    signing_authority jsonb,
+    has_submitted boolean DEFAULT false,
+    has_confirmed boolean DEFAULT false,
+    ip_address character varying(255),
+    terms_agreed boolean DEFAULT false,
+    support_staff_account boolean DEFAULT true,
+    organization_id bigint NOT NULL,
+    notion_page_id character varying(255),
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    is_disputed boolean,
+    erp_page_id character varying(255)
+);
+
+
+--
+-- Name: COLUMN registrations.org_details; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.org_details IS 'Details about the organization.';
+
+
+--
+-- Name: COLUMN registrations.platform_details; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.platform_details IS 'Details about the Gupshup platform.';
+
+
+--
+-- Name: COLUMN registrations.billing_frequency; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.billing_frequency IS 'Frequency of billing one of yearly, monthly, quarterly';
+
+
+--
+-- Name: COLUMN registrations.finance_poc; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.finance_poc IS 'Billing details.';
+
+
+--
+-- Name: COLUMN registrations.submitter; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.submitter IS 'Details of the submitter';
+
+
+--
+-- Name: COLUMN registrations.signing_authority; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.signing_authority IS 'Details of the signing authority.';
+
+
+--
+-- Name: COLUMN registrations.has_submitted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.has_submitted IS 'Flag indicating if the registration has been submitted.';
+
+
+--
+-- Name: COLUMN registrations.has_confirmed; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.has_confirmed IS 'Flag indicating if the applicant have confirmed the registration via email';
+
+
+--
+-- Name: COLUMN registrations.ip_address; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.ip_address IS 'IP address of the submitter';
+
+
+--
+-- Name: COLUMN registrations.terms_agreed; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.terms_agreed IS 'Flag indicating if the user agreed or disagreed with the T&C';
+
+
+--
+-- Name: COLUMN registrations.support_staff_account; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.support_staff_account IS 'Flag indicating if user agrees to create a support staff account';
+
+
+--
+-- Name: COLUMN registrations.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: COLUMN registrations.notion_page_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.notion_page_id IS 'ID of the org''s row in notion''s onboarding-list database';
+
+
+--
+-- Name: COLUMN registrations.is_disputed; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.is_disputed IS 'if the user disputed the T&C';
+
+
+--
+-- Name: COLUMN registrations.erp_page_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.registrations.erp_page_id IS 'ID of the org''s row in ERP''s customer-list database';
+
+
+--
+-- Name: registrations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.registrations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: registrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.registrations_id_seq OWNED BY public.registrations.id;
 
 
 --
@@ -4115,7 +5435,10 @@ CREATE TABLE public.session_templates (
     buttons jsonb DEFAULT '[]'::jsonb,
     bsp_id character varying(255),
     reason character varying(255),
-    tag_id bigint
+    tag_id bigint,
+    quality character varying(255),
+    allow_template_category_change boolean DEFAULT true,
+    footer character varying(255)
 );
 
 
@@ -4293,7 +5616,9 @@ CREATE TABLE public.sheets (
     updated_at timestamp(0) without time zone NOT NULL,
     sheet_data_count integer,
     type character varying(255),
-    auto_sync boolean DEFAULT false
+    auto_sync boolean DEFAULT false,
+    sync_status public.sheet_sync_status_enum DEFAULT 'success'::public.sheet_sync_status_enum,
+    failure_reason text
 );
 
 
@@ -4337,6 +5662,13 @@ COMMENT ON COLUMN public.sheets.type IS 'Google sheet type which can be READ, WR
 --
 
 COMMENT ON COLUMN public.sheets.auto_sync IS 'Auto Sync Sheets data in some interval';
+
+
+--
+-- Name: COLUMN sheets.sync_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sheets.sync_status IS 'Status of the sync operation';
 
 
 --
@@ -4436,7 +5768,8 @@ CREATE TABLE public.stats (
     hour integer,
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    conversations integer DEFAULT 0
 );
 
 
@@ -4726,7 +6059,9 @@ CREATE TABLE public.tickets (
     user_id bigint,
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    message_number integer,
+    flow_id bigint
 );
 
 
@@ -4742,6 +6077,13 @@ COMMENT ON COLUMN public.tickets.status IS 'Status of this ticket: Open or Close
 --
 
 COMMENT ON COLUMN public.tickets.remarks IS 'Closing remarks for the ticket';
+
+
+--
+-- Name: COLUMN tickets.flow_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tickets.flow_id IS 'Flow ID';
 
 
 --
@@ -4816,6 +6158,135 @@ CREATE SEQUENCE public.trackers_id_seq
 --
 
 ALTER SEQUENCE public.trackers_id_seq OWNED BY public.trackers.id;
+
+
+--
+-- Name: translate_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.translate_logs (
+    id bigint NOT NULL,
+    text text,
+    translated_text text,
+    translation_engine character varying(255),
+    source_language character varying(255),
+    destination_language character varying(255),
+    status boolean,
+    error character varying(255),
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN translate_logs.text; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.text IS 'Original text to be translated.';
+
+
+--
+-- Name: COLUMN translate_logs.translated_text; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.translated_text IS 'Translated text.';
+
+
+--
+-- Name: COLUMN translate_logs.translation_engine; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.translation_engine IS 'Translation engine used: either Google Translate or Open AI.';
+
+
+--
+-- Name: COLUMN translate_logs.source_language; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.source_language IS 'Language of the original text to be translated.';
+
+
+--
+-- Name: COLUMN translate_logs.destination_language; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.destination_language IS 'Language of the translated text.';
+
+
+--
+-- Name: COLUMN translate_logs.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.status IS 'Flag indicating whether the translation was successful or not.';
+
+
+--
+-- Name: COLUMN translate_logs.error; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.error IS 'Error received from API';
+
+
+--
+-- Name: COLUMN translate_logs.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.translate_logs.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: translate_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.translate_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: translate_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.translate_logs_id_seq OWNED BY public.translate_logs.id;
+
+
+--
+-- Name: trial_users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trial_users (
+    id bigint NOT NULL,
+    username character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    phone character varying(255) NOT NULL,
+    organization_name character varying(255) NOT NULL,
+    otp_entered boolean DEFAULT false NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: trial_users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trial_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trial_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trial_users_id_seq OWNED BY public.trial_users.id;
 
 
 --
@@ -4904,8 +6375,17 @@ CREATE TABLE public.triggers (
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
-    hours integer[] DEFAULT ARRAY[]::integer[]
+    hours integer[] DEFAULT ARRAY[]::integer[],
+    group_ids integer[] DEFAULT ARRAY[]::integer[],
+    group_type character varying(255)
 );
+
+
+--
+-- Name: COLUMN triggers.group_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.triggers.group_type IS 'one of WABA, WA';
 
 
 --
@@ -4925,6 +6405,92 @@ CREATE SEQUENCE public.triggers_id_seq
 --
 
 ALTER SEQUENCE public.triggers_id_seq OWNED BY public.triggers.id;
+
+
+--
+-- Name: user_jobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_jobs (
+    id bigint NOT NULL,
+    status character varying(255) DEFAULT 'pending'::character varying,
+    type character varying(255),
+    total_tasks integer,
+    tasks_done integer,
+    all_tasks_created boolean DEFAULT false,
+    organization_id bigint NOT NULL,
+    errors jsonb DEFAULT '{}'::jsonb,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN user_jobs.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.status IS 'Job status: failed/pending/success';
+
+
+--
+-- Name: COLUMN user_jobs.type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.type IS 'Type of job, e.g., contact_import';
+
+
+--
+-- Name: COLUMN user_jobs.total_tasks; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.total_tasks IS 'Total number of tasks for this job';
+
+
+--
+-- Name: COLUMN user_jobs.tasks_done; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.tasks_done IS 'Number of tasks completed for this job';
+
+
+--
+-- Name: COLUMN user_jobs.all_tasks_created; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.all_tasks_created IS 'Specifies whether all tasks created';
+
+
+--
+-- Name: COLUMN user_jobs.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: COLUMN user_jobs.errors; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_jobs.errors IS 'Details of any errors that occurred during the job';
+
+
+--
+-- Name: user_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_jobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_jobs_id_seq OWNED BY public.user_jobs.id;
 
 
 --
@@ -4984,7 +6550,9 @@ CREATE TABLE public.users (
     last_login_from character varying(255) DEFAULT NULL::character varying,
     language_id bigint,
     upload_contacts boolean DEFAULT false,
-    confirmed_at timestamp(0) without time zone
+    confirmed_at timestamp(0) without time zone,
+    email character varying(255),
+    consent_for_updates boolean DEFAULT false NOT NULL
 );
 
 
@@ -5129,6 +6697,702 @@ ALTER SEQUENCE public.users_tokens_id_seq OWNED BY public.users_tokens.id;
 
 
 --
+-- Name: versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.versions (
+    id bigint NOT NULL,
+    patch bytea NOT NULL,
+    entity_id integer NOT NULL,
+    entity_schema character varying(255) NOT NULL,
+    action character varying(255) NOT NULL,
+    recorded_at timestamp(0) without time zone NOT NULL,
+    rollback boolean DEFAULT false NOT NULL,
+    user_id bigint,
+    organization_id bigint
+);
+
+
+--
+-- Name: COLUMN versions.patch; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.patch IS 'The patch in Erlang External Term Format';
+
+
+--
+-- Name: COLUMN versions.entity_schema; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.entity_schema IS 'name of the table the entity is in';
+
+
+--
+-- Name: COLUMN versions.action; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.action IS 'type of the action that has happened to the entity (created, updated, deleted)';
+
+
+--
+-- Name: COLUMN versions.recorded_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.recorded_at IS 'when has this happened';
+
+
+--
+-- Name: COLUMN versions.rollback; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.rollback IS 'was this change part of a rollback?';
+
+
+--
+-- Name: COLUMN versions.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.versions.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: versions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: versions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.versions_id_seq OWNED BY public.versions.id;
+
+
+--
+-- Name: wa_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_groups (
+    id bigint NOT NULL,
+    label character varying(255) NOT NULL,
+    wa_managed_phone_id bigint NOT NULL,
+    bsp_id character varying(255),
+    organization_id bigint NOT NULL,
+    last_communication_at timestamp(0) without time zone,
+    last_message_number integer DEFAULT 0,
+    is_org_read boolean DEFAULT true,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    fields jsonb DEFAULT '{}'::jsonb
+);
+
+
+--
+-- Name: COLUMN wa_groups.label; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.label IS 'Label of the WhatsApp group';
+
+
+--
+-- Name: COLUMN wa_groups.wa_managed_phone_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.wa_managed_phone_id IS 'WA managed phone the WhatsApp group is linked to';
+
+
+--
+-- Name: COLUMN wa_groups.bsp_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.bsp_id IS 'Unique id of WhatsApp group provided by BSP';
+
+
+--
+-- Name: COLUMN wa_groups.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.organization_id IS 'Unique organization ID';
+
+
+--
+-- Name: COLUMN wa_groups.last_communication_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.last_communication_at IS 'Timestamp of the most recent communication in wa_group';
+
+
+--
+-- Name: COLUMN wa_groups.last_message_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.last_message_number IS 'The max message number recd or sent by this contact in wa_group';
+
+
+--
+-- Name: COLUMN wa_groups.is_org_read; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.is_org_read IS 'Has a staff read the messages sent in this wa_group';
+
+
+--
+-- Name: COLUMN wa_groups.fields; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups.fields IS 'Labels and values of the NGO generated fields for the WA group';
+
+
+--
+-- Name: wa_groups_collections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_groups_collections (
+    id bigint NOT NULL,
+    wa_group_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN wa_groups_collections.wa_group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_collections.wa_group_id IS 'WA group the WhatsApp group is linked to';
+
+
+--
+-- Name: COLUMN wa_groups_collections.group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_collections.group_id IS 'group the WhatsApp group is linked to';
+
+
+--
+-- Name: wa_groups_collections_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_groups_collections_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_groups_collections_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_groups_collections_id_seq OWNED BY public.wa_groups_collections.id;
+
+
+--
+-- Name: wa_groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_groups_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_groups_id_seq OWNED BY public.wa_groups.id;
+
+
+--
+-- Name: wa_groups_phones; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_groups_phones (
+    id bigint NOT NULL,
+    wa_group_id bigint NOT NULL,
+    wa_managed_phone_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    is_primary boolean DEFAULT false NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN wa_groups_phones.wa_group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_phones.wa_group_id IS 'WA group this membership belongs to';
+
+
+--
+-- Name: COLUMN wa_groups_phones.wa_managed_phone_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_phones.wa_managed_phone_id IS 'Maytapi-linked phone that is a member of the group';
+
+
+--
+-- Name: COLUMN wa_groups_phones.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_phones.organization_id IS 'Organization scope';
+
+
+--
+-- Name: COLUMN wa_groups_phones.is_primary; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_phones.is_primary IS 'Marks the primary phone for outbound sends to this group';
+
+
+--
+-- Name: COLUMN wa_groups_phones.is_active; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_groups_phones.is_active IS 'False when the phone is no longer a member of the group on WhatsApp';
+
+
+--
+-- Name: wa_groups_phones_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_groups_phones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_groups_phones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_groups_phones_id_seq OWNED BY public.wa_groups_phones.id;
+
+
+--
+-- Name: wa_managed_phones; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_managed_phones (
+    id bigint NOT NULL,
+    label character varying(255),
+    phone character varying(255) NOT NULL,
+    phone_id integer,
+    product_id character varying(255),
+    organization_id bigint NOT NULL,
+    contact_id bigint NOT NULL,
+    inserted_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    status character varying(255),
+    last_status_checked_at timestamp without time zone
+);
+
+
+--
+-- Name: COLUMN wa_managed_phones.label; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_managed_phones.label IS 'Identification for this phone';
+
+
+--
+-- Name: COLUMN wa_managed_phones.contact_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_managed_phones.contact_id IS 'contact id wa_managed_phone';
+
+
+--
+-- Name: COLUMN wa_managed_phones.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_managed_phones.status IS 'status of the phone connected to Maytapi to see whether it is active or not';
+
+
+--
+-- Name: COLUMN wa_managed_phones.last_status_checked_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_managed_phones.last_status_checked_at IS 'When the phone''s status was last reconciled against Maytapi (webhook or poll)';
+
+
+--
+-- Name: wa_managed_phones_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_managed_phones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_managed_phones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_managed_phones_id_seq OWNED BY public.wa_managed_phones.id;
+
+
+--
+-- Name: wa_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_messages (
+    id bigint NOT NULL,
+    uuid uuid,
+    body text,
+    type public.message_type_enum,
+    flow public.message_flow_enum,
+    status public.message_status_enum DEFAULT 'enqueued'::public.message_status_enum NOT NULL,
+    bsp_status public.message_status_enum NOT NULL,
+    bsp_id character varying(255),
+    errors jsonb,
+    message_number bigint,
+    contact_id bigint NOT NULL,
+    wa_managed_phone_id bigint,
+    media_id bigint,
+    send_at timestamp(0) without time zone,
+    sent_at timestamp(0) without time zone,
+    group_id bigint,
+    wa_group_id bigint,
+    organization_id bigint NOT NULL,
+    is_dm boolean DEFAULT false,
+    context_id text,
+    context_message_id bigint,
+    message_broadcast_id bigint,
+    inserted_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    flow_label character varying(255),
+    poll_content jsonb DEFAULT '{}'::jsonb,
+    poll_id bigint
+);
+
+
+--
+-- Name: COLUMN wa_messages.uuid; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.uuid IS 'Uniquely generated message UUID, primarily needed for the flow editor';
+
+
+--
+-- Name: COLUMN wa_messages.body; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.body IS 'Body of the message';
+
+
+--
+-- Name: COLUMN wa_messages.type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.type IS 'Type of the message; options are - text, audio, video, image, location, contact, file, sticker';
+
+
+--
+-- Name: COLUMN wa_messages.flow; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.flow IS 'Whether an inbound or an outbound message';
+
+
+--
+-- Name: COLUMN wa_messages.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.status IS 'Delivery status of the message';
+
+
+--
+-- Name: COLUMN wa_messages.bsp_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.bsp_status IS 'Whatsapp connection status; current options are : processing, valid, invalid & failed';
+
+
+--
+-- Name: COLUMN wa_messages.bsp_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.bsp_id IS 'Message ID from provider';
+
+
+--
+-- Name: COLUMN wa_messages.errors; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.errors IS 'Options : Sent, Delivered or Read';
+
+
+--
+-- Name: COLUMN wa_messages.message_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.message_number IS 'Messaging number for a WhatsApp group';
+
+
+--
+-- Name: COLUMN wa_messages.contact_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.contact_id IS 'contact id of beneficiary if the message is received or contact id of WA managed phone if the message is send';
+
+
+--
+-- Name: COLUMN wa_messages.wa_managed_phone_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.wa_managed_phone_id IS 'WA managed phone id of the number linked to Maytapi account';
+
+
+--
+-- Name: COLUMN wa_messages.media_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.media_id IS 'Message media ID';
+
+
+--
+-- Name: COLUMN wa_messages.send_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.send_at IS 'Timestamp when message is scheduled to be sent';
+
+
+--
+-- Name: COLUMN wa_messages.sent_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.sent_at IS 'Timestamp when message was sent from queue worker';
+
+
+--
+-- Name: COLUMN wa_messages.group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.group_id IS 'ID of group, message is sent to';
+
+
+--
+-- Name: COLUMN wa_messages.wa_group_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.wa_group_id IS 'ID of WA group,  message is sent/received from';
+
+
+--
+-- Name: COLUMN wa_messages.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.organization_id IS 'Unique organization ID';
+
+
+--
+-- Name: COLUMN wa_messages.is_dm; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.is_dm IS 'Flag to check if the message is Group Message or DM';
+
+
+--
+-- Name: COLUMN wa_messages.context_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.context_id IS 'ID of the message context';
+
+
+--
+-- Name: COLUMN wa_messages.flow_label; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.flow_label IS 'Tagged flow label for WA messages';
+
+
+--
+-- Name: COLUMN wa_messages.poll_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_messages.poll_id IS 'Reference for the Whatsapp groups poll';
+
+
+--
+-- Name: wa_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_messages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_messages_id_seq OWNED BY public.wa_messages.id;
+
+
+--
+-- Name: wa_polls; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_polls (
+    id bigint NOT NULL,
+    uuid uuid NOT NULL,
+    label character varying(255) NOT NULL,
+    poll_content jsonb DEFAULT '{}'::jsonb,
+    allow_multiple_answer boolean DEFAULT false,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN wa_polls.uuid; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_polls.uuid IS 'Uniquely generated message UUID, primarily needed for using in a flow webhook';
+
+
+--
+-- Name: COLUMN wa_polls.label; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_polls.label IS 'Title of the whatsapp poll';
+
+
+--
+-- Name: COLUMN wa_polls.poll_content; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_polls.poll_content IS 'poll content';
+
+
+--
+-- Name: COLUMN wa_polls.allow_multiple_answer; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_polls.allow_multiple_answer IS 'if users can select multiple answers in a WhatsApp poll or not';
+
+
+--
+-- Name: COLUMN wa_polls.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_polls.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: wa_polls_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_polls_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_polls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_polls_id_seq OWNED BY public.wa_polls.id;
+
+
+--
+-- Name: wa_reactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wa_reactions (
+    id bigint NOT NULL,
+    bsp_id character varying(255) NOT NULL,
+    reaction text NOT NULL,
+    wa_message_id bigint NOT NULL,
+    contact_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN wa_reactions.bsp_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_reactions.bsp_id IS 'Message ID from provider';
+
+
+--
+-- Name: COLUMN wa_reactions.reaction; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_reactions.reaction IS 'Reaction';
+
+
+--
+-- Name: COLUMN wa_reactions.wa_message_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_reactions.wa_message_id IS 'Unique WA Message ID';
+
+
+--
+-- Name: COLUMN wa_reactions.contact_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_reactions.contact_id IS 'Unique contact ID';
+
+
+--
+-- Name: COLUMN wa_reactions.organization_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.wa_reactions.organization_id IS 'Unique organization ID.';
+
+
+--
+-- Name: wa_reactions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wa_reactions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: wa_reactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.wa_reactions_id_seq OWNED BY public.wa_reactions.id;
+
+
+--
 -- Name: webhook_logs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5142,10 +7406,12 @@ CREATE TABLE public.webhook_logs (
     status_code integer,
     error text,
     flow_id bigint NOT NULL,
-    contact_id bigint NOT NULL,
+    contact_id integer,
     organization_id bigint NOT NULL,
     inserted_at timestamp(0) without time zone NOT NULL,
-    updated_at timestamp(0) without time zone NOT NULL
+    updated_at timestamp(0) without time zone NOT NULL,
+    wa_group_id bigint,
+    flow_context_id bigint
 );
 
 
@@ -5166,6 +7432,171 @@ CREATE SEQUENCE public.webhook_logs_id_seq
 --
 
 ALTER SEQUENCE public.webhook_logs_id_seq OWNED BY public.webhook_logs.id;
+
+
+--
+-- Name: whatsapp_form_revisions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.whatsapp_form_revisions (
+    id bigint NOT NULL,
+    revision_number integer NOT NULL,
+    definition jsonb NOT NULL,
+    whatsapp_form_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: whatsapp_form_revisions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.whatsapp_form_revisions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: whatsapp_form_revisions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.whatsapp_form_revisions_id_seq OWNED BY public.whatsapp_form_revisions.id;
+
+
+--
+-- Name: whatsapp_forms; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.whatsapp_forms (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    meta_flow_id character varying(255) NOT NULL,
+    status public.whatsapp_forms_status_enum DEFAULT 'draft'::public.whatsapp_forms_status_enum NOT NULL,
+    definition jsonb DEFAULT '{}'::jsonb,
+    categories public.whatsapp_forms_category_enum[] DEFAULT ARRAY[]::public.whatsapp_forms_category_enum[],
+    organization_id bigint NOT NULL,
+    inserted_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    revision_id bigint,
+    sheet_id bigint
+);
+
+
+--
+-- Name: COLUMN whatsapp_forms.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.name IS 'Name of the form';
+
+
+--
+-- Name: COLUMN whatsapp_forms.description; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.description IS 'Description of the form';
+
+
+--
+-- Name: COLUMN whatsapp_forms.meta_flow_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.meta_flow_id IS 'ID of the form received from Meta';
+
+
+--
+-- Name: COLUMN whatsapp_forms.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.status IS 'Current status of the form';
+
+
+--
+-- Name: COLUMN whatsapp_forms.definition; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.definition IS 'JSON of the form';
+
+
+--
+-- Name: COLUMN whatsapp_forms.categories; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms.categories IS 'Categories of the form';
+
+
+--
+-- Name: whatsapp_forms_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.whatsapp_forms_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: whatsapp_forms_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.whatsapp_forms_id_seq OWNED BY public.whatsapp_forms.id;
+
+
+--
+-- Name: whatsapp_forms_responses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.whatsapp_forms_responses (
+    id bigint NOT NULL,
+    raw_response jsonb DEFAULT '{}'::jsonb,
+    submitted_at timestamp without time zone NOT NULL,
+    contact_id bigint NOT NULL,
+    whatsapp_form_id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    inserted_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN whatsapp_forms_responses.raw_response; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms_responses.raw_response IS 'JSON of the response';
+
+
+--
+-- Name: COLUMN whatsapp_forms_responses.submitted_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.whatsapp_forms_responses.submitted_at IS 'Timestamp of the submission';
+
+
+--
+-- Name: whatsapp_forms_responses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.whatsapp_forms_responses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: whatsapp_forms_responses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.whatsapp_forms_responses_id_seq OWNED BY public.whatsapp_forms_responses.id;
 
 
 --
@@ -5204,6 +7635,41 @@ ALTER TABLE ONLY global.providers ALTER COLUMN id SET DEFAULT nextval('global.pr
 
 
 --
+-- Name: ai_evaluations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_evaluations ALTER COLUMN id SET DEFAULT nextval('public.ai_evaluations_id_seq'::regclass);
+
+
+--
+-- Name: ask_glific_conversations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ask_glific_conversations ALTER COLUMN id SET DEFAULT nextval('public.ask_glific_conversations_id_seq'::regclass);
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_version_knowledge_base_versions ALTER COLUMN id SET DEFAULT nextval('public.assistant_config_version_knowledge_base_versions_id_seq'::regclass);
+
+
+--
+-- Name: assistant_config_versions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_versions ALTER COLUMN id SET DEFAULT nextval('public.assistant_config_versions_id_seq'::regclass);
+
+
+--
+-- Name: assistants id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistants ALTER COLUMN id SET DEFAULT nextval('public.assistants_id_seq'::regclass);
+
+
+--
 -- Name: bigquery_jobs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5215,6 +7681,13 @@ ALTER TABLE ONLY public.bigquery_jobs ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.billings ALTER COLUMN id SET DEFAULT nextval('public.billings_id_seq'::regclass);
+
+
+--
+-- Name: certificate_templates id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.certificate_templates ALTER COLUMN id SET DEFAULT nextval('public.certificate_templates_id_seq'::regclass);
 
 
 --
@@ -5257,6 +7730,13 @@ ALTER TABLE ONLY public.contacts_groups ALTER COLUMN id SET DEFAULT nextval('pub
 --
 
 ALTER TABLE ONLY public.contacts_tags ALTER COLUMN id SET DEFAULT nextval('public.contacts_tags_id_seq'::regclass);
+
+
+--
+-- Name: contacts_wa_groups id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts_wa_groups ALTER COLUMN id SET DEFAULT nextval('public.contacts_wa_groups_id_seq'::regclass);
 
 
 --
@@ -5330,6 +7810,13 @@ ALTER TABLE ONLY public.gcs_jobs ALTER COLUMN id SET DEFAULT nextval('public.gcs
 
 
 --
+-- Name: golden_qas id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.golden_qas ALTER COLUMN id SET DEFAULT nextval('public.golden_qas_id_seq'::regclass);
+
+
+--
 -- Name: group_roles id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5362,6 +7849,27 @@ ALTER TABLE ONLY public.interactive_templates ALTER COLUMN id SET DEFAULT nextva
 --
 
 ALTER TABLE ONLY public.invoices ALTER COLUMN id SET DEFAULT nextval('public.invoices_id_seq'::regclass);
+
+
+--
+-- Name: issued_certificates id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.issued_certificates ALTER COLUMN id SET DEFAULT nextval('public.issued_certificates_id_seq'::regclass);
+
+
+--
+-- Name: knowledge_base_versions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_versions ALTER COLUMN id SET DEFAULT nextval('public.knowledge_base_versions_id_seq'::regclass);
+
+
+--
+-- Name: knowledge_bases id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_bases ALTER COLUMN id SET DEFAULT nextval('public.knowledge_bases_id_seq'::regclass);
 
 
 --
@@ -5435,6 +7943,13 @@ ALTER TABLE ONLY public.organization_data ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
+-- Name: organization_eval_requests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_eval_requests ALTER COLUMN id SET DEFAULT nextval('public.organization_eval_requests_id_seq'::regclass);
+
+
+--
 -- Name: organizations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5446,6 +7961,20 @@ ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.profiles ALTER COLUMN id SET DEFAULT nextval('public.profiles_id_seq'::regclass);
+
+
+--
+-- Name: prompt_generation_requests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.prompt_generation_requests ALTER COLUMN id SET DEFAULT nextval('public.prompt_generation_requests_id_seq'::regclass);
+
+
+--
+-- Name: registrations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.registrations ALTER COLUMN id SET DEFAULT nextval('public.registrations_id_seq'::regclass);
 
 
 --
@@ -5533,6 +8062,20 @@ ALTER TABLE ONLY public.trackers ALTER COLUMN id SET DEFAULT nextval('public.tra
 
 
 --
+-- Name: translate_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.translate_logs ALTER COLUMN id SET DEFAULT nextval('public.translate_logs_id_seq'::regclass);
+
+
+--
+-- Name: trial_users id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trial_users ALTER COLUMN id SET DEFAULT nextval('public.trial_users_id_seq'::regclass);
+
+
+--
 -- Name: trigger_logs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5551,6 +8094,13 @@ ALTER TABLE ONLY public.trigger_roles ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.triggers ALTER COLUMN id SET DEFAULT nextval('public.triggers_id_seq'::regclass);
+
+
+--
+-- Name: user_jobs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_jobs ALTER COLUMN id SET DEFAULT nextval('public.user_jobs_id_seq'::regclass);
 
 
 --
@@ -5582,10 +8132,87 @@ ALTER TABLE ONLY public.users_tokens ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
+-- Name: versions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions ALTER COLUMN id SET DEFAULT nextval('public.versions_id_seq'::regclass);
+
+
+--
+-- Name: wa_groups id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups ALTER COLUMN id SET DEFAULT nextval('public.wa_groups_id_seq'::regclass);
+
+
+--
+-- Name: wa_groups_collections id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_collections ALTER COLUMN id SET DEFAULT nextval('public.wa_groups_collections_id_seq'::regclass);
+
+
+--
+-- Name: wa_groups_phones id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_phones ALTER COLUMN id SET DEFAULT nextval('public.wa_groups_phones_id_seq'::regclass);
+
+
+--
+-- Name: wa_managed_phones id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_managed_phones ALTER COLUMN id SET DEFAULT nextval('public.wa_managed_phones_id_seq'::regclass);
+
+
+--
+-- Name: wa_messages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages ALTER COLUMN id SET DEFAULT nextval('public.wa_messages_id_seq'::regclass);
+
+
+--
+-- Name: wa_polls id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_polls ALTER COLUMN id SET DEFAULT nextval('public.wa_polls_id_seq'::regclass);
+
+
+--
+-- Name: wa_reactions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_reactions ALTER COLUMN id SET DEFAULT nextval('public.wa_reactions_id_seq'::regclass);
+
+
+--
 -- Name: webhook_logs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.webhook_logs ALTER COLUMN id SET DEFAULT nextval('public.webhook_logs_id_seq'::regclass);
+
+
+--
+-- Name: whatsapp_form_revisions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_form_revisions ALTER COLUMN id SET DEFAULT nextval('public.whatsapp_form_revisions_id_seq'::regclass);
+
+
+--
+-- Name: whatsapp_forms id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms ALTER COLUMN id SET DEFAULT nextval('public.whatsapp_forms_id_seq'::regclass);
+
+
+--
+-- Name: whatsapp_forms_responses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms_responses ALTER COLUMN id SET DEFAULT nextval('public.whatsapp_forms_responses_id_seq'::regclass);
 
 
 --
@@ -5602,6 +8229,22 @@ ALTER TABLE ONLY global.fun_with_flags_toggles
 
 ALTER TABLE ONLY global.languages
     ADD CONSTRAINT languages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oban_jobs non_negative_priority; Type: CHECK CONSTRAINT; Schema: global; Owner: -
+--
+
+ALTER TABLE global.oban_jobs
+    ADD CONSTRAINT non_negative_priority CHECK ((priority >= 0)) NOT VALID;
+
+
+--
+-- Name: oban_crons oban_crons_pkey; Type: CONSTRAINT; Schema: global; Owner: -
+--
+
+ALTER TABLE ONLY global.oban_crons
+    ADD CONSTRAINT oban_crons_pkey PRIMARY KEY (name);
 
 
 --
@@ -5629,6 +8272,14 @@ ALTER TABLE ONLY global.oban_producers
 
 
 --
+-- Name: oban_queues oban_queues_pkey; Type: CONSTRAINT; Schema: global; Owner: -
+--
+
+ALTER TABLE ONLY global.oban_queues
+    ADD CONSTRAINT oban_queues_pkey PRIMARY KEY (name);
+
+
+--
 -- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: global; Owner: -
 --
 
@@ -5645,6 +8296,46 @@ ALTER TABLE ONLY global.providers
 
 
 --
+-- Name: ai_evaluations ai_evaluations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_evaluations
+    ADD CONSTRAINT ai_evaluations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ask_glific_conversations ask_glific_conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ask_glific_conversations
+    ADD CONSTRAINT ask_glific_conversations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions assistant_config_version_knowledge_base_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_version_knowledge_base_versions
+    ADD CONSTRAINT assistant_config_version_knowledge_base_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: assistant_config_versions assistant_config_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_versions
+    ADD CONSTRAINT assistant_config_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: assistants assistants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistants
+    ADD CONSTRAINT assistants_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: bigquery_jobs bigquery_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5658,6 +8349,14 @@ ALTER TABLE ONLY public.bigquery_jobs
 
 ALTER TABLE ONLY public.billings
     ADD CONSTRAINT billings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: certificate_templates certificate_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.certificate_templates
+    ADD CONSTRAINT certificate_templates_pkey PRIMARY KEY (id);
 
 
 --
@@ -5706,6 +8405,14 @@ ALTER TABLE ONLY public.contacts
 
 ALTER TABLE ONLY public.contacts_tags
     ADD CONSTRAINT contacts_tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contacts_wa_groups contacts_wa_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts_wa_groups
+    ADD CONSTRAINT contacts_wa_groups_pkey PRIMARY KEY (id);
 
 
 --
@@ -5805,6 +8512,14 @@ ALTER TABLE ONLY public.gcs_jobs
 
 
 --
+-- Name: golden_qas golden_qas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.golden_qas
+    ADD CONSTRAINT golden_qas_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: group_roles group_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5842,6 +8557,30 @@ ALTER TABLE ONLY public.interactive_templates
 
 ALTER TABLE ONLY public.invoices
     ADD CONSTRAINT invoices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: issued_certificates issued_certificates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.issued_certificates
+    ADD CONSTRAINT issued_certificates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: knowledge_base_versions knowledge_base_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_versions
+    ADD CONSTRAINT knowledge_base_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: knowledge_bases knowledge_bases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_bases
+    ADD CONSTRAINT knowledge_bases_pkey PRIMARY KEY (id);
 
 
 --
@@ -5909,6 +8648,14 @@ ALTER TABLE ONLY public.organization_data
 
 
 --
+-- Name: organization_eval_requests organization_eval_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_eval_requests
+    ADD CONSTRAINT organization_eval_requests_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5922,6 +8669,22 @@ ALTER TABLE ONLY public.organizations
 
 ALTER TABLE ONLY public.profiles
     ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: prompt_generation_requests prompt_generation_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.prompt_generation_requests
+    ADD CONSTRAINT prompt_generation_requests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: registrations registrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.registrations
+    ADD CONSTRAINT registrations_pkey PRIMARY KEY (id);
 
 
 --
@@ -6037,6 +8800,22 @@ ALTER TABLE ONLY public.trackers
 
 
 --
+-- Name: translate_logs translate_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.translate_logs
+    ADD CONSTRAINT translate_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trial_users trial_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trial_users
+    ADD CONSTRAINT trial_users_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: trigger_logs trigger_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6058,6 +8837,14 @@ ALTER TABLE ONLY public.trigger_roles
 
 ALTER TABLE ONLY public.triggers
     ADD CONSTRAINT triggers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_jobs user_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_jobs
+    ADD CONSTRAINT user_jobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -6093,11 +8880,99 @@ ALTER TABLE ONLY public.users_tokens
 
 
 --
+-- Name: versions versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions
+    ADD CONSTRAINT versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_groups_collections wa_groups_collections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_collections
+    ADD CONSTRAINT wa_groups_collections_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_groups_phones wa_groups_phones_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_phones
+    ADD CONSTRAINT wa_groups_phones_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_groups wa_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups
+    ADD CONSTRAINT wa_groups_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_managed_phones wa_managed_phones_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_managed_phones
+    ADD CONSTRAINT wa_managed_phones_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_messages wa_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_polls wa_polls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_polls
+    ADD CONSTRAINT wa_polls_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wa_reactions wa_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_reactions
+    ADD CONSTRAINT wa_reactions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: webhook_logs webhook_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.webhook_logs
     ADD CONSTRAINT webhook_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: whatsapp_form_revisions whatsapp_form_revisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_form_revisions
+    ADD CONSTRAINT whatsapp_form_revisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: whatsapp_forms whatsapp_forms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms
+    ADD CONSTRAINT whatsapp_forms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: whatsapp_forms_responses whatsapp_forms_responses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms_responses
+    ADD CONSTRAINT whatsapp_forms_responses_pkey PRIMARY KEY (id);
 
 
 --
@@ -6122,6 +8997,20 @@ CREATE INDEX oban_jobs_args_index ON global.oban_jobs USING gin (args);
 
 
 --
+-- Name: oban_jobs_batch_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_batch_index ON global.oban_jobs USING btree (state, ((meta ->> 'batch_id'::text)), ((meta ->> 'callback'::text))) WHERE (meta ? 'batch_id'::text);
+
+
+--
+-- Name: oban_jobs_chain_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_chain_index ON global.oban_jobs USING btree (state, ((meta ->> 'chain_id'::text)), ((meta ->> 'on_hold'::text))) WHERE (meta ? 'chain_id'::text);
+
+
+--
 -- Name: oban_jobs_meta_index; Type: INDEX; Schema: global; Owner: -
 --
 
@@ -6129,10 +9018,52 @@ CREATE INDEX oban_jobs_meta_index ON global.oban_jobs USING gin (meta);
 
 
 --
+-- Name: oban_jobs_partition_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_partition_index ON global.oban_jobs USING btree (partition_key, queue, priority, scheduled_at, id) WHERE ((state = 'available'::global.oban_job_state) AND (partition_key IS NOT NULL));
+
+
+--
+-- Name: oban_jobs_state_cancelled_at_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_state_cancelled_at_index ON global.oban_jobs USING btree (state, cancelled_at);
+
+
+--
+-- Name: oban_jobs_state_discarded_at_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_state_discarded_at_index ON global.oban_jobs USING btree (state, discarded_at);
+
+
+--
 -- Name: oban_jobs_state_queue_priority_scheduled_at_id_index; Type: INDEX; Schema: global; Owner: -
 --
 
 CREATE INDEX oban_jobs_state_queue_priority_scheduled_at_id_index ON global.oban_jobs USING btree (state, queue, priority, scheduled_at, id);
+
+
+--
+-- Name: oban_jobs_sup_workflow_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_sup_workflow_index ON global.oban_jobs USING btree (((meta ->> 'sup_workflow_id'::text)), state, ((meta ->> 'on_hold'::text))) WHERE (meta ? 'sup_workflow_id'::text);
+
+
+--
+-- Name: oban_jobs_unique_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE UNIQUE INDEX oban_jobs_unique_index ON global.oban_jobs USING btree (uniq_key) WHERE (uniq_key IS NOT NULL);
+
+
+--
+-- Name: oban_jobs_workflow_index; Type: INDEX; Schema: global; Owner: -
+--
+
+CREATE INDEX oban_jobs_workflow_index ON global.oban_jobs USING btree (((meta ->> 'workflow_id'::text)), state, ((meta ->> 'on_hold'::text)), ((meta ->> 'name'::text))) WHERE (meta ? 'workflow_id'::text);
 
 
 --
@@ -6150,6 +9081,132 @@ CREATE UNIQUE INDEX providers_shortcode_index ON global.providers USING btree (s
 
 
 --
+-- Name: ai_evaluations_assistant_config_version_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_evaluations_assistant_config_version_id_index ON public.ai_evaluations USING btree (assistant_config_version_id);
+
+
+--
+-- Name: ai_evaluations_golden_qa_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_evaluations_golden_qa_id_index ON public.ai_evaluations USING btree (golden_qa_id);
+
+
+--
+-- Name: ai_evaluations_name_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ai_evaluations_name_organization_id_index ON public.ai_evaluations USING btree (name, organization_id);
+
+
+--
+-- Name: ai_evaluations_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_evaluations_organization_id_index ON public.ai_evaluations USING btree (organization_id);
+
+
+--
+-- Name: ai_evaluations_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_evaluations_status_index ON public.ai_evaluations USING btree (status);
+
+
+--
+-- Name: ask_glific_conversations_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ask_glific_conversations_organization_id_index ON public.ask_glific_conversations USING btree (organization_id);
+
+
+--
+-- Name: ask_glific_conversations_user_id_conversation_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ask_glific_conversations_user_id_conversation_id_index ON public.ask_glific_conversations USING btree (user_id, conversation_id);
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions_assistant_conf; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistant_config_version_knowledge_base_versions_assistant_conf ON public.assistant_config_version_knowledge_base_versions USING btree (assistant_config_version_id);
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions_knowledge_base; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistant_config_version_knowledge_base_versions_knowledge_base ON public.assistant_config_version_knowledge_base_versions USING btree (knowledge_base_version_id);
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions_organization_i; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistant_config_version_knowledge_base_versions_organization_i ON public.assistant_config_version_knowledge_base_versions USING btree (organization_id);
+
+
+--
+-- Name: assistant_config_versions_assistant_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistant_config_versions_assistant_id_index ON public.assistant_config_versions USING btree (assistant_id);
+
+
+--
+-- Name: assistant_config_versions_assistant_id_version_number_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX assistant_config_versions_assistant_id_version_number_index ON public.assistant_config_versions USING btree (assistant_id, version_number);
+
+
+--
+-- Name: assistant_config_versions_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistant_config_versions_organization_id_index ON public.assistant_config_versions USING btree (organization_id);
+
+
+--
+-- Name: assistants_active_config_version_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistants_active_config_version_id_index ON public.assistants USING btree (active_config_version_id);
+
+
+--
+-- Name: assistants_assistant_display_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX assistants_assistant_display_id_organization_id_index ON public.assistants USING btree (assistant_display_id, organization_id);
+
+
+--
+-- Name: assistants_name_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX assistants_name_organization_id_index ON public.assistants USING btree (name, organization_id);
+
+
+--
+-- Name: assistants_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX assistants_organization_id_index ON public.assistants USING btree (organization_id);
+
+
+--
+-- Name: bigquery_jobs_organization_id_table_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bigquery_jobs_organization_id_table_index ON public.bigquery_jobs USING btree (organization_id, "table");
+
+
+--
 -- Name: billings_organization_id_is_active_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6161,6 +9218,13 @@ CREATE INDEX billings_organization_id_is_active_index ON public.billings USING b
 --
 
 CREATE UNIQUE INDEX billings_stripe_customer_id_index ON public.billings USING btree (stripe_customer_id);
+
+
+--
+-- Name: certificate_templates_label_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX certificate_templates_label_organization_id_index ON public.certificate_templates USING btree (label, organization_id);
 
 
 --
@@ -6185,13 +9249,6 @@ CREATE INDEX contact_histories_contact_id_index ON public.contact_histories USIN
 
 
 --
--- Name: contact_histories_contact_id_updated_at_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX contact_histories_contact_id_updated_at_index ON public.contact_histories USING btree (contact_id, updated_at);
-
-
---
 -- Name: contact_histories_organization_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6199,10 +9256,10 @@ CREATE INDEX contact_histories_organization_id_index ON public.contact_histories
 
 
 --
--- Name: contact_histories_updated_at_index; Type: INDEX; Schema: public; Owner: -
+-- Name: contact_histories_profile_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX contact_histories_updated_at_index ON public.contact_histories USING btree (updated_at);
+CREATE INDEX contact_histories_profile_id_index ON public.contact_histories USING btree (profile_id) WHERE (profile_id IS NOT NULL);
 
 
 --
@@ -6220,17 +9277,17 @@ CREATE INDEX contacts_bsp_status_index ON public.contacts USING btree (bsp_statu
 
 
 --
--- Name: contacts_fields_name_organization_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: contacts_fields_name_organization_id_scope_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX contacts_fields_name_organization_id_index ON public.contacts_fields USING btree (name, organization_id);
+CREATE UNIQUE INDEX contacts_fields_name_organization_id_scope_index ON public.contacts_fields USING btree (name, organization_id, scope);
 
 
 --
--- Name: contacts_fields_shortcode_organization_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: contacts_fields_shortcode_organization_id_scope_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX contacts_fields_shortcode_organization_id_index ON public.contacts_fields USING btree (shortcode, organization_id);
+CREATE UNIQUE INDEX contacts_fields_shortcode_organization_id_scope_index ON public.contacts_fields USING btree (shortcode, organization_id, scope);
 
 
 --
@@ -6238,6 +9295,13 @@ CREATE UNIQUE INDEX contacts_fields_shortcode_organization_id_index ON public.co
 --
 
 CREATE UNIQUE INDEX contacts_groups_contact_id_group_id_index ON public.contacts_groups USING btree (contact_id, group_id);
+
+
+--
+-- Name: contacts_groups_group_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contacts_groups_group_id_organization_id_index ON public.contacts_groups USING btree (group_id, organization_id);
 
 
 --
@@ -6301,6 +9365,13 @@ CREATE UNIQUE INDEX contacts_tags_contact_id_tag_id_index ON public.contacts_tag
 --
 
 CREATE INDEX contacts_updated_at_index ON public.contacts USING btree (updated_at);
+
+
+--
+-- Name: contacts_wa_groups_wa_group_id_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contacts_wa_groups_wa_group_id_contact_id_index ON public.contacts_wa_groups USING btree (wa_group_id, contact_id);
 
 
 --
@@ -6528,17 +9599,38 @@ CREATE UNIQUE INDEX flows_uuid_organization_id_index ON public.flows USING btree
 
 
 --
--- Name: gcs_jobs_message_media_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: gcs_jobs_type_message_media_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX gcs_jobs_message_media_id_index ON public.gcs_jobs USING btree (message_media_id);
+CREATE UNIQUE INDEX gcs_jobs_type_message_media_id_index ON public.gcs_jobs USING btree (type, message_media_id);
 
 
 --
--- Name: gcs_jobs_organization_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: gcs_jobs_type_organization_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX gcs_jobs_organization_id_index ON public.gcs_jobs USING btree (organization_id);
+CREATE UNIQUE INDEX gcs_jobs_type_organization_id_index ON public.gcs_jobs USING btree (type, organization_id);
+
+
+--
+-- Name: golden_qas_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX golden_qas_organization_id_index ON public.golden_qas USING btree (organization_id);
+
+
+--
+-- Name: golden_qas_organization_id_inserted_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX golden_qas_organization_id_inserted_at_index ON public.golden_qas USING btree (organization_id, inserted_at);
+
+
+--
+-- Name: golden_qas_organization_id_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX golden_qas_organization_id_name_index ON public.golden_qas USING btree (organization_id, name);
 
 
 --
@@ -6605,6 +9697,55 @@ CREATE INDEX invoices_organization_id_index ON public.invoices USING btree (orga
 
 
 --
+-- Name: knowledge_base_versions_knowledge_base_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX knowledge_base_versions_knowledge_base_id_index ON public.knowledge_base_versions USING btree (knowledge_base_id);
+
+
+--
+-- Name: knowledge_base_versions_knowledge_base_id_version_number_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX knowledge_base_versions_knowledge_base_id_version_number_index ON public.knowledge_base_versions USING btree (knowledge_base_id, version_number);
+
+
+--
+-- Name: knowledge_base_versions_llm_service_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX knowledge_base_versions_llm_service_id_organization_id_index ON public.knowledge_base_versions USING btree (llm_service_id, organization_id);
+
+
+--
+-- Name: knowledge_base_versions_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX knowledge_base_versions_organization_id_index ON public.knowledge_base_versions USING btree (organization_id);
+
+
+--
+-- Name: knowledge_base_versions_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX knowledge_base_versions_status_index ON public.knowledge_base_versions USING btree (status);
+
+
+--
+-- Name: knowledge_bases_name_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX knowledge_bases_name_organization_id_index ON public.knowledge_bases USING btree (name, organization_id);
+
+
+--
+-- Name: knowledge_bases_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX knowledge_bases_organization_id_index ON public.knowledge_bases USING btree (organization_id);
+
+
+--
 -- Name: locations_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6623,6 +9764,13 @@ CREATE INDEX locations_message_id_index ON public.locations USING btree (message
 --
 
 CREATE INDEX locations_organization_id_index ON public.locations USING btree (organization_id);
+
+
+--
+-- Name: locations_wa_message_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX locations_wa_message_id_index ON public.locations USING btree (wa_message_id);
 
 
 --
@@ -6696,6 +9844,13 @@ CREATE UNIQUE INDEX messages_bsp_message_id_organization_id_index ON public.mess
 
 
 --
+-- Name: messages_contact_id_channel_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX messages_contact_id_channel_index ON public.messages USING btree (contact_id, channel);
+
+
+--
 -- Name: messages_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6766,10 +9921,31 @@ CREATE INDEX messages_media_id_index ON public.messages USING btree (media_id) W
 
 
 --
+-- Name: messages_media_inserted_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX messages_media_inserted_at_index ON public.messages_media USING btree (inserted_at);
+
+
+--
 -- Name: messages_media_organization_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX messages_media_organization_id_index ON public.messages_media USING btree (organization_id);
+
+
+--
+-- Name: messages_media_organization_id_url_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX messages_media_organization_id_url_index ON public.messages_media USING btree (organization_id, url);
+
+
+--
+-- Name: INDEX messages_media_organization_id_url_index; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.messages_media_organization_id_url_index IS 'Backs media dedup lookup by org + url (glific#5319)';
 
 
 --
@@ -6843,6 +10019,13 @@ CREATE INDEX messages_user_id_index ON public.messages USING btree (user_id) WHE
 
 
 --
+-- Name: messages_whatsapp_form_response_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX messages_whatsapp_form_response_id_index ON public.messages USING btree (whatsapp_form_response_id);
+
+
+--
 -- Name: notifications_inserted_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6857,10 +10040,24 @@ CREATE INDEX notifications_organization_id_index ON public.notifications USING b
 
 
 --
+-- Name: organization_eval_requests_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX organization_eval_requests_organization_id_index ON public.organization_eval_requests USING btree (organization_id);
+
+
+--
 -- Name: organizations_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX organizations_contact_id_index ON public.organizations USING btree (contact_id);
+
+
+--
+-- Name: organizations_deleted_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX organizations_deleted_index ON public.organizations USING btree (deleted_at) WHERE (deleted_at IS NULL);
 
 
 --
@@ -6899,6 +10096,27 @@ CREATE INDEX profiles_organization_id_index ON public.profiles USING btree (orga
 
 
 --
+-- Name: prompt_generation_requests_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX prompt_generation_requests_organization_id_index ON public.prompt_generation_requests USING btree (organization_id);
+
+
+--
+-- Name: prompt_generation_requests_request_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX prompt_generation_requests_request_id_organization_id_index ON public.prompt_generation_requests USING btree (request_id, organization_id);
+
+
+--
+-- Name: prompt_generation_requests_user_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX prompt_generation_requests_user_id_index ON public.prompt_generation_requests USING btree (user_id);
+
+
+--
 -- Name: role_permissions_role_id_permission_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6931,6 +10149,13 @@ CREATE UNIQUE INDEX saved_searches_shortcode_organization_id_index ON public.sav
 --
 
 CREATE UNIQUE INDEX session_templates_label_language_id_organization_id_index ON public.session_templates USING btree (label, language_id, organization_id);
+
+
+--
+-- Name: session_templates_message_media_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX session_templates_message_media_id_index ON public.session_templates USING btree (message_media_id) WHERE (message_media_id IS NOT NULL);
 
 
 --
@@ -7046,6 +10271,20 @@ CREATE INDEX trackers_organization_id_index ON public.trackers USING btree (orga
 
 
 --
+-- Name: trial_users_email_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX trial_users_email_index ON public.trial_users USING btree (email);
+
+
+--
+-- Name: trial_users_phone_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX trial_users_phone_index ON public.trial_users USING btree (phone);
+
+
+--
 -- Name: trigger_roles_organization_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7137,6 +10376,167 @@ CREATE INDEX users_tokens_user_id_index ON public.users_tokens USING btree (user
 
 
 --
+-- Name: versions_entity_schema_entity_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX versions_entity_schema_entity_id_index ON public.versions USING btree (entity_schema, entity_id);
+
+
+--
+-- Name: versions_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX versions_organization_id_index ON public.versions USING btree (organization_id);
+
+
+--
+-- Name: versions_user_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX versions_user_id_index ON public.versions USING btree (user_id);
+
+
+--
+-- Name: INDEX versions_user_id_index; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.versions_user_id_index IS 'Speeds up FK nilify_all on user deletion (glific#5188)';
+
+
+--
+-- Name: wa_groups_bsp_id_wa_managed_phone_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_groups_bsp_id_wa_managed_phone_id_organization_id_index ON public.wa_groups USING btree (bsp_id, wa_managed_phone_id, organization_id);
+
+
+--
+-- Name: wa_groups_collections_wa_group_id_group_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_groups_collections_wa_group_id_group_id_index ON public.wa_groups_collections USING btree (wa_group_id, group_id);
+
+
+--
+-- Name: wa_groups_collections_wa_group_id_group_id_organization_id_inde; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_groups_collections_wa_group_id_group_id_organization_id_inde ON public.wa_groups_collections USING btree (wa_group_id, group_id, organization_id);
+
+
+--
+-- Name: wa_groups_phones_one_primary; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_groups_phones_one_primary ON public.wa_groups_phones USING btree (wa_group_id) WHERE (is_primary IS TRUE);
+
+
+--
+-- Name: wa_groups_phones_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_groups_phones_organization_id_index ON public.wa_groups_phones USING btree (organization_id);
+
+
+--
+-- Name: wa_groups_phones_wa_group_id_wa_managed_phone_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_groups_phones_wa_group_id_wa_managed_phone_id_index ON public.wa_groups_phones USING btree (wa_group_id, wa_managed_phone_id);
+
+
+--
+-- Name: wa_groups_wa_managed_phone_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_groups_wa_managed_phone_id_organization_id_index ON public.wa_groups USING btree (wa_managed_phone_id, organization_id);
+
+
+--
+-- Name: wa_managed_phones_phone_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_managed_phones_phone_organization_id_index ON public.wa_managed_phones USING btree (phone, organization_id);
+
+
+--
+-- Name: wa_messages_bsp_id_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_messages_bsp_id_organization_id_index ON public.wa_messages USING btree (bsp_id, organization_id);
+
+
+--
+-- Name: wa_messages_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_messages_contact_id_index ON public.wa_messages USING btree (contact_id);
+
+
+--
+-- Name: wa_messages_media_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_messages_media_id_index ON public.wa_messages USING btree (media_id);
+
+
+--
+-- Name: wa_messages_poll_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_messages_poll_id_index ON public.wa_messages USING btree (poll_id) WHERE (poll_id IS NOT NULL);
+
+
+--
+-- Name: wa_messages_wa_managed_phone_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_messages_wa_managed_phone_id_index ON public.wa_messages USING btree (wa_managed_phone_id);
+
+
+--
+-- Name: wa_polls_label_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_polls_label_organization_id_index ON public.wa_polls USING btree (label, organization_id);
+
+
+--
+-- Name: wa_polls_uuid_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_polls_uuid_index ON public.wa_polls USING btree (uuid);
+
+
+--
+-- Name: wa_reactions_wa_message_id_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX wa_reactions_wa_message_id_contact_id_index ON public.wa_reactions USING btree (wa_message_id, contact_id);
+
+
+--
+-- Name: wa_reactions_wa_message_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX wa_reactions_wa_message_id_index ON public.wa_reactions USING btree (wa_message_id);
+
+
+--
+-- Name: webhook_logs_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX webhook_logs_contact_id_index ON public.webhook_logs USING btree (contact_id) WHERE (contact_id IS NOT NULL);
+
+
+--
+-- Name: webhook_logs_flow_context_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX webhook_logs_flow_context_id_index ON public.webhook_logs USING btree (flow_context_id) WHERE (flow_context_id IS NOT NULL);
+
+
+--
 -- Name: webhook_logs_flow_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7144,10 +10544,66 @@ CREATE INDEX webhook_logs_flow_id_index ON public.webhook_logs USING btree (flow
 
 
 --
--- Name: oban_jobs oban_notify; Type: TRIGGER; Schema: global; Owner: -
+-- Name: webhook_logs_wa_group_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE TRIGGER oban_notify AFTER INSERT ON global.oban_jobs FOR EACH ROW EXECUTE FUNCTION global.oban_jobs_notify();
+CREATE INDEX webhook_logs_wa_group_id_index ON public.webhook_logs USING btree (wa_group_id) WHERE (wa_group_id IS NOT NULL);
+
+
+--
+-- Name: whatsapp_form_revisions_whatsapp_form_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX whatsapp_form_revisions_whatsapp_form_id_index ON public.whatsapp_form_revisions USING btree (whatsapp_form_id);
+
+
+--
+-- Name: whatsapp_form_revisions_whatsapp_form_id_revision_number_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX whatsapp_form_revisions_whatsapp_form_id_revision_number_index ON public.whatsapp_form_revisions USING btree (whatsapp_form_id, revision_number);
+
+
+--
+-- Name: whatsapp_forms_name_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX whatsapp_forms_name_organization_id_index ON public.whatsapp_forms USING btree (name, organization_id);
+
+
+--
+-- Name: whatsapp_forms_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX whatsapp_forms_organization_id_index ON public.whatsapp_forms USING btree (organization_id);
+
+
+--
+-- Name: whatsapp_forms_responses_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX whatsapp_forms_responses_organization_id_index ON public.whatsapp_forms_responses USING btree (organization_id);
+
+
+--
+-- Name: whatsapp_forms_revision_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX whatsapp_forms_revision_id_index ON public.whatsapp_forms USING btree (revision_id);
+
+
+--
+-- Name: whatsapp_forms_sheet_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX whatsapp_forms_sheet_id_index ON public.whatsapp_forms USING btree (sheet_id);
+
+
+--
+-- Name: assistant_config_versions assistant_convfig_version_set_version_number; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER assistant_convfig_version_set_version_number BEFORE INSERT ON public.assistant_config_versions FOR EACH ROW WHEN ((new.version_number IS NULL)) EXECUTE FUNCTION public.set_assistant_config_version_number();
 
 
 --
@@ -7162,6 +10618,13 @@ CREATE TRIGGER delete_tag_ancestors_trigger AFTER DELETE ON public.tags FOR EACH
 --
 
 CREATE TRIGGER insert_tag_ancestors_trigger AFTER INSERT ON public.tags FOR EACH STATEMENT EXECUTE FUNCTION public.update_tag_ancestors();
+
+
+--
+-- Name: knowledge_base_versions knowledge_base_version_set_version_number; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER knowledge_base_version_set_version_number BEFORE INSERT ON public.knowledge_base_versions FOR EACH ROW WHEN ((new.version_number IS NULL)) EXECUTE FUNCTION public.set_knowledge_base_version_number();
 
 
 --
@@ -7183,6 +10646,13 @@ CREATE TRIGGER message_before_insert_trigger BEFORE INSERT ON public.messages FO
 --
 
 CREATE TRIGGER remove_old_history_trigger AFTER INSERT ON public.contact_histories FOR EACH ROW EXECUTE FUNCTION public.remove_old_history();
+
+
+--
+-- Name: whatsapp_form_revisions set_whatsapp_form_revision_number_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER set_whatsapp_form_revision_number_trigger BEFORE INSERT ON public.whatsapp_form_revisions FOR EACH ROW EXECUTE FUNCTION public.set_whatsapp_form_revision_number();
 
 
 --
@@ -7249,6 +10719,116 @@ CREATE TRIGGER update_tag_ancestors_trigger AFTER UPDATE OF parent_id ON public.
 
 
 --
+-- Name: wa_messages wa_message_after_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER wa_message_after_insert_trigger AFTER INSERT ON public.wa_messages FOR EACH ROW EXECUTE FUNCTION public.wa_message_after_insert_callback();
+
+
+--
+-- Name: wa_messages wa_message_before_insert_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER wa_message_before_insert_trigger BEFORE INSERT ON public.wa_messages FOR EACH ROW EXECUTE FUNCTION public.wa_message_before_insert_callback();
+
+
+--
+-- Name: ai_evaluations ai_evaluations_assistant_config_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_evaluations
+    ADD CONSTRAINT ai_evaluations_assistant_config_version_id_fkey FOREIGN KEY (assistant_config_version_id) REFERENCES public.assistant_config_versions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ai_evaluations ai_evaluations_golden_qa_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_evaluations
+    ADD CONSTRAINT ai_evaluations_golden_qa_id_fkey FOREIGN KEY (golden_qa_id) REFERENCES public.golden_qas(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: ai_evaluations ai_evaluations_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_evaluations
+    ADD CONSTRAINT ai_evaluations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ask_glific_conversations ask_glific_conversations_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ask_glific_conversations
+    ADD CONSTRAINT ask_glific_conversations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ask_glific_conversations ask_glific_conversations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ask_glific_conversations
+    ADD CONSTRAINT ask_glific_conversations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions assistant_config_version_knowledge_base_versions_assistant_conf; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_version_knowledge_base_versions
+    ADD CONSTRAINT assistant_config_version_knowledge_base_versions_assistant_conf FOREIGN KEY (assistant_config_version_id) REFERENCES public.assistant_config_versions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions assistant_config_version_knowledge_base_versions_knowledge_base; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_version_knowledge_base_versions
+    ADD CONSTRAINT assistant_config_version_knowledge_base_versions_knowledge_base FOREIGN KEY (knowledge_base_version_id) REFERENCES public.knowledge_base_versions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistant_config_version_knowledge_base_versions assistant_config_version_knowledge_base_versions_organization_i; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_version_knowledge_base_versions
+    ADD CONSTRAINT assistant_config_version_knowledge_base_versions_organization_i FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistant_config_versions assistant_config_versions_assistant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_versions
+    ADD CONSTRAINT assistant_config_versions_assistant_id_fkey FOREIGN KEY (assistant_id) REFERENCES public.assistants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistant_config_versions assistant_config_versions_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistant_config_versions
+    ADD CONSTRAINT assistant_config_versions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: assistants assistants_active_config_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistants
+    ADD CONSTRAINT assistants_active_config_version_id_fkey FOREIGN KEY (active_config_version_id) REFERENCES public.assistant_config_versions(id);
+
+
+--
+-- Name: assistants assistants_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assistants
+    ADD CONSTRAINT assistants_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
 -- Name: bigquery_jobs bigquery_jobs_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7262,6 +10842,14 @@ ALTER TABLE ONLY public.bigquery_jobs
 
 ALTER TABLE ONLY public.billings
     ADD CONSTRAINT billings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: certificate_templates certificate_templates_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.certificate_templates
+    ADD CONSTRAINT certificate_templates_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -7374,6 +10962,30 @@ ALTER TABLE ONLY public.contacts_tags
 
 ALTER TABLE ONLY public.contacts_tags
     ADD CONSTRAINT contacts_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contacts_wa_groups contacts_wa_groups_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts_wa_groups
+    ADD CONSTRAINT contacts_wa_groups_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contacts_wa_groups contacts_wa_groups_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts_wa_groups
+    ADD CONSTRAINT contacts_wa_groups_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contacts_wa_groups contacts_wa_groups_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts_wa_groups
+    ADD CONSTRAINT contacts_wa_groups_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
 
 
 --
@@ -7521,6 +11133,14 @@ ALTER TABLE ONLY public.flow_contexts
 
 
 --
+-- Name: flow_contexts flow_contexts_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.flow_contexts
+    ADD CONSTRAINT flow_contexts_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
+
+
+--
 -- Name: flow_counts flow_counts_flow_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7657,6 +11277,14 @@ ALTER TABLE ONLY public.gcs_jobs
 
 
 --
+-- Name: golden_qas golden_qas_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.golden_qas
+    ADD CONSTRAINT golden_qas_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
 -- Name: group_roles group_roles_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7729,6 +11357,54 @@ ALTER TABLE ONLY public.invoices
 
 
 --
+-- Name: issued_certificates issued_certificates_certificate_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.issued_certificates
+    ADD CONSTRAINT issued_certificates_certificate_template_id_fkey FOREIGN KEY (certificate_template_id) REFERENCES public.certificate_templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: issued_certificates issued_certificates_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.issued_certificates
+    ADD CONSTRAINT issued_certificates_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: issued_certificates issued_certificates_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.issued_certificates
+    ADD CONSTRAINT issued_certificates_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_base_versions knowledge_base_versions_knowledge_base_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_versions
+    ADD CONSTRAINT knowledge_base_versions_knowledge_base_id_fkey FOREIGN KEY (knowledge_base_id) REFERENCES public.knowledge_bases(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_base_versions knowledge_base_versions_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_versions
+    ADD CONSTRAINT knowledge_base_versions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_bases knowledge_bases_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_bases
+    ADD CONSTRAINT knowledge_bases_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
 -- Name: locations locations_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7750,6 +11426,14 @@ ALTER TABLE ONLY public.locations
 
 ALTER TABLE ONLY public.locations
     ADD CONSTRAINT locations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: locations locations_wa_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.locations
+    ADD CONSTRAINT locations_wa_message_id_fkey FOREIGN KEY (wa_message_id) REFERENCES public.wa_messages(id) ON DELETE CASCADE;
 
 
 --
@@ -7845,7 +11529,7 @@ ALTER TABLE ONLY public.messages
 --
 
 ALTER TABLE ONLY public.messages
-    ADD CONSTRAINT messages_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.messages_media(id) ON DELETE SET NULL;;
+    ADD CONSTRAINT messages_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.messages_media(id) ON DELETE SET NULL;
 
 
 --
@@ -7929,6 +11613,14 @@ ALTER TABLE ONLY public.messages
 
 
 --
+-- Name: messages messages_whatsapp_form_response_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_whatsapp_form_response_id_fkey FOREIGN KEY (whatsapp_form_response_id) REFERENCES public.whatsapp_forms_responses(id) ON DELETE SET NULL;
+
+
+--
 -- Name: notifications notifications_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7942,6 +11634,14 @@ ALTER TABLE ONLY public.notifications
 
 ALTER TABLE ONLY public.organization_data
     ADD CONSTRAINT organization_data_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: organization_eval_requests organization_eval_requests_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_eval_requests
+    ADD CONSTRAINT organization_eval_requests_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -7998,6 +11698,30 @@ ALTER TABLE ONLY public.profiles
 
 ALTER TABLE ONLY public.profiles
     ADD CONSTRAINT profiles_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: prompt_generation_requests prompt_generation_requests_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.prompt_generation_requests
+    ADD CONSTRAINT prompt_generation_requests_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: prompt_generation_requests prompt_generation_requests_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.prompt_generation_requests
+    ADD CONSTRAINT prompt_generation_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: registrations registrations_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.registrations
+    ADD CONSTRAINT registrations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -8177,6 +11901,14 @@ ALTER TABLE ONLY public.tickets
 
 
 --
+-- Name: tickets tickets_flow_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tickets
+    ADD CONSTRAINT tickets_flow_id_fkey FOREIGN KEY (flow_id) REFERENCES public.flows(id) ON DELETE CASCADE;
+
+
+--
 -- Name: tickets tickets_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8198,6 +11930,14 @@ ALTER TABLE ONLY public.tickets
 
 ALTER TABLE ONLY public.trackers
     ADD CONSTRAINT trackers_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: translate_logs translate_logs_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.translate_logs
+    ADD CONSTRAINT translate_logs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -8270,6 +12010,14 @@ ALTER TABLE ONLY public.triggers
 
 ALTER TABLE ONLY public.triggers
     ADD CONSTRAINT triggers_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_jobs user_jobs_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_jobs
+    ADD CONSTRAINT user_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -8361,11 +12109,219 @@ ALTER TABLE ONLY public.users_tokens
 
 
 --
+-- Name: versions versions_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions
+    ADD CONSTRAINT versions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: versions versions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions
+    ADD CONSTRAINT versions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: wa_groups_collections wa_groups_collections_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_collections
+    ADD CONSTRAINT wa_groups_collections_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups_collections wa_groups_collections_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_collections
+    ADD CONSTRAINT wa_groups_collections_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups_collections wa_groups_collections_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_collections
+    ADD CONSTRAINT wa_groups_collections_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups wa_groups_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups
+    ADD CONSTRAINT wa_groups_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups_phones wa_groups_phones_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_phones
+    ADD CONSTRAINT wa_groups_phones_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups_phones wa_groups_phones_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_phones
+    ADD CONSTRAINT wa_groups_phones_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups_phones wa_groups_phones_wa_managed_phone_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups_phones
+    ADD CONSTRAINT wa_groups_phones_wa_managed_phone_id_fkey FOREIGN KEY (wa_managed_phone_id) REFERENCES public.wa_managed_phones(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_groups wa_groups_wa_managed_phone_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_groups
+    ADD CONSTRAINT wa_groups_wa_managed_phone_id_fkey FOREIGN KEY (wa_managed_phone_id) REFERENCES public.wa_managed_phones(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_managed_phones wa_managed_phones_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_managed_phones
+    ADD CONSTRAINT wa_managed_phones_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_managed_phones wa_managed_phones_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_managed_phones
+    ADD CONSTRAINT wa_managed_phones_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_context_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_context_message_id_fkey FOREIGN KEY (context_message_id) REFERENCES public.wa_messages(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_media_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.messages_media(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_message_broadcast_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_message_broadcast_id_fkey FOREIGN KEY (message_broadcast_id) REFERENCES public.message_broadcasts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_poll_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_poll_id_fkey FOREIGN KEY (poll_id) REFERENCES public.wa_polls(id) ON DELETE SET NULL;
+
+
+--
+-- Name: wa_messages wa_messages_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_messages wa_messages_wa_managed_phone_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_messages
+    ADD CONSTRAINT wa_messages_wa_managed_phone_id_fkey FOREIGN KEY (wa_managed_phone_id) REFERENCES public.wa_managed_phones(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_polls wa_polls_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_polls
+    ADD CONSTRAINT wa_polls_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_reactions wa_reactions_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_reactions
+    ADD CONSTRAINT wa_reactions_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_reactions wa_reactions_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_reactions
+    ADD CONSTRAINT wa_reactions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wa_reactions wa_reactions_wa_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wa_reactions
+    ADD CONSTRAINT wa_reactions_wa_message_id_fkey FOREIGN KEY (wa_message_id) REFERENCES public.wa_messages(id) ON DELETE CASCADE;
+
+
+--
 -- Name: webhook_logs webhook_logs_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.webhook_logs
     ADD CONSTRAINT webhook_logs_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webhook_logs webhook_logs_flow_context_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_logs
+    ADD CONSTRAINT webhook_logs_flow_context_id_fkey FOREIGN KEY (flow_context_id) REFERENCES public.flow_contexts(id) ON DELETE CASCADE;
 
 
 --
@@ -8385,8 +12341,90 @@ ALTER TABLE ONLY public.webhook_logs
 
 
 --
+-- Name: webhook_logs webhook_logs_wa_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_logs
+    ADD CONSTRAINT webhook_logs_wa_group_id_fkey FOREIGN KEY (wa_group_id) REFERENCES public.wa_groups(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_form_revisions whatsapp_form_revisions_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_form_revisions
+    ADD CONSTRAINT whatsapp_form_revisions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_form_revisions whatsapp_form_revisions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_form_revisions
+    ADD CONSTRAINT whatsapp_form_revisions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: whatsapp_form_revisions whatsapp_form_revisions_whatsapp_form_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_form_revisions
+    ADD CONSTRAINT whatsapp_form_revisions_whatsapp_form_id_fkey FOREIGN KEY (whatsapp_form_id) REFERENCES public.whatsapp_forms(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_forms whatsapp_forms_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms
+    ADD CONSTRAINT whatsapp_forms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_forms_responses whatsapp_forms_responses_contact_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms_responses
+    ADD CONSTRAINT whatsapp_forms_responses_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_forms_responses whatsapp_forms_responses_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms_responses
+    ADD CONSTRAINT whatsapp_forms_responses_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_forms_responses whatsapp_forms_responses_whatsapp_form_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms_responses
+    ADD CONSTRAINT whatsapp_forms_responses_whatsapp_form_id_fkey FOREIGN KEY (whatsapp_form_id) REFERENCES public.whatsapp_forms(id) ON DELETE CASCADE;
+
+
+--
+-- Name: whatsapp_forms whatsapp_forms_revision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms
+    ADD CONSTRAINT whatsapp_forms_revision_id_fkey FOREIGN KEY (revision_id) REFERENCES public.whatsapp_form_revisions(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: whatsapp_forms whatsapp_forms_sheet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_forms
+    ADD CONSTRAINT whatsapp_forms_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheets(id) ON DELETE SET NULL;
+
+
+--
 -- PostgreSQL database dump complete
 --
+
+\unrestrict H2xfx7ERE4SrIeMiG3eYz7cFVhmyRKWtNmIzcMpTKJGeXmb5eiMQgq1gUC0CEim
 
 INSERT INTO public."schema_migrations" (version) VALUES (20200101010533);
 INSERT INTO public."schema_migrations" (version) VALUES (20200601193405);
@@ -8512,3 +12550,100 @@ INSERT INTO public."schema_migrations" (version) VALUES (20230522105210);
 INSERT INTO public."schema_migrations" (version) VALUES (20230616045651);
 INSERT INTO public."schema_migrations" (version) VALUES (20230627145331);
 INSERT INTO public."schema_migrations" (version) VALUES (20230710133911);
+INSERT INTO public."schema_migrations" (version) VALUES (20230725091729);
+INSERT INTO public."schema_migrations" (version) VALUES (20230725091730);
+INSERT INTO public."schema_migrations" (version) VALUES (20230801091505);
+INSERT INTO public."schema_migrations" (version) VALUES (20230803115906);
+INSERT INTO public."schema_migrations" (version) VALUES (20230810180931);
+INSERT INTO public."schema_migrations" (version) VALUES (20230814065215);
+INSERT INTO public."schema_migrations" (version) VALUES (20230818012026);
+INSERT INTO public."schema_migrations" (version) VALUES (20230818114410);
+INSERT INTO public."schema_migrations" (version) VALUES (20230820104852);
+INSERT INTO public."schema_migrations" (version) VALUES (20230909123216);
+INSERT INTO public."schema_migrations" (version) VALUES (20231118000016);
+INSERT INTO public."schema_migrations" (version) VALUES (20231122115923);
+INSERT INTO public."schema_migrations" (version) VALUES (20240117234740);
+INSERT INTO public."schema_migrations" (version) VALUES (20240220134922);
+INSERT INTO public."schema_migrations" (version) VALUES (20240222064744);
+INSERT INTO public."schema_migrations" (version) VALUES (20240229113537);
+INSERT INTO public."schema_migrations" (version) VALUES (20240308095004);
+INSERT INTO public."schema_migrations" (version) VALUES (20240320135052);
+INSERT INTO public."schema_migrations" (version) VALUES (20240422172324);
+INSERT INTO public."schema_migrations" (version) VALUES (20240424071508);
+INSERT INTO public."schema_migrations" (version) VALUES (20240515113612);
+INSERT INTO public."schema_migrations" (version) VALUES (20240527105105);
+INSERT INTO public."schema_migrations" (version) VALUES (20240605165834);
+INSERT INTO public."schema_migrations" (version) VALUES (20240627071515);
+INSERT INTO public."schema_migrations" (version) VALUES (20240703205102);
+INSERT INTO public."schema_migrations" (version) VALUES (20240704090400);
+INSERT INTO public."schema_migrations" (version) VALUES (20240723061734);
+INSERT INTO public."schema_migrations" (version) VALUES (20240910155519);
+INSERT INTO public."schema_migrations" (version) VALUES (20240918055424);
+INSERT INTO public."schema_migrations" (version) VALUES (20240930061155);
+INSERT INTO public."schema_migrations" (version) VALUES (20241115094241);
+INSERT INTO public."schema_migrations" (version) VALUES (20241120104539);
+INSERT INTO public."schema_migrations" (version) VALUES (20241201163710);
+INSERT INTO public."schema_migrations" (version) VALUES (20241205205937);
+INSERT INTO public."schema_migrations" (version) VALUES (20241208181710);
+INSERT INTO public."schema_migrations" (version) VALUES (20241209091320);
+INSERT INTO public."schema_migrations" (version) VALUES (20250106161903);
+INSERT INTO public."schema_migrations" (version) VALUES (20250109212933);
+INSERT INTO public."schema_migrations" (version) VALUES (20250109213637);
+INSERT INTO public."schema_migrations" (version) VALUES (20250224062928);
+INSERT INTO public."schema_migrations" (version) VALUES (20250227212728);
+INSERT INTO public."schema_migrations" (version) VALUES (20250405133306);
+INSERT INTO public."schema_migrations" (version) VALUES (20250407174642);
+INSERT INTO public."schema_migrations" (version) VALUES (20250520100142);
+INSERT INTO public."schema_migrations" (version) VALUES (20250520120237);
+INSERT INTO public."schema_migrations" (version) VALUES (20250529164649);
+INSERT INTO public."schema_migrations" (version) VALUES (20250618124706);
+INSERT INTO public."schema_migrations" (version) VALUES (20250711055838);
+INSERT INTO public."schema_migrations" (version) VALUES (20250715000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20250716033709);
+INSERT INTO public."schema_migrations" (version) VALUES (20250814023042);
+INSERT INTO public."schema_migrations" (version) VALUES (20250826070711);
+INSERT INTO public."schema_migrations" (version) VALUES (20250910093925);
+INSERT INTO public."schema_migrations" (version) VALUES (20251016171923);
+INSERT INTO public."schema_migrations" (version) VALUES (20251021100612);
+INSERT INTO public."schema_migrations" (version) VALUES (20251027070958);
+INSERT INTO public."schema_migrations" (version) VALUES (20251105035933);
+INSERT INTO public."schema_migrations" (version) VALUES (20251110073502);
+INSERT INTO public."schema_migrations" (version) VALUES (20251112051450);
+INSERT INTO public."schema_migrations" (version) VALUES (20251112165155);
+INSERT INTO public."schema_migrations" (version) VALUES (20251112165327);
+INSERT INTO public."schema_migrations" (version) VALUES (20251204052359);
+INSERT INTO public."schema_migrations" (version) VALUES (20251204053043);
+INSERT INTO public."schema_migrations" (version) VALUES (20251204053335);
+INSERT INTO public."schema_migrations" (version) VALUES (20251207180524);
+INSERT INTO public."schema_migrations" (version) VALUES (20251223101825);
+INSERT INTO public."schema_migrations" (version) VALUES (20260120120000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260213110822);
+INSERT INTO public."schema_migrations" (version) VALUES (20260219120000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260304000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260309111112);
+INSERT INTO public."schema_migrations" (version) VALUES (20260310161544);
+INSERT INTO public."schema_migrations" (version) VALUES (20260317000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260322120000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260325000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260401000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260429150747);
+INSERT INTO public."schema_migrations" (version) VALUES (20260429213725);
+INSERT INTO public."schema_migrations" (version) VALUES (20260504072827);
+INSERT INTO public."schema_migrations" (version) VALUES (20260507000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260511000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260513000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260513140000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260513140100);
+INSERT INTO public."schema_migrations" (version) VALUES (20260513140200);
+INSERT INTO public."schema_migrations" (version) VALUES (20260617054815);
+INSERT INTO public."schema_migrations" (version) VALUES (20260619000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260623000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260703000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260706000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260715000000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260715085249);
+INSERT INTO public."schema_migrations" (version) VALUES (20260715085302);
+INSERT INTO public."schema_migrations" (version) VALUES (20260716092134);
+INSERT INTO public."schema_migrations" (version) VALUES (20260812154401);
+INSERT INTO public."schema_migrations" (version) VALUES (20260812154402);
+INSERT INTO public."schema_migrations" (version) VALUES (20260813155534);

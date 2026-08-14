@@ -4,6 +4,7 @@ query flows($filter: FlowFilter) {
     name
     versionNumber
     flowType
+    channels
     keywords
     uuid
     isBackground

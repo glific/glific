@@ -60,6 +60,7 @@ defmodule Glific.Flows.Flow do
           respond_no_response: boolean() | nil,
           is_template: boolean() | nil,
           flow_type: String.t() | nil,
+          channels: [String.t()] | nil,
           status: String.t(),
           skip_validation: boolean() | nil,
           definition: map() | nil,
@@ -84,6 +85,7 @@ defmodule Glific.Flows.Flow do
     # this is the flow editor version number
     field(:version_number, :string)
     field(:flow_type, FlowType)
+    field(:channels, {:array, :string}, default: ["whatsapp", "web"])
     field(:uuid, Ecto.UUID)
 
     field(:uuid_map, :map, virtual: true)
@@ -463,7 +465,7 @@ defmodule Glific.Flows.Flow do
   commitment is irreversible: once a flow is `:web_message` it stays that way even if the blocks
   node is later removed, matching `web_channel_capability_errors/2` above (the inverse gate, which
   treats `:web_message` as a hard fact about the flow, not a hint). Call this at every point a
-  flow definition is written — see `Glific.Flows.maybe_update_flow_type/2`, its single caller.
+  flow definition is written — see `Glific.Flows.maybe_update_flow_type_and_channels/2`, its single caller.
   """
   @spec derive_flow_type(atom() | nil, map(), non_neg_integer()) :: atom() | nil
   def derive_flow_type(:web_message, _definition, _organization_id), do: :web_message
@@ -502,6 +504,55 @@ defmodule Glific.Flows.Flow do
             t.id in ^template_ids and t.type == :blocks and t.organization_id == ^organization_id
         )
       )
+  end
+
+  @default_channels ["whatsapp", "web"]
+
+  @doc """
+  Derive a flow's `channels` set (contract §11.1) from its already-derived `flow_type`
+  (`derive_flow_type/3`) and its definition, rather than trusting an author-set value. Three
+  states: web-only (`["web"]`), WhatsApp-only (`["whatsapp"]`), or omnichannel
+  (`["whatsapp", "web"]`, the default).
+
+  Takes `derived_flow_type` rather than re-deriving web-only itself — `derive_flow_type/3`'s own
+  web-only test (`web_only_node?/2`, a DB query per call) already carries the exact signal and
+  its monotonic lock (once a flow is `:web_message` it stays that way); recomputing it here would
+  run that query twice per write and risks the two derived fields disagreeing. This holds as long
+  as both are always written together at the same call site — see
+  `Glific.Flows.maybe_update_flow_type_and_channels/2`, this function's single caller, which
+  derives `flow_type` first and passes the result straight through.
+
+  WhatsApp-only carries no such ambiguity — the causing actions (`send_broadcast`, a templated
+  HSM `send_msg`) are directly observable in the current definition, so it is recomputed in both
+  directions on every call.
+
+  A flow whose definition matches both signals in the same call (fresh web-only signal alongside
+  a WhatsApp-only action) is a genuine conflict; `web_channel_capability_errors/2` above already
+  rejects publishing such a flow, so this function does not need a second error path — it simply
+  favors web, matching `derive_flow_type/3`'s own priority.
+  """
+  @spec derive_channels(atom() | nil, map()) :: list(String.t())
+  def derive_channels(derived_flow_type, definition) do
+    cond do
+      derived_flow_type == :web_message -> ["web"]
+      whatsapp_only_node?(definition) -> ["whatsapp"]
+      true -> @default_channels
+    end
+  end
+
+  # Exactly the set `web_channel_capability_errors/2` uses to reject these actions on a
+  # `:web_message` flow — reused here (rather than gated by current flow_type) so the signal is
+  # observable regardless of the flow's current channels.
+  @spec whatsapp_only_node?(map()) :: boolean()
+  defp whatsapp_only_node?(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> List.wrap()
+    |> Enum.flat_map(&(&1["actions"] || []))
+    |> Enum.any?(fn action ->
+      action["type"] in @unsupported_web_channel_action_types ||
+        (action["type"] == "send_msg" && templated_action?(action))
+    end)
   end
 
   @spec templated_action?(map()) :: boolean()
