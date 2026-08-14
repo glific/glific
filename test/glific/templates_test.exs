@@ -2831,6 +2831,31 @@ defmodule Glific.TemplatesTest do
              )
   end
 
+  test "translate_session_template/2 allows distinct locales that happen to share a label",
+       attrs do
+    source_language = language_fixture(%{label: "Hindi", locale: "hi_IN"})
+    target_language = language_fixture(%{label: "Hindi", locale: "hi_US"})
+
+    Tesla.Mock.mock_global(fn _env ->
+      %Tesla.Env{
+        status: 200,
+        body: %{"data" => %{"translations" => [%{"translatedText" => "translated"}]}}
+      }
+    end)
+
+    assert {:ok, result} =
+             Templates.translate_session_template(
+               %{
+                 language_id: target_language.id,
+                 source_language_id: source_language.id,
+                 body: "Hello"
+               },
+               attrs.organization_id
+             )
+
+    assert result.body == "translated"
+  end
+
   test "search_library_templates/1 stops serving a stale cache when the org's active languages change",
        attrs do
     organization = Partners.get_organization!(attrs.organization_id)

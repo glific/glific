@@ -1054,7 +1054,7 @@ defmodule Glific.Templates do
   defp fetch_source_language(_params), do: Repo.fetch_by(Language, %{label: "English"})
 
   @spec validate_distinct_languages(Language.t(), Language.t()) :: :ok | {:error, String.t()}
-  defp validate_distinct_languages(%{label: label}, %{label: label}),
+  defp validate_distinct_languages(%{locale: locale}, %{locale: locale}),
     do: {:error, "Source and target language cannot be the same."}
 
   defp validate_distinct_languages(_source, _target), do: :ok
