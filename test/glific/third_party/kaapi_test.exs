@@ -350,7 +350,7 @@ defmodule Glific.ThirdParty.KaapiTest do
                Kaapi.create_assistant_config(params, 1)
     end
 
-    test "defaults temperature to 0 for a classic model when no tunable setting is given" do
+    test "defaults temperature to 1 for a classic model when no tunable setting is given" do
       Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
 
       mock(fn
@@ -377,7 +377,7 @@ defmodule Glific.ThirdParty.KaapiTest do
                    "model" => "gpt-4o",
                    "instructions" => "You are a helpful assistant",
                    "knowledge_base_ids" => [],
-                   "temperature" => 0
+                   "temperature" => 1
                  }
 
           %Tesla.Env{
