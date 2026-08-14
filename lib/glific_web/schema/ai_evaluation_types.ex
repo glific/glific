@@ -101,6 +101,16 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :errors, list_of(:result_error)
   end
 
+  object :kaapi_model do
+    field :provider, :string
+    field :model_name, :string
+    field :completion_type, list_of(:string)
+    field :config, :json
+    field :input_modalities, list_of(:string)
+    field :output_modalities, list_of(:string)
+    field :pricing, :json
+  end
+
   object :improve_prompt do
     field :status, :string
   end
@@ -167,6 +177,13 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
+    end
+
+    @desc "List active Kaapi models (openai only, for now)"
+    field :kaapi_models, list_of(:kaapi_model) do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_kaapi_models/3)
     end
   end
 
