@@ -195,6 +195,14 @@ config :glific,
   api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
+# The BSP webhooks are unauthenticated, so we filter them on the provider's published
+# source IPs (list in config.exs). Deploy on "log" first and confirm in the logs that no
+# genuine callback is being flagged, then switch to "enforce"; "log" is also the instant
+# rollback if a provider starts calling us from a new IP.
+unless config_env() == :test do
+  config :glific, :bsp_webhook_ip_filter, mode: env!("BSP_WEBHOOK_IP_FILTER_MODE", :atom, :log)
+end
+
 search_repo_module =
   if(env!("USE_REPLICA_DB", :boolean, false), do: Glific.RepoReplica, else: Glific.Repo)
 

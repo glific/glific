@@ -210,6 +210,29 @@ config :ex_audit,
 # Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 
+# Source IPs allowed to call the unauthenticated BSP webhooks. See
+# `GlificWeb.Plugs.BSPWebhookIPFilter`; `mode` is set per environment in runtime.exs.
+# Gupshup's event callback IPs, plus the IPs it uses for media related requests,
+# as published by Gupshup support.
+config :glific, :bsp_webhook_ip_filter,
+  mode: :disabled,
+  allowlist: %{
+    "gupshup" => [
+      "34.202.224.208",
+      "52.66.99.126",
+      "15.206.217.7",
+      "3.6.228.131",
+      "13.126.35.181",
+      "13.232.173.180",
+      "13.127.57.130",
+      "13.234.143.23",
+      "3.7.115.196",
+      "13.232.49.3"
+    ],
+    "gupshup-enterprise" => [],
+    "maytapi" => []
+  }
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
