@@ -1,0 +1,11 @@
+query KaapiModels {
+  kaapiModels {
+    provider
+    modelName
+    completionType
+    config
+    inputModalities
+    outputModalities
+    pricing
+  }
+}

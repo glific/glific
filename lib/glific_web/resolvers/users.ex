@@ -6,7 +6,7 @@ defmodule GlificWeb.Resolvers.Users do
   use Gettext, backend: GlificWeb.Gettext
 
   alias Glific.Repo
-  alias Glific.{Groups, Users, Users.User}
+  alias Glific.{Groups, OTP, Users, Users.User}
   alias GlificWeb.Schema.Middleware.Authorize
 
   @doc false
@@ -58,8 +58,7 @@ defmodule GlificWeb.Resolvers.Users do
   @spec update_password_params(User.t(), map()) :: {:ok, map()} | {:error, any}
   defp update_password_params(user, params) do
     with false <- is_nil(params[:password]) || is_nil(params[:otp]),
-         :ok <- PasswordlessAuth.verify_code(user.phone, params.otp) do
-      PasswordlessAuth.remove_code(user.phone)
+         :ok <- OTP.verify_code(:auth, user.phone, params.otp) do
       params = Map.merge(params, %{password_confirmation: params.password})
       {:ok, params}
     else

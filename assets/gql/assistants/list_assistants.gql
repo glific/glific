@@ -4,6 +4,8 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
     name
     assistant_id
     temperature
+    effort
+    settings
     status
     new_version_in_progress
     live_version_number

@@ -106,6 +106,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :model, :string
     field :instructions, :string
     field :temperature, :float
+    field :effort, :string
+    field :settings, :json
     field :status, :string
     field :new_version_in_progress, :boolean
     field :live_version_number, :integer
@@ -136,6 +138,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :instructions, :string
     field :description, :string
     field :temperature, :float
+    field :effort, :string
+    field :settings, :json
     field :knowledge_base_version_id, :string
   end
 

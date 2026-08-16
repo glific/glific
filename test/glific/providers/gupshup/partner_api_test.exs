@@ -106,5 +106,47 @@ defmodule Glific.Providers.Gupshup.PartnerAPITest do
       assert message =~ "500"
       assert message =~ "internal server error"
     end
+
+    test "returns a friendly error instead of the raw tuple when the request times out",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+          }
+
+        %{
+          method: :get,
+          url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary"
+        } ->
+          {:error, :timeout}
+      end)
+
+      assert {:error, message} = PartnerAPI.get_library_templates(attrs.organization_id)
+      assert message == "Gupshup partner API request timed out, please try again"
+    end
+
+    test "sets a 30s receive timeout on the metalibrary request instead of Hackney's 5s default",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "https://partner.gupshup.io/partner/app/Glific42/token"} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(%{"token" => %{"token" => "xyz456"}})
+          }
+
+        %{
+          method: :get,
+          url: "https://partner.gupshup.io/partner/app/Glific42/template/metalibrary",
+          opts: opts
+        } ->
+          assert opts[:adapter] == [recv_timeout: 30_000]
+
+          %Tesla.Env{status: 200, body: Jason.encode!(%{"templates" => []})}
+      end)
+
+      assert {:ok, %{"templates" => []}} = PartnerAPI.get_library_templates(attrs.organization_id)
+    end
   end
 end

@@ -113,6 +113,27 @@ defmodule GlificWeb.Schema.AssistantTest do
 
     assert query_data.data["updateAssistant"]["assistant"]["assistant_id"] ==
              unified_assistant.kaapi_uuid
+
+    # updating with a reasoning-model param (effort) instead of temperature
+    {:ok, _query_data} =
+      auth_query_gql_by(:update_assistant, attrs.user,
+        variables: %{
+          "input" => %{
+            "model" => "gpt-5.1",
+            "effort" => "high"
+          },
+          "id" => unified_assistant.id
+        }
+      )
+
+    new_config_version =
+      AssistantConfigVersion
+      |> where([acv], acv.assistant_id == ^unified_assistant.id)
+      |> order_by([acv], desc: acv.version_number)
+      |> limit(1)
+      |> Repo.one()
+
+    assert get_in(new_config_version.settings, ["effort"]) == "high"
   end
 
   test "get assistant", attrs do
