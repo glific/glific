@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema do
   use Absinthe.Schema
   use Gettext, backend: GlificWeb.Gettext
 
+  alias Glific.Partners.Organization
   alias Glific.Repo
 
   alias GlificWeb.Schema.{
@@ -268,6 +269,12 @@ defmodule GlificWeb.Schema do
     if type == :mutation,
       do: middleware ++ [Middleware.ChangesetErrors],
       else: middleware ++ [Middleware.QueryErrors]
+  end
+
+  def middleware(middleware, field, %{identifier: :organization}) do
+    if field.identifier in Organization.internal_fields(),
+      do: [Middleware.RedactInternalField],
+      else: middleware
   end
 
   def middleware(middleware, _field, _object),

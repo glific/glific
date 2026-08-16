@@ -78,6 +78,8 @@ defmodule GlificWeb.Resolvers.Partners do
           context: map()
         }) :: {:ok, any} | {:error, any}
   def update_organization(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    params = Map.drop(params, Organization.internal_fields())
+
     with {:ok, organization} <-
            Repo.fetch(Organization, current_user.organization_id, skip_organization_id: true),
          {:ok, organization} <- Partners.update_organization(organization, params) do

@@ -1,0 +1,8 @@
+query organization($id: ID) {
+  organization(id: $id) {
+    organization {
+      id
+      signaturePhrase
+    }
+  }
+}
