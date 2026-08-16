@@ -465,6 +465,38 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "list_models/2" do
+    test "returns the model page and sends provider/skip/limit as query params" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:provider] == "openai"
+        assert query[:skip] == 0
+        assert query[:limit] == 100
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      assert {:ok, %{data: %{data: [model]}, metadata: %{has_more: false}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
+
+      assert model.model_name == "gpt-4o"
+    end
+
+    test "returns error tuple on 422 from Kaapi" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid provider"}}
+      end)
+
+      assert {:error, %{status: 422, body: %{error: "Invalid provider"}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
+    end
+  end
+
   describe "upload_evaluation_dataset/2" do
     setup [:create_dataset_upload_params]
 
@@ -530,6 +562,100 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, :timeout} =
                ApiClient.upload_evaluation_dataset_v2(dataset_params, @org_kaapi_api_key)
+    end
+  end
+
+  describe "create_evaluation_v2/2" do
+    @evaluation_params %{
+      experiment_name: "antaratrial",
+      config_id: "d186d8eb-1211-4a7b-aa28-e8a22f8163c9",
+      config_version: 7,
+      dataset_id: 651
+    }
+
+    test "successfully creates an evaluation on the v2 endpoint" do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{id: 777, run_name: "antaratrial", status: "processing"}}
+        }
+      end)
+
+      assert {:ok, %{data: %{id: 777, status: "processing"}}} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
+    end
+
+    test "returns error when kaapi returns error status" do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid config_id"}}
+      end)
+
+      assert {:error, %{status: 422, body: %{error: "Invalid config_id"}}} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
+    end
+
+    test "returns error on transport failure/timeout" do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
+    end
+  end
+
+  describe "improve_prompt_v2/3" do
+    test "successfully dispatches the v2 improve-prompt request" do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations/767/improve-prompt"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              job_id: "a8f2be70-4ac6-42af-ada7-c28ac46fd834",
+              status: "PENDING",
+              message: "Prompt recommendation is running"
+            },
+            error: nil
+          }
+        }
+      end)
+
+      body = %{callback_url: "https://example.com/kaapi/improve_prompt"}
+
+      assert {:ok, resp} = ApiClient.improve_prompt_v2(767, body, @org_kaapi_api_key)
+      assert resp.data.job_id == "a8f2be70-4ac6-42af-ada7-c28ac46fd834"
+      assert resp.data.status == "PENDING"
+    end
+
+    test "returns error when kaapi returns error status" do
+      response_body = %{error: "Evaluation not found", data: %{}, success: false}
+
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 404, body: response_body}
+      end)
+
+      assert {:error, %{status: 404, body: ^response_body} = error} =
+               ApiClient.improve_prompt_v2(
+                 999,
+                 %{callback_url: "https://example.com"},
+                 @org_kaapi_api_key
+               )
+
+      assert error.body.error == "Evaluation not found"
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.improve_prompt_v2(
+                 767,
+                 %{callback_url: "https://example.com"},
+                 @org_kaapi_api_key
+               )
     end
   end
 

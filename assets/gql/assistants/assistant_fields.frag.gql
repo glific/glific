@@ -4,6 +4,8 @@ fragment AssistantFields on AssistantResult {
     name
     assistant_id
     temperature
+    effort
+    settings
     status
     new_version_in_progress
     vector_store {
