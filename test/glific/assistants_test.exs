@@ -2066,6 +2066,53 @@ defmodule Glific.AssistantsTest do
     end
   end
 
+  describe "upload_file/2" do
+    setup :enable_kaapi
+
+    setup do
+      path = Path.join(System.tmp_dir!(), "upload_file_test_#{Ecto.UUID.generate()}.pdf")
+      File.write!(path, "test content")
+      on_exit(fn -> File.rm(path) end)
+
+      %{path: path}
+    end
+
+    test "accepts uppercase and mixed-case supported extensions and uploads the file as-is",
+         %{organization_id: organization_id, path: path} do
+      for filename <- ["Report.PDF", "notes.Txt", "data.CSV"] do
+        Tesla.Mock.mock(fn
+          %{method: :post, body: %Tesla.Multipart{parts: parts}} ->
+            uploaded_filename =
+              Enum.find_value(parts, fn part -> part.dispositions[:filename] end)
+
+            %Tesla.Env{
+              status: 200,
+              body: %{
+                data: %{
+                  id: "file_abc",
+                  fname: uploaded_filename,
+                  inserted_at: "2026-03-23T12:00:00Z"
+                }
+              }
+            }
+        end)
+
+        params = %{media: %{path: path, filename: filename}}
+
+        assert {:ok, %{file_id: "file_abc", filename: ^filename}} =
+                 Assistants.upload_file(params, organization_id)
+      end
+    end
+
+    test "rejects unsupported extensions regardless of case",
+         %{organization_id: organization_id, path: path} do
+      params = %{media: %{path: path, filename: "malware.EXE"}}
+
+      assert {:error, "Files with extension '.exe' not supported in Assistants"} =
+               Assistants.upload_file(params, organization_id)
+    end
+  end
+
   describe "Assistant changeset unique constraints" do
     test "rejects duplicate name within the same organization",
          %{organization_id: organization_id} do

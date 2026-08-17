@@ -33,7 +33,7 @@ defmodule Glific.Media do
   # Whitelist file extensions:
   def validate({file, _}) do
     ~w(.jpg .jpeg .gif .png .pdf .wav .mp3 .mp4 .aac .mpeg)
-    |> Enum.member?(Path.extname(file.file_name))
+    |> Enum.member?(file.file_name |> Path.extname() |> String.downcase())
   end
 
   # Define a thumbnail transformation:

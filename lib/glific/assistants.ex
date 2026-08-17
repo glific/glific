@@ -920,7 +920,7 @@ defmodule Glific.Assistants do
 
   @spec validate_file_format(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   defp validate_file_format(filename) do
-    extension = String.split(filename, ".") |> List.last()
+    extension = filename |> String.split(".") |> List.last() |> String.downcase()
 
     if extension in @assistant_supported_file_extensions do
       {:ok, filename}

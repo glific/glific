@@ -9,6 +9,7 @@ defmodule Glific.MessagesTest do
     Fixtures,
     Groups,
     Groups.Group,
+    Media,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
@@ -1568,6 +1569,39 @@ defmodule Glific.MessagesTest do
         assert {media_type.type, media_type.url} ==
                  Messages.get_media_type_from_url(media_type.url)
       end)
+    end
+
+    test "get_media_type_from_url/1 treats uppercase and mixed-case extensions as valid",
+         _attrs do
+      mixed_case_media_types = [
+        %{
+          type: :image,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.JPG",
+          content_type: "image/png"
+        },
+        %{
+          type: :document,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/pdf/sample01.Pdf",
+          content_type: "application/pdf"
+        }
+      ]
+
+      Enum.each(mixed_case_media_types, fn media_type ->
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              headers: [
+                {"content-type", media_type.content_type},
+                {"content-length", "3209581"}
+              ],
+              method: :get,
+              status: 200
+            }
+        end)
+
+        assert {media_type.type, media_type.url} ==
+                 Messages.get_media_type_from_url(media_type.url)
+      end)
 
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -1795,6 +1829,55 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    @valid_sticker_media_url "https://www.buildquickbots.com/whatsapp/media/sample/sticker/sample02"
+
+    test "validate media/2 accepts uppercase and mixed-case sticker extension", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/webp"},
+              {"content-length", "3209"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_sticker_media_url <> "_1.WEBP",
+                 "sticker"
+               )
+
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_sticker_media_url <> "_2.Webp",
+                 "sticker"
+               )
+    end
+
+    test "validate media/2 rejects a non-webp sticker url whose query string incidentally contains 'webp'",
+         _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: false, message: "Media content-type is not valid"} ==
+               Messages.validate_media(
+                 @valid_sticker_media_url <> "_3.png?ref=MyWebPage",
+                 "sticker"
+               )
+    end
+
     test "change_message_media/1 returns a message_media changeset", attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
@@ -1808,6 +1891,25 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                "112233 is your verification code. For your security, do not share this code."
+    end
+  end
+
+  describe "Glific.Media.validate/1" do
+    test "accepts whitelisted extensions regardless of case" do
+      for extension <- ~w(.jpg .jpeg .gif .png .pdf .wav .mp3 .mp4 .aac .mpeg) do
+        assert Media.validate({%{file_name: "sample#{extension}"}, nil})
+        assert Media.validate({%{file_name: "sample#{String.upcase(extension)}"}, nil})
+      end
+    end
+
+    test "accepts mixed-case extensions" do
+      assert Media.validate({%{file_name: "File.Pdf"}, nil})
+      assert Media.validate({%{file_name: "IMAGE.Png"}, nil})
+    end
+
+    test "rejects extensions not in the whitelist" do
+      refute Media.validate({%{file_name: "sample.exe"}, nil})
+      refute Media.validate({%{file_name: "sample.EXE"}, nil})
     end
   end
 end
