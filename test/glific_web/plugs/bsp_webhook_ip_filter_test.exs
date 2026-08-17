@@ -5,7 +5,8 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
 
   alias GlificWeb.Plugs.BSPWebhookIPFilter
 
-  @gupshup_ip {34, 202, 224, 208}
+  # RFC 5737 documentation addresses, so no real provider IP is held in the repository.
+  @provider_ip {192, 0, 2, 10}
   @attacker_ip {203, 0, 113, 5}
 
   setup do
@@ -32,11 +33,11 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
 
   describe "filtering" do
     setup do
-      configure(%{"gupshup" => ["34.202.224.208", "3.6.228.131"], "maytapi" => []})
+      configure(%{"gupshup" => ["192.0.2.10", "192.0.2.11"], "maytapi" => []})
     end
 
     test "lets a request from an allowlisted provider IP through" do
-      conn = call("/gupshup", @gupshup_ip)
+      conn = call("/gupshup", @provider_ip)
 
       refute conn.halted
       assert conn.status == nil
@@ -62,9 +63,9 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
     end
 
     test "keeps each provider's allowlist to itself" do
-      configure(%{"gupshup" => ["34.202.224.208"], "maytapi" => ["1.2.3.4"]})
+      configure(%{"gupshup" => ["192.0.2.10"], "maytapi" => ["198.51.100.1"]})
 
-      conn = call("/maytapi", @gupshup_ip)
+      conn = call("/maytapi", @provider_ip)
 
       assert conn.halted
       assert conn.status == 403
@@ -87,25 +88,25 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
 
   describe "matching" do
     test "matches an IP inside a CIDR block" do
-      configure(%{"gupshup" => ["3.6.0.0/16"]})
+      configure(%{"gupshup" => ["198.51.100.0/24"]})
 
-      allowed = call("/gupshup", {3, 6, 228, 131})
-      rejected = call("/gupshup", {3, 7, 115, 196})
+      allowed = call("/gupshup", {198, 51, 100, 7})
+      rejected = call("/gupshup", {198, 51, 101, 7})
 
       refute allowed.halted
       assert rejected.halted
     end
 
     test "ignores an unparsable entry instead of failing the request" do
-      configure(%{"gupshup" => ["not-an-ip", "34.202.224.208"]})
+      configure(%{"gupshup" => ["not-an-ip", "192.0.2.10"]})
 
-      conn = call("/gupshup", @gupshup_ip)
+      conn = call("/gupshup", @provider_ip)
 
       refute conn.halted
     end
 
     test "an IPv6 caller does not match an IPv4 allowlist" do
-      configure(%{"gupshup" => ["34.202.224.208"]})
+      configure(%{"gupshup" => ["192.0.2.10"]})
 
       conn = call("/gupshup", {0, 0, 0, 0, 0, 0, 0, 1})
 
@@ -114,7 +115,7 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
   end
 
   test "the router runs the filter ahead of the gupshup shunt" do
-    configure(%{"gupshup" => ["34.202.224.208"]})
+    configure(%{"gupshup" => ["192.0.2.10"]})
 
     conn =
       %{conn(:post, "/gupshup", %{}) | remote_ip: @attacker_ip}

@@ -196,40 +196,43 @@ config :glific,
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
 # The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
-# provider publishes; anything else gets a 403. Setting the matching variable replaces a
-# provider's list outright, so a provider adding an IP is a `gigalixir config:set` and a
-# restart rather than a deploy. An empty list disables filtering for that provider, which
-# is why only :prod is configured — dev and test keep working without a real IP.
-webhook_ips = fn variable, default ->
+# provider publishes; anything else gets a 403. The lists are deliberately not in this
+# repository — they live only in the deployment environment, and setting a variable
+# replaces that provider's list outright, so widening one is a `gigalixir config:set` and
+# a restart rather than a deploy.
+webhook_ips = fn variable ->
   case env!(variable, :string, nil) do
-    nil -> default
-    "" -> default
+    unset when unset in [nil, ""] -> []
     ips -> ips |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
   end
 end
 
-# Gupshup's event callback IPs, plus the IPs it uses for media related requests, as
-# published by Gupshup support.
-gupshup_webhook_ips = [
-  "34.202.224.208",
-  "52.66.99.126",
-  "15.206.217.7",
-  "3.6.228.131",
-  "13.126.35.181",
-  "13.232.173.180",
-  "13.127.57.130",
-  "13.234.143.23",
-  "3.7.115.196",
-  "13.232.49.3"
-]
-
+# Only :prod is configured. An unset list means the provider is not filtered, which keeps
+# dev and test working against localhost.
 if config_env() == :prod do
+  gupshup_webhook_ips = webhook_ips.("GUPSHUP_WEBHOOK_IPS")
+
+  # Booting without this list would leave the busiest webhook accepting forged messages
+  # from any caller, so refuse to start rather than come up unprotected.
+  if gupshup_webhook_ips == [],
+    do:
+      raise("""
+      GUPSHUP_WEBHOOK_IPS is not set.
+
+      The /gupshup webhook is unauthenticated and is guarded only by Gupshup's published
+      callback IPs, so Glific will not boot without them.
+
+      Set it to Gupshup's comma separated callback IPs, CIDR blocks allowed:
+
+          gigalixir config:set GUPSHUP_WEBHOOK_IPS="a.b.c.d,e.f.g.h,w.x.y.z/24"
+      """)
+
   config :glific,
          :bsp_webhook_ip_allowlist,
          %{
-           "gupshup" => webhook_ips.("GUPSHUP_WEBHOOK_IPS", gupshup_webhook_ips),
-           "gupshup-enterprise" => webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS", []),
-           "maytapi" => webhook_ips.("MAYTAPI_WEBHOOK_IPS", [])
+           "gupshup" => gupshup_webhook_ips,
+           "gupshup-enterprise" => webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS"),
+           "maytapi" => webhook_ips.("MAYTAPI_WEBHOOK_IPS")
          }
 end
 

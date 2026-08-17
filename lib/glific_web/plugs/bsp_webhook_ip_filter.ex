@@ -10,7 +10,7 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   The provider is the first path segment (`/gupshup`, `/gupshup-enterprise`,
   `/maytapi`) and is looked up in the `:bsp_webhook_ip_allowlist` config:
 
-      config :glific, :bsp_webhook_ip_allowlist, %{"gupshup" => ["34.202.224.208", "3.6.0.0/16"]}
+      config :glific, :bsp_webhook_ip_allowlist, %{"gupshup" => ["192.0.2.10", "198.51.100.0/24"]}
 
   Entries are IPv4/IPv6 addresses or CIDR blocks. A caller outside its provider's list is
   logged and answered with 403. That log line is the only warning that a provider has
@@ -20,9 +20,11 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   working before its IPs are known, and what leaves dev and test unfiltered, since
   `config/runtime.exs` only populates the lists in `:prod`.
 
-  The lists are set per provider from the environment (`GUPSHUP_WEBHOOK_IPS` and
-  friends), so a provider adding an IP is a `gigalixir config:set` and a restart rather
-  than a deploy.
+  The lists come per provider from the environment (`GUPSHUP_WEBHOOK_IPS` and friends)
+  and are deliberately not held in this repository, so a provider adding an IP is a
+  `gigalixir config:set` and a restart rather than a deploy. Because an empty list means
+  no filtering, `runtime.exs` refuses to boot `:prod` when `GUPSHUP_WEBHOOK_IPS` is
+  missing rather than let the busiest webhook come up unguarded.
 
   The check uses `conn.remote_ip`, which is derived from `X-Forwarded-For` by the
   `RemoteIp` plug in `GlificWeb.Endpoint`; that plug has to stay ahead of the router
