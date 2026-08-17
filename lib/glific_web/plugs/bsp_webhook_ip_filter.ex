@@ -26,17 +26,25 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   no filtering, `runtime.exs` refuses to boot `:prod` when `GUPSHUP_WEBHOOK_IPS` is
   missing rather than let the busiest webhook come up unguarded.
 
-  The check uses `conn.remote_ip`, which is derived from `X-Forwarded-For` by the
-  `RemoteIp` plug in `GlificWeb.Endpoint`; that plug has to stay ahead of the router
-  for this filter to see the real client IP.
+  The caller is taken from `x-forwarded-for` alone, rather than from `conn.remote_ip`.
+  `GlificWeb.Endpoint` runs `RemoteIp` with its defaults, which also trust `forwarded`,
+  `x-client-ip` and `x-real-ip`; our proxy only rewrites `x-forwarded-for`, so a caller
+  that sends one of the other three can put an allowlisted address last in the chain and
+  have it win. Deciding here from the one header the proxy controls keeps that out of a
+  security decision, and leaves `conn.remote_ip` untouched for rate limiting and logging.
+
+  A request with no usable `x-forwarded-for` cannot be attributed to anyone and is
+  refused, with a distinct log line — in production every request arrives through the
+  proxy, so that means the proxy is not sending the header we expect.
   """
 
   require Logger
 
-  alias GlificWeb.Tenants
   alias Plug.Conn
 
   @behaviour Plug
+
+  @forwarding_headers ~w[x-forwarded-for]
 
   @doc false
   @spec init(Plug.opts()) :: Plug.opts()
@@ -55,16 +63,31 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
 
   @spec filter(Conn.t(), String.t(), [String.t()]) :: Conn.t()
   defp filter(conn, provider, allowlist) do
-    if allowed?(conn.remote_ip, allowlist) do
-      conn
-    else
-      Logger.warning("Unlisted IP #{Tenants.remote_ip(conn)} called the #{provider} webhook")
+    case client_ip(conn) do
+      nil ->
+        reject(conn, "Request to the #{provider} webhook carried no usable x-forwarded-for")
 
-      conn
-      |> Conn.send_resp(403, "")
-      |> Conn.halt()
+      client_ip ->
+        if allowed?(client_ip, allowlist),
+          do: conn,
+          else: reject(conn, "Unlisted IP #{format_ip(client_ip)} called the #{provider} webhook")
     end
   end
+
+  @spec reject(Conn.t(), String.t()) :: Conn.t()
+  defp reject(conn, message) do
+    Logger.warning(message)
+
+    conn
+    |> Conn.send_resp(403, "")
+    |> Conn.halt()
+  end
+
+  @spec client_ip(Conn.t()) :: :inet.ip_address() | nil
+  defp client_ip(conn), do: RemoteIp.from(conn.req_headers, headers: @forwarding_headers)
+
+  @spec format_ip(:inet.ip_address()) :: String.t()
+  defp format_ip(client_ip), do: client_ip |> :inet_parse.ntoa() |> to_string()
 
   @spec allowed?(:inet.ip_address(), [String.t()]) :: boolean()
   defp allowed?(remote_ip, allowlist) do

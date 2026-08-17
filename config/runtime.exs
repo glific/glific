@@ -200,10 +200,52 @@ config :glific,
 # repository — they live only in the deployment environment, and setting a variable
 # replaces that provider's list outright, so widening one is a `gigalixir config:set` and
 # a restart rather than a deploy.
+
+# A malformed entry would otherwise sit in the list matching nothing, quietly narrowing the
+# allowlist and logging on every request, so entries are checked here instead. :inet is used
+# rather than the CIDR library the plug matches with because config runs before any
+# dependency is started.
+valid_webhook_ip? = fn entry ->
+  [address | prefix] = String.split(entry, "/", parts: 2)
+
+  case :inet.parse_address(String.to_charlist(address)) do
+    {:error, _reason} ->
+      false
+
+    {:ok, parsed} ->
+      max_length = if tuple_size(parsed) == 4, do: 32, else: 128
+
+      case prefix do
+        [] ->
+          true
+
+        [length] ->
+          match?({value, ""} when value >= 0 and value <= max_length, Integer.parse(length))
+      end
+  end
+end
+
 webhook_ips = fn variable ->
   case env!(variable, :string, nil) do
-    unset when unset in [nil, ""] -> []
-    ips -> ips |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
+    unset when unset in [nil, ""] ->
+      []
+
+    ips ->
+      ips
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(fn entry ->
+        if valid_webhook_ip?.(entry),
+          do: entry,
+          else:
+            raise("""
+            #{variable} contains "#{entry}", which is not an IP address or CIDR block.
+
+            Expected a comma separated list, for example:
+
+                gigalixir config:set #{variable}="a.b.c.d,e.f.g.h,w.x.y.z/24"
+            """)
+      end)
   end
 end
 
