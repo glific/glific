@@ -186,7 +186,6 @@ defmodule Glific.GCS do
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
     gcs_secrets = get_secrets(organization_id)
-    gcs_secrets = Map.put(gcs_secrets, "private_bucket", "test-private-cc")
 
     if is_nil(gcs_secrets["private_bucket"]) do
       Logger.info("no private bucket for org_id: #{organization_id}")
