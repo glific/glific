@@ -202,6 +202,9 @@ defmodule Glific.Partners.Organization do
     # A virtual field for now to conditionally enable the HSM Template V2 page for an organization
     field(:is_template_v2_enabled, :boolean, default: false, virtual: true)
 
+    # A virtual field to conditionally enable the Template Library button for an organization
+    field(:is_template_library_enabled, :boolean, default: false, virtual: true)
+
     timestamps(type: :utc_datetime)
   end
 

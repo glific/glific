@@ -596,6 +596,7 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:assistant_config_versions_enabled)
       |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
       |> Flags.set_flag_enabled(:is_template_v2_enabled)
+      |> Flags.set_flag_enabled(:is_template_library_enabled)
 
     Caches.set(
       @global_organization_id,
@@ -1488,6 +1489,8 @@ defmodule Glific.Partners do
       "high_trigger_tps_enabled" =>
         Flags.get_flag_enabled(:high_trigger_tps_enabled, organization),
       "ai_evaluations_enabled" => Flags.get_flag_enabled(:ai_evaluations, organization),
+      "ai_evaluation_v2_enabled" =>
+        Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization),
       "assistant_config_versions_enabled" =>
         Flags.get_assistant_config_versions_enabled(organization),
       "copy_node_enabled" => Flags.get_copy_node_enabled(organization),
@@ -1495,7 +1498,9 @@ defmodule Glific.Partners do
         FunWithFlags.enabled?(:superset_enabled, for: %{organization_id: organization_id}),
       "prompt_generator_enabled" =>
         Flags.get_flag_enabled(:is_prompt_generator_enabled, organization),
-      "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization)
+      "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization),
+      "template_library_enabled" =>
+        Flags.get_flag_enabled(:is_template_library_enabled, organization)
     }
   end
 

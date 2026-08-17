@@ -6,6 +6,7 @@ defmodule Glific.ThirdParty.Kaapi do
 
   import Glific.SafeLog
 
+  alias Glific.Caches
   alias Glific.Partners
   alias Glific.Partners.Credential
   alias Glific.Providers.Gupshup.ApiClient, as: GupshupClient
@@ -143,7 +144,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_assistant_config(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_assistant_config(params, organization_id) do
-    config_blob = build_config_blob(params, params.knowledge_base_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids, organization_id)
 
     body = %{
       name: params.name,
@@ -179,7 +180,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec create_config_version(binary(), map(), non_neg_integer()) ::
           {:ok, map()} | {:error, map() | binary()}
   def create_config_version(config_id, params, organization_id) do
-    config_blob = build_config_blob(params, params.knowledge_base_ids)
+    config_blob = build_config_blob(params, params.knowledge_base_ids, organization_id)
 
     body = %{
       commit_message: params[:description] || "",
@@ -318,14 +319,21 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  @spec build_config_blob(map(), list(String.t())) :: map()
-  defp build_config_blob(params, knowledge_base_ids) do
-    completion_params = %{
-      model: params.model || "gpt-4o",
-      instructions: params.prompt || "You are a helpful assistant",
-      temperature: params.temperature || 1.0,
-      knowledge_base_ids: knowledge_base_ids
+  @spec build_config_blob(map(), list(String.t()), non_neg_integer()) :: map()
+  defp build_config_blob(params, knowledge_base_ids, organization_id) do
+    model = params.model || "gpt-4o"
+
+    base_params = %{
+      "model" => model,
+      "instructions" => params.prompt || "You are a helpful assistant",
+      "knowledge_base_ids" => knowledge_base_ids
     }
+
+    completion_params =
+      (params[:settings] || %{})
+      |> stringify_keys()
+      |> put_default_tunable_param(model, organization_id)
+      |> Map.merge(base_params)
 
     %{
       completion: %{
@@ -335,6 +343,29 @@ defmodule Glific.ThirdParty.Kaapi do
       }
     }
   end
+
+  # Default comes from the model's own Kaapi config
+  @spec put_default_tunable_param(map(), String.t(), non_neg_integer()) :: map()
+  defp put_default_tunable_param(settings, _model, _organization_id)
+       when is_map_key(settings, "temperature") or is_map_key(settings, "effort"),
+       do: settings
+
+  # Set default temperature as 1 for models that support it, or effort as "low" for models that support it.
+  defp put_default_tunable_param(settings, model, organization_id) do
+    with {:ok, models} <- list_models(organization_id),
+         %{config: config} <- Enum.find(models, &(&1.model_name == model)) do
+      cond do
+        is_map_key(config, :effort) -> Map.put(settings, "effort", "low")
+        is_map_key(config, :temperature) -> Map.put(settings, "temperature", 1)
+        true -> settings
+      end
+    else
+      _ -> settings
+    end
+  end
+
+  @spec stringify_keys(map()) :: map()
+  defp stringify_keys(map), do: Map.new(map, fn {key, value} -> {to_string(key), value} end)
 
   # Error type strings surfaced in webhook logs and flow failure path.
   # Each string is checked as a substring of the Kaapi error message body.
@@ -387,42 +418,56 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Initiates async LLM prompt generation via Kaapi unified LLM API.
-
-  Receives an already-built payload (from `Glific.PromptGenerator.build_llm_payload/3`)
-  and dispatches it to Kaapi. On success, extracts and returns `{:ok, %{job_id: job_id}}`
-  for the caller to persist. On failure, logs the exception and returns `{:error, reason}`.
-
-  ## Parameters
-
-    - `payload` — the LLM call envelope built by `Glific.PromptGenerator.build_llm_payload/3`.
-    - `organization_id` — used to look up the Kaapi API key via `fetch_kaapi_creds/1`.
+  Sends an ad-hoc `PromptGenerator` payload for async LLM prompt generation via Kaapi.
   """
   @spec generate_prompt(map(), non_neg_integer()) ::
-          {:ok, %{job_id: String.t()}} | {:error, any()}
-  def generate_prompt(payload, organization_id) do
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
+  def generate_prompt(payload, organization_id),
+    do: dispatch_llm_job(payload, organization_id, "generate_prompt")
+
+  @doc """
+  Sends a stored-config (`config: %{id:, version:}`) Kaapi LLM call, e.g. the
+  "Try It Out" chat sandbox. Distinct from `generate_prompt/2` so the two payload shapes
+  are never confused.
+  """
+  @spec llm_call(map(), non_neg_integer()) ::
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
+  def llm_call(payload, organization_id) do
+    dispatch_llm_job(payload, organization_id, "llm_call")
+  end
+
+  @spec dispatch_llm_job(map(), non_neg_integer(), String.t()) ::
+          {:ok, %{job_id: String.t(), conversation_id: String.t() | nil}} | {:error, any()}
+  defp dispatch_llm_job(payload, organization_id, caller) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]) do
-      case body do
-        %{data: %{job_id: job_id}} when is_binary(job_id) ->
-          {:ok, %{job_id: job_id}}
-
-        other ->
-          Glific.log_exception(%Error{
-            message:
-              "Kaapi generate_prompt returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
-          })
-
-          {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
-      end
+         {:ok, body} <- ApiClient.call_llm(payload, secrets["api_key"]),
+         %{data: %{job_id: job_id} = data} when is_binary(job_id) <- body do
+      {:ok, %{job_id: job_id, conversation_id: get_in(data, [:conversation, :id])}}
     else
+      {:error, %{status: status, body: %{success: false} = body}} ->
+        message = extract_error_message(body)
+
+        Glific.log_error(
+          "Kaapi #{caller} rejected request for org_id=#{organization_id}, status=#{status}, reason=#{message}"
+        )
+
+        {:error, message}
+
       {:error, reason} ->
         Glific.log_exception(%Error{
           message:
-            "Kaapi generate_prompt failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+            "Kaapi #{caller} failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
         })
 
-        {:error, reason}
+        {:error, safe_inspect(reason)}
+
+      other ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi #{caller} returned unexpected body for org_id=#{organization_id}, body=#{safe_inspect(other)}"
+        })
+
+        {:error, "Unexpected Kaapi response: #{safe_inspect(other)}"}
     end
   end
 
@@ -516,8 +561,14 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @spec extract_error_message(map() | any()) :: String.t()
+  # when payload has a list of field-level errors
+  # {"error":"Validation failed","errors":[{"field":"config.id","message":"Input should be a valid UUID..."}]}
+  defp extract_error_message(%{errors: errors}) when is_list(errors) and errors != [] do
+    Enum.map_join(errors, "; ", &"#{&1[:field]}: #{&1[:message]}")
+  end
+
   defp extract_error_message(body) when is_map(body),
-    do: body["error"] || body["message"] || safe_inspect(body)
+    do: body[:error] || body[:message] || safe_inspect(body)
 
   defp extract_error_message(body), do: safe_inspect(body)
 
@@ -664,6 +715,27 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Create an evaluation on Kaapi via the v2 endpoint.
+  """
+  @spec create_evaluation_v2(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation_v2(params, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, result} <- ApiClient.create_evaluation_v2(params, secrets["api_key"]) do
+      {:ok, result}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi evaluation v2 creation failed: evaluation_name=#{params[:experiment_name]}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
   @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
@@ -681,6 +753,33 @@ defmodule Glific.ThirdParty.Kaapi do
       {:error, reason} ->
         Glific.log_exception(%Error{
           message: "Kaapi evaluation scores fetch failed: evaluation_id=#{evaluation_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Request a v2 prompt-improvement recommendation from Kaapi for a completed evaluation.
+  """
+  @spec improve_evaluation_prompt(non_neg_integer(), String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  def improve_evaluation_prompt(kaapi_evaluation_id, callback_url, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, %{data: data}} <-
+           ApiClient.improve_prompt_v2(
+             kaapi_evaluation_id,
+             %{callback_url: callback_url},
+             secrets["api_key"]
+           ) do
+      {:ok, data}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi improve_evaluation_prompt failed for kaapi_evaluation_id=#{kaapi_evaluation_id}",
           organization_id: organization_id,
           reason: safe_inspect(reason)
         })
@@ -780,6 +879,118 @@ defmodule Glific.ThirdParty.Kaapi do
         )
 
         {:error, reason}
+    end
+  end
+
+  @doc """
+  Upload an evaluation dataset to Kaapi via the v2 endpoint, send error to Appsignal if failed.
+  """
+  @spec upload_evaluation_dataset_v2(map(), non_neg_integer()) ::
+          {:ok, map()} | {:error, map() | binary()} | {:error, :timeout}
+  def upload_evaluation_dataset_v2(params, organization_id) do
+    case fetch_kaapi_creds(organization_id) do
+      {:ok, secrets} ->
+        params
+        |> ApiClient.upload_evaluation_dataset_v2(secrets["api_key"])
+        |> handle_evaluation_dataset_v2_response(organization_id)
+
+      {:error, reason} ->
+        send_kaapi_error(
+          "Failed to upload evaluation dataset v2 to Kaapi",
+          organization_id,
+          reason
+        )
+
+        {:error, reason}
+    end
+  end
+
+  @models_cache_ttl_hours 6
+  @models_provider "openai"
+
+  @doc """
+  List active Kaapi models for the (currently hardcoded) openai provider. Fetches all pages
+  and caches the result globally for #{@models_cache_ttl_hours}h, since the model catalog is
+  provider-wide, not org data.
+  """
+  @spec list_models(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_models(organization_id) do
+    cache_key = {:kaapi_models, @models_provider}
+
+    case Caches.get_global(cache_key) do
+      {:ok, models} when is_list(models) ->
+        {:ok, models}
+
+      _ ->
+        fetch_and_cache_models(organization_id, cache_key)
+    end
+  end
+
+  @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
+  defp fetch_and_cache_models(organization_id, cache_key) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, models} <- fetch_all_models(secrets["api_key"]) do
+      # avoid caching a transient empty result for @models_cache_ttl_hours
+      if models != [], do: Caches.put_global(cache_key, models, @models_cache_ttl_hours)
+      {:ok, models}
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message:
+            "Kaapi list_models failed for org_id=#{organization_id}, reason=#{safe_inspect(reason)}"
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @spec handle_evaluation_dataset_v2_response(
+          {:ok, map()} | {:error, map() | binary() | :timeout},
+          non_neg_integer()
+        ) :: {:ok, map()} | {:error, map() | binary()}
+  defp handle_evaluation_dataset_v2_response(
+         {:ok, %{data: %{dataset_id: dataset_id, total_items: total_items}}},
+         _organization_id
+       ) do
+    {:ok, %{dataset_id: dataset_id, total_items: total_items}}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:error, reason}, organization_id) do
+    send_kaapi_error("Failed to upload evaluation dataset v2 to Kaapi", organization_id, reason)
+    {:error, reason}
+  end
+
+  defp handle_evaluation_dataset_v2_response({:ok, result}, organization_id) do
+    send_kaapi_error(
+      "Got unexpected response from Kaapi while uploading evaluation dataset v2",
+      organization_id,
+      result
+    )
+
+    {:error, "An unknown error occurred, please contact Glific support."}
+  end
+
+  @spec send_kaapi_error(String.t(), non_neg_integer(), term()) :: Appsignal.Span.t() | nil
+  defp send_kaapi_error(message, organization_id, reason) do
+    Appsignal.send_error(
+      %Error{
+        message: message,
+        organization_id: organization_id,
+        reason: safe_inspect(reason)
+      },
+      []
+    )
+  end
+
+  @spec fetch_all_models(String.t()) :: {:ok, list(map())} | {:error, any()}
+  defp fetch_all_models(api_key) do
+    with {:ok, body} <-
+           ApiClient.list_models(%{provider: @models_provider}, api_key),
+         %{data: %{data: page}} <- body do
+      {:ok, page}
+    else
+      {:error, reason} -> {:error, reason}
+      other -> {:error, "Unexpected Kaapi list_models response: #{safe_inspect(other)}"}
     end
   end
 
