@@ -202,6 +202,61 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "get_document/3" do
+    setup [:enable_kaapi_credential]
+
+    test "returns document data with signed_url", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :get, url: url} ->
+        assert url =~ "/api/v1/documents/doc_123"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              id: "doc_123",
+              fname: "biu-1.pdf",
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{id: "doc_123", signed_url: signed_url}} =
+               Kaapi.get_document("doc_123", organization_id, true)
+
+      assert signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns an error when include_url is true but signed_url is missing", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 200, body: %{success: true, data: %{id: "doc_123", fname: "biu-1.pdf"}}}
+      end)
+
+      assert {:error, "File download URL not available"} =
+               Kaapi.get_document("doc_123", organization_id, true)
+    end
+
+    test "does not require signed_url when include_url is false", %{
+      organization_id: organization_id
+    } do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 200, body: %{success: true, data: %{id: "doc_123", fname: "biu-1.pdf"}}}
+      end)
+
+      assert {:ok, %{id: "doc_123", fname: "biu-1.pdf"}} =
+               Kaapi.get_document("doc_123", organization_id)
+    end
+
+    test "passes an upstream error through unchanged", %{organization_id: organization_id} do
+      mock(fn %Tesla.Env{method: :get} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = Kaapi.get_document("doc_123", organization_id, true)
+    end
+  end
+
   describe "improve_evaluation_prompt/3" do
     setup [:enable_kaapi_credential]
 

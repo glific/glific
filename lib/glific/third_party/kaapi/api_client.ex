@@ -319,6 +319,27 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Get a document from Kaapi with optional signed URL.
+  """
+  @spec get_document(String.t(), String.t(), boolean()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, org_api_key, include_url \\ false) do
+    query_params =
+      if include_url do
+        [include_url: "true"]
+      else
+        []
+      end
+
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/documents/:document_id",
+      query: query_params,
+      opts: [path_params: [document_id: document_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Delete an evaluation dataset in Kaapi.
   """
   @spec delete_evaluation_dataset(non_neg_integer() | String.t(), String.t()) ::

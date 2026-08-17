@@ -59,6 +59,15 @@ defmodule GlificWeb.Resolvers.Assistants do
   end
 
   @doc """
+  Gets a signed download URL for a knowledge base file from Kaapi
+  """
+  @spec download_knowledge_base_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def download_knowledge_base_file(_, %{file_id: file_id}, %{context: %{current_user: user}}) do
+    Assistants.download_knowledge_base_file(file_id, user.organization_id)
+  end
+
+  @doc """
   Create an Assistant
   """
   @spec create_assistant(Absinthe.Resolution.t(), map(), %{context: map()}) ::

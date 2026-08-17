@@ -904,6 +904,33 @@ defmodule Glific.Assistants do
   end
 
   @doc """
+  Get a signed download URL for a knowledge base file from Kaapi.
+  """
+  @spec download_knowledge_base_file(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def download_knowledge_base_file(file_id, organization_id) do
+    case Kaapi.get_document(file_id, organization_id, true) do
+      {:ok, document_data} ->
+        {:ok,
+         %{
+           file_id: document_data[:id],
+           filename: document_data[:fname],
+           signed_url: document_data[:signed_url]
+         }}
+
+      {:error, %{status: status, body: body}} ->
+        error_message = body[:error]
+        {:error, "File download failed (status #{status}): #{error_message}"}
+
+      {:error, reason} when is_binary(reason) ->
+        {:error, reason}
+
+      {:error, reason} ->
+        {:error, "File download failed: #{Glific.SafeLog.safe_inspect(reason)}"}
+    end
+  end
+
+  @doc """
   Delete an assistant config from Kaapi first, then deletes
   the assistant from the database.
   """
