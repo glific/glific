@@ -71,6 +71,16 @@ defmodule GlificWeb.KaapiControllerTest do
             status: 200,
             body: %{data: %{id: "kaapi_config_123", version: %{version: 1}}}
           }
+
+        %Tesla.Env{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{
+                data: [%{model_name: "gpt-4", provider: "openai", config: %{temperature: 1}}]
+              }
+            }
+          }
       end)
 
       {:ok, assistant} =

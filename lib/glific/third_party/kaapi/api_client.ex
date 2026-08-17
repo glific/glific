@@ -260,6 +260,17 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create an evaluation in Kaapi (v2)
+  """
+  @spec create_evaluation_v2(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation_v2(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v2/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
   @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
@@ -331,6 +342,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     )
     |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
     |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
+  end
+
+  @doc """
+  List active models from Kaapi for a provider. Paginated via skip/limit.
+  """
+  @spec list_models(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def list_models(params, org_api_key) do
+    query = [provider: params.provider, skip: params[:skip] || 0, limit: params[:limit] || 100]
+
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/models", query: query)
+    |> parse_kaapi_response()
   end
 
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()
