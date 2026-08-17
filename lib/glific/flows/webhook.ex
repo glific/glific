@@ -492,6 +492,11 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
+  # A smoke-test probe has no parked flow to resume: the outbound {:ok, ack} already proved the
+  # node is alive, so drop the callback here — after signature validation — before Dispatcher.callback
+  # (which would count it against `flow_webhook_count`), the flow resume, or any resume-error report.
+  defp resume(_organization_id, _result, %{"smoke_test" => true}, _contact), do: :ok
+
   defp resume(organization_id, result, response, contact) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
@@ -588,6 +593,9 @@ defmodule Glific.Flows.Webhook do
   copied into the supervised resume task.
   """
   @spec maybe_upload_tts_audio(map()) :: map()
+  # Smoke-test callbacks are dropped in resume/4, so never spend a GCS upload on their audio.
+  def maybe_upload_tts_audio(%{"smoke_test" => true} = response), do: response
+
   def maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
     {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
 

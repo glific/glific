@@ -68,18 +68,28 @@ defmodule Glific.Flows.Webhooks.Kaapi do
 
     callback_url = Glific.api_callback_base(organization.shortcode) <> callback_path
 
-    request_metadata = %{
-      organization_id: organization_id,
-      flow_id: flow_id,
-      contact_id: contact_id,
-      timestamp: timestamp,
-      signature: signature,
-      webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
-    }
+    request_metadata =
+      %{
+        organization_id: organization_id,
+        flow_id: flow_id,
+        contact_id: contact_id,
+        timestamp: timestamp,
+        signature: signature,
+        webhook_log_id: fields["webhook_log_id"],
+        result_name: fields["result_name"]
+      }
+      |> maybe_put_smoke_test(fields)
 
     {callback_url, request_metadata}
   end
+
+  # Rides the smoke-test sentinel back in the echoed metadata so the flow-resume path can drop the
+  # callback before it counts against `flow_webhook_count`. Absent on real traffic.
+  @spec maybe_put_smoke_test(map(), map()) :: map()
+  defp maybe_put_smoke_test(request_metadata, %{"smoke_test" => true}),
+    do: Map.put(request_metadata, :smoke_test, true)
+
+  defp maybe_put_smoke_test(request_metadata, _fields), do: request_metadata
 
   @doc """
   Dispatches the async unified LLM call to Kaapi (`/api/v1/llm/call`). Returns the normalised
