@@ -1320,9 +1320,11 @@ defmodule Glific.Messages do
     do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
 
   ## sometimes webp files does not return any content type. We need to figure out another way to validate this
-  defp do_validate_headers(headers, "sticker", url),
-    do:
-      String.contains?(url, [".webp"]) && String.contains?(headers["content-type"], ["image", ""])
+  defp do_validate_headers(headers, "sticker", url) do
+    extension = (URI.parse(url).path || "") |> Path.extname() |> String.downcase()
+
+    extension == ".webp" && String.contains?(headers["content-type"], ["image", ""])
+  end
 
   # accept audio file excluding ogg
   defp do_validate_headers(headers, type, _url) when type == "audio" do
