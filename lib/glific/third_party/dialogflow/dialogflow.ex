@@ -97,15 +97,23 @@ defmodule Glific.Dialogflow do
         }
 
       credential ->
-        service_account = Jason.decode!(credential.secrets["service_account"])
+        case decode_service_account(credential.secrets["service_account"]) do
+          {:ok, service_account} when is_map(service_account) ->
+            %{
+              url: "https://dialogflow.googleapis.com/v2beta1/projects",
+              id: service_account["project_id"],
+              email: service_account["client_email"]
+            }
 
-        %{
-          url: "https://dialogflow.googleapis.com/v2beta1/projects",
-          id: service_account["project_id"],
-          email: service_account["client_email"]
-        }
+          _ ->
+            %{url: nil, id: nil, email: nil}
+        end
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @doc """
   Execute a webhook action, could be either get or post for now

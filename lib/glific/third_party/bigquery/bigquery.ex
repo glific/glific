@@ -249,22 +249,27 @@ defmodule Glific.BigQuery do
         org_contact,
         organization_id
       ) do
-    case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, service_account} ->
-        project_id = service_account["project_id"]
-        token = Partners.get_goth_token(organization_id, "bigquery")
+    case decode_service_account(credentials.secrets["service_account"]) do
+      {:ok, service_account} when is_map(service_account) ->
+        case Partners.get_goth_token(organization_id, "bigquery") do
+          nil ->
+            {:error, "Error fetching token with Service Account JSON"}
 
-        if is_nil(token) do
-          {:error, "Error fetching token with Service Account JSON"}
-        else
-          conn = Connection.new(token.token)
-          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+          token ->
+            conn = Connection.new(token.token)
+            project_id = service_account["project_id"]
+
+            {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
 
-      {:error, _error} ->
+      _ ->
         {:error, "Invalid Service Account JSON"}
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @table_lookup %{
     "contact_histories" => ContactHistory,

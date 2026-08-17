@@ -181,30 +181,51 @@ defmodule Glific.GCS do
   @doc """
   Generate a signed URL for a private file
   """
-  @spec get_signed_url(String.t(), non_neg_integer, keyword) :: String.t()
+  @spec get_signed_url(String.t(), non_neg_integer, keyword) ::
+          {:ok, String.t()} | {:error, String.t()}
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
     gcs_secrets = get_secrets(organization_id)
-    gcs_secrets = Map.put(gcs_secrets, "private_bucket", "test-private-cc")
 
     if is_nil(gcs_secrets["private_bucket"]) do
       Logger.info("no private bucket for org_id: #{organization_id}")
+      {:error, "no private bucket for org_id: #{organization_id}"}
     else
       put_bucket_name(gcs_secrets["private_bucket"])
-      load_goth(Jason.decode!(gcs_secrets["service_account"]))
 
-      opts =
-        [signed: true, expires_in: 300]
-        |> Keyword.merge(opts)
+      case decode_service_account(gcs_secrets["service_account"]) do
+        {:ok, service_account} when is_map(service_account) ->
+          load_goth(service_account)
 
-      CloudStorage.url(
-        Glific.Media,
-        :original,
-        {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-        opts
-      )
+          opts =
+            [signed: true, expires_in: 300]
+            |> Keyword.merge(opts)
+
+          url =
+            CloudStorage.url(
+              Glific.Media,
+              :original,
+              {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+              opts
+            )
+
+          {:ok, url}
+
+        {:error, :missing} ->
+          Logger.info("no service account for org_id: #{organization_id}")
+          {:error, "no service account for org_id: #{organization_id}"}
+
+        _ ->
+          Logger.info("invalid service account JSON for org_id: #{organization_id}")
+          {:error, "invalid service account JSON for org_id: #{organization_id}"}
+      end
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(nil), do: {:error, :missing}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @spec bucket_name(non_neg_integer()) :: String.t() | nil
   defp bucket_name(org_id) do
