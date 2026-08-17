@@ -1400,6 +1400,64 @@ defmodule Glific.MessagesTest do
       assert updated_hsm_template.body ==
                "Your OTP for param1 is param2. This is valid for param3."
     end
+
+    test "create_and_send_otp_template_message/2 picks the approved and active verify_otp template among multiple shortcode variants",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_pending",
+        shortcode: "verify_otp_pending",
+        type: :text,
+        body: "{{1}} is your pending verification code.",
+        is_hsm: true,
+        status: "PENDING",
+        is_active: false,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: organization_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_rejected",
+        shortcode: "verify_otp_rejected",
+        type: :text,
+        body: "{{1}} is your rejected verification code.",
+        is_hsm: true,
+        status: "REJECTED",
+        is_active: false,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: organization_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_approved",
+        shortcode: "verify_otp_approved",
+        type: :text,
+        body: "{{1}} is your verification code. For your security, do not share this code.",
+        is_hsm: true,
+        status: "APPROVED",
+        is_active: true,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: organization_id
+      })
+
+      assert {:ok, %Message{} = message} =
+               Messages.create_and_send_otp_template_message(contact, "445566")
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.body ==
+               "445566 is your verification code. For your security, do not share this code."
+    end
   end
 
   describe "message_media" do
