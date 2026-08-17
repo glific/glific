@@ -363,6 +363,13 @@ defmodule Glific.Flows.ExpressionTest do
       # the completed form still works
       assert {:ok, "3"} =
                Expression.eval("<%= String.length(@name) %>", %{"name" => "abc"})
+
+      # render/2 trusts its compiled input and skips re-validation, so it is the
+      # path that actually reaches eval_node's bare-alias clause -- verifying the
+      # sole security boundary fails closed with the same message even when the
+      # safe_shape twin is bypassed.
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.render([{:expr, {:__aliases__, [], [:String]}}], %{})
     end
 
     test "anonymous functions (fn and & capture) with Enum" do
