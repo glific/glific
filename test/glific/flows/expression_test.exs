@@ -348,6 +348,23 @@ defmodule Glific.Flows.ExpressionTest do
                Expression.validate(~S|<%= Enum.max_by(@l, &(System.cmd(&1, []))) %>|)
     end
 
+    test "a bare module used as a value rejects with an actionable message" do
+      # single-segment and multi-segment aliases both get a clear message
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.eval("<%= String %>")
+
+      assert {:error, "module Foo.Bar used as a value; call it as Foo.Bar.function(...)"} =
+               Expression.validate("<%= Foo.Bar %>")
+
+      # a bare module as an argument is rejected the same way
+      assert {:error, "module Date used as a value" <> _} =
+               Expression.eval("<%= Enum.max_by([1, 2], Date) %>")
+
+      # the completed form still works
+      assert {:ok, "3"} =
+               Expression.eval("<%= String.length(@name) %>", %{"name" => "abc"})
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 

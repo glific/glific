@@ -560,6 +560,12 @@ defmodule Glific.Flows.Expression do
       else: {:error, "unsupported capture"}
   end
 
+  # bare module name used as a value, e.g. `String` on its own instead of
+  # `String.upcase(x)` (twin of the eval_node clause). Rejected like before, but
+  # with an author-actionable message instead of the opaque "__aliases__/N".
+  defp validate_ast({:__aliases__, _, segments}) when is_list(segments),
+    do: {:error, alias_as_value_error(segments)}
+
   # operators / Kernel calls on the @kernel table
   defp validate_ast({op, _, args}) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -820,6 +826,11 @@ defmodule Glific.Flows.Expression do
   defp eval_node({:&, _, [inner]}, bindings),
     do: make_capture(max_placeholder(inner, 0), inner, bindings)
 
+  # bare module name used as a value (e.g. `String` on its own, not
+  # `String.upcase(x)`). Still fail-closed; only the message is friendlier.
+  defp eval_node({:__aliases__, _, segments}, _bindings) when is_list(segments),
+    do: reject(alias_as_value_error(segments))
+
   # allowed operators / Kernel calls
   defp eval_node({op, _, args}, bindings) when is_atom(op) and is_list(args) do
     if {op, length(args)} in @kernel,
@@ -1000,5 +1011,11 @@ defmodule Glific.Flows.Expression do
     node |> Macro.to_string() |> String.slice(0, 60)
   rescue
     _ -> "unsupported construct"
+  end
+
+  @spec alias_as_value_error([atom()]) :: String.t()
+  defp alias_as_value_error(segments) do
+    path = Enum.join(segments, ".")
+    "module #{path} used as a value; call it as #{path}.function(...)"
   end
 end
