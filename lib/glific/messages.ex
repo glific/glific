@@ -462,20 +462,33 @@ defmodule Glific.Messages do
   @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_otp_template_message(contact, otp) do
-    session_template = fetch_verify_otp_template(contact.organization_id)
-    parameters = [otp]
+    case fetch_verify_otp_template(contact.organization_id) do
+      {:ok, session_template} ->
+        parameters = [otp]
 
-    %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
-    |> create_and_send_hsm_message()
+        %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
+        |> create_and_send_hsm_message()
+
+      {:error, _} = error ->
+        error
+    end
   end
 
-  @spec fetch_verify_otp_template(non_neg_integer()) :: SessionTemplate.t() | nil
+  @spec fetch_verify_otp_template(non_neg_integer()) ::
+          {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp fetch_verify_otp_template(organization_id) do
     SessionTemplate
-    |> where([st], ilike(st.shortcode, "verify_otp%"))
+    |> where([st], ilike(st.shortcode, "verify\\_otp%"))
     |> where([st], st.is_hsm and st.organization_id == ^organization_id)
-    |> Repo.all()
-    |> Enum.find(&(&1.status == "APPROVED" and &1.is_active))
+    |> where([st], st.category == "AUTHENTICATION")
+    |> where([st], st.status == "APPROVED" and st.is_active)
+    |> order_by([st], desc: st.updated_at, desc: st.id)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, "No approved OTP template found"}
+      template -> {:ok, template}
+    end
   end
 
   @doc """

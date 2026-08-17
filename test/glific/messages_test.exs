@@ -1434,6 +1434,34 @@ defmodule Glific.MessagesTest do
       })
 
       Repo.insert!(%SessionTemplate{
+        label: "verify_otp_active_but_not_approved",
+        shortcode: "verify_otp_active_but_not_approved",
+        type: :text,
+        body: "{{1}} is your active but unapproved verification code.",
+        is_hsm: true,
+        status: "PENDING",
+        is_active: true,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: organization_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_approved_but_inactive",
+        shortcode: "verify_otp_approved_but_inactive",
+        type: :text,
+        body: "{{1}} is your approved but inactive verification code.",
+        is_hsm: true,
+        status: "APPROVED",
+        is_active: false,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: organization_id
+      })
+
+      Repo.insert!(%SessionTemplate{
         label: "verify_otp_approved",
         shortcode: "verify_otp_approved",
         type: :text,
@@ -1457,6 +1485,44 @@ defmodule Glific.MessagesTest do
 
       assert message.body ==
                "445566 is your verification code. For your security, do not share this code."
+    end
+
+    test "create_and_send_otp_template_message/2 returns an error when no verify_otp template is approved and active",
+         attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_pending",
+        shortcode: "verify_otp_pending",
+        type: :text,
+        body: "{{1}} is your pending verification code.",
+        is_hsm: true,
+        status: "PENDING",
+        is_active: false,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: attrs.organization_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "verify_otp_approved_but_inactive",
+        shortcode: "verify_otp_approved_but_inactive",
+        type: :text,
+        body: "{{1}} is your approved but inactive verification code.",
+        is_hsm: true,
+        status: "APPROVED",
+        is_active: false,
+        number_parameters: 1,
+        category: "AUTHENTICATION",
+        language_id: 1,
+        organization_id: attrs.organization_id
+      })
+
+      assert {:error, error_message} =
+               Messages.create_and_send_otp_template_message(contact, "445566")
+
+      assert error_message == "No approved OTP template found"
     end
   end
 
