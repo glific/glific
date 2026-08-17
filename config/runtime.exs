@@ -9,26 +9,34 @@ source(["config/.env", "config/.env.#{config_env()}", System.get_env()])
 
 http_port = env!("HTTP_PORT", :integer, 4000)
 
-# Helper function to create SSL opts
+# Database SSL is on by default, but skipped entirely for the test env, when
+# ENABLE_DB_SSL=false (e.g. an in-cluster Postgres with no TLS), or when a DB's
+# CA cert env var is absent — so a certificate-less server still connects.
+# ENABLE_DB_SSL is read here, in one place.
+db_ssl_enabled =
+  Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true)
+
+# Build the SSL opts for a DB from its base64 CA cert env var; [] means "no SSL".
 db_ssl_opts = fn db_type ->
-  if Application.get_env(:glific, :environment) != :test && env!("ENABLE_DB_SSL", :boolean, true) do
-    pem = "#{db_type}_CACERT_ENCODED" |> env!(:string) |> Base.decode64!()
-    File.mkdir_p(Path.join(:code.priv_dir(:glific), "cert"))
+  case db_ssl_enabled && System.get_env("#{db_type}_CACERT_ENCODED") do
+    encoded when is_binary(encoded) and encoded != "" ->
+      File.mkdir_p!(Path.join(:code.priv_dir(:glific), "cert"))
 
-    cert_path =
-      Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
+      cert_path =
+        Path.join(:code.priv_dir(:glific), "cert/#{String.downcase(db_type)}-db-server-ca.pem")
 
-    File.write!(cert_path, pem)
+      File.write!(cert_path, Base.decode64!(encoded))
 
-    [
-      cacertfile: cert_path,
-      verify: :verify_peer,
-      server_name_indication:
-        env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
-        |> String.to_charlist()
-    ]
-  else
-    false
+      [
+        cacertfile: cert_path,
+        verify: :verify_peer,
+        server_name_indication:
+          env!("#{db_type}_DB_SERVER_NAME_INDICATION", :string!, "localhost")
+          |> String.to_charlist()
+      ]
+
+    _ ->
+      []
   end
 end
 
@@ -39,7 +47,7 @@ config :glific, Glific.Repo,
   url: primary_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: primary_ssl_opts,
+  ssl: primary_ssl_opts != [] && primary_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
@@ -52,7 +60,7 @@ config :glific, Glific.RepoReplica,
   url: replica_url,
   pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
-  ssl: replica_ssl_opts,
+  ssl: replica_ssl_opts != [] && replica_ssl_opts,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 
