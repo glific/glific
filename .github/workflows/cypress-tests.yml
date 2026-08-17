@@ -62,7 +62,7 @@ jobs:
           git clone https://github.com/glific/glific-frontend.git
 
       - name: Use latest Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "22.21.1"
 
