@@ -112,11 +112,13 @@ defmodule Glific.Saas.Onboard do
   @doc """
   Updates the registration details and send submission mail to user
   """
-  @spec update_registration(map(), Organization.t()) :: map()
-  def update_registration(%{"registration_id" => reg_id} = params, org) do
+  @spec update_registration(map()) :: map()
+  def update_registration(%{"registration_id" => reg_id} = params) do
     result = %{is_valid: true, messages: %{}}
 
     with {:ok, registration} <- Registrations.get_registration(reg_id),
+         %{is_valid: true} <- editable_registration(result, registration),
+         {:ok, org} <- fetch_registration_org(registration),
          %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
       {:ok, registration} = update_registration_details(params, registration)
       {:ok, org} = update_org_details(org, params, registration)
@@ -129,6 +131,10 @@ defmodule Glific.Saas.Onboard do
         process_result
       end
     else
+      {:error, :organization_not_found} ->
+        dgettext("error", "Organization doesn't exist for given registration ID.")
+        |> Queries.error(result, :organization_id)
+
       {:error, _} ->
         dgettext("error", "Registration doesn't exist for given registration ID.")
         |> Queries.error(result, :registration_id)
@@ -138,12 +144,36 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  def update_registration(_params, _org) do
+  def update_registration(_params) do
     result = %{is_valid: false, messages: %{}}
 
     dgettext("error", "Registration ID is empty.")
     |> Queries.error(result, :registration_id)
   end
+
+  # This endpoint is unauthenticated, so the organization must never come from the request.
+  # Deriving it from the registration is what keeps a caller from pointing someone else's
+  # registration at an organization they picked.
+  @spec fetch_registration_org(Registration.t()) ::
+          {:ok, Organization.t()} | {:error, :organization_not_found}
+  defp fetch_registration_org(%Registration{organization_id: org_id}) do
+    case Partners.organization(org_id) do
+      %Organization{} = org ->
+        Repo.put_process_state(org.id)
+        {:ok, org}
+
+      _ ->
+        {:error, :organization_not_found}
+    end
+  end
+
+  @spec editable_registration(map(), Registration.t()) :: map()
+  defp editable_registration(result, %Registration{has_submitted: true}) do
+    dgettext("error", "Registration has already been submitted and cannot be updated.")
+    |> Queries.error(result, :has_submitted)
+  end
+
+  defp editable_registration(result, _registration), do: result
 
   @doc """
   Send the queries to support mail

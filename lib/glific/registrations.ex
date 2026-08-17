@@ -28,11 +28,14 @@ defmodule Glific.Registrations do
   end
 
   @doc """
-  Fetch a registration by given registration id
+  Fetch a registration by given registration id, across organizations
   """
   @spec get_registration(integer()) :: {:ok, Registration.t()} | {:error, term()}
   def get_registration(registration_id) do
-    Repo.fetch_by(Registration, id: registration_id)
+    # SaaS onboarding runs on the SaaS host, so the ambient tenant context is never the
+    # registration's own organization. Callers must derive it from registration.organization_id
+    # rather than from anything in the request.
+    Repo.fetch_by(Registration, [id: registration_id], skip_organization_id: true)
   end
 
   @doc """

@@ -232,37 +232,31 @@ defmodule Glific.OnboardTest do
       end
     end
 
-    test "update_registration, without registration_id", %{org: org} do
+    test "update_registration, without registration_id" do
       assert %{messages: %{registration_id: "Registration ID is empty."}, is_valid: false} =
-               Onboard.update_registration(%{}, org)
+               Onboard.update_registration(%{})
     end
 
-    test "update_registration, invalid registration_id", %{org: org} do
+    test "update_registration, invalid registration_id" do
       assert %{
                messages: %{
                  registration_id: "Registration doesn't exist for given registration ID."
                },
                is_valid: false
              } =
-               Onboard.update_registration(%{"registration_id" => "0"}, org)
+               Onboard.update_registration(%{"registration_id" => "0"})
     end
 
-    test "update_registration, valid registration_id", %{
-      registration_id: registration_id,
-      org: org
-    } do
+    test "update_registration, valid registration_id", %{registration_id: registration_id} do
       assert %{
                messages: %{},
                is_valid: true,
                registration: _registration_details
              } =
-               Onboard.update_registration(
-                 %{"registration_id" => registration_id},
-                 org
-               )
+               Onboard.update_registration(%{"registration_id" => registration_id})
     end
 
-    test "update_registration, invalid params", %{registration_id: reg_id, org: org} do
+    test "update_registration, invalid params", %{registration_id: reg_id} do
       invalid_params = %{
         "registration_id" => reg_id,
         "billing_frequency" => "twice",
@@ -294,7 +288,7 @@ defmodule Glific.OnboardTest do
                },
                is_valid: false
              } =
-               Onboard.update_registration(invalid_params, org)
+               Onboard.update_registration(invalid_params)
     end
 
     test "update_registration, valid params", %{org: org, registration_id: reg_id} do
@@ -317,7 +311,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "Annually"
@@ -347,7 +341,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "Annually"
@@ -356,7 +350,7 @@ defmodule Glific.OnboardTest do
       assert %{email: nil} = Partners.get_organization!(org.id)
     end
 
-    test "update_registration, when terms_agreed is false", %{org: org, registration_id: reg_id} do
+    test "update_registration, when terms_agreed is false", %{registration_id: reg_id} do
       valid_params = %{
         "registration_id" => reg_id,
         "billing_frequency" => "Annually",
@@ -377,7 +371,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.is_disputed == true
@@ -407,7 +401,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "monthly"
@@ -433,7 +427,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
     end
 
     test "update_registration, terms_agreed and support_staff_acount were false on submission", %{
@@ -460,7 +454,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "monthly"
@@ -487,7 +481,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: false
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
     end
 
     test "update_registration, terms_agreed and support_staff_acount were true on submission", %{
@@ -514,7 +508,7 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
 
       {:ok, %Registration{} = reg} = Registrations.get_registration(reg_id)
       assert reg.billing_frequency == "monthly"
@@ -572,7 +566,52 @@ defmodule Glific.OnboardTest do
                messages: _,
                is_valid: true
              } =
-               Onboard.update_registration(valid_params, org)
+               Onboard.update_registration(valid_params)
+    end
+
+    test "update_registration, org_id in the request cannot redirect the update to another org",
+         %{org: org, registration_id: registration_id} do
+      other_organization = Partners.get_organization!(Saas.organization_id())
+      signing_authority_email = Faker.Internet.email()
+
+      params = %{
+        "org_id" => other_organization.id,
+        "registration_id" => registration_id,
+        "finance_poc" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => Faker.Internet.email(),
+          "designation" => "Sr Accountant",
+          "phone" => Phone.PtBr.phone()
+        },
+        "signing_authority" => %{
+          "name" => Faker.Person.name() |> String.slice(0, 10),
+          "email" => signing_authority_email,
+          "designation" => "designation"
+        }
+      }
+
+      assert %{is_valid: true} = Onboard.update_registration(params)
+
+      assert %{email: ^signing_authority_email} = Partners.get_organization!(org.id)
+
+      assert other_organization.email ==
+               Partners.get_organization!(other_organization.id).email
+    end
+
+    test "update_registration, a submitted registration can no longer be updated", %{
+      registration_id: registration_id
+    } do
+      {:ok, registration} = Registrations.get_registration(registration_id)
+
+      {:ok, _registration} =
+        Registrations.update_registation(registration, %{has_submitted: true})
+
+      assert %{
+               is_valid: false,
+               messages: %{
+                 has_submitted: "Registration has already been submitted and cannot be updated."
+               }
+             } = Onboard.update_registration(%{"registration_id" => registration_id})
     end
   end
 
