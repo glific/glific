@@ -438,7 +438,7 @@ defmodule Glific.Messages do
     |> then(&Map.merge(attrs, %{interactive_content: &1}))
   end
 
-  @doc false
+  @doc "Sends the OTP as a session message when possible, falling back to the HSM template."
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_otp_verification_message(contact, otp) do
@@ -458,7 +458,7 @@ defmodule Glific.Messages do
     send_default_message(contact, body)
   end
 
-  @doc false
+  @doc "Sends the OTP using the organization's approved verify_otp HSM template."
   @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_otp_template_message(contact, otp) do
