@@ -47,6 +47,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @doc """
+  List active Kaapi models available to the organization.
+  """
+  @spec list_kaapi_models(map(), map(), map()) :: {:ok, list(map())} | {:error, any()}
+  def list_kaapi_models(_, _args, %{context: %{current_user: user}}) do
+    Kaapi.list_models(user.organization_id)
+  end
+
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
   @max_golden_qa_evaluations 80
@@ -205,24 +213,23 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end)
   end
 
+  @golden_qa_csv_escape_max_lines 1000
+
   @spec validate_csv_structure(struct()) :: {:ok, non_neg_integer()} | {:error, String.t()}
   defp validate_csv_structure(%{path: path}) do
     path
     |> File.stream!()
-    |> CSV.decode(headers: false, escape_max_lines: 1000)
+    |> CSV.decode!(headers: false, escape_max_lines: @golden_qa_csv_escape_max_lines)
     |> Enum.reduce_while({:await_header, 0}, fn
-      {:ok, row}, {:await_header, _} ->
+      row, {:await_header, _} ->
         if row == ["question", "answer"] do
           {:cont, {:count, 0}}
         else
           {:halt, {:error, "CSV must have exactly two columns: 'question' and 'answer'"}}
         end
 
-      {:ok, _row}, {:count, n} ->
+      _row, {:count, n} ->
         {:cont, {:count, n + 1}}
-
-      {:error, _reason}, _acc ->
-        {:halt, {:error, "Unable to parse the uploaded CSV file"}}
     end)
     |> case do
       {:count, n} -> {:ok, n}
@@ -230,7 +237,30 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
       {:error, _} = err -> err
     end
   rescue
-    _ -> {:error, "Unable to parse the uploaded CSV file"}
+    e in CSV.StrayEscapeCharacterError ->
+      {:error,
+       "Row #{e.line} of the CSV has an unescaped \" character inside a field, for example: " <>
+         "He said \"hi\" to me. Wrap the whole field in quotes and double up the inner quotes " <>
+         "to fix it, for example: \"He said \"\"hi\"\" to me\"."}
+
+    e in CSV.EscapeSequenceError ->
+      {:error,
+       "Row #{escape_sequence_error_row(e)} of the CSV has a malformed quoted field (a value " <>
+         "wrapped in double quotes, for example: \"This is an answer\") — check for a missing " <>
+         "closing quote, for example: \"This answer never closes. If the field is legitimately " <>
+         "longer than #{@golden_qa_csv_escape_max_lines} lines, please reduce it to under " <>
+         "#{@golden_qa_csv_escape_max_lines} lines."}
+
+    _ ->
+      {:error, "Unable to parse the uploaded CSV file"}
+  end
+
+  @spec escape_sequence_error_row(Exception.t()) :: String.t()
+  defp escape_sequence_error_row(%CSV.EscapeSequenceError{message: message}) do
+    case Regex.run(~r/on line (\d+)/, message) do
+      [_match, row] -> row
+      _ -> "unknown"
+    end
   end
 
   @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
@@ -373,6 +403,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
+  @known_ai_evaluation_statuses ~w(processing failed completed)
+
   @doc """
   Create an AI Evaluation by sending the input to Kaapi, storing the result in the DB,
   and returning the evaluation.
@@ -387,7 +419,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
             })},
          {:assistant_config_version, {:ok, config_version}} <-
            {:assistant_config_version,
-            Repo.fetch_by(AssistantConfigVersion, %{id: input.config_id})},
+            Repo.fetch_by(AssistantConfigVersion, %{
+              id: input.config_id,
+              organization_id: user.organization_id
+            })},
          config_version = Repo.preload(config_version, :assistant),
          {:golden_qa, {:ok, golden_qa}} <-
            {:golden_qa,
@@ -401,11 +436,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         {:ok, %{data: data}} <- Kaapi.create_evaluation(kaapi_input, user.organization_id),
+         {:ok, kaapi_response} <- run_kaapi_evaluation(kaapi_input, user.organization_id),
+         {:kaapi_response, {:ok, data}} <-
+           {:kaapi_response, validate_kaapi_evaluation_response(kaapi_response)},
+         {:status, {:ok, status}} <- {:status, parse_ai_evaluation_status(data.status)},
          {:ok, evaluation} <-
            AIEvaluations.create_ai_evaluation(%{
              name: input.evaluation_name,
-             status: String.to_existing_atom(data.status),
+             status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
              golden_qa_id: input.golden_qa_id,
@@ -425,6 +463,14 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         {:error,
          "The specified Golden QA dataset does not exist or does not belong to your organization."}
 
+      {:kaapi_response, {:error, msg}} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        {:error, msg}
+
+      {:status, {:error, msg}} ->
+        Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
+        {:error, msg}
+
       {:error, :timeout} ->
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "Timeout occurred, please try again."}
@@ -441,6 +487,37 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
         Metrics.increment(@ai_evaluation_create_failure_metric, user.organization_id)
         {:error, "An unknown error occurred, please contact Glific support."}
     end
+  end
+
+  @spec run_kaapi_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  defp run_kaapi_evaluation(kaapi_input, organization_id) do
+    organization = Partners.organization(organization_id)
+
+    if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      Kaapi.create_evaluation_v2(kaapi_input, organization_id)
+    else
+      Kaapi.create_evaluation(kaapi_input, organization_id)
+    end
+  end
+
+  @spec parse_ai_evaluation_status(String.t()) :: {:ok, atom()} | {:error, String.t()}
+  defp parse_ai_evaluation_status(status) when status in @known_ai_evaluation_statuses,
+    do: {:ok, String.to_existing_atom(status)}
+
+  defp parse_ai_evaluation_status(status),
+    do: {:error, "Unexpected evaluation status received from Kaapi: #{status}"}
+
+  @spec validate_kaapi_evaluation_response(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_kaapi_evaluation_response(%{data: %{status: _status, id: _id} = data}),
+    do: {:ok, data}
+
+  defp validate_kaapi_evaluation_response(response) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Kaapi evaluation creation returned an unexpected response shape",
+      reason: safe_inspect(response)
+    })
+
+    {:error, "Invalid evaluation response received from Kaapi."}
   end
 
   @doc """
