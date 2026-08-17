@@ -149,9 +149,13 @@ defmodule Glific.AIEvaluations do
       entity: %{evaluation_id: evaluation.id}
     })
 
-    Assistants.set_last_evaluation_run(evaluation.assistant_config_version_id, evaluation.id)
+    case do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}}) do
+      :ok ->
+        Assistants.set_last_evaluation_run(evaluation.assistant_config_version_id, evaluation.id)
 
-    do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}})
+      error ->
+        error
+    end
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do

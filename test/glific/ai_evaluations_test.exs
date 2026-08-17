@@ -333,6 +333,8 @@ defmodule Glific.AIEvaluationsTest do
         })
         |> Repo.update()
 
+      assert {:ok, %{last_evaluation_summary: nil}} = Assistants.get_assistant(assistant.id)
+
       evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
 
       summary_scores = [
@@ -377,6 +379,32 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, updated_evaluation} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated_evaluation.status == :completed
+    end
+
+    test "does not set last_evaluation_run_id when the evaluation fails",
+         %{organization_id: organization_id, config_version: config_version} do
+      unsaved_assistant = Repo.get!(Assistant, config_version.assistant_id)
+
+      {:ok, assistant} =
+        unsaved_assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Kaapi evaluation failed"}}
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
+      assert unchanged_assistant.last_evaluation_run_id == nil
     end
   end
 
