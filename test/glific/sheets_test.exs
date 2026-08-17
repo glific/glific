@@ -1229,5 +1229,13 @@ defmodule Glific.SheetsTest do
       assert {:error, "Invalid Service Account JSON"} =
                GoogleSheets.decode_credential(credentials, organization_id)
     end
+
+    test "returns error instead of raising when service_account is valid JSON but not an object",
+         %{organization_id: organization_id} do
+      credentials = %{secrets: %{"service_account" => "null"}}
+
+      assert {:error, "Invalid Service Account JSON"} =
+               GoogleSheets.decode_credential(credentials, organization_id)
+    end
   end
 end

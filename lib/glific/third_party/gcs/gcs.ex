@@ -181,7 +181,8 @@ defmodule Glific.GCS do
   @doc """
   Generate a signed URL for a private file
   """
-  @spec get_signed_url(String.t(), non_neg_integer, keyword) :: String.t()
+  @spec get_signed_url(String.t(), non_neg_integer, keyword) ::
+          {:ok, String.t()} | {:error, String.t()}
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
     gcs_secrets = get_secrets(organization_id)
@@ -189,32 +190,38 @@ defmodule Glific.GCS do
 
     if is_nil(gcs_secrets["private_bucket"]) do
       Logger.info("no private bucket for org_id: #{organization_id}")
+      {:error, "no private bucket for org_id: #{organization_id}"}
     else
       put_bucket_name(gcs_secrets["private_bucket"])
 
       case gcs_secrets["service_account"] do
         service_account when is_binary(service_account) ->
           case Jason.decode(service_account) do
-            {:ok, service_account} ->
+            {:ok, service_account} when is_map(service_account) ->
               load_goth(service_account)
 
               opts =
                 [signed: true, expires_in: 300]
                 |> Keyword.merge(opts)
 
-              CloudStorage.url(
-                Glific.Media,
-                :original,
-                {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-                opts
-              )
+              url =
+                CloudStorage.url(
+                  Glific.Media,
+                  :original,
+                  {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+                  opts
+                )
 
-            {:error, _error} ->
+              {:ok, url}
+
+            _ ->
               Logger.info("invalid service account JSON for org_id: #{organization_id}")
+              {:error, "invalid service account JSON for org_id: #{organization_id}"}
           end
 
         _ ->
           Logger.info("no service account for org_id: #{organization_id}")
+          {:error, "no service account for org_id: #{organization_id}"}
       end
     end
   end

@@ -1221,7 +1221,7 @@ defmodule Glific.Partners do
     case credentials.secrets["service_account"] do
       service_account when is_binary(service_account) ->
         case Jason.decode(service_account) do
-          {:ok, config} -> config
+          {:ok, config} when is_map(config) -> config
           _ -> :error
         end
 
