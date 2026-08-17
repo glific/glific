@@ -82,9 +82,8 @@ defmodule Glific.Sheets.GoogleSheets do
   """
   @spec decode_credential(map(), non_neg_integer) :: {:ok, any} | {:error, any}
   def decode_credential(credentials, organization_id) do
-    with service_account when is_binary(service_account) <-
-           credentials.secrets["service_account"],
-         {:ok, service_account} when is_map(service_account) <- Jason.decode(service_account) do
+    with {:ok, service_account} when is_map(service_account) <-
+           decode_service_account(credentials.secrets["service_account"]) do
       case Partners.get_goth_token(organization_id, "google_sheets", scopes: @scopes) do
         nil -> {:error, "Error fetching token with Service Account JSON"}
         token -> {:ok, %{conn: build_conn(token.token)}}
@@ -93,6 +92,10 @@ defmodule Glific.Sheets.GoogleSheets do
       _ -> {:error, "Invalid Service Account JSON"}
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @doc """
   Read all rows from the spreadsheet.

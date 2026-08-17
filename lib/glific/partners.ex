@@ -1218,14 +1218,17 @@ defmodule Glific.Partners do
 
   @spec config(map()) :: map() | :error
   defp config(credentials) do
-    with service_account when is_binary(service_account) <-
-           credentials.secrets["service_account"],
-         {:ok, config} when is_map(config) <- Jason.decode(service_account) do
+    with {:ok, config} when is_map(config) <-
+           decode_service_account(credentials.secrets["service_account"]) do
       config
     else
       _ -> :error
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @doc """
   Common function to get the goth config

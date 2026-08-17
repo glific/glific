@@ -193,8 +193,8 @@ defmodule Glific.GCS do
     else
       put_bucket_name(gcs_secrets["private_bucket"])
 
-      with service_account when is_binary(service_account) <- gcs_secrets["service_account"],
-           {:ok, service_account} when is_map(service_account) <- Jason.decode(service_account) do
+      with {:ok, service_account} when is_map(service_account) <-
+             decode_service_account(gcs_secrets["service_account"]) do
         load_goth(service_account)
 
         opts =
@@ -211,7 +211,7 @@ defmodule Glific.GCS do
 
         {:ok, url}
       else
-        nil ->
+        {:error, :missing} ->
           Logger.info("no service account for org_id: #{organization_id}")
           {:error, "no service account for org_id: #{organization_id}"}
 
@@ -221,6 +221,11 @@ defmodule Glific.GCS do
       end
     end
   end
+
+  @spec decode_service_account(any()) :: {:ok, any()} | {:error, any()}
+  defp decode_service_account(nil), do: {:error, :missing}
+  defp decode_service_account(value) when is_binary(value), do: Jason.decode(value)
+  defp decode_service_account(_value), do: {:error, :not_binary}
 
   @spec bucket_name(non_neg_integer()) :: String.t() | nil
   defp bucket_name(org_id) do
