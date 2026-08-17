@@ -97,22 +97,17 @@ defmodule Glific.Dialogflow do
         }
 
       credential ->
-        case credential.secrets["service_account"] do
-          service_account when is_binary(service_account) ->
-            case Jason.decode(service_account) do
-              {:ok, service_account} when is_map(service_account) ->
-                %{
-                  url: "https://dialogflow.googleapis.com/v2beta1/projects",
-                  id: service_account["project_id"],
-                  email: service_account["client_email"]
-                }
-
-              _ ->
-                %{url: nil, id: nil, email: nil}
-            end
-
-          _ ->
-            %{url: nil, id: nil, email: nil}
+        with service_account when is_binary(service_account) <-
+               credential.secrets["service_account"],
+             {:ok, service_account} when is_map(service_account) <-
+               Jason.decode(service_account) do
+          %{
+            url: "https://dialogflow.googleapis.com/v2beta1/projects",
+            id: service_account["project_id"],
+            email: service_account["client_email"]
+          }
+        else
+          _ -> %{url: nil, id: nil, email: nil}
         end
     end
   end

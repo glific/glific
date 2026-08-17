@@ -194,34 +194,31 @@ defmodule Glific.GCS do
     else
       put_bucket_name(gcs_secrets["private_bucket"])
 
-      case gcs_secrets["service_account"] do
-        service_account when is_binary(service_account) ->
-          case Jason.decode(service_account) do
-            {:ok, service_account} when is_map(service_account) ->
-              load_goth(service_account)
+      with service_account when is_binary(service_account) <- gcs_secrets["service_account"],
+           {:ok, service_account} when is_map(service_account) <- Jason.decode(service_account) do
+        load_goth(service_account)
 
-              opts =
-                [signed: true, expires_in: 300]
-                |> Keyword.merge(opts)
+        opts =
+          [signed: true, expires_in: 300]
+          |> Keyword.merge(opts)
 
-              url =
-                CloudStorage.url(
-                  Glific.Media,
-                  :original,
-                  {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-                  opts
-                )
+        url =
+          CloudStorage.url(
+            Glific.Media,
+            :original,
+            {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+            opts
+          )
 
-              {:ok, url}
-
-            _ ->
-              Logger.info("invalid service account JSON for org_id: #{organization_id}")
-              {:error, "invalid service account JSON for org_id: #{organization_id}"}
-          end
-
-        _ ->
+        {:ok, url}
+      else
+        nil ->
           Logger.info("no service account for org_id: #{organization_id}")
           {:error, "no service account for org_id: #{organization_id}"}
+
+        _ ->
+          Logger.info("invalid service account JSON for org_id: #{organization_id}")
+          {:error, "invalid service account JSON for org_id: #{organization_id}"}
       end
     end
   end
