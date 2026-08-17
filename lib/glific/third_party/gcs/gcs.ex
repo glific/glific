@@ -193,24 +193,24 @@ defmodule Glific.GCS do
     else
       put_bucket_name(gcs_secrets["private_bucket"])
 
-      with {:ok, service_account} when is_map(service_account) <-
-             decode_service_account(gcs_secrets["service_account"]) do
-        load_goth(service_account)
+      case decode_service_account(gcs_secrets["service_account"]) do
+        {:ok, service_account} when is_map(service_account) ->
+          load_goth(service_account)
 
-        opts =
-          [signed: true, expires_in: 300]
-          |> Keyword.merge(opts)
+          opts =
+            [signed: true, expires_in: 300]
+            |> Keyword.merge(opts)
 
-        url =
-          CloudStorage.url(
-            Glific.Media,
-            :original,
-            {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-            opts
-          )
+          url =
+            CloudStorage.url(
+              Glific.Media,
+              :original,
+              {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+              opts
+            )
 
-        {:ok, url}
-      else
+          {:ok, url}
+
         {:error, :missing} ->
           Logger.info("no service account for org_id: #{organization_id}")
           {:error, "no service account for org_id: #{organization_id}"}

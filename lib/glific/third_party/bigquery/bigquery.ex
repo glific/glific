@@ -249,20 +249,21 @@ defmodule Glific.BigQuery do
         org_contact,
         organization_id
       ) do
-    with {:ok, service_account} when is_map(service_account) <-
-           decode_service_account(credentials.secrets["service_account"]) do
-      case Partners.get_goth_token(organization_id, "bigquery") do
-        nil ->
-          {:error, "Error fetching token with Service Account JSON"}
+    case decode_service_account(credentials.secrets["service_account"]) do
+      {:ok, service_account} when is_map(service_account) ->
+        case Partners.get_goth_token(organization_id, "bigquery") do
+          nil ->
+            {:error, "Error fetching token with Service Account JSON"}
 
-        token ->
-          conn = Connection.new(token.token)
-          project_id = service_account["project_id"]
+          token ->
+            conn = Connection.new(token.token)
+            project_id = service_account["project_id"]
 
-          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-      end
-    else
-      _ -> {:error, "Invalid Service Account JSON"}
+            {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+        end
+
+      _ ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 

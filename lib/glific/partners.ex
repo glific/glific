@@ -1218,10 +1218,8 @@ defmodule Glific.Partners do
 
   @spec config(map()) :: map() | :error
   defp config(credentials) do
-    with {:ok, config} when is_map(config) <-
-           decode_service_account(credentials.secrets["service_account"]) do
-      config
-    else
+    case decode_service_account(credentials.secrets["service_account"]) do
+      {:ok, config} when is_map(config) -> config
       _ -> :error
     end
   end
