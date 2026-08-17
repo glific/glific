@@ -103,10 +103,11 @@ defmodule Glific.Flows.Expression do
     {:Enum, :find, 3} => &Enum.find/3,
     {:Enum, :sort_by, 2} => &Enum.sort_by/2,
     {:Enum, :sum, 1} => &Enum.sum/1,
+    {:Enum, :max, 2} => &Enum.max/2,
+    {:Enum, :max_by, 2} => &Enum.max_by/2,
     {:Enum, :map_join, 3} => &Enum.map_join/3,
-    # NOTE: Enum.random/1 is NOT pure (non-deterministic). Included for the corpus
-    # audit only; decide deliberately before enabling.
     {:Enum, :random, 1} => &Enum.random/1,
+    {:Enum, :take_random, 2} => &Enum.take_random/2,
     {:List, :first, 1} => &List.first/1,
     {:List, :last, 1} => &List.last/1,
     {:List, :wrap, 1} => &List.wrap/1,
