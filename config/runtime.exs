@@ -195,12 +195,42 @@ config :glific,
   api_host_override: env!("GLIFIC_API_HOST_OVERRIDE", :string, nil),
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
-# The BSP webhooks are unauthenticated, so we filter them on the provider's published
-# source IPs (list in config.exs). Deploy on "log" first and confirm in the logs that no
-# genuine callback is being flagged, then switch to "enforce"; "log" is also the instant
-# rollback if a provider starts calling us from a new IP.
-unless config_env() == :test do
-  config :glific, :bsp_webhook_ip_filter, mode: env!("BSP_WEBHOOK_IP_FILTER_MODE", :atom, :log)
+# The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
+# provider publishes; anything else gets a 403. Setting the matching variable replaces a
+# provider's list outright, so a provider adding an IP is a `gigalixir config:set` and a
+# restart rather than a deploy. An empty list disables filtering for that provider, which
+# is why only :prod is configured — dev and test keep working without a real IP.
+webhook_ips = fn variable, default ->
+  case env!(variable, :string, nil) do
+    nil -> default
+    "" -> default
+    ips -> ips |> String.split(",", trim: true) |> Enum.map(&String.trim/1)
+  end
+end
+
+# Gupshup's event callback IPs, plus the IPs it uses for media related requests, as
+# published by Gupshup support.
+gupshup_webhook_ips = [
+  "34.202.224.208",
+  "52.66.99.126",
+  "15.206.217.7",
+  "3.6.228.131",
+  "13.126.35.181",
+  "13.232.173.180",
+  "13.127.57.130",
+  "13.234.143.23",
+  "3.7.115.196",
+  "13.232.49.3"
+]
+
+if config_env() == :prod do
+  config :glific,
+         :bsp_webhook_ip_allowlist,
+         %{
+           "gupshup" => webhook_ips.("GUPSHUP_WEBHOOK_IPS", gupshup_webhook_ips),
+           "gupshup-enterprise" => webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS", []),
+           "maytapi" => webhook_ips.("MAYTAPI_WEBHOOK_IPS", [])
+         }
 end
 
 search_repo_module =
