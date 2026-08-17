@@ -183,7 +183,13 @@ defmodule Glific.AIEvaluations do
   @spec do_update(AIEvaluation.t(), map()) :: :ok
   defp do_update(evaluation, attrs) do
     case update_ai_evaluation(evaluation, attrs) do
-      {:ok, _} ->
+      {:ok, updated_evaluation} ->
+        Absinthe.Subscription.publish(
+          GlificWeb.Endpoint,
+          updated_evaluation,
+          ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+        )
+
         :ok
 
       {:error, changeset} ->
@@ -350,6 +356,45 @@ defmodule Glific.AIEvaluations do
   defp build_improve_prompt_callback_url(organization_id) do
     organization = Partners.organization(organization_id)
     Glific.api_callback_base(organization.shortcode) <> "/kaapi/improve_prompt"
+  end
+
+  @doc """
+  Handles the async callback POSTed by Kaapi when a v2 evaluation run finishes (completed
+  or failed). Re-fetches full scores from Kaapi for the matching evaluation and updates it,
+  which also publishes the change over the `ai_evaluation_updated` subscription.
+  """
+  @spec handle_evaluation_run_callback(map()) :: :ok
+  def handle_evaluation_run_callback(%{
+        "data" => %{"id" => kaapi_evaluation_id, "status" => status}
+      })
+      when status in ["completed", "failed"] do
+    case Repo.fetch_by(AIEvaluation, %{kaapi_evaluation_id: kaapi_evaluation_id}) do
+      {:ok, evaluation} ->
+        poll_evaluation(evaluation, evaluation.organization_id)
+
+      {:error, reason} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Evaluation run callback for unknown kaapi_evaluation_id=#{kaapi_evaluation_id}",
+          reason: safe_inspect(reason)
+        })
+    end
+
+    :ok
+  end
+
+  # Non-terminal status (e.g. still PROCESSING) — nothing to do yet.
+  def handle_evaluation_run_callback(%{"data" => %{"status" => _}}), do: :ok
+
+  # Defensive catch-all: the callback endpoint is public, so a malformed body must not
+  # raise (the controller must still return 200).
+  def handle_evaluation_run_callback(params) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Unexpected evaluation run callback payload",
+      reason: safe_inspect(params)
+    })
+
+    :ok
   end
 
   @spec create_improve_prompt_config_version(map()) ::

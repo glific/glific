@@ -137,6 +137,7 @@ defmodule GlificWeb.Router do
     post("/prompt_generation", KaapiController, :prompt_generation_callback)
     post("/assistant_chat", KaapiController, :assistant_chat_callback)
     post("/improve_prompt", KaapiController, :improve_prompt_callback)
+    post("/evaluation_run", KaapiController, :evaluation_run_callback)
   end
 
   # Dify chatbot callback routes.

@@ -229,4 +229,13 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
     end
   end
+
+  object :ai_evaluation_subscriptions do
+    @desc "Delivers an AI evaluation's status as it changes (e.g. once Kaapi's run completes)."
+    field :ai_evaluation_updated, :ai_evaluation do
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
+    end
+  end
 end

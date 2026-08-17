@@ -3,6 +3,7 @@ defmodule Glific.AIEvaluationsTest do
   use Glific.DataCase, async: false
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     AIEvaluations,
@@ -751,6 +752,111 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:error, %Ecto.Changeset{}} = AIEvaluations.handle_improve_prompt_callback(params)
+    end
+  end
+
+  describe "handle_evaluation_run_callback/1" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+
+      evaluation =
+        create_evaluation(organization_id, config_version.id, %{
+          status: :processing,
+          kaapi_evaluation_id: 767
+        })
+
+      %{evaluation: evaluation}
+    end
+
+    test "completed status re-fetches full scores from Kaapi, updates the evaluation, and publishes ai_evaluation_updated",
+         %{organization_id: organization_id, evaluation: evaluation} do
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert :ok =
+                 AIEvaluations.handle_evaluation_run_callback(%{
+                   "data" => %{"id" => 767, "status" => "completed"}
+                 })
+
+        {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+        assert updated.status == :completed
+        assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
+
+        assert_receive {:published, payload, [{:ai_evaluation_updated, topic}]}, 1000
+        assert payload.id == evaluation.id
+        assert payload.status == :completed
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Model inference error"}}
+        }
+      end)
+
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(%{
+                 "data" => %{"id" => 767, "status" => "failed"}
+               })
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason == "Model inference error"
+    end
+
+    test "non-terminal status is acknowledged without contacting Kaapi", %{
+      evaluation: evaluation
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(%{
+                 "data" => %{"id" => 767, "status" => "processing"}
+               })
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+
+    test "unknown kaapi_evaluation_id is acknowledged without crashing", %{
+      evaluation: evaluation
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(%{
+                 "data" => %{"id" => 999_999, "status" => "completed"}
+               })
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+
+    test "malformed payload is acknowledged without crashing" do
+      assert :ok = AIEvaluations.handle_evaluation_run_callback(%{"unexpected" => "shape"})
     end
   end
 
