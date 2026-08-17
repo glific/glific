@@ -51,6 +51,16 @@ defmodule Glific.Flows.Expression do
       but `Enum.map(list, fn ...)` runs the body once per element, so a small AST
       can do work proportional to the list length. Runtime cost is still bounded
       by the `isolated/1` heap and timeout caps — not by `@max_nodes`.
+
+  ## `with` expressions
+
+  `with pat <- expr, ... do body [else pat -> body ...] end` is supported. It is
+  pure control flow — every clause rhs, body and else body is interpreted through
+  `eval_node`, and patterns only *bind data* (the sole sub-evaluation is a pin
+  `^x`, an allowlisted lookup), so it introduces no new reachability. Supported
+  patterns: variables and `_`, literals and safe atoms, tuples, lists (including
+  `[h | t]`), maps (subset match), and pins. Guards on a clause
+  (`{:ok, x} when is_integer(x) <- ...`) are **not** supported and reject.
   """
 
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
@@ -497,6 +507,10 @@ defmodule Glific.Flows.Expression do
 
   defp validate_ast({:cond, _, [[{:do, clauses}]]}), do: validate_cond(clauses)
 
+  # with — twin of the eval_node clause. Validates each clause's pattern + rhs,
+  # then the do body and any else clauses.
+  defp validate_ast({:with, _, clauses}) when is_list(clauses), do: validate_with(clauses)
+
   defp validate_ast({:&&, _, [a, b]}), do: validate_all([a, b])
   defp validate_ast({:||, _, [a, b]}), do: validate_all([a, b])
 
@@ -581,6 +595,112 @@ defmodule Glific.Flows.Expression do
 
       other, :ok ->
         {:halt, {:error, "disallowed cond clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  # -- with validation (twin of eval_with/pattern matching) -----------------
+
+  defp validate_with(clauses) do
+    {steps, last} = Enum.split(clauses, -1)
+
+    case last do
+      [do_else] when is_list(do_else) ->
+        if Keyword.keyword?(do_else) and Keyword.has_key?(do_else, :do),
+          do: validate_with_body(steps, do_else),
+          else: {:error, "malformed with"}
+
+      _ ->
+        {:error, "malformed with"}
+    end
+  end
+
+  defp validate_with_body(steps, do_else) do
+    with :ok <- validate_with_steps(steps),
+         :ok <- validate_ast(Keyword.fetch!(do_else, :do)) do
+      validate_with_else(Keyword.get(do_else, :else))
+    end
+  end
+
+  defp validate_with_steps(steps) do
+    Enum.reduce_while(steps, :ok, fn step, :ok ->
+      case validate_with_step(step) do
+        :ok -> {:cont, :ok}
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp validate_with_step({arrow, _, [pattern, expr]}) when arrow in [:<-, :=] do
+    with :ok <- validate_pattern(pattern), do: validate_ast(expr)
+  end
+
+  defp validate_with_step(expr), do: validate_ast(expr)
+
+  defp validate_with_else(nil), do: :ok
+
+  defp validate_with_else(clauses) when is_list(clauses) do
+    Enum.reduce_while(clauses, :ok, fn
+      {:->, _, [[pattern], body]}, :ok ->
+        with :ok <- validate_pattern(pattern),
+             :ok <- validate_ast(body) do
+          {:cont, :ok}
+        else
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed with else clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  defp validate_with_else(_), do: {:error, "malformed with else"}
+
+  # Pattern grammar — the structural twin of match_pattern/3, same order.
+  defp validate_pattern({:_, _, ctx}) when is_atom(ctx), do: :ok
+  defp validate_pattern({name, _, ctx}) when is_atom(name) and is_atom(ctx), do: :ok
+  defp validate_pattern({:^, _, [var]}), do: validate_ast(var)
+  defp validate_pattern({:{}, _, elems}) when is_list(elems), do: validate_patterns(elems)
+
+  defp validate_pattern({:%{}, _, pairs}) when is_list(pairs) do
+    Enum.reduce_while(pairs, :ok, fn {k, v_pattern}, :ok ->
+      with :ok <- validate_key(k),
+           :ok <- validate_pattern(v_pattern) do
+        {:cont, :ok}
+      else
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp validate_pattern(literal)
+       when is_integer(literal) or is_float(literal) or is_binary(literal) or
+              is_boolean(literal) or is_nil(literal),
+       do: :ok
+
+  defp validate_pattern(atom) when is_atom(atom) do
+    if atom in @safe_atoms,
+      do: :ok,
+      else: {:error, "bare atom #{Glific.SafeLog.safe_inspect(atom)}"}
+  end
+
+  defp validate_pattern({p1, p2}), do: validate_patterns([p1, p2])
+  defp validate_pattern(list) when is_list(list), do: validate_list_pattern(list)
+  defp validate_pattern(pattern), do: {:error, "unsupported pattern: #{safe_desc(pattern)}"}
+
+  defp validate_list_pattern([{:|, _, [head, tail]}]), do: validate_patterns([head, tail])
+
+  defp validate_list_pattern([pattern | rest]) do
+    with :ok <- validate_pattern(pattern), do: validate_list_pattern(rest)
+  end
+
+  defp validate_list_pattern([]), do: :ok
+
+  defp validate_patterns(patterns) do
+    Enum.reduce_while(patterns, :ok, fn pattern, :ok ->
+      case validate_pattern(pattern) do
+        :ok -> {:cont, :ok}
+        {:error, _} = err -> {:halt, err}
+      end
     end)
   end
 
@@ -753,6 +873,16 @@ defmodule Glific.Flows.Expression do
 
   # cond do c -> body ... end
   defp eval_node({:cond, _, [[{:do, clauses}]]}, bindings), do: eval_cond(clauses, bindings)
+
+  # with pat <- expr, ... do body [else pat -> body ...] end
+  # Pattern-matching control flow. Each `pat <- expr` evaluates expr and matches;
+  # a non-match short-circuits to the else clauses, or returns the unmatched value
+  # when there is no else. Patterns only bind data (the sole sub-evaluation is a
+  # pin `^x`, an allowlisted lookup), so this stays within the security boundary.
+  defp eval_node({:with, _, clauses}, bindings) when is_list(clauses) do
+    {steps, do_else} = split_with(clauses)
+    eval_with(steps, Keyword.fetch!(do_else, :do), Keyword.get(do_else, :else), bindings)
+  end
 
   # short-circuit && / ||
   defp eval_node({:&&, _, [a, b]}, bindings) do
@@ -947,6 +1077,167 @@ defmodule Glific.Flows.Expression do
   end
 
   defp eval_cond([other | _], _bindings), do: reject("disallowed cond clause #{safe_desc(other)}")
+
+  # -- with evaluation & pattern matching -----------------------------------
+
+  # Split the trailing `[do: ..., else: ...]` keyword list off the match steps.
+  defp split_with(clauses) do
+    {steps, last} = Enum.split(clauses, -1)
+
+    case last do
+      [do_else] when is_list(do_else) ->
+        if Keyword.keyword?(do_else) and Keyword.has_key?(do_else, :do),
+          do: {steps, do_else},
+          else: reject("malformed with")
+
+      _ ->
+        reject("malformed with")
+    end
+  end
+
+  defp eval_with([], body, _else_clauses, bindings), do: eval_node(body, bindings)
+
+  defp eval_with([{:<-, _, [pattern, expr]} | rest], body, else_clauses, bindings) do
+    value = eval_node(expr, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_with(rest, body, else_clauses, bound)
+      :nomatch -> with_else(value, else_clauses, bindings)
+    end
+  end
+
+  defp eval_with([{:=, _, [pattern, expr]} | rest], body, else_clauses, bindings) do
+    value = eval_node(expr, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_with(rest, body, else_clauses, bound)
+      :nomatch -> reject("no match of right hand side value in with")
+    end
+  end
+
+  defp eval_with([expr | rest], body, else_clauses, bindings) do
+    _ = eval_node(expr, bindings)
+    eval_with(rest, body, else_clauses, bindings)
+  end
+
+  # No else: a non-match returns the unmatched value. With else: route the value
+  # through the else clauses like a case.
+  defp with_else(value, nil, _bindings), do: value
+
+  defp with_else(value, clauses, bindings) when is_list(clauses),
+    do: eval_with_else(clauses, value, bindings)
+
+  defp eval_with_else([], _value, _bindings), do: reject("no with else clause matched")
+
+  defp eval_with_else([{:->, _, [[pattern], body]} | rest], value, bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> eval_with_else(rest, value, bindings)
+    end
+  end
+
+  defp eval_with_else([other | _], _value, _bindings),
+    do: reject("disallowed with else clause #{safe_desc(other)}")
+
+  # Returns {:ok, bindings} with any variables bound, or :nomatch. Only binds
+  # data; the sole sub-evaluation is a pin (^x), an allowlisted lookup. Order is
+  # the structural twin of validate_pattern/1.
+  @spec match_pattern(Macro.t(), any(), binding()) :: {:ok, binding()} | :nomatch
+  defp match_pattern({:_, _, ctx}, _value, bindings) when is_atom(ctx), do: {:ok, bindings}
+
+  defp match_pattern({name, _, ctx}, value, bindings) when is_atom(name) and is_atom(ctx),
+    do: {:ok, Map.put(bindings, name, value)}
+
+  defp match_pattern({:^, _, [var]}, value, bindings) do
+    if eval_node(var, bindings) === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern({:{}, _, elems}, value, bindings) when is_list(elems) do
+    if is_tuple(value) and tuple_size(value) == length(elems),
+      do: match_sequence(elems, Tuple.to_list(value), bindings),
+      else: :nomatch
+  end
+
+  defp match_pattern({:%{}, _, pairs}, value, bindings) when is_list(pairs) and is_map(value) do
+    Enum.reduce_while(pairs, {:ok, bindings}, fn {k, v_pattern}, {:ok, acc} ->
+      case Map.fetch(value, eval_key(k, acc)) do
+        {:ok, v} ->
+          case match_pattern(v_pattern, v, acc) do
+            {:ok, acc2} -> {:cont, {:ok, acc2}}
+            :nomatch -> {:halt, :nomatch}
+          end
+
+        :error ->
+          {:halt, :nomatch}
+      end
+    end)
+  end
+
+  defp match_pattern({:%{}, _, _}, _value, _bindings), do: :nomatch
+
+  defp match_pattern(literal, value, bindings)
+       when is_integer(literal) or is_float(literal) or is_binary(literal) or
+              is_boolean(literal) or is_nil(literal) do
+    if literal === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern(atom, value, bindings) when is_atom(atom) do
+    if atom in @safe_atoms and atom === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern({p1, p2}, value, bindings) do
+    case value do
+      {v1, v2} -> match_sequence([p1, p2], [v1, v2], bindings)
+      _ -> :nomatch
+    end
+  end
+
+  defp match_pattern(patterns, value, bindings) when is_list(patterns),
+    do: match_list(patterns, value, bindings)
+
+  defp match_pattern(pattern, _value, _bindings),
+    do: reject("unsupported pattern: #{safe_desc(pattern)}")
+
+  defp match_sequence([], [], bindings), do: {:ok, bindings}
+
+  defp match_sequence([pattern | patterns], [value | values], bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> match_sequence(patterns, values, bound)
+      :nomatch -> :nomatch
+    end
+  end
+
+  defp match_sequence(_patterns, _values, _bindings), do: :nomatch
+
+  defp match_list([{:|, _, [head_pattern, tail_pattern]}], value, bindings) do
+    case value do
+      [v | vs] ->
+        case match_pattern(head_pattern, v, bindings) do
+          {:ok, bound} -> match_pattern(tail_pattern, vs, bound)
+          :nomatch -> :nomatch
+        end
+
+      _ ->
+        :nomatch
+    end
+  end
+
+  defp match_list([], [], bindings), do: {:ok, bindings}
+
+  defp match_list([pattern | patterns], value, bindings) do
+    case value do
+      [v | vs] ->
+        case match_pattern(pattern, v, bindings) do
+          {:ok, bound} -> match_list(patterns, vs, bound)
+          :nomatch -> :nomatch
+        end
+
+      _ ->
+        :nomatch
+    end
+  end
+
+  defp match_list(_patterns, _value, _bindings), do: :nomatch
 
   defp inject_pipe(left, {call, meta, args}) when is_list(args), do: {call, meta, [left | args]}
   defp inject_pipe(left, {call, meta, nil}), do: {call, meta, [left]}

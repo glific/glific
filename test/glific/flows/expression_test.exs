@@ -423,4 +423,84 @@ defmodule Glific.Flows.ExpressionTest do
       end
     end
   end
+
+  describe "eval/2 — with expression" do
+    test "happy path binds and runs the do body" do
+      assert {:ok, "10"} = Expression.eval("<%= with {:ok, v} <- {:ok, 5} do v * 2 end %>")
+    end
+
+    test "chains multiple clauses, threading bindings forward" do
+      assert {:ok, "5"} =
+               Expression.eval(
+                 "<%= with {:ok, a} <- {:ok, 2}, {:ok, b} <- {:ok, 3} do a + b end %>"
+               )
+    end
+
+    test "a non-match routes to the else clause" do
+      assert {:ok, "boom"} =
+               Expression.eval(
+                 "<%= with {:ok, v} <- {:error, \"boom\"} do v else {:error, e} -> e end %>"
+               )
+    end
+
+    test "a non-match with no else returns the unmatched value" do
+      assert {:ok, "raw"} = Expression.eval("<%= with {:ok, v} <- \"raw\" do v end %>")
+    end
+
+    test "list, cons and map patterns" do
+      assert {:ok, "3"} = Expression.eval("<%= with [a, b] <- [1, 2] do a + b end %>")
+      assert {:ok, "3"} = Expression.eval("<%= with [h | t] <- [1, 2, 3] do h + hd(t) end %>")
+      assert {:ok, "9"} = Expression.eval("<%= with %{\"n\" => n} <- %{\"n\" => 9} do n end %>")
+    end
+
+    test "pin matches against a bound value" do
+      {:ok, compiled} = Expression.compile("<%= with ^x <- 5 do \"eq\" else _ -> \"ne\" end %>")
+      assert {:ok, "eq"} = Expression.render(compiled, %{"x" => 5})
+      assert {:ok, "ne"} = Expression.render(compiled, %{"x" => 9})
+    end
+
+    test "real corpus shape: decode then destructure" do
+      assert {:ok, "1"} =
+               Expression.eval(
+                 "<%= with %{\"a\" => a} <- Jason.decode!(\"{\\\"a\\\":1}\") do a end %>"
+               )
+    end
+
+    test "the do body cannot escape the allowlist" do
+      payload = "<%= with x <- 1 do System.cmd(\"id\", []) end %>"
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "the clause rhs cannot escape the allowlist" do
+      payload = "<%= with x <- System.cmd(\"id\", []) do x end %>"
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "the else body cannot escape the allowlist" do
+      payload =
+        "<%= with {:ok, v} <- {:error, 1} do v else _ -> File.read!(\"/etc/hostname\") end %>"
+
+      assert {:error, _} = Expression.eval(payload)
+      assert {:error, _} = Expression.validate(payload)
+    end
+
+    test "validate/1 and eval/2 both accept a valid with" do
+      valid = "<%= with {:ok, v} <- {:ok, 1} do v end %>"
+      assert :ok = Expression.validate(valid)
+      assert {:ok, "1"} = Expression.eval(valid)
+    end
+
+    test "n-tuple pattern binds each element (tuple arrives as a binding)" do
+      {:ok, compiled} = Expression.compile("<%= with {a, b, c} <- @triple do a + b + c end %>")
+      assert {:ok, "6"} = Expression.render(compiled, %{"triple" => {1, 2, 3}})
+    end
+
+    test "a guard on a clause is not supported and rejects" do
+      payload = "<%= with {:ok, x} when is_integer(x) <- {:ok, 5} do x end %>"
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+  end
 end
