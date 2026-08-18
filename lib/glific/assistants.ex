@@ -891,15 +891,7 @@ defmodule Glific.Assistants do
          file_size: File.stat!(params.media.path).size
        }}
     else
-      {:error, %{status: status, body: body}} ->
-        error_message = body[:error]
-        {:error, "File upload failed (status #{status}): #{error_message}"}
-
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      {:error, reason} ->
-        {:error, "File upload failed: #{Glific.SafeLog.safe_inspect(reason)}"}
+      {:error, reason} -> format_kaapi_file_error("File upload", reason)
     end
   end
 
@@ -918,17 +910,19 @@ defmodule Glific.Assistants do
            signed_url: document_data[:signed_url]
          }}
 
-      {:error, %{status: status, body: body}} ->
-        error_message = body[:error]
-        {:error, "File download failed (status #{status}): #{error_message}"}
-
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
       {:error, reason} ->
-        {:error, "File download failed: #{Glific.SafeLog.safe_inspect(reason)}"}
+        format_kaapi_file_error("File download", reason)
     end
   end
+
+  @spec format_kaapi_file_error(String.t(), map() | binary() | any()) :: {:error, String.t()}
+  defp format_kaapi_file_error(action, %{status: status, body: body}),
+    do: {:error, "#{action} failed (status #{status}): #{body[:error]}"}
+
+  defp format_kaapi_file_error(_action, reason) when is_binary(reason), do: {:error, reason}
+
+  defp format_kaapi_file_error(action, reason),
+    do: {:error, "#{action} failed: #{Glific.SafeLog.safe_inspect(reason)}"}
 
   @doc """
   Delete an assistant config from Kaapi first, then deletes
