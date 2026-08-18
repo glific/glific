@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "Resource not found"
   end
 
-  test "create a language and test possible scenarios and errors", %{manager: user} do
+  test "create a language and test possible scenarios and errors", %{glific_admin: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -75,7 +75,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message =~ "has already been taken"
   end
 
-  test "update a language and test possible scenarios and errors", %{manager: user} do
+  test "update a language and test possible scenarios and errors", %{glific_admin: user} do
     label = "Klingon"
 
     result =
@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message =~ "has already been taken"
   end
 
-  test "delete a language", %{manager: user} do
+  test "delete a language", %{glific_admin: user} do
     # first create a language
     result =
       auth_query_gql_by(:create, user,
@@ -142,5 +142,36 @@ defmodule GlificWeb.Schema.LanguageTest do
 
     message = get_in(query_data, [:data, "deleteLanguage", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  # languages is a global-prefix table shared by every tenant, so writes must not be
+  # reachable below :glific_admin
+  test "a manager cannot create, update or delete a language", %{manager: user} do
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) == "Unauthorized"
+
+    {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: "English"})
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => lang.id,
+          "input" => %{"label" => "Pirate", "labelLocale" => "Pirate", "locale" => "pi_PI"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) == "Unauthorized"
+
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => lang.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:errors, Access.at(0), :message]) == "Unauthorized"
   end
 end

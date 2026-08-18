@@ -17,7 +17,8 @@ defmodule Glific.Flows.Periodic do
     Flows,
     Flows.FlowContext,
     Messages.Message,
-    Partners
+    Partners,
+    SafeLog
   }
 
   @periodic_flows [
@@ -143,11 +144,18 @@ defmodule Glific.Flows.Periodic do
     do: common_flow(state, period, message, since)
 
   defp init_common_flow(state, flow_id, message) do
-    {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase})
+    case Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase}) do
+      {:ok, flow} ->
+        opts = Keyword.put(Keyword.new(), :flow_keyword, message.body)
+        FlowContext.init_context(flow, message.contact, @final_phrase, opts)
+        {state, true}
 
-    opts = Keyword.put(Keyword.new(), :flow_keyword, message.body)
-    FlowContext.init_context(flow, message.contact, @final_phrase, opts)
-    {state, true}
+      {:error, error} ->
+        Glific.log_error(
+          "Periodic flow: failed to load cached flow #{flow_id} for org #{message.organization_id}: #{SafeLog.safe_inspect(error)}"
+        )
+
+        {state, false}
+    end
   end
 end

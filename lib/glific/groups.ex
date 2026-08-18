@@ -176,6 +176,9 @@ defmodule Glific.Groups do
   """
   @spec export_collection(integer) :: map()
   def export_collection(group_id) do
+    if has_permission?(group_id) == false,
+      do: raise(RuntimeError, message: "Permission denied")
+
     result =
       ContactGroup
       |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)

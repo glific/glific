@@ -5,6 +5,8 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   """
   use Gettext, backend: GlificWeb.Gettext
 
+  alias Glific.Users.Roles
+
   @behaviour Absinthe.Middleware
 
   @doc """
@@ -41,4 +43,16 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
 
   def valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
   def valid_role?(_, _), do: false
+
+  @doc """
+  Can the actor administer the target user? Blocks reaching up the hierarchy.
+  """
+  @spec can_manage_user?(list(), list()) :: boolean()
+  defdelegate can_manage_user?(actor_roles, target_roles), to: Roles
+
+  @doc """
+  Can the actor grant this set of roles? Nobody may grant a role above their own.
+  """
+  @spec can_grant_roles?(list(), list()) :: boolean()
+  defdelegate can_grant_roles?(actor_roles, requested_roles), to: Roles
 end

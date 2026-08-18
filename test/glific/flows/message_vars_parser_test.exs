@@ -371,7 +371,8 @@ defmodule Glific.Flows.MessageVarParserTest do
     assert MessageVarParser.parse(str_2, fields) == "Your school type is: string"
   end
 
-  test "parse/2 falls back to the literal placeholder when @contact.language is not a map", _attrs do
+  test "parse/2 falls back to the literal placeholder when @contact.language is not a map",
+       _attrs do
     # contact.fields.language is a plain string here instead of the usual
     # %{"label" => ...} shape, so indexing ["label"] directly used to raise.
     fields = %{"contact" => %{"fields" => %{"language" => "en"}}}

@@ -25,7 +25,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Fixtures.session_template_fixture()
     active_language_ids = Partners.organization(organization.id).active_language_ids
     Caches.remove(organization.id, [{:template_library, active_language_ids}])
-    FunWithFlags.enable(:is_template_library_enabled, for_actor: %{organization_id: organization.id})
+
+    FunWithFlags.enable(:is_template_library_enabled,
+      for_actor: %{organization_id: organization.id}
+    )
 
     :ok
   end

@@ -67,23 +67,26 @@ defmodule GlificWeb.Schema.LanguageTypes do
     end
   end
 
+  # languages lives in the "global" schema prefix, so Repo.prepare_query does not
+  # scope it by organization - a write here is visible to every tenant. Gated at
+  # :glific_admin to match the sibling global table (providers).
   object :language_mutations do
     field :create_language, :language_result do
       arg(:input, non_null(:language_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Settings.create_language/3)
     end
 
     field :update_language, :language_result do
       arg(:id, non_null(:id))
       arg(:input, :language_input)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Settings.update_language/3)
     end
 
     field :delete_language, :language_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Settings.delete_language/3)
     end
   end

@@ -49,7 +49,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field :phone, :string do
       resolve(fn contact, _, %{context: %{current_user: user}} ->
-        if Enum.member?(user.roles, :staff) && !user.is_restricted,
+        if Enum.member?(user.roles, :staff),
           do: {:ok, ""},
           else: {:ok, contact.phone}
       end)

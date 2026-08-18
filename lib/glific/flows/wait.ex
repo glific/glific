@@ -96,8 +96,11 @@ defmodule Glific.Flows.Wait do
   @spec validate_expression(Wait.t(), Keyword.t(), non_neg_integer()) :: Keyword.t()
   defp validate_expression(%{expression: expression}, errors, organization_id) do
     case Glific.validate_flow_expression(expression, organization_id) do
-      :ok -> errors
-      {:error, _reason} -> [{EEx, "Wait timeout has unsupported expression", "Critical"} | errors]
+      :ok ->
+        errors
+
+      {:error, reason} ->
+        [{EEx, "Wait timeout has unsupported expression: #{reason}", "Critical"} | errors]
     end
   end
 
