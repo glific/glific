@@ -587,8 +587,8 @@ defmodule Glific.Flows.Action do
         :ok ->
           errors
 
-        {:error, _reason} ->
-          [{EEx, "#{label} has an unsupported expression", "Critical"} | errors]
+        {:error, reason} ->
+          [{EEx, "#{label} has an unsupported expression: #{reason}", "Critical"} | errors]
       end
     end)
   end
