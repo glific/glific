@@ -196,10 +196,7 @@ config :glific,
   discord_webhook_url: env!("DISCORD_WEBHOOK_URL", :string, nil)
 
 # The BSP webhooks are unauthenticated, so callers are filtered on the source IPs the
-# provider publishes; anything else gets a 403. The lists are deliberately not in this
-# repository — they live only in the deployment environment, and setting a variable
-# replaces that provider's list outright, so widening one is a `gigalixir config:set` and
-# a restart rather than a deploy.
+# provider publishes; anything else gets a 403.
 
 # :inet rather than the CIDR library the plug matches with, because config runs before any
 # dependency is started.
