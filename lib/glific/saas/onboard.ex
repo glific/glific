@@ -12,16 +12,12 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Communications.Mailer,
     Contacts.Contact,
-    ERP,
     Mails.NewPartnerOnboardedMail,
-    Notion,
     Partners,
     Partners.Billing,
     Partners.Credential,
     Partners.Organization,
     Partners.Saas,
-    Registrations,
-    Registrations.Registration,
     Repo,
     Saas.Queries,
     Seeds.SeedsMigration,
@@ -78,7 +74,7 @@ defmodule Glific.Saas.Onboard do
          shortcode <- generate_shortcode(params["name"], params["shortcode"]),
          %{is_valid: true} <- Queries.validate_shortcode(result, shortcode),
          %{is_valid: true} = result <-
-           Queries.setup_v2(result, params |> Map.put("shortcode", shortcode)) do
+           Queries.setup(result, params |> Map.put("shortcode", shortcode)) do
       Repo.put_process_state(result.organization.id)
       Queries.seed_data(result)
       setup_kaapi_for_organization(result.organization)
@@ -108,72 +104,6 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp generate_shortcode(_org_name, shortcode), do: shortcode
-
-  @doc """
-  Updates the registration details and send submission mail to user
-  """
-  @spec update_registration(map()) :: map()
-  def update_registration(%{"registration_id" => reg_id} = params) do
-    result = %{is_valid: true, messages: %{}}
-
-    with {:ok, registration} <- Registrations.get_registration(reg_id),
-         %{is_valid: true} <- editable_registration(result, registration),
-         {:ok, org} <- fetch_registration_org(registration),
-         %{is_valid: true} = result <- Queries.validate_registration_details(result, params) do
-      {:ok, registration} = update_registration_details(params, registration)
-      {:ok, org} = update_org_details(org, params, registration)
-
-      process_result = process_on_submission(result, org, registration)
-
-      if Map.get(process_result, :is_valid, true) do
-        Map.put(process_result, :registration, Registration.to_minimal_map(registration))
-      else
-        process_result
-      end
-    else
-      {:error, :organization_not_found} ->
-        dgettext("error", "Organization doesn't exist for given registration ID.")
-        |> Queries.error(result, :organization_id)
-
-      {:error, _} ->
-        dgettext("error", "Registration doesn't exist for given registration ID.")
-        |> Queries.error(result, :registration_id)
-
-      result ->
-        result
-    end
-  end
-
-  def update_registration(_params) do
-    result = %{is_valid: false, messages: %{}}
-
-    dgettext("error", "Registration ID is empty.")
-    |> Queries.error(result, :registration_id)
-  end
-
-  # This endpoint is unauthenticated, so the organization must never come from the request.
-  # Deriving it from the registration is what keeps a caller from pointing someone else's
-  # registration at an organization they picked.
-  @spec fetch_registration_org(Registration.t()) ::
-          {:ok, Organization.t()} | {:error, :organization_not_found}
-  defp fetch_registration_org(%Registration{organization_id: org_id}) do
-    case Partners.organization(org_id) do
-      %Organization{} = org ->
-        Repo.put_process_state(org.id)
-        {:ok, org}
-
-      _ ->
-        {:error, :organization_not_found}
-    end
-  end
-
-  @spec editable_registration(map(), Registration.t()) :: map()
-  defp editable_registration(result, %Registration{has_submitted: true}) do
-    dgettext("error", "Registration has already been submitted and cannot be updated.")
-    |> Queries.error(result, :has_submitted)
-  end
-
-  defp editable_registration(result, _registration), do: result
 
   @doc """
   Send the queries to support mail
@@ -310,32 +240,6 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  @spec process_on_submission(map(), Organization.t(), Registration.t()) :: map()
-  defp process_on_submission(result, org, %{has_submitted: true} = registration) do
-    with %{is_valid: true} = result <- Queries.eligible_for_submission?(result, registration),
-         {:ok, erp_response} <- ERP.update_organization(registration) do
-      notify_on_submission(org, registration)
-      notify_saas_team(org)
-
-      Task.start(fn ->
-        Notion.update_table_properties(registration)
-        |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
-      end)
-
-      Map.put(result, :erp_response, erp_response)
-    else
-      {:error, erp_error} ->
-        Map.put(result, :is_valid, false)
-        |> Map.put(:error, erp_error)
-
-      _ ->
-        Map.put(result, :is_valid, false)
-        |> Map.put(:error, "Unexpected response from ERP update")
-    end
-  end
-
-  defp process_on_submission(result, _org, _registration), do: result
-
   @doc """
   Updates password_hash field of passed org_id with hashed password generated via Glific.Password
   """
@@ -361,26 +265,6 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  @spec notify_on_submission(Organization.t(), Registration.t()) :: any()
-  defp notify_on_submission(org, registration) do
-    Map.put(%{}, "submitter", registration.submitter)
-    |> Map.put("signing_authority", registration.signing_authority)
-    |> NewPartnerOnboardedMail.confirmation_mail()
-    |> Mailer.send(%{
-      category: "Onboarding_confirmation",
-      organization_id: org.id
-    })
-    |> case do
-      {:ok, _} ->
-        :ok
-
-      error ->
-        Glific.log_error(
-          "Error sending submission confirmation email #{Glific.SafeLog.safe_inspect(error)} for org: #{org.id}"
-        )
-    end
-  end
-
   @spec notify_user_queries(map(), map()) :: map()
   defp notify_user_queries(%{is_valid: false} = results, _params), do: results
 
@@ -403,74 +287,6 @@ defmodule Glific.Saas.Onboard do
     end
 
     results
-  end
-
-  @spec update_registration_details(map(), Registration.t()) ::
-          {:ok, Registration.t()} | {:error, Ecto.Changeset.t()}
-  defp update_registration_details(params, registration) do
-    # updates the `Dispute in T&C` column in Notion whenever user disagrees with T&C
-    confirm_terms_acceptance(params["terms_agreed"], registration)
-    params = update_is_disputed(params, registration)
-
-    case params do
-      %{"org_details" => org_details} ->
-        Map.put(
-          params,
-          "org_details",
-          Map.merge(registration.org_details, org_details)
-        )
-
-      _ ->
-        params
-    end
-    |> then(&Registrations.update_registation(registration, &1))
-  end
-
-  @spec update_org_details(Organization.t(), map(), Registration.t()) ::
-          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  defp update_org_details(
-         org,
-         %{"signing_authority" => signing_authority} = _params,
-         registration
-       )
-       when is_map(signing_authority) do
-    team_emails =
-      Enum.reduce(org.team_emails, %{}, fn {key, _val}, team_emails ->
-        case key do
-          "finance" ->
-            Map.put(team_emails, key, registration.finance_poc["email"])
-
-          key ->
-            Map.put(team_emails, key, signing_authority["email"])
-        end
-      end)
-
-    changes = %{
-      email: signing_authority["email"],
-      team_emails: team_emails
-    }
-
-    Partners.update_organization(org, changes)
-  end
-
-  defp update_org_details(org, _params, _registration), do: {:ok, org}
-
-  @spec confirm_terms_acceptance(boolean() | nil, Registration.t()) :: any()
-  defp confirm_terms_acceptance(false, registration) do
-    Task.start(fn ->
-      Notion.update_tc_dispute_property()
-      |> then(&Notion.update_database_entry(registration.notion_page_id, &1))
-    end)
-  end
-
-  defp confirm_terms_acceptance(_terms_agreed, _registration), do: :ok
-
-  @spec update_is_disputed(map(), Registration.t()) :: map()
-  defp update_is_disputed(params, registration) do
-    case {params["terms_agreed"], registration.is_disputed} do
-      {false, _} -> Map.put(params, "is_disputed", true)
-      _ -> params
-    end
   end
 
   defp setup_kaapi_for_organization(organization) do

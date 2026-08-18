@@ -24,27 +24,6 @@ defmodule GlificWeb.API.V1.OnboardController do
   end
 
   @doc false
-  @spec update_registration(Conn.t(), map()) :: Conn.t()
-  def update_registration(conn, params) do
-    response = Onboard.update_registration(params)
-
-    if Map.get(response, :is_valid, true) do
-      json(conn, response)
-    else
-      conn
-      |> put_status(400)
-      |> json(%{
-        error: %{
-          status: 400,
-          message: Map.get(response, :error),
-          messages: Map.get(response, :messages, %{}),
-          is_valid: false
-        }
-      })
-    end
-  end
-
-  @doc false
   @spec reachout(Conn.t(), map()) :: Conn.t()
   def reachout(conn, params) do
     json(conn, Onboard.reachout(params))
