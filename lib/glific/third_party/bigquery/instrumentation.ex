@@ -87,21 +87,6 @@ defmodule Glific.BigQuery.Instrumentation do
   rescue
     exception ->
       record(table, :exception, action, organization_id)
-      tag_exception_with_org(table, organization_id)
       reraise exception, __STACKTRACE__
-  end
-
-  @spec tag_exception_with_org(String.t() | atom(), non_neg_integer() | nil) :: :ok
-  defp tag_exception_with_org(table, organization_id) do
-    Appsignal.Tracer.root_span()
-    |> Appsignal.Span.set_sample_data("tags", %{
-      organization_id: organization_id,
-      table: to_string(table)
-    })
-
-    :ok
-  rescue
-    # Enriching the span is best-effort: it must never mask the original exception.
-    _exception -> :ok
   end
 end
