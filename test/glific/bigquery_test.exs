@@ -376,6 +376,33 @@ defmodule Glific.BigQueryTest do
     end
   end
 
+  test "decode_bigquery_credential/3 returns error for a missing service account without raising",
+       attrs do
+    credentials = %{secrets: %{}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for a nil service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => nil}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Missing Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
+  test "decode_bigquery_credential/3 returns error for an invalid service account without raising",
+       attrs do
+    credentials = %{secrets: %{"service_account" => "not-a-json"}}
+    org_contact = %{phone: "919999999999"}
+
+    assert {:error, "Invalid Service Account JSON"} =
+             BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
+  end
+
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     # we need to figure out how to check that this function did the right thing

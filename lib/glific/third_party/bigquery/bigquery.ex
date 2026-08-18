@@ -249,21 +249,37 @@ defmodule Glific.BigQuery do
         org_contact,
         organization_id
       ) do
-    case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, service_account} ->
-        project_id = service_account["project_id"]
-        token = Partners.get_goth_token(organization_id, "bigquery")
+    service_account_json = credentials.secrets["service_account"]
 
-        if is_nil(token) do
-          {:error, "Error fetching token with Service Account JSON"}
-        else
-          conn = Connection.new(token.token)
-          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-        end
+    if is_binary(service_account_json) and service_account_json != "" do
+      case Jason.decode(service_account_json) do
+        {:ok, service_account} ->
+          project_id = service_account["project_id"]
+          token = Partners.get_goth_token(organization_id, "bigquery")
 
-      {:error, _error} ->
-        {:error, "Invalid Service Account JSON"}
+          if is_nil(token) do
+            {:error, "Error fetching token with Service Account JSON"}
+          else
+            conn = Connection.new(token.token)
+            {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+          end
+
+        {:error, _error} ->
+          log_bigquery_credential_error(organization_id, "invalid")
+          {:error, "Invalid Service Account JSON"}
+      end
+    else
+      log_bigquery_credential_error(organization_id, "missing")
+      {:error, "Missing Service Account JSON"}
     end
+  end
+
+  @spec log_bigquery_credential_error(non_neg_integer(), String.t()) :: :ok
+  defp log_bigquery_credential_error(organization_id, reason) do
+    Glific.log_exception(
+      %RuntimeError{message: "BigQuery service account JSON #{reason}"},
+      tags: %{organization_id: organization_id, shortcode: "bigquery"}
+    )
   end
 
   @table_lookup %{
@@ -888,18 +904,29 @@ defmodule Glific.BigQuery do
       "Insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
-    fetch_bigquery_credentials(organization_id)
-    |> do_make_insert_query(organization_id, data,
-      table: table,
-      max_id: max_id,
-      last_updated_at: last_updated_at
-    )
-    |> handle_insert_query_response(organization_id,
-      table: table,
-      max_id: max_id,
-      last_updated_at: last_updated_at,
-      action: Keyword.get(attrs, :action)
-    )
+    case fetch_bigquery_credentials(organization_id) do
+      {:ok, %{conn: _conn, project_id: _project_id, dataset_id: _dataset_id}} = credentials ->
+        credentials
+        |> do_make_insert_query(organization_id, data,
+          table: table,
+          max_id: max_id,
+          last_updated_at: last_updated_at
+        )
+        |> handle_insert_query_response(organization_id,
+          table: table,
+          max_id: max_id,
+          last_updated_at: last_updated_at,
+          action: Keyword.get(attrs, :action)
+        )
+
+      {:error, _reason} ->
+        Instrumentation.record(table, :error, Keyword.get(attrs, :action), organization_id)
+
+      {:ok, message} ->
+        Logger.info(
+          "Skipping bigquery insert for org_id: #{organization_id}, table: #{table}: #{message}"
+        )
+    end
 
     :ok
   end
