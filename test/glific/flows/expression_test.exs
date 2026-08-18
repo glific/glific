@@ -459,7 +459,7 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "ne"} = Expression.render(compiled, %{"x" => 9})
     end
 
-    test "real corpus shape: decode then destructure" do
+    test "decodes JSON then destructures the result with a map pattern" do
       assert {:ok, "1"} =
                Expression.eval(
                  "<%= with %{\"a\" => a} <- Jason.decode!(\"{\\\"a\\\":1}\") do a end %>"
@@ -501,6 +501,22 @@ defmodule Glific.Flows.ExpressionTest do
       payload = "<%= with {:ok, x} when is_integer(x) <- {:ok, 5} do x end %>"
       assert {:error, _} = Expression.validate(payload)
       assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a non-stringable result (unmatched tuple, no else) errors instead of raising" do
+      # `with` with no else returns the unmatched value; here that is a tuple,
+      # which has no String.Chars — eval must degrade to an error tuple, not raise.
+      assert {:error, _} = Expression.eval("<%= with {:ok, v} <- {:error, 1} do v end %>")
+    end
+
+    test "handles with statement" do
+      template =
+        "<%= (with {:ok, s, _} <- DateTime.from_iso8601(\"2024-01-01T10:00:00Z\"), " <>
+          "{:ok, e, _} <- DateTime.from_iso8601(\"2024-01-01T10:10:00Z\"), " <>
+          "do: DateTime.diff(e, s, :second) / 60 |> round()) || 0 %>"
+
+      assert :ok = Expression.validate(template)
+      assert {:ok, "10"} = Expression.eval(template)
     end
   end
 end

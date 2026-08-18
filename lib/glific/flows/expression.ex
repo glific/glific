@@ -344,8 +344,8 @@ defmodule Glific.Flows.Expression do
         {:cont, {:ok, [text | acc]}}
 
       {:expr, ast}, {:ok, acc} ->
-        case isolated(fn -> eval_node(ast, bindings) end) do
-          {:ok, value} -> {:cont, {:ok, [to_output(value) | acc]}}
+        case isolated(fn -> to_output(eval_node(ast, bindings)) end) do
+          {:ok, output} -> {:cont, {:ok, [output | acc]}}
           {:error, _} = err -> {:halt, err}
         end
     end)
@@ -381,7 +381,7 @@ defmodule Glific.Flows.Expression do
 
       {:expr, src}, {:ok, acc} ->
         case eval_expr(src, bindings) do
-          {:ok, value} -> {:cont, {:ok, [to_output(value) | acc]}}
+          {:ok, output} -> {:cont, {:ok, [output | acc]}}
           {:error, _} = err -> {:halt, err}
         end
     end)
@@ -754,12 +754,15 @@ defmodule Glific.Flows.Expression do
 
   # Phase 1 path: content has already been through MessageVarParser, so all
   # @vars are literals and `existing_atoms_only: true` is both safe and lossless.
-  @spec eval_expr(String.t(), binding()) :: {:ok, any()} | {:error, String.t()}
+  # `to_output/1` runs inside `isolated/1` so a non-stringable result (e.g. a tuple
+  # returned by a `with` whose clauses did not match) degrades to an error tuple
+  # instead of raising out of a function specced to return {:ok, _} | {:error, _}.
+  @spec eval_expr(String.t(), binding()) :: {:ok, String.t()} | {:error, String.t()}
   defp eval_expr(src, bindings) do
     with {:ok, ast} <- parse(src, true),
          :ok <- check_size(ast),
          :ok <- safe_shape(ast) do
-      isolated(fn -> eval_node(ast, bindings) end)
+      isolated(fn -> to_output(eval_node(ast, bindings)) end)
     end
   end
 
