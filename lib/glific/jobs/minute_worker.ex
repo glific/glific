@@ -20,6 +20,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Flags,
     Flows.BroadcastWorker,
     Flows.FlowContext,
+    Flows.Webhooks.Core.SmokeTest,
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
     Jobs.UserJobWorker,
@@ -192,6 +193,14 @@ defmodule Glific.Jobs.MinuteWorker do
           only_recent: true
         )
     end
+
+    :ok
+  end
+
+  defp perform(%Oban.Job{args: %{"job" => "webhook_smoke"}} = _args, _services) do
+    Appsignal.CheckIn.cron("webhook_smoke", fn ->
+      SmokeTest.run_scheduled()
+    end)
 
     :ok
   end

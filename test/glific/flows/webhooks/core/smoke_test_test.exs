@@ -158,6 +158,47 @@ defmodule Glific.Flows.Webhooks.Core.SmokeTestTest do
     end
   end
 
+  describe "run_scheduled/0" do
+    setup do
+      previous = Application.get_env(:glific, SmokeTest)
+      on_exit(fn -> restore_env(previous) end)
+      :ok
+    end
+
+    test "is a no-op that reports nothing when no canary org is configured" do
+      Application.delete_env(:glific, SmokeTest)
+
+      with_mock Glific, [:passthrough], log_error: fn message -> {:error, message} end do
+        assert SmokeTest.run_scheduled() == :ok
+        assert_not_called(Glific.log_error(:_))
+      end
+    end
+
+    test "runs the probe and reports each failed node when a canary org is configured" do
+      Application.put_env(:glific, SmokeTest, org_id: 1)
+      results_stub = %{@all_ok | geolocation: {:error, :empty_input, "Missing lat or long field"}}
+
+      with_mocks(
+        mock_calls(results_stub) ++
+          [{Glific, [:passthrough], [log_error: fn message -> {:error, message} end]}]
+      ) do
+        capture_io(fn -> assert SmokeTest.run_scheduled() == :ok end)
+
+        assert_called(
+          Glific.log_error(
+            "Flow-webhook smoke test failed for geolocation: Missing lat or long field"
+          )
+        )
+
+        assert_called_exactly(Glific.log_error(:_), 1)
+      end
+    end
+  end
+
+  @spec restore_env(keyword() | nil) :: :ok
+  defp restore_env(nil), do: Application.delete_env(:glific, SmokeTest)
+  defp restore_env(previous), do: Application.put_env(:glific, SmokeTest, previous)
+
   @spec capture_run(non_neg_integer()) :: %{String.t() => SmokeTest.outcome()}
   defp capture_run(organization_id) do
     {result, _io} = with_io(fn -> SmokeTest.run_all(organization_id) end)

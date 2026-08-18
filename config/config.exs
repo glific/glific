@@ -79,6 +79,9 @@ oban_crontab = [
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
   {"0 3 * * *", Glific.Jobs.MinuteWorker, args: %{job: :tracker_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+  # Flow-webhook uptime probe. No-op unless a canary org is configured (staging only) — see
+  # Glific.Flows.Webhooks.Core.SmokeTest.run_scheduled/0.
+  {"*/15 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :webhook_smoke}},
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
   # 21:00 Sat UTC is  02:30 SAT IST, running the msg purging a day before other DB purges
   # to test this in isolation

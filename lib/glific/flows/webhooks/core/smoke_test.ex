@@ -25,12 +25,28 @@ defmodule Glific.Flows.Webhooks.Core.SmokeTest do
       Glific.Flows.Webhooks.Core.SmokeTest.run_all(1)
       Glific.Flows.Webhooks.Core.SmokeTest.run_all(1, %{assistant_id: "asst_123", audio_url: "https://.../sample.ogg"})
 
-  ## Fixtures
+  Recurringly, via the `Glific.Jobs.MinuteWorker` cron fan-out (a `"webhook_smoke"` branch wrapped in
+  `Appsignal.CheckIn.cron/2`). `run_scheduled/0` is config-gated: it runs only where a canary org is
+  configured, so it is a no-op on environments (e.g. production) that don't set it. The check-in
+  heartbeat alerts if the job stops running; each failed node is reported to AppSignal via
+  `Glific.log_error/1`.
+
+  ## Fixtures / config
 
   `geolocation` uses static coordinates. The async nodes need org-specific fixtures — a reachable
   `audio_url`, a configured `assistant_id`, and a `flow_id`/`contact_id` to sign the callback with.
-  Supply them via the `overrides` map or `config :glific, #{inspect(__MODULE__)}, ...`; a node whose
-  fixture is missing surfaces the node's own typed error rather than crashing the run.
+  Supply them via the `overrides` map or, for the scheduled run, via application config on the
+  staging deployment (a node whose fixture is missing surfaces its own typed error rather than
+  crashing the run):
+
+      config :glific, #{inspect(__MODULE__)},
+        org_id: 1,
+        assistant_id: "asst_123",
+        audio_url: "https://.../sample.ogg",
+        flow_id: 42,
+        contact_id: 99
+
+  `org_id` is what gates the scheduled run: absent (the default), `run_scheduled/0` does nothing.
 
   ## Alerting (ops-side)
 
@@ -90,6 +106,32 @@ defmodule Glific.Flows.Webhooks.Core.SmokeTest do
 
     print_summary(org_id, results)
     results
+  end
+
+  @doc """
+  Config-gated scheduled entry point for the `Glific.Jobs.MinuteWorker` cron branch. Runs the probe
+  only when a canary org is configured (`config :glific, #{inspect(__MODULE__)}, org_id: N, ...`) — a
+  no-op otherwise — reporting each failed node to AppSignal via `Glific.log_error/1`.
+  """
+  @spec run_scheduled() :: :ok
+  def run_scheduled do
+    env = Application.get_env(:glific, __MODULE__, [])
+
+    case Keyword.get(env, :org_id) do
+      nil -> :ok
+      org_id -> org_id |> run_all(Map.new(env)) |> report_failures()
+    end
+  end
+
+  @spec report_failures(%{String.t() => outcome()}) :: :ok
+  defp report_failures(results) do
+    Enum.each(results, fn
+      {name, {:error, reason}} ->
+        Glific.log_error("Flow-webhook smoke test failed for #{name}: #{reason}")
+
+      {_name, :ok} ->
+        :ok
+    end)
   end
 
   @spec run_one(module(), map(), map()) :: outcome()
