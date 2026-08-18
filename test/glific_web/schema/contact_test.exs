@@ -151,6 +151,13 @@ defmodule GlificWeb.Schema.ContactTest do
     assert fetched_contact["phone"] == ""
     assert fetched_contact["maskedPhone"] != contact.phone
 
+    # a restricted staff user is more limited, so it must not see more
+    {:ok, restricted_user} = Glific.Users.update_user(user, %{is_restricted: true})
+
+    result = auth_query_gql_by(:by_id, restricted_user, variables: %{"id" => contact.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "contact", "contact", "phone"]) == ""
+
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
