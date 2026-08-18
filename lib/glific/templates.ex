@@ -1013,11 +1013,12 @@ defmodule Glific.Templates do
   end
 
   @doc """
-  Machine-translates an HSM draft's body/footer/button text from English into
-  the target language, for the "Add new language" flow on an existing
-  template family. Returns translated strings only — it does not create or
-  update any SessionTemplate record, since each language of an HSM still has
-  to be submitted separately (via create_session_template) for BSP approval.
+  Machine-translates an HSM draft's body/footer/button text from the anchor
+  template's language into the target language, for the "Add new language"
+  flow on an existing template family. Returns translated strings only — it
+  does not create or update any SessionTemplate record, since each language
+  of an HSM still has to be submitted separately (via create_session_template)
+  for BSP approval.
   """
   @spec translate_session_template(map(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
@@ -1028,8 +1029,12 @@ defmodule Glific.Templates do
     texts = [body, footer || ""] ++ buttons
 
     with {:ok, language} <- Repo.fetch_by(Language, %{id: params.language_id}),
+         {:ok, source_language} <- fetch_source_language(params),
+         :ok <- validate_distinct_languages(source_language, language),
          {:ok, translated} <-
-           GoogleTranslate.translate(texts, "English", language.label, org_id: organization_id) do
+           GoogleTranslate.translate(texts, source_language.locale, language.locale,
+             org_id: organization_id
+           ) do
       [translated_body, translated_footer | translated_buttons] = translated
 
       {:ok,
@@ -1040,6 +1045,19 @@ defmodule Glific.Templates do
        }}
     end
   end
+
+  @spec fetch_source_language(map()) :: {:ok, Language.t()} | {:error, any()}
+  defp fetch_source_language(%{source_language_id: source_language_id})
+       when not is_nil(source_language_id),
+       do: Repo.fetch_by(Language, %{id: source_language_id})
+
+  defp fetch_source_language(_params), do: Repo.fetch_by(Language, %{label: "English"})
+
+  @spec validate_distinct_languages(Language.t(), Language.t()) :: :ok | {:error, String.t()}
+  defp validate_distinct_languages(%{locale: locale}, %{locale: locale}),
+    do: {:error, "Source and target language cannot be the same."}
+
+  defp validate_distinct_languages(_source, _target), do: :ok
 
   @doc """
   get template from EEx based on variables

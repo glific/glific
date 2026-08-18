@@ -283,6 +283,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     field :translate_session_template, :translate_session_template_result do
       arg(:language_id, non_null(:id))
+      arg(:source_language_id, :id)
       arg(:body, :string)
       arg(:footer, :string)
       arg(:buttons, list_of(:string))
