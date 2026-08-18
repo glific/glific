@@ -47,10 +47,15 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :file_size, :integer
   end
 
-  object :file_download_result do
+  object :file_download do
     field :file_id, :string
     field :filename, :string
     field :signed_url, :string
+  end
+
+  object :file_download_result do
+    field :file_download, :file_download
+    field :errors, list_of(:input_error)
   end
 
   object :kaapi_assistant_result do

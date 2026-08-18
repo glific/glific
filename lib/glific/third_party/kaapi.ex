@@ -827,19 +827,8 @@ defmodule Glific.ThirdParty.Kaapi do
           {:ok, map()} | {:error, any()}
   def get_document(document_id, organization_id, include_url \\ false) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, %{success: true, data: data}} <-
-           ApiClient.get_document(document_id, secrets["api_key"], include_url) do
-      if include_url && !Map.has_key?(data, :signed_url) do
-        Glific.log_exception(%Error{
-          message: "Kaapi document response missing signed_url",
-          organization_id: organization_id,
-          reason: safe_inspect(data)
-        })
-
-        {:error, "File download URL not available"}
-      else
-        {:ok, data}
-      end
+         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"], include_url) do
+      validate_document_response(body, include_url, organization_id)
     else
       {:error, reason} ->
         Glific.log_exception(%Error{
@@ -850,6 +839,30 @@ defmodule Glific.ThirdParty.Kaapi do
 
         {:error, reason}
     end
+  end
+
+  @spec validate_document_response(any(), boolean(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp validate_document_response(
+         %{success: true, data: %{signed_url: signed_url} = data},
+         true,
+         _organization_id
+       )
+       when is_binary(signed_url) and signed_url != "",
+       do: {:ok, data}
+
+  defp validate_document_response(%{success: true, data: data}, false, _organization_id)
+       when is_map(data),
+       do: {:ok, data}
+
+  defp validate_document_response(body, _include_url, organization_id) do
+    Glific.log_exception(%Error{
+      message: "Kaapi document response missing signed_url",
+      organization_id: organization_id,
+      reason: safe_inspect(body)
+    })
+
+    {:error, "File download URL not available"}
   end
 
   @doc """
