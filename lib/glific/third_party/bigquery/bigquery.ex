@@ -249,28 +249,26 @@ defmodule Glific.BigQuery do
         org_contact,
         organization_id
       ) do
-    service_account_json = credentials.secrets["service_account"]
-
-    if is_binary(service_account_json) and service_account_json != "" do
-      case Jason.decode(service_account_json) do
-        {:ok, service_account} ->
-          project_id = service_account["project_id"]
-          token = Partners.get_goth_token(organization_id, "bigquery")
-
-          if is_nil(token) do
-            {:error, "Error fetching token with Service Account JSON"}
-          else
-            conn = Connection.new(token.token)
-            {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-          end
-
-        {:error, _error} ->
-          log_bigquery_credential_error(organization_id, "invalid")
-          {:error, "Invalid Service Account JSON"}
-      end
+    with {:secrets, service_account_json}
+         when is_binary(service_account_json) and service_account_json != "" <-
+           {:secrets, credentials.secrets["service_account"]},
+         {:ok, %{"project_id" => project_id}}
+         when is_binary(project_id) and project_id != "" <- Jason.decode(service_account_json),
+         {:token, token} when not is_nil(token) <-
+           {:token, Partners.get_goth_token(organization_id, "bigquery")} do
+      conn = Connection.new(token.token)
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
     else
-      log_bigquery_credential_error(organization_id, "missing")
-      {:error, "Missing Service Account JSON"}
+      {:secrets, _missing} ->
+        log_bigquery_credential_error(organization_id, "missing")
+        {:error, "Missing Service Account JSON"}
+
+      {:token, nil} ->
+        {:error, "Error fetching token with Service Account JSON"}
+
+      _invalid ->
+        log_bigquery_credential_error(organization_id, "invalid")
+        {:error, "Invalid Service Account JSON"}
     end
   end
 
@@ -539,15 +537,17 @@ defmodule Glific.BigQuery do
   @spec validate_bigquery_credentials(map(), non_neg_integer() | nil) ::
           {:ok, :valid} | {:error, String.t()}
   def validate_bigquery_credentials(service_account, organization_id \\ nil) do
-    project_id = service_account["project_id"]
-
-    case Goth.Token.fetch(source: {:service_account, service_account, []}) do
-      {:ok, token} ->
-        conn = Connection.new(token.token)
-        validate_bigquery_permissions(conn, project_id, organization_id)
-
+    with %{"project_id" => project_id} when is_binary(project_id) and project_id != "" <-
+           service_account,
+         {:ok, token} <- Goth.Token.fetch(source: {:service_account, service_account, []}) do
+      conn = Connection.new(token.token)
+      validate_bigquery_permissions(conn, project_id, organization_id)
+    else
       {:error, reason} ->
         {:error, "Error fetching token from service account: #{safe_inspect(reason)}"}
+
+      _invalid ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 

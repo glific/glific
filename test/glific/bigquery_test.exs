@@ -403,6 +403,22 @@ defmodule Glific.BigQueryTest do
              BigQuery.decode_bigquery_credential(credentials, org_contact, attrs.organization_id)
   end
 
+  test "decode_bigquery_credential/3 returns error for non-object service account json without raising",
+       attrs do
+    org_contact = %{phone: "919999999999"}
+
+    for service_account_json <- ["[]", "null", "{}", ~s({"project_id": ""})] do
+      credentials = %{secrets: %{"service_account" => service_account_json}}
+
+      assert {:error, "Invalid Service Account JSON"} =
+               BigQuery.decode_bigquery_credential(
+                 credentials,
+                 org_contact,
+                 attrs.organization_id
+               )
+    end
+  end
+
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     # we need to figure out how to check that this function did the right thing
