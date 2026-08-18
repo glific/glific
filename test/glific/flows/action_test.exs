@@ -1666,6 +1666,20 @@ defmodule Glific.Flows.ActionTest do
       assert message =~ "Message template expression has an unsupported expression"
     end
 
+    test "surfaces the specific interpreter reason to the author" do
+      # Fresh org so the ETS-cached flag never leaks into the shared org-1 tests;
+      # the DB write rolls back with the SQL sandbox (mirrors glific_test.exs).
+      organization = Fixtures.organization_fixture()
+      FunWithFlags.enable(:safe_expressions, for_actor: %{organization_id: organization.id})
+
+      flow = %{organization_id: organization.id}
+      action = %Action{type: "set_run_result", value: ~s|<%= System.cmd("id", []) %>|}
+
+      assert [{EEx, message, "Critical"}] = Action.validate_expressions(action, [], flow)
+      assert message =~ "Action value has an unsupported expression:"
+      assert message =~ "System.cmd/2"
+    end
+
     test "ignores non-string values (set_contact_profile stores a map)", %{flow: flow} do
       # action.value is not always a string: set_contact_profile holds a map. It is
       # never evaluated as an expression, so validating it must not flag the flow.

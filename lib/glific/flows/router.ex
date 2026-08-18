@@ -151,8 +151,9 @@ defmodule Glific.Flows.Router do
       :ok ->
         errors
 
-      {:error, _reason} ->
-        [{EEx, "Node #{node_uuid_sliced} has unsupported expression", "Critical"}] ++ errors
+      {:error, reason} ->
+        [{EEx, "Node #{node_uuid_sliced} has unsupported expression: #{reason}", "Critical"}] ++
+          errors
     end
   end
 
