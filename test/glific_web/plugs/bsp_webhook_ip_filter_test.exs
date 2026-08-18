@@ -9,21 +9,29 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
   @provider_ip "192.0.2.10"
   @attacker_ip "203.0.113.5"
 
-  setup do
-    original = Application.get_env(:glific, :bsp_webhook_ip_allowlist)
+  @allowlist_keys %{
+    "gupshup" => :gupshup_webhook_ips,
+    "gupshup-enterprise" => :gupshup_enterprise_webhook_ips,
+    "maytapi" => :maytapi_webhook_ips
+  }
 
-    on_exit(fn ->
-      case original do
-        nil -> Application.delete_env(:glific, :bsp_webhook_ip_allowlist)
-        allowlist -> Application.put_env(:glific, :bsp_webhook_ip_allowlist, allowlist)
-      end
-    end)
+  setup do
+    original =
+      Map.new(@allowlist_keys, fn {_provider, key} -> {key, Application.get_env(:glific, key)} end)
+
+    on_exit(fn -> Enum.each(original, fn {key, ips} -> put_allowlist(key, ips) end) end)
 
     :ok
   end
 
-  defp configure(allowlist),
-    do: Application.put_env(:glific, :bsp_webhook_ip_allowlist, allowlist)
+  defp configure(allowlist) do
+    Enum.each(@allowlist_keys, fn {provider, key} ->
+      put_allowlist(key, Map.get(allowlist, provider))
+    end)
+  end
+
+  defp put_allowlist(key, nil), do: Application.delete_env(:glific, key)
+  defp put_allowlist(key, ips), do: Application.put_env(:glific, key, ips)
 
   defp build_conn(path, headers) do
     Enum.reduce(headers, conn(:post, path, %{}), fn {header, value}, conn ->
@@ -77,7 +85,7 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilterTest do
     end
 
     test "missing config leaves every request untouched" do
-      Application.delete_env(:glific, :bsp_webhook_ip_allowlist)
+      configure(%{})
 
       conn = call("/gupshup", @attacker_ip)
 

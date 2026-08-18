@@ -7,10 +7,10 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   on the provider's published callback IPs is what stops an arbitrary caller from
   posting a forged inbound message on behalf of any organization.
 
-  The provider is the first path segment (`/gupshup`, `/gupshup-enterprise`,
-  `/maytapi`) and is looked up in the `:bsp_webhook_ip_allowlist` config:
+  The provider is the first path segment (`/gupshup`, `/gupshup-enterprise`, `/maytapi`)
+  and each one carries its own config key, so a provider can be changed on its own:
 
-      config :glific, :bsp_webhook_ip_allowlist, %{"gupshup" => ["192.0.2.10", "198.51.100.0/24"]}
+      config :glific, :gupshup_webhook_ips, ["192.0.2.10", "198.51.100.0/24"]
 
   Entries are IPv4/IPv6 addresses or CIDR blocks. A caller outside its provider's list is
   logged and answered with 403. That log line is the only warning that a provider has
@@ -45,6 +45,12 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
   @behaviour Plug
 
   @forwarding_headers ~w[x-forwarded-for]
+
+  @allowlist_keys %{
+    "gupshup" => :gupshup_webhook_ips,
+    "gupshup-enterprise" => :gupshup_enterprise_webhook_ips,
+    "maytapi" => :maytapi_webhook_ips
+  }
 
   @doc false
   @spec init(Plug.opts()) :: Plug.opts()
@@ -122,8 +128,10 @@ defmodule GlificWeb.Plugs.BSPWebhookIPFilter do
 
   @spec allowlist(String.t()) :: [String.t()]
   defp allowlist(provider) do
-    case Application.get_env(:glific, :bsp_webhook_ip_allowlist) do
-      allowlist when is_map(allowlist) -> Map.get(allowlist, provider, [])
+    with {:ok, key} <- Map.fetch(@allowlist_keys, provider),
+         ips when is_list(ips) <- Application.get_env(:glific, key) do
+      ips
+    else
       _unconfigured -> []
     end
   end

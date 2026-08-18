@@ -201,9 +201,7 @@ config :glific,
 # replaces that provider's list outright, so widening one is a `gigalixir config:set` and
 # a restart rather than a deploy.
 
-# A malformed entry would otherwise sit in the list matching nothing, quietly narrowing the
-# allowlist and logging on every request, so entries are checked here instead. :inet is used
-# rather than the CIDR library the plug matches with because config runs before any
+# :inet rather than the CIDR library the plug matches with, because config runs before any
 # dependency is started.
 valid_webhook_ip? = fn entry ->
   [address | prefix] = String.split(entry, "/", parts: 2)
@@ -269,13 +267,9 @@ if config_env() == :prod do
           gigalixir config:set GUPSHUP_WEBHOOK_IPS="a.b.c.d,e.f.g.h,w.x.y.z/24"
       """)
 
-  config :glific,
-         :bsp_webhook_ip_allowlist,
-         %{
-           "gupshup" => gupshup_webhook_ips,
-           "gupshup-enterprise" => webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS"),
-           "maytapi" => webhook_ips.("MAYTAPI_WEBHOOK_IPS")
-         }
+  config :glific, :gupshup_webhook_ips, gupshup_webhook_ips
+  config :glific, :gupshup_enterprise_webhook_ips, webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS")
+  config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
 end
 
 search_repo_module =
