@@ -395,22 +395,19 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # lets have a default timeout of 5 seconds for each call
-  @timeout 5000
+  # how long to wait for a free worker from the poolboy pool before giving up
+  @poolboy_checkout_timeout 20_000
 
-  @spec error(String.t(), any(), any(), list() | nil, boolean()) :: nil
-  defp error(error, e, r \\ nil, stacktrace \\ nil, send_to_appsignal \\ true) do
-    error = error <> ": #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
-    Logger.error(error)
+  # time budget for the genserver worker to process a single message through its flow
+  # steps; chained flows via enter_flow can legitimately take more than a few seconds
+  @genserver_call_timeout 30_000
 
-    stacktrace =
-      if stacktrace == nil,
-        do: Process.info(self(), :current_stacktrace) |> elem(1),
-        else: stacktrace
+  @spec error(String.t(), any(), any(), non_neg_integer() | nil) :: nil
+  defp error(error, e, r \\ nil, organization_id \\ nil) do
+    tags = if organization_id, do: %{organization_id: organization_id}
 
-    if send_to_appsignal do
-      Appsignal.send_error(:error, error, stacktrace)
-    end
+    "#{error}: #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
+    |> Glific.log_error(true, tags)
 
     nil
   end
@@ -420,34 +417,33 @@ defmodule Glific.Communications.Message do
 
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
-    process_state = {
-      Repo.get_organization_id(),
-      Repo.get_current_user()
-    }
+    organization_id = Repo.get_organization_id()
+    process_state = {organization_id, Repo.get_current_user()}
 
     self = self()
 
     # We don't want to block the input pipeline, and we are unsure how long the consumer worker
-    # will take. So we run it as a separate task
-    # We will also set a short timeout for both the genserver and the poolboy transaction
+    # will take. So we run it as a separate task. Wrapping the whole transaction lets us report a
+    # poolboy checkout timeout (all workers busy) with org context too, not just a genserver call
+    # timeout — poolboy still checks the worker back in via its own `after` clause on either exit.
     Task.start(fn ->
-      :poolboy.transaction(
-        Glific.Application.message_poolname(),
-        fn pid ->
-          try do
-            GenServer.call(pid, {message, process_state, self}, @timeout)
-          catch
-            e, r ->
-              error(
-                "Poolboy genserver caught error while processing the message for flow.",
-                e,
-                r,
-                __STACKTRACE__,
-                false
-              )
-          end
-        end
-      )
+      try do
+        :poolboy.transaction(
+          Glific.Application.message_poolname(),
+          fn pid ->
+            GenServer.call(pid, {message, process_state, self}, @genserver_call_timeout)
+          end,
+          @poolboy_checkout_timeout
+        )
+      catch
+        e, r ->
+          error(
+            "Poolboy caught error while processing the message for flow.",
+            e,
+            r,
+            organization_id
+          )
+      end
     end)
   end
 
