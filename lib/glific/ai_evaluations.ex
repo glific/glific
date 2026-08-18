@@ -359,9 +359,7 @@ defmodule Glific.AIEvaluations do
   end
 
   @doc """
-  Handles the async callback POSTed by Kaapi when a v2 evaluation run finishes (completed
-  or failed). Re-fetches full scores from Kaapi for the matching evaluation and updates it,
-  which also publishes the change over the `ai_evaluation_updated` subscription.
+  Handles Kaapi's async callback when a v2 evaluation run finishes (completed or failed).
   """
   @spec handle_evaluation_run_callback(map()) :: :ok
   def handle_evaluation_run_callback(%{
@@ -383,11 +381,9 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  # Non-terminal status (e.g. still PROCESSING) — nothing to do yet.
+  # non-terminal status (e.g. PROCESSING) — nothing to do
   def handle_evaluation_run_callback(%{"data" => %{"status" => _}}), do: :ok
 
-  # Defensive catch-all: the callback endpoint is public, so a malformed body must not
-  # raise (the controller must still return 200).
   def handle_evaluation_run_callback(params) do
     Glific.log_exception(%Kaapi.Error{
       message: "Unexpected evaluation run callback payload",

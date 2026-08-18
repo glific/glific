@@ -57,12 +57,7 @@ defmodule GlificWeb.KaapiController do
     send_resp(conn, 200, "")
   end
 
-  @doc """
-  Handles the async callback POSTed by Kaapi after a v2 evaluation run completes.
-
-  Always returns 200 — Kaapi does not retry on non-2xx, and kaapi_evaluation_id is treated
-  as an unguessable token (matching the auth posture of the other Kaapi callbacks above).
-  """
+  @doc "Handles Kaapi's async callback after a v2 evaluation run completes."
   @spec evaluation_run_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def evaluation_run_callback(conn, params) do
     AIEvaluations.handle_evaluation_run_callback(params)
