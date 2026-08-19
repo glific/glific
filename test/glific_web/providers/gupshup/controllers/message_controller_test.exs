@@ -833,14 +833,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       with_mocks [
         {Glific.Messages, [:passthrough],
          [create_message: fn _params -> {:error, error_changeset} end]},
-        {Elixir.Appsignal, [:passthrough], [send_error: fn _, _, _, _ -> :ok end]}
+        {Elixir.Appsignal, [:passthrough], [send_error: fn _, _, _ -> :ok end]}
       ] do
         conn2 = post(conn, "/gupshup", text_params)
         # The controller still returns 200 — error is logged, not propagated
         assert conn2.halted
         # Error path must not trigger downstream flow processing either
         refute_receive :received_message_to_process, 50
-        assert called(Elixir.Appsignal.send_error(:error, :_, :_, :_))
+        assert called(Elixir.Appsignal.send_error(:error, :_, :_))
       end
     end
   end

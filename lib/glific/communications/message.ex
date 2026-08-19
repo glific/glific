@@ -17,6 +17,16 @@ defmodule Glific.Communications.Message do
     WhatsappFormsResponses
   }
 
+  defmodule FlowProcessingError do
+    @moduledoc """
+    Raised when handing an inbound message to a poolboy worker fails — a poolboy checkout
+    timeout (pool exhausted) or a GenServer.call timeout while a flow was being processed.
+    Reported as its own AppSignal error type so these are observable separately from the
+    generic ErlangError bucket that string errors collapse into.
+    """
+    defexception [:message, :reason, :organization_id]
+  end
+
   @doc false
   defmacro __using__(_opts \\ []) do
     quote do
@@ -402,14 +412,39 @@ defmodule Glific.Communications.Message do
   # steps; chained flows via enter_flow can legitimately take more than a few seconds
   @genserver_call_timeout 30_000
 
-  @spec error(String.t(), any(), any(), non_neg_integer() | nil) :: nil
-  defp error(error, e, r \\ nil, organization_id \\ nil) do
-    tags = if organization_id, do: %{organization_id: organization_id}
-
+  @spec error(String.t(), any(), any()) :: nil
+  defp error(error, e, r \\ nil) do
     "#{error}: #{Glific.SafeLog.safe_inspect(e)}, #{Glific.SafeLog.safe_inspect(r)}"
-    |> Glific.log_error(true, tags)
+    |> Glific.log_error()
 
     nil
+  end
+
+  # A poolboy checkout timeout (pool exhausted) or a GenServer.call timeout while the flow was
+  # being processed. Reported as FlowProcessingError so it gets its own AppSignal error type,
+  # tagged with the org. Benign flow-completion signals are still filtered out via ignore_error?.
+  @spec report_flow_processing_error(atom(), any(), non_neg_integer()) :: :ok
+  defp report_flow_processing_error(kind, reason, organization_id) do
+    formatted_reason =
+      "#{Glific.SafeLog.safe_inspect(kind)}, #{Glific.SafeLog.safe_inspect(reason)}"
+
+    message = "Poolboy caught error while processing the message for flow: #{formatted_reason}"
+
+    if Glific.ignore_error?(message) do
+      Logger.error(message)
+    else
+      Glific.log_exception(
+        %FlowProcessingError{
+          message: message,
+          reason: formatted_reason,
+          organization_id: organization_id
+        },
+        namespace: "message_processing",
+        tags: %{organization_id: organization_id}
+      )
+    end
+
+    :ok
   end
 
   @spec process_message(Message.t() | nil) :: any
@@ -437,12 +472,7 @@ defmodule Glific.Communications.Message do
         )
       catch
         e, r ->
-          error(
-            "Poolboy caught error while processing the message for flow.",
-            e,
-            r,
-            organization_id
-          )
+          report_flow_processing_error(e, r, organization_id)
       end
     end)
   end

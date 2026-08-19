@@ -515,19 +515,17 @@ defmodule Glific do
   end
 
   @doc """
-  Log the error and also send it over to our friends at appsignal.
-
-  Pass `tags` (e.g. `%{organization_id: id}`) to attach AppSignal sample data to the occurrence.
+  Log the error and also send it over to our friends at appsignal
   """
-  @spec log_error(String.t(), boolean, map() | nil) :: {:error, String.t()}
-  def log_error(error, send_appsignal? \\ true, tags \\ nil) do
+  @spec log_error(String.t(), boolean) :: {:error, String.t()}
+  def log_error(error, send_appsignal? \\ true) do
     Logger.error(error)
 
     # disable sending exit loop and finished flow errors, since
     # these are beneficiary errors
     if !ignore_error?(error) && send_appsignal? do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
-      Appsignal.send_error(:error, error, stacktrace, &apply_appsignal_tags(&1, tags))
+      Appsignal.send_error(:error, error, stacktrace)
     end
 
     {:error, error}
