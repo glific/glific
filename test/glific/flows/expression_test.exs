@@ -492,20 +492,18 @@ defmodule Glific.Flows.ExpressionTest do
     test "list, cons and map patterns" do
       assert {:ok, "3"} = Expression.eval("<%= with [a, b] <- [1, 2] do a + b end %>")
       assert {:ok, "3"} = Expression.eval("<%= with [h | t] <- [1, 2, 3] do h + hd(t) end %>")
-      assert {:ok, "9"} = Expression.eval("<%= with %{\"n\" => n} <- %{\"n\" => 9} do n end %>")
+      assert {:ok, "9"} = Expression.eval(~S|<%= with %{"n" => n} <- %{"n" => 9} do n end %>|)
     end
 
     test "pin matches against a bound value" do
-      {:ok, compiled} = Expression.compile("<%= with ^x <- 5 do \"eq\" else _ -> \"ne\" end %>")
+      {:ok, compiled} = Expression.compile(~S|<%= with ^x <- 5 do "eq" else _ -> "ne" end %>|)
       assert {:ok, "eq"} = Expression.render(compiled, %{"x" => 5})
       assert {:ok, "ne"} = Expression.render(compiled, %{"x" => 9})
     end
 
     test "decodes JSON then destructures the result with a map pattern" do
       assert {:ok, "1"} =
-               Expression.eval(
-                 "<%= with %{\"a\" => a} <- Jason.decode!(\"{\\\"a\\\":1}\") do a end %>"
-               )
+               Expression.eval(~S|<%= with %{"a" => a} <- Jason.decode!("{\"a\":1}") do a end %>|)
     end
 
     test "the do body cannot escape the allowlist" do
@@ -559,6 +557,37 @@ defmodule Glific.Flows.ExpressionTest do
 
       assert :ok = Expression.validate(template)
       assert {:ok, "10"} = Expression.eval(template)
+    end
+
+    test "= binding and bare-expression steps are supported" do
+      assert {:ok, "11"} =
+               Expression.eval(~S|<%= with a = 5, {:ok, b} <- {:ok, 6} do a + b end %>|)
+
+      assert {:ok, "5"} = Expression.eval(~S|<%= with 1, {:ok, v} <- {:ok, 5} do v end %>|)
+    end
+
+    test "a literal pattern matches" do
+      assert {:ok, "ok"} = Expression.eval(~S|<%= with 200 <- 200 do "ok" end %>|)
+    end
+
+    test "a map pattern against a non-map value routes to else" do
+      assert {:ok, "fallback"} =
+               Expression.eval(~S|<%= with %{"a" => a} <- "x" do a else _ -> "fallback" end %>|)
+    end
+
+    test "a tuple-size mismatch routes to else" do
+      {:ok, compiled} =
+        Expression.compile(~S|<%= with {a, b, c} <- @pair do a + b + c else _ -> "no" end %>|)
+
+      assert {:ok, "no"} = Expression.render(compiled, %{"pair" => {1, 2}})
+      assert {:ok, "6"} = Expression.render(compiled, %{"pair" => {1, 2, 3}})
+    end
+
+    test "an else with no matching clause errors" do
+      assert {:error, _} =
+               Expression.eval(
+                 ~S|<%= with {:ok, v} <- {:error, 1} do v else {:ok, x} -> x end %>|
+               )
     end
   end
 end
