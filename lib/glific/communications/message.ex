@@ -466,8 +466,20 @@ defmodule Glific.Communications.Message do
           @poolboy_checkout_timeout
         )
       catch
-        e, r ->
-          report_flow_processing_error(e, r, organization_id)
+        # A poolboy checkout timeout means every worker was busy — the pool is the bottleneck.
+        # It surfaces as an Erlang :gen_server call timeout (poolboy is pure Erlang), distinct
+        # from a worker-processing timeout which is an Elixir GenServer call timeout.
+        :exit, {:timeout, {:gen_server, :call, _}} = reason ->
+          Appsignal.increment_counter(
+            "message_poolboy_checkout_timeout",
+            1,
+            %{organization_id: organization_id}
+          )
+
+          report_flow_processing_error(:exit, reason, organization_id)
+
+        kind, reason ->
+          report_flow_processing_error(kind, reason, organization_id)
       end
     end)
   end
