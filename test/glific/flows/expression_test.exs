@@ -330,6 +330,48 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "1"} = Expression.eval("<%= Enum.count(List.wrap(1)) %>")
     end
 
+    test "Enum.max_by/2, Enum.max/2 and Enum.take_random/2 (issue #5530)" do
+      # max_by/2 is higher-order: the mapper is one of our own closures
+      assert {:ok, "bbb"} =
+               Expression.eval(
+                 ~S|<%= Enum.max_by(["a", "bbb", "cc"], fn s -> String.length(s) end) %>|
+               )
+
+      # max/2 with an explicit sorter closure
+      assert {:ok, "5"} = Expression.eval("<%= Enum.max([1, 5, 3], fn a, b -> a >= b end) %>")
+
+      # take_random/2 is non-deterministic; assert on the count of what it returns
+      assert {:ok, "2"} = Expression.eval("<%= Enum.count(Enum.take_random([1, 2, 3], 2)) %>")
+
+      # a disallowed call inside the mapper closure is still rejected
+      assert {:error, _} =
+               Expression.validate(~S|<%= Enum.max_by(@l, &(System.cmd(&1, []))) %>|)
+    end
+
+    test "a bare module used as a value rejects with an actionable message" do
+      # single-segment and multi-segment aliases both get a clear message
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.eval("<%= String %>")
+
+      assert {:error, "module Foo.Bar used as a value; call it as Foo.Bar.function(...)"} =
+               Expression.validate("<%= Foo.Bar %>")
+
+      # a bare module as an argument is rejected the same way
+      assert {:error, "module Date used as a value" <> _} =
+               Expression.eval("<%= Enum.max_by([1, 2], Date) %>")
+
+      # the completed form still works
+      assert {:ok, "3"} =
+               Expression.eval("<%= String.length(@name) %>", %{"name" => "abc"})
+
+      # render/2 trusts its compiled input and skips re-validation, so it is the
+      # path that actually reaches eval_node's bare-alias clause -- verifying the
+      # sole security boundary fails closed with the same message even when the
+      # safe_shape twin is bypassed.
+      assert {:error, "module String used as a value; call it as String.function(...)"} =
+               Expression.render([{:expr, {:__aliases__, [], [:String]}}], %{})
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 
