@@ -4,7 +4,6 @@ defmodule Glific.WhatsappFormsResponses do
   """
   import Ecto.Query
   use Publicist
-  require Logger
 
   alias Glific.{
     Flows.FlowContext,
@@ -137,7 +136,7 @@ defmodule Glific.WhatsappFormsResponses do
     Map.new(raw_response, fn
       {key, value} when is_list(value) ->
         if media_list?(value),
-          do: {key, Enum.map(value, &save_one_media(&1, organization_id))},
+          do: {key, save_media_list(value, organization_id)},
           else: {key, value}
 
       kv ->
@@ -146,6 +145,37 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   def save_response_media(raw_response, _organization_id), do: raw_response
+
+  @media_task_timeout :timer.seconds(45)
+  @media_max_concurrency 5
+
+  # Each entry is an independent download + GCS upload, so run them concurrently
+  # instead of summing their latency: processing a form's photos one-by-one can
+  # push the whole batch past an external time budget (Oban attempt, retry
+  # stack) that the same photos processed in parallel comfortably fit inside.
+  @spec save_media_list(list(map()), non_neg_integer()) :: list(map())
+  defp save_media_list(media_list, organization_id) do
+    media_list
+    |> Task.async_stream(&save_one_media(&1, organization_id),
+      max_concurrency: @media_max_concurrency,
+      timeout: @media_task_timeout,
+      on_timeout: :kill_task
+    )
+    |> Enum.zip(media_list)
+    |> Enum.map(fn
+      {{:ok, media}, _original} -> media
+      {{:exit, reason}, original} -> handle_media_task_timeout(original, organization_id, reason)
+    end)
+  end
+
+  @spec handle_media_task_timeout(map(), non_neg_integer(), any()) :: map()
+  defp handle_media_task_timeout(media, organization_id, reason) do
+    Glific.log_error(
+      "Timed out saving WhatsApp form media #{media["file_name"]} (id #{media["id"]}) for org_id=#{organization_id}: #{SafeLog.safe_inspect(reason)}"
+    )
+
+    media
+  end
 
   # A media list is a NON-EMPTY list where EVERY item carries the WhatsApp media
   # fields we need to download it. Validating all items (not just the head) means a
@@ -187,8 +217,8 @@ defmodule Glific.WhatsappFormsResponses do
         # for the download/write-ok-but-upload-failed path (no-op if it never existed).
         File.rm(local)
 
-        Logger.error(
-          "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
+        Glific.log_error(
+          "Failed to save WhatsApp form media #{file_name} (id #{id}) for org_id=#{organization_id}: #{SafeLog.safe_inspect(error)}"
         )
 
         media
