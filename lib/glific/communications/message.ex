@@ -423,27 +423,21 @@ defmodule Glific.Communications.Message do
 
   # A poolboy checkout timeout (pool exhausted) or a GenServer.call timeout while the flow was
   # being processed. Reported as FlowProcessingError so it gets its own AppSignal error type,
-  # tagged with the org. Benign flow-completion signals are still filtered out via ignore_error?.
+  # tagged with the org, instead of the generic ErlangError bucket string errors collapse into.
   @spec report_flow_processing_error(atom(), any(), non_neg_integer()) :: :ok
   defp report_flow_processing_error(kind, reason, organization_id) do
     formatted_reason =
       "#{Glific.SafeLog.safe_inspect(kind)}, #{Glific.SafeLog.safe_inspect(reason)}"
 
-    message = "Poolboy caught error while processing the message for flow: #{formatted_reason}"
-
-    if Glific.ignore_error?(message) do
-      Logger.error(message)
-    else
-      Glific.log_exception(
-        %FlowProcessingError{
-          message: message,
-          reason: formatted_reason,
-          organization_id: organization_id
-        },
-        namespace: "message_processing",
-        tags: %{organization_id: organization_id}
-      )
-    end
+    Glific.log_exception(
+      %FlowProcessingError{
+        message: "Poolboy caught error while processing the message for flow: #{formatted_reason}",
+        reason: formatted_reason,
+        organization_id: organization_id
+      },
+      namespace: "message_processing",
+      tags: %{organization_id: organization_id}
+    )
 
     :ok
   end
