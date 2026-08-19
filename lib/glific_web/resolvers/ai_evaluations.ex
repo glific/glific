@@ -291,10 +291,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   defp validate_duplication_factor(_factor),
     do: {:error, "Duplication factor must be between 1 and 5"}
 
-  @spec validate_evaluation_duplication_factor(integer() | nil) :: :ok | {:error, String.t()}
-  defp validate_evaluation_duplication_factor(nil), do: :ok
-  defp validate_evaluation_duplication_factor(factor), do: validate_duplication_factor(factor)
-
   @spec validate_golden_qa_file_size(struct(), map()) :: :ok | {:error, String.t()}
   defp validate_golden_qa_file_size(%{path: path}, %{id: id, organization_id: organization_id}) do
     case File.stat(path) do
@@ -415,7 +411,9 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    with :ok <- validate_evaluation_duplication_factor(Map.get(input, :duplication_factor)),
+    duplication_factor = Map.get(input, :duplication_factor) || 1
+
+    with :ok <- validate_duplication_factor(duplication_factor),
          {:name, {:error, _}} <-
            {:name,
             Repo.fetch_by(AIEvaluation, %{
@@ -441,7 +439,6 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         duplication_factor = Map.get(input, :duplication_factor) || 1,
          {:ok, kaapi_response} <-
            run_kaapi_evaluation(kaapi_input, duplication_factor, user.organization_id),
          {:kaapi_response, {:ok, data}} <-
