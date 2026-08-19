@@ -114,8 +114,14 @@ defmodule GlificWeb.Router do
     forward("/api", Absinthe.Plug, schema: GlificWeb.Schema)
   end
 
+  pipeline :bsp_webhook do
+    plug(GlificWeb.Plugs.BSPWebhookIPFilter)
+  end
+
   # BSP webhooks
   scope "/", GlificWeb do
+    pipe_through(:bsp_webhook)
+
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
     forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
     forward("/maytapi", Providers.Maytapi.Plugs.Shunt)
