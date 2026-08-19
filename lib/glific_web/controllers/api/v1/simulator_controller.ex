@@ -27,6 +27,9 @@ defmodule GlificWeb.API.V1.SimulatorController do
     %User{organization_id: organization_id} = conn.assigns[:current_user]
 
     if simulator_sender?(params) do
+      # SubdomainPlug has already resolved an organization from the host, but that only says
+      # which one the URL named. Taking the caller's own instead stops a valid token being
+      # pointed at another organization's simulator.
       Repo.put_organization_id(organization_id)
 
       conn
