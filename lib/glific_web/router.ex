@@ -81,6 +81,7 @@ defmodule GlificWeb.Router do
     pipe_through([:api, :api_protected])
 
     post("/get-embed-token", SupersetController, :embed_token)
+    post("/simulator/message", SimulatorController, :message)
   end
 
   # Enables LiveDashboard only for development

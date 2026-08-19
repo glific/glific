@@ -200,6 +200,16 @@ config :glific,
 
 # :inet rather than the CIDR library the plug matches with, because config runs before any
 # dependency is started.
+# The CIDR library the plug matches with rejects a block whose host bits are set, so
+# accepting one here would leave a list that looks configured but never matches, and the
+# whole range would be answered with 403.
+network_address? = fn parsed, prefix_length ->
+  {bits, group} = if tuple_size(parsed) == 4, do: {32, 256}, else: {128, 65_536}
+  address = parsed |> Tuple.to_list() |> Enum.reduce(0, fn part, acc -> acc * group + part end)
+
+  rem(address, Integer.pow(2, bits - prefix_length)) == 0
+end
+
 valid_webhook_ip? = fn entry ->
   [address | prefix] = String.split(entry, "/", parts: 2)
 
@@ -215,7 +225,13 @@ valid_webhook_ip? = fn entry ->
           true
 
         [length] ->
-          match?({value, ""} when value >= 0 and value <= max_length, Integer.parse(length))
+          case Integer.parse(length) do
+            {prefix_length, ""} when prefix_length >= 0 and prefix_length <= max_length ->
+              network_address?.(parsed, prefix_length)
+
+            _invalid ->
+              false
+          end
       end
   end
 end
@@ -235,6 +251,9 @@ webhook_ips = fn variable ->
           else:
             raise("""
             #{variable} contains "#{entry}", which is not an IP address or CIDR block.
+
+            A CIDR block must be given as its network address, so 192.0.2.0/24 rather than
+            192.0.2.10/24.
 
             Expected a comma separated list, for example:
 
