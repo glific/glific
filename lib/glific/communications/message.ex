@@ -410,7 +410,8 @@ defmodule Glific.Communications.Message do
 
   # time budget for the genserver worker to process a single message through its flow
   # steps; chained flows via enter_flow can legitimately take more than a few seconds
-  @genserver_call_timeout 30_000
+  # (a measured 4-flow chain took ~11s to settle), so keep some headroom over that
+  @genserver_call_timeout 20_000
 
   @spec error(String.t(), any(), any()) :: nil
   defp error(error, e, r \\ nil) do
