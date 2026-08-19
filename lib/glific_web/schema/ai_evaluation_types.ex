@@ -94,6 +94,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :golden_qa_id, non_null(:id)
     field :evaluation_name, non_null(:string)
     field :config_id, non_null(:id)
+    field :duplication_factor, :integer
   end
 
   object :evaluation_scores_result do
