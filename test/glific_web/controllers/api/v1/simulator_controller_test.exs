@@ -1,5 +1,11 @@
 defmodule GlificWeb.API.V1.SimulatorControllerTest do
+  @moduledoc """
+  Tests for the authenticated simulator endpoint: that a simulator payload is received into
+  the caller's organization, and that anything else is refused.
+  """
   use GlificWeb.ConnCase
+
+  import Ecto.Query
 
   alias Glific.{
     Contacts,
@@ -8,8 +14,6 @@ defmodule GlificWeb.API.V1.SimulatorControllerTest do
     Repo,
     Seeds.SeedsDev
   }
-
-  import Ecto.Query
 
   setup do
     SeedsDev.seed_organizations()
