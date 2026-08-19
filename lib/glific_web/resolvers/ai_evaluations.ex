@@ -441,7 +441,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         duplication_factor = Map.get(input, :duplication_factor),
+         duplication_factor = Map.get(input, :duplication_factor) || 1,
          {:ok, kaapi_response} <-
            run_kaapi_evaluation(kaapi_input, duplication_factor, user.organization_id),
          {:kaapi_response, {:ok, data}} <-
@@ -496,25 +496,19 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec run_kaapi_evaluation(map(), integer() | nil, non_neg_integer()) ::
+  @spec run_kaapi_evaluation(map(), integer(), non_neg_integer()) ::
           {:ok, map()} | {:error, any()}
   defp run_kaapi_evaluation(kaapi_input, duplication_factor, organization_id) do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
       kaapi_input
-      |> maybe_put_duplication_factor(duplication_factor)
+      |> Map.put(:duplication_factor, duplication_factor)
       |> Kaapi.create_evaluation_v2(organization_id)
     else
       Kaapi.create_evaluation(kaapi_input, organization_id)
     end
   end
-
-  @spec maybe_put_duplication_factor(map(), integer() | nil) :: map()
-  defp maybe_put_duplication_factor(kaapi_input, nil), do: kaapi_input
-
-  defp maybe_put_duplication_factor(kaapi_input, duplication_factor),
-    do: Map.put(kaapi_input, :duplication_factor, duplication_factor)
 
   @spec parse_ai_evaluation_status(String.t()) :: {:ok, atom()} | {:error, String.t()}
   defp parse_ai_evaluation_status(status) when status in @known_ai_evaluation_statuses,

@@ -1768,6 +1768,46 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       )
     end
 
+    test "v2 path: defaults duplication_factor to 1 when not passed", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url, body: body} ->
+          assert url =~ "/api/v2/evaluations"
+          assert body =~ ~s("duplication_factor":1)
+
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{id: 780, run_name: "test_experiment_default_dup", status: "processing"}
+            }
+          }
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_default_dup",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: _evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
     test "v2 path: forwards duplication_factor to the Kaapi request body", %{
       staff: user,
       assistant_config_version: assistant_config_version,
