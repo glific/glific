@@ -688,12 +688,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
         )
 
       result = query_data.data["download_knowledge_base_file"]
-      assert result["errors"] == nil
-
-      file_download = result["file_download"]
-      assert file_download["file_id"] == "doc_123"
-      assert file_download["filename"] == "biu-1.pdf"
-      assert file_download["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+      assert result["file_id"] == "doc_123"
+      assert result["filename"] == "biu-1.pdf"
+      assert result["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
     end
 
     test "returns a top-level error when kaapi fails", %{staff: user} do

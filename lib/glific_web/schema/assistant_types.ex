@@ -45,17 +45,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :filename, :string
     field :uploaded_at, :string
     field :file_size, :integer
-  end
-
-  object :file_download do
-    field :file_id, :string
-    field :filename, :string
     field :signed_url, :string
-  end
-
-  object :file_download_result do
-    field :file_download, :file_download
-    field :errors, list_of(:input_error)
   end
 
   object :kaapi_assistant_result do
@@ -288,7 +278,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     end
 
     @desc "Get a signed download URL for a knowledge base file"
-    field :download_knowledge_base_file, :file_download_result do
+    field :download_knowledge_base_file, :file_result do
       arg(:file_id, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.download_knowledge_base_file/3)

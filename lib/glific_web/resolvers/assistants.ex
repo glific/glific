@@ -64,10 +64,7 @@ defmodule GlificWeb.Resolvers.Assistants do
   @spec download_knowledge_base_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def download_knowledge_base_file(_, %{file_id: file_id}, %{context: %{current_user: user}}) do
-    with {:ok, file_download} <-
-           Assistants.download_knowledge_base_file(file_id, user.organization_id) do
-      {:ok, %{file_download: file_download}}
-    end
+    Assistants.download_knowledge_base_file(file_id, user.organization_id)
   end
 
   @doc """

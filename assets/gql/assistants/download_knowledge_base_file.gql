@@ -1,13 +1,7 @@
 query download_knowledge_base_file($file_id: String!) {
     download_knowledge_base_file(file_id: $file_id) {
-        file_download {
-            file_id
-            filename
-            signed_url
-        }
-        errors {
-            key
-            message
-        }
+        file_id
+        filename
+        signed_url
     }
 }

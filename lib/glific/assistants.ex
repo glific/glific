@@ -901,7 +901,7 @@ defmodule Glific.Assistants do
   @spec download_knowledge_base_file(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   def download_knowledge_base_file(file_id, organization_id) do
-    case Kaapi.get_document(file_id, organization_id, true) do
+    case Kaapi.get_document(file_id, organization_id) do
       {:ok, document_data} ->
         {:ok,
          %{

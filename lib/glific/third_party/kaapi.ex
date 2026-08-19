@@ -821,14 +821,13 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
-  Get document details from Kaapi with optional signed URL.
+  Get document details from Kaapi, including its signed download URL.
   """
-  @spec get_document(String.t(), non_neg_integer(), boolean()) ::
-          {:ok, map()} | {:error, any()}
-  def get_document(document_id, organization_id, include_url \\ false) do
+  @spec get_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"], include_url) do
-      validate_document_response(body, include_url, organization_id)
+         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"], true) do
+      validate_document_response(body, organization_id)
     else
       {:error, reason} ->
         Glific.log_exception(%Error{
@@ -841,21 +840,18 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
-  @spec validate_document_response(any(), boolean(), non_neg_integer()) ::
+  @spec validate_document_response(any(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
   defp validate_document_response(
-         %{success: true, data: %{signed_url: signed_url} = data},
-         true,
+         %{success: true, data: %{signed_url: signed_url}} = body,
          _organization_id
        )
-       when is_binary(signed_url) and signed_url != "",
-       do: {:ok, data}
+       when is_binary(signed_url) and signed_url != "" do
+    %{data: data} = body
+    {:ok, data}
+  end
 
-  defp validate_document_response(%{success: true, data: data}, false, _organization_id)
-       when is_map(data),
-       do: {:ok, data}
-
-  defp validate_document_response(body, _include_url, organization_id) do
+  defp validate_document_response(body, organization_id) do
     Glific.log_exception(%Error{
       message: "Kaapi document response missing signed_url",
       organization_id: organization_id,
