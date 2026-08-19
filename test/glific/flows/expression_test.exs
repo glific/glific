@@ -589,5 +589,38 @@ defmodule Glific.Flows.ExpressionTest do
                  ~S|<%= with {:ok, v} <- {:error, 1} do v else {:ok, x} -> x end %>|
                )
     end
+
+    test "a non-matching = step errors" do
+      assert {:error, _} = Expression.eval(~S/<%= with {:ok, v} = {:error, 1} do v end %>/)
+    end
+
+    test "a map pattern with a non-matching value or missing key routes to else" do
+      assert {:ok, "no"} =
+               Expression.eval(
+                 ~S/<%= with %{"a" => :ok} <- %{"a" => 1} do "y" else _ -> "no" end %>/
+               )
+
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with %{"z" => a} <- %{"a" => 1} do a else _ -> "no" end %>/)
+    end
+
+    test "list and cons patterns route to else on any mismatch" do
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with [:ok | t] <- [1, 2] do t else _ -> "no" end %>/)
+
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [h | t] <- "x" do h else _ -> "no" end %>/)
+
+      assert {:ok, "no"} =
+               Expression.eval(~S/<%= with [:ok, b] <- [1, 2] do b else _ -> "no" end %>/)
+
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [a, b] <- "x" do a else _ -> "no" end %>/)
+      assert {:ok, "no"} = Expression.eval(~S/<%= with [a] <- [1, 2] do a else _ -> "no" end %>/)
+    end
+
+    test "invalid patterns are rejected at publish time" do
+      assert {:error, _} = Expression.validate(~S/<%= with :nope <- @x do 1 end %>/)
+      assert {:error, _} = Expression.validate(~S/<%= with {:ok, <<x>>} <- @y do x end %>/)
+      assert {:error, _} = Expression.validate(~S/<%= with %{"a" => <<x>>} <- @y do x end %>/)
+    end
   end
 end
