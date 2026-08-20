@@ -87,6 +87,7 @@ defmodule Glific.Flows.Expression do
     {:String, :split, 2} => &String.split/2,
     {:String, :split, 3} => &String.split/3,
     {:String, :to_integer, 1} => &String.to_integer/1,
+    {:String, :to_float, 1} => &String.to_float/1,
     {:String, :starts_with?, 2} => &String.starts_with?/2,
     {:String, :ends_with?, 2} => &String.ends_with?/2,
     {:String, :contains?, 2} => &String.contains?/2,
@@ -116,6 +117,8 @@ defmodule Glific.Flows.Expression do
     {:Enum, :max, 2} => &Enum.max/2,
     {:Enum, :max_by, 2} => &Enum.max_by/2,
     {:Enum, :map_join, 3} => &Enum.map_join/3,
+    {:Enum, :take, 2} => &Enum.take/2,
+    {:Enum, :reverse, 1} => &Enum.reverse/1,
     {:Enum, :random, 1} => &Enum.random/1,
     {:Enum, :take_random, 2} => &Enum.take_random/2,
     {:List, :first, 1} => &List.first/1,
@@ -137,6 +140,7 @@ defmodule Glific.Flows.Expression do
     {:Date, :compare, 2} => &Date.compare/2,
     {:Date, :days_in_month, 1} => &Date.days_in_month/1,
     {:Date, :from_iso8601!, 1} => &Date.from_iso8601!/1,
+    {:Date, :to_iso8601, 1} => &Date.to_iso8601/1,
     {:Time, :diff, 3} => &Time.diff/3,
     {:Time, :from_iso8601!, 1} => &Time.from_iso8601!/1,
     {:DateTime, :utc_now, 0} => &DateTime.utc_now/0,
@@ -155,6 +159,7 @@ defmodule Glific.Flows.Expression do
     {:DateTime, :to_iso8601, 1} => &DateTime.to_iso8601/1,
     {:DateTime, :add, 3} => &DateTime.add/3,
     {:DateTime, :from_iso8601, 1} => &DateTime.from_iso8601/1,
+    {:DateTime, :shift_zone!, 2} => &DateTime.shift_zone!/2,
     {:NaiveDateTime, :new!, 2} => &NaiveDateTime.new!/2,
     {:DateTime, :new!, 3} => &DateTime.new!/3,
     # Timex (today/0 kept as UTC per the note above)
@@ -164,10 +169,13 @@ defmodule Glific.Flows.Expression do
     {:Timex, :now, 1} => &Timex.now/1,
     {:Timex, :diff, 3} => &Timex.diff/3,
     {:Timex, :compare, 2} => &Timex.compare/2,
+    {:Timex, :compare, 3} => &Timex.compare/3,
     {:Timex, :to_unix, 1} => &Timex.to_unix/1,
+    {:Timex, :to_date, 1} => &Timex.to_date/1,
     {:Timex, :format!, 2} => &Timex.format!/2,
     {:Timex, :shift, 2} => &Timex.shift/2,
     {:Timex, :parse!, 2} => &Timex.parse!/2,
+    {:Timex, :parse!, 3} => &Timex.parse!/3,
     {:Timex, :format!, 3} => &Timex.format!/3,
     {:Timex, :month_name, 1} => &Timex.month_name/1,
     {:Timex, :to_datetime, 2} => &Timex.to_datetime/2,
@@ -180,6 +188,10 @@ defmodule Glific.Flows.Expression do
     {:Regex, :replace, 3} => &Regex.replace/3,
     {:Regex, :replace, 4} => &Regex.replace/4,
     {:Regex, :scan, 2} => &Regex.scan/2,
+    # Explicit Kernel operator forms, for the pipe idiom `x |> Kernel.>(0)` where a
+    # bare operator cannot appear. Identical to the allowlisted operators.
+    {:Kernel, :+, 2} => &Kernel.+/2,
+    {:Kernel, :>, 2} => &Kernel.>/2,
     # Glific flow helper. send_template/2 is PURE: it builds a JSON template
     # descriptor string and does NOT send anything (the flow engine sends later).
     # Each entry maps to the actual function the author named (the per-NGO
@@ -235,6 +247,7 @@ defmodule Glific.Flows.Expression do
     {:min, 2},
     {:then, 2},
     {:.., 2},
+    {:"..//", 3},
     {:hd, 1},
     {:is_map, 1}
   ]
@@ -1038,6 +1051,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(:.., [a, b]), do: Range.new(a, b)
+  defp kernel_call(:"..//", [a, b, c]), do: Range.new(a, b, c)
   defp kernel_call(:hd, [a]) when is_list(a) and a != [], do: hd(a)
   defp kernel_call(:hd, _), do: reject("hd requires a non-empty list")
   defp kernel_call(:is_map, [a]), do: is_map(a)

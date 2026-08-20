@@ -322,15 +322,34 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S|<%= %{"a" => 1}[System.cmd("id", [])] %>|)
     end
 
-    test "newly allowlisted pure functions (Decimal, Enum, List, Timex)" do
+    test "newly allowlisted pure functions (Decimal, Enum, List, String, Kernel, DateTime)" do
       assert {:ok, "6"} = Expression.eval("<%= Decimal.mult(2, 3) %>")
       assert {:ok, "3"} = Expression.eval("<%= Decimal.div(9, 3) %>")
       assert {:ok, "6"} = Expression.eval("<%= Enum.sum([1, 2, 3]) %>")
       assert {:ok, "a, b"} = Expression.eval(~S|<%= Enum.map_join(["a", "b"], ", ", &(&1)) %>|)
       assert {:ok, "1"} = Expression.eval("<%= Enum.count(List.wrap(1)) %>")
+
+      assert {:ok, "1, 2"} =
+               Expression.eval(~S/<%= Enum.take([1, 2, 3], 2) |> Enum.join(", ") %>/)
+
+      assert {:ok, "b-a"} =
+               Expression.eval(~S/<%= ["a", "b"] |> Enum.reverse() |> Enum.join("-") %>/)
+
+      assert {:ok, "1.5"} = Expression.eval(~S|<%= String.to_float("1.5") %>|)
+      assert {:ok, "he"} = Expression.eval(~S|<%= String.slice("hello", 0..1//1) %>|)
+      assert {:ok, "true"} = Expression.eval("<%= 5 |> Kernel.>(0) %>")
+      assert {:ok, "2000"} = Expression.eval("<%= 1000 |> Kernel.+(1000) %>")
+
+      assert {:ok, iso} =
+               Expression.eval(
+                 "<%= DateTime.shift_zone!(DateTime.utc_now(), \"Etc/UTC\") " <>
+                   "|> DateTime.to_date() |> Date.to_iso8601() %>"
+               )
+
+      assert iso == Date.to_string(Date.utc_today())
     end
 
-    test "Enum.max_by/2, Enum.max/2 and Enum.take_random/2 (issue #5530)" do
+    test "Enum.max_by/2, Enum.max/2 and Enum.take_random/2" do
       # max_by/2 is higher-order: the mapper is one of our own closures
       assert {:ok, "bbb"} =
                Expression.eval(
