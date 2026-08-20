@@ -406,7 +406,7 @@ defmodule Glific.Communications.Message do
   defp publish_simulator(message, _type), do: message
 
   # how long to wait for a free worker from the poolboy pool before giving up
-  @poolboy_checkout_timeout 20_000
+  @poolboy_checkout_timeout 25_000
 
   # time budget for the genserver worker to process a single message through its flow
   # steps; chained flows via enter_flow can legitimately take more than a few seconds
