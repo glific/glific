@@ -826,7 +826,7 @@ defmodule Glific.ThirdParty.Kaapi do
   @spec get_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
   def get_document(document_id, organization_id) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"], true) do
+         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"]) do
       validate_document_response(body, organization_id)
     else
       {:error, reason} ->

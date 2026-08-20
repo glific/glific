@@ -396,7 +396,7 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
-  describe "download_knowledge_base_file/2" do
+  describe "get_file/2" do
     test "returns signed_url on successful fetch", %{organization_id: organization_id} do
       Tesla.Mock.mock(fn
         %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->
@@ -414,7 +414,7 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       assert {:ok, %{file_id: file_id, filename: filename, signed_url: signed_url}} =
-               Assistants.download_knowledge_base_file("doc_123", organization_id)
+               Assistants.get_file("doc_123", organization_id)
 
       assert file_id == "doc_123"
       assert filename == "biu-1.pdf"
@@ -431,7 +431,7 @@ defmodule Glific.Assistants.AssistantTest do
       end)
 
       assert {:error, error_message} =
-               Assistants.download_knowledge_base_file("doc_123", organization_id)
+               Assistants.get_file("doc_123", organization_id)
 
       assert is_binary(error_message)
       assert error_message =~ "status 404"

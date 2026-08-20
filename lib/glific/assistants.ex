@@ -896,11 +896,11 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Get a signed download URL for a knowledge base file from Kaapi.
+  Get a knowledge base file's metadata and signed download URL from Kaapi.
   """
-  @spec download_knowledge_base_file(String.t(), non_neg_integer()) ::
+  @spec get_file(String.t(), non_neg_integer()) ::
           {:ok, map()} | {:error, String.t()}
-  def download_knowledge_base_file(file_id, organization_id) do
+  def get_file(file_id, organization_id) do
     case Kaapi.get_document(file_id, organization_id) do
       {:ok, document_data} ->
         {:ok,

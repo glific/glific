@@ -40,9 +40,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   )
 
   load_gql(
-    :download_knowledge_base_file,
+    :get_file,
     GlificWeb.Schema,
-    "assets/gql/assistants/download_knowledge_base_file.gql"
+    "assets/gql/assistants/file_result.gql"
   )
 
   describe "create_knowledge_base/3" do
@@ -663,7 +663,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
   end
 
-  describe "download_knowledge_base_file/3" do
+  describe "get_file/3" do
     setup :enable_kaapi
 
     test "returns signed_url on success", %{staff: user} do
@@ -683,11 +683,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       end)
 
       {:ok, query_data} =
-        auth_query_gql_by(:download_knowledge_base_file, user,
-          variables: %{"file_id" => "doc_123"}
-        )
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "doc_123"})
 
-      result = query_data.data["download_knowledge_base_file"]
+      result = query_data.data["get_file"]
       assert result["file_id"] == "doc_123"
       assert result["filename"] == "biu-1.pdf"
       assert result["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
@@ -700,11 +698,9 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       end)
 
       {:ok, query_data} =
-        auth_query_gql_by(:download_knowledge_base_file, user,
-          variables: %{"file_id" => "missing_doc"}
-        )
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "missing_doc"})
 
-      assert query_data.data["download_knowledge_base_file"] == nil
+      assert query_data.data["get_file"] == nil
       assert [error | _] = query_data.errors
       assert error[:message] =~ "status 404"
     end
