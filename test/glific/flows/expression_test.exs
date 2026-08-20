@@ -686,4 +686,60 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} = Expression.validate(~S/<%= with %{"a" => <<x>>} <- @y do x end %>/)
     end
   end
+
+  describe "eval/2 — case expression" do
+    test "picks the first matching clause and evaluates its body" do
+      template =
+        ~S/<%= case @n do 0 -> "zero"; 1 -> "one"; _ -> "many" end %>/
+
+      {:ok, compiled} = Expression.compile(template)
+      assert {:ok, "zero"} = Expression.render(compiled, %{"n" => 0})
+      assert {:ok, "one"} = Expression.render(compiled, %{"n" => 1})
+      assert {:ok, "many"} = Expression.render(compiled, %{"n" => 7})
+    end
+
+    test "binds variables from the matched pattern into the body" do
+      assert {:ok, "5"} =
+               Expression.eval(~S/<%= case {:ok, 5} do {:ok, v} -> v; _ -> 0 end %>/)
+    end
+
+    test "map, list-cons and tuple patterns work like they do in with" do
+      assert {:ok, "3"} =
+               Expression.eval(~S/<%= case [1, 2, 3] do [h | _] -> h + 2; _ -> 0 end %>/)
+
+      assert {:ok, "9"} =
+               Expression.eval(~S|<%= case %{"n" => 9} do %{"n" => n} -> n; _ -> 0 end %>|)
+    end
+
+    test "pin matches against a bound value" do
+      {:ok, compiled} =
+        Expression.compile(~S/<%= case @actual do ^expected -> "eq"; _ -> "ne" end %>/)
+
+      assert {:ok, "eq"} = Expression.render(compiled, %{"actual" => 5, "expected" => 5})
+      assert {:ok, "ne"} = Expression.render(compiled, %{"actual" => 5, "expected" => 9})
+    end
+
+    test "no matching clause errors instead of raising CaseClauseError" do
+      assert {:error, _} =
+               Expression.eval(~S/<%= case 3 do 1 -> "a"; 2 -> "b" end %>/)
+    end
+
+    test "the scrutinee cannot escape the allowlist" do
+      payload = ~S/<%= case System.cmd("id", []) do _ -> "x" end %>/
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a clause body cannot escape the allowlist" do
+      payload = ~S|<%= case 1 do _ -> File.read!("/etc/hostname") end %>|
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload)
+    end
+
+    test "a guard on a clause is not supported and rejects" do
+      payload = ~S/<%= case @n do x when is_integer(x) -> x; _ -> 0 end %>/
+      assert {:error, _} = Expression.validate(payload)
+      assert {:error, _} = Expression.eval(payload, %{"n" => 1})
+    end
+  end
 end

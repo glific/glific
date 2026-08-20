@@ -52,15 +52,18 @@ defmodule Glific.Flows.Expression do
       can do work proportional to the list length. Runtime cost is still bounded
       by the `isolated/1` heap and timeout caps — not by `@max_nodes`.
 
-  ## `with` expressions
+  ## `with` and `case` expressions
 
-  `with pat <- expr, ... do body [else pat -> body ...] end` is supported. It is
-  pure control flow — every clause rhs, body and else body is interpreted through
-  `eval_node`, and patterns only *bind data* (the sole sub-evaluation is a pin
-  `^x`, an allowlisted lookup), so it introduces no new reachability. Supported
-  patterns: variables and `_`, literals and safe atoms, tuples, lists (including
-  `[h | t]`), maps (subset match), and pins. Guards on a clause
-  (`{:ok, x} when is_integer(x) <- ...`) are **not** supported and reject.
+  `with pat <- expr, ... do body [else pat -> body ...] end` and
+  `case expr do pat -> body ... end` are both supported. They are pure control
+  flow — every clause rhs, body and else body is interpreted through `eval_node`,
+  and patterns only *bind data* (the sole sub-evaluation is a pin `^x`, an
+  allowlisted lookup), so they introduce no new reachability. Supported patterns:
+  variables and `_`, literals and safe atoms, tuples, lists (including `[h | t]`),
+  maps (subset match), and pins. Guards on a clause
+  (`{:ok, x} when is_integer(x) -> ...`) are **not** supported and reject.
+  A `case` with no matching clause rejects at runtime (there is no `CaseClauseError`
+  escape hatch — we return `{:error, _}`).
   """
 
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
@@ -528,6 +531,11 @@ defmodule Glific.Flows.Expression do
   # then the do body and any else clauses.
   defp validate_ast({:with, _, clauses}) when is_list(clauses), do: validate_with(clauses)
 
+  # case value do pat -> body ... end — twin of the eval_node clause.
+  defp validate_ast({:case, _, [value, [{:do, clauses}]]}) when is_list(clauses) do
+    with :ok <- validate_ast(value), do: validate_case(clauses)
+  end
+
   defp validate_ast({:&&, _, [a, b]}), do: validate_all([a, b])
   defp validate_ast({:||, _, [a, b]}), do: validate_all([a, b])
 
@@ -626,6 +634,24 @@ defmodule Glific.Flows.Expression do
 
       other, :ok ->
         {:halt, {:error, "disallowed cond clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  # Clauses are `pat -> body`. A guard (`pat when g -> body`) wraps the pattern in
+  # `{:when, _, ...}`, which is not in the pattern grammar and rejects — same
+  # behavior as `with`.
+  defp validate_case(clauses) do
+    Enum.reduce_while(clauses, :ok, fn
+      {:->, _, [[pattern], body]}, :ok ->
+        with :ok <- validate_pattern(pattern),
+             :ok <- validate_ast(body) do
+          {:cont, :ok}
+        else
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed case clause #{safe_desc(other)}"}}
     end)
   end
 
@@ -918,6 +944,11 @@ defmodule Glific.Flows.Expression do
     eval_with(steps, Keyword.fetch!(do_else, :do), Keyword.get(do_else, :else), bindings)
   end
 
+  # case value do pat -> body ... end
+  defp eval_node({:case, _, [value_expr, [{:do, clauses}]]}, bindings) do
+    eval_case(clauses, eval_node(value_expr, bindings), bindings)
+  end
+
   # short-circuit && / ||
   defp eval_node({:&&, _, [a, b]}, bindings) do
     va = eval_node(a, bindings)
@@ -1123,6 +1154,20 @@ defmodule Glific.Flows.Expression do
   end
 
   defp eval_cond([other | _], _bindings), do: reject("disallowed cond clause #{safe_desc(other)}")
+
+  # -- case evaluation ------------------------------------------------------
+  # Reuses match_pattern/3 (the same data-only matcher `with` uses).
+  defp eval_case([], _value, _bindings), do: reject("no case clause matched")
+
+  defp eval_case([{:->, _, [[pattern], body]} | rest], value, bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> eval_case(rest, value, bindings)
+    end
+  end
+
+  defp eval_case([other | _], _value, _bindings),
+    do: reject("disallowed case clause #{safe_desc(other)}")
 
   # -- with evaluation & pattern matching -----------------------------------
 
