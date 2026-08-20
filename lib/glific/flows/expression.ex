@@ -256,6 +256,7 @@ defmodule Glific.Flows.Expression do
     {:!, 1},
     {:in, 2},
     {:to_string, 1},
+    {:inspect, 1},
     {:is_number, 1},
     {:is_binary, 1},
     {:is_integer, 1},
@@ -1087,6 +1088,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
   defp kernel_call(:in, _), do: reject("in requires a list")
   defp kernel_call(:to_string, [a]), do: to_string(a)
+  defp kernel_call(:inspect, [a]), do: inspect(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
   defp kernel_call(:is_integer, [a]), do: is_integer(a)

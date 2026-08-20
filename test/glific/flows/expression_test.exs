@@ -355,6 +355,11 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} =
                Expression.validate(~S/<%= Enum.into(@l, [], &(System.cmd(&1, []))) %>/)
 
+      # inspect/1 — stringifies any term, useful for debugging / rendering non-string values
+      assert {:ok, "\"en\""} = Expression.eval(~S/<%= inspect("en") %>/)
+      assert {:ok, "[1, 2, 3]"} = Expression.eval(~S/<%= inspect([1, 2, 3]) %>/)
+      assert {:ok, "\"EN\""} = Expression.eval(~S/<%= inspect("en") |> String.upcase() %>/)
+
       assert {:ok, "a-0,b-1,c-2"} =
                Expression.eval(
                  ~S/<%= Enum.with_index(["a", "b", "c"]) |> Enum.map_join(",", fn p -> "#{elem(p, 0)}-#{elem(p, 1)}" end) %>/
