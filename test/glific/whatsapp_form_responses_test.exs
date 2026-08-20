@@ -523,12 +523,36 @@ defmodule Glific.WhatsappFormResponsesTest do
       end
     end
 
-    test "handle_media_task_timeout/3 logs the timeout and leaves the media unchanged",
+    test "leaves the media unchanged when a task runs past the timeout",
          %{organization_id: organization_id} do
+      Application.put_env(:glific, :whatsapp_form_media_task_timeout, 50)
+      on_exit(fn -> Application.delete_env(:glific, :whatsapp_form_media_task_timeout) end)
+
       photo = %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"}
 
-      assert WhatsappFormsResponses.handle_media_task_timeout(photo, organization_id, :timeout) ==
-               photo
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, _media_id ->
+             # outlives the 50ms task timeout above, so Task.async_stream kills
+             # this task before it ever returns
+             Process.sleep(200)
+             {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [photo]}
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [^photo] = enriched["photos"]
+      end
     end
 
     test "skips re-download/re-upload for media that already has a gcs_url (retry-safe)",

@@ -146,27 +146,49 @@ defmodule Glific.WhatsappFormsResponses do
 
   def save_response_media(raw_response, _organization_id), do: raw_response
 
-  @media_task_timeout :timer.seconds(45)
+  @default_media_task_timeout :timer.seconds(45)
   @media_max_concurrency 5
+
+  # A function (not a bare module attribute) so tests can shrink it via
+  # Application.put_env/3 to exercise the on_timeout: :kill_task path without
+  # waiting out the real 45s default.
+  @spec media_task_timeout() :: non_neg_integer()
+  defp media_task_timeout,
+    do:
+      Application.get_env(:glific, :whatsapp_form_media_task_timeout, @default_media_task_timeout)
 
   # Each entry is an independent download + GCS upload, so run them concurrently
   # instead of summing their latency: processing a form's photos one-by-one can
   # push the whole batch past an external time budget (Oban attempt, retry
   # stack) that the same photos processed in parallel comfortably fit inside.
+
   @spec save_media_list(list(map()), non_neg_integer()) :: list(map())
   defp save_media_list(media_list, organization_id) do
-    media_list
-    |> Task.async_stream(&save_one_media(&1, organization_id),
+    media_with_paths = Enum.map(media_list, &{&1, local_media_path(&1)})
+
+    media_with_paths
+    |> Task.async_stream(
+      fn {media, local} -> save_one_media(media, organization_id, local) end,
       max_concurrency: @media_max_concurrency,
-      timeout: @media_task_timeout,
+      timeout: media_task_timeout(),
       on_timeout: :kill_task
     )
-    |> Enum.zip(media_list)
+    |> Enum.zip(media_with_paths)
     |> Enum.map(fn
-      {{:ok, media}, _original} -> media
-      {{:exit, reason}, original} -> handle_media_task_timeout(original, organization_id, reason)
+      {{:ok, media}, _original} ->
+        media
+
+      {{:exit, reason}, {original, local}} ->
+        File.rm(local)
+        handle_media_task_timeout(original, organization_id, reason)
     end)
   end
+
+  @spec local_media_path(map()) :: String.t()
+  defp local_media_path(%{"file_name" => file_name}),
+    do: Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
+
+  defp local_media_path(_media), do: Path.join(System.tmp_dir!(), Ecto.UUID.generate())
 
   @spec handle_media_task_timeout(map(), non_neg_integer(), any()) :: map()
   defp handle_media_task_timeout(media, organization_id, reason) do
@@ -191,21 +213,22 @@ defmodule Glific.WhatsappFormsResponses do
 
   defp media_list?(_), do: false
 
-  @spec save_one_media(map(), non_neg_integer()) :: map()
+  @spec save_one_media(map(), non_neg_integer(), String.t()) :: map()
   # Already uploaded (e.g. on an Oban retry sourced from the persisted row) — skip
   # the re-download/re-upload so the gcs_url stays stable and we don't burn the
   # Gupshup media rate limit.
-  defp save_one_media(%{"gcs_url" => gcs_url} = media, _organization_id)
+  defp save_one_media(%{"gcs_url" => gcs_url} = media, _organization_id, _local)
        when is_binary(gcs_url),
        do: media
 
   # Requires id + file_name — the same fields media_list?/1 classifies on, so every
-  # item treated as media here is actually downloadable (no silent skip).
-  defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
+  # item treated as media here is actually downloadable (no silent skip). `local`
+  # is precomputed by save_media_list/2 so it can remove the file itself if this
+  # task gets killed for timing out.
+  defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id, local) do
     # Deterministic key (media id) so a retried upload overwrites the same object
     # instead of orphaning the first one under a fresh UUID.
     remote = "whatsapp_forms/#{organization_id}/#{id}-#{file_name}"
-    local = Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
 
     with {:ok, bytes} <- PartnerAPI.download_flow_media(organization_id, id),
          :ok <- File.write(local, bytes),
@@ -225,7 +248,7 @@ defmodule Glific.WhatsappFormsResponses do
     end
   end
 
-  defp save_one_media(media, _organization_id), do: media
+  defp save_one_media(media, _organization_id, _local), do: media
 
   @doc """
   Injects the saved media URLs (gcs_url) into the contact's active flow result
