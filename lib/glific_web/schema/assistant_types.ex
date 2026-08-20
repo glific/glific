@@ -45,6 +45,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :filename, :string
     field :uploaded_at, :string
     field :file_size, :integer
+    field :signed_url, :string
+    field :errors, list_of(:input_error)
   end
 
   object :kaapi_assistant_result do
@@ -275,6 +277,13 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:assistant_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Assistants.list_assistant_versions/3)
+    end
+
+    @desc "Get a knowledge base file's metadata and signed download URL"
+    field :get_file, :file_result do
+      arg(:file_id, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Assistants.get_file/3)
     end
   end
 end
