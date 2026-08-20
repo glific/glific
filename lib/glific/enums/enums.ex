@@ -124,6 +124,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.AssistantConfigVersionStatus.__enum_map__()
   Glific.Enums.assistant_config_version_status_const()
 
+  iex> Glific.Enums.AssistantConfigVersionBumpType.__enum_map__()
+  Glific.Enums.assistant_config_version_bump_type_const()
+
   iex> Glific.Enums.KnowledgeBaseStatus.__enum_map__()
   Glific.Enums.knowledge_base_status_const()
 
@@ -202,6 +205,9 @@ defmodule Glific.Enums do
 
   defmacro assistant_config_version_status_const,
     do: Macro.expand(@assistant_config_version_status_const, __CALLER__)
+
+  defmacro assistant_config_version_bump_type_const,
+    do: Macro.expand(@assistant_config_version_bump_type_const, __CALLER__)
 
   defmacro knowledge_base_status_const,
     do: Macro.expand(@knowledge_base_status_const, __CALLER__)
