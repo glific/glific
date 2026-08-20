@@ -335,6 +335,26 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "b-a"} =
                Expression.eval(~S/<%= ["a", "b"] |> Enum.reverse() |> Enum.join("-") %>/)
 
+      assert {:ok, "2"} =
+               Expression.eval(
+                 ~S/<%= MapSet.new([1, 1, 2]) |> Enum.count() |> Integer.to_string() %>/
+               )
+
+      # Enum.into/2 with a MapSet as the collectable (dedupes 1, 1, 2 -> 2 elements)
+      assert {:ok, "2"} =
+               Expression.eval(
+                 ~S/<%= Enum.into([1, 1, 2], MapSet.new([])) |> Enum.count() |> Integer.to_string() %>/
+               )
+
+      assert {:ok, "2, 4, 6"} =
+               Expression.eval(
+                 ~S/<%= Enum.into([1, 2, 3], [], fn n -> n * 2 end) |> Enum.join(", ") %>/
+               )
+
+      # a disallowed call inside the Enum.into/3 transform closure is still rejected
+      assert {:error, _} =
+               Expression.validate(~S/<%= Enum.into(@l, [], &(System.cmd(&1, []))) %>/)
+
       assert {:ok, "1.5"} = Expression.eval(~S|<%= String.to_float("1.5") %>|)
       assert {:ok, "he"} = Expression.eval(~S|<%= String.slice("hello", 0..1//1) %>|)
       assert {:ok, "true"} = Expression.eval("<%= 5 |> Kernel.>(0) %>")

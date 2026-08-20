@@ -109,6 +109,8 @@ defmodule Glific.Flows.Expression do
     {:Enum, :filter, 2} => &Enum.filter/2,
     {:Enum, :reject, 2} => &Enum.reject/2,
     {:Enum, :map, 2} => &Enum.map/2,
+    {:Enum, :into, 2} => &Enum.into/2,
+    {:Enum, :into, 3} => &Enum.into/3,
     {:Enum, :at, 3} => &Enum.at/3,
     {:Enum, :slice, 2} => &Enum.slice/2,
     {:Enum, :find, 3} => &Enum.find/3,
@@ -126,6 +128,7 @@ defmodule Glific.Flows.Expression do
     {:List, :wrap, 1} => &List.wrap/1,
     {:Map, :get, 2} => &Map.get/2,
     {:Map, :get, 3} => &Map.get/3,
+    {:MapSet, :new, 1} => &MapSet.new/1,
     # Integer / Float / URI / Jason
     {:Integer, :to_string, 1} => &Integer.to_string/1,
     {:Float, :parse, 1} => &Float.parse/1,
