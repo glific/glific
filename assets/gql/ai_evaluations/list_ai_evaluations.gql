@@ -5,6 +5,7 @@ query AiEvaluations($filter: AiEvaluationFilter, $opts: Opts) {
     status
     failureReason
     results
+    duplicationFactor
     goldenQa {
       id
       name
