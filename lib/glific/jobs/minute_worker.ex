@@ -46,6 +46,9 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
+    # fully qualified: the bare `Instrumentation` alias in this module is the provider one
+    Glific.Jobs.Instrumentation.heartbeat()
+
     Logger.info("Performing job: #{Glific.SafeLog.safe_inspect(job)}")
     services = Partners.get_organization_services()
     perform(args, services)
@@ -78,6 +81,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "triggers_and_broadcast" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
+        Glific.Appsignal.send_message_broadcast_size()
 
       "check_user_job_status" ->
         Partners.perform_all(&UserJobWorker.check_user_job_status/1, nil, [])

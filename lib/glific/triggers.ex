@@ -18,6 +18,7 @@ defmodule Glific.Triggers do
     Repo,
     Triggers,
     Triggers.Helper,
+    Triggers.Instrumentation,
     Triggers.Trigger
   }
 
@@ -61,9 +62,13 @@ defmodule Glific.Triggers do
   defp do_execute_trigger(trigger) do
     Logger.info("executing trigger: #{trigger.name} for org_id: #{trigger.organization_id}")
 
-    trigger
-    |> update_next()
-    |> start_flow()
+    # the trigger is handed over before update_next/1 overwrites next_trigger_at, which is
+    # the scheduled time this run's start drift is measured against
+    Instrumentation.track_execution(trigger, fn ->
+      trigger
+      |> update_next()
+      |> start_flow()
+    end)
   end
 
   @spec update_next(Trigger.t()) :: Trigger.t()

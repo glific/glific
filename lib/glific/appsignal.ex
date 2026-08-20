@@ -6,7 +6,13 @@ defmodule Glific.Appsignal do
   @tracer Appsignal.Tracer
   @span Appsignal.Span
 
-  alias Glific.Repo
+  import Ecto.Query
+
+  alias Glific.{Flows.MessageBroadcast, Repo}
+
+  # Provisional backlog threshold (issue #5382) — tune from the emitted gauge before the
+  # alert goes live.
+  @default_broadcast_pending_threshold 500
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
@@ -158,6 +164,67 @@ defmodule Glific.Appsignal do
         organization_id: organization_id || "unknown"
       })
     end)
+  end
+
+  @doc """
+  Sends `message_broadcasts` size gauges to Appsignal, called every minute from
+  `Glific.Jobs.MinuteWorker`'s `triggers_and_broadcast` job.
+
+  Emits two gauges per organization:
+
+    * `message_broadcast_row_count` — every row in the table
+    * `message_broadcast_pending_count` — rows still awaiting a `completed_at`
+
+  `message_broadcasts` is never pruned (`Glific.Erase.remove_old_records/0` only trims the
+  much larger `message_broadcast_contacts`), so the total row count only ever climbs and any
+  fixed alert on it eventually fires for a healthy platform. The pending count is the
+  actionable half — it is what grows when `BroadcastWorker` stops draining the queue — so it
+  is the one compared against the threshold, with the total kept for capacity trending.
+  """
+  @spec send_message_broadcast_size :: :ok
+  def send_message_broadcast_size do
+    Enum.each(get_message_broadcast_data(), fn {organization_id, total, pending} ->
+      tags = %{organization_id: to_string(organization_id)}
+
+      Appsignal.set_gauge("message_broadcast_row_count", total, tags)
+      Appsignal.set_gauge("message_broadcast_pending_count", pending, tags)
+
+      maybe_flag_broadcast_backlog(organization_id, pending)
+    end)
+  end
+
+  @spec get_message_broadcast_data :: [{non_neg_integer(), non_neg_integer(), non_neg_integer()}]
+  defp get_message_broadcast_data do
+    MessageBroadcast
+    |> group_by([mb], mb.organization_id)
+    |> select(
+      [mb],
+      {mb.organization_id, count(mb.id), filter(count(mb.id), is_nil(mb.completed_at))}
+    )
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  @spec maybe_flag_broadcast_backlog(non_neg_integer(), non_neg_integer()) :: :ok
+  defp maybe_flag_broadcast_backlog(organization_id, pending) do
+    threshold =
+      :glific
+      |> Application.get_env(
+        :message_broadcast_pending_threshold,
+        @default_broadcast_pending_threshold
+      )
+      |> Glific.parse_maybe_integer!()
+
+    if pending > threshold do
+      Appsignal.increment_counter("message_broadcast_backlog_exceeded", 1, %{
+        organization_id: to_string(organization_id)
+      })
+
+      Glific.log_error(
+        "Message broadcast backlog: org_id #{organization_id} has #{pending} incomplete broadcasts (threshold #{threshold})"
+      )
+    end
+
+    :ok
   end
 
   @spec record_event(atom(), any(), any(), integer()) :: any()

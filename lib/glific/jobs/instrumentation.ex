@@ -15,10 +15,16 @@ defmodule Glific.Jobs.Instrumentation do
   `oban_job_duration` distribution emitted by `Glific.Appsignal`'s
   `[:oban, :job, :stop]` handler.
 
+  `heartbeat/1` covers the other half of the same question: `track/3` only ever
+  reports on a job that *ran*, so it goes quiet in exactly the failure that matters
+  most — the crontab itself stopping. See its docs below.
+
   Modelled on `Glific.Flows.Webhooks.Instrumentation` (flow webhooks) and
   `Glific.Providers.Instrumentation` (BSP send/receive), which follow the same
   wrap-and-count shape for their domains.
   """
+
+  @minute_worker_identifier "glific_minute_worker"
 
   @typedoc "Final status recorded on `job_run_count`, derived from the wrapped work's return value."
   @type status :: :success | :error | :discard
@@ -41,6 +47,29 @@ defmodule Glific.Jobs.Instrumentation do
     exception ->
       record(job, :error, organization_id)
       reraise exception, __STACKTRACE__
+  end
+
+  @doc """
+  Records a liveness heartbeat for the crontab, called at the top of every
+  `Glific.Jobs.MinuteWorker.perform/1`.
+
+  Every counter in this module is emitted *by* a job, so all of them fall silent
+  together if Oban's cron plugin stops scheduling — the outage looks identical to
+  an idle platform. This is the one signal defined by its own absence: AppSignal's
+  check-in API records the timestamp and raises the alert when no heartbeat has
+  arrived, so the staleness window lives in the AppSignal dashboard rather than in
+  code, and nothing has to be persisted on our side.
+
+  `MinuteWorker` has several every-minute crontab entries, so a healthy platform
+  checks in more than once a minute; a >5 minute gap means the crontab is dead.
+  """
+  @spec heartbeat(String.t()) :: :ok
+  def heartbeat(identifier \\ @minute_worker_identifier) do
+    Appsignal.CheckIn.heartbeat(identifier)
+    :ok
+  rescue
+    # A heartbeat that fails to send must never take down the job it is reporting on.
+    _exception -> :ok
   end
 
   @spec classify(any()) :: status()

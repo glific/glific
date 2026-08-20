@@ -169,6 +169,14 @@ config :glific, Glific.Erase,
 config :glific,
   appsignal_sampling_rate: env!("APPSIGNAL_SAMPLING_RATE", :integer, 100)
 
+# Uptime-monitoring alert thresholds (issue #5382). All three numbers are provisional and
+# left tunable via env so ops can settle them against the emitted AppSignal distributions
+# without a code change.
+config :glific,
+  trigger_start_drift_seconds: env!("TRIGGER_START_DRIFT_SECONDS", :integer, 300),
+  trigger_duration_seconds: env!("TRIGGER_DURATION_SECONDS", :integer, 60),
+  message_broadcast_pending_threshold: env!("MESSAGE_BROADCAST_PENDING_THRESHOLD", :integer, 500)
+
 upload_adapter =
   if config_env() == :test,
     do: nil,

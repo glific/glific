@@ -407,6 +407,40 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec message_broadcast_fixture(map()) :: Flows.MessageBroadcast.t()
+  def message_broadcast_fixture(attrs \\ %{}) do
+    organization_id = Map.get(attrs, :organization_id, get_org_id())
+
+    valid_attrs = %{
+      group_id: broadcast_group(organization_id).id,
+      message_id: message_fixture(%{organization_id: organization_id}).id,
+      organization_id: organization_id,
+      started_at: Elixir.DateTime.utc_now() |> Elixir.DateTime.truncate(:second)
+    }
+
+    {:ok, message_broadcast} =
+      %Flows.MessageBroadcast{}
+      |> Flows.MessageBroadcast.changeset(Enum.into(attrs, valid_attrs))
+      |> Repo.insert()
+
+    message_broadcast
+  end
+
+  # group_fixture/1 also seeds two fixed-label groups, so it raises on a second call for the
+  # same organization; reuse whatever group is already there for repeat broadcasts.
+  @spec broadcast_group(non_neg_integer()) :: Groups.Group.t()
+  defp broadcast_group(organization_id) do
+    Groups.Group
+    |> where([group], group.organization_id == ^organization_id)
+    |> limit(1)
+    |> Repo.one(skip_organization_id: true)
+    |> case do
+      nil -> group_fixture(%{organization_id: organization_id})
+      group -> group
+    end
+  end
+
+  @doc false
   @spec contact_group_fixture(map()) :: Groups.ContactGroup.t()
   def contact_group_fixture(attrs) do
     valid_attrs = %{

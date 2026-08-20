@@ -3,7 +3,7 @@ defmodule Glific.AppsignalTest do
 
   import Mock
 
-  alias Glific.Appsignal
+  alias Glific.{Appsignal, Fixtures, Repo}
 
   defp call_handle_event(args) do
     meta = %{queue: "default", worker: "TestWorker", args: args}
@@ -46,6 +46,140 @@ defmodule Glific.AppsignalTest do
   describe "send_oban_queue_size/0" do
     test "executes without error" do
       assert Appsignal.send_oban_queue_size() == :ok
+    end
+  end
+
+  describe "send_message_broadcast_size/0" do
+    # Appsignal's metric calls are no-op NIF calls in test, so the assertions capture the
+    # arguments instead — the metric names and tag values are the contract an alert is built on.
+    defp capture_metrics(fun) do
+      parent = self()
+
+      with_mock Elixir.Appsignal,
+                [:passthrough],
+                set_gauge: fn name, value, tags ->
+                  send(parent, {:metric, name, value, tags})
+                  :ok
+                end,
+                increment_counter: fn name, value, tags ->
+                  send(parent, {:metric, name, value, tags})
+                  :ok
+                end do
+        fun.()
+      end
+
+      collect_metrics([])
+    end
+
+    defp collect_metrics(acc) do
+      receive do
+        {:metric, name, value, tags} -> collect_metrics([{name, value, tags} | acc])
+      after
+        0 -> Enum.reverse(acc)
+      end
+    end
+
+    defp metric(metrics, name, organization_id) do
+      Enum.find(metrics, fn {metric_name, _value, tags} ->
+        metric_name == name and tags.organization_id == to_string(organization_id)
+      end)
+    end
+
+    defp completed_now, do: Elixir.DateTime.utc_now() |> Elixir.DateTime.truncate(:second)
+
+    defp with_threshold(threshold) do
+      previous = Application.get_env(:glific, :message_broadcast_pending_threshold)
+      Application.put_env(:glific, :message_broadcast_pending_threshold, threshold)
+
+      on_exit(fn ->
+        if is_nil(previous),
+          do: Application.delete_env(:glific, :message_broadcast_pending_threshold),
+          else: Application.put_env(:glific, :message_broadcast_pending_threshold, previous)
+      end)
+    end
+
+    test "emits a total and a pending gauge per organization",
+         %{organization_id: organization_id} = attrs do
+      Fixtures.message_broadcast_fixture(attrs)
+      Fixtures.message_broadcast_fixture(attrs)
+      Fixtures.message_broadcast_fixture(Map.put(attrs, :completed_at, completed_now()))
+
+      metrics = capture_metrics(fn -> assert Appsignal.send_message_broadcast_size() == :ok end)
+
+      assert {_name, 3, _tags} = metric(metrics, "message_broadcast_row_count", organization_id)
+
+      assert {_name, 2, _tags} =
+               metric(metrics, "message_broadcast_pending_count", organization_id)
+    end
+
+    test "counts only incomplete broadcasts as pending",
+         %{organization_id: organization_id} = attrs do
+      completed = Map.put(attrs, :completed_at, completed_now())
+      Fixtures.message_broadcast_fixture(completed)
+      Fixtures.message_broadcast_fixture(completed)
+
+      metrics = capture_metrics(fn -> Appsignal.send_message_broadcast_size() end)
+
+      assert {_name, 2, _tags} = metric(metrics, "message_broadcast_row_count", organization_id)
+
+      assert {_name, 0, _tags} =
+               metric(metrics, "message_broadcast_pending_count", organization_id)
+    end
+
+    test "flags a backlog past the configured threshold",
+         %{organization_id: organization_id} = attrs do
+      with_threshold(1)
+
+      Fixtures.message_broadcast_fixture(attrs)
+      Fixtures.message_broadcast_fixture(attrs)
+
+      metrics = capture_metrics(fn -> Appsignal.send_message_broadcast_size() end)
+
+      assert {_name, 1, _tags} =
+               metric(metrics, "message_broadcast_backlog_exceeded", organization_id)
+    end
+
+    test "does not flag a backlog inside the configured threshold",
+         %{organization_id: organization_id} = attrs do
+      with_threshold(5)
+
+      Fixtures.message_broadcast_fixture(attrs)
+
+      metrics = capture_metrics(fn -> Appsignal.send_message_broadcast_size() end)
+
+      refute metric(metrics, "message_broadcast_backlog_exceeded", organization_id)
+    end
+
+    test "reports each organization separately, so one tenant's backlog is not masked",
+         %{organization_id: organization_id} = attrs do
+      other = Fixtures.organization_fixture(%{shortcode: "broadcast_gauge_org"})
+
+      # organization_fixture/1 leaves the process scoped to the organization it just created
+      Fixtures.message_broadcast_fixture(%{organization_id: other.id})
+
+      Fixtures.message_broadcast_fixture(%{
+        organization_id: other.id,
+        completed_at: completed_now()
+      })
+
+      Repo.put_organization_id(organization_id)
+      Fixtures.message_broadcast_fixture(attrs)
+
+      metrics = capture_metrics(fn -> Appsignal.send_message_broadcast_size() end)
+
+      assert {_name, 1, _tags} =
+               metric(metrics, "message_broadcast_pending_count", organization_id)
+
+      assert {_name, 2, _tags} = metric(metrics, "message_broadcast_row_count", other.id)
+      assert {_name, 1, _tags} = metric(metrics, "message_broadcast_pending_count", other.id)
+    end
+
+    test "emits no broadcast metric when no organization has any broadcast" do
+      metrics = capture_metrics(fn -> assert Appsignal.send_message_broadcast_size() == :ok end)
+
+      refute Enum.any?(metrics, fn {name, _value, _tags} ->
+               String.starts_with?(name, "message_broadcast")
+             end)
     end
   end
 
