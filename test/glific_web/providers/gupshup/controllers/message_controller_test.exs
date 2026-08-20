@@ -885,6 +885,47 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       end
     end
 
+    test "worker processing timeout emits the processing metric and reports FlowProcessingError",
+         %{conn: conn, text_params: text_params} do
+      organization_id = conn.assigns[:organization_id]
+      test_pid = self()
+
+      # A worker-processing timeout surfaces as an Elixir GenServer call timeout — make poolboy's
+      # inner call raise it so the classification branch and the processing metric are exercised.
+      with_mocks [
+        {:poolboy, [:passthrough],
+         [
+           transaction: fn _pool, _fun, _timeout ->
+             exit({:timeout, {GenServer, :call, [self(), :flow, 1]}})
+           end
+         ]},
+        {Elixir.Appsignal, [:passthrough],
+         [
+           increment_counter: fn name, count, tags ->
+             send(test_pid, {:increment_counter, name, count, tags})
+             :ok
+           end,
+           send_error: fn exception, _stack, _fun ->
+             send(test_pid, {:send_error, exception})
+             :ok
+           end
+         ]}
+      ] do
+        conn2 = post(conn, "/gupshup", text_params)
+        assert conn2.halted
+
+        assert_receive {:increment_counter, "message_flow_processing_timeout", 1,
+                        %{organization_id: ^organization_id}},
+                       500
+
+        assert_receive {:send_error,
+                        %Glific.Communications.Message.FlowProcessingError{
+                          organization_id: ^organization_id
+                        }},
+                       500
+      end
+    end
+
     test "non-timeout poolboy error reports FlowProcessingError without the pool metric",
          %{conn: conn, text_params: text_params} do
       test_pid = self()

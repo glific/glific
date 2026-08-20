@@ -431,7 +431,8 @@ defmodule Glific.Communications.Message do
 
     Glific.log_exception(
       %FlowProcessingError{
-        message: "Poolboy caught error while processing the message for flow: #{formatted_reason}",
+        message:
+          "Poolboy caught error while processing the message for flow: #{formatted_reason}",
         reason: formatted_reason,
         organization_id: organization_id
       },
@@ -472,6 +473,17 @@ defmodule Glific.Communications.Message do
         :exit, {:timeout, {:gen_server, :call, _}} = reason ->
           Appsignal.increment_counter(
             "message_poolboy_checkout_timeout",
+            1,
+            %{organization_id: organization_id}
+          )
+
+          report_flow_processing_error(:exit, reason, organization_id)
+
+        # A worker-processing timeout: a worker was obtained but the flow step exceeded the
+        # budget. Surfaces as an Elixir GenServer call timeout.
+        :exit, {:timeout, {GenServer, :call, _}} = reason ->
+          Appsignal.increment_counter(
+            "message_flow_processing_timeout",
             1,
             %{organization_id: organization_id}
           )
