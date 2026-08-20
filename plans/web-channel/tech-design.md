@@ -12,7 +12,10 @@ comparison behind the Vercel choice below ·
 [Custom UI messages](./custom-ui-design.md) — rich UI as JSON on the web channel: built-in
 `glific/*` blocks (image panel, carousel, form) pre-rendered by the widget, plus opaque
 org-namespace components (`tap/*`) rendered by the org's own client; the envelope contract,
-authoring model, and the cross-channel direction for future channels (RCS/Telegram).
+authoring model, and the cross-channel direction for future channels (RCS/Telegram) ·
+[API authentication](./api-auth-design.md) — how a partner org's own app authenticates its
+end users: NGO-minted HS256 JWTs verified by Glific (`kid`-scoped per-org signing keys), the
+`phone`/`username` contact identity split, revocation, and session expiry on a live socket.
 
 ---
 
@@ -57,7 +60,9 @@ flowchart LR
   dedicated URL scope, `/web/`:
   - a **WebSocket API** for sending/receiving messages (`join` → last 100, `load_more`, `new_message`,
     `media`, `presence`);
-  - separate **Login / Logout REST** APIs for the web channel.
+  - separate **Login / Logout REST** APIs for the web channel. Auth itself — the two modes,
+    token contract, and revocation — is specified in
+    [API authentication](./api-auth-design.md).
 - All `/web/` endpoints (socket + REST) are namespaced under `/web/`, isolated from the staff GraphQL/REST
   surface. **There is no separate backend service** — the same Phoenix deployment serves them, and data
   resides in the existing PostgreSQL.
