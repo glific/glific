@@ -463,6 +463,50 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:ok, "10"} = Expression.eval("<%= 5 |> then(fn v -> v * 2 end) %>")
     end
 
+    test "fn params support tuple, list, literal and pin destructuring" do
+      # tuple destructuring — the corpus's Enum.with_index / group_by / into shape
+      assert {:ok, "3,7"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{1, 2}, {3, 4}], fn {a, b} -> a + b end) |> Enum.join(",") %>/
+               )
+
+      # literal + var, corpus: fn {:ok, v} -> v end
+      assert {:ok, "5,9"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{:ok, 5}, {:ok, 9}], fn {:ok, v} -> v end) |> Enum.join(",") %>/
+               )
+
+      # underscore in tuple (corpus: fn {v, _} -> v end and fn {_, i} -> i end)
+      assert {:ok, "a,b,c"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{"a", 1}, {"b", 2}, {"c", 3}], fn {v, _} -> v end) |> Enum.join(",") %>/
+               )
+
+      # list destructuring (corpus: fn [day, month, year] -> ...)
+      assert {:ok, "6"} =
+               Expression.eval(
+                 ~S/<%= Enum.map([[1, 2, 3]], fn [a, b, c] -> a + b + c end) |> Enum.at(0) |> Integer.to_string() %>/
+               )
+
+      # arity 2 with tuple destructuring in both params (Enum.max/2 comparator)
+      assert {:ok, "b"} =
+               Expression.eval(
+                 ~S/<%= Enum.max([{1, "a"}, {3, "b"}, {2, "c"}], fn {a, _}, {b, _} -> a >= b end) |> elem(1) %>/
+               )
+    end
+
+    test "an fn param that fails to match at call time returns {:error, _}" do
+      assert {:error, _} =
+               Expression.eval(
+                 ~S/<%= Enum.map([{:error, "boom"}], fn {:ok, v} -> v end) %>/
+               )
+    end
+
+    test "invalid fn param patterns are rejected at publish time" do
+      # <<x>> is a bitstring pattern, not in the pattern grammar
+      assert {:error, _} = Expression.validate(~S/<%= Enum.map(@l, fn <<x>> -> x end) %>/)
+    end
+
     test "a closure body cannot escape the allowlist" do
       for payload <- [
             "<%= Enum.find(@l, fn x -> System.cmd(x, []) end) %>",

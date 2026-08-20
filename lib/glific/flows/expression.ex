@@ -42,9 +42,12 @@ defmodule Glific.Flows.Expression do
   run allowlisted operations), but they are gaps to close before this is
   considered complete:
 
-    * **Only single-clause functions with simple variable params.** Multi-clause
-      / pattern-matching functions (`fn 1 -> ...; _ -> ... end`), destructuring
-      params (`fn {a, b} -> ... end`) and arity > 2 are rejected.
+    * **Only single-clause functions, arity 1 or 2.** Multi-clause functions
+      (`fn 1 -> ...; _ -> ... end`) and arity > 2 are rejected. Params may use
+      the same pattern grammar as `with` / `case` clauses — bare variables and
+      `_`, literals, tuples, lists (including `[h | t]`), maps (subset match),
+      and pins. A call whose argument does not match the pattern returns
+      `{:error, _}` (there is no `FunctionClauseError` escape hatch).
     * **No function-reference captures.** `&String.upcase/1` is rejected; it must
       be written `&String.upcase(&1)` or `fn x -> String.upcase(x) end`.
     * **The node cap does not bound closure work.** `@max_nodes` limits AST size,
@@ -579,20 +582,14 @@ defmodule Glific.Flows.Expression do
     end)
   end
 
-  # single-clause fn with simple params; the body is validated like any other
-  # expression (param vars are bare vars, always structurally valid).
+  # single-clause fn — params share the `with`/`case` pattern grammar (bare vars,
+  # literals, tuples, lists, maps, pins). Arity capped to match make_fun/3 at
+  # runtime, so validate/1 cannot green-light a closure that eval_node/2 rejects.
   defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
-    cond do
-      not Enum.all?(params, &match?({name, _, nil} when is_atom(name), &1)) ->
-        {:error, "unsupported fn parameter"}
-
-      # Bound arity to match make_fun/3 at runtime, so validate/1 cannot
-      # green-light a closure that eval_node/2 would reject.
-      length(params) not in [1, 2] ->
-        {:error, "unsupported fn arity"}
-
-      true ->
-        validate_ast(body)
+    if length(params) in [1, 2] do
+      with :ok <- validate_patterns(params), do: validate_ast(body)
+    else
+      {:error, "unsupported fn arity"}
     end
   end
 
@@ -629,6 +626,9 @@ defmodule Glific.Flows.Expression do
 
   # keyword-list pair (twin of the eval_node clause) — validate only the value
   defp validate_ast({key, value}) when is_atom(key), do: validate_ast(value)
+
+  # generic 2-tuple literal (3+ element tuples parse as {:{}, _, [...]}).
+  defp validate_ast({a, b}), do: validate_all([a, b])
 
   defp validate_ast(node), do: {:error, "disallowed expression: #{safe_desc(node)}"}
 
@@ -1047,6 +1047,9 @@ defmodule Glific.Flows.Expression do
   # interpreted through the allowlist like anything else.
   defp eval_node({key, value}, bindings) when is_atom(key), do: {key, eval_node(value, bindings)}
 
+  # generic 2-tuple literal — twin of the validate_ast clause.
+  defp eval_node({a, b}, bindings), do: {eval_node(a, bindings), eval_node(b, bindings)}
+
   defp eval_node(node, _), do: reject(safe_desc(node))
 
   # Explicit dispatch. Args are already evaluated (strict), so using the
@@ -1101,23 +1104,34 @@ defmodule Glific.Flows.Expression do
 
   # -- anonymous-function closures ------------------------------------------
 
-  defp build_closure(params, body, bindings) do
-    names =
-      Enum.map(params, fn
-        {name, _, nil} when is_atom(name) -> name
-        _ -> reject("unsupported fn parameter")
-      end)
+  defp build_closure(params, body, bindings), do: make_fun(params, body, bindings)
 
-    make_fun(names, body, bindings)
-  end
-
+  # Patterns are matched at call time via match_pattern/3 — the same data-only
+  # matcher `with` / `case` use. A non-matching argument surfaces as {:error, _}
+  # via reject/1; there is no FunctionClauseError escape hatch.
   defp make_fun([p1], body, bindings),
-    do: fn a1 -> eval_node(body, Map.put(bindings, p1, a1)) end
+    do: fn a1 -> apply_fun([p1], [a1], body, bindings) end
 
   defp make_fun([p1, p2], body, bindings),
-    do: fn a1, a2 -> eval_node(body, bindings |> Map.put(p1, a1) |> Map.put(p2, a2)) end
+    do: fn a1, a2 -> apply_fun([p1, p2], [a1, a2], body, bindings) end
 
   defp make_fun(_params, _body, _bindings), do: reject("unsupported fn arity")
+
+  defp apply_fun(patterns, args, body, bindings) do
+    case match_all(patterns, args, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> reject("fn parameter did not match")
+    end
+  end
+
+  defp match_all([], [], bindings), do: {:ok, bindings}
+
+  defp match_all([pattern | rest_p], [arg | rest_a], bindings) do
+    case match_pattern(pattern, arg, bindings) do
+      {:ok, bound} -> match_all(rest_p, rest_a, bound)
+      :nomatch -> :nomatch
+    end
+  end
 
   defp max_placeholder({:&, _, [n]}, acc) when is_integer(n), do: max(n, acc)
 
