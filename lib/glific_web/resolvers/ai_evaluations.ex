@@ -383,8 +383,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
-  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+  def get_evaluation_scores(_, %{id: evaluation_id} = args, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(
+           evaluation_id,
+           user.organization_id,
+           args[:export_format]
+         ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
 

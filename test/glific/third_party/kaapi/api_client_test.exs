@@ -497,6 +497,18 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                ApiClient.get_evaluation_scores(999, @org_kaapi_api_key)
     end
 
+    test "includes export_format in query when given" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{status: 200, body: %{data: %{id: 42, status: "completed"}}}
+      end)
+
+      assert {:ok, _resp} =
+               ApiClient.get_evaluation_scores(42, @org_kaapi_api_key, "grouped")
+    end
+
     test "returns error on 500 from Kaapi" do
       mock(fn %Tesla.Env{method: :get} ->
         %Tesla.Env{status: 500, body: %{error: "Internal server error"}}

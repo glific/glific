@@ -1320,6 +1320,31 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert scores.status == "completed"
     end
 
+    test "passes export_format through to Kaapi as a query param", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "completed", summary_scores: []}}
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      assert scores.status == "completed"
+    end
+
     test "returns timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
       Tesla.Mock.mock(fn %{method: :get} ->
         {:error, :timeout}
