@@ -94,6 +94,7 @@ defmodule Glific.Flows.Expression do
     {:String, :starts_with?, 2} => &String.starts_with?/2,
     {:String, :ends_with?, 2} => &String.ends_with?/2,
     {:String, :contains?, 2} => &String.contains?/2,
+    {:String, :graphemes, 1} => &String.graphemes/1,
     # Decimal
     {:Decimal, :round, 2} => &Decimal.round/2,
     {:Decimal, :from_float, 1} => &Decimal.from_float/1,
@@ -114,6 +115,9 @@ defmodule Glific.Flows.Expression do
     {:Enum, :map, 2} => &Enum.map/2,
     {:Enum, :into, 2} => &Enum.into/2,
     {:Enum, :into, 3} => &Enum.into/3,
+    {:Enum, :with_index, 1} => &Enum.with_index/1,
+    {:Enum, :with_index, 2} => &Enum.with_index/2,
+    {:Enum, :group_by, 2} => &Enum.group_by/2,
     {:Enum, :at, 3} => &Enum.at/3,
     {:Enum, :slice, 2} => &Enum.slice/2,
     {:Enum, :find, 3} => &Enum.find/3,
@@ -132,6 +136,7 @@ defmodule Glific.Flows.Expression do
     {:Map, :get, 2} => &Map.get/2,
     {:Map, :get, 3} => &Map.get/3,
     {:MapSet, :new, 1} => &MapSet.new/1,
+    {:MapSet, :member?, 2} => &MapSet.member?/2,
     # Integer / Float / URI / Jason
     {:Integer, :to_string, 1} => &Integer.to_string/1,
     {:Float, :parse, 1} => &Float.parse/1,
@@ -210,8 +215,11 @@ defmodule Glific.Flows.Expression do
     {[:Glific, :Clients, :DigitalGreen], :send_template, 2} =>
       &Glific.Clients.DigitalGreen.send_template/2,
     {[:Glific, :Clients, :ArogyaWorld], :template, 2} => &Glific.Clients.ArogyaWorld.template/2,
+    {[:Glific, :Clients, :ArogyaWorld], :template, 1} => &Glific.Clients.ArogyaWorld.template/1,
+    {[:Glific, :Clients, :PehlayAkshar], :template, 2} => &Glific.Clients.PehlayAkshar.template/2,
     {[:Glific, :Clients, :Tap], :template, 2} => &Glific.Clients.Tap.template/2,
-    {[:Glific, :Clients, :Tap], :template, 1} => &Glific.Clients.Tap.template/1
+    {[:Glific, :Clients, :Tap], :template, 1} => &Glific.Clients.Tap.template/1,
+    {[:Glific, :Templates], :template, 2} => &Glific.Templates.template/2
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain

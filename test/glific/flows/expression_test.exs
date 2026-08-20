@@ -355,6 +355,22 @@ defmodule Glific.Flows.ExpressionTest do
       assert {:error, _} =
                Expression.validate(~S/<%= Enum.into(@l, [], &(System.cmd(&1, []))) %>/)
 
+      assert {:ok, "a-0,b-1,c-2"} =
+               Expression.eval(
+                 ~S/<%= Enum.with_index(["a", "b", "c"]) |> Enum.map_join(",", fn p -> "#{elem(p, 0)}-#{elem(p, 1)}" end) %>/
+               )
+
+      assert {:ok, "1,3"} =
+               Expression.eval(
+                 ~S/<%= Enum.group_by([1, 2, 3], fn n -> rem(n, 2) end) |> Map.get(1) |> Enum.join(",") %>/
+               )
+
+      assert {:ok, "true"} =
+               Expression.eval(~S/<%= MapSet.new([1, 2, 3]) |> MapSet.member?(2) %>/)
+
+      assert {:ok, "a, b, c"} =
+               Expression.eval(~S/<%= "abc" |> String.graphemes() |> Enum.join(", ") %>/)
+
       assert {:ok, "1.5"} = Expression.eval(~S|<%= String.to_float("1.5") %>|)
       assert {:ok, "he"} = Expression.eval(~S|<%= String.slice("hello", 0..1//1) %>|)
       assert {:ok, "true"} = Expression.eval("<%= 5 |> Kernel.>(0) %>")
@@ -493,6 +509,11 @@ defmodule Glific.Flows.ExpressionTest do
                Expression.validate("<%= Glific.Clients.ArogyaWorld.template(\"u\", []) %>")
 
       assert :ok = Expression.validate(~s|<%= Glific.Clients.Tap.template("code", "") %>|)
+
+      # additional client template calls seen in the corpus
+      assert :ok = Expression.validate(~s|<%= Glific.Clients.ArogyaWorld.template("u") %>|)
+      assert :ok = Expression.validate(~s|<%= Glific.Clients.PehlayAkshar.template("l", 1) %>|)
+      assert :ok = Expression.validate(~s|<%= Glific.Templates.template("uuid", ["a"]) %>|)
 
       # but unknown multi-segment modules/functions are still rejected
       assert {:error, _} = Expression.validate("<%= Glific.Clients.Evil.cmd(\"id\") %>")
