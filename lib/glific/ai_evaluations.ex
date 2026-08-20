@@ -231,7 +231,7 @@ defmodule Glific.AIEvaluations do
           {:ok, map()} | {:error, any()}
   def get_evaluation_scores(evaluation_id, org_id, export_format \\ nil) do
     with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id}} <-
-           Repo.fetch(AIEvaluation, evaluation_id) do
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: org_id}) do
       Kaapi.get_evaluation_scores(kaapi_id, org_id, export_format)
     end
   end
