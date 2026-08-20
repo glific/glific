@@ -71,7 +71,6 @@ defmodule GlificWeb.Router do
     post("/session/name", SessionController, :name)
     post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
-    post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
