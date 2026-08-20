@@ -372,6 +372,15 @@ defmodule Glific.Flows.ExpressionTest do
                Expression.render([{:expr, {:__aliases__, [], [:String]}}], %{})
     end
 
+    test "a computed alias (capitalised trailing field) rejects instead of raising" do
+      # `@contact.fields.Grade` parses as an alias whose first segment is the
+      # `@contact.fields` AST node, not an atom — the error builder must not raise.
+      assert {:error, "module @contact.fields.Grade used as a value" <> _} =
+               Expression.validate("<%= @contact.fields.Grade %>")
+
+      assert {:error, _} = Expression.eval("<%= @contact.fields.Grade %>")
+    end
+
     test "anonymous functions (fn and & capture) with Enum" do
       results = %{"results" => %{"list" => [1, 2, 3, 4, 5]}}
 

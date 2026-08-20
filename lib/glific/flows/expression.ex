@@ -1307,9 +1307,17 @@ defmodule Glific.Flows.Expression do
     _ -> "unsupported construct"
   end
 
-  @spec alias_as_value_error([atom()]) :: String.t()
+  # `segments` are usually atoms (`String`, `Foo.Bar`), but a computed alias such
+  # as `@contact.fields.Grade` (a capitalised trailing name) carries a non-atom
+  # first segment — an AST node, not something `to_string/1` can render. Stringify
+  # each segment defensively so this never raises out of validate_ast/eval_node.
+  @spec alias_as_value_error([Macro.t()]) :: String.t()
   defp alias_as_value_error(segments) do
-    path = Enum.join(segments, ".")
+    path = Enum.map_join(segments, ".", &alias_segment/1)
     "module #{path} used as a value; call it as #{path}.function(...)"
   end
+
+  @spec alias_segment(Macro.t()) :: String.t()
+  defp alias_segment(segment) when is_atom(segment), do: Atom.to_string(segment)
+  defp alias_segment(segment), do: safe_desc(segment)
 end
