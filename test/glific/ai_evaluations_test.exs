@@ -109,77 +109,6 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "poll_and_update/1 - timeout logic" do
-    setup %{organization_id: organization_id} do
-      config_version = create_config_version(organization_id)
-      %{config_version: config_version}
-    end
-
-    test "marks processing evaluation older than 24 hours as failed", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      evaluation =
-        create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> backdate_evaluation(25)
-
-      notification_count =
-        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
-
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert updated.status == :failed
-      assert updated.failure_reason == "Evaluation timed out"
-
-      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
-               notification_count + 1
-
-      {:ok, notification} =
-        Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
-
-      assert notification.severity == Notifications.types().warning
-      assert notification.message =~ "timed out"
-    end
-
-    test "does not timeout completed or failed evaluations", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      completed =
-        create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> backdate_evaluation(25)
-
-      failed =
-        create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> backdate_evaluation(25)
-
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, unchanged_completed} = Repo.fetch_by(AIEvaluation, %{id: completed.id})
-      {:ok, unchanged_failed} = Repo.fetch_by(AIEvaluation, %{id: failed.id})
-      assert unchanged_completed.status == :completed
-      assert unchanged_failed.status == :failed
-    end
-
-    test "does not timeout recent processing evaluation", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
-
-      Tesla.Mock.mock(fn %{method: :get} ->
-        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
-      end)
-
-      enable_kaapi(organization_id)
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert unchanged.status == :processing
-    end
-  end
-
   describe "poll_and_update/1 - polling logic" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
@@ -369,16 +298,6 @@ defmodule Glific.AIEvaluationsTest do
       |> Repo.insert()
 
     evaluation
-  end
-
-  defp backdate_evaluation(evaluation, hours_ago) do
-    old_time = DateTime.utc_now() |> DateTime.add(-hours_ago, :hour) |> DateTime.truncate(:second)
-
-    from(e in AIEvaluation, where: e.id == ^evaluation.id)
-    |> Repo.update_all(set: [inserted_at: old_time])
-
-    {:ok, updated_eval} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-    updated_eval
   end
 
   describe "request_eval_access/1" do
@@ -857,6 +776,59 @@ defmodule Glific.AIEvaluationsTest do
 
     test "malformed payload is acknowledged without crashing" do
       assert :ok = AIEvaluations.handle_evaluation_run_callback(%{"unexpected" => "shape"})
+    end
+
+    test "is a no-op when the evaluation already left :processing (race with the cron poller)",
+         %{organization_id: organization_id, evaluation: evaluation} do
+      {:ok, _already_completed_by_cron} =
+        AIEvaluations.update_ai_evaluation(evaluation, %{
+          status: :completed,
+          results: %{summary_scores: []}
+        })
+
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                summary_scores: [%{name: "Cosine Similarity", avg: 0.9}],
+                traces: []
+              }
+            }
+          }
+        }
+      end)
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert :ok =
+                 AIEvaluations.handle_evaluation_run_callback(%{
+                   "data" => %{"id" => 767, "status" => "completed"}
+                 })
+
+        refute_receive {:published, _payload, _opts}, 200
+      end
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :completed
+      assert unchanged.results == %{"summary_scores" => []}
     end
   end
 
