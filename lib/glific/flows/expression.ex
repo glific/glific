@@ -574,6 +574,14 @@ defmodule Glific.Flows.Expression do
       else: {:error, "unsupported capture"}
   end
 
+  # computed alias — a capitalised trailing name on a variable, e.g.
+  # `@contact.fields.Grade`, parses as an alias whose first segment is the
+  # `@contact.fields` AST node (not an atom). It is a field reference, not a
+  # module, so reinterpret it as the field-access chain the author meant. A real
+  # bare module has an all-atom segment list and falls through to the clause below.
+  defp validate_ast({:__aliases__, meta, [inner | segments]}) when not is_atom(inner),
+    do: validate_ast(alias_to_field_access(inner, segments, meta))
+
   # bare module name used as a value, e.g. `String` on its own instead of
   # `String.upcase(x)` (twin of the eval_node clause). Rejected like before, but
   # with an author-actionable message instead of the opaque "__aliases__/N".
@@ -959,6 +967,12 @@ defmodule Glific.Flows.Expression do
   defp eval_node({:&, _, [inner]}, bindings),
     do: make_capture(max_placeholder(inner, 0), inner, bindings)
 
+  # computed alias — a capitalised trailing field/result name on a variable, e.g.
+  # `@contact.fields.Grade` (twin of the validate_ast clause). Reinterpreted as
+  # the field-access chain the author meant, so it resolves like any other var.
+  defp eval_node({:__aliases__, meta, [inner | segments]}, bindings) when not is_atom(inner),
+    do: eval_node(alias_to_field_access(inner, segments, meta), bindings)
+
   # bare module name used as a value (e.g. `String` on its own, not
   # `String.upcase(x)`). Still fail-closed; only the message is friendlier.
   defp eval_node({:__aliases__, _, segments}, _bindings) when is_list(segments),
@@ -1320,4 +1334,14 @@ defmodule Glific.Flows.Expression do
   @spec alias_segment(Macro.t()) :: String.t()
   defp alias_segment(segment) when is_atom(segment), do: Atom.to_string(segment)
   defp alias_segment(segment), do: safe_desc(segment)
+
+  # Fold a computed alias's segments onto its inner expression as nested field
+  # access: `@contact.fields` + [:Grade] -> `@contact.fields.Grade`. The result is
+  # an ordinary field-access node, gated exactly like any other (maps only, keys
+  # are data), so this adds no reachability — it only stops a capitalised field
+  # name from being misread as a module.
+  @spec alias_to_field_access(Macro.t(), [atom()], keyword()) :: Macro.t()
+  defp alias_to_field_access(inner, segments, meta) do
+    Enum.reduce(segments, inner, fn segment, acc -> {{:., meta, [acc, segment]}, meta, []} end)
+  end
 end

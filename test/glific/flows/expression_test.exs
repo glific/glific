@@ -372,13 +372,28 @@ defmodule Glific.Flows.ExpressionTest do
                Expression.render([{:expr, {:__aliases__, [], [:String]}}], %{})
     end
 
-    test "a computed alias (capitalised trailing field) rejects instead of raising" do
+    test "a capitalised field/result name is treated as a variable, not a module" do
       # `@contact.fields.Grade` parses as an alias whose first segment is the
-      # `@contact.fields` AST node, not an atom — the error builder must not raise.
-      assert {:error, "module @contact.fields.Grade used as a value" <> _} =
-               Expression.validate("<%= @contact.fields.Grade %>")
+      # `@contact.fields` AST node; it is a field reference, so it validates and
+      # resolves like any other variable rather than being rejected as a module.
+      assert :ok = Expression.validate("<%= @contact.fields.Grade %>")
+      assert :ok = Expression.validate("<%= @results.Score %>")
 
-      assert {:error, _} = Expression.eval("<%= @contact.fields.Grade %>")
+      {:ok, compiled} = Expression.compile("<%= @contact.fields.Grade %>")
+
+      assert {:ok, "8"} =
+               Expression.render(compiled, %{"contact" => %{"fields" => %{"Grade" => "8"}}})
+
+      # an unresolved reference degrades like a lowercase one (never raises)
+      assert {:error, "field access on non-map"} =
+               Expression.eval("<%= @contact.fields.Grade %>")
+    end
+
+    test "a genuine bare module is still rejected" do
+      assert {:error, "module String used as a value" <> _} = Expression.validate("<%= String %>")
+
+      assert {:error, "module Foo.Bar used as a value" <> _} =
+               Expression.validate("<%= Foo.Bar %>")
     end
 
     test "anonymous functions (fn and & capture) with Enum" do
