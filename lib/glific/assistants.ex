@@ -550,12 +550,18 @@ defmodule Glific.Assistants do
   end
 
   @spec resolve_knowledge_base_version(Assistant.t(), map()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t() | [String.t()]}
+          {:ok, KnowledgeBaseVersion.t() | nil} | {:error, String.t() | [String.t()]}
   defp resolve_knowledge_base_version(_assistant, %{
          knowledge_base_version_id: knowledge_base_version_id
        })
        when not is_nil(knowledge_base_version_id),
        do: KnowledgeBaseVersion.get_by_version_id(knowledge_base_version_id)
+
+  # `knowledge_base_version_id` present but nil means the caller explicitly
+  # cleared the knowledge base (e.g. removed all files) rather than leaving
+  # it untouched, so unlink instead of falling back to the current version.
+  defp resolve_knowledge_base_version(_assistant, %{knowledge_base_version_id: nil}),
+    do: {:ok, nil}
 
   defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
@@ -955,9 +961,15 @@ defmodule Glific.Assistants do
     If Kaapi collection creation fails, any newly created records are cleaned up immediately:
     - The KnowledgeBaseVersion is always deleted on Kaapi failure.
     - The KnowledgeBase is deleted only if it was newly created (not fetched from an existing ID).
+
+    Kaapi rejects collections with no documents, so when `media_info` is empty this skips
+    Kaapi and the DB writes entirely and returns a nil knowledge base/version.
   """
   @spec create_knowledge_base_with_version(params :: map()) ::
           {:ok, map()} | {:error, Ecto.Changeset.t() | String.t()}
+  def create_knowledge_base_with_version(%{media_info: []}),
+    do: {:ok, %{knowledge_base_version: nil, knowledge_base: nil}}
+
   def create_knowledge_base_with_version(params) do
     newly_created_kb = is_nil(params[:id])
 
