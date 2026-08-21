@@ -111,51 +111,45 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
-    case do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}}) do
-      {:ok, updated_evaluation} ->
-        duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+    with {:ok, updated_evaluation} <-
+           do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}}) do
+      duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
 
-        Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
-          org_id: org_id
-        })
+      Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
+        org_id: org_id
+      })
 
-        Metrics.increment("AI Evaluation Completed", org_id)
+      Metrics.increment("AI Evaluation Completed", org_id)
 
-        Notifications.create_notification(%{
-          category: "AI Evaluation",
-          message: "AI evaluation #{updated_evaluation.name} completed successfully.",
-          severity: Notifications.types().info,
-          organization_id: org_id,
-          entity: %{evaluation_id: updated_evaluation.id}
-        })
-
-        :ok
-
-      _ ->
-        :ok
+      Notifications.create_notification(%{
+        category: "AI Evaluation",
+        message: "AI evaluation #{updated_evaluation.name} completed successfully.",
+        severity: Notifications.types().info,
+        organization_id: org_id,
+        entity: %{evaluation_id: updated_evaluation.id}
+      })
     end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
 
-    case do_update(evaluation, %{status: :failed, failure_reason: failure_reason}) do
-      {:ok, updated_evaluation} ->
-        Metrics.increment("AI Evaluation Failed", org_id)
+    with {:ok, updated_evaluation} <-
+           do_update(evaluation, %{status: :failed, failure_reason: failure_reason}) do
+      Metrics.increment("AI Evaluation Failed", org_id)
 
-        Notifications.create_notification(%{
-          category: "AI Evaluation",
-          message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
-          severity: Notifications.types().warning,
-          organization_id: org_id,
-          entity: %{evaluation_id: updated_evaluation.id}
-        })
-
-        :ok
-
-      _ ->
-        :ok
+      Notifications.create_notification(%{
+        category: "AI Evaluation",
+        message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
+        severity: Notifications.types().warning,
+        organization_id: org_id,
+        entity: %{evaluation_id: updated_evaluation.id}
+      })
     end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
@@ -172,35 +166,17 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  # Atomically transitions from :processing so a racing cron poll and Kaapi callback can't
-  # both apply side effects (notifications, metrics, subscription publish) for the same row.
   @spec do_update(AIEvaluation.t(), map()) ::
-          {:ok, AIEvaluation.t()} | :noop | {:error, Ecto.Changeset.t()}
+          {:ok, AIEvaluation.t()} | {:error, Ecto.Changeset.t()}
   defp do_update(evaluation, attrs) do
-    changeset = AIEvaluation.changeset(evaluation, attrs)
+    with {:ok, updated_evaluation} <- update_ai_evaluation(evaluation, attrs) do
+      Absinthe.Subscription.publish(
+        GlificWeb.Endpoint,
+        updated_evaluation,
+        ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+      )
 
-    if changeset.valid? do
-      set = Keyword.new(changeset.changes) ++ [updated_at: DateTime.utc_now(:second)]
-
-      AIEvaluation
-      |> where([e], e.id == ^evaluation.id and e.status == :processing)
-      |> select([e], e)
-      |> Repo.update_all([set: set], returning: true)
-      |> case do
-        {1, [updated_evaluation]} ->
-          Absinthe.Subscription.publish(
-            GlificWeb.Endpoint,
-            updated_evaluation,
-            ai_evaluation_updated: "#{updated_evaluation.organization_id}"
-          )
-
-          {:ok, updated_evaluation}
-
-        {0, _} ->
-          :noop
-      end
-    else
-      {:error, changeset}
+      {:ok, updated_evaluation}
     end
   end
 
