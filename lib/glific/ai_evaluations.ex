@@ -316,34 +316,73 @@ defmodule Glific.AIEvaluations do
 
   @doc """
   Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes.
+  Publishes `improve_prompt_updated` on a terminal (SUCCESS/FAILED) status; `organization_id`
+  is only required for the FAILED case since there's no config version to derive it from.
   """
-  @spec handle_improve_prompt_callback(map()) ::
+  @spec handle_improve_prompt_callback(map(), non_neg_integer() | nil) ::
           {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, String.t()}
-  def handle_improve_prompt_callback(%{"data" => %{"status" => "SUCCESS"} = data}),
-    do: create_improve_prompt_config_version(data["config_version"] || %{})
+  def handle_improve_prompt_callback(params, organization_id \\ nil)
 
-  def handle_improve_prompt_callback(%{"data" => %{"status" => "FAILED"} = data}) do
+  def handle_improve_prompt_callback(
+        %{"data" => %{"status" => "SUCCESS"} = data},
+        _organization_id
+      ) do
+    case create_improve_prompt_config_version(data["config_version"] || %{}) do
+      {:ok, config_version} = result ->
+        publish_improve_prompt_update(config_version.organization_id, %{
+          status: "success",
+          config_version: config_version,
+          error: nil
+        })
+
+        result
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  def handle_improve_prompt_callback(%{"data" => %{"status" => "FAILED"} = data}, organization_id) do
     Glific.log_exception(%Kaapi.Error{
       message: "Improve prompt failed",
       reason: safe_inspect(data)
     })
 
+    if organization_id do
+      publish_improve_prompt_update(organization_id, %{
+        status: "failed",
+        config_version: nil,
+        error: data["error_message"] || "Improve prompt failed"
+      })
+    end
+
     {:ok, :acknowledged}
   end
 
   # Non-terminal status (e.g. still PENDING) — nothing to do yet.
-  def handle_improve_prompt_callback(%{"data" => %{"status" => _}}),
+  def handle_improve_prompt_callback(%{"data" => %{"status" => _}}, _organization_id),
     do: {:ok, :acknowledged}
 
   # Defensive catch-all: the callback endpoint is public, so a malformed body must not
   # raise (the controller must still return 200).
-  def handle_improve_prompt_callback(params) do
+  def handle_improve_prompt_callback(params, _organization_id) do
     Glific.log_exception(%Kaapi.Error{
       message: "Unexpected improve prompt callback payload",
       reason: safe_inspect(params)
     })
 
     {:error, "Unexpected improve prompt callback payload"}
+  end
+
+  @spec publish_improve_prompt_update(non_neg_integer(), map()) :: :ok
+  defp publish_improve_prompt_update(organization_id, payload) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      payload,
+      improve_prompt_updated: "#{organization_id}"
+    )
+
+    :ok
   end
 
   @spec build_improve_prompt_callback_url(non_neg_integer()) :: String.t()
