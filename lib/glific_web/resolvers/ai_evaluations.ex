@@ -383,8 +383,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
-  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+  def get_evaluation_scores(_, %{id: evaluation_id} = args, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(
+           evaluation_id,
+           user.organization_id,
+           args[:export_format] || "row"
+         ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
 
@@ -450,6 +454,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
+             duplication_factor: duplication_factor,
              golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id

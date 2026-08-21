@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :ai_evaluation_status_enum
     field :failure_reason, :string
     field :results, :json
+    field :duplication_factor, :integer
     field :golden_qa, :ai_eval_golden_qa
     field :assistant_config_version, :ai_eval_config_version
     field :inserted_at, :datetime
@@ -159,6 +160,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Get Evaluation Scores"
     field :evaluation_scores, :evaluation_scores_result do
       arg(:id, non_null(:id))
+      arg(:export_format, :string)
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
