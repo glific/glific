@@ -1839,8 +1839,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      assert {:ok, %{evaluation: _evaluation}} =
+      assert {:ok, %{evaluation: evaluation}} =
                AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.duplication_factor == 3
 
       FunWithFlags.disable(:is_ai_evaluation_enabled,
         for_actor: %{organization_id: user.organization_id}
