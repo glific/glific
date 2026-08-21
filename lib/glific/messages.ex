@@ -325,11 +325,10 @@ defmodule Glific.Messages do
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
-    # `create_and_send_message/1`'s top-level guard only rejects an empty body when the
-    # caller explicitly passes `type: :text`. Callers (e.g. `create_and_send_message` GraphQL
-    # mutations) that omit `type` entirely skip that guard and land here, where `type`
-    # defaults to `:text` via `Map.put_new/3` below. Re-check with the type resolved so we
-    # don't persist a `type: :text` message with a `nil`/empty body (see issue #4848).
+    # `type` defaults to `:text` here so callers that omit it (e.g. the
+    # `create_and_send_message` GraphQL mutation) are checked the same as an explicit
+    # `type: :text`, and we never persist a `:text` message with a `nil`/empty body
+    # (see issue #4848).
     attrs = Map.put_new(attrs, :type, :text)
 
     if attrs.type == :text && attrs[:body] in ["", nil] do
