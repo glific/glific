@@ -71,7 +71,6 @@ defmodule GlificWeb.Router do
     post("/session/name", SessionController, :name)
     post("/session/tracker", SessionController, :tracker)
     post("/onboard/setup", OnboardController, :setup)
-    post("/onboard/update-registration-details", OnboardController, :update_registration)
     post("/onboard/reachout", OnboardController, :reachout)
     post("/trial/allocate-account", TrialAccountController, :trial)
     post("/trial/create-trial-user", TrialUsersController, :create_trial_user)
@@ -81,6 +80,7 @@ defmodule GlificWeb.Router do
     pipe_through([:api, :api_protected])
 
     post("/get-embed-token", SupersetController, :embed_token)
+    post("/simulator/message", SimulatorController, :message)
   end
 
   # Enables LiveDashboard only for development

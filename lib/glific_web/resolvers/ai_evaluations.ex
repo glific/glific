@@ -383,8 +383,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
-  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+  def get_evaluation_scores(_, %{id: evaluation_id} = args, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(
+           evaluation_id,
+           user.organization_id,
+           args[:export_format] || "row"
+         ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
 
@@ -411,7 +415,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec create_evaluation(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
   def create_evaluation(_, %{input: input}, %{context: %{current_user: user}}) do
-    with {:name, {:error, _}} <-
+    duplication_factor = Map.get(input, :duplication_factor) || 1
+
+    with :ok <- validate_duplication_factor(duplication_factor),
+         {:name, {:error, _}} <-
            {:name,
             Repo.fetch_by(AIEvaluation, %{
               name: input.evaluation_name,
@@ -436,7 +443,8 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
            config_version: config_version.kaapi_version_number,
            dataset_id: golden_qa.dataset_id
          },
-         {:ok, kaapi_response} <- run_kaapi_evaluation(kaapi_input, user.organization_id),
+         {:ok, kaapi_response} <-
+           run_kaapi_evaluation(kaapi_input, duplication_factor, user.organization_id),
          {:kaapi_response, {:ok, data}} <-
            {:kaapi_response, validate_kaapi_evaluation_response(kaapi_response)},
          {:status, {:ok, status}} <- {:status, parse_ai_evaluation_status(data.status)},
@@ -446,6 +454,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
+             duplication_factor: duplication_factor,
              golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
@@ -489,12 +498,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec run_kaapi_evaluation(map(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
-  defp run_kaapi_evaluation(kaapi_input, organization_id) do
+  @spec run_kaapi_evaluation(map(), integer(), non_neg_integer()) ::
+          {:ok, map()} | {:error, any()}
+  defp run_kaapi_evaluation(kaapi_input, duplication_factor, organization_id) do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
-      Kaapi.create_evaluation_v2(kaapi_input, organization_id)
+      kaapi_input
+      |> Map.put(:duplication_factor, duplication_factor)
+      |> Kaapi.create_evaluation_v2(organization_id)
     else
       Kaapi.create_evaluation(kaapi_input, organization_id)
     end

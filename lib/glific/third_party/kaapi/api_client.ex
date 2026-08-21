@@ -273,12 +273,15 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
-  @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, org_api_key) do
+  @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, org_api_key, export_format \\ "row") do
+    query = [get_trace_info: "true", export_format: export_format]
+
     org_api_key
     |> client()
     |> Tesla.get("/api/v1/evaluations/:evaluation_id",
-      query: [get_trace_info: "true"],
+      query: query,
       opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
     )
     |> parse_kaapi_response()
@@ -314,6 +317,20 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     |> Tesla.get("/api/v1/evaluations/datasets/:dataset_id",
       query: query_params,
       opts: [path_params: [dataset_id: dataset_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
+  Get a document from Kaapi, including its signed download URL.
+  """
+  @spec get_document(String.t(), String.t()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/documents/:document_id",
+      query: [include_url: "true"],
+      opts: [path_params: [document_id: document_id]]
     )
     |> parse_kaapi_response()
   end
