@@ -821,6 +821,47 @@ defmodule Glific.ThirdParty.Kaapi do
   end
 
   @doc """
+  Get document details from Kaapi, including its signed download URL.
+  """
+  @spec get_document(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, organization_id) do
+    with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
+         {:ok, body} <- ApiClient.get_document(document_id, secrets["api_key"]) do
+      validate_document_response(body, organization_id)
+    else
+      {:error, reason} ->
+        Glific.log_exception(%Error{
+          message: "Failed to get document from Kaapi",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+
+        {:error, reason}
+    end
+  end
+
+  @spec validate_document_response(any(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  defp validate_document_response(
+         %{success: true, data: %{signed_url: signed_url}} = body,
+         _organization_id
+       )
+       when is_binary(signed_url) and signed_url != "" do
+    %{data: data} = body
+    {:ok, data}
+  end
+
+  defp validate_document_response(body, organization_id) do
+    Glific.log_exception(%Error{
+      message: "Kaapi document response missing signed_url",
+      organization_id: organization_id,
+      reason: safe_inspect(body)
+    })
+
+    {:error, "File download URL not available"}
+  end
+
+  @doc """
   Delete an evaluation dataset from Kaapi.
   """
   @spec delete_evaluation_dataset(non_neg_integer() | String.t(), non_neg_integer()) ::

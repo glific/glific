@@ -309,6 +309,48 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "get_document/2" do
+    test "returns document data with signed_url" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:include_url] == "true"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              id: "96331afd-7f06-4a46-ac4d-0a65c6fd1b1e",
+              fname: "biu-1.pdf",
+              project_id: 1,
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{success: true, data: data}} =
+               ApiClient.get_document("96331afd-7f06-4a46-ac4d-0a65c6fd1b1e", @org_kaapi_api_key)
+
+      assert data.fname == "biu-1.pdf"
+      assert data.signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns error when document is not found" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 404, body: %{error: "Not Found"}}
+      end)
+
+      assert {:error, %{status: 404, body: %{error: "Not Found"}}} =
+               ApiClient.get_document("missing_doc", @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :get} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = ApiClient.get_document("doc_1", @org_kaapi_api_key)
+    end
+  end
+
   describe "create_config_version/3" do
     test "successfully creates config version in kaapi" do
       mock(fn %Tesla.Env{method: :post} ->
