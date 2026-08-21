@@ -191,8 +191,11 @@ defmodule Glific.AIEvaluations do
 
           updated_evaluation
 
-        _ ->
-          Repo.rollback(:skip)
+        {:ok, _already_resolved} ->
+          Repo.rollback(:already_processed)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
       end
     end)
   end
