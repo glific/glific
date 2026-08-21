@@ -462,6 +462,99 @@ defmodule Glific.WhatsappFormResponsesTest do
                "not-a-map"
     end
 
+    test "processes multiple media items concurrently instead of one at a time",
+         %{organization_id: organization_id} do
+      photo_a = %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"}
+      photo_b = %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
+      photo_c = %{"id" => 3, "file_name" => "c.jpg", "mime_type" => "image/jpeg"}
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, _media_id ->
+             Process.sleep(200)
+             {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [photo_a, photo_b, photo_c]}
+
+        {elapsed_microseconds, enriched} =
+          :timer.tc(fn ->
+            WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+          end)
+
+        assert Enum.all?(enriched["photos"], &Map.has_key?(&1, "gcs_url"))
+        assert elapsed_microseconds < 500_000
+      end
+    end
+
+    test "keeps each photo's own gcs_url distinct when processed concurrently",
+         %{organization_id: organization_id} do
+      photo_a = %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"}
+      photo_b = %{"id" => 2, "file_name" => "b.jpg", "mime_type" => "image/jpeg"}
+      photo_c = %{"id" => 3, "file_name" => "c.jpg", "mime_type" => "image/jpeg"}
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [download_flow_media: fn _org, _media_id -> {:ok, <<255, 216, 255>>} end]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, remote, _org ->
+             {:ok, %{url: "https://gcs.test/#{remote}", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [photo_a, photo_b, photo_c]}
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [gcs_url_a, gcs_url_b, gcs_url_c] = Enum.map(enriched["photos"], & &1["gcs_url"])
+        assert gcs_url_a =~ "1-a.jpg"
+        assert gcs_url_b =~ "2-b.jpg"
+        assert gcs_url_c =~ "3-c.jpg"
+        assert Enum.map(enriched["photos"], & &1["id"]) == [1, 2, 3]
+      end
+    end
+
+    test "leaves the media unchanged when a task runs past the timeout",
+         %{organization_id: organization_id} do
+      Application.put_env(:glific, :whatsapp_form_media_task_timeout, 50)
+      on_exit(fn -> Application.delete_env(:glific, :whatsapp_form_media_task_timeout) end)
+
+      photo = %{"id" => 1, "file_name" => "a.jpg", "mime_type" => "image/jpeg"}
+
+      with_mocks([
+        {PartnerAPI, [:passthrough],
+         [
+           download_flow_media: fn _org, _media_id ->
+             # outlives the 50ms task timeout above, so Task.async_stream kills
+             # this task before it ever returns
+             Process.sleep(200)
+             {:ok, <<255, 216, 255>>}
+           end
+         ]},
+        {GcsWorker, [:passthrough],
+         [
+           upload_media: fn _local, _remote, _org ->
+             {:ok, %{url: "https://gcs.test/photo.jpg", type: :image}}
+           end
+         ]}
+      ]) do
+        raw_response = %{"photos" => [photo]}
+
+        enriched = WhatsappFormsResponses.save_response_media(raw_response, organization_id)
+
+        assert [^photo] = enriched["photos"]
+      end
+    end
+
     test "skips re-download/re-upload for media that already has a gcs_url (retry-safe)",
          %{organization_id: organization_id} do
       with_mocks([

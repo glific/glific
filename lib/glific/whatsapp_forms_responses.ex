@@ -4,7 +4,6 @@ defmodule Glific.WhatsappFormsResponses do
   """
   import Ecto.Query
   use Publicist
-  require Logger
 
   alias Glific.{
     Flows.FlowContext,
@@ -137,7 +136,7 @@ defmodule Glific.WhatsappFormsResponses do
     Map.new(raw_response, fn
       {key, value} when is_list(value) ->
         if media_list?(value),
-          do: {key, Enum.map(value, &save_one_media(&1, organization_id))},
+          do: {key, save_media_list(value, organization_id)},
           else: {key, value}
 
       kv ->
@@ -146,6 +145,59 @@ defmodule Glific.WhatsappFormsResponses do
   end
 
   def save_response_media(raw_response, _organization_id), do: raw_response
+
+  @default_media_task_timeout :timer.seconds(45)
+  @media_max_concurrency 5
+
+  # A function (not a bare module attribute) so tests can shrink it via
+  # Application.put_env/3 to exercise the on_timeout: :kill_task path without
+  # waiting out the real 45s default.
+  @spec media_task_timeout() :: non_neg_integer()
+  defp media_task_timeout,
+    do:
+      Application.get_env(:glific, :whatsapp_form_media_task_timeout, @default_media_task_timeout)
+
+  # Each entry is an independent download + GCS upload, so run them concurrently
+  # instead of summing their latency: processing a form's photos one-by-one can
+  # push the whole batch past an external time budget (Oban attempt, retry
+  # stack) that the same photos processed in parallel comfortably fit inside.
+
+  @spec save_media_list(list(map()), non_neg_integer()) :: list(map())
+  defp save_media_list(media_list, organization_id) do
+    media_with_paths = Enum.map(media_list, &{&1, local_media_path(&1)})
+
+    media_with_paths
+    |> Task.async_stream(
+      fn {media, local} -> save_one_media(media, organization_id, local) end,
+      max_concurrency: @media_max_concurrency,
+      timeout: media_task_timeout(),
+      on_timeout: :kill_task
+    )
+    |> Enum.zip(media_with_paths)
+    |> Enum.map(fn
+      {{:ok, media}, _original} ->
+        media
+
+      {{:exit, reason}, {original, local}} ->
+        File.rm(local)
+        handle_media_task_timeout(original, organization_id, reason)
+    end)
+  end
+
+  @spec local_media_path(map()) :: String.t()
+  defp local_media_path(%{"file_name" => file_name}),
+    do: Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
+
+  defp local_media_path(_media), do: Path.join(System.tmp_dir!(), Ecto.UUID.generate())
+
+  @spec handle_media_task_timeout(map(), non_neg_integer(), any()) :: map()
+  defp handle_media_task_timeout(media, organization_id, reason) do
+    Glific.log_error(
+      "Timed out saving WhatsApp form media #{media["file_name"]} (id #{media["id"]}) for org_id=#{organization_id}: #{SafeLog.safe_inspect(reason)}"
+    )
+
+    media
+  end
 
   # A media list is a NON-EMPTY list where EVERY item carries the WhatsApp media
   # fields we need to download it. Validating all items (not just the head) means a
@@ -161,21 +213,22 @@ defmodule Glific.WhatsappFormsResponses do
 
   defp media_list?(_), do: false
 
-  @spec save_one_media(map(), non_neg_integer()) :: map()
+  @spec save_one_media(map(), non_neg_integer(), String.t()) :: map()
   # Already uploaded (e.g. on an Oban retry sourced from the persisted row) — skip
   # the re-download/re-upload so the gcs_url stays stable and we don't burn the
   # Gupshup media rate limit.
-  defp save_one_media(%{"gcs_url" => gcs_url} = media, _organization_id)
+  defp save_one_media(%{"gcs_url" => gcs_url} = media, _organization_id, _local)
        when is_binary(gcs_url),
        do: media
 
   # Requires id + file_name — the same fields media_list?/1 classifies on, so every
-  # item treated as media here is actually downloadable (no silent skip).
-  defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id) do
+  # item treated as media here is actually downloadable (no silent skip). `local`
+  # is precomputed by save_media_list/2 so it can remove the file itself if this
+  # task gets killed for timing out.
+  defp save_one_media(%{"id" => id, "file_name" => file_name} = media, organization_id, local) do
     # Deterministic key (media id) so a retried upload overwrites the same object
     # instead of orphaning the first one under a fresh UUID.
     remote = "whatsapp_forms/#{organization_id}/#{id}-#{file_name}"
-    local = Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}-#{file_name}")
 
     with {:ok, bytes} <- PartnerAPI.download_flow_media(organization_id, id),
          :ok <- File.write(local, bytes),
@@ -187,15 +240,15 @@ defmodule Glific.WhatsappFormsResponses do
         # for the download/write-ok-but-upload-failed path (no-op if it never existed).
         File.rm(local)
 
-        Logger.error(
-          "Failed to save WhatsApp form media #{file_name} (id #{id}): #{SafeLog.safe_inspect(error)}"
+        Glific.log_error(
+          "Failed to save WhatsApp form media #{file_name} (id #{id}) for org_id=#{organization_id}: #{SafeLog.safe_inspect(error)}"
         )
 
         media
     end
   end
 
-  defp save_one_media(media, _organization_id), do: media
+  defp save_one_media(media, _organization_id, _local), do: media
 
   @doc """
   Injects the saved media URLs (gcs_url) into the contact's active flow result

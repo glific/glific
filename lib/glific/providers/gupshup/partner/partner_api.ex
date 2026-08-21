@@ -42,6 +42,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # Returns the raw media bytes directly (one-step, no decryption).
   @flow_media_path "/media/"
   @library_templates_recv_timeout 30_000
+  @flow_media_recv_timeout 20_000
 
   @modes [
     "ENQUEUED",
@@ -96,7 +97,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     # tagged tuple (the caller treats it as a soft failure).
     with {:ok, base_url} <- app_url(org_id) do
       (base_url <> @flow_media_path <> to_string(media_id))
-      |> get(headers: headers(:app_token, org_id: org_id))
+      |> get(
+        headers: headers(:app_token, org_id: org_id),
+        opts: [adapter: [recv_timeout: @flow_media_recv_timeout]]
+      )
       |> case do
         {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
           {:ok, body}
