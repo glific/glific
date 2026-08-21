@@ -738,11 +738,12 @@ defmodule Glific.ThirdParty.Kaapi do
   @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
-  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, organization_id) do
+  def get_evaluation_scores(evaluation_id, organization_id, export_format \\ "row") do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),
-         {:ok, result} <- ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"]) do
+         {:ok, result} <-
+           ApiClient.get_evaluation_scores(evaluation_id, secrets["api_key"], export_format) do
       {:ok, result}
     else
       {:error, :timeout} ->
