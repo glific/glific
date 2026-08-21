@@ -9,6 +9,7 @@ defmodule Glific.AIEvaluationsTest do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBase,
@@ -311,6 +312,99 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
+    end
+  end
+
+  describe "poll_and_update/1 - updates assistant's last_evaluation_run_id" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+      %{config_version: config_version}
+    end
+
+    test "sets last_evaluation_run_id when the evaluation completes against the assistant's active config version",
+         %{organization_id: organization_id, config_version: config_version} do
+      unsaved_assistant = Repo.get!(Assistant, config_version.assistant_id)
+
+      {:ok, assistant} =
+        unsaved_assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      assert {:ok, %{last_evaluation_summary: nil}} = Assistants.get_assistant(assistant.id)
+
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, updated_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
+      assert updated_assistant.last_evaluation_run_id == evaluation.id
+
+      assert {:ok,
+              %{
+                last_evaluation_summary: %{
+                  "summary_scores" => [%{"name" => "Cosine Similarity"}]
+                }
+              }} = Assistants.get_assistant(assistant.id)
+    end
+
+    test "does not set last_evaluation_run_id when the evaluation completes against a non-active config version",
+         %{organization_id: organization_id, config_version: config_version} do
+      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "completed"}}}
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: config_version.assistant_id})
+      assert unchanged_assistant.active_config_version_id != config_version.id
+      assert unchanged_assistant.last_evaluation_run_id == nil
+
+      {:ok, updated_evaluation} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated_evaluation.status == :completed
+    end
+
+    test "does not set last_evaluation_run_id when the evaluation fails",
+         %{organization_id: organization_id, config_version: config_version} do
+      unsaved_assistant = Repo.get!(Assistant, config_version.assistant_id)
+
+      {:ok, assistant} =
+        unsaved_assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      create_evaluation(organization_id, config_version.id, %{status: :processing})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Kaapi evaluation failed"}}
+        }
+      end)
+
+      AIEvaluations.poll_and_update(organization_id)
+
+      {:ok, unchanged_assistant} = Repo.fetch_by(Assistant, %{id: assistant.id})
+      assert unchanged_assistant.last_evaluation_run_id == nil
     end
   end
 

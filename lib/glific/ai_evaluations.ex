@@ -13,6 +13,7 @@ defmodule Glific.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
@@ -148,7 +149,13 @@ defmodule Glific.AIEvaluations do
       entity: %{evaluation_id: evaluation.id}
     })
 
-    do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}})
+    case do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}}) do
+      :ok ->
+        Assistants.set_last_evaluation_run(evaluation.assistant_config_version_id, evaluation.id)
+
+      error ->
+        error
+    end
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do

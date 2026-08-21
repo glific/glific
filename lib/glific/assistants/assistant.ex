@@ -7,6 +7,7 @@ defmodule Glific.Assistants.Assistant do
   import Ecto.Changeset
 
   alias Glific.{
+    AIEvaluations.AIEvaluation,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Partners.Organization
@@ -21,10 +22,12 @@ defmodule Glific.Assistants.Assistant do
           assistant_display_id: String.t() | nil,
           clone_status: String.t() | nil,
           active_config_version_id: non_neg_integer() | nil,
+          last_evaluation_run_id: non_neg_integer() | nil,
           organization_id: non_neg_integer() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           active_config_version:
             AssistantConfigVersion.t() | Ecto.Association.NotLoaded.t() | nil,
+          last_evaluation_run: AIEvaluation.t() | Ecto.Association.NotLoaded.t() | nil,
           config_versions: [AssistantConfigVersion.t()] | Ecto.Association.NotLoaded.t(),
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
@@ -38,6 +41,7 @@ defmodule Glific.Assistants.Assistant do
   @optional_fields [
     :description,
     :active_config_version_id,
+    :last_evaluation_run_id,
     :kaapi_uuid,
     :assistant_display_id,
     :clone_status
@@ -52,6 +56,7 @@ defmodule Glific.Assistants.Assistant do
 
     belongs_to(:organization, Organization)
     belongs_to(:active_config_version, AssistantConfigVersion)
+    belongs_to(:last_evaluation_run, AIEvaluation)
     has_many :config_versions, AssistantConfigVersion
 
     timestamps(type: :utc_datetime)
@@ -65,6 +70,16 @@ defmodule Glific.Assistants.Assistant do
     assistant
     |> cast(attrs, [:active_config_version_id])
     |> validate_required([:active_config_version_id])
+  end
+
+  @doc """
+  Changeset for updating the last_evaluation_run_id
+  """
+  @spec set_last_evaluation_run_changeset(Assistant.t(), map()) :: Ecto.Changeset.t()
+  def set_last_evaluation_run_changeset(assistant, attrs) do
+    assistant
+    |> cast(attrs, [:last_evaluation_run_id])
+    |> validate_required([:last_evaluation_run_id])
   end
 
   @doc """
