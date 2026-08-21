@@ -309,6 +309,48 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "get_document/2" do
+    test "returns document data with signed_url" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:include_url] == "true"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              id: "96331afd-7f06-4a46-ac4d-0a65c6fd1b1e",
+              fname: "biu-1.pdf",
+              project_id: 1,
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{success: true, data: data}} =
+               ApiClient.get_document("96331afd-7f06-4a46-ac4d-0a65c6fd1b1e", @org_kaapi_api_key)
+
+      assert data.fname == "biu-1.pdf"
+      assert data.signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns error when document is not found" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 404, body: %{error: "Not Found"}}
+      end)
+
+      assert {:error, %{status: 404, body: %{error: "Not Found"}}} =
+               ApiClient.get_document("missing_doc", @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :get} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = ApiClient.get_document("doc_1", @org_kaapi_api_key)
+    end
+  end
+
   describe "create_config_version/3" do
     test "successfully creates config version in kaapi" do
       mock(fn %Tesla.Env{method: :post} ->
@@ -411,6 +453,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     test "returns all evaluator scores including LLM-as-a-Judge on 200" do
       mock(fn %Tesla.Env{method: :get, query: query} ->
         assert query[:get_trace_info] == "true"
+        assert query[:export_format] == "row"
 
         %Tesla.Env{
           status: 200,
@@ -453,6 +496,95 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, %{status: 404, body: %{error: "Evaluation not found"}}} =
                ApiClient.get_evaluation_scores(999, @org_kaapi_api_key)
+    end
+
+    test "includes export_format in query when given" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{status: 200, body: %{data: %{id: 42, status: "completed"}}}
+      end)
+
+      assert {:ok, _resp} =
+               ApiClient.get_evaluation_scores(42, @org_kaapi_api_key, "grouped")
+    end
+
+    test "row format returns one trace per (question, evaluator answer) pair with flat scores" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:export_format] == "row"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 810,
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    trace_id: "item_0_0",
+                    question_id: 1,
+                    question: "What is health?",
+                    llm_answer: "Complete well-being.",
+                    ground_truth_answer: "Complete well-being.",
+                    scores: [
+                      %{name: "Adherence to Ground Truth", value: 5, verdict: "Good"},
+                      %{name: "Adherence to Prompt", value: 5, verdict: "Good"}
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(810, @org_kaapi_api_key, "row")
+      [trace] = resp.data.score.traces
+      assert trace.trace_id == "item_0_0"
+      assert trace.llm_answer == "Complete well-being."
+      assert Enum.all?(trace.scores, &is_map/1)
+    end
+
+    test "grouped format returns one trace per question with llm_answers and nested scores" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 810,
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    question_id: 1,
+                    question: "What is health?",
+                    ground_truth_answer: "Complete well-being.",
+                    llm_answers: ["Complete well-being."],
+                    trace_ids: ["item_0_0"],
+                    scores: [
+                      [
+                        %{name: "Adherence to Ground Truth", value: 5, verdict: "Good"},
+                        %{name: "Adherence to Prompt", value: 5, verdict: "Good"}
+                      ]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(810, @org_kaapi_api_key, "grouped")
+      [trace] = resp.data.score.traces
+      assert trace.question_id == 1
+      assert trace.llm_answers == ["Complete well-being."]
+      assert [scores_for_answer] = trace.scores
+      assert Enum.all?(scores_for_answer, &is_map/1)
     end
 
     test "returns error on 500 from Kaapi" do

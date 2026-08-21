@@ -39,6 +39,12 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     "assets/gql/assistants/set_live_version.gql"
   )
 
+  load_gql(
+    :get_file,
+    GlificWeb.Schema,
+    "assets/gql/assistants/file_result.gql"
+  )
+
   describe "create_knowledge_base/3" do
     setup :enable_kaapi
 
@@ -130,6 +136,26 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert query_data.data["create_knowledge_base"] == nil
       assert [error | _] = query_data.errors
       assert error[:message] == "Failed to create knowledge base"
+    end
+
+    test "returns nil knowledge base when media_info is empty", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user, variables: %{"media_info" => []})
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
+    end
+
+    test "returns nil knowledge base when media_info is empty, regardless of id", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{"id" => 0, "media_info" => []}
+        )
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
     end
   end
 
@@ -654,6 +680,49 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       assert query_data.data["setLiveVersion"] == nil
       assert query_data.errors != nil
+    end
+  end
+
+  describe "get_file/3" do
+    setup :enable_kaapi
+
+    test "returns signed_url on success", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: "doc_123",
+                fname: "biu-1.pdf",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+              }
+            }
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "doc_123"})
+
+      result = query_data.data["get_file"]
+      assert result["file_id"] == "doc_123"
+      assert result["filename"] == "biu-1.pdf"
+      assert result["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns a top-level error when kaapi fails", %{staff: user} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 404, body: %{success: false, error: "Not Found"}}
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "missing_doc"})
+
+      assert query_data.data["get_file"] == nil
+      assert [error | _] = query_data.errors
+      assert error[:message] =~ "status 404"
     end
   end
 

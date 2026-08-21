@@ -20,22 +20,34 @@ defmodule GlificWeb.Resolvers.Assistants do
   Create a new knowledge base with the given parameters.
   """
   @spec create_knowledge_base(map(), map(), map()) :: {:ok, map()} | {:error, String.t()}
-  def create_knowledge_base(_, params, _context) do
+  def create_knowledge_base(_, params, %{context: %{current_user: user}}) do
+    params = Map.put(params, :organization_id, user.organization_id)
+
     with {:ok, %{knowledge_base_version: knowledge_base_version, knowledge_base: knowledge_base}} <-
            Assistants.create_knowledge_base_with_version(params) do
-      response = %{
-        id: knowledge_base.id,
-        name: knowledge_base.name,
-        knowledge_base_version_id: knowledge_base_version.id,
-        files: knowledge_base_version.files,
-        size: knowledge_base_version.size,
-        status: knowledge_base_version.status,
-        inserted_at: knowledge_base.inserted_at,
-        updated_at: knowledge_base_version.inserted_at
-      }
-
-      {:ok, %{knowledge_base: response}}
+      {:ok,
+       %{knowledge_base: build_knowledge_base_response(knowledge_base, knowledge_base_version)}}
     end
+  end
+
+  @spec build_knowledge_base_response(
+          Assistants.KnowledgeBase.t() | nil,
+          Assistants.KnowledgeBaseVersion.t() | nil
+        ) ::
+          map() | nil
+  defp build_knowledge_base_response(nil, nil), do: nil
+
+  defp build_knowledge_base_response(knowledge_base, knowledge_base_version) do
+    %{
+      id: knowledge_base.id,
+      name: knowledge_base.name,
+      knowledge_base_version_id: knowledge_base_version.id,
+      files: knowledge_base_version.files,
+      size: knowledge_base_version.size,
+      status: knowledge_base_version.status,
+      inserted_at: knowledge_base.inserted_at,
+      updated_at: knowledge_base_version.inserted_at
+    }
   end
 
   @doc """
@@ -56,6 +68,15 @@ defmodule GlificWeb.Resolvers.Assistants do
           {:ok, any} | {:error, any}
   def upload_file(_, params, %{context: %{current_user: user}}) do
     Assistants.upload_file(params, user.organization_id)
+  end
+
+  @doc """
+  Gets a knowledge base file's metadata and signed download URL from Kaapi
+  """
+  @spec get_file(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_file(_, %{file_id: file_id}, %{context: %{current_user: user}}) do
+    Assistants.get_file(file_id, user.organization_id)
   end
 
   @doc """

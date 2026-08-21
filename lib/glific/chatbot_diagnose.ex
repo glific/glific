@@ -48,7 +48,6 @@ defmodule Glific.ChatbotDiagnose do
     "organization_data" => Glific.Partners.OrganizationData,
     "organizations" => Glific.Partners.Organization,
     "profiles" => Glific.Profiles.Profile,
-    "registrations" => Glific.Registrations.Registration,
     "roles" => Glific.AccessControl.Role,
     "saved_searches" => Glific.Searches.SavedSearch,
     "session_templates" => Glific.Templates.SessionTemplate,
@@ -135,8 +134,6 @@ defmodule Glific.ChatbotDiagnose do
       ~w(id name shortcode email is_active is_approved status timezone session_limit inserted_at updated_at)a,
     "profiles" =>
       ~w(id name type is_active is_default language_id contact_id organization_id inserted_at updated_at)a,
-    "registrations" =>
-      ~w(id org_details platform_details billing_frequency has_submitted has_confirmed organization_id inserted_at updated_at)a,
     "roles" => ~w(id description is_reserved label organization_id inserted_at updated_at)a,
     "saved_searches" =>
       ~w(id label shortcode is_reserved organization_id inserted_at updated_at)a,

@@ -642,7 +642,6 @@ defmodule Glific.Erase do
       organization_eval_requests
       profiles
       prompt_generation_requests
-      registrations
       role_permissions
       roles
       saas
