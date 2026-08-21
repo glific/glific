@@ -137,6 +137,26 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert [error | _] = query_data.errors
       assert error[:message] == "Failed to create knowledge base"
     end
+
+    test "returns nil knowledge base when media_info is empty", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user, variables: %{"media_info" => []})
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
+    end
+
+    test "returns nil knowledge base when media_info is empty, regardless of id", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{"id" => 0, "media_info" => []}
+        )
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
+    end
   end
 
   describe "list_assistant_config_versions/3" do
