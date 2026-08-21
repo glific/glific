@@ -102,7 +102,7 @@ defmodule GlificWeb.Schema.AssistantTest do
     new_config_version =
       AssistantConfigVersion
       |> where([acv], acv.assistant_id == ^unified_assistant.id)
-      |> order_by([acv], desc: acv.version_number)
+      |> order_by([acv], desc: acv.major_version, desc: acv.minor_version)
       |> limit(1)
       |> Repo.one()
 
@@ -129,7 +129,7 @@ defmodule GlificWeb.Schema.AssistantTest do
     new_config_version =
       AssistantConfigVersion
       |> where([acv], acv.assistant_id == ^unified_assistant.id)
-      |> order_by([acv], desc: acv.version_number)
+      |> order_by([acv], desc: acv.major_version, desc: acv.minor_version)
       |> limit(1)
       |> Repo.one()
 
@@ -272,9 +272,9 @@ defmodule GlificWeb.Schema.AssistantTest do
 
     assert length(result.data["Assistants"]) == 2
 
-    # live_version_number is nil when version_number not set on config version
+    # live_version_label reflects the active config version's "major.minor" label
     assert Enum.all?(result.data["Assistants"], fn a ->
-             Map.has_key?(a, "live_version_number")
+             Map.has_key?(a, "live_version_label")
            end)
 
     # limit 1
