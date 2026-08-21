@@ -450,6 +450,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
+             duplication_factor: duplication_factor,
              golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
