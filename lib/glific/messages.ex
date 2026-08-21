@@ -257,9 +257,6 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
-  def create_and_send_message(%{body: body, type: :text} = _attrs) when body in ["", nil],
-    do: {:error, "Could not send message with empty body"}
-
   def create_and_send_message(%{receiver_id: receiver_id} = attrs) do
     contact = Contacts.get_contact(receiver_id)
 
@@ -328,22 +325,33 @@ defmodule Glific.Messages do
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
-    {:ok, message} =
-      attrs
-      |> Map.put_new(:type, :text)
-      |> Map.merge(%{
-        sender_id: Partners.organization_contact_id(organization_id),
-        flow: :outbound
-      })
-      |> create_message()
+    # `type` defaults to `:text` here so callers that omit it (e.g. the
+    # `create_and_send_message` GraphQL mutation) are checked the same as an explicit
+    # `type: :text`, and we never persist a `:text` message with a `nil`/empty body
+    # (see issue #4848).
+    attrs = Map.put_new(attrs, :type, :text)
 
-    result = Communications.Message.send_message(message, attrs)
+    if attrs.type == :text && attrs[:body] in ["", nil] do
+      reason = "Could not send message with empty body"
+      notify(attrs, reason)
+      {:error, reason}
+    else
+      {:ok, message} =
+        attrs
+        |> Map.merge(%{
+          sender_id: Partners.organization_contact_id(organization_id),
+          flow: :outbound
+        })
+        |> create_message()
 
-    if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
-      Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+      result = Communications.Message.send_message(message, attrs)
+
+      if attrs[:is_hsm] && attrs[:button_type] == :whatsapp_form do
+        Glific.Metrics.increment("WhatsApp Form Dispatched", organization_id)
+      end
+
+      result
     end
-
-    result
   end
 
   defp do_send_message({:error, reason}, attrs) do
