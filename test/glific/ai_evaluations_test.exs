@@ -242,6 +242,44 @@ defmodule Glific.AIEvaluationsTest do
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
     end
+
+    test "concurrent polls only complete the evaluation and notify once", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock_global(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
+      [task_one, task_two] =
+        Enum.map(1..2, fn _ ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+            AIEvaluations.poll_and_update(organization_id)
+          end)
+        end)
+
+      Task.await(task_one)
+      Task.await(task_two)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count + 1
+    end
   end
 
   defp create_config_version(organization_id) do

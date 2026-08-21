@@ -112,7 +112,10 @@ defmodule Glific.AIEvaluations do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
     with {:ok, updated_evaluation} <-
-           do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}}) do
+           process_evaluation_status(evaluation, %{
+             status: :completed,
+             results: %{summary_scores: summary_scores}
+           }) do
       duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
 
       Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
@@ -137,7 +140,10 @@ defmodule Glific.AIEvaluations do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
 
     with {:ok, updated_evaluation} <-
-           do_update(evaluation, %{status: :failed, failure_reason: failure_reason}) do
+           process_evaluation_status(evaluation, %{
+             status: :failed,
+             failure_reason: failure_reason
+           }) do
       Metrics.increment("AI Evaluation Failed", org_id)
 
       Notifications.create_notification(%{
@@ -166,18 +172,32 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  @spec do_update(AIEvaluation.t(), map()) ::
-          {:ok, AIEvaluation.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update(evaluation, attrs) do
-    with {:ok, updated_evaluation} <- update_ai_evaluation(evaluation, attrs) do
-      Absinthe.Subscription.publish(
-        GlificWeb.Endpoint,
-        updated_evaluation,
-        ai_evaluation_updated: "#{updated_evaluation.organization_id}"
-      )
+  @spec process_evaluation_status(AIEvaluation.t(), map()) ::
+          {:ok, AIEvaluation.t()} | {:error, term()}
+  defp process_evaluation_status(evaluation, attrs) do
+    Repo.transaction(fn ->
+      AIEvaluation
+      |> lock("FOR UPDATE")
+      |> Repo.fetch_by(%{id: evaluation.id})
+      |> case do
+        {:ok, %{status: :processing} = locked_evaluation} ->
+          {:ok, updated_evaluation} = update_ai_evaluation(locked_evaluation, attrs)
 
-      {:ok, updated_evaluation}
-    end
+          Absinthe.Subscription.publish(
+            GlificWeb.Endpoint,
+            updated_evaluation,
+            ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+          )
+
+          updated_evaluation
+
+        {:ok, _already_resolved} ->
+          Repo.rollback(:already_processed)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
   end
 
   @doc """
@@ -353,8 +373,11 @@ defmodule Glific.AIEvaluations do
            kaapi_evaluation_id: kaapi_evaluation_id,
            organization_id: organization_id
          }) do
-      {:ok, evaluation} ->
+      {:ok, %{status: :processing} = evaluation} ->
         poll_evaluation(evaluation, organization_id)
+
+      {:ok, _already_resolved} ->
+        :ok
 
       {:error, reason} ->
         Glific.log_exception(%Kaapi.Error{
