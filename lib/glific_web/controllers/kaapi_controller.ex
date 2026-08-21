@@ -59,8 +59,11 @@ defmodule GlificWeb.KaapiController do
 
   @doc "Handles Kaapi's async callback after a v2 evaluation run completes."
   @spec evaluation_run_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def evaluation_run_callback(conn, params) do
-    AIEvaluations.handle_evaluation_run_callback(params)
+  def evaluation_run_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    AIEvaluations.handle_evaluation_run_callback(organization_id, params)
     send_resp(conn, 200, "")
   end
 end

@@ -674,7 +674,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "handle_evaluation_run_callback/1" do
+  describe "handle_evaluation_run_callback/2" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
@@ -715,7 +715,7 @@ defmodule Glific.AIEvaluationsTest do
          ]}
       ]) do
         assert :ok =
-                 AIEvaluations.handle_evaluation_run_callback(%{
+                 AIEvaluations.handle_evaluation_run_callback(organization_id, %{
                    "data" => %{"id" => 767, "status" => "completed"}
                  })
 
@@ -731,6 +731,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
+      organization_id: organization_id,
       evaluation: evaluation
     } do
       Tesla.Mock.mock(fn %{method: :get} ->
@@ -741,7 +742,7 @@ defmodule Glific.AIEvaluationsTest do
       end)
 
       assert :ok =
-               AIEvaluations.handle_evaluation_run_callback(%{
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
                  "data" => %{"id" => 767, "status" => "failed"}
                })
 
@@ -751,10 +752,11 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "non-terminal status is acknowledged without contacting Kaapi", %{
+      organization_id: organization_id,
       evaluation: evaluation
     } do
       assert :ok =
-               AIEvaluations.handle_evaluation_run_callback(%{
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
                  "data" => %{"id" => 767, "status" => "processing"}
                })
 
@@ -763,10 +765,11 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "unknown kaapi_evaluation_id is acknowledged without crashing", %{
+      organization_id: organization_id,
       evaluation: evaluation
     } do
       assert :ok =
-               AIEvaluations.handle_evaluation_run_callback(%{
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
                  "data" => %{"id" => 999_999, "status" => "completed"}
                })
 
@@ -774,8 +777,13 @@ defmodule Glific.AIEvaluationsTest do
       assert unchanged.status == :processing
     end
 
-    test "malformed payload is acknowledged without crashing" do
-      assert :ok = AIEvaluations.handle_evaluation_run_callback(%{"unexpected" => "shape"})
+    test "malformed payload is acknowledged without crashing", %{
+      organization_id: organization_id
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "unexpected" => "shape"
+               })
     end
 
     test "is a no-op when the evaluation already left :processing (race with the cron poller)",
@@ -816,7 +824,7 @@ defmodule Glific.AIEvaluationsTest do
          ]}
       ]) do
         assert :ok =
-                 AIEvaluations.handle_evaluation_run_callback(%{
+                 AIEvaluations.handle_evaluation_run_callback(organization_id, %{
                    "data" => %{"id" => 767, "status" => "completed"}
                  })
 

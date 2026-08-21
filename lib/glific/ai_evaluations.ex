@@ -368,19 +368,23 @@ defmodule Glific.AIEvaluations do
   @doc """
   Handles Kaapi's async callback when a v2 evaluation run finishes (completed or failed).
   """
-  @spec handle_evaluation_run_callback(map()) :: :ok
-  def handle_evaluation_run_callback(%{
+  @spec handle_evaluation_run_callback(non_neg_integer(), map()) :: :ok
+  def handle_evaluation_run_callback(organization_id, %{
         "data" => %{"id" => kaapi_evaluation_id, "status" => status}
       })
       when status in ["completed", "failed"] do
-    case Repo.fetch_by(AIEvaluation, %{kaapi_evaluation_id: kaapi_evaluation_id}) do
+    case Repo.fetch_by(AIEvaluation, %{
+           kaapi_evaluation_id: kaapi_evaluation_id,
+           organization_id: organization_id
+         }) do
       {:ok, evaluation} ->
-        poll_evaluation(evaluation, evaluation.organization_id)
+        poll_evaluation(evaluation, organization_id)
 
       {:error, reason} ->
         Glific.log_exception(%Kaapi.Error{
           message:
             "Evaluation run callback for unknown kaapi_evaluation_id=#{kaapi_evaluation_id}",
+          organization_id: organization_id,
           reason: safe_inspect(reason)
         })
     end
@@ -389,11 +393,12 @@ defmodule Glific.AIEvaluations do
   end
 
   # non-terminal status (e.g. PROCESSING) — nothing to do
-  def handle_evaluation_run_callback(%{"data" => %{"status" => _}}), do: :ok
+  def handle_evaluation_run_callback(_organization_id, %{"data" => %{"status" => _}}), do: :ok
 
-  def handle_evaluation_run_callback(params) do
+  def handle_evaluation_run_callback(organization_id, params) do
     Glific.log_exception(%Kaapi.Error{
       message: "Unexpected evaluation run callback payload",
+      organization_id: organization_id,
       reason: safe_inspect(params)
     })
 
