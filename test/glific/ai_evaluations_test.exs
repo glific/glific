@@ -3,6 +3,7 @@ defmodule Glific.AIEvaluationsTest do
   use Glific.DataCase, async: false
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     AIEvaluations,
@@ -580,6 +581,47 @@ defmodule Glific.AIEvaluationsTest do
       assert new_config_version.settings == %{"temperature" => 0.4}
     end
 
+    test "success callback publishes improve_prompt_updated with the new config version", %{
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{"model" => "gpt-5.6-luna", "instructions" => "Be helpful."}
+              }
+            }
+          }
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, new_config_version} =
+                 AIEvaluations.handle_improve_prompt_callback(params)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "success"
+        assert payload.config_version.id == new_config_version.id
+        assert payload.error == nil
+        assert topic == "#{new_config_version.organization_id}"
+      end
+    end
+
     test "success callback for a reasoning model carries effort, not temperature", %{
       assistant: assistant
     } do
@@ -637,6 +679,64 @@ defmodule Glific.AIEvaluationsTest do
 
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count
+    end
+
+    test "failure callback publishes improve_prompt_updated when given an organization_id", %{
+      organization_id: organization_id
+    } do
+      params = %{
+        "data" => %{
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, :acknowledged} =
+                 AIEvaluations.handle_improve_prompt_callback(params, organization_id)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "failed"
+        assert payload.config_version == nil
+        assert payload.error == "Judge scores unavailable"
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "failure callback without an organization_id just acknowledges, no publish" do
+      params = %{
+        "data" => %{
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
+        refute_receive {:published, _payload, _opts}, 200
+      end
     end
 
     test "returns error when config_id in the payload matches no assistant" do

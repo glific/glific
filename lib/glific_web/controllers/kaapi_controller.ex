@@ -52,8 +52,11 @@ defmodule GlificWeb.KaapiController do
   unguessable token (matching the auth posture of the other Kaapi callbacks above).
   """
   @spec improve_prompt_callback(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def improve_prompt_callback(conn, params) do
-    AIEvaluations.handle_improve_prompt_callback(params)
+  def improve_prompt_callback(
+        %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
+        params
+      ) do
+    AIEvaluations.handle_improve_prompt_callback(params, organization_id)
     send_resp(conn, 200, "")
   end
 end
