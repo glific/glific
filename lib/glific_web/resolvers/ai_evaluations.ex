@@ -387,7 +387,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     case AIEvaluations.get_evaluation_scores(
            evaluation_id,
            user.organization_id,
-           args[:export_format]
+           args[:export_format] || "row"
          ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}

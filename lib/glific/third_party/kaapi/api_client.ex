@@ -273,11 +273,10 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
-  @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t() | nil) ::
+  @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, org_api_key, export_format \\ nil) do
-    query =
-      [get_trace_info: "true"] ++ if export_format, do: [export_format: export_format], else: []
+  def get_evaluation_scores(evaluation_id, org_api_key, export_format \\ "row") do
+    query = [get_trace_info: "true", export_format: export_format]
 
     org_api_key
     |> client()

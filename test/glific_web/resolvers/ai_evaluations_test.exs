@@ -1320,6 +1320,37 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert scores.status == "completed"
     end
 
+    test "defaults export_format to row when not passed", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "row"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{trace_id: "item_0_0", question_id: 1, llm_answer: "answer", scores: []}
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      [trace] = scores.score.traces
+      assert trace.trace_id == "item_0_0"
+    end
+
     test "passes export_format through to Kaapi as a query param", %{
       staff: user,
       evaluation: evaluation
@@ -1343,6 +1374,47 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                )
 
       assert scores.status == "completed"
+    end
+
+    test "grouped export_format returns traces with llm_answers and nested scores", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    question_id: 1,
+                    llm_answers: ["answer 1", "answer 2"],
+                    trace_ids: ["item_0_0", "item_0_1"],
+                    scores: [[%{name: "score", value: 5}], [%{name: "score", value: 4}]]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      [trace] = scores.score.traces
+      assert trace.llm_answers == ["answer 1", "answer 2"]
+      assert length(trace.scores) == 2
     end
 
     test "returns timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
