@@ -1,0 +1,13 @@
+#import "./ack_fields.frag.gql"
+
+mutation resolveAiRequest($conversationId: ID!, $gateToken: String!, $decision: String!) {
+  resolveAiRequest(
+    conversationId: $conversationId
+    gateToken: $gateToken
+    decision: $decision
+  ) {
+    ...AiRequestAckFields
+
+    ...AckErrorFields
+  }
+}

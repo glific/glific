@@ -12,6 +12,7 @@ defmodule Glific.Jobs.MinuteWorker do
   require Logger
 
   alias Glific.{
+    AI.Sweeper,
     AIEvaluations,
     Assistants,
     BigQuery.BigQueryWorker,
@@ -180,6 +181,10 @@ defmodule Glific.Jobs.MinuteWorker do
         Instrumentation.check_inbound_staleness()
 
         Partners.perform_all(&WAManagedPhones.reconcile_wa_managed_phone_statuses/1, nil, [])
+
+        Appsignal.CheckIn.cron("glific_ai_sweeper_five_minute", fn ->
+          Partners.perform_all(&Sweeper.run/1, nil, [])
+        end)
 
       "update_hsms" ->
         Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])

@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    AI.Model.Stub,
     Caches,
     Fixtures,
     Messages,
@@ -30,6 +31,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       for_actor: %{organization_id: organization.id}
     )
 
+    FunWithFlags.enable(:is_template_utility_rewrite_enabled,
+      for_actor: %{organization_id: organization.id}
+    )
+
+    start_supervised!(Stub)
+
     :ok
   end
 
@@ -51,6 +58,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     :template_library,
     GlificWeb.Schema,
     "assets/gql/session_templates/template_library.gql"
+  )
+
+  load_gql(
+    :rewrite_for_utility,
+    GlificWeb.Schema,
+    "assets/gql/session_templates/rewrite_for_utility.gql"
   )
 
   test "session templates field returns list of session_templates", %{manager: user} do
@@ -668,6 +681,88 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     FunWithFlags.disable(:is_template_library_enabled, for_actor: %{organization_id: org_id})
 
     result = auth_query_gql_by(:template_library, user)
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "not enabled"
+  end
+
+  test "rewriteTemplateForUtility rewrites the body and returns the suggested category and changes",
+       %{staff: user} do
+    Stub.queue_text("draft")
+
+    Stub.queue_object(%{
+      "body" => "Hi {{1}}, your appointment is confirmed.",
+      "suggested_category" => "UTILITY",
+      "changes" => [
+        %{
+          "what_changed" => "Removed the exclamation marks",
+          "why" => "Utility templates should read calmly, not persuasively",
+          "best_practice" => "Avoid urgency and hype in utility copy",
+          "best_practice_url" => "https://developers.facebook.com/docs/whatsapp"
+        }
+      ]
+    })
+
+    result =
+      auth_query_gql_by(:rewrite_for_utility, user,
+        variables: %{
+          "body" => "Hi {{1}}, your appointment is confirmed!!",
+          "footer" => "Reply STOP to opt out",
+          "buttons" => ["Confirm"],
+          "label" => "Appointment confirmation"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    rewrite = get_in(query_data, [:data, "rewriteTemplateForUtility"])
+
+    assert rewrite["body"] == "Hi {{1}}, your appointment is confirmed."
+    assert rewrite["suggestedCategory"] == "UTILITY"
+    assert rewrite["errors"] == []
+
+    assert [change] = rewrite["changes"]
+    assert change["whatChanged"] == "Removed the exclamation marks"
+    assert change["bestPracticeUrl"] == "https://developers.facebook.com/docs/whatsapp"
+  end
+
+  test "rewriteTemplateForUtility returns a field-level error, not a top-level GraphQL error, when the rewrite violates a hard constraint",
+       %{staff: user} do
+    # Queued twice: UtilityRewriter retries once before giving up, so both the first attempt
+    # and the retry need a scripted (still-violating) response.
+    for _attempt <- 1..2 do
+      Stub.queue_text("draft")
+
+      Stub.queue_object(%{
+        "body" => "Hi there, your appointment is confirmed.",
+        "suggested_category" => "UTILITY",
+        "changes" => []
+      })
+    end
+
+    result =
+      auth_query_gql_by(:rewrite_for_utility, user,
+        variables: %{"body" => "Hi {{1}}, your appointment is confirmed."}
+      )
+
+    assert {:ok, query_data} = result
+    rewrite = get_in(query_data, [:data, "rewriteTemplateForUtility"])
+
+    assert rewrite["body"] == nil
+    assert [%{"key" => "body", "message" => message}] = rewrite["errors"]
+    assert message =~ "{{n}} placeholders"
+  end
+
+  test "rewriteTemplateForUtility is rejected when the :is_template_utility_rewrite_enabled flag is off for the org",
+       %{staff: user, organization_id: org_id} do
+    FunWithFlags.disable(:is_template_utility_rewrite_enabled,
+      for_actor: %{organization_id: org_id}
+    )
+
+    result =
+      auth_query_gql_by(:rewrite_for_utility, user,
+        variables: %{"body" => "Hi {{1}}, your appointment is confirmed."}
+      )
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:errors, Access.at(0), :message])

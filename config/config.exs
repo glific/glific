@@ -62,7 +62,15 @@ oban_queues = [
   ],
   contact_import: 10,
   gupshup_high_tps: 10,
-  clone_assistant: 5
+  clone_assistant: 5,
+  ai_runtime: [
+    local_limit: 10,
+    global_limit: [
+      allowed: 5,
+      burst: true,
+      partition: [args: :organization_id]
+    ]
+  ]
 ]
 
 oban_crontab = [
@@ -209,6 +217,11 @@ config :ex_audit,
 
 # Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
+
+# AI runtime OpenTelemetry/Langfuse tracing — off by default. config/runtime.exs flips this on
+# only once both LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are present in the environment.
+# See Glific.AI.Telemetry.
+config :glific, :ai_telemetry, enabled: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

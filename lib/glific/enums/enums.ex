@@ -129,6 +129,15 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.AIEvaluationStatus.__enum_map__()
   Glific.Enums.ai_evaluation_status_const()
+
+  iex> Glific.Enums.AIRequestStatus.__enum_map__()
+  Glific.Enums.ai_request_status_const()
+
+  iex> Glific.Enums.AIMessageRole.__enum_map__()
+  Glific.Enums.ai_message_role_const()
+
+  iex> Glific.Enums.AIMessageStatus.__enum_map__()
+  Glific.Enums.ai_message_status_const()
   """
 
   defmacro api_status_const,
@@ -208,4 +217,13 @@ defmodule Glific.Enums do
 
   defmacro ai_evaluation_status_const,
     do: Macro.expand(@ai_evaluation_status_const, __CALLER__)
+
+  defmacro ai_request_status_const,
+    do: Macro.expand(@ai_request_status_const, __CALLER__)
+
+  defmacro ai_message_role_const,
+    do: Macro.expand(@ai_message_role_const, __CALLER__)
+
+  defmacro ai_message_status_const,
+    do: Macro.expand(@ai_message_status_const, __CALLER__)
 end

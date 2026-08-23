@@ -20,7 +20,9 @@ defmodule Glific.Templates do
     Repo,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Templates.UtilityRewriter,
+    Users.User
   }
 
   require Logger
@@ -1040,6 +1042,14 @@ defmodule Glific.Templates do
        }}
     end
   end
+
+  @doc """
+  Rewrites a draft HSM template's body for WhatsApp UTILITY-category eligibility via the AI
+  runtime. See `Glific.Templates.UtilityRewriter`.
+  """
+  @spec rewrite_template_for_utility(map(), User.t()) ::
+          {:ok, UtilityRewriter.rewrite()} | {:error, [UtilityRewriter.field_error()]}
+  defdelegate rewrite_template_for_utility(draft, user), to: UtilityRewriter, as: :rewrite
 
   @doc """
   get template from EEx based on variables

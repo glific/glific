@@ -1,8 +1,9 @@
 defmodule Glific.ChatbotDiagnose do
   @moduledoc """
-  Core logic for the chatbot diagnostic endpoint.
-  Accepts a map of table queries from a Dify chatbot, executes them
-  against the database with organization scoping, and returns results.
+  Core logic for diagnostic table queries against Glific's own data.
+  Accepts a map of table queries, executes them against the database with organization
+  scoping, and returns results. Wrapped by `Glific.AI.Tools.DescribeTable` and
+  `Glific.AI.Tools.QueryOrgData` for use by the `Glific.AI.Skills.AskGlific` agent skill.
   """
 
   import Ecto.Query
@@ -206,6 +207,15 @@ defmodule Glific.ChatbotDiagnose do
       Map.put(acc, table_name, result)
     end)
   end
+
+  @doc "Every table name this diagnostic registry allows querying."
+  @spec tables() :: [String.t()]
+  def tables, do: Map.keys(@table_registry)
+
+  @doc "The allow-listed fields for `table_name`, or `[]` if the table is unknown."
+  @spec allowed_fields(String.t()) :: [atom()]
+  def allowed_fields(table_name) when is_binary(table_name),
+    do: Map.get(@allowed_fields, table_name, [])
 
   @spec query_table(String.t(), map(), DateTime.t() | nil, map()) :: list()
   defp query_table(table_name, table_opts, time_threshold, virtual_resolutions) do

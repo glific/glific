@@ -68,6 +68,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WhatsappFormResponseTypes)
   import_types(__MODULE__.WhatsappFormsRevisionTypes)
   import_types(__MODULE__.AskGlificTypes)
+  import_types(__MODULE__.AITypes)
 
   query do
     import_fields(:profile_queries)
@@ -149,6 +150,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ask_glific_queries)
 
     import_fields(:prompt_generator_queries)
+
+    import_fields(:ai_queries)
   end
 
   mutation do
@@ -237,6 +240,8 @@ defmodule GlificWeb.Schema do
     import_fields(:prompt_generator_mutations)
 
     import_fields(:assistant_chat_mutations)
+
+    import_fields(:ai_mutations)
   end
 
   subscription do
@@ -249,6 +254,8 @@ defmodule GlificWeb.Schema do
     import_fields(:ask_glific_subscriptions)
 
     import_fields(:assistant_chat_subscriptions)
+
+    import_fields(:ai_subscriptions)
   end
 
   @doc """

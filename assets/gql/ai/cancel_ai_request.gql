@@ -1,0 +1,9 @@
+#import "./ack_fields.frag.gql"
+
+mutation cancelAiRequest($conversationId: ID!) {
+  cancelAiRequest(conversationId: $conversationId) {
+    ...AiRequestAckFields
+
+    ...AckErrorFields
+  }
+}

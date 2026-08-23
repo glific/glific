@@ -2,40 +2,59 @@ defmodule Glific.PromptGenerator do
   @moduledoc """
   Context for on-demand WhatsApp chatbot system-prompt generation.
 
-  An NGO supplies answers to 9 questions; this context calls Kaapi's async LLM
-  service and persists the request. When Kaapi completes, it POSTs back to
-  `/kaapi/prompt_generation` and `handle_callback/1` updates the row.
+  An NGO supplies answers to 9 questions; this context drives `Glific.AI.Skills.PromptGenerator`
+  on the in-Glific AI agent runtime, synchronously, through `Glific.AI.Run.sync/3`, and persists
+  the result. `generate_prompt/3` keeps its original signature and its
+  `PromptGenerationRequest` row lifecycle (`:in_progress` -> `:ready`/`:failed`) unchanged, so the
+  pollable `prompt_generation(id)` query and the existing `PromptGeneratorModal` frontend keep
+  working exactly as before — only the engine underneath changed, from an async Kaapi round trip
+  to a synchronous in-process model call.
 
-  ## Flow
+  ## Why the row still passes through `:in_progress`
 
-      1. `generate_prompt/3` — build payload, call Kaapi, persist `:in_progress` row.
-      2. Kaapi processes asynchronously and POSTs to the callback URL.
-      3. `handle_callback/1` — look up by `metadata.request_id`, update status + text/error.
+  The row briefly exists in `:in_progress` even though generation now completes before
+  `generate_prompt/3` returns, because `apply_callback/2` — the function that resolves a row to
+  `:ready`/`:failed` — is shared with `handle_callback/1` below and is not worth forking into two
+  copies for a state transition that is otherwise identical. `create_prompt_request/1` inserts
+  the row, then the very same call transitions it via `apply_callback/2` before returning.
 
-  ## Callback correlation
+  ## `handle_callback/1` is now legacy
 
-  We generate a UUID `request_id` before calling Kaapi and embed it as
-  `request_metadata.request_id` in the payload. Kaapi echoes it back as
-  `metadata.request_id` in the async callback body — this is the correlation key.
+  `handle_callback/1`, `apply_callback/2`'s Kaapi-callback-shaped `params`, and the
+  `POST /kaapi/prompt_generation` route (`GlificWeb.KaapiController.prompt_generation_callback/2`)
+  are kept, unchanged, purely because the router and controller still reference
+  `handle_callback/1` and are outside this module's remit to edit. Nothing in this codebase will
+  ever POST to that route again: `generate_prompt/3` no longer sends a `request_id`/callback URL
+  to Kaapi, so no external caller can supply a `metadata.request_id` that correlates to a real
+  row. This code path is orphaned, not deleted — see the PR/commit notes for the follow-up to
+  remove the route, the controller action, and this function together.
+
+  ## A deliberate behavior change: `user_id` is no longer optional in practice
+
+  Every real caller (`GlificWeb.Resolvers.PromptGenerator.generate/3`) already supplies
+  `user.id`. `user_id` now names the identity the AI runtime runs the skill as — for
+  authorization (`required_role/0`) and for the acting-user audit trail `Glific.AI.Actor`
+  establishes — so a `nil` `user_id` is no longer a request the Kaapi-less engine can serve; the
+  old Kaapi engine only needed an organization id. Passing `nil` now returns `{:error, reason}`
+  without inserting a row, the same as any other precondition failure below.
   """
 
   import Glific.SafeLog
 
   alias Glific.{
-    Partners,
+    AI.Run,
     PromptGenerator.PromptGenerationRequest,
     Repo,
-    ThirdParty.Kaapi
+    Users.User
   }
 
   defmodule Error do
     @moduledoc """
     Custom error for prompt-generation failures.
 
-    The callback endpoint is a backend-to-backend integration with Kaapi (NGOs
-    never interact with it), so failures are reported to AppSignal under the
-    `"prompt_generator"` namespace rather than surfaced to a user. This lets us
-    build an error-rate trigger on the namespace.
+    Failures here are reported to AppSignal under the `"prompt_generator"` namespace rather
+    than surfaced to a user (the resolver shapes what the caller sees), so we can build a
+    dedicated error-rate trigger on the namespace.
     """
     defexception [:message, :reason, :organization_id]
 
@@ -48,172 +67,13 @@ defmodule Glific.PromptGenerator do
   # AppSignal namespace for prompt-generation errors (enables a dedicated error-rate trigger).
   @appsignal_namespace "prompt_generator"
 
-  # Server-side meta-prompt — kept here so it can be tuned without a frontend release.
-  # Structured, few-shot prompt so Kaapi returns a clean, sectioned WhatsApp system prompt.
-  # Post-beta: this should move into org config / DB so admins can edit it without a deploy.
-  @meta_prompt ~S"""
-  You are an expert prompt engineer helping non-profits in India build their first AI assistant on Glific, a WhatsApp chatbot platform.
+  # Registry name of Glific.AI.Skills.PromptGenerator — Run.sync/3 takes the name, not the
+  # module, so no compile-time alias to the skill module is needed here.
+  @skill_name "prompt_generator"
 
-  Your job is to take 9 inputs about the NGO's use case and return a clean, ready-to-use SYSTEM PROMPT they can paste directly into their Glific AI assistant.
-
-  The output system prompt must:
-  - Be written in second person, addressing the AI assistant ("You are...")
-  - Use plain language — no jargon, no markdown headers
-  - Be structured in clearly labelled sections using ALL CAPS section names
-  - Avoid bullet points in the LANGUAGE and TONE instructions (these render poorly on WhatsApp)
-  - Include a clear fallback message the AI should say verbatim when it doesn't know the answer
-  - Include guardrails for topics to skip and escalation handling
-  - Be self-contained — an NGO staff member with no technical background should be able to read and understand it
-
-  ---
-
-  Here are 3 few-shot examples showing input → output:
-
-  ---
-  EXAMPLE 1
-
-  Input:
-  - persona: Asha Sakhi, assistant for the Sneha Foundation
-  - objective: Help pregnant women and new mothers in urban slums with questions about prenatal care, nutrition, and government maternity schemes
-  - audience: Women aged 18–35 in low-income urban settlements, many with low literacy
-  - language: Respond in the same language the user writes in. Support Hindi, Hinglish, and simple English. If unsure, default to Hindi.
-  - tone: Warm, gentle, and simple — like an older sister or a trusted community health worker. Use words a 5-year-old would understand.
-  - length: Maximum 4 sentences per reply. Write in short, easy sentences. No bullet points.
-  - skip_answer_topics: Do not give medical diagnoses or prescriptions. Do not answer questions about legal rights or government complaints. Do not discuss politics.
-  - fallback_answer: Mujhe is baare mein jaankari nahi hai abhi. Aap apni ASHA didi se ya nearest health centre se pooch sakti hain.
-  - escalation_details: If someone describes symptoms of a medical emergency (heavy bleeding, unconsciousness, difficulty breathing), respond with: "Yeh zaruri hai — abhi 108 pe call karein ya najdiki hospital jaayein."
-
-  Output:
-  You are Asha Sakhi, a caring assistant for the Sneha Foundation.
-
-  ROLE
-  Your purpose is to support pregnant women and new mothers in urban communities with questions about prenatal care, nutrition, and government maternity schemes like JSY and PMMVY.
-
-  LANGUAGE
-  Respond in the same language the user writes in. You support Hindi, Hinglish, and simple English. When unsure, reply in Hindi.
-
-  TONE AND STYLE
-  Speak like a trusted older sister or community health worker. Use simple, everyday words — the kind a young child would understand. Be warm and encouraging.
-
-  RESPONSE LENGTH
-  Keep every reply to a maximum of 4 sentences. Use short, clear sentences. Do not use bullet points or lists.
-
-  KNOWLEDGE BASE RULES
-  Answer only using information from your knowledge base. If the user writes in Hindi or Hinglish, mentally translate their question to English, find the answer in your knowledge base, then reply in their language. Never guess or invent information.
-
-  WHEN YOU DON'T KNOW
-  If the answer is not in your knowledge base, say exactly this:
-  "Mujhe is baare mein jaankari nahi hai abhi. Aap apni ASHA didi se ya nearest health centre se pooch sakti hain."
-
-  TOPICS YOU WILL NOT COVER
-  Do not give medical diagnoses or prescriptions. Do not answer questions about legal rights or government complaints. Do not discuss politics. If asked about these, politely say this is outside what you can help with.
-
-  ESCALATION
-  If someone describes symptoms that sound like a medical emergency — heavy bleeding, unconsciousness, or difficulty breathing — respond immediately with:
-  "Yeh zaruri hai — abhi 108 pe call karein ya najdiki hospital jaayein."
-
-  YOUR IDENTITY
-  Your name is Asha Sakhi and you work for the Sneha Foundation. If someone asks who made you or what technology you use, say only: "Main Asha Sakhi hoon, Sneha Foundation ki assistant."
-
-  ---
-  EXAMPLE 2
-
-  Input:
-  - persona: Krishi Mitra, assistant for Digital Green
-  - objective: Answer smallholder farmers' questions about crop advisory, weather alerts, and sustainable farming practices
-  - audience: Farmers in rural Odisha and Andhra Pradesh, comfortable with Odia or Telugu, low smartphone literacy
-  - language: Match the user's language. Primary languages: Odia and Telugu. Fall back to simple Hindi if neither is detected.
-  - tone: Practical and respectful. Like a knowledgeable fellow farmer or a local agricultural extension worker. Avoid technical terms.
-  - length: 3–5 sentences maximum. One clear recommendation per reply. No bullet points.
-  - skip_answer_topics: Do not give advice on pesticide dosage or chemical use. Do not make promises about crop yields. Do not discuss government loan schemes beyond general information.
-  - fallback_answer: I don't have specific information about this. Please contact your local Krishi Vigyan Kendra or call the Kisan helpline at 1551.
-  - escalation_details: If a farmer reports a large-scale pest outbreak or crop disease spreading across multiple fields, say: "This sounds serious. Please contact your district agriculture officer immediately and call 1551."
-
-  Output:
-  You are Krishi Mitra, a helpful farming assistant for Digital Green.
-
-  ROLE
-  Your purpose is to help smallholder farmers with practical questions about crop care, seasonal advisory, weather guidance, and sustainable farming practices.
-
-  LANGUAGE
-  Respond in the same language the user writes in. You support Odia and Telugu. If neither is detected, reply in simple Hindi. Use everyday farming words — avoid scientific or technical terms.
-
-  TONE AND STYLE
-  Speak like a knowledgeable fellow farmer or a local agricultural extension worker. Be practical, direct, and respectful. Give one clear recommendation at a time.
-
-  RESPONSE LENGTH
-  Keep every reply to 3–5 sentences. Give one clear recommendation per message. Do not use bullet points or lists.
-
-  KNOWLEDGE BASE RULES
-  Answer only using information from your knowledge base. Never guess crop outcomes or make promises about yields. Never invent information.
-
-  WHEN YOU DON'T KNOW
-  If the answer is not in your knowledge base, say exactly this:
-  "I don't have specific information about this. Please contact your local Krishi Vigyan Kendra or call the Kisan helpline at 1551."
-
-  TOPICS YOU WILL NOT COVER
-  Do not advise on specific pesticide dosage or chemical application. Do not make promises about crop yields or income. Do not provide detailed information about government loan schemes. If asked about these, say this is outside what you can help with and suggest they contact their local agriculture office.
-
-  ESCALATION
-  If a farmer reports a large-scale pest outbreak or crop disease spreading across multiple fields, respond with:
-  "This sounds serious. Please contact your district agriculture officer immediately and call 1551."
-
-  YOUR IDENTITY
-  Your name is Krishi Mitra and you work for Digital Green. If asked who made you, say only: "I am Krishi Mitra, a farming assistant from Digital Green."
-
-  ---
-  EXAMPLE 3
-
-  Input:
-  - persona: Vidya Sathi, assistant for the Quest Alliance
-  - objective: Help school students in grades 8–12 explore career options, understand entrance exams, and find scholarship information
-  - audience: Students aged 13–18 in government schools in Odisha, many first-generation learners
-  - language: English, with Odia or Hindi words where helpful. Match the student's language if they write in Odia or Hindi.
-  - tone: Encouraging, friendly, and patient — like a helpful older student or a good teacher. Never make students feel their question is silly.
-  - length: 4–6 sentences. Keep it conversational. Ask one follow-up question at the end to keep the student engaged.
-  - skip_answer_topics: Do not discuss college admissions processes outside India. Do not give opinions on which career is "best." Do not discuss personal relationships or social issues unrelated to education.
-  - fallback_answer: I don't have information about that in my knowledge base right now. You can ask your school counsellor or check the National Career Service portal at ncs.gov.in.
-  - escalation_details: If a student expresses distress, anxiety, or mentions feeling hopeless, respond with care: "It sounds like you're going through something difficult. Please talk to a trusted teacher or call iCall at 9152987821 — they are here to listen."
-
-  Output:
-  You are Vidya Sathi, a friendly career guide for Quest Alliance.
-
-  ROLE
-  Your purpose is to help students in grades 8–12 explore career paths, understand entrance exams, and find scholarship and further education opportunities in India.
-
-  LANGUAGE
-  Respond in the language the student uses. You support English, Hindi, and Odia. Use simple, friendly language — the kind you would use chatting with a classmate.
-
-  TONE AND STYLE
-  Be encouraging, patient, and warm — like a helpful older student or a good teacher. No question is a silly question. Celebrate curiosity. Never make a student feel judged for what they ask.
-
-  RESPONSE LENGTH
-  Keep replies to 4–6 sentences. Write conversationally. At the end of each reply, ask one thoughtful follow-up question to help the student think further.
-
-  KNOWLEDGE BASE RULES
-  Answer only using information from your knowledge base. If the student's question is in Hindi or Odia, understand it in that language, find the answer, and reply in their language. Never invent scholarship amounts, exam dates, or eligibility rules.
-
-  WHEN YOU DON'T KNOW
-  If the answer is not in your knowledge base, say exactly this:
-  "I don't have information about that in my knowledge base right now. You can ask your school counsellor or check the National Career Service portal at ncs.gov.in."
-
-  TOPICS YOU WILL NOT COVER
-  Do not discuss college admissions outside India. Do not give opinions on which career is best — help the student think for themselves. Do not discuss personal relationships or social issues unrelated to education. If asked about these, gently redirect to education topics.
-
-  ESCALATION
-  If a student expresses distress, anxiety, or mentions feeling hopeless, respond with:
-  "It sounds like you're going through something difficult. Please talk to a trusted teacher or call iCall at 9152987821 — they are here to listen."
-
-  YOUR IDENTITY
-  Your name is Vidya Sathi and you work for Quest Alliance. If asked who made you, say only: "I am Vidya Sathi, a career guide from Quest Alliance."
-
-  ---
-
-  Return only the system prompt. No explanation, no preamble, no closing note.
-  """
-
-  # Ordered list of {field_atom, label} for the 9 NGO questions. Labels match the
-  # few-shot input keys in @meta_prompt so the model maps input -> output consistently.
+  # Ordered list of {field_atom, label} for the 9 NGO questions. Labels match the few-shot
+  # input keys in Glific.AI.Skills.PromptGenerator's system prompt so the model maps input to
+  # output consistently.
   @answer_fields [
     {:name, "persona"},
     {:purpose, "objective"},
@@ -227,66 +87,60 @@ defmodule Glific.PromptGenerator do
   ]
 
   @doc """
-  Initiates async prompt generation for the given NGO answers.
+  Generates a WhatsApp chatbot system prompt for the given NGO answers, as `user_id`.
 
-  Builds the Kaapi LLM payload (including a unique `request_id` and `callback_url`),
-  calls Kaapi, then persists a `:in_progress` `PromptGenerationRequest` row.
-  Returns `{:ok, request}` on success.
+  Drives `Glific.AI.Skills.PromptGenerator` synchronously through `Glific.AI.Run.sync/3`:
+  `answers` is serialised by `format_answers/1` into the skill's single-string input, the model
+  runs to completion inside this call, and the result is persisted through the same
+  `apply_callback/2` transition `handle_callback/1` uses. Returns `{:ok, request}` with the row
+  already resolved to `:ready` or `:failed` — the caller does not need to poll to see the
+  outcome, though the `prompt_generation(id)` query still works for that if it wants to.
 
-  The `request_id` (a UUID we generate) is stored on the row and sent to Kaapi as
-  `request_metadata.request_id`. Kaapi echoes it back in the async callback as
-  `metadata.request_id` — this is the correlation key.
+  Returns `{:error, reason}` — without inserting a row — when `user_id` cannot be resolved to a
+  real user of `org_id` (see the moduledoc: a real acting user is required now that generation
+  runs on the agent runtime, not merely an active Kaapi credential for the organization).
 
-  Returns `{:error, reason}` — without inserting a row — when Kaapi is inactive for
-  the org or when the Kaapi call itself fails.
-
-  The `:is_prompt_generator_enabled` feature flag gates access to this function at the
-  GraphQL mutation layer (M2). The flag is registered in `Glific.Flags` and exposed via
-  the organization schema.
+  The `:is_prompt_generator_enabled` feature flag gates access to this function at the GraphQL
+  mutation layer, and is also enforced again inside `Glific.AI.Run.sync/3` via the skill's own
+  `feature_flag/0` (see `Glific.AI.Skill.enabled?/2`).
 
   ## Parameters
 
     - `answers` — map with keys `:name`, `:purpose`, `:audience`, `:language`, `:tone`,
       `:format`, `:off_limits`, `:fallback`, `:escalation` (string values; blank entries
-      are omitted from the LLM prompt).
-    - `org_id` — organization ID (scopes the row and the Kaapi credential lookup).
-    - `user_id` — optional user who initiated the request; stored for audit.
-
-  ## Examples
-
-      iex> Glific.PromptGenerator.generate_prompt(%{name: "Pratham", purpose: "education"}, 1)
-      {:ok, %PromptGenerationRequest{status: :in_progress, ...}}
+      are omitted from the model input).
+    - `org_id` — organization ID (scopes the row and the user lookup).
+    - `user_id` — the user to run the skill as; required (see the moduledoc).
   """
   @spec generate_prompt(map(), non_neg_integer(), non_neg_integer() | nil) ::
           {:ok, PromptGenerationRequest.t()} | {:error, any()}
   def generate_prompt(answers, org_id, user_id \\ nil) do
-    request_id = Ecto.UUID.generate()
-    callback_url = build_callback_url(org_id)
-    payload = build_llm_payload(answers, callback_url, request_id)
-
-    with {:ok, _ack} <- Kaapi.generate_prompt(payload, org_id) do
-      create_prompt_request(%{
-        inputs: answers,
-        status: :in_progress,
-        request_id: request_id,
-        organization_id: org_id,
-        user_id: user_id
-      })
+    with {:ok, user} <- fetch_user(user_id, org_id),
+         {:ok, request} <-
+           create_prompt_request(%{
+             inputs: answers,
+             status: :in_progress,
+             request_id: Ecto.UUID.generate(),
+             organization_id: org_id,
+             user_id: user_id
+           }) do
+      apply_callback(request, run_params(answers, user))
     end
   end
 
   @doc """
   Handles the async callback POSTed by Kaapi after LLM completion.
 
-  Looks up the `PromptGenerationRequest` by `metadata.request_id` (the UUID we
-  generated and sent to Kaapi in `request_metadata.request_id`; Kaapi echoes it back).
-  On `success: true`, sets `status: :ready` and `generated_prompt`. On failure
-  (`success: false` or error present), sets `status: :failed` and `error_message`.
-  Unknown `request_id` logs and returns an error.
+  Legacy path, kept only because `GlificWeb.KaapiController.prompt_generation_callback/2` still
+  calls it — see the moduledoc. Nothing calls into this from `generate_prompt/3` anymore.
 
-  This function is idempotent: calling it twice on the same row is safe — the
-  terminal-state guard returns `{:ok, request}` unchanged for rows already in
-  `:ready` or `:failed`.
+  Looks up the `PromptGenerationRequest` by `metadata.request_id` (the UUID we generated and
+  sent to Kaapi in `request_metadata.request_id`; Kaapi echoes it back). On `success: true`,
+  sets `status: :ready` and `generated_prompt`. On failure (`success: false` or error present),
+  sets `status: :failed` and `error_message`. Unknown `request_id` logs and returns an error.
+
+  This function is idempotent: calling it twice on the same row is safe — the terminal-state
+  guard returns `{:ok, request}` unchanged for rows already in `:ready` or `:failed`.
 
   The real callback shape (string-keyed after Plug JSON parsing):
 
@@ -339,45 +193,15 @@ defmodule Glific.PromptGenerator do
   end
 
   @doc """
-  Builds the Kaapi LLM API payload for prompt generation.
-
-  The `query.input` field is the formatted answers string. The `config` blob
-  specifies the OpenAI `gpt-4o` completion. The callback URL and a unique
-  `request_id` (for correlation) are embedded in the envelope.
-
-  ## Examples
-
-      iex> Glific.PromptGenerator.build_llm_payload(%{name: "Pratham"}, "https://cb.url", "uuid-123")
-      %{query: %{input: "...\n"}, config: %{...}, callback_url: "https://cb.url", ...}
-  """
-  @spec build_llm_payload(map(), String.t(), String.t()) :: map()
-  def build_llm_payload(answers, callback_url, request_id) do
-    %{
-      query: %{input: format_answers(answers)},
-      config: %{
-        blob: %{
-          completion: %{
-            provider: "openai",
-            type: "text",
-            params: %{
-              model: "gpt-4o",
-              instructions: @meta_prompt,
-              temperature: 0.7
-            }
-          }
-        }
-      },
-      callback_url: callback_url,
-      request_metadata: %{request_id: request_id}
-    }
-  end
-
-  @doc """
-  Formats the NGO answer map into a labelled Q→A string for the LLM.
+  Formats the NGO answer map into a labelled Q→A string for the model.
 
   Blank, nil, or empty answers are omitted. Per-field length is validated and
   rejected at the resolver boundary (see `GlificWeb.Resolvers.PromptGenerator`), so
   this function does not clamp — it formats the answers as given.
+
+  This is also the encoding `generate_prompt/3` sends as
+  `Glific.AI.Skills.PromptGenerator`'s single string `"message"` input — see that skill's
+  moduledoc for the seam this crosses.
 
   ## Examples
 
@@ -402,6 +226,61 @@ defmodule Glific.PromptGenerator do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  @spec fetch_user(non_neg_integer() | nil, non_neg_integer()) ::
+          {:ok, User.t()} | {:error, String.t()}
+  defp fetch_user(nil, _org_id), do: {:error, "A user is required to generate a prompt."}
+
+  defp fetch_user(user_id, org_id) do
+    case Repo.fetch_by(User, %{id: user_id, organization_id: org_id}) do
+      {:ok, user} -> {:ok, user}
+      {:error, _reason} -> {:error, "A user is required to generate a prompt."}
+    end
+  end
+
+  # Runs the skill to completion and shapes the result into the same string-keyed envelope
+  # apply_callback/2 already knows how to read (see its moduledoc's callback-shape example) —
+  # this is what "apply_callback/2 is called directly instead of via HTTP" means in practice.
+  @spec run_params(map(), User.t()) :: map()
+  defp run_params(answers, user) do
+    input = %{"message" => format_answers(answers)}
+
+    case Run.sync(@skill_name, input, user) do
+      {:ok, %{result: %{"generated_prompt" => text}}} when is_binary(text) ->
+        success_params(text)
+
+      {:ok, %{result: unexpected}} ->
+        log_callback_error("Prompt generator skill returned an unexpected result shape",
+          reason: safe_inspect(unexpected)
+        )
+
+        failure_params(:unexpected_result)
+
+      {:error, reason} ->
+        failure_params(reason)
+    end
+  end
+
+  @spec success_params(String.t()) :: map()
+  defp success_params(text) do
+    %{
+      "success" => true,
+      "data" => %{"response" => %{"output" => %{"content" => %{"value" => text}}}}
+    }
+  end
+
+  @spec failure_params(term()) :: map()
+  defp failure_params(reason), do: %{"success" => false, "error" => run_error_message(reason)}
+
+  @spec run_error_message(term()) :: String.t()
+  defp run_error_message(reason)
+       when reason in [:forbidden, :unknown_skill, :gated_skill, :feature_disabled],
+       do: "Prompt generation is not available for this organization."
+
+  defp run_error_message(reason) do
+    log_callback_error("Prompt generator run failed", reason: safe_inspect(reason))
+    "The prompt could not be generated right now. Please try again."
+  end
 
   @spec create_prompt_request(map()) ::
           {:ok, PromptGenerationRequest.t()} | {:error, Ecto.Changeset.t()}
@@ -447,7 +326,7 @@ defmodule Glific.PromptGenerator do
     |> record_outcome("failure")
   end
 
-  # Track generation latency (dispatch -> callback) and the success/failure count in
+  # Track generation latency (dispatch -> resolution) and the success/failure count in
   # AppSignal, mirroring the flow-webhook telemetry (track_webhook_count/latency). Only
   # fires on a real transition — the terminal-state guard short-circuits duplicate callbacks.
   @spec record_outcome(
@@ -477,12 +356,6 @@ defmodule Glific.PromptGenerator do
       %Error{message: message, reason: Keyword.get(opts, :reason)},
       namespace: @appsignal_namespace
     )
-  end
-
-  @spec build_callback_url(non_neg_integer()) :: String.t()
-  defp build_callback_url(org_id) do
-    organization = Partners.organization(org_id)
-    Glific.api_callback_base(organization.shortcode) <> "/kaapi/prompt_generation"
   end
 
   @spec blank?(any()) :: boolean()

@@ -4,7 +4,9 @@ mutation askGlific($input: AskGlificInput!) {
     conversationId
     conversationName
     messageId
+    requestId
     errors {
+      key
       message
     }
   }

@@ -1,6 +1,14 @@
 defmodule Glific.AskGlific.Conversation do
   @moduledoc """
   Schema for storing AskGlific conversations.
+
+  Legacy and inert. This table tracked conversation ids from the retired Dify integration
+  (`ask_glific_conversations`); Ask Glific now runs on `Glific.AI.Conversation` /
+  `Glific.AI.Message` like every other agent skill, and nothing writes a new row here anymore.
+  The table is kept rather than dropped because dropping is irreversible and the row history is
+  a record of who used the feature — the Dify-era transcripts these rows pointed at are
+  deliberately abandoned along with it (these are staff support chats, not beneficiary data).
+  Removing this table entirely is a tracked follow-up, not done here.
   """
 
   use Ecto.Schema

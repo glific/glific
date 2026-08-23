@@ -1,0 +1,19 @@
+query aiMessages($conversationId: ID!, $opts: Opts) {
+  aiMessages(conversationId: $conversationId, opts: $opts) {
+    id
+    conversationId
+    seq
+    role
+    parts
+    status
+    requestId
+    model
+    promptTokens
+    completionTokens
+    cachedTokens
+    durationMs
+    error
+    insertedAt
+    updatedAt
+  }
+}

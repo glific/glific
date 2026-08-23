@@ -164,3 +164,21 @@ defenum(
   :ai_evaluation_status_enum,
   Glific.Enums.ai_evaluation_status_const()
 )
+
+defenum(
+  Glific.Enums.AIRequestStatus,
+  :ai_request_status_enum,
+  Glific.Enums.ai_request_status_const()
+)
+
+defenum(
+  Glific.Enums.AIMessageRole,
+  :ai_message_role_enum,
+  Glific.Enums.ai_message_role_const()
+)
+
+defenum(
+  Glific.Enums.AIMessageStatus,
+  :ai_message_status_enum,
+  Glific.Enums.ai_message_status_const()
+)

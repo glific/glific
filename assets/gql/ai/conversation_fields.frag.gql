@@ -1,0 +1,16 @@
+fragment AiConversationFields on AiConversation {
+  id
+  skill
+  title
+  status
+  activeRequestId
+  activeStatus
+  stepCount
+  maxSteps
+  gateToken
+  gateExpiresAt
+  tokenCount
+  lastMessageAt
+  insertedAt
+  updatedAt
+}

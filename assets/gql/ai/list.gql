@@ -1,0 +1,7 @@
+#import "./conversation_fields.frag.gql"
+
+query aiConversations($filter: AiConversationFilter, $opts: Opts) {
+  aiConversations(filter: $filter, opts: $opts) {
+    ...AiConversationFields
+  }
+}

@@ -1,0 +1,12 @@
+fragment AiRequestAckFields on AiRequestAck {
+  requestId
+  conversationId
+  status
+}
+
+fragment AckErrorFields on AiRequestAck {
+  errors {
+    key
+    message
+  }
+}

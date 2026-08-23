@@ -1,19 +1,22 @@
 defmodule GlificWeb.Schema.PromptGeneratorTest do
   @moduledoc """
   GraphQL integration tests for the PromptGenerator surface:
-  - generatePrompt mutation
+  - generatePrompt mutation (now resolves synchronously, via the AI runtime)
   - promptGeneration query (poll)
   - authorization enforcement
   - cross-org isolation
-  - full async loop (mutation → callback → poll)
+  - the legacy `handle_callback/1` path, still reachable via `PromptGenerator` directly
+
+  `Glific.AI.Model.Stub` is a globally-named Agent shared across test files, so this module
+  relies on `GlificWeb.ConnCase`'s default `async: false` — same reasoning as
+  `test/glific/templates/utility_rewriter_test.exs`.
   """
 
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
-  import Tesla.Mock
 
   alias Glific.{
-    Partners,
+    AI.Model.Stub,
     PromptGenerator,
     PromptGenerator.PromptGenerationRequest,
     Repo
@@ -26,36 +29,15 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
   # Setup helpers
   # ---------------------------------------------------------------------------
 
-  defp enable_kaapi(%{organization_id: org_id}) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: org_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{"api_key" => "sk_test_key"}
-      })
-
-    {:ok, _credential} =
-      Partners.update_credential(credential, %{
-        keys: %{},
-        secrets: %{"api_key" => "sk_test_key"},
-        is_active: true,
-        organization_id: org_id,
-        shortcode: "kaapi"
-      })
-
+  defp enable_prompt_generator(%{organization_id: org_id}) do
+    start_supervised!(Stub)
     FunWithFlags.enable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
-
     :ok
   end
 
-  defp kaapi_success_mock do
-    mock(fn %Tesla.Env{method: :post} ->
-      %Tesla.Env{
-        status: 200,
-        body: %{data: %{job_id: "job_pg_test"}, success: true}
-      }
-    end)
+  defp queue_generated_prompt(text) do
+    Stub.queue_text("draft")
+    Stub.queue_object(%{"generated_prompt" => text})
   end
 
   @valid_input %{
@@ -69,11 +51,11 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
   # ---------------------------------------------------------------------------
 
   describe "generatePrompt mutation" do
-    setup :enable_kaapi
+    setup :enable_prompt_generator
 
-    test "staff user can generate a prompt and receives :in_progress row",
+    test "staff user can generate a prompt and receives a :ready row",
          %{staff: user} do
-      kaapi_success_mock()
+      queue_generated_prompt("You are a helpful WhatsApp chatbot for Pratham Education.")
 
       result =
         auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
@@ -83,14 +65,18 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
       prompt_generation =
         get_in(query_data, [:data, "generatePrompt", "promptGeneration"])
 
-      assert prompt_generation["status"] == "in_progress"
+      assert prompt_generation["status"] == "ready"
+
+      assert prompt_generation["generatedPrompt"] ==
+               "You are a helpful WhatsApp chatbot for Pratham Education."
+
       assert prompt_generation["id"] != nil
       assert get_in(query_data, [:data, "generatePrompt", "errors"]) in [nil, []]
     end
 
     test "manager user can also generate a prompt",
          %{manager: user} do
-      kaapi_success_mock()
+      queue_generated_prompt("You are a helpful WhatsApp chatbot.")
 
       result =
         auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
@@ -100,7 +86,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
       prompt_generation =
         get_in(query_data, [:data, "generatePrompt", "promptGeneration"])
 
-      assert prompt_generation["status"] == "in_progress"
+      assert prompt_generation["status"] == "ready"
     end
 
     test "is rejected when the :is_prompt_generator_enabled flag is off for the org",
@@ -143,6 +129,22 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
       errors = get_in(query_data, [:errors])
       assert errors != nil && length(errors) > 0
     end
+
+    test "a model-call failure still returns a :failed row, not a mutation error",
+         %{staff: user} do
+      Stub.queue_error(:timeout)
+
+      result =
+        auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
+
+      assert {:ok, query_data} = result
+
+      prompt_generation =
+        get_in(query_data, [:data, "generatePrompt", "promptGeneration"])
+
+      assert prompt_generation["status"] == "failed"
+      assert get_in(query_data, [:data, "generatePrompt", "errors"]) in [nil, []]
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -150,7 +152,7 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
   # ---------------------------------------------------------------------------
 
   describe "promptGeneration query" do
-    setup :enable_kaapi
+    setup :enable_prompt_generator
 
     test "staff user can fetch a prompt generation request by id",
          %{staff: user, organization_id: org_id} do
@@ -220,34 +222,27 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
   end
 
   # ---------------------------------------------------------------------------
-  # Full async loop: mutation → callback → poll shows :ready
+  # Legacy callback path — GlificWeb.KaapiController.prompt_generation_callback/2 still routes
+  # to PromptGenerator.handle_callback/1 (see Glific.PromptGenerator's moduledoc), even though
+  # generatePrompt no longer dispatches anything to Kaapi that could ever call it back. This
+  # exercises that the row it resolves is still visible through the ordinary poll query.
   # ---------------------------------------------------------------------------
 
-  describe "full async loop" do
-    setup :enable_kaapi
+  describe "legacy handle_callback/1, polled afterwards" do
+    setup :enable_prompt_generator
 
-    test "generate → callback → poll returns status :ready with generated_prompt",
+    test "a callback-resolved row polls as :ready with generatedPrompt",
          %{staff: user, organization_id: org_id} do
-      kaapi_success_mock()
-
-      # Step 1: trigger generation
-      {:ok, mutation_data} =
-        auth_query_gql_by(:create, user, variables: %{"input" => @valid_input})
-
-      prompt_id =
-        get_in(mutation_data, [:data, "generatePrompt", "promptGeneration", "id"])
-
-      assert prompt_id != nil
-
-      # Step 2: look up the created row to get its request_id (the callback correlation key)
       {:ok, request} =
-        Repo.fetch(PromptGenerationRequest, String.to_integer(prompt_id),
-          skip_organization_id: true
-        )
+        %PromptGenerationRequest{}
+        |> PromptGenerationRequest.changeset(%{
+          inputs: %{"name" => "Test NGO"},
+          status: :in_progress,
+          request_id: "req_legacy_001",
+          organization_id: org_id
+        })
+        |> Repo.insert()
 
-      assert is_binary(request.request_id)
-
-      # Step 3: simulate the Kaapi callback (real shape, correlated by request_id)
       {:ok, _updated} =
         PromptGenerator.handle_callback(%{
           "success" => true,
@@ -261,9 +256,8 @@ defmodule GlificWeb.Schema.PromptGeneratorTest do
           "metadata" => %{"request_id" => request.request_id}
         })
 
-      # Step 4: poll via GraphQL and assert :ready
       {:ok, poll_data} =
-        auth_query_gql_by(:by_id, user, variables: %{"id" => String.to_integer(prompt_id)})
+        auth_query_gql_by(:by_id, user, variables: %{"id" => request.id})
 
       pg = get_in(poll_data, [:data, "promptGeneration", "promptGeneration"])
 

@@ -1,0 +1,8 @@
+{
+  "name": "repeats a message containing punctuation and emoji verbatim",
+  "input": { "message": "Thanks! 🙏 See you at 5pm." },
+  "expect": {
+    "contains": ["Thanks!", "See you at 5pm."],
+    "max_steps": 1
+  }
+}

@@ -145,11 +145,6 @@ defmodule GlificWeb.Router do
     post("/improve_prompt", KaapiController, :improve_prompt_callback)
   end
 
-  # Dify chatbot callback routes.
-  scope "/dify", GlificWeb do
-    post("/chatbot-diagnose", ChatbotController, :diagnose)
-  end
-
   # """
   # All the flow editor routes which is used while designing the flow.
   # """

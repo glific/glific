@@ -1,249 +1,219 @@
 defmodule GlificWeb.Resolvers.AskGlificTest do
   @moduledoc """
-  Test suite for AskGlific GraphQL resolvers.
+  GraphQL integration tests for the Ask Glific surface, now backed by the in-Glific AI agent
+  runtime instead of Dify. `askGlific` is fire-and-forget: it acks synchronously and the real
+  answer is published later on the `askGlificResponse` subscription (bridged from the runtime's
+  `ai_request_event` topic by `Glific.AskGlific.Bridge`) — that publish path is covered at the
+  unit level in `test/glific/ai/publisher_test.exs`, not re-tested here.
   """
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.AskGlific.Conversation
-  alias Glific.Repo
+  alias Glific.{AI.Conversation, AI.Model.Stub, Fixtures, Repo}
 
-  load_gql(
-    :ask_glific,
-    GlificWeb.Schema,
-    "assets/gql/ask_glific/ask.gql"
-  )
+  load_gql(:ask_glific, GlificWeb.Schema, "assets/gql/ask_glific/ask.gql")
+  load_gql(:conversations, GlificWeb.Schema, "assets/gql/ask_glific/conversations.gql")
+  load_gql(:messages, GlificWeb.Schema, "assets/gql/ask_glific/messages.gql")
+  load_gql(:feedback, GlificWeb.Schema, "assets/gql/ask_glific/feedback.gql")
 
-  load_gql(
-    :conversations,
-    GlificWeb.Schema,
-    "assets/gql/ask_glific/conversations.gql"
-  )
-
-  load_gql(
-    :messages,
-    GlificWeb.Schema,
-    "assets/gql/ask_glific/messages.gql"
-  )
-
-  load_gql(
-    :feedback,
-    GlificWeb.Schema,
-    "assets/gql/ask_glific/feedback.gql"
-  )
-
-  setup do
-    test_pid = self()
-
-    Application.put_env(:glific, :dify_req_plug, {Req.Test, test_pid})
-    Application.put_env(:glific, :dify_api_key, "test-api-key")
-
-    on_exit(fn ->
-      Application.delete_env(:glific, :dify_req_plug)
-      Application.delete_env(:glific, :dify_api_key)
-    end)
-
+  setup %{organization_id: organization_id} do
+    start_supervised!(Stub)
+    FunWithFlags.enable(:is_ask_glific_enabled, for_actor: %{organization_id: organization_id})
     :ok
   end
 
-  defp insert_conversation(conversation_id, user) do
-    %Conversation{}
-    |> Conversation.changeset(%{
-      conversation_id: conversation_id,
-      user_id: user.id,
-      organization_id: user.organization_id
-    })
-    |> Repo.insert!()
-  end
-
   describe "ask_glific mutation" do
-    # The mutation is fire-and-forget: it returns a placeholder synchronously
-    # and publishes the real Dify result over the `askGlificResponse`
-    # Absinthe subscription. End-to-end coverage of the Dify call lives in
-    # test/glific/ask_glific_test.exs.
-
-    test "accepts input and returns placeholder synchronously", %{staff: user} do
+    test "a manager starts a run and gets an immediate placeholder ack", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:ask_glific, user,
           variables: %{
-            "input" => %{
-              "query" => "What is Glific?",
-              "pageUrl" => "https://glific.org"
-            }
+            "input" => %{"query" => "What is Glific?", "pageUrl" => "https://glific.org"}
           }
         )
 
       result = get_in(query_data, [:data, "askGlific"])
       assert result["answer"] == nil
-      assert result["conversationId"] == nil
-      assert Map.get(query_data, :errors) == nil
+      assert result["conversationId"] != nil
+      assert result["requestId"] != nil
+      assert result["errors"] in [nil, []]
+
+      conversation = Repo.get!(Conversation, result["conversationId"])
+      assert conversation.skill == "ask_glific"
+      assert conversation.title == "What is Glific?"
     end
 
-    test "accepts follow-up messages with an existing conversation_id", %{staff: user} do
+    test "continuing an existing conversation succeeds", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      conversation =
+        Fixtures.ai_conversation_fixture(%{
+          organization_id: organization_id,
+          user_id: user.id,
+          skill: "ask_glific"
+        })
+
       {:ok, query_data} =
         auth_query_gql_by(:ask_glific, user,
           variables: %{
             "input" => %{
               "query" => "Tell me more",
-              "conversationId" => "conv-gql-123"
+              "conversationId" => to_string(conversation.id)
             }
           }
         )
 
       result = get_in(query_data, [:data, "askGlific"])
+      assert result["conversationId"] == to_string(conversation.id)
+      assert result["errors"] in [nil, []]
+    end
+
+    test "a staff user is rejected, since the underlying skill requires manager", %{staff: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:ask_glific, user, variables: %{"input" => %{"query" => "Hi"}})
+
+      result = get_in(query_data, [:data, "askGlific"])
       assert result["answer"] == nil
       assert result["conversationId"] == nil
-      assert Map.get(query_data, :errors) == nil
+      assert [%{"message" => message} | _] = result["errors"]
+      assert message =~ "permission"
+    end
+
+    test "is rejected when the feature flag is disabled for the organization", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      FunWithFlags.disable(:is_ask_glific_enabled, for_actor: %{organization_id: organization_id})
+
+      {:ok, query_data} =
+        auth_query_gql_by(:ask_glific, user, variables: %{"input" => %{"query" => "Hi"}})
+
+      result = get_in(query_data, [:data, "askGlific"])
+      assert result["conversationId"] == nil
+      assert [%{"message" => message} | _] = result["errors"]
+      assert message =~ "not enabled"
     end
   end
 
   describe "ask_glific_conversations query" do
-    test "returns conversations tracked in DB for the user", %{staff: user} do
-      insert_conversation("conv-gql-abc", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{
-          "data" => [
-            %{
-              "id" => "conv-gql-abc",
-              "name" => "Glific Chat",
-              "status" => "normal",
-              "created_at" => 1_700_000_000,
-              "updated_at" => 1_700_001_000
-            }
-          ],
-          "has_more" => false,
-          "limit" => 20
+    test "returns only the caller's ask_glific conversations", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      conversation =
+        Fixtures.ai_conversation_fixture(%{
+          organization_id: organization_id,
+          user_id: user.id,
+          skill: "ask_glific",
+          title: "Glific Chat"
         })
-      end)
 
-      {:ok, query_data} =
-        auth_query_gql_by(:conversations, user, variables: %{"limit" => 20})
+      Fixtures.ai_conversation_fixture(%{
+        organization_id: organization_id,
+        user_id: user.id,
+        skill: "template_utility_rewrite"
+      })
+
+      {:ok, query_data} = auth_query_gql_by(:conversations, user, variables: %{"limit" => 20})
 
       result = get_in(query_data, [:data, "askGlificConversations"])
-
       assert length(result["conversations"]) == 1
-      assert hd(result["conversations"])["id"] == "conv-gql-abc"
+      assert hd(result["conversations"])["id"] == to_string(conversation.id)
       assert hd(result["conversations"])["name"] == "Glific Chat"
       assert result["hasMore"] == false
     end
 
-    test "returns empty list when Dify has no conversations", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{
-          "data" => [],
-          "has_more" => false,
-          "limit" => 20
-        })
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:conversations, user, variables: %{})
+    test "returns an empty list when the caller has no ask_glific conversations", %{
+      manager: user
+    } do
+      {:ok, query_data} = auth_query_gql_by(:conversations, user, variables: %{})
 
       result = get_in(query_data, [:data, "askGlificConversations"])
       assert result["conversations"] == []
     end
-
-    test "returns error on Dify failure", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        conn
-        |> Plug.Conn.put_status(500)
-        |> Req.Test.json(%{"error" => "Server error"})
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:conversations, user, variables: %{})
-
-      assert query_data.errors != nil
-    end
   end
 
   describe "ask_glific_messages query" do
-    test "returns messages for an owned conversation", %{staff: user} do
-      insert_conversation("conv-msg-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{
-          "data" => [
-            %{
-              "id" => "msg-001",
-              "conversation_id" => "conv-msg-123",
-              "query" => "What is Glific?",
-              "answer" => "A communication platform.",
-              "created_at" => 1_700_000_100
-            }
-          ],
-          "has_more" => true,
-          "limit" => 50
+    test "returns turn history for an owned conversation", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      conversation =
+        Fixtures.ai_conversation_fixture(%{
+          organization_id: organization_id,
+          user_id: user.id,
+          skill: "ask_glific"
         })
-      end)
+
+      Fixtures.ai_message_fixture(%{
+        conversation: conversation,
+        seq: 1,
+        role: :user,
+        reqllm_message: ReqLLM.Context.user("What is Glific?")
+      })
+
+      Fixtures.ai_message_fixture(%{
+        conversation: conversation,
+        seq: 2,
+        role: :assistant,
+        reqllm_message: ReqLLM.Context.assistant("A communication platform.")
+      })
 
       {:ok, query_data} =
         auth_query_gql_by(:messages, user,
-          variables: %{"conversationId" => "conv-msg-123", "limit" => 50}
+          variables: %{"conversationId" => to_string(conversation.id), "limit" => 50}
         )
 
       result = get_in(query_data, [:data, "askGlificMessages"])
       messages = result["messages"]
       assert length(messages) == 1
-      assert hd(messages)["id"] == "msg-001"
       assert hd(messages)["query"] == "What is Glific?"
       assert hd(messages)["answer"] == "A communication platform."
-      assert result["hasMore"] == true
+      assert result["hasMore"] == false
     end
 
-    test "returns error for conversation not owned by user", %{staff: user} do
-      # Don't insert any conversation for this user
+    test "returns an error for a conversation not owned by the caller", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      other_user =
+        Fixtures.user_fixture(%{organization_id: organization_id, roles: ["manager"]})
 
-      {:ok, query_data} =
-        auth_query_gql_by(:messages, user, variables: %{"conversationId" => "conv-not-owned"})
-
-      assert query_data.errors != nil
-    end
-
-    test "supports pagination with firstId", %{staff: user} do
-      insert_conversation("conv-msg-123", user)
-
-      Req.Test.stub(self(), fn conn ->
-        params = conn.params
-        assert params["first_id"] == "msg-050"
-
-        Req.Test.json(conn, %{
-          "data" => [],
-          "has_more" => false,
-          "limit" => 50
+      conversation =
+        Fixtures.ai_conversation_fixture(%{
+          organization_id: organization_id,
+          user_id: other_user.id,
+          skill: "ask_glific"
         })
-      end)
 
       {:ok, query_data} =
         auth_query_gql_by(:messages, user,
-          variables: %{
-            "conversationId" => "conv-msg-123",
-            "limit" => 50,
-            "firstId" => "msg-050"
-          }
+          variables: %{"conversationId" => to_string(conversation.id)}
         )
 
-      result = get_in(query_data, [:data, "askGlificMessages"])
-      assert result["messages"] == []
-      assert result["hasMore"] == false
+      assert query_data.errors != nil
     end
   end
 
   describe "ask_glific_feedback mutation" do
-    test "submits like feedback successfully", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        assert conn.request_path == "/v1/messages/msg-gql-001/feedbacks"
-        Req.Test.json(conn, %{"result" => "success"})
-      end)
+    test "submits like feedback successfully", %{
+      manager: user,
+      organization_id: organization_id
+    } do
+      conversation =
+        Fixtures.ai_conversation_fixture(%{
+          organization_id: organization_id,
+          user_id: user.id,
+          skill: "ask_glific"
+        })
+
+      message =
+        Fixtures.ai_message_fixture(%{conversation: conversation, seq: 2, role: :assistant})
 
       {:ok, query_data} =
         auth_query_gql_by(:feedback, user,
           variables: %{
-            "input" => %{
-              "messageId" => "msg-gql-001",
-              "rating" => "like"
-            }
+            "input" => %{"messageId" => to_string(message.id), "rating" => "like"}
           }
         )
 
@@ -251,41 +221,10 @@ defmodule GlificWeb.Resolvers.AskGlificTest do
       assert result["success"] == true
     end
 
-    test "submits dislike feedback with content", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        Req.Test.json(conn, %{"result" => "success"})
-      end)
-
+    test "returns an error for a message that does not belong to the caller", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:feedback, user,
-          variables: %{
-            "input" => %{
-              "messageId" => "msg-gql-002",
-              "rating" => "dislike",
-              "content" => "Not helpful"
-            }
-          }
-        )
-
-      result = get_in(query_data, [:data, "askGlificFeedback"])
-      assert result["success"] == true
-    end
-
-    test "returns error on Dify failure", %{staff: user} do
-      Req.Test.stub(self(), fn conn ->
-        conn
-        |> Plug.Conn.put_status(404)
-        |> Req.Test.json(%{"error" => "Message not found"})
-      end)
-
-      {:ok, query_data} =
-        auth_query_gql_by(:feedback, user,
-          variables: %{
-            "input" => %{
-              "messageId" => "msg-nonexistent",
-              "rating" => "like"
-            }
-          }
+          variables: %{"input" => %{"messageId" => "999999999", "rating" => "like"}}
         )
 
       assert query_data.errors != nil

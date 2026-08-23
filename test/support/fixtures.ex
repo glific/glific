@@ -72,6 +72,12 @@ defmodule Glific.Fixtures do
     WhatsappForms.WhatsappForm
   }
 
+  # `Glific.AI.Message`/`Glific.AI.Conversation` need distinct aliases: `Message` is already
+  # aliased above to `Providers.Maytapi.Message`.
+  alias Glific.AI.Codec, as: AICodec
+  alias Glific.AI.Conversation, as: AIConversation
+  alias Glific.AI.Message, as: AIMessage
+
   @valid_attrs %{
     flow_id: 1,
     flow_uuid: Ecto.UUID.generate(),
@@ -1452,5 +1458,53 @@ defmodule Glific.Fixtures do
       |> Repo.update()
 
     assistant
+  end
+
+  @doc false
+  @spec ai_conversation_fixture(map()) :: AIConversation.t()
+  def ai_conversation_fixture(attrs \\ %{}) do
+    organization_id = Map.get(attrs, :organization_id, get_org_id())
+    user_id = Map.get(attrs, :user_id) || user_fixture(%{organization_id: organization_id}).id
+
+    valid_attrs = %{
+      skill: "chat",
+      max_steps: 20,
+      codec_version: AICodec.version(),
+      user_id: user_id,
+      organization_id: organization_id
+    }
+
+    {:ok, conversation} =
+      %AIConversation{}
+      |> AIConversation.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    conversation
+  end
+
+  @doc false
+  @spec ai_message_fixture(map()) :: AIMessage.t()
+  def ai_message_fixture(attrs \\ %{}) do
+    conversation = Map.get(attrs, :conversation) || ai_conversation_fixture(attrs)
+
+    {:ok, parts} =
+      attrs
+      |> Map.get(:reqllm_message, ReqLLM.Context.user("fixture message"))
+      |> AICodec.encode()
+
+    valid_attrs = %{
+      conversation_id: conversation.id,
+      seq: Map.get(attrs, :seq, 1),
+      role: :user,
+      parts: parts,
+      organization_id: conversation.organization_id
+    }
+
+    {:ok, message} =
+      %AIMessage{}
+      |> AIMessage.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    message
   end
 end

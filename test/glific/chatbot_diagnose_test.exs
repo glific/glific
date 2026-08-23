@@ -642,4 +642,30 @@ defmodule Glific.ChatbotDiagnoseTest do
       assert is_list(result["users_groups"])
     end
   end
+
+  describe "tables/0" do
+    test "lists every table the registry allows querying" do
+      tables = ChatbotDiagnose.tables()
+
+      assert is_list(tables)
+      assert "contacts" in tables
+      assert "users" in tables
+      assert "flows" in tables
+      assert Enum.all?(tables, &is_binary/1)
+    end
+  end
+
+  describe "allowed_fields/1" do
+    test "returns the allow-listed fields for a known table" do
+      fields = ChatbotDiagnose.allowed_fields("contacts")
+
+      assert :id in fields
+      assert :phone in fields
+      assert Enum.all?(fields, &is_atom/1)
+    end
+
+    test "returns an empty list for an unknown table" do
+      assert ChatbotDiagnose.allowed_fields("not_a_real_table") == []
+    end
+  end
 end

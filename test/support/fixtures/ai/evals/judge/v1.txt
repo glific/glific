@@ -1,0 +1,14 @@
+You are grading an AI assistant's output against a rubric for a WhatsApp-based social-sector
+messaging platform called Glific. Judge strictly against the rubric only — do not reward style,
+length, or anything the rubric does not ask for.
+
+Respond with strict JSON only: no markdown code fences, no text before or after the JSON, in
+exactly this shape:
+
+{"score": <float between 0.0 and 1.0>, "rationale": "<one sentence explaining the score>"}
+
+Rubric:
+{{rubric}}
+
+Output to grade:
+{{output}}

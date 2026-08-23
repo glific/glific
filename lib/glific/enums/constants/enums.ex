@@ -139,6 +139,21 @@ defmodule Glific.Enums.Constants do
       @assistant_config_version_status_const [:in_progress, :ready, :failed]
       @knowledge_base_status_const [:in_progress, :completed, :failed]
       @ai_evaluation_status_const [:create_in_progress, :processing, :failed, :completed]
+
+      # lifecycle of one agent-run request; ai_conversations.active_status only ever holds
+      # the first three, since the row is cleared back to nil on any terminal status
+      @ai_request_status_const [
+        :queued,
+        :running,
+        :awaiting_confirmation,
+        :succeeded,
+        :failed,
+        :cancelled,
+        :expired
+      ]
+
+      @ai_message_role_const [:user, :assistant, :tool]
+      @ai_message_status_const [:complete, :failed]
     end
   end
 end

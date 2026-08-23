@@ -175,6 +175,91 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: cover/excoveralls.json
 
+  ai-changes:
+    runs-on: ubuntu-latest
+
+    outputs:
+      ai: ${{ steps.filter.outputs.ai }}
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v7
+
+      # dorny/paths-filter rather than a workflow-level `on.pull_request.paths` trigger: a
+      # top-level `paths` filter would gate the *entire* workflow file (every job in it,
+      # including code-quality/tests/compile), and this workflow already carries several jobs
+      # that must always run. Isolating the AI-eval gate to its own filter step — feeding a
+      # single `if:` on the `ai-evals` job below — reuses the existing setup/tests job shape
+      # (matrix, caches, Postgres service) instead of duplicating it in a second workflow file.
+      - name: Detect changes under the AI runtime
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ai:
+              - 'lib/glific/ai/skills/**'
+              - 'lib/glific/ai/tools/**'
+              - 'lib/glific/ai/runtime.ex'
+              - 'lib/glific/ai/run.ex'
+              - 'lib/glific/ai/codec.ex'
+
+  ai-evals:
+    runs-on: ubuntu-latest
+    needs: [setup, ai-changes]
+    if: needs.ai-changes.outputs.ai == 'true'
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: glific_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      MIX_ENV: test
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      matrix:
+        elixir: [1.18.3]
+        otp: [27.3.3]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v7
+
+      - name: Setup elixir
+        uses: erlef/setup-elixir@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v4
+        with:
+          path: deps
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Retrieve Build Cache
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-v2.3-build-
+
+      # :eval_live is NEVER run in CI — it makes real, paid provider calls and needs provider
+      # API keys CI does not have. This job runs only the deterministic/stubbed `:eval` tier.
+      # A model change (e.g. swapping a skill's model/0 string, or bumping req_llm) is a
+      # one-line diff with a much larger blast radius than it looks — validate it with
+      # `mix test --only eval_live` locally, using a real provider API key, before it ships.
+      - name: Run AI skill evals
+        run: mix test --only eval
+
   compile:
     runs-on: ubuntu-latest
     needs: setup

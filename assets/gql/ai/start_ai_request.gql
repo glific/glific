@@ -1,0 +1,9 @@
+#import "./ack_fields.frag.gql"
+
+mutation startAiRequest($input: StartAiRequestInput!) {
+  startAiRequest(input: $input) {
+    ...AiRequestAckFields
+
+    ...AckErrorFields
+  }
+}

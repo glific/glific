@@ -44,6 +44,20 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :template_rewrite_change do
+    field :what_changed, :string
+    field :why, :string
+    field :best_practice, :string
+    field :best_practice_url, :string
+  end
+
+  object :rewrite_template_for_utility_result do
+    field :body, :string
+    field :suggested_category, :string
+    field :changes, list_of(:template_rewrite_change)
+    field :errors, list_of(:input_error)
+  end
+
   object :session_template do
     field :id, :id
     field :bsp_id, :string
@@ -288,6 +302,21 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:buttons, list_of(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.translate_session_template/3)
+    end
+
+    field :rewrite_template_for_utility, :rewrite_template_for_utility_result do
+      arg(:body, non_null(:string))
+      arg(:footer, :string)
+      arg(:buttons, list_of(:string))
+      arg(:label, :string)
+      middleware(Authorize, :staff)
+
+      middleware(
+        RequireFeatureFlag,
+        {:is_template_utility_rewrite_enabled, "Template Utility Rewrite"}
+      )
+
+      resolve(&Resolvers.Templates.rewrite_template_for_utility/3)
     end
   end
 end

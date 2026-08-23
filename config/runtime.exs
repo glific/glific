@@ -124,6 +124,9 @@ config :glific,
   gemini_api_key: env!("GEMINI_API_KEY", :string!, "This is not a secret")
 
 config :glific,
+  anthropic_api_key: env!("ANTHROPIC_API_KEY", :string!, "This is not a secret")
+
+config :glific,
   google_translate: env!("GOOGLE_TRANSLATE_KEY", :string!, "This is not a secret")
 
 config :glific,
@@ -148,9 +151,6 @@ config :glific,
 
 config :glific,
   open_ai_project: env!("OPEN_AI_PROJECT", :string!, "This is not a secret")
-
-config :glific,
-  dify_api_key: env!("DIFY_API_KEY", :string!, "This is not a secret")
 
 config :glific,
   avni_password: env!("AVNI_PASSWORD", :string!, "This is not a secret")
@@ -283,6 +283,29 @@ if config_env() == :prod do
   config :glific, :gupshup_webhook_ips, gupshup_webhook_ips
   config :glific, :gupshup_enterprise_webhook_ips, webhook_ips.("GUPSHUP_ENTERPRISE_WEBHOOK_IPS")
   config :glific, :maytapi_webhook_ips, webhook_ips.("MAYTAPI_WEBHOOK_IPS")
+end
+
+# AI runtime tracing (Glific.AI.Telemetry) — opt-in, and never touched in :test (see
+# config/test.exs, which pins the OTel SDK to a no-op exporter so no test can attempt network
+# I/O even if a stray LANGFUSE_* var is present in the environment).
+langfuse_public_key = env!("LANGFUSE_PUBLIC_KEY", :string, nil)
+langfuse_secret_key = env!("LANGFUSE_SECRET_KEY", :string, nil)
+
+if is_binary(langfuse_public_key) and is_binary(langfuse_secret_key) do
+  langfuse_host = env!("LANGFUSE_HOST", :string, "https://us.cloud.langfuse.com")
+  auth = "Basic " <> Base.encode64("#{langfuse_public_key}:#{langfuse_secret_key}")
+
+  config :glific, :ai_telemetry, enabled: true
+
+  config :opentelemetry,
+    span_processor: :batch,
+    traces_exporter: :otlp
+
+  # Langfuse only accepts OTLP/HTTP, never gRPC.
+  config :opentelemetry_exporter,
+    otlp_protocol: :http_protobuf,
+    otlp_traces_endpoint: "#{langfuse_host}/api/public/otel/v1/traces",
+    otlp_traces_headers: [{"authorization", auth}]
 end
 
 search_repo_module =

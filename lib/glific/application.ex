@@ -63,11 +63,22 @@ defmodule Glific.Application do
       ),
 
       # Dedicated hackney pool for Kaapi document uploads
-      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50)
+      :hackney_pool.child_spec(:kaapi_upload_pool, timeout: 60_000, max_connections: 50),
+
+      # Prunes Glific.AI.Telemetry's in-flight OpenTelemetry span entries so a process that
+      # dies mid-request doesn't leak its span forever. Runs regardless of whether tracing is
+      # enabled — a no-op against an empty/absent span table when it isn't.
+      {:telemetry_poller,
+       measurements: [{Glific.AI.Telemetry, :prune_stale_spans, []}], period: :timer.minutes(1)}
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:
     attach_oban_telemetry_event()
+
+    # Bridges Glific.AI's model-call telemetry into OpenTelemetry GenAI spans (Langfuse, when
+    # configured) and AppSignal metrics. A no-op unless config :glific, :ai_telemetry,
+    # enabled: true — see Glific.AI.Telemetry.
+    Glific.AI.Telemetry.attach()
 
     # Add this :telemetry.attach/4 for swoosh success/failure call:
     attach_mailer_telemetry_event()

@@ -84,3 +84,21 @@ config :glific, gupshup_partner_client_secret: "test_client_secret"
 # Relax OTP rate limiting in tests (the suite fires many send_otp requests from the same IP).
 # The dedicated rate-limit test overrides this locally.
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1_000
+
+# No test may make a real outbound model call — see test/CLAUDE.md.
+config :glific, :ai_model_adapter, Glific.AI.Model.Stub
+
+# Fixture skills for Glific.AI.Runtime / Glific.AI.StepWorker tests, resolved through the exact
+# same Glific.AI.Skill.Registry.fetch/1 path production uses. Not listed in the registry's own
+# @skills, since test/support/ compiles after lib/ — see Glific.AI.Skill.Registry's moduledoc.
+config :glific, :ai_extra_skills, [
+  Glific.AI.Test.RuntimeSkill,
+  Glific.AI.Test.GatedRuntimeSkill,
+  Glific.AI.Test.StructuredRuntimeSkill
+]
+
+# AI runtime tracing stays off in tests, and the OTel SDK is pinned to a no-op exporter so
+# nothing here can attempt network I/O even if `Glific.AI.Telemetry.attach/0` is exercised
+# directly by a test.
+config :glific, :ai_telemetry, enabled: false
+config :opentelemetry, traces_exporter: :none

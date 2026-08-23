@@ -686,6 +686,15 @@ defmodule Glific do
   end
 
   @doc """
+  Get the platform-wide Anthropic API key — the fallback `Glific.AI.Credentials.fetch/2` uses
+  when an organisation has not configured its own.
+  """
+  @spec get_anthropic_api_key() :: String.t() | nil
+  def get_anthropic_api_key do
+    Application.fetch_env!(:glific, :anthropic_api_key)
+  end
+
+  @doc """
   Get default Google Translate key
   """
   @spec get_google_translate_key() :: String.t()

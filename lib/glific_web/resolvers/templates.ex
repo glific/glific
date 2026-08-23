@@ -195,4 +195,21 @@ defmodule GlificWeb.Resolvers.Templates do
   def translate_session_template(_, params, %{context: %{current_user: user}}) do
     Templates.translate_session_template(params, user.organization_id)
   end
+
+  @doc """
+  Rewrites a draft HSM template's body for WhatsApp UTILITY-category eligibility. Always
+  resolves to `{:ok, _}` — a failure comes back as a field-level entry in `errors`, not a
+  top-level GraphQL error, so the client's error handling stays uniform.
+  """
+  @spec rewrite_template_for_utility(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()}
+  def rewrite_template_for_utility(_, params, %{context: %{current_user: user}}) do
+    case Templates.rewrite_template_for_utility(params, user) do
+      {:ok, %{body: body, suggested_category: category, changes: changes}} ->
+        {:ok, %{body: body, suggested_category: category, changes: changes, errors: []}}
+
+      {:error, errors} ->
+        {:ok, %{body: nil, suggested_category: nil, changes: nil, errors: errors}}
+    end
+  end
 end

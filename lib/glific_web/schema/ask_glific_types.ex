@@ -21,10 +21,12 @@ defmodule GlificWeb.Schema.AskGlificTypes do
     field(:success, :boolean)
   end
 
+  # `content` (free-text feedback) was Dify's field and is gone with it: nothing sends it — not
+  # the Ask Glific UI, not the Bruno collection — and `ai_messages` has nowhere to store it.
+  # Keeping it would mean accepting a field and silently discarding it.
   input_object :ask_glific_feedback_input do
     field(:message_id, non_null(:string))
     field(:rating, :string)
-    field(:content, :string)
   end
 
   input_object :ask_glific_input do

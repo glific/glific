@@ -1,0 +1,14 @@
+#import "./conversation_fields.frag.gql"
+
+query aiConversation($id: ID!) {
+  aiConversation(id: $id) {
+    conversation {
+      ...AiConversationFields
+    }
+
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "repeats a message containing template-like placeholders verbatim",
+  "input": { "message": "Hi {{1}}, your OTP is {{2}}. It expires in 10 minutes." },
+  "expect": {
+    "contains": ["{{1}}", "{{2}}", "expires in 10 minutes"],
+    "max_steps": 1
+  }
+}

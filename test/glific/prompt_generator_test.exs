@@ -1,36 +1,13 @@
 defmodule Glific.PromptGeneratorTest do
-  use Glific.DataCase
-  import Tesla.Mock
+  # Glific.AI.Model.Stub is a globally-named Agent shared across test files — async: true
+  # would leak one file's queued responses into another's assertions.
+  use Glific.DataCase, async: false
 
-  alias Glific.Partners
+  alias Glific.AI.Model.Stub
+  alias Glific.Fixtures
   alias Glific.PromptGenerator
   alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.Repo
-
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
-  defp enable_kaapi(%{organization_id: org_id}) do
-    {:ok, credential} =
-      Partners.create_credential(%{
-        organization_id: org_id,
-        shortcode: "kaapi",
-        keys: %{},
-        secrets: %{"api_key" => "sk_test_key"}
-      })
-
-    {:ok, _credential} =
-      Partners.update_credential(credential, %{
-        keys: %{},
-        secrets: %{"api_key" => "sk_test_key"},
-        is_active: true,
-        organization_id: org_id,
-        shortcode: "kaapi"
-      })
-
-    :ok
-  end
 
   @valid_answers %{
     name: "Pratham Education",
@@ -43,6 +20,20 @@ defmodule Glific.PromptGeneratorTest do
     fallback: "I don't understand. Please type 'Help' for options.",
     escalation: "Reply AGENT to speak with a human"
   }
+
+  # Glific.AI.Run.sync/3 honours the skill's own feature_flag/0, and every flag is seeded
+  # disabled for a new organisation (Glific.Misc.Flags), so this precondition is what the whole
+  # generate_prompt/3 describe block depends on rather than something incidental.
+  setup %{organization_id: organization_id} do
+    start_supervised!(Stub)
+
+    FunWithFlags.enable(:is_prompt_generator_enabled,
+      for_actor: %{organization_id: organization_id}
+    )
+
+    user = Fixtures.user_fixture(%{organization_id: organization_id})
+    %{user: user}
+  end
 
   # ---------------------------------------------------------------------------
   # format_answers/1
@@ -102,172 +93,101 @@ defmodule Glific.PromptGeneratorTest do
   end
 
   # ---------------------------------------------------------------------------
-  # build_llm_payload/3
-  # ---------------------------------------------------------------------------
-
-  describe "build_llm_payload/3" do
-    test "contains the meta-prompt as instructions" do
-      payload =
-        PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "req-1")
-
-      instructions = get_in(payload, [:config, :blob, :completion, :params, :instructions])
-      assert is_binary(instructions)
-      assert String.contains?(instructions, "expert prompt engineer")
-    end
-
-    test "type is 'text'" do
-      payload =
-        PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "req-1")
-
-      type = get_in(payload, [:config, :blob, :completion, :type])
-      assert type == "text"
-    end
-
-    test "provider is 'openai'" do
-      payload =
-        PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "req-1")
-
-      provider = get_in(payload, [:config, :blob, :completion, :provider])
-      assert provider == "openai"
-    end
-
-    test "model is 'gpt-4o'" do
-      payload =
-        PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "req-1")
-
-      model = get_in(payload, [:config, :blob, :completion, :params, :model])
-      assert model == "gpt-4o"
-    end
-
-    test "temperature is 0.7" do
-      payload =
-        PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "req-1")
-
-      temperature = get_in(payload, [:config, :blob, :completion, :params, :temperature])
-      assert temperature == 0.7
-    end
-
-    test "embeds callback_url and request_id" do
-      payload =
-        PromptGenerator.build_llm_payload(
-          @valid_answers,
-          "https://cb.example.com/hook",
-          "uuid-42"
-        )
-
-      assert payload[:callback_url] == "https://cb.example.com/hook"
-      assert payload[:request_metadata][:request_id] == "uuid-42"
-    end
-
-    test "query.input contains formatted answers" do
-      payload = PromptGenerator.build_llm_payload(@valid_answers, "https://cb.example.com", "r")
-
-      input = get_in(payload, [:query, :input])
-      assert String.contains?(input, "- persona: Pratham Education")
-    end
-
-    test "blank answers are omitted from query.input" do
-      answers = %{name: "NGO", purpose: ""}
-      payload = PromptGenerator.build_llm_payload(answers, "https://cb.example.com", "r")
-
-      input = get_in(payload, [:query, :input])
-      refute String.contains?(input, "objective")
-    end
-  end
-
-  # ---------------------------------------------------------------------------
   # generate_prompt/3
   # ---------------------------------------------------------------------------
 
-  describe "generate_prompt/3" do
-    setup :enable_kaapi
+  describe "generate_prompt/3 — happy path" do
+    test "persists a :ready row with the generated prompt", %{
+      organization_id: org_id,
+      user: user
+    } do
+      Stub.queue_text("draft")
 
-    test "happy path: persists :in_progress row with request_id",
-         %{organization_id: org_id} do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{job_id: "job_pg_123"}, success: true}
-        }
-      end)
+      Stub.queue_object(%{
+        "generated_prompt" => "You are a helpful WhatsApp chatbot for Pratham Education."
+      })
 
       assert {:ok, %PromptGenerationRequest{} = request} =
-               PromptGenerator.generate_prompt(@valid_answers, org_id)
+               PromptGenerator.generate_prompt(@valid_answers, org_id, user.id)
 
-      assert request.status == :in_progress
+      assert request.status == :ready
+
+      assert request.generated_prompt ==
+               "You are a helpful WhatsApp chatbot for Pratham Education."
+
       assert request.organization_id == org_id
-      # request_id is the callback correlation key — must be stored as a non-nil binary
+      assert request.user_id == user.id
       assert is_binary(request.request_id)
       assert byte_size(request.request_id) > 0
       # Atom-keyed map is preserved in the struct returned by Repo.insert/1
       assert request.inputs[:name] == "Pratham Education"
     end
 
-    test "persists user_id when provided", %{organization_id: org_id} do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body: %{data: %{job_id: "job_pg_user"}, success: true}
-        }
-      end)
+    test "sends the formatted answers as the skill's message input", %{
+      organization_id: org_id,
+      user: user
+    } do
+      Stub.queue_text("draft")
+      Stub.queue_object(%{"generated_prompt" => "Some generated prompt."})
 
-      assert {:ok, request} = PromptGenerator.generate_prompt(@valid_answers, org_id, 1)
-      assert request.user_id == 1
+      assert {:ok, _request} = PromptGenerator.generate_prompt(@valid_answers, org_id, user.id)
+
+      [first_call | _rest] = Stub.calls()
+      user_message = Enum.find(first_call.messages, &(&1.role == :user))
+      text = user_message.content |> Enum.map_join("", & &1.text)
+
+      assert text == PromptGenerator.format_answers(@valid_answers)
+    end
+  end
+
+  describe "generate_prompt/3 — failure paths" do
+    test "persists a :failed row when the model call errors", %{
+      organization_id: org_id,
+      user: user
+    } do
+      Stub.queue_error(:timeout)
+
+      assert {:ok, %PromptGenerationRequest{} = request} =
+               PromptGenerator.generate_prompt(@valid_answers, org_id, user.id)
+
+      assert request.status == :failed
+      assert is_binary(request.error_message)
+      assert is_nil(request.generated_prompt)
     end
 
-    test "returns error (no row leaked) when Kaapi is inactive", %{organization_id: org_id} do
-      # Disable Kaapi by setting is_active: false, then bust the cache
-      {:ok, credential} =
-        Partners.get_credential(%{organization_id: org_id, shortcode: "kaapi"})
+    test "persists a :failed row when the skill's feature flag is disabled for the org", %{
+      organization_id: org_id,
+      user: user
+    } do
+      FunWithFlags.disable(:is_prompt_generator_enabled, for_actor: %{organization_id: org_id})
 
-      Partners.update_credential(credential, %{
-        keys: %{},
-        secrets: %{"api_key" => "sk_test_key"},
-        is_active: false,
-        organization_id: org_id,
-        shortcode: "kaapi"
-      })
+      assert {:ok, %PromptGenerationRequest{} = request} =
+               PromptGenerator.generate_prompt(@valid_answers, org_id, user.id)
 
-      # Bust the org cache so fetch_kaapi_creds sees the updated credential state
-      org = Partners.get_organization!(org_id)
-      Partners.fill_cache(org)
+      assert request.status == :failed
+      assert is_binary(request.error_message)
+    end
 
+    test "returns an error without inserting a row when user_id is nil", %{
+      organization_id: org_id
+    } do
       count_before = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
 
-      result = PromptGenerator.generate_prompt(@valid_answers, org_id)
-
-      assert {:error, _reason} = result
+      assert {:error, _reason} = PromptGenerator.generate_prompt(@valid_answers, org_id)
 
       count_after = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
       assert count_before == count_after
     end
 
-    test "returns error (no ready row) when Kaapi returns 500", %{organization_id: org_id} do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 500, body: %{error: "Internal Server Error"}}
-      end)
-
-      result = PromptGenerator.generate_prompt(@valid_answers, org_id)
-
-      assert {:error, _reason} = result
-
-      count =
-        PromptGenerationRequest
-        |> Repo.aggregate(:count, skip_organization_id: true)
-
-      assert count == 0
-    end
-
-    test "returns error (no ready row) when Kaapi returns 422", %{organization_id: org_id} do
-      mock(fn %Tesla.Env{method: :post} ->
-        %Tesla.Env{status: 422, body: %{error: "Unprocessable entity"}}
-      end)
+    test "returns an error without inserting a row when user_id belongs to another organization",
+         %{organization_id: org_id} do
+      other_organization = Fixtures.organization_fixture()
+      other_user = Fixtures.user_fixture(%{organization_id: other_organization.id})
 
       count_before = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
 
-      result = PromptGenerator.generate_prompt(@valid_answers, org_id)
-
-      assert {:error, _reason} = result
+      assert {:error, _reason} =
+               PromptGenerator.generate_prompt(@valid_answers, org_id, other_user.id)
 
       count_after = Repo.aggregate(PromptGenerationRequest, :count, skip_organization_id: true)
       assert count_before == count_after
@@ -275,12 +195,11 @@ defmodule Glific.PromptGeneratorTest do
   end
 
   # ---------------------------------------------------------------------------
-  # handle_callback/1 — real Kaapi callback shape
+  # handle_callback/1 — legacy Kaapi callback shape (kept for the still-wired
+  # /kaapi/prompt_generation route; not exercised by generate_prompt/3 anymore)
   # ---------------------------------------------------------------------------
 
   describe "handle_callback/1" do
-    setup :enable_kaapi
-
     setup %{organization_id: org_id} do
       request_id = Ecto.UUID.generate()
 

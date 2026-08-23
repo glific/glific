@@ -1,0 +1,8 @@
+{
+  "name": "repeats a short message verbatim",
+  "input": { "message": "hello there" },
+  "expect": {
+    "contains": ["hello there"],
+    "max_steps": 1
+  }
+}

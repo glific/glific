@@ -1,0 +1,148 @@
+meta {
+  name: Rewrite Template For Utility
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation rewriteTemplateForUtility($body: String!, $footer: String, $buttons: [String], $label: String) {
+    rewriteTemplateForUtility(body: $body, footer: $footer, buttons: $buttons, label: $label) {
+      body
+      suggestedCategory
+      changes {
+        whatChanged
+        why
+        bestPractice
+        bestPracticeUrl
+      }
+      errors {
+        key
+        message
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "body": "Hi {{1}}, don't miss our exciting new event this weekend!!",
+    "footer": "Reply STOP to opt out",
+    "buttons": ["Confirm"],
+    "label": "Event reminder"
+  }
+}
+
+docs {
+  # Rewrite Template For Utility
+
+  ## Description
+  Rewrites a draft WhatsApp HSM template's body via Glific's AI runtime so it is eligible for
+  Meta's UTILITY template category, and explains what was changed and why. Draft/create-flow
+  tooling only — it never reads or writes a `SessionTemplate` row, and does not touch buttons or
+  footer, only `body`.
+
+  Requires the `staff` role or above, and the `is_template_utility_rewrite_enabled` feature flag
+  to be on for the organization.
+
+  ## Base URL
+  `{{api_url}}`
+
+  ## Parameters
+  | Parameter | Description                                                        |
+  |-----------|---------------------------------------------------------------------|
+  | `body`    | Required. The current draft body, including any `{{n}}` variables.  |
+  | `footer`  | Optional. The current draft footer — used to check the combined character budget, never rewritten. |
+  | `buttons` | Optional. The current draft's button text — used to check the combined character budget, never rewritten. |
+  | `label`   | Optional. The draft's internal label, for context only.             |
+
+  ## Request Example
+  ```bash
+  curl -X POST {{api_url}} \
+      -H "Authorization: {{auth_token}}" \
+      -H "Content-Type: application/json" \
+      -d '{
+          "query": "mutation rewriteTemplateForUtility($body: String!, $footer: String, $buttons: [String], $label: String) { rewriteTemplateForUtility(body: $body, footer: $footer, buttons: $buttons, label: $label) { body suggestedCategory changes { whatChanged why bestPractice bestPracticeUrl } errors { key message } } }",
+          "variables": {
+              "body": "Hi {{1}}, don'\''t miss our exciting new event this weekend!!",
+              "footer": "Reply STOP to opt out",
+              "buttons": ["Confirm"],
+              "label": "Event reminder"
+          }
+      }'
+  ```
+
+  ## Response
+  A successful rewrite:
+  ```json
+  {
+    "data": {
+      "rewriteTemplateForUtility": {
+        "body": "Hi {{1}}, your event registration is confirmed.",
+        "suggestedCategory": "UTILITY",
+        "changes": [
+          {
+            "whatChanged": "Removed the promotional call-to-action and exclamation marks",
+            "why": "Utility templates should confirm something the recipient already did, not invite them to something new",
+            "bestPractice": "Avoid urgency and hype in utility copy",
+            "bestPracticeUrl": null
+          }
+        ],
+        "errors": []
+      }
+    }
+  }
+  ```
+
+  A rewrite that fails one of the hard checks the backend enforces (the same `{{n}}` variables
+  preserved in order, the body + buttons + footer combined 1024-character budget, or
+  `suggestedCategory` being a recognised category) comes back as a field-level entry in
+  `errors`, not a top-level GraphQL error, so the body/category/changes fields are all `null`:
+  ```json
+  {
+    "data": {
+      "rewriteTemplateForUtility": {
+        "body": null,
+        "suggestedCategory": null,
+        "changes": null,
+        "errors": [
+          {
+            "key": "body",
+            "message": "The rewritten body must keep exactly the same {{n}} placeholders, in the same count and order, as the original body."
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  A feature-flag-off organization, or a caller below the `staff` role, gets a top-level GraphQL
+  error instead — the same as every other `Authorize`/`RequireFeatureFlag`-gated field in this
+  API:
+  ```json
+  {
+    "data": { "rewriteTemplateForUtility": null },
+    "errors": [
+      { "message": "Template Utility Rewrite is not enabled for the organization." }
+    ]
+  }
+  ```
+
+  ## Use Cases
+  1. **Use Case 1: Convert a marketing-styled draft to UTILITY.** Staff drafting an HSM notices
+     it reads promotionally and wants it reworded to qualify for the cheaper, higher-throughput
+     UTILITY category before submitting it for BSP approval.
+
+  ## FAQ
+  None
+}

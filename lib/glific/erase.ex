@@ -598,6 +598,8 @@ defmodule Glific.Erase do
   @spec org_data_deletion_order() :: [String.t()]
   def org_data_deletion_order do
     ~w(
+      ai_messages
+      ai_conversations
       ai_evaluations
       ask_glific_conversations
       assistant_config_version_knowledge_base_versions
