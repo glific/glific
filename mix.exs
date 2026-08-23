@@ -155,7 +155,7 @@ defmodule Glific.MixProject do
       {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
-      {:dotenvy, "~> 0.1"},
+      {:dotenvy, "~> 1.1"},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
       {:phoenix_swoosh, "~> 1.2"},
       {:gen_smtp, "~> 1.1"},
@@ -170,7 +170,13 @@ defmodule Glific.MixProject do
       {:tarams, "~> 1.8"},
       {:mix_test_watch, "~> 1.2", only: @test_envs},
       {:ex_audit, "~> 0.10"},
-      {:req, "~> 0.5.0"}
+      {:req, "~> 0.7"},
+      {:req_llm, "~> 1.20.0"},
+      # google_gax caps mime at ~> 1.0 but never calls MIME; req >= 0.6 needs 2.x.
+      {:mime, "~> 2.0", override: true},
+      {:opentelemetry_api, "~> 1.4"},
+      {:opentelemetry, "~> 1.5"},
+      {:opentelemetry_exporter, "~> 1.8"}
     ]
   end
 
