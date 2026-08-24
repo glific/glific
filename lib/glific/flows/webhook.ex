@@ -462,6 +462,22 @@ defmodule Glific.Flows.Webhook do
     end)
   end
 
+  @doc """
+  Check the HMAC signature on a parsed async callback, logging any rejection.
+  """
+  @spec valid_callback?(non_neg_integer(), map(), String.t()) :: boolean()
+  def valid_callback?(organization_id, response, label \\ "Flow resume") do
+    if validate_request(organization_id, response) do
+      true
+    else
+      Logger.warning(
+        "#{label} validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
+      )
+
+      false
+    end
+  end
+
   # Restores tenant context, validates the callback signature and resolves the
   # contact BEFORE running `fun`. A forged/unsigned callback must not drive any
   # log writes, metrics, or flow resume — so validation comes first.
@@ -471,7 +487,7 @@ defmodule Glific.Flows.Webhook do
     Repo.put_process_state(organization_id)
     organization = Partners.organization(organization_id)
 
-    with true <- validate_request(organization_id, response),
+    with true <- valid_callback?(organization_id, response, label),
          {:ok, contact} <-
            Repo.fetch_by(Contact, %{
              id: response["contact_id"],
@@ -480,9 +496,7 @@ defmodule Glific.Flows.Webhook do
       fun.(contact)
     else
       false ->
-        Logger.warning(
-          "#{label} validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
-        )
+        :ok
 
       {:error, reason} ->
         Logger.warning("#{label} contact lookup failed: #{SafeLog.safe_inspect(reason)}")

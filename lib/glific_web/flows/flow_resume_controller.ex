@@ -24,14 +24,25 @@ defmodule GlificWeb.Flows.FlowResumeController do
     # (arrival - dispatch) reflects true arrival rather than that overhead.
     callback_received_ts = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
 
-    # Parse + TTS upload run in the request process (not the supervised task) to avoid
-    # transferring large audio binaries between processes. maybe_upload_tts_audio/1 is a no-op
-    # unless the callback carries TTS audio.
-    # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
-    # breaches the thin/generic contract; revisit during the speech-to-speech integration.
+    parsed = Webhook.parse_callback_response(result)
+
+    # The signature is checked here, ahead of the TTS upload, so an unsigned callback cannot make
+    # us decode an arbitrary base64 payload and push it to GCS. Rejections still answer 200 — the
+    # caller learns nothing, and Kaapi has no retry to trigger.
+    if Webhook.valid_callback?(organization_id, parsed),
+      do: resume(conn, organization_id, result, parsed, callback_received_ts),
+      else: json(conn, "")
+  end
+
+  # Parse + TTS upload run in the request process (not the supervised task) to avoid
+  # transferring large audio binaries between processes. maybe_upload_tts_audio/1 is a no-op
+  # unless the callback carries TTS audio.
+  # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
+  # breaches the thin/generic contract; revisit during the speech-to-speech integration.
+  @spec resume(Plug.Conn.t(), non_neg_integer(), map(), map(), integer()) :: Plug.Conn.t()
+  defp resume(conn, organization_id, result, parsed, callback_received_ts) do
     response =
-      result
-      |> Webhook.parse_callback_response()
+      parsed
       |> Webhook.maybe_upload_tts_audio()
       |> Map.put("callback_received_ts", callback_received_ts)
 

@@ -10,6 +10,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     Flows.Webhook,
     Flows.WebhookLog,
     Flows.Webhooks.Errors.SystemError,
+    GCS.GcsWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -317,6 +318,47 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end do
         conn = post(conn, "/webhook/flow_resume", params)
         assert json_response(conn, 200) == ""
+      end
+    end
+
+    test "a forged TTS callback is rejected before the audio reaches GCS", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      webhook_log = Fixtures.webhook_log_fixture(%{organization_id: organization_id})
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
+
+      params = %{
+        "data" => %{
+          "response" => %{
+            "conversation_id" => "conv_tts_forged",
+            "output" => %{
+              "type" => "audio",
+              "content" => %{"value" => Base.encode64("fake_ogg_audio_bytes")}
+            }
+          }
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "signature" => "forged",
+          "timestamp" => timestamp,
+          "webhook_log_id" => webhook_log.id,
+          "result_name" => "response"
+        },
+        "success" => true
+      }
+
+      with_mock Glific.GCS.GcsWorker,
+        upload_media: fn _file, _remote, _org ->
+          {:ok, %{url: "https://storage.googleapis.com/bucket/Kaapi/outbound/test.ogg"}}
+        end do
+        conn = post(conn, "/webhook/flow_resume", params)
+        assert json_response(conn, 200) == ""
+        assert_not_called(GcsWorker.upload_media(:_, :_, :_))
       end
     end
 
