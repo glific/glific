@@ -8,6 +8,7 @@ defmodule GlificWeb.KaapiControllerTest do
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBaseVersion
   alias Glific.Fixtures
+  alias Glific.Notifications
   alias Glific.Partners
   alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.Repo
@@ -445,6 +446,14 @@ defmodule GlificWeb.KaapiControllerTest do
         Repo.fetch(AIEvaluation, evaluation.id, skip_organization_id: true)
 
       assert updated_evaluation.status == :completed
+
+      [notification] =
+        Notifications.list_notifications(%{
+          filter: %{organization_id: evaluation.organization_id, category: "AI Evaluation"}
+        })
+
+      assert notification.message =~ "completed successfully"
+      assert notification.entity["evaluation_id"] == evaluation.id
     end
 
     test "returns 200 and updates the evaluation to failed on a failed run",
@@ -468,6 +477,14 @@ defmodule GlificWeb.KaapiControllerTest do
 
       assert updated_evaluation.status == :failed
       assert updated_evaluation.failure_reason == "Model inference error"
+
+      [notification] =
+        Notifications.list_notifications(%{
+          filter: %{organization_id: evaluation.organization_id, category: "AI Evaluation"}
+        })
+
+      assert notification.message =~ "Model inference error"
+      assert notification.entity["evaluation_id"] == evaluation.id
     end
 
     test "returns 200 when the kaapi_evaluation_id is not found", %{conn: conn} do
