@@ -56,7 +56,7 @@ defmodule GlificWeb.KaapiController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         params
       ) do
-    AIEvaluations.handle_improve_prompt_callback(params, organization_id)
+    AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     send_resp(conn, 200, "")
   end
 

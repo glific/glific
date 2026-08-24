@@ -484,6 +484,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "success callback builds a new :ready config version entirely from the payload", %{
+      organization_id: organization_id,
       assistant: assistant,
       config_version: config_version
     } do
@@ -520,7 +521,7 @@ defmodule Glific.AIEvaluationsTest do
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before + 1
       refute new_config_version.id == config_version.id
@@ -539,6 +540,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "success callback publishes improve_prompt_updated with the new config version", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -569,7 +571,7 @@ defmodule Glific.AIEvaluationsTest do
          ]}
       ]) do
         assert {:ok, new_config_version} =
-                 AIEvaluations.handle_improve_prompt_callback(params)
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
         assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
         assert payload.status == "success"
@@ -580,6 +582,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "success callback for a reasoning model carries effort, not temperature", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -603,7 +606,7 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert new_config_version.model == "gpt-5.6-luna"
       assert new_config_version.prompt == "You are a helpful assistant."
@@ -630,7 +633,7 @@ defmodule Glific.AIEvaluationsTest do
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       assert {:ok, :acknowledged} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
 
@@ -661,7 +664,7 @@ defmodule Glific.AIEvaluationsTest do
          ]}
       ]) do
         assert {:ok, :acknowledged} =
-                 AIEvaluations.handle_improve_prompt_callback(params, organization_id)
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
         assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
         assert payload.status == "failed"
@@ -671,32 +674,9 @@ defmodule Glific.AIEvaluationsTest do
       end
     end
 
-    test "failure callback without an organization_id just acknowledges, no publish" do
-      params = %{
-        "data" => %{
-          "status" => "FAILED",
-          "config_version" => nil,
-          "error_message" => "Judge scores unavailable"
-        }
-      }
-
-      test_pid = self()
-
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
-        refute_receive {:published, _payload, _opts}, 200
-      end
-    end
-
-    test "returns error when config_id in the payload matches no assistant" do
+    test "returns error when config_id in the payload matches no assistant", %{
+      organization_id: organization_id
+    } do
       params = %{
         "data" => %{
           "status" => "SUCCESS",
@@ -710,20 +690,26 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:error, [_, "Resource not found"]} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     end
 
-    test "malformed payload is reported and does not crash" do
+    test "malformed payload is reported and does not crash", %{organization_id: organization_id} do
       assert {:error, _reason} =
-               AIEvaluations.handle_improve_prompt_callback(%{"unexpected" => "shape"})
+               AIEvaluations.handle_improve_prompt_callback(organization_id, %{
+                 "unexpected" => "shape"
+               })
     end
 
-    test "non-terminal status is acknowledged without creating a config version" do
+    test "non-terminal status is acknowledged without creating a config version", %{
+      organization_id: organization_id
+    } do
       params = %{"data" => %{"status" => "PENDING", "job_id" => "job-uuid-pending"}}
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, :acknowledged} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
@@ -754,7 +740,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:ok, new_config_version} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, new_config_version} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.all(
                from(link in "assistant_config_version_knowledge_base_versions",
@@ -765,6 +752,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "rolls back the config version when no knowledge base matches the llm_service_id", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -788,12 +776,15 @@ defmodule Glific.AIEvaluationsTest do
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:error, reason} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert reason =~ "No matching knowledge base found"
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
     test "returns the changeset error when the config version data is invalid", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -807,7 +798,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:error, %Ecto.Changeset{}} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, %Ecto.Changeset{}} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     end
   end
 
