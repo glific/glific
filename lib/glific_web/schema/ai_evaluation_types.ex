@@ -249,6 +249,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       config(fn _args, %{context: %{current_user: user}} ->
         {:ok, topic: "#{user.organization_id}"}
       end)
+
+      resolve(fn update, _args, _resolution -> {:ok, update} end)
     end
 
     @desc "Delivers an AI evaluation's status as it changes (e.g. once Kaapi's run completes)."
@@ -259,6 +261,8 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       config(fn _args, %{context: %{current_user: user}} ->
         {:ok, topic: "#{user.organization_id}"}
       end)
+
+      resolve(fn evaluation, _args, _resolution -> {:ok, evaluation} end)
     end
   end
 end

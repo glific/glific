@@ -204,6 +204,11 @@ defmodule Glific.AIEvaluations do
               updated_evaluation =
                 Repo.preload(evaluation, [:golden_qa, assistant_config_version: :assistant])
 
+              Logger.info(
+                "PUBLISH ai_evaluation_updated id=#{updated_evaluation.id} " <>
+                  "topic=#{updated_evaluation.organization_id} status=#{updated_evaluation.status}"
+              )
+
               Absinthe.Subscription.publish(
                 GlificWeb.Endpoint,
                 updated_evaluation,
