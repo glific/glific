@@ -960,16 +960,6 @@ defmodule Glific.Flows.FlowContext do
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def wakeup_one(context, message \\ nil) do
-    # NOTE: when called from wakeup_flows/1, context.wakeup_at already holds a
-    # short lease set by claim_and_wakeup/1, which is what actually prevents
-    # two overlapping cron runs from double-processing this context -- this
-    # update clearing it to nil is not what provides that protection. It does,
-    # however, mean the lease's crash-recovery benefit ends here: if we crash
-    # anywhere in the rest of this function (e.g. mid webhook/API call), this
-    # context has wakeup_at = nil and will not be retried automatically.
-    # wakeup_one/2 is also called directly by dialogflow/sessions.ex and
-    # flows/webhook.ex (not via a lease), so this reset can't simply be
-    # removed -- those callers rely on it too.
     {:ok, context} =
       update_flow_context(
         context,
