@@ -111,27 +111,27 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
-    with {:ok, updated_evaluation} <-
-           process_evaluation_status(evaluation, %{
-             status: :completed,
-             results: %{summary_scores: summary_scores}
-           }) do
-      duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+    case process_evaluation_status(evaluation, %{
+           status: :completed,
+           results: %{summary_scores: summary_scores}
+         }) do
+      {:ok, updated_evaluation} ->
+        duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
 
-      Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
-        org_id: org_id
-      })
+        Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
+          org_id: org_id
+        })
 
-      Metrics.increment("AI Evaluation Completed", org_id)
+        Metrics.increment("AI Evaluation Completed", org_id)
 
-      Notifications.create_notification(%{
-        category: "AI Evaluation",
-        message: "AI evaluation #{updated_evaluation.name} completed successfully.",
-        severity: Notifications.types().info,
-        organization_id: org_id,
-        entity: %{evaluation_id: updated_evaluation.id}
-      })
-    else
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} completed successfully.",
+          severity: Notifications.types().info,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
+
       {:error, :already_processed} ->
         :ok
 
@@ -148,21 +148,21 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
 
-    with {:ok, updated_evaluation} <-
-           process_evaluation_status(evaluation, %{
-             status: :failed,
-             failure_reason: failure_reason
-           }) do
-      Metrics.increment("AI Evaluation Failed", org_id)
+    case process_evaluation_status(evaluation, %{
+           status: :failed,
+           failure_reason: failure_reason
+         }) do
+      {:ok, updated_evaluation} ->
+        Metrics.increment("AI Evaluation Failed", org_id)
 
-      Notifications.create_notification(%{
-        category: "AI Evaluation",
-        message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
-        severity: Notifications.types().warning,
-        organization_id: org_id,
-        entity: %{evaluation_id: updated_evaluation.id}
-      })
-    else
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
+          severity: Notifications.types().warning,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
+
       {:error, :already_processed} ->
         :ok
 
