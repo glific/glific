@@ -25,7 +25,6 @@ defmodule Glific.AIEvaluations do
 
   alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
-  @timeout_hours 24
   @tunable_settings_keys ~w(temperature effort)
 
   @doc """
@@ -85,35 +84,13 @@ defmodule Glific.AIEvaluations do
   end
 
   @doc """
-  Polls Kaapi for status of processing evaluations and times out stale ones.
+  Polls Kaapi for status of processing evaluations.
   Called once per minute by the cron job for each organization.
   """
   @spec poll_and_update(non_neg_integer()) :: :ok
   def poll_and_update(org_id) do
-    timeout_threshold = DateTime.utc_now() |> DateTime.add(-@timeout_hours, :hour)
-
     AIEvaluation
     |> where([e], e.status == :processing)
-    |> where([e], e.inserted_at < ^timeout_threshold)
-    |> Repo.all()
-    |> Enum.each(fn evaluation ->
-      Logger.warning("Timing out AI evaluation #{evaluation.id} for org #{org_id}")
-      Metrics.increment("AI Evaluation Timed Out", org_id)
-
-      Notifications.create_notification(%{
-        category: "AI Evaluation",
-        message: "AI evaluation #{evaluation.name} timed out after #{@timeout_hours} hour(s).",
-        severity: Notifications.types().warning,
-        organization_id: org_id,
-        entity: %{evaluation_id: evaluation.id}
-      })
-
-      do_update(evaluation, %{status: :failed, failure_reason: "Evaluation timed out"})
-    end)
-
-    AIEvaluation
-    |> where([e], e.status == :processing)
-    |> where([e], e.inserted_at >= ^timeout_threshold)
     |> Repo.all()
     |> Enum.each(fn evaluation ->
       poll_evaluation(evaluation, org_id)
@@ -134,36 +111,69 @@ defmodule Glific.AIEvaluations do
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
     summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
 
-    duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
+    case process_evaluation_status(evaluation, %{
+           status: :completed,
+           results: %{summary_scores: summary_scores}
+         }) do
+      {:ok, updated_evaluation} ->
+        duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
 
-    Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{org_id: org_id})
+        Appsignal.add_distribution_value("ai_evaluation_duration", duration_seconds, %{
+          org_id: org_id
+        })
 
-    Metrics.increment("AI Evaluation Completed", org_id)
+        Metrics.increment("AI Evaluation Completed", org_id)
 
-    Notifications.create_notification(%{
-      category: "AI Evaluation",
-      message: "AI evaluation #{evaluation.name} completed successfully.",
-      severity: Notifications.types().info,
-      organization_id: org_id,
-      entity: %{evaluation_id: evaluation.id}
-    })
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} completed successfully.",
+          severity: Notifications.types().info,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
 
-    do_update(evaluation, %{status: :completed, results: %{summary_scores: summary_scores}})
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process completed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
+    end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, %{data: %{status: "failed"} = data}}, evaluation, org_id) do
     failure_reason = Map.get(data, :error_message, "Evaluation failed")
-    Metrics.increment("AI Evaluation Failed", org_id)
 
-    Notifications.create_notification(%{
-      category: "AI Evaluation",
-      message: "AI evaluation #{evaluation.name} failed: #{failure_reason}",
-      severity: Notifications.types().warning,
-      organization_id: org_id,
-      entity: %{evaluation_id: evaluation.id}
-    })
+    case process_evaluation_status(evaluation, %{
+           status: :failed,
+           failure_reason: failure_reason
+         }) do
+      {:ok, updated_evaluation} ->
+        Metrics.increment("AI Evaluation Failed", org_id)
 
-    do_update(evaluation, %{status: :failed, failure_reason: failure_reason})
+        Notifications.create_notification(%{
+          category: "AI Evaluation",
+          message: "AI evaluation #{updated_evaluation.name} failed: #{failure_reason}",
+          severity: Notifications.types().warning,
+          organization_id: org_id,
+          entity: %{evaluation_id: updated_evaluation.id}
+        })
+
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process failed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
+    end
+
+    :ok
   end
 
   defp handle_evaluation_status({:ok, _}, _evaluation, _org_id), do: :ok
@@ -180,15 +190,39 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  @spec do_update(AIEvaluation.t(), map()) :: :ok
-  defp do_update(evaluation, attrs) do
-    case update_ai_evaluation(evaluation, attrs) do
-      {:ok, _} ->
-        :ok
+  @spec process_evaluation_status(AIEvaluation.t(), map()) ::
+          {:ok, AIEvaluation.t()} | {:error, term()}
+  defp process_evaluation_status(evaluation, attrs) do
+    Repo.transaction(fn ->
+      AIEvaluation
+      |> lock("FOR UPDATE")
+      |> Repo.fetch_by(%{id: evaluation.id})
+      |> case do
+        {:ok, %{status: :processing} = locked_evaluation} ->
+          case update_ai_evaluation(locked_evaluation, attrs) do
+            {:ok, evaluation} ->
+              updated_evaluation =
+                Repo.preload(evaluation, [:golden_qa, assistant_config_version: :assistant])
 
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+              Absinthe.Subscription.publish(
+                GlificWeb.Endpoint,
+                updated_evaluation,
+                ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+              )
+
+              updated_evaluation
+
+            {:error, reason} ->
+              Repo.rollback(reason)
+          end
+
+        {:ok, _already_resolved} ->
+          Repo.rollback(:already_processed)
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
   end
 
   @doc """
@@ -389,6 +423,49 @@ defmodule Glific.AIEvaluations do
   defp build_improve_prompt_callback_url(organization_id) do
     organization = Partners.organization(organization_id)
     Glific.api_callback_base(organization.shortcode) <> "/kaapi/improve_prompt"
+  end
+
+  @doc """
+  Handles Kaapi's async callback when a v2 evaluation run finishes (completed or failed).
+  """
+  @spec handle_evaluation_run_callback(non_neg_integer(), map()) :: :ok
+  def handle_evaluation_run_callback(organization_id, %{
+        "data" => %{"id" => kaapi_evaluation_id, "status" => status}
+      })
+      when status in ["completed", "failed"] do
+    case Repo.fetch_by(AIEvaluation, %{
+           kaapi_evaluation_id: kaapi_evaluation_id,
+           organization_id: organization_id
+         }) do
+      {:ok, %{status: :processing} = evaluation} ->
+        poll_evaluation(evaluation, organization_id)
+
+      {:ok, _already_resolved} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_exception(%Kaapi.Error{
+          message:
+            "Evaluation run callback for unknown kaapi_evaluation_id=#{kaapi_evaluation_id}",
+          organization_id: organization_id,
+          reason: safe_inspect(reason)
+        })
+    end
+
+    :ok
+  end
+
+  # non-terminal status (e.g. PROCESSING) — nothing to do
+  def handle_evaluation_run_callback(_organization_id, %{"data" => %{"status" => _}}), do: :ok
+
+  def handle_evaluation_run_callback(organization_id, params) do
+    Glific.log_exception(%Kaapi.Error{
+      message: "Unexpected evaluation run callback payload",
+      organization_id: organization_id,
+      reason: safe_inspect(params)
+    })
+
+    :ok
   end
 
   @spec create_improve_prompt_config_version(map()) ::

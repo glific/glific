@@ -504,7 +504,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
+
       kaapi_input
+      |> Map.put(:callback_url, callback_url)
       |> Map.put(:duplication_factor, duplication_factor)
       |> Kaapi.create_evaluation_v2(organization_id)
     else
