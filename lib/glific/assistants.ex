@@ -156,8 +156,7 @@ defmodule Glific.Assistants do
 
   @doc """
   Sets the last evaluation run on the assistant whose active config version matches
-  the given config version id. No-ops if no assistant's active version matches
-  (e.g. the evaluation ran against a draft/non-active version).
+  the given config version id. No-ops if no assistant's active version matches.
   """
   @spec set_last_evaluation_run(non_neg_integer(), non_neg_integer()) :: :ok
   def set_last_evaluation_run(assistant_config_version_id, evaluation_id) do

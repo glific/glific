@@ -4,10 +4,9 @@ defmodule GlificWeb.Schema.AssistantTest do
   """
 
   alias Glific.{
-    AIEvaluations,
-    AIEvaluations.AIEvaluation,
     Assistants,
     Assistants.AssistantConfigVersion,
+    Fixtures,
     Partners,
     Repo
   }
@@ -175,27 +174,15 @@ defmodule GlificWeb.Schema.AssistantTest do
         kaapi_uuid: "asst_eval"
       })
 
-    {:ok, golden_qa} =
-      AIEvaluations.create_golden_qa(%{
-        name: "golden_qa_#{:rand.uniform(10_000)}",
-        dataset_id: 1,
-        organization_id: attrs.organization_id
-      })
-
-    {:ok, evaluation} =
-      %AIEvaluation{}
-      |> AIEvaluation.changeset(%{
-        name: "eval_#{:rand.uniform(10_000)}",
-        status: :completed,
-        golden_qa_id: golden_qa.id,
-        kaapi_evaluation_id: 1,
-        assistant_config_version_id: config_version.id,
+    evaluation =
+      Fixtures.ai_evaluation_fixture(%{
         organization_id: attrs.organization_id,
+        assistant_config_version_id: config_version.id,
+        status: :completed,
         results: %{
           "summary_scores" => [%{"name" => "Cosine Similarity", "avg" => 0.74}]
         }
       })
-      |> Repo.insert()
 
     {:ok, _assistant} =
       assistant
