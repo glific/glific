@@ -383,8 +383,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
-  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+  def get_evaluation_scores(_, %{id: evaluation_id} = args, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(
+           evaluation_id,
+           user.organization_id,
+           args[:export_format] || "row"
+         ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
 
@@ -500,7 +504,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
+
       kaapi_input
+      |> Map.put(:callback_url, callback_url)
       |> Map.put(:duplication_factor, duplication_factor)
       |> Kaapi.create_evaluation_v2(organization_id)
     else

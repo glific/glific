@@ -161,6 +161,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Get Evaluation Scores"
     field :evaluation_scores, :evaluation_scores_result do
       arg(:id, non_null(:id))
+      arg(:export_format, :string)
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
@@ -230,6 +231,18 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
       resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
+    end
+  end
+
+  object :ai_evaluation_subscriptions do
+    @desc "Delivers an AI evaluation's status as it changes (e.g. once Kaapi's run completes)."
+    field :ai_evaluation_updated, :ai_evaluation do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
     end
   end
 end
