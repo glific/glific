@@ -131,6 +131,15 @@ defmodule Glific.AIEvaluations do
         organization_id: org_id,
         entity: %{evaluation_id: updated_evaluation.id}
       })
+    else
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process completed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
     end
 
     :ok
@@ -153,6 +162,15 @@ defmodule Glific.AIEvaluations do
         organization_id: org_id,
         entity: %{evaluation_id: updated_evaluation.id}
       })
+    else
+      {:error, :already_processed} ->
+        :ok
+
+      {:error, reason} ->
+        Glific.log_error(
+          "Failed to process failed AI Evaluation: id=#{evaluation.id}, " <>
+            "name=#{evaluation.name}, org_id=#{org_id}, reason=#{safe_inspect(reason)}"
+        )
     end
 
     :ok
@@ -181,15 +199,22 @@ defmodule Glific.AIEvaluations do
       |> Repo.fetch_by(%{id: evaluation.id})
       |> case do
         {:ok, %{status: :processing} = locked_evaluation} ->
-          {:ok, updated_evaluation} = update_ai_evaluation(locked_evaluation, attrs)
+          case update_ai_evaluation(locked_evaluation, attrs) do
+            {:ok, evaluation} ->
+              updated_evaluation =
+                Repo.preload(evaluation, [:golden_qa, assistant_config_version: :assistant])
 
-          Absinthe.Subscription.publish(
-            GlificWeb.Endpoint,
-            updated_evaluation,
-            ai_evaluation_updated: "#{updated_evaluation.organization_id}"
-          )
+              Absinthe.Subscription.publish(
+                GlificWeb.Endpoint,
+                updated_evaluation,
+                ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+              )
 
-          updated_evaluation
+              updated_evaluation
+
+            {:error, reason} ->
+              Repo.rollback(reason)
+          end
 
         {:ok, _already_resolved} ->
           Repo.rollback(:already_processed)
