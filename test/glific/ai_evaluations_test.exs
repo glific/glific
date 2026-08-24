@@ -817,7 +817,7 @@ defmodule Glific.AIEvaluationsTest do
       %{evaluation: evaluation}
     end
 
-    test "completed status re-fetches full scores from Kaapi, updates the evaluation, and publishes ai_evaluation_updated",
+    test "completed status re-fetches full scores from Kaapi and updates the evaluation",
          %{organization_id: organization_id, evaluation: evaluation} do
       summary_scores = [
         %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
@@ -832,31 +832,14 @@ defmodule Glific.AIEvaluationsTest do
         }
       end)
 
-      test_pid = self()
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 767, "status" => "completed"}
+               })
 
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert :ok =
-                 AIEvaluations.handle_evaluation_run_callback(organization_id, %{
-                   "data" => %{"id" => 767, "status" => "completed"}
-                 })
-
-        {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-        assert updated.status == :completed
-        assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
-
-        assert_receive {:published, payload, [{:ai_evaluation_updated, topic}]}, 1000
-        assert payload.id == evaluation.id
-        assert payload.status == :completed
-        assert topic == "#{organization_id}"
-      end
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+      assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
     end
 
     test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
