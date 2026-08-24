@@ -349,19 +349,17 @@ defmodule Glific.AIEvaluations do
   end
 
   @doc """
-  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes.
-  Publishes `improve_prompt_updated` on a terminal (SUCCESS/FAILED) status; on SUCCESS the
-  topic's organization_id is derived from the new config version, not the `organization_id` arg.
+  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes, publishing `improve_prompt_updated` on a terminal (SUCCESS/FAILED) status.
   """
   @spec handle_improve_prompt_callback(non_neg_integer(), map()) ::
-          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, String.t()}
+          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, any()}
   def handle_improve_prompt_callback(
-        _organization_id,
+        organization_id,
         %{"data" => %{"status" => "SUCCESS"} = data}
       ) do
-    case create_improve_prompt_config_version(data["config_version"] || %{}) do
+    case create_improve_prompt_config_version(data["config_version"] || %{}, organization_id) do
       {:ok, config_version} = result ->
-        publish_improve_prompt_update(config_version.organization_id, %{
+        publish_improve_prompt_update(organization_id, %{
           status: "success",
           config_version: config_version,
           error: nil
@@ -389,7 +387,6 @@ defmodule Glific.AIEvaluations do
     {:ok, :acknowledged}
   end
 
-  # Non-terminal status (e.g. still PENDING) — nothing to do yet.
   def handle_improve_prompt_callback(_organization_id, %{"data" => %{"status" => _}}),
     do: {:ok, :acknowledged}
 
@@ -464,11 +461,14 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  @spec create_improve_prompt_config_version(map()) ::
+  @spec create_improve_prompt_config_version(map(), non_neg_integer()) ::
           {:ok, AssistantConfigVersion.t()} | {:error, any()}
-  defp create_improve_prompt_config_version(config_version_data) do
+  defp create_improve_prompt_config_version(config_version_data, organization_id) do
     with {:ok, assistant} <-
-           Repo.fetch_by(Assistant, %{kaapi_uuid: config_version_data["config_id"]}) do
+           Repo.fetch_by(Assistant, %{
+             kaapi_uuid: config_version_data["config_id"],
+             organization_id: organization_id
+           }) do
       completion = get_in(config_version_data, ["config_blob", "completion"]) || %{}
       params = completion["params"] || %{}
 

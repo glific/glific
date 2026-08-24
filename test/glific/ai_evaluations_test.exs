@@ -577,8 +577,31 @@ defmodule Glific.AIEvaluationsTest do
         assert payload.status == "success"
         assert payload.config_version.id == new_config_version.id
         assert payload.error == nil
-        assert topic == "#{new_config_version.organization_id}"
+        assert topic == "#{organization_id}"
       end
+    end
+
+    test "returns an error and publishes nothing when config_id belongs to another organization",
+         %{organization_id: organization_id, assistant: assistant} do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{"params" => %{"instructions" => "Be helpful."}}
+            }
+          }
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:error, _reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id + 1, params)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
     test "success callback for a reasoning model carries effort, not temperature", %{
