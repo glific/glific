@@ -242,6 +242,8 @@ defmodule Glific.Assistants do
       name: assistant.name,
       assistant_id: assistant.kaapi_uuid,
       temperature: get_in(active_config_version.settings || %{}, ["temperature"]),
+      effort: get_in(active_config_version.settings || %{}, ["effort"]),
+      settings: active_config_version.settings,
       model: active_config_version.model,
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
@@ -548,12 +550,18 @@ defmodule Glific.Assistants do
   end
 
   @spec resolve_knowledge_base_version(Assistant.t(), map()) ::
-          {:ok, KnowledgeBaseVersion.t()} | {:error, String.t() | [String.t()]}
+          {:ok, KnowledgeBaseVersion.t() | nil} | {:error, String.t() | [String.t()]}
   defp resolve_knowledge_base_version(_assistant, %{
          knowledge_base_version_id: knowledge_base_version_id
        })
        when not is_nil(knowledge_base_version_id),
        do: KnowledgeBaseVersion.get_by_version_id(knowledge_base_version_id)
+
+  # `knowledge_base_version_id` present but nil means the caller explicitly
+  # cleared the knowledge base (e.g. removed all files) rather than leaving
+  # it untouched, so unlink instead of falling back to the current version.
+  defp resolve_knowledge_base_version(_assistant, %{knowledge_base_version_id: nil}),
+    do: {:ok, nil}
 
   defp resolve_knowledge_base_version(assistant, _user_params) do
     case assistant.active_config_version.knowledge_base_versions do
@@ -585,7 +593,7 @@ defmodule Glific.Assistants do
     user_params[:name] == assistant.name and
       user_params[:instructions] == active_config.prompt and
       user_params[:model] == active_config.model and
-      user_params[:temperature] == get_in(active_config.settings || %{}, ["temperature"]) and
+      build_settings(user_params) == (active_config.settings || %{}) and
       kb_unchanged
   end
 
@@ -593,7 +601,7 @@ defmodule Glific.Assistants do
   defp name_only_change?(user_params) do
     not is_nil(user_params[:name]) and
       not Enum.any?(
-        [:instructions, :model, :temperature, :knowledge_base_version_id],
+        [:instructions, :model, :temperature, :effort, :settings, :knowledge_base_version_id],
         &Map.has_key?(user_params, &1)
       )
   end
@@ -699,7 +707,7 @@ defmodule Glific.Assistants do
         else: []
 
     config = %{
-      temperature: user_params[:temperature] || 1,
+      settings: build_settings(user_params),
       model: user_params[:model] || @default_model,
       organization_id: user_params[:organization_id],
       name: generate_assistant_name(user_params[:name]),
@@ -710,6 +718,16 @@ defmodule Glific.Assistants do
 
     {:ok, config}
   end
+
+  # A model's tunable params vary (temperature/top_p for classic models,
+  # effort/summary for reasoning models) and don't overlap
+  @spec build_settings(map()) :: map()
+  defp build_settings(%{settings: settings}) when map_size(settings) > 0 do
+    Map.new(settings, fn {key, value} -> {to_string(key), value} end)
+  end
+
+  defp build_settings(%{effort: effort}) when not is_nil(effort), do: %{"effort" => effort}
+  defp build_settings(user_params), do: %{"temperature" => user_params[:temperature] || 1}
 
   # If the KB is already completed (callback arrived before assistant creation),
   # register the config with Kaapi immediately since the deferred flow won't trigger.
@@ -803,7 +821,7 @@ defmodule Glific.Assistants do
       prompt: kaapi_config.prompt,
       model: kaapi_config.model,
       provider: "openai",
-      settings: %{temperature: kaapi_config.temperature},
+      settings: kaapi_config.settings,
       status: :in_progress,
       organization_id: kaapi_config.organization_id
     })
@@ -824,7 +842,7 @@ defmodule Glific.Assistants do
       prompt: kaapi_config.prompt,
       model: kaapi_config.model,
       provider: "openai",
-      settings: %{temperature: kaapi_config.temperature},
+      settings: kaapi_config.settings,
       status: status,
       organization_id: kaapi_config.organization_id
     })
@@ -879,17 +897,38 @@ defmodule Glific.Assistants do
          file_size: File.stat!(params.media.path).size
        }}
     else
-      {:error, %{status: status, body: body}} ->
-        error_message = body[:error]
-        {:error, "File upload failed (status #{status}): #{error_message}"}
-
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      {:error, reason} ->
-        {:error, "File upload failed: #{Glific.SafeLog.safe_inspect(reason)}"}
+      {:error, reason} -> format_kaapi_file_error("File upload", reason)
     end
   end
+
+  @doc """
+  Get a knowledge base file's metadata and signed download URL from Kaapi.
+  """
+  @spec get_file(String.t(), non_neg_integer()) ::
+          {:ok, map()} | {:error, String.t()}
+  def get_file(file_id, organization_id) do
+    case Kaapi.get_document(file_id, organization_id) do
+      {:ok, document_data} ->
+        {:ok,
+         %{
+           file_id: document_data[:id],
+           filename: document_data[:fname],
+           signed_url: document_data[:signed_url]
+         }}
+
+      {:error, reason} ->
+        format_kaapi_file_error("File download", reason)
+    end
+  end
+
+  @spec format_kaapi_file_error(String.t(), map() | binary() | any()) :: {:error, String.t()}
+  defp format_kaapi_file_error(action, %{status: status, body: body}),
+    do: {:error, "#{action} failed (status #{status}): #{body[:error]}"}
+
+  defp format_kaapi_file_error(_action, reason) when is_binary(reason), do: {:error, reason}
+
+  defp format_kaapi_file_error(action, reason),
+    do: {:error, "#{action} failed: #{Glific.SafeLog.safe_inspect(reason)}"}
 
   @doc """
   Delete an assistant config from Kaapi first, then deletes
@@ -922,9 +961,15 @@ defmodule Glific.Assistants do
     If Kaapi collection creation fails, any newly created records are cleaned up immediately:
     - The KnowledgeBaseVersion is always deleted on Kaapi failure.
     - The KnowledgeBase is deleted only if it was newly created (not fetched from an existing ID).
+
+    Kaapi rejects collections with no documents, so when `media_info` is empty this skips
+    Kaapi and the DB writes entirely and returns a nil knowledge base/version.
   """
   @spec create_knowledge_base_with_version(params :: map()) ::
           {:ok, map()} | {:error, Ecto.Changeset.t() | String.t()}
+  def create_knowledge_base_with_version(%{media_info: []}),
+    do: {:ok, %{knowledge_base_version: nil, knowledge_base: nil}}
+
   def create_knowledge_base_with_version(params) do
     newly_created_kb = is_nil(params[:id])
 
@@ -1243,7 +1288,7 @@ defmodule Glific.Assistants do
       model: config_version.model,
       prompt: config_version.prompt,
       description: config_version.description || "Assistant configuration",
-      temperature: get_in(config_version.settings || %{}, ["temperature"]) || 1,
+      settings: config_version.settings || %{},
       knowledge_base_ids: [knowledge_base_version.llm_service_id],
       organization_id: assistant.organization_id
     }

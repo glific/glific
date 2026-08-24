@@ -41,12 +41,36 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:search_multi, GlificWeb.Schema, "assets/gql/searches/search_multi.gql")
   load_gql(:wa_search_multi, GlificWeb.Schema, "assets/gql/searches/wa_search_multi.gql")
 
+  load_gql(
+    :collection_stats,
+    GlificWeb.Schema,
+    "assets/gql/searches/collection_stats.gql"
+  )
+
   defp get_saved_search_list(org_id) do
     Searches.list_saved_searches(%{filter: %{organization_id: org_id}})
   end
 
   defp get_contacts_count(org_id) do
     Contacts.count_contacts(%{filter: %{organization_id: org_id}})
+  end
+
+  test "collectionStats is scoped to the session, not to the organization_id argument", %{
+    staff: user
+  } do
+    other_org =
+      Fixtures.organization_fixture(%{shortcode: "other_org", email: "other@org.test"})
+
+    Fixtures.contact_fixture(%{organization_id: other_org.id})
+
+    {:ok, query_data} =
+      auth_query_gql_by(:collection_stats, user,
+        variables: %{"organizationId" => "#{other_org.id}"}
+      )
+
+    stats = Jason.decode!(get_in(query_data, [:data, "collectionStats"]))
+    assert Map.keys(stats) == ["#{user.organization_id}"]
+    refute Map.has_key?(stats, "#{other_org.id}")
   end
 
   test "savedSearches field returns list of searches", %{staff: user} do

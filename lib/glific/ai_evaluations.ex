@@ -26,6 +26,7 @@ defmodule Glific.AIEvaluations do
   alias Glific.ThirdParty.Discord.Notifications, as: DiscordNotifications
 
   @timeout_hours 24
+  @tunable_settings_keys ~w(temperature effort)
 
   @doc """
   Returns the list of AI evaluations for an organization.
@@ -226,12 +227,12 @@ defmodule Glific.AIEvaluations do
   @doc """
   Fetches evaluation scores for a given AI evaluation from Kaapi.
   """
-  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer()) ::
+  @spec get_evaluation_scores(non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, org_id) do
+  def get_evaluation_scores(evaluation_id, org_id, export_format \\ "row") do
     with {:ok, %AIEvaluation{kaapi_evaluation_id: kaapi_id}} <-
-           Repo.fetch(AIEvaluation, evaluation_id) do
-      Kaapi.get_evaluation_scores(kaapi_id, org_id)
+           Repo.fetch_by(AIEvaluation, %{id: evaluation_id, organization_id: org_id}) do
+      Kaapi.get_evaluation_scores(kaapi_id, org_id, export_format)
     end
   end
 
@@ -366,7 +367,7 @@ defmodule Glific.AIEvaluations do
           prompt: params["instructions"],
           provider: completion["provider"] || "openai",
           model: params["model"],
-          settings: %{"temperature" => params["temperature"]},
+          settings: extract_settings(params),
           status: :ready,
           kaapi_version_number: config_version_data["version"],
           description: config_version_data["commit_message"]
@@ -391,6 +392,11 @@ defmodule Glific.AIEvaluations do
       end
     end
   end
+
+  # Classic models tune via temperature, reasoning models via effort — the two
+  # don't overlap on one model
+  @spec extract_settings(map()) :: map()
+  defp extract_settings(params), do: Map.take(params, @tunable_settings_keys)
 
   @spec link_improve_prompt_knowledge_bases(Multi.t(), [String.t()] | nil, non_neg_integer()) ::
           Multi.t()

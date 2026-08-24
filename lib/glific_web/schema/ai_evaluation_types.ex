@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :ai_evaluation_status_enum
     field :failure_reason, :string
     field :results, :json
+    field :duplication_factor, :integer
     field :golden_qa, :ai_eval_golden_qa
     field :assistant_config_version, :ai_eval_config_version
     field :inserted_at, :datetime
@@ -94,11 +95,22 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :golden_qa_id, non_null(:id)
     field :evaluation_name, non_null(:string)
     field :config_id, non_null(:id)
+    field :duplication_factor, :integer, default_value: 1
   end
 
   object :evaluation_scores_result do
     field :scores, :json
     field :errors, list_of(:result_error)
+  end
+
+  object :kaapi_model do
+    field :provider, :string
+    field :model_name, :string
+    field :completion_type, list_of(:string)
+    field :config, :json
+    field :input_modalities, list_of(:string)
+    field :output_modalities, list_of(:string)
+    field :pricing, :json
   end
 
   object :improve_prompt do
@@ -148,6 +160,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Get Evaluation Scores"
     field :evaluation_scores, :evaluation_scores_result do
       arg(:id, non_null(:id))
+      arg(:export_format, :string)
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
@@ -167,6 +180,13 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_org_eval_access_request/3)
+    end
+
+    @desc "List active Kaapi models (openai only, for now)"
+    field :kaapi_models, list_of(:kaapi_model) do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      resolve(&Resolvers.AIEvaluations.list_kaapi_models/3)
     end
   end
 

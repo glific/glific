@@ -260,14 +260,28 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Create an evaluation in Kaapi (v2)
+  """
+  @spec create_evaluation_v2(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def create_evaluation_v2(params, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.post("/api/v2/evaluations", params)
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Get full scores for a completed evaluation from Kaapi (includes all evaluators via Langfuse).
   """
-  @spec get_evaluation_scores(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any()}
-  def get_evaluation_scores(evaluation_id, org_api_key) do
+  @spec get_evaluation_scores(non_neg_integer(), String.t(), String.t()) ::
+          {:ok, map()} | {:error, any()}
+  def get_evaluation_scores(evaluation_id, org_api_key, export_format \\ "row") do
+    query = [get_trace_info: "true", export_format: export_format]
+
     org_api_key
     |> client()
     |> Tesla.get("/api/v1/evaluations/:evaluation_id",
-      query: [get_trace_info: "true"],
+      query: query,
       opts: [path_params: [evaluation_id: evaluation_id], adapter: [recv_timeout: 30_000]]
     )
     |> parse_kaapi_response()
@@ -308,6 +322,20 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
   end
 
   @doc """
+  Get a document from Kaapi, including its signed download URL.
+  """
+  @spec get_document(String.t(), String.t()) :: {:ok, map()} | {:error, any()}
+  def get_document(document_id, org_api_key) do
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/documents/:document_id",
+      query: [include_url: "true"],
+      opts: [path_params: [document_id: document_id]]
+    )
+    |> parse_kaapi_response()
+  end
+
+  @doc """
   Delete an evaluation dataset in Kaapi.
   """
   @spec delete_evaluation_dataset(non_neg_integer() | String.t(), String.t()) ::
@@ -331,6 +359,19 @@ defmodule Glific.ThirdParty.Kaapi.ApiClient do
     )
     |> Tesla.Multipart.add_field("dataset_name", params.dataset_name)
     |> Tesla.Multipart.add_field("duplication_factor", to_string(params.duplication_factor))
+  end
+
+  @doc """
+  List active models from Kaapi for a provider. Paginated via skip/limit.
+  """
+  @spec list_models(map(), String.t()) :: {:ok, map()} | {:error, any()}
+  def list_models(params, org_api_key) do
+    query = [provider: params.provider, skip: params[:skip] || 0, limit: params[:limit] || 100]
+
+    org_api_key
+    |> client()
+    |> Tesla.get("/api/v1/models", query: query)
+    |> parse_kaapi_response()
   end
 
   @spec add_optional_fields(Tesla.Multipart.t(), map()) :: Tesla.Multipart.t()

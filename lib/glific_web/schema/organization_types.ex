@@ -316,23 +316,26 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.organization_services/3)
     end
 
+    # These export the whole organization via raw SQL, so neither prepare_query nor
+    # Repo.add_permission applies - a restricted staff user would read every contact
+    # and message in the org. The gate is the only available control.
     @desc "Export organization dynamic data"
     field :organization_export_data, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_data/3)
     end
 
     @desc "Export organization config data"
     field :organization_export_config, :organization_export_result do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_config/3)
     end
 
     @desc "Export organization stats data"
     field :organization_export_stats, :organization_export_result do
       arg(:filter, :export_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization_export_stats/3)
     end
 

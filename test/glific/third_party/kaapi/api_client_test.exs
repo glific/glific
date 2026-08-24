@@ -309,6 +309,48 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     end
   end
 
+  describe "get_document/2" do
+    test "returns document data with signed_url" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:include_url] == "true"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            success: true,
+            data: %{
+              id: "96331afd-7f06-4a46-ac4d-0a65c6fd1b1e",
+              fname: "biu-1.pdf",
+              project_id: 1,
+              signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+            }
+          }
+        }
+      end)
+
+      assert {:ok, %{success: true, data: data}} =
+               ApiClient.get_document("96331afd-7f06-4a46-ac4d-0a65c6fd1b1e", @org_kaapi_api_key)
+
+      assert data.fname == "biu-1.pdf"
+      assert data.signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns error when document is not found" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 404, body: %{error: "Not Found"}}
+      end)
+
+      assert {:error, %{status: 404, body: %{error: "Not Found"}}} =
+               ApiClient.get_document("missing_doc", @org_kaapi_api_key)
+    end
+
+    test "returns error on timeout" do
+      mock(fn %Tesla.Env{method: :get} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = ApiClient.get_document("doc_1", @org_kaapi_api_key)
+    end
+  end
+
   describe "create_config_version/3" do
     test "successfully creates config version in kaapi" do
       mock(fn %Tesla.Env{method: :post} ->
@@ -411,6 +453,7 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
     test "returns all evaluator scores including LLM-as-a-Judge on 200" do
       mock(fn %Tesla.Env{method: :get, query: query} ->
         assert query[:get_trace_info] == "true"
+        assert query[:export_format] == "row"
 
         %Tesla.Env{
           status: 200,
@@ -455,6 +498,95 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
                ApiClient.get_evaluation_scores(999, @org_kaapi_api_key)
     end
 
+    test "includes export_format in query when given" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:get_trace_info] == "true"
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{status: 200, body: %{data: %{id: 42, status: "completed"}}}
+      end)
+
+      assert {:ok, _resp} =
+               ApiClient.get_evaluation_scores(42, @org_kaapi_api_key, "grouped")
+    end
+
+    test "row format returns one trace per (question, evaluator answer) pair with flat scores" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:export_format] == "row"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 810,
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    trace_id: "item_0_0",
+                    question_id: 1,
+                    question: "What is health?",
+                    llm_answer: "Complete well-being.",
+                    ground_truth_answer: "Complete well-being.",
+                    scores: [
+                      %{name: "Adherence to Ground Truth", value: 5, verdict: "Good"},
+                      %{name: "Adherence to Prompt", value: 5, verdict: "Good"}
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(810, @org_kaapi_api_key, "row")
+      [trace] = resp.data.score.traces
+      assert trace.trace_id == "item_0_0"
+      assert trace.llm_answer == "Complete well-being."
+      assert Enum.all?(trace.scores, &is_map/1)
+    end
+
+    test "grouped format returns one trace per question with llm_answers and nested scores" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              id: 810,
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    question_id: 1,
+                    question: "What is health?",
+                    ground_truth_answer: "Complete well-being.",
+                    llm_answers: ["Complete well-being."],
+                    trace_ids: ["item_0_0"],
+                    scores: [
+                      [
+                        %{name: "Adherence to Ground Truth", value: 5, verdict: "Good"},
+                        %{name: "Adherence to Prompt", value: 5, verdict: "Good"}
+                      ]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      assert {:ok, resp} = ApiClient.get_evaluation_scores(810, @org_kaapi_api_key, "grouped")
+      [trace] = resp.data.score.traces
+      assert trace.question_id == 1
+      assert trace.llm_answers == ["Complete well-being."]
+      assert [scores_for_answer] = trace.scores
+      assert Enum.all?(scores_for_answer, &is_map/1)
+    end
+
     test "returns error on 500 from Kaapi" do
       mock(fn %Tesla.Env{method: :get} ->
         %Tesla.Env{status: 500, body: %{error: "Internal server error"}}
@@ -462,6 +594,38 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, %{status: 500, body: %{error: "Internal server error"}}} =
                ApiClient.get_evaluation_scores(42, @org_kaapi_api_key)
+    end
+  end
+
+  describe "list_models/2" do
+    test "returns the model page and sends provider/skip/limit as query params" do
+      mock(fn %Tesla.Env{method: :get, query: query} ->
+        assert query[:provider] == "openai"
+        assert query[:skip] == 0
+        assert query[:limit] == 100
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      assert {:ok, %{data: %{data: [model]}, metadata: %{has_more: false}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
+
+      assert model.model_name == "gpt-4o"
+    end
+
+    test "returns error tuple on 422 from Kaapi" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid provider"}}
+      end)
+
+      assert {:error, %{status: 422, body: %{error: "Invalid provider"}}} =
+               ApiClient.list_models(%{provider: "openai"}, @org_kaapi_api_key)
     end
   end
 
@@ -530,6 +694,45 @@ defmodule Glific.ThirdParty.Kaapi.ApiClientTest do
 
       assert {:error, :timeout} =
                ApiClient.upload_evaluation_dataset_v2(dataset_params, @org_kaapi_api_key)
+    end
+  end
+
+  describe "create_evaluation_v2/2" do
+    @evaluation_params %{
+      experiment_name: "antaratrial",
+      config_id: "d186d8eb-1211-4a7b-aa28-e8a22f8163c9",
+      config_version: 7,
+      dataset_id: 651
+    }
+
+    test "successfully creates an evaluation on the v2 endpoint" do
+      mock(fn %Tesla.Env{method: :post, url: url} ->
+        assert url =~ "/api/v2/evaluations"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{id: 777, run_name: "antaratrial", status: "processing"}}
+        }
+      end)
+
+      assert {:ok, %{data: %{id: 777, status: "processing"}}} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
+    end
+
+    test "returns error when kaapi returns error status" do
+      mock(fn %Tesla.Env{method: :post} ->
+        %Tesla.Env{status: 422, body: %{error: "Invalid config_id"}}
+      end)
+
+      assert {:error, %{status: 422, body: %{error: "Invalid config_id"}}} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
+    end
+
+    test "returns error on transport failure/timeout" do
+      mock(fn %Tesla.Env{method: :post} -> {:error, :timeout} end)
+
+      assert {:error, :timeout} =
+               ApiClient.create_evaluation_v2(@evaluation_params, @org_kaapi_api_key)
     end
   end
 

@@ -358,6 +358,28 @@ defmodule Glific.AssistantsTest do
 
       assert {:error, _} = Assistants.create_knowledge_base_with_version(params)
     end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty",
+         %{organization_id: organization_id} do
+      kb_count_before = Repo.aggregate(KnowledgeBase, :count, :id)
+      kbv_count_before = Repo.aggregate(KnowledgeBaseVersion, :count, :id)
+
+      params = %{media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+
+      assert Repo.aggregate(KnowledgeBase, :count, :id) == kb_count_before
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
+    end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty, regardless of id",
+         %{organization_id: organization_id} do
+      params = %{id: 0, media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+    end
   end
 
   describe "update_assistant/2" do
@@ -476,6 +498,61 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert get_in(new_config_version.settings, ["temperature"]) == 0.5
+    end
+
+    test "unlinks the knowledge base when knowledge_base_version_id is explicitly nil",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_unlink", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 temperature: 0.5,
+                 knowledge_base_version_id: nil,
+                 organization_id: organization_id
+               })
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+        |> Repo.preload(:knowledge_base_versions)
+
+      assert new_config_version.knowledge_base_versions == []
+    end
+
+    test "creates a new config version when effort changes",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_effort", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 effort: "high",
+                 organization_id: organization_id
+               })
+
+      config_count =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> Repo.aggregate(:count, :id)
+
+      assert config_count == 2
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+
+      assert get_in(new_config_version.settings, ["effort"]) == "high"
     end
 
     test "creates a new config version when model changes",
@@ -1275,6 +1352,36 @@ defmodule Glific.AssistantsTest do
         config_version.settings[:temperature] || config_version.settings["temperature"]
 
       assert temperature == 1
+    end
+
+    test "persists reasoning-model settings without a temperature",
+         %{organization_id: organization_id} do
+      {:ok, kb} =
+        Assistants.create_knowledge_base(%{
+          name: "Settings Test KB",
+          organization_id: organization_id
+        })
+
+      {:ok, kbv} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: kb.id,
+          organization_id: organization_id,
+          files: %{},
+          status: :in_progress,
+          llm_service_id: "vs_settings_test",
+          size: 0
+        })
+
+      assert {:ok, %{config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "GPT-5.1 Assistant",
+                 model: "gpt-5.1",
+                 settings: %{"effort" => "none"},
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
+
+      assert config_version.settings == %{"effort" => "none"}
     end
   end
 

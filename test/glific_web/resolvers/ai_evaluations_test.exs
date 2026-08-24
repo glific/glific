@@ -702,10 +702,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert msg == "Unable to parse the uploaded CSV file"
     end
 
-    test "returns error when CSV contains malformed rows (escape sequence errors)", %{
-      staff: user
-    } do
-      # Unclosed quote triggers {:error, _} from CSV.decode; reduce_while halts immediately
+    test "returns error naming the row when CSV has a malformed quoted field (unclosed quote)",
+         %{staff: user} do
       csv_path =
         Path.join(
           System.tmp_dir!(),
@@ -736,7 +734,45 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Unable to parse the uploaded CSV file"
+      assert msg =~ "Row 7"
+      assert msg =~ "malformed"
+      assert msg =~ "missing closing quote"
+    end
+
+    test "returns error naming the row when CSV has a stray escape character inside a field", %{
+      staff: user
+    } do
+      csv_path =
+        Path.join(
+          System.tmp_dir!(),
+          "stray_escape_csv_#{System.unique_integer([:positive])}.csv"
+        )
+
+      content = "question,answer\nWhat is Glific?,A \"quick\" answer\n"
+      File.write!(csv_path, content)
+      on_exit(fn -> File.rm(csv_path) end)
+
+      upload = %Plug.Upload{
+        path: csv_path,
+        content_type: "text/csv",
+        filename: "stray_escape.csv"
+      }
+
+      args = %{
+        input: %{
+          name: "valid_name",
+          file: upload,
+          duplication_factor: 1
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{errors: [%{message: msg}]}} =
+               AIEvaluations.create_golden_qa(nil, args, resolution)
+
+      assert msg =~ "Row 2"
+      assert msg =~ "unescaped"
     end
 
     test "accepts a properly quoted answer field with exactly escape_max_lines (1000) embedded line breaks (boundary)",
@@ -772,7 +808,9 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert {:ok, %{errors: [%{message: msg}]}} =
                AIEvaluations.create_golden_qa(nil, args, resolution)
 
-      assert msg == "Unable to parse the uploaded CSV file"
+      assert msg =~ "malformed"
+      assert msg =~ "longer than 1000 lines"
+      assert msg =~ "reduce it"
     end
 
     test "returns error when CSV columns are not exactly 'question' and 'answer'", %{
@@ -1282,6 +1320,103 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert scores.status == "completed"
     end
 
+    test "defaults export_format to row when not passed", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "row"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{trace_id: "item_0_0", question_id: 1, llm_answer: "answer", scores: []}
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      [trace] = scores.score.traces
+      assert trace.trace_id == "item_0_0"
+    end
+
+    test "passes export_format through to Kaapi as a query param", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "completed", summary_scores: []}}
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      assert scores.status == "completed"
+    end
+
+    test "grouped export_format returns traces with llm_answers and nested scores", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    question_id: 1,
+                    llm_answers: ["answer 1", "answer 2"],
+                    trace_ids: ["item_0_0", "item_0_1"],
+                    scores: [[%{name: "score", value: 5}], [%{name: "score", value: 4}]]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      [trace] = scores.score.traces
+      assert trace.llm_answers == ["answer 1", "answer 2"]
+      assert length(trace.scores) == 2
+    end
+
     test "returns timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
       Tesla.Mock.mock(fn %{method: :get} ->
         {:error, :timeout}
@@ -1334,6 +1469,32 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
                AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
 
       assert msg == "An unknown error occurred, please contact Glific support."
+    end
+  end
+
+  describe "list_kaapi_models/3" do
+    setup [:enable_kaapi]
+
+    setup do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+      :ok
+    end
+
+    test "returns the models fetched from Kaapi", %{staff: user} do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: [%{provider: "openai", model_name: "gpt-4o"}]},
+            metadata: %{has_more: false}
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, [model]} = AIEvaluations.list_kaapi_models(nil, %{}, resolution)
+      assert model.model_name == "gpt-4o"
     end
   end
 
@@ -1658,6 +1819,296 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
       assert reason == "Kaapi is not active"
+    end
+  end
+
+  describe "create_evaluation/3 v2 (is_ai_evaluation_enabled)" do
+    setup [:enable_kaapi, :create_config_version, :create_golden_qa_fixture]
+
+    test "v2 path: hits the v2 endpoint and persists the returned status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url} ->
+          assert url =~ "/api/v2/evaluations"
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: 777, run_name: "test_experiment", status: "processing"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.status == :processing
+      assert evaluation.kaapi_evaluation_id == 777
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "v2 path: defaults duplication_factor to 1 when not passed", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url, body: body} ->
+          assert url =~ "/api/v2/evaluations"
+          assert body =~ ~s("duplication_factor":1)
+
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              data: %{id: 780, run_name: "test_experiment_default_dup", status: "processing"}
+            }
+          }
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_default_dup",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: _evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "v2 path: forwards duplication_factor to the Kaapi request body", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post, url: url, body: body} ->
+          assert url =~ "/api/v2/evaluations"
+          assert body =~ ~s("duplication_factor":3)
+
+          %Tesla.Env{
+            status: 200,
+            body: %{data: %{id: 779, run_name: "test_experiment_dup", status: "processing"}}
+          }
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_dup",
+          config_id: assistant_config_version.id,
+          duplication_factor: 3
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{evaluation: evaluation}} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.duplication_factor == 3
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "v2 path: returns error when duplication_factor is out of range", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_dup_invalid",
+          config_id: assistant_config_version.id,
+          duplication_factor: 8
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Duplication factor must be between 1 and 5"} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns an error instead of crashing on an unrecognized status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: 778, status: "queued"}}}
+      end)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "test_experiment_unrecognized",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, reason} = AIEvaluations.create_evaluation(nil, args, resolution)
+      assert reason == "Unexpected evaluation status received from Kaapi: queued"
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns a controlled error when Kaapi response is missing data", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_data_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns a controlled error when Kaapi response is missing status", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{data: %{id: 779}}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_status_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+    end
+
+    test "returns a controlled error when Kaapi response is missing id", %{
+      staff: user,
+      assistant_config_version: assistant_config_version,
+      golden_qa: golden_qa
+    } do
+      FunWithFlags.enable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
+
+      Tesla.Mock.mock(fn %{method: :post} ->
+        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
+      end)
+
+      count_before = Repo.aggregate(AIEvaluation, :count, :id)
+
+      args = %{
+        input: %{
+          golden_qa_id: golden_qa.id,
+          evaluation_name: "missing_id_response",
+          config_id: assistant_config_version.id
+        }
+      }
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:error, "Invalid evaluation response received from Kaapi."} =
+               AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert Repo.aggregate(AIEvaluation, :count, :id) == count_before
+
+      FunWithFlags.disable(:is_ai_evaluation_enabled,
+        for_actor: %{organization_id: user.organization_id}
+      )
     end
   end
 

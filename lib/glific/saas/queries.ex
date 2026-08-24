@@ -13,13 +13,10 @@ defmodule Glific.Saas.Queries do
     Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
-    Notion,
     Partners,
     Partners.Organization,
     Partners.Provider,
     Providers.Gupshup.PartnerAPI,
-    Registrations,
-    Registrations.Registration,
     Repo,
     Seeds.Seeder,
     Seeds.SeedsMigration,
@@ -41,22 +38,6 @@ defmodule Glific.Saas.Queries do
     |> contact(params)
     # create the credentials
     |> credentials(params)
-    # create registration details
-    |> registration(params)
-  end
-
-  @doc """
-  Main function to setup the organization entity in Glific
-  """
-  @spec setup_v2(map(), map()) :: map()
-  def setup_v2(result, params) do
-    result
-    # first create the organization
-    |> organization(params)
-    # then create the contact and associate contact with organization
-    |> contact(params)
-    # create the credentials
-    |> credentials(params)
   end
 
   @doc """
@@ -69,34 +50,6 @@ defmodule Glific.Saas.Queries do
     |> validate_shortcode(params["shortcode"])
     |> validate_phone(params["phone"])
     |> validate_text_field(params["name"], :name, {1, 250})
-  end
-
-  @doc """
-  Validate all the details regarding NGO registration
-  """
-  @spec validate_registration_details(map(), map()) :: map()
-  def validate_registration_details(result, params) do
-    Enum.reduce(params, result, fn {key, value}, result ->
-      case key do
-        "billing_frequency" ->
-          validate_billing_frequency(result, value)
-
-        "finance_poc" ->
-          validate_finance_poc(result, value)
-
-        "submitter" ->
-          validate_submitter_details(result, value)
-
-        "signing_authority" ->
-          validate_signer_details(result, value)
-
-        "org_details" ->
-          validate_org_details(result, value)
-
-        _ ->
-          result
-      end
-    end)
   end
 
   @doc """
@@ -138,29 +91,6 @@ defmodule Glific.Saas.Queries do
   end
 
   def sync_templates(results), do: results
-
-  @doc """
-  Validates if all the required fields are filled before submission
-  """
-  @spec eligible_for_submission?(map(), Registration.t()) :: map()
-  def eligible_for_submission?(result, registration) do
-    registration_map = Map.from_struct(registration)
-
-    [:org_details, :finance_poc, :submitter, :signing_authority]
-    |> Enum.reduce_while(result, fn key, result ->
-      if is_nil(registration_map[key]) do
-        result =
-          dgettext("error", "Field cannot be empty.")
-          |> error(result, key)
-
-        {:halt, result}
-      else
-        {:cont, result}
-      end
-    end)
-    |> validate_true(registration.terms_agreed, :terms_agreed)
-    |> validate_true(registration.support_staff_account, :support_staff_account)
-  end
 
   @spec validate_text_field(map(), String.t(), atom(), {number(), number()}, boolean()) :: map()
   defp validate_text_field(result, field, key, length, optional \\ false)
@@ -476,127 +406,6 @@ defmodule Glific.Saas.Queries do
 
     reset_organization_id
   end
-
-  @spec registration(map(), map()) :: map()
-  defp registration(%{is_valid: false} = result, _params), do: result
-
-  defp registration(result, params) do
-    org_details = %{
-      name: params["name"]
-    }
-
-    platform_details = %{
-      api_key: params["api_key"],
-      app_name: params["app_name"],
-      phone: params["phone"],
-      shortcode: params["shortcode"]
-    }
-
-    registration_map = %{
-      org_details: org_details,
-      organization_id: result.organization.id,
-      platform_details: platform_details,
-      ip_address: params["client_ip"],
-      erp_page_id: result |> Map.get(:erp_page_id)
-    }
-
-    registration_map
-    |> Registrations.create_registration()
-    |> case do
-      {:ok, %{id: id} = registration} ->
-        :ok = create_registration_in_notion(result.organization.id, registration)
-        Map.put(result, :registration_id, id)
-
-      {:error, errors} ->
-        error(Glific.SafeLog.safe_inspect(errors), result, :registration)
-    end
-  end
-
-  @spec validate_billing_frequency(map(), String.t()) :: map()
-  defp validate_billing_frequency(result, value) when is_binary(value) do
-    cond do
-      empty(value) ->
-        dgettext("error", "Billing frequency cannot be empty.")
-        |> error(result, :billing_frequency)
-
-      value not in ["Monthly", "Quarterly", "Half-Yearly", "Annually"] ->
-        dgettext("error", "Value should be one of Monthly , Quarterly, Half-Yearly, Annually.")
-        |> error(result, :billing_frequency)
-
-      true ->
-        result
-    end
-  end
-
-  @spec validate_finance_poc(map(), map()) :: map()
-
-  defp validate_finance_poc(result, params) do
-    result
-    |> validate_text_field(params["name"], :finance_poc_name, {1, 100})
-    |> validate_text_field(params["designation"], :finance_poc_designation, {1, 100})
-    |> validate_phone(params["phone"], :finance_poc_phone)
-    |> validate_email(params["email"], :finance_poc_email)
-  end
-
-  @spec validate_submitter_details(map(), map()) :: map()
-
-  defp validate_submitter_details(result, params) do
-    result
-    |> validate_text_field(params["first_name"], :submitter_name, {1, 100})
-    |> validate_email(params["email"], :submitter_name)
-  end
-
-  @spec validate_signer_details(map(), map()) :: map()
-
-  defp validate_signer_details(result, params) do
-    result
-    |> validate_text_field(params["name"], :signer_name, {1, 100})
-    |> validate_text_field(params["designation"], :signer_designation, {1, 100})
-    |> validate_email(params["email"], :signer_email)
-  end
-
-  @spec validate_org_details(map(), map()) :: map()
-
-  defp validate_org_details(result, params) do
-    current_address = params["current_address"]
-    registered_address = params["registered_address"]
-
-    result
-    |> validate_text_field(params["gstin"], :gstin, {15, 15}, true)
-    |> validate_address_fields(registered_address, :registered_address)
-    |> validate_address_fields(current_address, :current_address)
-  end
-
-  @spec validate_address_fields(map(), map(), atom()) :: map()
-  defp validate_address_fields(result, address_map, field_prefix) do
-    result
-    |> validate_text_field(address_map["address_line1"], :"#{field_prefix}_line1", {1, 300})
-    |> validate_text_field(address_map["city"], :"#{field_prefix}_city", {1, 100})
-    |> validate_text_field(address_map["pincode"], :"#{field_prefix}_pincode", {1, 10})
-  end
-
-  @spec create_registration_in_notion(String.t(), Registration.t()) :: :ok
-  defp create_registration_in_notion(org_id, registration) do
-    {:ok, _} =
-      Task.start(fn ->
-        Repo.put_process_state(org_id)
-        properties = Notion.init_table_properties(registration)
-
-        with {:ok, page_id} <- Notion.create_database_entry(properties) do
-          Registrations.update_registation(registration, %{notion_page_id: page_id})
-        end
-      end)
-
-    :ok
-  end
-
-  @spec validate_true(map(), boolean(), atom()) :: map()
-  defp validate_true(results, false, key) do
-    dgettext("error", "Field cannot be false.")
-    |> error(results, key)
-  end
-
-  defp validate_true(results, _, _key), do: results
 
   @spec delete_migration_if_exists(String.t()) :: any()
   defp delete_migration_if_exists(tenant) do
