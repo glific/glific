@@ -2,6 +2,8 @@ defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: false
   import Ecto.Query, warn: false
 
+  alias Ecto.Adapters.SQL.Sandbox
+
   alias Glific.{
     Contacts,
     Fixtures,
@@ -415,7 +417,7 @@ defmodule Glific.Flows.FlowContextTest do
       two_overlapping_runs =
         for _ <- 1..2 do
           Task.async(fn ->
-            Ecto.Adapters.SQL.Sandbox.allow(Repo, test_process, self())
+            Sandbox.allow(Repo, test_process, self())
             FlowContext.wakeup_flows(organization_id)
           end)
         end
