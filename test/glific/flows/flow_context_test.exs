@@ -418,6 +418,12 @@ defmodule Glific.Flows.FlowContextTest do
         for _ <- 1..2 do
           Task.async(fn ->
             Sandbox.allow(Repo, test_process, self())
+            Repo.put_organization_id(organization_id)
+
+            Repo.put_current_user(
+              Fixtures.user_fixture(%{name: "NGO Test Admin", roles: ["manager"]})
+            )
+
             FlowContext.wakeup_flows(organization_id)
           end)
         end
