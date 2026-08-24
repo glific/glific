@@ -1458,7 +1458,7 @@ defmodule Glific.Fixtures do
     assistant
   end
 
-  @doc false
+  @doc "Creates a knowledge base fixture"
   @spec knowledge_base_fixture(map()) :: KnowledgeBase.t()
   def knowledge_base_fixture(attrs) do
     valid_attrs = %{name: "Fixture Knowledge Base #{Ecto.UUID.generate()}"}
@@ -1471,7 +1471,7 @@ defmodule Glific.Fixtures do
     knowledge_base
   end
 
-  @doc false
+  @doc "Creates a knowledge base version fixture"
   @spec knowledge_base_version_fixture(map()) :: KnowledgeBaseVersion.t()
   def knowledge_base_version_fixture(attrs) do
     knowledge_base_id =
@@ -1494,7 +1494,7 @@ defmodule Glific.Fixtures do
     knowledge_base_version
   end
 
-  @doc false
+  @doc "Creates a golden QA fixture"
   @spec golden_qa_fixture(map()) :: GoldenQA.t()
   def golden_qa_fixture(attrs) do
     valid_attrs = %{name: "Fixture Golden QA #{Ecto.UUID.generate()}", dataset_id: 1}
@@ -1507,7 +1507,7 @@ defmodule Glific.Fixtures do
     golden_qa
   end
 
-  @doc false
+  @doc "Creates an AI evaluation fixture"
   @spec ai_evaluation_fixture(map()) :: AIEvaluation.t()
   def ai_evaluation_fixture(attrs) do
     golden_qa_id =
@@ -1519,7 +1519,7 @@ defmodule Glific.Fixtures do
       name: "Fixture Evaluation #{Ecto.UUID.generate()}",
       status: :processing,
       golden_qa_id: golden_qa_id,
-      kaapi_evaluation_id: 404
+      kaapi_evaluation_id: System.unique_integer([:positive])
     }
 
     {:ok, evaluation} =

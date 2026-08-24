@@ -154,26 +154,16 @@ defmodule Glific.Assistants do
   defp validate_version_ready(_version),
     do: {:error, "Version must be in ready status to be set as live"}
 
-  @doc """
-  Sets the last evaluation run on the assistant whose active config version matches
-  the given config version id. No-ops if no assistant's active version matches.
-  """
+  @doc "Sets the last evaluation run on the assistant whose active config version matches the given config version id"
   @spec set_last_evaluation_run(non_neg_integer(), non_neg_integer()) :: :ok
   def set_last_evaluation_run(assistant_config_version_id, evaluation_id) do
     Assistant
     |> where([a], a.active_config_version_id == ^assistant_config_version_id)
-    |> Repo.one()
-    |> case do
-      nil ->
-        :ok
+    |> Repo.update_all(
+      set: [last_evaluation_run_id: evaluation_id, updated_at: DateTime.utc_now()]
+    )
 
-      assistant ->
-        assistant
-        |> Assistant.set_last_evaluation_run_changeset(%{last_evaluation_run_id: evaluation_id})
-        |> Repo.update()
-
-        :ok
-    end
+    :ok
   end
 
   @doc """
