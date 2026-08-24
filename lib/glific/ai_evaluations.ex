@@ -379,7 +379,7 @@ defmodule Glific.AIEvaluations do
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       payload,
-      improve_prompt_updated: "#{organization_id}"
+      [{:improve_prompt_updated, "#{organization_id}"}]
     )
 
     :ok

@@ -512,7 +512,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "handle_improve_prompt_callback/1" do
+  describe "handle_improve_prompt_callback/2" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
