@@ -17,8 +17,12 @@ defmodule Glific.Fixtures do
     AccessControl,
     AccessControl.Permission,
     AccessControl.Role,
+    AIEvaluations.AIEvaluation,
+    AIEvaluations.GoldenQA,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
+    Assistants.KnowledgeBase,
+    Assistants.KnowledgeBaseVersion,
     Contacts,
     Contacts.ContactsField,
     Extensions.Extension,
@@ -1452,5 +1456,77 @@ defmodule Glific.Fixtures do
       |> Repo.update()
 
     assistant
+  end
+
+  @doc false
+  @spec knowledge_base_fixture(map()) :: KnowledgeBase.t()
+  def knowledge_base_fixture(attrs) do
+    valid_attrs = %{name: "Fixture Knowledge Base #{Ecto.UUID.generate()}"}
+
+    {:ok, knowledge_base} =
+      %KnowledgeBase{}
+      |> KnowledgeBase.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    knowledge_base
+  end
+
+  @doc false
+  @spec knowledge_base_version_fixture(map()) :: KnowledgeBaseVersion.t()
+  def knowledge_base_version_fixture(attrs) do
+    knowledge_base_id =
+      Map.get_lazy(attrs, :knowledge_base_id, fn ->
+        knowledge_base_fixture(%{organization_id: attrs.organization_id}).id
+      end)
+
+    valid_attrs = %{
+      knowledge_base_id: knowledge_base_id,
+      files: %{},
+      status: :completed,
+      llm_service_id: "llm-service-#{Ecto.UUID.generate()}"
+    }
+
+    {:ok, knowledge_base_version} =
+      %KnowledgeBaseVersion{}
+      |> KnowledgeBaseVersion.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    knowledge_base_version
+  end
+
+  @doc false
+  @spec golden_qa_fixture(map()) :: GoldenQA.t()
+  def golden_qa_fixture(attrs) do
+    valid_attrs = %{name: "Fixture Golden QA #{Ecto.UUID.generate()}", dataset_id: 1}
+
+    {:ok, golden_qa} =
+      %GoldenQA{}
+      |> GoldenQA.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    golden_qa
+  end
+
+  @doc false
+  @spec ai_evaluation_fixture(map()) :: AIEvaluation.t()
+  def ai_evaluation_fixture(attrs) do
+    golden_qa_id =
+      Map.get_lazy(attrs, :golden_qa_id, fn ->
+        golden_qa_fixture(%{organization_id: attrs.organization_id}).id
+      end)
+
+    valid_attrs = %{
+      name: "Fixture Evaluation #{Ecto.UUID.generate()}",
+      status: :processing,
+      golden_qa_id: golden_qa_id,
+      kaapi_evaluation_id: 404
+    }
+
+    {:ok, evaluation} =
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(Map.merge(valid_attrs, attrs))
+      |> Repo.insert()
+
+    evaluation
   end
 end
