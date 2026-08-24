@@ -302,6 +302,137 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.is_background_flow == false
   end
 
+  describe "wakeup_flows/1" do
+    test "an overdue context (wakeup_at in the past) gets claimed: wakeup_at is cleared",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: three_minutes_ago,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
+
+      FlowContext.wakeup_flows(organization_id)
+
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert reloaded_flow_context.wakeup_at == nil
+    end
+
+    test "a context whose alarm hasn't gone off yet is left completely alone",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      five_minutes_from_now = Timex.shift(Timex.now(), minutes: 5)
+
+      flow_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: five_minutes_from_now,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
+
+      FlowContext.wakeup_flows(organization_id)
+
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert reloaded_flow_context.wakeup_at != nil
+
+      assert DateTime.compare(reloaded_flow_context.wakeup_at, Timex.now()) == :gt
+    end
+
+    test "a context already marked completed is never picked up again, even though its old alarm is overdue",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: three_minutes_ago,
+          completed_at: Timex.now(),
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
+
+      FlowContext.wakeup_flows(organization_id)
+
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert DateTime.truncate(reloaded_flow_context.wakeup_at, :second) ==
+               DateTime.truncate(three_minutes_ago, :second)
+    end
+
+    test "an expired lease from a crashed run is retried automatically, exactly like any other overdue context",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      expired_lease_from_a_crashed_run = Timex.shift(Timex.now(), minutes: -1)
+
+      flow_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: expired_lease_from_a_crashed_run,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
+
+      FlowContext.wakeup_flows(organization_id)
+
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert reloaded_flow_context.wakeup_at == nil
+    end
+
+    test "when two overlapping runs parallely for the same overdue context, only one of them processes it",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: three_minutes_ago,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
+
+      test_process = self()
+
+      two_overlapping_runs =
+        for _ <- 1..2 do
+          Task.async(fn ->
+            Ecto.Adapters.SQL.Sandbox.allow(Repo, test_process, self())
+            FlowContext.wakeup_flows(organization_id)
+          end)
+        end
+
+      Task.await_many(two_overlapping_runs)
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert reloaded_flow_context.wakeup_at == nil
+
+      FlowContext.wakeup_flows(organization_id)
+
+      {:ok, final_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert final_flow_context.wakeup_at == nil
+    end
+  end
+
   test "resume_contact_flow/3 will process all the context for the contact",
        %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
