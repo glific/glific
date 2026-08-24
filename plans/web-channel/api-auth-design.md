@@ -4,7 +4,7 @@
 
 How a partner organization's own application authenticates its end users against the Glific web
 channel, how those end users are identified when they have no phone number, and how access is
-revoked. This replaces the prototype's phone-plus-OTP-only auth with **two modes** that share one
+revoked. Contact identity (§3) is channel-general and outlives the web channel. This replaces the prototype's phone-plus-OTP-only auth with **two modes** that share one
 socket.
 
 - **Mode A — Glific's own widget.** Phone + OTP, verified by Glific, exactly as today. Glific
@@ -43,7 +43,7 @@ token format and a second TTL. Dropped.
 Header   { "alg": "HS256", "typ": "JWT", "kid": "gws_7f3a91c4" }
 
 Claims   {
-  "sub":   "member_4471",       // REQUIRED — the username. Opaque, max 255 chars.
+  "sub":   "member_4471",       // REQUIRED — the web identity. Opaque, max 255 chars.
   "org":   42,                  // REQUIRED — organization_id, cross-checked against kid
   "iat":   1755590400,          // REQUIRED — precondition for revoke-before-iat (§4.2)
   "exp":   1755591300,          // REQUIRED — short, see §2.4
@@ -90,10 +90,10 @@ victim's contact.
 
 **Mitigations, in order of strength:**
 
-1. **First-link OTP.** The first time a `username` is bound to a contact that already has a `phone`,
-   require a one-time OTP to that phone. Subsequent logins need none. Friction once per user, ever.
+1. **First-link OTP.** The first time a `web` identity is bound to a contact that already carries a
+   `whatsapp` identity, require a one-time OTP to that phone. Subsequent logins need none. Friction once per user, ever.
 2. **Org-level opt-in** `allow_jwt_phone_binding`, default `false`. Without it a `phone` claim is
-   ignored and a username-only contact is created.
+   ignored and a web-only contact is created.
 3. **Integrator documentation** carrying Stream's warning verbatim, with a worked example deriving
    both `sub` and `phone` from the server-side session.
 
@@ -145,68 +145,148 @@ after coming back online.
 
 ## 3. Contact identity
 
-A human reaching an NGO on WhatsApp and on the web is **one contact**. Identity becomes two nullable
-columns with at least one required.
+A human reaching an NGO on WhatsApp, on the web, and later on Telegram is **one contact** carrying
+**one identity row per channel**.
+
+Identity has to be per-channel because the namespaces are disjoint: a phone number, a web username
+and a Telegram id are three different things, and one column can hold only one of them. This section
+is therefore **channel-general, not web-specific** — the web channel is simply its first consumer,
+and Telegram should arrive as a data migration rather than a schema migration.
+
+### 3.1 Rejected: overloading `phone`
+
+`phone` is already an opaque string in practice — simulator contacts hold values like
+`"9876543210_1"` behind `@simulator_phone_prefix`. So storing `krish1231` there would "work".
+
+The cost is already visible in the codebase. `Contacts.simulator_contact?/1` exists **only** to
+answer "is this string a real reachable number?", and it is called in **14 places** across
+`contacts.ex`, `messages.ex`, `consumer_tagger.ex`, `communications/message.ex`,
+`bigquery_worker.ex` and both Gupshup workers. Each is a site where someone had to remember that
+`phone` might be a lie. A second class of non-phone value means revisiting all fourteen with a
+different predicate.
+
+It also leaks downstream: `bigquery_schema.ex` exports `phone`, `sender_phone`, `receiver_phone`,
+`contact_phone` and `user_phone`. NGOs query those. Putting usernames in them is a data-contract
+change to systems we do not control.
+
+### 3.2 Rejected: a single `username` column
+
+An earlier draft of this document proposed one nullable `username` column beside `phone`. It fails
+at the third channel: a web username and a Telegram id cannot share a column, so channel three
+forces either an overloaded column (3.1 again) or a second column — and then a third, each with its
+own unique index and its own branch in every lookup.
+
+### 3.3 The model
 
 ```sql
-ALTER TABLE contacts ADD COLUMN username character varying(255);
-ALTER TABLE contacts ALTER COLUMN phone DROP NOT NULL;
+CREATE TABLE contact_identities (
+  id              bigserial PRIMARY KEY,
+  contact_id      bigint NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  organization_id bigint NOT NULL REFERENCES organizations(id),
+  channel         varchar(50)  NOT NULL,   -- 'whatsapp' | 'web' | 'telegram' | …
+  identifier      varchar(255) NOT NULL,   -- phone | username | telegram id
+  verified_at     timestamp,               -- how the link was proven (§2.3 first-link OTP)
+  inserted_at     timestamp NOT NULL,
+  updated_at      timestamp NOT NULL
+);
 
-CREATE UNIQUE INDEX contacts_username_organization_id_index
-  ON contacts (username, organization_id) WHERE username IS NOT NULL;
-
--- the existing phone index must become partial too, or every username-only
--- contact collides on NULL
-DROP INDEX contacts_phone_organization_id_index;
-CREATE UNIQUE INDEX contacts_phone_organization_id_index
-  ON contacts (phone, organization_id) WHERE phone IS NOT NULL;
-
-ALTER TABLE contacts ADD CONSTRAINT contacts_identity_present
-  CHECK (phone IS NOT NULL OR username IS NOT NULL);
+CREATE UNIQUE INDEX contact_identities_org_channel_identifier_index
+  ON contact_identities (organization_id, channel, identifier);
+CREATE INDEX contact_identities_contact_id_index ON contact_identities (contact_id);
 ```
 
-`username` is **NGO-supplied and opaque** (the `sub` claim), changeable through an API. It is not a
-user-chosen handle — that would need claiming, uniqueness UX and moderation, and is out of scope.
+`organization_id` sits on the row so `Repo.prepare_query/3` auto-scopes it like every other table.
+Uniqueness is scoped **per organization and per channel**, never globally — matching how Zendesk
+scopes `external_id` per workspace.
 
-### 3.1 Making `phone` nullable breaks running code
+Three deliberate choices around it:
 
-Located in the current tree; each is a real break, not a hypothetical.
+**`contacts.phone` stays, as the reachability field.** It is not the identity field. The BSP send
+path, opt-in/opt-out, exports, reports and the BigQuery schema all want "how do I reach this person
+on WhatsApp", and that is a different question from "who is this". This is the same split described
+in §3.6 — the difference is that it is now enforced by *which table you query* rather than by
+discipline across 34 call sites. `phone` becomes nullable, but never synthetic.
+
+**`contacts.channels` as a denormalized index only.** A contact's channel set is derivable
+(`SELECT DISTINCT channel FROM contact_identities WHERE contact_id = ?`), but the staff inbox query
+filters on it, so carry a `{:array, :string}` column with a GIN index. This is the same shape
+`flows.channels` already uses, so the two models match.
+
+**`contact_type` is left alone.** It is written by the Gupshup (`"WABA"`) and Maytapi (`"WA"`)
+controllers and consumed by `reports.ex` and the `stats_live` pie charts. Adding `channels` is
+additive; replacing `contact_type` is a downstream break for no present gain. Deprecate it later.
+
+### 3.4 Linking identities is additive, not a merge
+
+This is a security property, not only a modelling preference.
+
+With a single identity column, linking Asha's web login to her existing WhatsApp contact means
+rewriting the contact row — or, if two contacts already exist, a genuine merge that repoints
+messages, groups and flow results. Irreversible, and done carelessly it is exactly the Chatwoot
+vulnerability: `ContactMergeAction#merge_contact_inboxes` repoints the attacker's session, carrying
+its auth token, onto the victim's contact record.
+
+With `contact_identities`, the same link is one insert. It is reversible by deleting the row, and it
+touches neither the WhatsApp identity nor any message history. The first-link OTP of §2.3 becomes a
+gate on that insert rather than a gate on a destructive rewrite.
+
+`verified_at` records **how** each identity was proven — OTP versus NGO-asserted JWT — which an
+auditor, and possibly a flow author, will legitimately want to distinguish.
+
+### 3.5 Making `phone` nullable breaks running code
+
+Note this cost belongs to **supporting non-phone contacts at all**, not to any particular schema
+choice: a web-only contact has no phone under any of the three models above.
 
 | Location | Break | Fix |
 |---|---|---|
 | `Contacts.simulator_contact?/1` (`contacts.ex:971`) | `String.starts_with?(nil, _)` raises. 14 call sites; these pass `contact.phone` straight in: `contacts.ex:328,355,582,808`, `messages.ex:1197`, `consumer_tagger.ex:36`, `communications/message.ex:380`, `bigquery_worker.ex:976,1241` | add `def simulator_contact?(nil), do: false` — one clause covers all |
 | `Contact.populate_masked_phone/1` (`contact.ex:151`) | `String.split_at(nil, 4)` raises. Reached from the GraphQL `maskedPhone` resolver, so any console query selecting it on a web-only contact 500s | nil clause returning `nil` |
-| `Contacts.maybe_create_contact/1` (`contacts.ex:450`) | `Repo.get_by(Contact, %{phone: nil})` compiles to `WHERE phone IS NULL` — returns **an arbitrary username-only contact**, or raises `Ecto.MultipleResultsError` once there are two. A cross-contact leak, not just a crash | branch on which identity is present; never `get_by` a nil identity |
-| `searches.ex:179`, `:259` | `where c.contact_type in ["WABA","WABA+WA"]` — a web contact with a new `contact_type` **silently vanishes from the staff inbox** | widen both clauses in the same commit that adds the new type |
-| GraphQL `contact_types.ex:50-54` | `phone` returns `""` for `:staff`, and `masked_phone` exists — a deliberate privacy control. An NGO `username` is often an email or member ID | gate `username` identically |
+| `Contacts.maybe_create_contact/1` (`contacts.ex:450`) | `Repo.get_by(Contact, %{phone: nil})` compiles to `WHERE phone IS NULL` — returns **an arbitrary** contact, or raises `Ecto.MultipleResultsError` once there are two. A cross-contact leak, not just a crash | resolve through `contact_identities`; never `get_by` a nil identity |
+| `searches.ex:179`, `:259` | `where c.contact_type in ["WABA","WABA+WA"]` — a web contact is **silently absent from the staff inbox** | widen to consult `channels` in the same commit that adds it |
+| GraphQL `contact_types.ex:50-54` | `phone` returns `""` for `:staff`, and `masked_phone` exists — a deliberate privacy control. An NGO identifier is often an email or member ID | gate identity fields identically |
 | Flows | `@contact.phone` resolves empty for web-only contacts | document for NGOs |
 
-### 3.2 The 34 lookup sites are a semantic audit, not a rename
+### 3.6 The 34 lookup sites are a semantic audit, not a rename
 
 There are 34 contact lookups keyed on phone in `lib/`, several inside per-NGO modules
-(`clients/digital_green.ex`, `sol.ex`, `tap.ex`, `mukkamaar.ex`, `arogya_world.ex`) — the ones most
-likely to break quietly. Each currently uses `phone` to mean one of two things and only a human can
-tell which:
+(`clients/digital_green.ex`, `sol.ex`, `tap.ex`, `mukkamaar.ex`, `arogya_world.ex`) — thin test
+coverage, so they break quietly. Each currently uses `phone` to mean one of two things and only a
+human can tell which:
 
-- *"who is this"* → an identity lookup (`phone` **or** `username`)
-- *"how do I reach them on WhatsApp"* → stays `phone`
+- *"who is this"* → resolve through `contact_identities`
+- *"how do I reach them on WhatsApp"* → stays `contacts.phone`
 
 `Contacts.contact_opted_in/4` is the second kind. `maybe_create_contact/1` and `Glific.Erase`
 deleting by phone are the first. A mechanical substitution produces code that compiles and is wrong.
 
-### 3.3 Prior art in the codebase
+Identity-specific consequences beyond that audit:
 
-- **`phone` already holds non-dialable values**: simulator contacts use `@simulator_phone_prefix
-  "9876543210"` with values like `"9876543210_1"`. The column is already an opaque identity string,
-  and `simulator_contact?/1` is the predicate that distinguishes them — checked in 14 places. That
-  maintenance tax is exactly what a synthetic-phone approach would double, and the reason a real
-  `username` column is worth the migration.
+- **`maybe_create_contact/1` is the hot path** for every inbound message and becomes an identities
+  lookup. It needs the same on-conflict handling it has today for the opt-in / first-message race
+  (issue #850), and it should be cached.
+- **`contacts/import.ex`** (3 phone lookups) — CSV import stays phone-only in v1.
+- **BigQuery** — identities are not exported in v1; decide later whether they get their own table.
+- **`Glific.Erase`** deletes by phone and must become identity-aware, or it silently misses web
+  contacts.
+- **`Contact` gains `has_many :identities`**, alongside the existing `has_one :user`, three
+  `many_to_many` and `belongs_to :active_profile`. Preloading matters on the inbox query.
+
+### 3.7 Open question: can an identity move between contacts?
+
+If an NGO reassigns `member_4471` to a different person, is that an update, a delete-and-insert, or
+forbidden? This must be settled before dual-read (phase 0c, §7) — getting it wrong is how identity
+tables accumulate orphaned history.
+
+### 3.8 Prior art in the codebase
+
+- **`phone` already holds non-dialable values** (§3.1) — the `simulator_contact?/1` tax is the
+  measured cost of that pattern, and the reason a real identity model is worth the migration.
 - **`contact_type`** already discriminates `"WABA"` / `"WA"` / `"WABA+WA"` with merge logic at
-  `contacts.ex:1052-1067` — precedent for a channel discriminator, subject to the `searches.ex` trap.
-- **`profiles`** is a persona switcher (one contact, many personas), **not** a second login. Keep it
-  out of this design.
-
----
+  `contacts.ex:1052-1067` — an early, string-concatenated attempt at exactly the channel set that
+  `contacts.channels` now models properly.
+- **`profiles`** is a persona switcher (one contact, many personas), **not** a second login. It is
+  orthogonal to identities and should stay out of this design.
 
 ## 4. Signing keys and revocation
 
@@ -312,19 +392,22 @@ That line needs a comment saying so.
 
 **Migrations**
 - `web_channel_signing_keys` (§4.1)
-- `contacts.username` + partial unique index; `contacts.phone` drop `NOT NULL` and rebuild its index
-  as partial; CHECK that at least one identity is present
+- `contact_identities` (§3.3) + backfill one `('whatsapp', phone)` row per existing contact
+- `contacts.channels` `{:array, :string}` with a GIN index; `contacts.phone` drop `NOT NULL` and
+  rebuild its unique index as partial (`WHERE phone IS NOT NULL`)
 - *Later:* `contacts.tokens_valid_after`, `organizations.web_tokens_valid_after`
 
-**Nil-phone fixes** — blocking, see §3.1: `simulator_contact?(nil)`, `populate_masked_phone/1`,
+**Nil-phone fixes** — blocking, see §3.5: `simulator_contact?(nil)`, `populate_masked_phone/1`,
 `maybe_create_contact/1`, the two `searches.ex` filters.
 
 **New modules**
 - `Glific.WebChannel.SigningKeys` — create (cap 10 active), list, revoke, `fetch_active_by_kid/1`
   (cached; it runs on every connect)
 - `GlificWeb.WebChannel.JWT` — the §5 pipeline
-- `Glific.WebChannel.Identity` — resolve-or-create contact from claims; `phone` binding only behind
-  `allow_jwt_phone_binding`
+- `Glific.Contacts.Identities` — resolve-or-create a contact from `(channel, identifier)`; the
+  channel-general context behind §3.3, cached on the inbound hot path
+- `Glific.WebChannel.Identity` — map JWT claims to a `('web', sub)` identity; `phone` binding only
+  behind `allow_jwt_phone_binding`
 
 **Socket / channel**
 - `WebChannelSocket.connect/3` — accept either credential; assign `token_exp` and `auth_mode`; keep
@@ -342,8 +425,8 @@ That line needs a comment saying so.
 **GraphQL (console)**
 - `webChannelSigningKeys` / `createWebChannelSigningKey` / `revokeWebChannelSigningKey`, `:admin` only,
   secret returned once
-- `updateContactUsername`
-- `username` on `Contact`, gated for `:staff` exactly like `phone`
+- `addContactIdentity` / `removeContactIdentity` (channel + identifier)
+- `identities` on `Contact`, gated for `:staff` exactly like `phone`
 
 **Config / deps**
 - Promote `jose` to an explicit `mix.exs` dependency
@@ -353,9 +436,10 @@ That line needs a comment saying so.
 **Tests**
 - Verifier matrix: `alg: none`, `alg: RS256`, unknown `kid`, revoked `kid`, cross-org `kid`, missing
   `iat`, missing `exp`, expired, skew in and out of leeway, TTL over cap
-- Identity: CHECK rejects neither-identity; two contacts with `phone IS NULL` and distinct usernames
-  coexist; `maybe_create_contact` with a nil phone does not return an unrelated contact; a
-  username-only contact appears in inbox search
+- Identity: the same identifier may exist on two different channels; the same
+  `(org, channel, identifier)` may not exist twice; two contacts with `phone IS NULL` coexist;
+  `maybe_create_contact` with a nil phone does not return an unrelated contact; a web-only contact
+  appears in inbox search; deleting a contact cascades its identities
 - Socket: expired token → `session_expired` pushed and the channel stopped by the sweep
 
 ---
@@ -364,7 +448,10 @@ That line needs a comment saying so.
 
 | Phase | Scope |
 |---|---|
-| **0** | Contact identity: `username`, partial indexes, CHECK, nullable `phone`, **all §3.1 fixes**, widen `searches.ex`. Independent of every auth decision — ship first |
+| **0a** | Nil-safety fixes (§3.5) + widen `searches.ex`. No schema change — ship today |
+| **0b** | Create `contact_identities`, backfill `('whatsapp', phone)` for every contact. **Nothing reads it.** Additive and reversible |
+| **0c** | Dual-read: identity lookups go through the table, falling back to `contacts.phone`; verify parity in production. Requires §3.7 settled |
+| **0d** | Drop `NOT NULL` on `phone`; add `contacts.channels`; allow web-only contacts |
 | **1** | `web_channel_signing_keys`: schema, context, GraphQL, console UI, 10-key cap, show-once |
 | **2** | JWT verifier, `:web_channel_authenticated` pipeline, socket/join verification, expiry sweep |
 | **3** | Revocation: `tokens_valid_after` markers, mutations, live socket disconnect |

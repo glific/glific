@@ -14,8 +14,10 @@ comparison behind the Vercel choice below ·
 org-namespace components (`tap/*`) rendered by the org's own client; the envelope contract,
 authoring model, and the cross-channel direction for future channels (RCS/Telegram) ·
 [API authentication](./api-auth-design.md) — how a partner org's own app authenticates its
-end users: NGO-minted HS256 JWTs verified by Glific (`kid`-scoped per-org signing keys), the
-`phone`/`username` contact identity split, revocation, and session expiry on a live socket.
+end users: NGO-minted HS256 JWTs verified by Glific (`kid`-scoped per-org signing keys),
+revocation, and session expiry on a live socket. Also carries the **channel-general contact
+identity model** (§3) — one contact, one `contact_identities` row per channel — which outlives
+the web channel and is what makes Telegram a data migration rather than a schema migration.
 
 ---
 
