@@ -4,6 +4,8 @@ defmodule GlificWeb.Schema.AssistantTest do
   """
 
   alias Glific.{
+    AIEvaluations,
+    AIEvaluations.AIEvaluation,
     Assistants,
     Assistants.AssistantConfigVersion,
     Partners,
@@ -174,15 +176,15 @@ defmodule GlificWeb.Schema.AssistantTest do
       })
 
     {:ok, golden_qa} =
-      Glific.AIEvaluations.create_golden_qa(%{
+      AIEvaluations.create_golden_qa(%{
         name: "golden_qa_#{:rand.uniform(10_000)}",
         dataset_id: 1,
         organization_id: attrs.organization_id
       })
 
     {:ok, evaluation} =
-      %Glific.AIEvaluations.AIEvaluation{}
-      |> Glific.AIEvaluations.AIEvaluation.changeset(%{
+      %AIEvaluation{}
+      |> AIEvaluation.changeset(%{
         name: "eval_#{:rand.uniform(10_000)}",
         status: :completed,
         golden_qa_id: golden_qa.id,
