@@ -7,6 +7,7 @@ defmodule GlificWeb.KaapiControllerTest do
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBaseVersion
+  alias Glific.Fixtures
   alias Glific.Partners
   alias Glific.PromptGenerator.PromptGenerationRequest
   alias Glific.Repo
@@ -411,6 +412,102 @@ defmodule GlificWeb.KaapiControllerTest do
       conn = post(conn, "/kaapi/improve_prompt", params)
       assert response(conn, 200) == ""
     end
+  end
+
+  describe "evaluation_run_callback/2" do
+    setup :setup_evaluation_run
+
+    test "returns 200 and updates the evaluation to completed on a successful run",
+         %{conn: conn, evaluation: evaluation} do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                summary_scores: [%{name: "Cosine Similarity", avg: 0.9}],
+                traces: []
+              }
+            }
+          }
+        }
+      end)
+
+      conn =
+        post(conn, "/kaapi/evaluation_run", %{
+          "data" => %{"id" => evaluation.kaapi_evaluation_id, "status" => "completed"}
+        })
+
+      assert response(conn, 200) == ""
+
+      {:ok, updated_evaluation} =
+        Repo.fetch(AIEvaluation, evaluation.id, skip_organization_id: true)
+
+      assert updated_evaluation.status == :completed
+    end
+
+    test "returns 200 and updates the evaluation to failed on a failed run",
+         %{conn: conn, evaluation: evaluation} do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Model inference error"}}
+        }
+      end)
+
+      conn =
+        post(conn, "/kaapi/evaluation_run", %{
+          "data" => %{"id" => evaluation.kaapi_evaluation_id, "status" => "failed"}
+        })
+
+      assert response(conn, 200) == ""
+
+      {:ok, updated_evaluation} =
+        Repo.fetch(AIEvaluation, evaluation.id, skip_organization_id: true)
+
+      assert updated_evaluation.status == :failed
+      assert updated_evaluation.failure_reason == "Model inference error"
+    end
+
+    test "returns 200 when the kaapi_evaluation_id is not found", %{conn: conn} do
+      conn =
+        post(conn, "/kaapi/evaluation_run", %{
+          "data" => %{"id" => 999_999, "status" => "completed"}
+        })
+
+      assert response(conn, 200) == ""
+    end
+  end
+
+  defp setup_evaluation_run(%{organization_id: organization_id}) do
+    Fixtures.kaapi_credential_fixture(%{organization_id: organization_id})
+    assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+    config_version =
+      Fixtures.assistant_config_version_fixture(%{
+        assistant_id: assistant.id,
+        organization_id: organization_id
+      })
+
+    {:ok, golden_qa} =
+      AIEvaluations.create_golden_qa(%{
+        name: "eval_run_dataset",
+        dataset_id: 1,
+        organization_id: organization_id
+      })
+
+    {:ok, evaluation} =
+      AIEvaluations.create_ai_evaluation(%{
+        name: "test_evaluation_run_ctrl",
+        status: :processing,
+        kaapi_evaluation_id: 890,
+        golden_qa_id: golden_qa.id,
+        assistant_config_version_id: config_version.id,
+        organization_id: organization_id
+      })
+
+    %{evaluation: evaluation, organization_id: organization_id}
   end
 
   defp setup_improve_prompt(%{organization_id: organization_id}) do
