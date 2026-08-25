@@ -151,8 +151,6 @@ defmodule Glific.Assistants do
   defp validate_version_ready(_version),
     do: {:error, "Version must be in ready status to be set as live"}
 
-  # Re-points `active_config_version_id` at an already-published (major) version, without
-  # creating a new row. Used for rolling back to a prior major version.
   @spec reactivate_version(Assistant.t(), AssistantConfigVersion.t()) ::
           {:ok, map()} | {:error, any()}
   defp reactivate_version(assistant, version) do
@@ -171,8 +169,6 @@ defmodule Glific.Assistants do
     end
   end
 
-  # Clones a draft (minor) version into a brand-new major version and activates it, leaving
-  # the original draft row untouched in history.
   @spec promote_draft_to_major(Assistant.t(), AssistantConfigVersion.t()) ::
           {:ok, map()} | {:error, any()}
   defp promote_draft_to_major(assistant, version) do
@@ -180,6 +176,9 @@ defmodule Glific.Assistants do
     knowledge_base_version = List.first(version.knowledge_base_versions)
 
     Multi.new()
+    |> Multi.run(:lock, fn repo, _changes ->
+      repo.query("SELECT pg_advisory_xact_lock($1)", [assistant.id])
+    end)
     |> Multi.insert(:config_version, build_promoted_config_version_changeset(version))
     |> maybe_link_knowledge_base(knowledge_base_version, version.organization_id)
     |> Multi.update(:updated_assistant, fn %{config_version: config_version} ->

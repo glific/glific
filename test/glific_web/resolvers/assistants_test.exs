@@ -528,6 +528,43 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert Enum.all?(versions, fn v -> is_nil(v["vector_store"]) end)
     end
 
+    test "concurrent inserts for the same assistant get unique, sequential version numbers", %{
+      organization_id: organization_id
+    } do
+      {:ok, assistant} =
+        %Assistant{}
+        |> Assistant.changeset(%{name: "Concurrent Assistant", organization_id: organization_id})
+        |> Repo.insert()
+
+      tasks =
+        Enum.map(1..5, fn index ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+
+            %AssistantConfigVersion{}
+            |> AssistantConfigVersion.changeset(%{
+              assistant_id: assistant.id,
+              organization_id: organization_id,
+              provider: "openai",
+              model: "gpt-4o",
+              prompt: "Prompt #{index}",
+              settings: %{},
+              status: :in_progress
+            })
+            |> Repo.insert()
+          end)
+        end)
+
+      results = Enum.map(tasks, &Task.await/1)
+      assert Enum.all?(results, &match?({:ok, %AssistantConfigVersion{}}, &1))
+
+      version_pairs =
+        Enum.map(results, fn {:ok, version} -> {version.major_version, version.minor_version} end)
+
+      assert Enum.uniq(version_pairs) |> length() == 5
+      assert Enum.sort(version_pairs) == [{1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4}]
+    end
+
     test "returns vector_store linked to each version", %{
       staff: user,
       organization_id: organization_id

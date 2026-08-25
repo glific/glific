@@ -3330,5 +3330,50 @@ defmodule Glific.AssistantsTest do
 
       assert AssistantConfigVersion.version_label(next_save) == "2.1"
     end
+
+    test "two concurrent promotions of the same draft each produce a distinct, unique major version",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          status: :ready
+        })
+
+      [task_one, task_two] =
+        Enum.map(1..2, fn _ ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+            Assistants.set_live_version(assistant.id, draft_version.id)
+          end)
+        end)
+
+      results = [Task.await(task_one), Task.await(task_two)]
+
+      assert Enum.all?(results, &match?({:ok, %{live_version_label: _}}, &1))
+
+      major_versions =
+        results
+        |> Enum.map(fn {:ok, %{live_version_label: label}} -> label end)
+        |> Enum.sort()
+
+      assert major_versions == ["2.0", "3.0"]
+      assert count_config_versions(assistant.id) == 4
+    end
   end
 end
