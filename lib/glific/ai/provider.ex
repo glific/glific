@@ -1,0 +1,34 @@
+defmodule Glific.AI.Provider do
+  @moduledoc """
+  The contract for talking to an AI provider.
+
+  One implementation exists — `Glific.AI.Provider.ReqLLM`. The point of the
+  behaviour is that it is the only thing the rest of Glific AI depends on, so
+  replacing the client library means writing a second implementation rather than
+  changing callers or migrating stored data.
+
+  Implementations must never raise on a provider failure: a timeout, a rate
+  limit, a 5xx or a rejected model all come back as `{:error, reason}` so the
+  caller can record a failed request.
+  """
+
+  alias Glific.AI.{Message, Usage}
+
+  @type failure ::
+          {:not_configured, String.t()}
+          | {:provider_error, String.t()}
+
+  @doc """
+  Sends a conversation to the provider and returns its reply plus what the call
+  consumed.
+  """
+  @callback generate(messages :: [Message.t()], opts :: keyword()) ::
+              {:ok, Message.t(), Usage.t()} | {:error, failure()}
+
+  @doc "The configured implementation."
+  @spec impl() :: module()
+  def impl do
+    Application.get_env(:glific, Glific.AI, [])
+    |> Keyword.get(:provider, Glific.AI.Provider.ReqLLM)
+  end
+end
