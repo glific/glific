@@ -216,7 +216,7 @@ defmodule Glific.AIEvaluations do
               Absinthe.Subscription.publish(
                 GlificWeb.Endpoint,
                 updated_evaluation,
-                ai_evaluation_updated: "#{updated_evaluation.organization_id}"
+                [{:ai_evaluation_updated, "#{updated_evaluation.organization_id}"}]
               )
 
               updated_evaluation
@@ -358,35 +358,67 @@ defmodule Glific.AIEvaluations do
   end
 
   @doc """
-  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes.
+  Handles the async callback POSTed by Kaapi after v2 prompt-improvement completes, publishing `improve_prompt_updated` on a terminal (SUCCESS/FAILED) status.
   """
-  @spec handle_improve_prompt_callback(map()) ::
-          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, String.t()}
-  def handle_improve_prompt_callback(%{"data" => %{"status" => "SUCCESS"} = data}),
-    do: create_improve_prompt_config_version(data["config_version"] || %{})
+  @spec handle_improve_prompt_callback(non_neg_integer(), map()) ::
+          {:ok, AssistantConfigVersion.t() | :acknowledged} | {:error, any()}
+  def handle_improve_prompt_callback(
+        organization_id,
+        %{"data" => %{"status" => "SUCCESS"} = data}
+      ) do
+    case create_improve_prompt_config_version(data["config_version"] || %{}, organization_id) do
+      {:ok, config_version} = result ->
+        publish_improve_prompt_update(organization_id, %{
+          status: "success",
+          config_version: config_version,
+          error: nil
+        })
 
-  def handle_improve_prompt_callback(%{"data" => %{"status" => "FAILED"} = data}) do
+        result
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  def handle_improve_prompt_callback(organization_id, %{"data" => %{"status" => "FAILED"} = data}) do
     Glific.log_exception(%Kaapi.Error{
       message: "Improve prompt failed",
       reason: safe_inspect(data)
     })
 
+    publish_improve_prompt_update(organization_id, %{
+      status: "failed",
+      config_version: nil,
+      error: data["error_message"] || "Improve prompt failed"
+    })
+
     {:ok, :acknowledged}
   end
 
-  # Non-terminal status (e.g. still PENDING) — nothing to do yet.
-  def handle_improve_prompt_callback(%{"data" => %{"status" => _}}),
+  def handle_improve_prompt_callback(_organization_id, %{"data" => %{"status" => _}}),
     do: {:ok, :acknowledged}
 
   # Defensive catch-all: the callback endpoint is public, so a malformed body must not
   # raise (the controller must still return 200).
-  def handle_improve_prompt_callback(params) do
+  def handle_improve_prompt_callback(_organization_id, params) do
     Glific.log_exception(%Kaapi.Error{
       message: "Unexpected improve prompt callback payload",
       reason: safe_inspect(params)
     })
 
     {:error, "Unexpected improve prompt callback payload"}
+  end
+
+  @spec publish_improve_prompt_update(non_neg_integer(), map()) :: :ok
+  defp publish_improve_prompt_update(organization_id, payload) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      payload,
+      [{:improve_prompt_updated, "#{organization_id}"}]
+    )
+
+    :ok
   end
 
   @spec build_improve_prompt_callback_url(non_neg_integer()) :: String.t()
@@ -438,11 +470,14 @@ defmodule Glific.AIEvaluations do
     :ok
   end
 
-  @spec create_improve_prompt_config_version(map()) ::
+  @spec create_improve_prompt_config_version(map(), non_neg_integer()) ::
           {:ok, AssistantConfigVersion.t()} | {:error, any()}
-  defp create_improve_prompt_config_version(config_version_data) do
+  defp create_improve_prompt_config_version(config_version_data, organization_id) do
     with {:ok, assistant} <-
-           Repo.fetch_by(Assistant, %{kaapi_uuid: config_version_data["config_id"]}) do
+           Repo.fetch_by(Assistant, %{
+             kaapi_uuid: config_version_data["config_id"],
+             organization_id: organization_id
+           }) do
       completion = get_in(config_version_data, ["config_blob", "completion"]) || %{}
       params = completion["params"] || %{}
 

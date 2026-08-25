@@ -525,8 +525,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "Timeout occurred, please try again."
     end
 
-    test "returns error when questions × duplication_factor exceeds 80", %{staff: user} do
-      csv_path = create_csv_with_rows(41)
+    test "returns error when unique question count exceeds 100", %{staff: user} do
+      csv_path = create_csv_with_rows(101)
       on_exit(fn -> File.rm(csv_path) end)
 
       upload = %Plug.Upload{
@@ -549,12 +549,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         assert {:ok, %{errors: [%{message: msg}]}} =
                  AIEvaluations.create_golden_qa(nil, args, resolution)
 
-        assert msg =~
-                 "exceeds the maximum allowed limit of 80"
-
-        assert msg =~ "41 questions"
-        assert msg =~ "2 duplication factor"
-        assert msg =~ "82"
+        assert msg =~ "101 questions"
+        assert msg =~ "exceeds the maximum allowed limit of 100 unique questions"
 
         assert called(
                  Glific.Metrics.increment(
@@ -565,10 +561,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       end
     end
 
-    test "succeeds when questions × duplication_factor equals exactly 80 (boundary)", %{
+    test "succeeds when unique question count equals exactly 100 (boundary)", %{
       staff: user
     } do
-      csv_path = create_csv_with_rows(40)
+      csv_path = create_csv_with_rows(100)
       on_exit(fn -> File.rm(csv_path) end)
 
       upload = %Plug.Upload{
@@ -589,7 +585,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         input: %{
           name: "valid_name",
           file: upload,
-          duplication_factor: 2
+          duplication_factor: 5
         }
       }
 
@@ -601,7 +597,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "valid_name"
     end
 
-    test "succeeds when questions × duplication_factor is well under 80", %{staff: user} do
+    test "succeeds when unique question count is well under 100", %{staff: user} do
       csv_path = create_csv_with_rows(5)
       on_exit(fn -> File.rm(csv_path) end)
 
