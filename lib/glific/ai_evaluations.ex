@@ -110,11 +110,17 @@ defmodule Glific.AIEvaluations do
 
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
-    summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
+    score = Map.get(data, :score, %{})
+    summary_scores = Map.get(score, :summary_scores, [])
+    overall = Map.get(score, :overall, %{})
 
     case process_evaluation_status(evaluation, %{
            status: :completed,
-           results: %{summary_scores: summary_scores}
+           results: %{
+             summary_scores: summary_scores,
+             verdict: Map.get(overall, :verdict),
+             overall_score: Map.get(overall, :overall_score)
+           }
          }) do
       {:ok, updated_evaluation} ->
         duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)

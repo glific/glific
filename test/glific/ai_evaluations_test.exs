@@ -127,7 +127,14 @@ defmodule Glific.AIEvaluationsTest do
         %Tesla.Env{
           status: 200,
           body: %{
-            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+            data: %{
+              status: "completed",
+              score: %{
+                summary_scores: summary_scores,
+                traces: [],
+                overall: %{verdict: "Needs Refinement", overall_score: 3.84}
+              }
+            }
           }
         }
       end)
@@ -142,6 +149,8 @@ defmodule Glific.AIEvaluationsTest do
       assert length(updated.results["summary_scores"]) == 1
       assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
       assert hd(updated.results["summary_scores"])["avg"] == 0.74
+      assert updated.results["verdict"] == "Needs Refinement"
+      assert updated.results["overall_score"] == 3.84
 
       assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
                notification_count + 1
@@ -165,7 +174,12 @@ defmodule Glific.AIEvaluationsTest do
 
       {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert updated.status == :completed
-      assert updated.results == %{"summary_scores" => []}
+
+      assert updated.results == %{
+               "summary_scores" => [],
+               "verdict" => nil,
+               "overall_score" => nil
+             }
     end
 
     test "updates evaluation to failed when Kaapi returns failed with reason", %{
