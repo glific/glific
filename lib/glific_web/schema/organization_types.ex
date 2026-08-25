@@ -126,8 +126,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       end)
     end
 
-    # Redacted for every role by Middleware.RedactInternalField — see Organization.internal_fields/0.
-    field(:signature_phrase, :string)
+    field :signature_phrase, :string do
+      resolve(fn organization, _, %{context: %{current_user: current_user}} ->
+        if Enum.member?(current_user.roles, :staff),
+          do: {:ok, ""},
+          else: {:ok, organization.signature_phrase}
+      end)
+    end
 
     field(:is_suspended, :boolean)
     field(:suspended_until, :datetime)

@@ -38,13 +38,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/organizations/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
-
-  load_gql(
-    :by_id_signature_phrase,
-    GlificWeb.Schema,
-    "assets/gql/organizations/by_id_signature_phrase.gql"
-  )
-
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
   load_gql(:get_services, GlificWeb.Schema, "assets/gql/organizations/get_services.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
@@ -195,40 +188,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
-  end
-
-  test "signature phrase is redacted for every role", %{
-    staff: staff,
-    manager: manager,
-    glific_admin: glific_admin
-  } do
-    for user <- [staff, manager, glific_admin] do
-      result = auth_query_gql_by(:by_id_signature_phrase, user)
-      assert {:ok, query_data} = result
-
-      assert nil ==
-               get_in(query_data, [:data, "organization", "organization", "signaturePhrase"])
-    end
-  end
-
-  test "updating an organization ignores the signature phrase", %{manager: user} do
-    {:ok, organization} =
-      Repo.fetch(Organization, user.organization_id, skip_organization_id: true)
-
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => organization.id,
-          "input" => %{"signaturePhrase" => "attacker chosen phrase"}
-        }
-      )
-
-    assert {:ok, query_data} = result
-    assert nil == get_in(query_data, [:data, "updateOrganization", "errors"])
-
-    {:ok, reloaded} = Repo.fetch(Organization, organization.id, skip_organization_id: true)
-    refute reloaded.signature_phrase == "attacker chosen phrase"
-    assert reloaded.signature_phrase == organization.signature_phrase
   end
 
   test "organization without id returns current user's organization", %{user: user} do

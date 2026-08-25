@@ -51,8 +51,6 @@ defmodule Glific.Partners.Organization do
     :deleted_at
   ]
 
-  @internal_fields [:signature_phrase]
-
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
@@ -209,16 +207,6 @@ defmodule Glific.Partners.Organization do
 
     timestamps(type: :utc_datetime)
   end
-
-  @doc """
-  Settings Glific operates itself. They are never returned to, nor writable by, organization
-  admins — the GraphQL layer redacts them on read and drops them on write. Internal callers
-  (onboarding, seeds, admin scripts) still set them through the changeset as usual.
-
-  Add a field here to withdraw it from the API and the settings UI.
-  """
-  @spec internal_fields() :: [atom()]
-  def internal_fields, do: @internal_fields
 
   @doc """
   Standard changeset pattern we use for all data types
