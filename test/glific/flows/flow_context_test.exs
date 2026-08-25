@@ -304,15 +304,111 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.is_background_flow == false
   end
 
-  describe "wakeup_flows/1" do
-    test "queues a wakeup job for an overdue context (wakeup_at in the past)",
+  describe "wakeup_flows/0" do
+    test "queues a wakeup job for an organization that has an overdue context",
          %{organization_id: organization_id} = _attrs do
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
       [node | _tail] = flow.nodes
 
       three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
 
-      flow_context =
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      assert_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only context isn't due yet",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      five_minutes_from_now = Timex.shift(Timex.now(), minutes: 5)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: five_minutes_from_now,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "does not queue a job for an organization whose only overdue context is already completed",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        completed_at: Timex.now(),
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+
+      refute_enqueued(
+        worker: WakeupWorker,
+        args: %{organization_id: organization_id},
+        prefix: "global"
+      )
+    end
+
+    test "calling wakeup_flows/0 twice for the same overdue organization only ever queues one job",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        wakeup_at: three_minutes_ago,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+      FlowContext.wakeup_flows()
+      FlowContext.wakeup_flows()
+
+      jobs =
+        all_enqueued(worker: WakeupWorker, prefix: "global")
+        |> Enum.filter(&(&1.args["organization_id"] == organization_id))
+
+      assert length(jobs) == 1
+    end
+  end
+
+  describe "WakeupWorker.perform/1" do
+    test "processes every overdue context for the organization",
+         %{organization_id: organization_id} = _attrs do
+      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+      [node | _tail] = flow.nodes
+
+      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
+
+      first_context =
         flow_context_fixture(%{
           node_uuid: node.uuid,
           wakeup_at: three_minutes_ago,
@@ -320,16 +416,24 @@ defmodule Glific.Flows.FlowContextTest do
           flow_id: flow.id
         })
 
-      FlowContext.wakeup_flows(organization_id)
+      second_context =
+        flow_context_fixture(%{
+          node_uuid: node.uuid,
+          wakeup_at: three_minutes_ago,
+          flow_uuid: flow.uuid,
+          flow_id: flow.id
+        })
 
-      assert_enqueued(
-        worker: WakeupWorker,
-        args: %{flow_context_id: flow_context.id, organization_id: organization_id},
-        prefix: "global"
-      )
+      assert :ok = perform_job(WakeupWorker, %{organization_id: organization_id})
+
+      {:ok, reloaded_first_context} = Repo.fetch_by(FlowContext, %{id: first_context.id})
+      {:ok, reloaded_second_context} = Repo.fetch_by(FlowContext, %{id: second_context.id})
+
+      assert reloaded_first_context.wakeup_at == nil
+      assert reloaded_second_context.wakeup_at == nil
     end
 
-    test "does not queue a job for a context whose alarm hasn't gone off yet",
+    test "leaves a context alone whose alarm hasn't gone off yet",
          %{organization_id: organization_id} = _attrs do
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
       [node | _tail] = flow.nodes
@@ -344,16 +448,14 @@ defmodule Glific.Flows.FlowContextTest do
           flow_id: flow.id
         })
 
-      FlowContext.wakeup_flows(organization_id)
+      assert :ok = perform_job(WakeupWorker, %{organization_id: organization_id})
 
-      refute_enqueued(
-        worker: WakeupWorker,
-        args: %{flow_context_id: flow_context.id},
-        prefix: "global"
-      )
+      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
+
+      assert reloaded_flow_context.wakeup_at != nil
     end
 
-    test "does not queue a job for a context already marked completed, even though its old alarm is overdue",
+    test "leaves a context alone that is already marked completed",
          %{organization_id: organization_id} = _attrs do
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
       [node | _tail] = flow.nodes
@@ -369,113 +471,7 @@ defmodule Glific.Flows.FlowContextTest do
           flow_id: flow.id
         })
 
-      FlowContext.wakeup_flows(organization_id)
-
-      refute_enqueued(
-        worker: WakeupWorker,
-        args: %{flow_context_id: flow_context.id},
-        prefix: "global"
-      )
-    end
-
-    test "calling wakeup_flows/1 twice for the same overdue context only ever queues one job",
-         %{organization_id: organization_id} = _attrs do
-      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
-      [node | _tail] = flow.nodes
-
-      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
-
-      flow_context =
-        flow_context_fixture(%{
-          node_uuid: node.uuid,
-          wakeup_at: three_minutes_ago,
-          flow_uuid: flow.uuid,
-          flow_id: flow.id
-        })
-
-      FlowContext.wakeup_flows(organization_id)
-      FlowContext.wakeup_flows(organization_id)
-
-      jobs =
-        all_enqueued(worker: WakeupWorker, prefix: "global")
-        |> Enum.filter(&(&1.args["flow_context_id"] == flow_context.id))
-
-      assert length(jobs) == 1
-    end
-  end
-
-  describe "WakeupWorker.perform/1" do
-    test "processes an overdue context: clears wakeup_at and continues the flow",
-         %{organization_id: organization_id} = _attrs do
-      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
-      [node | _tail] = flow.nodes
-
-      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
-
-      flow_context =
-        flow_context_fixture(%{
-          node_uuid: node.uuid,
-          wakeup_at: three_minutes_ago,
-          flow_uuid: flow.uuid,
-          flow_id: flow.id
-        })
-
-      assert :ok =
-               perform_job(WakeupWorker, %{
-                 flow_context_id: flow_context.id,
-                 organization_id: organization_id
-               })
-
-      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
-
-      assert reloaded_flow_context.wakeup_at == nil
-    end
-
-    test "is a safe no-op for a context that is no longer overdue by the time the job runs",
-         %{organization_id: organization_id} = _attrs do
-      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
-      [node | _tail] = flow.nodes
-
-      flow_context =
-        flow_context_fixture(%{
-          node_uuid: node.uuid,
-          wakeup_at: nil,
-          flow_uuid: flow.uuid,
-          flow_id: flow.id
-        })
-
-      assert :ok =
-               perform_job(WakeupWorker, %{
-                 flow_context_id: flow_context.id,
-                 organization_id: organization_id
-               })
-
-      {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
-
-      assert reloaded_flow_context.wakeup_at == nil
-    end
-
-    test "is a safe no-op for a context already marked completed",
-         %{organization_id: organization_id} = _attrs do
-      flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
-      [node | _tail] = flow.nodes
-
-      three_minutes_ago = Timex.shift(Timex.now(), minutes: -3)
-
-      flow_context =
-        flow_context_fixture(%{
-          node_uuid: node.uuid,
-          wakeup_at: three_minutes_ago,
-          completed_at: Timex.now(),
-          flow_uuid: flow.uuid,
-          flow_id: flow.id
-        })
-
-      assert :ok =
-               perform_job(WakeupWorker, %{
-                 flow_context_id: flow_context.id,
-                 organization_id: organization_id
-               })
+      assert :ok = perform_job(WakeupWorker, %{organization_id: organization_id})
 
       {:ok, reloaded_flow_context} = Repo.fetch_by(FlowContext, %{id: flow_context.id})
 

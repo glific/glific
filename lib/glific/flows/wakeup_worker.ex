@@ -36,11 +36,10 @@ defmodule Glific.Flows.WakeupWorker do
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
     |> limit(@wake_up_flow_limit)
-    |> Repo.one()
-    |> case do
-      nil -> :ok
-      context -> context |> Repo.preload(:flow) |> FlowContext.wakeup_one()
-    end
+    |> Repo.all()
+    |> Enum.each(fn context ->
+      context |> Repo.preload(:flow) |> FlowContext.wakeup_one()
+    end)
 
     :ok
   end

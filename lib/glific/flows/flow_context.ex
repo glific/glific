@@ -932,7 +932,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     |> distinct(true)
     |> select([fc], fc.organization_id)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.each(fn organization_id ->
       %{organization_id: organization_id}
       |> WakeupWorker.new()
