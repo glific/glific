@@ -35,6 +35,13 @@ oban_queues = [
     rate_limit: [allowed: 30, period: {1, :minute}, partition: [:worker, args: :organization_id]]
   ],
   dialogflow: 5,
+  flow_wakeup: [
+    local_limit: 20,
+    global_limit: [
+      allowed: 1,
+      partition: [args: :organization_id]
+    ]
+  ],
   gcs: 10,
   gupshup: 10,
   webhook: [
