@@ -129,6 +129,12 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.AIEvaluationStatus.__enum_map__()
   Glific.Enums.ai_evaluation_status_const()
+
+  iex> Glific.Enums.GlificAIRequestStatus.__enum_map__()
+  Glific.Enums.glific_ai_request_status_const()
+
+  iex> Glific.Enums.GlificAIEventType.__enum_map__()
+  Glific.Enums.glific_ai_event_type_const()
   """
 
   defmacro api_status_const,
@@ -208,4 +214,10 @@ defmodule Glific.Enums do
 
   defmacro ai_evaluation_status_const,
     do: Macro.expand(@ai_evaluation_status_const, __CALLER__)
+
+  defmacro glific_ai_request_status_const,
+    do: Macro.expand(@glific_ai_request_status_const, __CALLER__)
+
+  defmacro glific_ai_event_type_const,
+    do: Macro.expand(@glific_ai_event_type_const, __CALLER__)
 end

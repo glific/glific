@@ -621,6 +621,10 @@ defmodule Glific.Erase do
       flow_roles
       flows
       gcs_jobs
+      glific_ai_events
+      glific_ai_requests
+      glific_ai_conversations
+      glific_ai_org_profiles
       golden_qas
       group_roles
       groups
