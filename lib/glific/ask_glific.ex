@@ -4,6 +4,8 @@ defmodule Glific.AskGlific do
   """
 
   import Ecto.Query
+
+  alias Glific.AI
   alias Glific.AskGlific.Conversation
   alias Glific.Dify.ApiClient
   alias Glific.Repo
@@ -29,6 +31,15 @@ defmodule Glific.AskGlific do
   def ask(params, user) do
     Glific.Metrics.increment("AskGlific Requests")
 
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.ask(params, user)
+    else
+      dify_ask(params, user)
+    end
+  end
+
+  @spec dify_ask(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_ask(params, user) do
     query = params |> Map.get(:query) |> to_string() |> String.trim()
     conversation_id = Map.get(params, :conversation_id, "")
     page_url = Map.get(params, :page_url, "")
@@ -109,6 +120,15 @@ defmodule Glific.AskGlific do
   """
   @spec submit_feedback(map(), map()) :: {:ok, map()} | {:error, String.t()}
   def submit_feedback(params, user) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.submit_feedback(params, user)
+    else
+      dify_feedback(params, user)
+    end
+  end
+
+  @spec dify_feedback(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_feedback(params, user) do
     message_id = Map.get(params, :message_id)
     rating = Map.get(params, :rating)
     content = Map.get(params, :content, "")
@@ -148,6 +168,15 @@ defmodule Glific.AskGlific do
   @spec get_conversations(map(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def get_conversations(user, params \\ %{}) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.get_conversations(user, params)
+    else
+      dify_conversations(user, params)
+    end
+  end
+
+  @spec dify_conversations(map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_conversations(user, params) do
     limit = Map.get(params, :limit, 20)
     last_id = Map.get(params, :last_id, "")
 
@@ -192,6 +221,15 @@ defmodule Glific.AskGlific do
   @spec get_messages(String.t(), map(), map()) ::
           {:ok, map()} | {:error, String.t()}
   def get_messages(conversation_id, user, params \\ %{}) do
+    if AI.enabled?(user.organization_id) do
+      AI.AskGlific.get_messages(conversation_id, user, params)
+    else
+      dify_messages(conversation_id, user, params)
+    end
+  end
+
+  @spec dify_messages(String.t(), map(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp dify_messages(conversation_id, user, params) do
     limit = Map.get(params, :limit, 20)
     first_id = Map.get(params, :first_id, "")
 

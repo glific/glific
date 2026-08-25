@@ -62,6 +62,11 @@ defmodule Glific.AskGlificTest do
   setup do
     test_pid = self()
 
+    # These tests exercise the Dify path, which AskGlific only takes when Glific AI
+    # is off. FunWithFlags keeps a global ETS cache that outlives the SQL sandbox, so
+    # the precondition is asserted here rather than assumed from test ordering.
+    FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
     Application.put_env(:glific, :dify_req_plug, {Req.Test, test_pid})
     Application.put_env(:glific, :dify_api_key, "test-api-key")
 
