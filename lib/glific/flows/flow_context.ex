@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowContext do
   alias Glific.Flows.MessageBroadcast
   alias Glific.Flows.MessageVarParser
   alias Glific.Flows.Node
+  alias Glific.Flows.WakeupWorker
   alias Glific.Flows.Webhook
   alias Glific.Flows.WebhookLog
   alias Glific.Flows.Webhooks.{Instrumentation, Registry}
@@ -916,14 +917,17 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @wake_up_flow_limit 500
-  @wake_up_lease_seconds 120
+  @wake_up_flow_limit 200
 
   @spec wakeup_flows(non_neg_integer) :: any
   @doc """
-  Find all the contexts which need to be woken up and processed
+  Find all the contexts which need to be woken up and queue each one as its
+  own job. Jobs run in the `:flow_wakeup` queue, which limits execution to one
+  job at a time per organization (see `config/config.exs`), so a single
+  organization's overdue contexts are drained one at a time while different
+  organizations process in parallel.
   """
-  def wakeup_flows(_organization_id) do
+  def wakeup_flows(organization_id) do
     FlowContext
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
@@ -931,27 +935,11 @@ defmodule Glific.Flows.FlowContext do
     |> limit(@wake_up_flow_limit)
     |> select([fc], fc.id)
     |> Repo.all()
-    |> Enum.each(&claim_and_wakeup/1)
-  end
-
-  @spec claim_and_wakeup(non_neg_integer) :: any
-  defp claim_and_wakeup(id) do
-    lease_until = DateTime.add(DateTime.utc_now(), @wake_up_lease_seconds, :second)
-
-    {_count, contexts} =
-      from(fc in FlowContext,
-        where: fc.id == ^id,
-        where: not is_nil(fc.wakeup_at),
-        where: fc.wakeup_at < ^DateTime.utc_now(),
-        where: is_nil(fc.completed_at)
-      )
-      |> select([fc], fc)
-      |> Repo.update_all([set: [wakeup_at: lease_until]], returning: true)
-
-    case contexts do
-      [context] -> context |> Repo.preload(:flow) |> wakeup_one()
-      [] -> :ok
-    end
+    |> Enum.each(fn id ->
+      %{flow_context_id: id, organization_id: organization_id}
+      |> WakeupWorker.new()
+      |> Oban.insert()
+    end)
   end
 
   @doc """
