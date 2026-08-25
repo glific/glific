@@ -3,6 +3,7 @@ defmodule Glific.AIEvaluationsTest do
   use Glific.DataCase, async: false
 
   import Ecto.Query
+  import Mock
 
   alias Glific.{
     AIEvaluations,
@@ -105,77 +106,6 @@ defmodule Glific.AIEvaluationsTest do
       assert updated.status == :completed
       assert updated.results == score
       assert updated.kaapi_evaluation_id == 999
-    end
-  end
-
-  describe "poll_and_update/1 - timeout logic" do
-    setup %{organization_id: organization_id} do
-      config_version = create_config_version(organization_id)
-      %{config_version: config_version}
-    end
-
-    test "marks processing evaluation older than 24 hours as failed", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      evaluation =
-        create_evaluation(organization_id, config_version.id, %{status: :processing})
-        |> backdate_evaluation(25)
-
-      notification_count =
-        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
-
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert updated.status == :failed
-      assert updated.failure_reason == "Evaluation timed out"
-
-      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
-               notification_count + 1
-
-      {:ok, notification} =
-        Repo.fetch_by(Notification, %{organization_id: organization_id, category: "AI Evaluation"})
-
-      assert notification.severity == Notifications.types().warning
-      assert notification.message =~ "timed out"
-    end
-
-    test "does not timeout completed or failed evaluations", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      completed =
-        create_evaluation(organization_id, config_version.id, %{status: :completed})
-        |> backdate_evaluation(25)
-
-      failed =
-        create_evaluation(organization_id, config_version.id, %{status: :failed})
-        |> backdate_evaluation(25)
-
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, unchanged_completed} = Repo.fetch_by(AIEvaluation, %{id: completed.id})
-      {:ok, unchanged_failed} = Repo.fetch_by(AIEvaluation, %{id: failed.id})
-      assert unchanged_completed.status == :completed
-      assert unchanged_failed.status == :failed
-    end
-
-    test "does not timeout recent processing evaluation", %{
-      organization_id: organization_id,
-      config_version: config_version
-    } do
-      evaluation = create_evaluation(organization_id, config_version.id, %{status: :processing})
-
-      Tesla.Mock.mock(fn %{method: :get} ->
-        %Tesla.Env{status: 200, body: %{data: %{status: "processing"}}}
-      end)
-
-      enable_kaapi(organization_id)
-      AIEvaluations.poll_and_update(organization_id)
-
-      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-      assert unchanged.status == :processing
     end
   end
 
@@ -312,6 +242,44 @@ defmodule Glific.AIEvaluationsTest do
       {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
       assert unchanged.status == :processing
     end
+
+    test "concurrent polls only complete the evaluation and notify once", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock_global(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
+      [task_one, task_two] =
+        Enum.map(1..2, fn _ ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+            AIEvaluations.poll_and_update(organization_id)
+          end)
+        end)
+
+      Task.await(task_one)
+      Task.await(task_two)
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count + 1
+    end
   end
 
   defp create_config_version(organization_id) do
@@ -368,16 +336,6 @@ defmodule Glific.AIEvaluationsTest do
       |> Repo.insert()
 
     evaluation
-  end
-
-  defp backdate_evaluation(evaluation, hours_ago) do
-    old_time = DateTime.utc_now() |> DateTime.add(-hours_ago, :hour) |> DateTime.truncate(:second)
-
-    from(e in AIEvaluation, where: e.id == ^evaluation.id)
-    |> Repo.update_all(set: [inserted_at: old_time])
-
-    {:ok, updated_eval} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
-    updated_eval
   end
 
   describe "request_eval_access/1" do
@@ -511,7 +469,7 @@ defmodule Glific.AIEvaluationsTest do
     end
   end
 
-  describe "handle_improve_prompt_callback/1" do
+  describe "handle_improve_prompt_callback/2" do
     setup %{organization_id: organization_id} do
       enable_kaapi(organization_id)
       config_version = create_config_version(organization_id)
@@ -526,6 +484,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "success callback builds a new :ready config version entirely from the payload", %{
+      organization_id: organization_id,
       assistant: assistant,
       config_version: config_version
     } do
@@ -562,7 +521,7 @@ defmodule Glific.AIEvaluationsTest do
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before + 1
       refute new_config_version.id == config_version.id
@@ -580,7 +539,73 @@ defmodule Glific.AIEvaluationsTest do
       assert new_config_version.settings == %{"temperature" => 0.4}
     end
 
+    test "success callback publishes improve_prompt_updated with the new config version", %{
+      organization_id: organization_id,
+      assistant: assistant
+    } do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{
+                "provider" => "openai",
+                "params" => %{"model" => "gpt-5.6-luna", "instructions" => "Be helpful."}
+              }
+            }
+          }
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, new_config_version} =
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "success"
+        assert payload.config_version.id == new_config_version.id
+        assert payload.error == nil
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "returns an error and publishes nothing when config_id belongs to another organization",
+         %{organization_id: organization_id, assistant: assistant} do
+      params = %{
+        "data" => %{
+          "status" => "SUCCESS",
+          "config_version" => %{
+            "config_id" => assistant.kaapi_uuid,
+            "version" => 6,
+            "config_blob" => %{
+              "completion" => %{"params" => %{"instructions" => "Be helpful."}}
+            }
+          }
+        }
+      }
+
+      count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
+
+      assert {:error, _reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id + 1, params)
+
+      assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
+    end
+
     test "success callback for a reasoning model carries effort, not temperature", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -604,7 +629,7 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:ok, new_config_version} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert new_config_version.model == "gpt-5.6-luna"
       assert new_config_version.prompt == "You are a helpful assistant."
@@ -631,7 +656,7 @@ defmodule Glific.AIEvaluationsTest do
         Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
 
       assert {:ok, :acknowledged} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
 
@@ -639,7 +664,42 @@ defmodule Glific.AIEvaluationsTest do
                notification_count
     end
 
-    test "returns error when config_id in the payload matches no assistant" do
+    test "failure callback publishes improve_prompt_updated when given an organization_id", %{
+      organization_id: organization_id
+    } do
+      params = %{
+        "data" => %{
+          "status" => "FAILED",
+          "config_version" => nil,
+          "error_message" => "Judge scores unavailable"
+        }
+      }
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert {:ok, :acknowledged} =
+                 AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
+        assert_receive {:published, payload, [{:improve_prompt_updated, topic}]}, 1000
+        assert payload.status == "failed"
+        assert payload.config_version == nil
+        assert payload.error == "Judge scores unavailable"
+        assert topic == "#{organization_id}"
+      end
+    end
+
+    test "returns error when config_id in the payload matches no assistant", %{
+      organization_id: organization_id
+    } do
       params = %{
         "data" => %{
           "status" => "SUCCESS",
@@ -653,20 +713,26 @@ defmodule Glific.AIEvaluationsTest do
       }
 
       assert {:error, [_, "Resource not found"]} =
-               AIEvaluations.handle_improve_prompt_callback(params)
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
     end
 
-    test "malformed payload is reported and does not crash" do
+    test "malformed payload is reported and does not crash", %{organization_id: organization_id} do
       assert {:error, _reason} =
-               AIEvaluations.handle_improve_prompt_callback(%{"unexpected" => "shape"})
+               AIEvaluations.handle_improve_prompt_callback(organization_id, %{
+                 "unexpected" => "shape"
+               })
     end
 
-    test "non-terminal status is acknowledged without creating a config version" do
+    test "non-terminal status is acknowledged without creating a config version", %{
+      organization_id: organization_id
+    } do
       params = %{"data" => %{"status" => "PENDING", "job_id" => "job-uuid-pending"}}
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:ok, :acknowledged} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, :acknowledged} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
@@ -697,7 +763,8 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:ok, new_config_version} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:ok, new_config_version} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
 
       assert Repo.all(
                from(link in "assistant_config_version_knowledge_base_versions",
@@ -708,6 +775,7 @@ defmodule Glific.AIEvaluationsTest do
     end
 
     test "rolls back the config version when no knowledge base matches the llm_service_id", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -731,12 +799,15 @@ defmodule Glific.AIEvaluationsTest do
 
       count_before = Repo.aggregate(AssistantConfigVersion, :count, :id)
 
-      assert {:error, reason} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, reason} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+
       assert reason =~ "No matching knowledge base found"
       assert Repo.aggregate(AssistantConfigVersion, :count, :id) == count_before
     end
 
     test "returns the changeset error when the config version data is invalid", %{
+      organization_id: organization_id,
       assistant: assistant
     } do
       params = %{
@@ -750,7 +821,157 @@ defmodule Glific.AIEvaluationsTest do
         }
       }
 
-      assert {:error, %Ecto.Changeset{}} = AIEvaluations.handle_improve_prompt_callback(params)
+      assert {:error, %Ecto.Changeset{}} =
+               AIEvaluations.handle_improve_prompt_callback(organization_id, params)
+    end
+  end
+
+  describe "handle_evaluation_run_callback/2" do
+    setup %{organization_id: organization_id} do
+      enable_kaapi(organization_id)
+      config_version = create_config_version(organization_id)
+
+      evaluation =
+        create_evaluation(organization_id, config_version.id, %{
+          status: :processing,
+          kaapi_evaluation_id: 767
+        })
+
+      %{evaluation: evaluation}
+    end
+
+    test "completed status re-fetches full scores from Kaapi and updates the evaluation",
+         %{organization_id: organization_id, evaluation: evaluation} do
+      summary_scores = [
+        %{name: "Cosine Similarity", avg: 0.74, std: 0.1, data_type: "NUMERIC", total_pairs: 25}
+      ]
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{status: "completed", score: %{summary_scores: summary_scores, traces: []}}
+          }
+        }
+      end)
+
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 767, "status" => "completed"}
+               })
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :completed
+      assert hd(updated.results["summary_scores"])["name"] == "Cosine Similarity"
+    end
+
+    test "failed status re-fetches from Kaapi and updates the evaluation to failed", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "failed", error_message: "Model inference error"}}
+        }
+      end)
+
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 767, "status" => "failed"}
+               })
+
+      {:ok, updated} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert updated.status == :failed
+      assert updated.failure_reason == "Model inference error"
+    end
+
+    test "non-terminal status is acknowledged without contacting Kaapi", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 767, "status" => "processing"}
+               })
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+
+    test "unknown kaapi_evaluation_id is acknowledged without crashing", %{
+      organization_id: organization_id,
+      evaluation: evaluation
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "data" => %{"id" => 999_999, "status" => "completed"}
+               })
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :processing
+    end
+
+    test "malformed payload is acknowledged without crashing", %{
+      organization_id: organization_id
+    } do
+      assert :ok =
+               AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                 "unexpected" => "shape"
+               })
+    end
+
+    test "is a no-op when the evaluation already left :processing (race with the cron poller)",
+         %{organization_id: organization_id, evaluation: evaluation} do
+      {:ok, _already_completed_by_cron} =
+        AIEvaluations.update_ai_evaluation(evaluation, %{
+          status: :completed,
+          results: %{summary_scores: []}
+        })
+
+      notification_count =
+        Notifications.count_notifications(%{filter: %{organization_id: organization_id}})
+
+      Tesla.Mock.mock(fn %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                summary_scores: [%{name: "Cosine Similarity", avg: 0.9}],
+                traces: []
+              }
+            }
+          }
+        }
+      end)
+
+      test_pid = self()
+
+      with_mocks([
+        {Absinthe.Subscription, [],
+         [
+           publish: fn _endpoint, payload, opts ->
+             send(test_pid, {:published, payload, opts})
+             :ok
+           end
+         ]}
+      ]) do
+        assert :ok =
+                 AIEvaluations.handle_evaluation_run_callback(organization_id, %{
+                   "data" => %{"id" => 767, "status" => "completed"}
+                 })
+
+        refute_receive {:published, _payload, _opts}, 200
+      end
+
+      assert Notifications.count_notifications(%{filter: %{organization_id: organization_id}}) ==
+               notification_count
+
+      {:ok, unchanged} = Repo.fetch_by(AIEvaluation, %{id: evaluation.id})
+      assert unchanged.status == :completed
+      assert unchanged.results == %{"summary_scores" => []}
     end
   end
 

@@ -232,7 +232,10 @@ defmodule Glific.ThirdParty.KaapiTest do
       organization_id: organization_id
     } do
       mock(fn %Tesla.Env{method: :get} ->
-        %Tesla.Env{status: 200, body: %{success: true, data: %{id: "doc_123", fname: "biu-1.pdf"}}}
+        %Tesla.Env{
+          status: 200,
+          body: %{success: true, data: %{id: "doc_123", fname: "biu-1.pdf"}}
+        }
       end)
 
       assert {:error, "File download URL not available"} =
