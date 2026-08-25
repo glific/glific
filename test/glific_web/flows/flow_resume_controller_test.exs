@@ -358,6 +358,8 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end do
         conn = post(conn, "/webhook/flow_resume", params)
         assert json_response(conn, 200) == ""
+
+        await_supervised_tasks()
         assert_not_called(GcsWorker.upload_media(:_, :_, :_))
       end
     end
@@ -1159,5 +1161,16 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       end
 
     {exception, tags}
+  end
+
+  # The TTS upload and flow resume run in a supervised task, so asserting straight after the
+  # response races the task and passes for the wrong reason. Wait for the supervisor to drain.
+  @spec await_supervised_tasks(non_neg_integer()) :: :ok
+  defp await_supervised_tasks(remaining_ms \\ 2_000) do
+    case Task.Supervisor.children(Glific.TaskSupervisor) do
+      [] -> :ok
+      _children when remaining_ms <= 0 -> :ok
+      _children -> Process.sleep(25) && await_supervised_tasks(remaining_ms - 25)
+    end
   end
 end

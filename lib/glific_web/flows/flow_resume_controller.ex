@@ -8,7 +8,7 @@ defmodule GlificWeb.Flows.FlowResumeController do
   use GlificWeb, :controller
   use Publicist
 
-  alias Glific.Flows.Webhook
+  alias Glific.{Flows.Webhook, Repo}
 
   @doc """
   Resume a flow after any async webhook calls back. Every Kaapi node (STT, TTS, filesearch-gpt,
@@ -34,19 +34,24 @@ defmodule GlificWeb.Flows.FlowResumeController do
       else: json(conn, "")
   end
 
-  # Parse + TTS upload run in the request process (not the supervised task) to avoid
-  # transferring large audio binaries between processes. maybe_upload_tts_audio/1 is a no-op
-  # unless the callback carries TTS audio.
+  # Kaapi times out waiting on this response, so the TTS upload — a GCS round trip on a
+  # multi-megabyte payload — runs in the supervised task and Kaapi gets its 200 straight away.
+  # The task sets its own tenant context: it runs outside the request process, so the plug's
+  # organization_id is not in scope, and the GCS error path writes org-scoped rows.
   # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
   # breaches the thin/generic contract; revisit during the speech-to-speech integration.
   @spec resume(Plug.Conn.t(), non_neg_integer(), map(), map(), integer()) :: Plug.Conn.t()
   defp resume(conn, organization_id, result, parsed, callback_received_ts) do
-    response =
-      parsed
-      |> Webhook.maybe_upload_tts_audio()
-      |> Map.put("callback_received_ts", callback_received_ts)
+    run_supervised(fn ->
+      Repo.put_process_state(organization_id)
 
-    run_supervised(fn -> Webhook.resume(organization_id, result, response) end)
+      response =
+        parsed
+        |> Webhook.maybe_upload_tts_audio()
+        |> Map.put("callback_received_ts", callback_received_ts)
+
+      Webhook.resume(organization_id, result, response)
+    end)
 
     json(conn, "")
   end
