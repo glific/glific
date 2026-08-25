@@ -35,6 +35,7 @@ defmodule Glific.Flows.WakeupWorker do
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
+    |> order_by([fc], asc: fc.wakeup_at)
     |> limit(@wake_up_flow_limit)
     |> Repo.all()
     |> Enum.each(fn context ->
