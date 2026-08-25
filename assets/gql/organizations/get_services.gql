@@ -17,7 +17,6 @@ query organizationServices {
     ai_evaluation_v2_enabled
     template_v2_enabled
     template_library_enabled
-    glific_ai_enabled
     errors {
       key
       message

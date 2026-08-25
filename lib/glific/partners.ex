@@ -597,7 +597,6 @@ defmodule Glific.Partners do
       |> Flags.set_flag_enabled(:is_prompt_generator_enabled)
       |> Flags.set_flag_enabled(:is_template_v2_enabled)
       |> Flags.set_flag_enabled(:is_template_library_enabled)
-      |> Flags.set_glific_ai_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -1501,8 +1500,7 @@ defmodule Glific.Partners do
         Flags.get_flag_enabled(:is_prompt_generator_enabled, organization),
       "template_v2_enabled" => Flags.get_flag_enabled(:is_template_v2_enabled, organization),
       "template_library_enabled" =>
-        Flags.get_flag_enabled(:is_template_library_enabled, organization),
-      "glific_ai_enabled" => Flags.get_glific_ai_enabled(organization)
+        Flags.get_flag_enabled(:is_template_library_enabled, organization)
     }
   end
 
