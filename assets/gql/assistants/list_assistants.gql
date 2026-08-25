@@ -9,6 +9,7 @@ query Assistants($filter: AssistantFilter, $opts: Opts) {
     status
     new_version_in_progress
     live_version_number
+    last_evaluation_summary
     vector_store {
       id
       knowledge_base_version_id
