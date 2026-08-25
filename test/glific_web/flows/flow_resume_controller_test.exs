@@ -1163,8 +1163,7 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
     {exception, tags}
   end
 
-  # The TTS upload and flow resume run in a supervised task, so asserting straight after the
-  # response races the task and passes for the wrong reason. Wait for the supervisor to drain.
+  # Without this, the assertion races the supervised task and passes for the wrong reason.
   @spec await_supervised_tasks(non_neg_integer()) :: :ok
   defp await_supervised_tasks(remaining_ms \\ 2_000) do
     case Task.Supervisor.children(Glific.TaskSupervisor) do

@@ -26,18 +26,16 @@ defmodule GlificWeb.Flows.FlowResumeController do
 
     parsed = Webhook.parse_callback_response(result)
 
-    # The signature is checked here, ahead of the TTS upload, so an unsigned callback cannot make
-    # us decode an arbitrary base64 payload and push it to GCS. Rejections still answer 200 — the
-    # caller learns nothing, and Kaapi has no retry to trigger.
+    # Validate before spawning: an unsigned callback must not reach the base64 decode or GCS.
+    # Rejections answer 200 — the caller learns nothing and Kaapi has no retry to trigger.
     if Webhook.valid_callback?(organization_id, parsed),
       do: resume(conn, organization_id, result, parsed, callback_received_ts),
       else: json(conn, "")
   end
 
-  # Kaapi times out waiting on this response, so the TTS upload — a GCS round trip on a
-  # multi-megabyte payload — runs in the supervised task and Kaapi gets its 200 straight away.
-  # The task sets its own tenant context: it runs outside the request process, so the plug's
-  # organization_id is not in scope, and the GCS error path writes org-scoped rows.
+  # The GCS round trip blocked the response and Kaapi timed out waiting on it.
+  # put_process_state/1 is needed because the task runs outside the request process: the plug's
+  # organization_id is out of scope, and the GCS error path writes org-scoped rows.
   # TODO: move maybe_upload_tts_audio/1 out of this controller — it's TTS-specific and
   # breaches the thin/generic contract; revisit during the speech-to-speech integration.
   @spec resume(Plug.Conn.t(), non_neg_integer(), map(), map(), integer()) :: Plug.Conn.t()

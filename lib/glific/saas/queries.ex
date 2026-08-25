@@ -197,8 +197,7 @@ defmodule Glific.Saas.Queries do
     end
   end
 
-  # Every organization signs its outbound webhooks with its own secret. Only new organizations
-  # get one here — existing organizations are deliberately left alone rather than backfilled.
+  # Deliberately not backfilled: existing organizations keep the secret they already have.
   @spec generate_signature_phrase() :: String.t()
   defp generate_signature_phrase do
     @signature_phrase_bytes
