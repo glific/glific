@@ -318,6 +318,11 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         end do
         conn = post(conn, "/webhook/flow_resume", params)
         assert json_response(conn, 200) == ""
+
+        # The upload runs in the supervised task; leaving this block first would tear the mock
+        # down and let the child hit the real GcsWorker.
+        await_supervised_tasks()
+        assert_called(GcsWorker.upload_media(:_, :_, :_))
       end
     end
 
@@ -362,6 +367,34 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         await_supervised_tasks()
         assert_not_called(GcsWorker.upload_media(:_, :_, :_))
       end
+    end
+
+    # Only covers that a malformed payload is rejected cleanly. The rejection log itself cannot be
+    # tested: config/test.exs purges every Logger call below :emergency at compile time, so the
+    # interpolation that SafeLog.safe_inspect/1 guards does not exist in the test build.
+    test "a forged callback with a non-string flow_id is rejected, not raised", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
+    } do
+      contact = Fixtures.contact_fixture()
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      params = %{
+        "data" => %{
+          "response" => %{"output" => %{"type" => "text", "content" => %{"value" => "x"}}}
+        },
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => %{},
+          "contact_id" => contact.id,
+          "signature" => "forged",
+          "timestamp" => timestamp,
+          "result_name" => "response"
+        },
+        "success" => true
+      }
+
+      conn = post(conn, "/webhook/flow_resume", params)
+      assert json_response(conn, 200) == ""
     end
 
     test "resumes flow with Failure on STT/TTS callback with success: false", %{

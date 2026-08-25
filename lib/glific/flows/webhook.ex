@@ -462,16 +462,16 @@ defmodule Glific.Flows.Webhook do
     end)
   end
 
-  @doc """
-  Check the HMAC signature on a parsed async callback, logging any rejection.
-  """
+  @doc "Check the HMAC signature on a parsed async callback, logging any rejection."
   @spec valid_callback?(non_neg_integer(), map(), String.t()) :: boolean()
   def valid_callback?(organization_id, response, label \\ "Flow resume") do
     if validate_request(organization_id, response) do
       true
     else
       Logger.warning(
-        "#{label} validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}"
+        "#{label} validation failed: organization_id=#{organization_id}, " <>
+          "flow_id=#{SafeLog.safe_inspect(response["flow_id"])}, " <>
+          "contact_id=#{SafeLog.safe_inspect(response["contact_id"])}"
       )
 
       false
