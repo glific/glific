@@ -12,7 +12,7 @@ defmodule Glific.Flows.WakeupWorker do
     unique: [
       period: :infinity,
       fields: [:args, :worker],
-      keys: [:flow_context_id],
+      keys: [:organization_id],
       states: [:available, :scheduled, :executing]
     ]
 
@@ -21,18 +21,21 @@ defmodule Glific.Flows.WakeupWorker do
   alias Glific.Flows.FlowContext
   alias Glific.Repo
 
+  @wake_up_flow_limit 200
+
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{
-        args: %{"flow_context_id" => flow_context_id, "organization_id" => organization_id}
+        args: %{"organization_id" => organization_id}
       }) do
     Repo.put_process_state(organization_id)
 
     FlowContext
-    |> where([fc], fc.id == ^flow_context_id)
+    |> where([fc], fc.organization_id == ^organization_id)
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
+    |> limit(@wake_up_flow_limit)
     |> Repo.one()
     |> case do
       nil -> :ok

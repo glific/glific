@@ -917,9 +917,7 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @wake_up_flow_limit 200
-
-  @spec wakeup_flows(non_neg_integer) :: any
+  @spec wakeup_flows :: any
   @doc """
   Find all the contexts which need to be woken up and queue each one as its
   own job. Jobs run in the `:flow_wakeup` queue, which limits execution to one
@@ -927,16 +925,16 @@ defmodule Glific.Flows.FlowContext do
   organization's overdue contexts are drained one at a time while different
   organizations process in parallel.
   """
-  def wakeup_flows(organization_id) do
+  def wakeup_flows do
     FlowContext
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
-    |> limit(@wake_up_flow_limit)
-    |> select([fc], fc.id)
+    |> distinct(true)
+    |> select([fc], fc.organization_id)
     |> Repo.all()
-    |> Enum.each(fn id ->
-      %{flow_context_id: id, organization_id: organization_id}
+    |> Enum.each(fn organization_id ->
+      %{organization_id: organization_id}
       |> WakeupWorker.new()
       |> Oban.insert()
     end)
