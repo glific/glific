@@ -6,24 +6,28 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
       "CREATE TYPE public.assistant_config_version_bump_type_enum AS ENUM ('minor', 'major');"
     )
 
+    rename table(:assistant_config_versions), :version_number, to: :major_version
+
     alter table(:assistant_config_versions) do
-      add :major_version, :integer, comment: "Major version number (bumped on publish)"
-      add :minor_version, :integer, comment: "Minor version number (bumped on every save)"
+      add :minor_version, :integer,
+        null: false,
+        default: 0,
+        comment: "Minor version number (bumped on every save)"
 
       add :bump_type, :assistant_config_version_bump_type_enum,
         null: false,
-        default: "minor",
+        default: "major",
         comment: "Whether this insert should bump the major or minor version"
     end
 
     execute(
-      "UPDATE assistant_config_versions SET major_version = 1, minor_version = version_number - 1"
+      "ALTER TABLE assistant_config_versions ALTER COLUMN bump_type SET DEFAULT 'minor';"
     )
 
-    alter table(:assistant_config_versions) do
-      modify :major_version, :integer, null: false
-      modify :minor_version, :integer, null: false
-    end
+    execute("""
+    COMMENT ON COLUMN assistant_config_versions.major_version
+    IS 'Major version number (bumped on publish)';
+    """)
 
     drop_if_exists unique_index(:assistant_config_versions, [:assistant_id, :version_number])
 
@@ -78,21 +82,12 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
     WHEN (NEW.major_version IS NULL OR NEW.minor_version IS NULL)
     EXECUTE FUNCTION set_assistant_config_version_number();
     """)
-
-    alter table(:assistant_config_versions) do
-      remove :version_number
-    end
   end
 
   def down do
-    alter table(:assistant_config_versions) do
-      add :version_number, :integer,
-        comment: "Monotonically increasing config version per assistant"
-    end
-
     execute("""
     UPDATE assistant_config_versions acv
-    SET version_number = ranked.row_number
+    SET major_version = ranked.row_number
     FROM (
       SELECT id, ROW_NUMBER() OVER (
         PARTITION BY assistant_id ORDER BY major_version, minor_version
@@ -101,10 +96,6 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
     ) AS ranked
     WHERE acv.id = ranked.id;
     """)
-
-    alter table(:assistant_config_versions) do
-      modify :version_number, :integer, null: false
-    end
 
     execute(
       "DROP TRIGGER IF EXISTS assistant_config_version_set_version_number ON assistant_config_versions;"
@@ -128,6 +119,30 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
     $$ LANGUAGE plpgsql;
     """)
 
+    drop_if_exists unique_index(:assistant_config_versions, [
+                     :assistant_id,
+                     :major_version,
+                     :minor_version
+                   ])
+
+    alter table(:assistant_config_versions) do
+      remove :bump_type
+      remove :minor_version
+    end
+
+    rename table(:assistant_config_versions), :major_version, to: :version_number
+
+    alter table(:assistant_config_versions) do
+      modify :version_number, :integer, null: false
+    end
+
+    execute("""
+    COMMENT ON COLUMN assistant_config_versions.version_number
+    IS 'Monotonically increasing config version per assistant';
+    """)
+
+    create unique_index(:assistant_config_versions, [:assistant_id, :version_number])
+
     execute("""
     CREATE TRIGGER assistant_convfig_version_set_version_number
     BEFORE INSERT ON assistant_config_versions
@@ -135,20 +150,6 @@ defmodule Glific.Repo.Migrations.AddSemanticVersioningToAssistantConfigVersions 
     WHEN (NEW.version_number IS NULL)
     EXECUTE FUNCTION set_assistant_config_version_number();
     """)
-
-    drop_if_exists unique_index(:assistant_config_versions, [
-                     :assistant_id,
-                     :major_version,
-                     :minor_version
-                   ])
-
-    create unique_index(:assistant_config_versions, [:assistant_id, :version_number])
-
-    alter table(:assistant_config_versions) do
-      remove :bump_type
-      remove :minor_version
-      remove :major_version
-    end
 
     execute("DROP TYPE IF EXISTS public.assistant_config_version_bump_type_enum;")
   end
