@@ -25,7 +25,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       period: :infinity,
       fields: [:args, :worker],
       keys: [:table, :organization_id, :action, :remove_duplicates],
-      states: [:suspended, :available, :scheduled, :executing, :retryable]
+      states: [:available, :scheduled, :executing]
     ]
 
   alias Glific.{
