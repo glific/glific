@@ -709,21 +709,14 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "success" => true
       }
 
-      conn = post(conn, "/webhook/flow_resume", params)
-      assert json_response(conn, 200) == ""
-
-      # Call do_voice_flow_resume directly to verify the flow is NOT resumed
-      response = Webhook.parse_callback_response(params)
-
-      with_mock FlowContext,
+      # Asserted through the endpoint, not Webhook.resume/3: the controller owns the signature
+      # check, and resume/3 trusts an already-validated callback.
+      with_mock FlowContext, [:passthrough],
         resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
-        assert :ok =
-                 Webhook.resume(
-                   organization_id,
-                   params,
-                   response
-                 )
+        conn = post(conn, "/webhook/flow_resume", params)
+        assert json_response(conn, 200) == ""
 
+        await_supervised_tasks()
         refute called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
       end
     end
@@ -1013,26 +1006,36 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
       assert json_response(conn, 200) == ""
     end
 
-    test "do_flow_resume logs warning when a required callback field is missing", %{
-      conn: %{assigns: %{organization_id: organization_id}} = _conn
+    test "a callback missing a required field is rejected without resuming", %{
+      conn: %{assigns: %{organization_id: organization_id}} = conn
     } do
+      contact = Fixtures.contact_fixture()
       timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
       flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "call_and_wait"})
 
-      # response is missing the required "signature" field
-      response = %{
-        "organization_id" => organization_id,
-        "flow_id" => flow.id,
-        "contact_id" => 1,
-        "timestamp" => timestamp
+      params = %{
+        "data" => %{
+          "response" => %{"output" => %{"type" => "text", "content" => %{"value" => "x"}}}
+        },
+        # no "signature"
+        "metadata" => %{
+          "organization_id" => organization_id,
+          "flow_id" => flow.id,
+          "contact_id" => contact.id,
+          "timestamp" => timestamp,
+          "result_name" => "response"
+        },
+        "success" => true
       }
 
-      assert :ok =
-               Webhook.resume(
-                 organization_id,
-                 %{"success" => true},
-                 response
-               )
+      with_mock FlowContext, [:passthrough],
+        resume_contact_flow: fn _contact, _flow_id, _results, _message -> {:ok, nil, []} end do
+        conn = post(conn, "/webhook/flow_resume", params)
+        assert json_response(conn, 200) == ""
+
+        await_supervised_tasks()
+        refute called(FlowContext.resume_contact_flow(:_, :_, :_, :_))
+      end
     end
 
     test "do_flow_resume logs warning when contact is not found", %{
