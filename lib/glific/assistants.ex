@@ -217,6 +217,18 @@ defmodule Glific.Assistants do
     })
   end
 
+  @doc "Sets the last evaluation run on the assistant whose active config version matches the given config version id"
+  @spec set_last_evaluation_run(non_neg_integer(), non_neg_integer()) :: :ok
+  def set_last_evaluation_run(assistant_config_version_id, evaluation_id) do
+    Assistant
+    |> where([a], a.active_config_version_id == ^assistant_config_version_id)
+    |> Repo.update_all(
+      set: [last_evaluation_run_id: evaluation_id, updated_at: DateTime.utc_now()]
+    )
+
+    :ok
+  end
+
   @doc """
   Lists assistants from the unified API tables, transformed to legacy shape.
   """
@@ -277,6 +289,7 @@ defmodule Glific.Assistants do
   defp preload_assistant_associations(assistant_or_assistants) do
     Repo.preload(assistant_or_assistants, [
       {:active_config_version, [knowledge_base_versions: :knowledge_base]},
+      :last_evaluation_run,
       config_versions:
         from(config_version in AssistantConfigVersion,
           where: config_version.status == :in_progress
@@ -317,7 +330,9 @@ defmodule Glific.Assistants do
       vector_store_data: vector_store_data,
       inserted_at: assistant.inserted_at,
       updated_at: assistant.updated_at,
-      active_config_version_id: assistant.active_config_version_id
+      active_config_version_id: assistant.active_config_version_id,
+      last_evaluation_summary:
+        assistant.last_evaluation_run && assistant.last_evaluation_run.results
     }
   end
 

@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.AssistantTest do
   alias Glific.{
     Assistants,
     Assistants.AssistantConfigVersion,
+    Fixtures,
     Partners,
     Repo
   }
@@ -163,6 +164,41 @@ defmodule GlificWeb.Schema.AssistantTest do
       )
 
     assert length(query_data.data["assistant"]["errors"]) == 1
+  end
+
+  test "get assistant returns last_evaluation_summary", attrs do
+    {assistant, config_version} =
+      create_unified_assistant(%{
+        organization_id: attrs.organization_id,
+        name: "assistant with evaluation",
+        kaapi_uuid: "asst_eval"
+      })
+
+    evaluation =
+      Fixtures.ai_evaluation_fixture(%{
+        organization_id: attrs.organization_id,
+        assistant_config_version_id: config_version.id,
+        status: :completed,
+        results: %{
+          "summary_scores" => [%{"name" => "Cosine Similarity", "avg" => 0.74}]
+        }
+      })
+
+    {:ok, _assistant} =
+      assistant
+      |> Assistants.Assistant.set_last_evaluation_run_changeset(%{
+        last_evaluation_run_id: evaluation.id
+      })
+      |> Repo.update()
+
+    {:ok, query_data} =
+      auth_query_gql_by(:assistant, attrs.user, variables: %{"id" => assistant.id})
+
+    assert %{
+             "summary_scores" => [%{"name" => "Cosine Similarity", "avg" => 0.74}]
+           } ==
+             query_data.data["assistant"]["assistant"]["last_evaluation_summary"]
+             |> Jason.decode!()
   end
 
   test "get assistant with vector store", attrs do

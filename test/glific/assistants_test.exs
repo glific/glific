@@ -3376,4 +3376,57 @@ defmodule Glific.AssistantsTest do
       assert count_config_versions(assistant.id) == 4
     end
   end
+
+  describe "set_last_evaluation_run/2" do
+    test "stores the evaluation run on the assistant whose active version matches", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: config_version.id})
+        )
+
+      assert :ok = Assistants.set_last_evaluation_run(config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == evaluation.id
+    end
+
+    test "no-ops when the config version is no longer the active one", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      stale_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      new_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: new_config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: stale_config_version.id})
+        )
+
+      # simulates an evaluation callback landing for a config version that was
+      # superseded as the active one before the callback arrived
+      assert :ok = Assistants.set_last_evaluation_run(stale_config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
+    end
+  end
 end

@@ -118,6 +118,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :legacy, :boolean
     field :clone_status, :string
     field :active_config_version_id, :id
+    field :last_evaluation_summary, :json
 
     field :vector_store, :vector_store do
       resolve(&Resolvers.Assistants.resolve_vector_store/3)
