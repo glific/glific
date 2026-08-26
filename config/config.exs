@@ -32,6 +32,7 @@ oban_queues = [
     local_limit: 10,
     global_limit: [
       allowed: 1,
+      burst: true,
       partition: [args: :organization_id]
     ]
   ],

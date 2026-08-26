@@ -20,7 +20,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   use Oban.Worker,
     queue: :bigquery,
     max_attempts: 1,
-    priority: 1,
+    priority: 2,
     unique: [
       period: :infinity,
       fields: [:args, :worker],
