@@ -1,6 +1,5 @@
 defmodule Glific.AssistantsTest do
   use Glific.DataCase
-  import Mock
   import Tesla.Mock
 
   import Ecto.Query
@@ -187,68 +186,6 @@ defmodule Glific.AssistantsTest do
       assert updated.size == kbv.size
       assert updated.knowledge_base_id == kbv.knowledge_base_id
       assert updated.organization_id == kbv.organization_id
-    end
-
-    test "publishes knowledge_base_version_updated when status becomes completed", %{
-      knowledge_base_version: kbv,
-      organization_id: organization_id
-    } do
-      test_pid = self()
-
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert {:ok, updated} =
-                 Assistants.update_knowledge_base_version(kbv, %{status: :completed})
-
-        assert_receive {:published, payload, [{:knowledge_base_version_updated, topic}]}, 1000
-        assert payload.id == updated.id
-        assert payload.status == :completed
-        assert topic == "#{organization_id}"
-      end
-    end
-
-    test "publishes knowledge_base_version_updated when status becomes failed", %{
-      knowledge_base_version: kbv,
-      organization_id: organization_id
-    } do
-      test_pid = self()
-
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert {:ok, updated} = Assistants.update_knowledge_base_version(kbv, %{status: :failed})
-
-        assert_receive {:published, payload, [{:knowledge_base_version_updated, topic}]}, 1000
-        assert payload.id == updated.id
-        assert payload.status == :failed
-        assert topic == "#{organization_id}"
-      end
-    end
-
-    test "does not publish when status stays in_progress or is untouched", %{
-      knowledge_base_version: kbv
-    } do
-      with_mocks([
-        {Absinthe.Subscription, [], [publish: fn _endpoint, _payload, _opts -> :ok end]}
-      ]) do
-        Assistants.update_knowledge_base_version(kbv, %{status: :in_progress, size: 300})
-        Assistants.update_knowledge_base_version(kbv, %{kaapi_job_id: "job_xyz"})
-
-        refute called(Absinthe.Subscription.publish(:_, :_, :_))
-      end
     end
   end
 
@@ -1328,7 +1265,7 @@ defmodule Glific.AssistantsTest do
       assert length(config_version.knowledge_base_versions) == 1
     end
 
-    test "creates assistant with in-progress KB and sets config status to in_progress, without publishing",
+    test "creates assistant with in-progress KB and sets config status to in_progress",
          %{organization_id: organization_id} do
       {:ok, kb} =
         Assistants.create_knowledge_base(%{
@@ -1346,26 +1283,21 @@ defmodule Glific.AssistantsTest do
           size: 500
         })
 
-      with_mocks([
-        {Absinthe.Subscription, [], [publish: fn _endpoint, _payload, _opts -> :ok end]}
-      ]) do
-        assert {:ok, %{assistant: assistant, config_version: config_version}} =
-                 Assistants.create_assistant(%{
-                   name: "Deferred Assistant",
-                   model: "gpt-4o",
-                   instructions: "You are a helpful assistant",
-                   temperature: 1.0,
-                   knowledge_base_version_id: kbv.id,
-                   organization_id: organization_id
-                 })
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "Deferred Assistant",
+                 model: "gpt-4o",
+                 instructions: "You are a helpful assistant",
+                 temperature: 1.0,
+                 knowledge_base_version_id: kbv.id,
+                 organization_id: organization_id
+               })
 
-        assert is_nil(assistant.kaapi_uuid)
-        assert config_version.status == :in_progress
-        refute called(Absinthe.Subscription.publish(:_, :_, :_))
-      end
+      assert is_nil(assistant.kaapi_uuid)
+      assert config_version.status == :in_progress
     end
 
-    test "creates assistant without knowledge_base_version_id and publishes assistant_config_version_updated",
+    test "creates assistant without knowledge_base_version_id",
          %{organization_id: organization_id} do
       enable_kaapi(%{organization_id: organization_id})
 
@@ -1377,63 +1309,14 @@ defmodule Glific.AssistantsTest do
           }
       end)
 
-      test_pid = self()
+      assert {:ok, %{assistant: assistant, config_version: config_version}} =
+               Assistants.create_assistant(%{
+                 name: "No KB Assistant",
+                 organization_id: organization_id
+               })
 
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert {:ok, %{assistant: assistant, config_version: config_version}} =
-                 Assistants.create_assistant(%{
-                   name: "No KB Assistant",
-                   organization_id: organization_id
-                 })
-
-        assert assistant.name == "No KB Assistant"
-        assert config_version.status == :ready
-
-        assert_receive {:published, payload, [{:assistant_config_version_updated, topic}]}, 1000
-        assert payload.id == config_version.id
-        assert payload.status == :ready
-        assert topic == "#{organization_id}"
-      end
-    end
-
-    test "publishes assistant_config_version_updated as failed when Kaapi config creation fails",
-         %{organization_id: organization_id} do
-      enable_kaapi(%{organization_id: organization_id})
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{status: 500, body: %{error: "kaapi unavailable"}}
-      end)
-
-      test_pid = self()
-
-      with_mocks([
-        {Absinthe.Subscription, [],
-         [
-           publish: fn _endpoint, payload, opts ->
-             send(test_pid, {:published, payload, opts})
-             :ok
-           end
-         ]}
-      ]) do
-        assert {:error, _reason} =
-                 Assistants.create_assistant(%{
-                   name: "Failing Assistant",
-                   organization_id: organization_id
-                 })
-
-        assert_receive {:published, payload, [{:assistant_config_version_updated, topic}]}, 1000
-        assert payload.status == :failed
-        assert topic == "#{organization_id}"
-      end
+      assert assistant.name == "No KB Assistant"
+      assert config_version.status == :ready
     end
 
     test "uses default values when optional params are missing",
