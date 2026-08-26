@@ -192,21 +192,21 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:media, non_null(:upload))
       arg(:target_format, :string)
       arg(:callback_url, :string)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.upload_file/3)
     end
 
     @desc "Create Assistant"
     field :create_assistant, :kaapi_assistant_result do
       arg(:input, :assistant_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.create_assistant/3)
     end
 
     @desc "Delete Assistant"
     field :delete_assistant, :kaapi_assistant_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.delete_assistant/3)
     end
 
@@ -214,7 +214,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :create_knowledge_base, :knowledge_base_result do
       arg(:media_info, non_null(list_of(non_null(:file_info_input))))
       arg(:id, :id)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.create_knowledge_base/3)
     end
 
@@ -222,7 +222,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :update_assistant, :assistant_result do
       arg(:input, :assistant_input)
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.update_assistant/3)
     end
 
@@ -230,7 +230,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :clone_assistant, :clone_result do
       arg(:id, non_null(:id))
       arg(:version_id, :id)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.clone_assistant/3)
     end
 
@@ -238,7 +238,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :set_live_version, :set_live_version_result do
       arg(:assistant_id, non_null(:id))
       arg(:version_id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.set_live_version/3)
     end
   end
@@ -247,7 +247,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     @desc "Get Assistant"
     field :assistant, :assistant_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.get_assistant/3)
     end
 
@@ -255,34 +255,34 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :assistants, list_of(:assistant) do
       arg(:filter, :assistant_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.list_assistants/3)
     end
 
     @desc "List Assistant Config Versions"
     field :assistant_config_versions, list_of(:assistant_config_version_for_evals) do
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.list_assistant_config_versions/3)
     end
 
     @desc "Get a count of all assistants filtered by various criteria"
     field :count_assistants, :integer do
       arg(:filter, :assistant_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.count_assistants/3)
     end
 
     @desc "List all config versions for an assistant"
     field :assistant_versions, list_of(:assistant_config_version) do
       arg(:assistant_id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.list_assistant_versions/3)
     end
 
     @desc "Get a knowledge base file's metadata and signed download URL"
     field :get_file, :file_result do
       arg(:file_id, non_null(:string))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.get_file/3)
     end
   end
