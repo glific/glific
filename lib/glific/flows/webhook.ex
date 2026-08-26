@@ -43,6 +43,8 @@ defmodule Glific.Flows.Webhook do
     defexception [:message, :reason, :organization_id]
   end
 
+  @timeout_error "Timeout: taking long to process response"
+
   @non_unique_urls [
     "parse_via_gpt_vision",
     "parse_via_chat_gpt",
@@ -118,14 +120,14 @@ defmodule Glific.Flows.Webhook do
     attrs = %{response_json: result, status_code: 400, error: error}
 
     webhook_log
-    |> WebhookLog.update_webhook_log(attrs)
+    |> update_outcome(attrs)
   end
 
   def update_log(webhook_log, result) when is_map(result) do
     attrs = %{response_json: result, status_code: 200}
 
     webhook_log
-    |> WebhookLog.update_webhook_log(attrs)
+    |> update_outcome(attrs)
   end
 
   def update_log(webhook_log, error_message) do
@@ -137,6 +139,21 @@ defmodule Glific.Flows.Webhook do
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)
   end
+
+  @doc "The error recorded on a webhook log when an async node's await window expires."
+  @spec timeout_error() :: String.t()
+  def timeout_error, do: @timeout_error
+
+  # A callback can still arrive after the await window expired, by which point the flow has
+  # already routed to Failure. Record the late response, but leave the outcome alone -- otherwise
+  # a timed-out interaction is relabelled 200/Success and webhook_logs undercount timeouts.
+  @spec update_outcome(WebhookLog.t(), map()) ::
+          {:ok, WebhookLog.t()} | {:error, Ecto.Changeset.t()}
+  defp update_outcome(%WebhookLog{error: @timeout_error} = webhook_log, attrs),
+    do: WebhookLog.update_webhook_log(webhook_log, Map.take(attrs, [:response_json]))
+
+  defp update_outcome(webhook_log, attrs),
+    do: WebhookLog.update_webhook_log(webhook_log, attrs)
 
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
@@ -458,8 +475,28 @@ defmodule Glific.Flows.Webhook do
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
-      resume(organization_id, result, response, contact)
+      if still_awaiting?(response),
+        do: resume(organization_id, result, response, contact),
+        else: record_late_callback(result, response)
     end)
+  end
+
+  # The await window already closed, so there is no context to resume. Stop here rather than
+  # letting resume_contact_flow/4 fail with "no active flows awaiting results" and report a
+  # SystemError for an expected outcome. Skipping also avoids Dispatcher.callback/3, whose
+  # handle_callback/3 does the voice node's NMT + TTS post-processing.
+  @spec record_late_callback(map(), map()) :: :ok
+  defp record_late_callback(result, response) do
+    response = Map.put(response, "error_type", "flow_not_awaiting")
+
+    maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
+    Instrumentation.track_webhook_count(response["webhook_name"], "late_callback")
+
+    Logger.info(
+      "Late callback ignored, flow no longer awaiting a result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}"
+    )
+
+    :ok
   end
 
   # Restores tenant context, validates the callback signature and resolves the
@@ -588,7 +625,59 @@ defmodule Glific.Flows.Webhook do
   copied into the supervised resume task.
   """
   @spec maybe_upload_tts_audio(map()) :: map()
-  def maybe_upload_tts_audio(%{"output_type" => "audio", "message" => base64_audio} = response) do
+  def maybe_upload_tts_audio(%{"output_type" => "audio", "message" => _audio} = response) do
+    if still_awaiting?(response),
+      do: do_upload_tts_audio(response),
+      else: skip_tts_upload(response)
+  end
+
+  def maybe_upload_tts_audio(response), do: response
+
+  # The flow already moved on -- timed out or completed -- so nothing can consume the audio.
+  # Skipping saves a multi-megabyte GCS upload whose result is discarded. The base64 has to be
+  # dropped as well: callback_log_message/2 copies "message" into the webhook log's response_json,
+  # so leaving it would write the whole payload into the row.
+  @spec skip_tts_upload(map()) :: map()
+  defp skip_tts_upload(response) do
+    Logger.info(
+      "Skipping TTS upload, flow no longer awaiting result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}"
+    )
+
+    response
+    |> Map.put("message", nil)
+    |> Map.put("success", false)
+    |> Map.put("error_type", "flow_not_awaiting")
+    |> Map.put("reason", "Flow is no longer awaiting a result; TTS upload skipped")
+  end
+
+  # Unusable ids mean we cannot run the lookup, so fall through to the upload -- the same
+  # behaviour as before this check existed. Skipping instead would drop audio a flow may
+  # genuinely be waiting on.
+  @spec still_awaiting?(map()) :: boolean()
+  defp still_awaiting?(response) do
+    case {integer_field(response["contact_id"]), integer_field(response["flow_id"])} do
+      {contact_id, flow_id} when is_integer(contact_id) and is_integer(flow_id) ->
+        FlowContext.awaiting_result?(contact_id, flow_id)
+
+      _ ->
+        true
+    end
+  end
+
+  @spec integer_field(any()) :: integer() | nil
+  defp integer_field(value) when is_integer(value), do: value
+
+  defp integer_field(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, ""} -> parsed
+      _ -> nil
+    end
+  end
+
+  defp integer_field(_value), do: nil
+
+  @spec do_upload_tts_audio(map()) :: map()
+  defp do_upload_tts_audio(%{"message" => base64_audio} = response) do
     {:ok, organization_id} = response["organization_id"] |> Glific.parse_maybe_integer()
 
     case upload_tts_audio(base64_audio, organization_id) do
@@ -606,8 +695,6 @@ defmodule Glific.Flows.Webhook do
         |> Map.put("reason", reason)
     end
   end
-
-  def maybe_upload_tts_audio(response), do: response
 
   @spec upload_tts_audio(String.t() | nil, non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}

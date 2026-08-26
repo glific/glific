@@ -996,6 +996,17 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Whether the contact still has a flow parked on `flow_id` awaiting a webhook result.
+  """
+  @spec awaiting_result?(non_neg_integer(), non_neg_integer()) :: boolean()
+  def awaiting_result?(contact_id, flow_id) do
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id and fc.flow_id == ^flow_id)
+    |> where([fc], fc.is_await_result == true and is_nil(fc.completed_at))
+    |> Repo.exists?()
+  end
+
+  @doc """
   Resume the flow for a given contact and a given flow id if still active
   """
   @spec resume_contact_flow(
@@ -1180,7 +1191,7 @@ defmodule Glific.Flows.FlowContext do
       webhook_log_id = fetch_latest_webhook_log_id(context)
 
       if webhook_log_id do
-        Webhook.update_log(webhook_log_id, "Timeout: taking long to process response")
+        Webhook.update_log(webhook_log_id, Webhook.timeout_error())
       end
 
       # Always count the timeout failure, even when no WebhookLog row exists yet.
