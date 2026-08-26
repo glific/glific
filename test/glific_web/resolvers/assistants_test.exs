@@ -454,7 +454,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
   describe "assistant_versions/3" do
     test "returns all versions for an assistant ordered by major/minor version desc", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -646,7 +646,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
   describe "set_live_version/3" do
     test "promoting a draft version creates a new major version and repoints the live pointer",
          %{
-           staff: user,
+           manager: user,
            organization_id: organization_id
          } do
       {:ok, assistant} =
@@ -723,7 +723,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
     test "reactivating an already-major version repoints the live pointer without a new row",
          %{
-           staff: user,
+           manager: user,
            organization_id: organization_id
          } do
       {:ok, assistant} =
