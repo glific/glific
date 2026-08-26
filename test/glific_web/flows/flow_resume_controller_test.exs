@@ -912,6 +912,20 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
         "reason" => "TTS audio upload failed (GCS may not be enabled for this organization)"
       }
 
+      [node | _tail] = flow.nodes
+
+      {:ok, _context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: organization_id,
+          wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+          is_await_result: true,
+          node_uuid: node.uuid
+        })
+
       with_mock FlowContext, [:passthrough],
         resume_contact_flow: fn _contact, _flow_id, _results, message ->
           send(self(), {:resume_message, message})
@@ -1021,6 +1035,20 @@ defmodule GlificWeb.Flows.FlowResumeControllerTest do
 
       {exception, tags} =
         capture_appsignal(fn ->
+          [node | _tail] = flow.nodes
+
+          {:ok, _context} =
+            FlowContext.create_flow_context(%{
+              contact_id: contact.id,
+              flow_id: flow.id,
+              flow_uuid: flow.uuid,
+              uuid_map: %{},
+              organization_id: organization_id,
+              wakeup_at: DateTime.add(DateTime.utc_now(), 60),
+              is_await_result: true,
+              node_uuid: node.uuid
+            })
+
           with_mock FlowContext, [:passthrough],
             resume_contact_flow: fn _contact, _flow_id, _results, _message ->
               {:error, "flow context not found"}

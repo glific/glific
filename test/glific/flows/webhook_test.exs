@@ -431,6 +431,51 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
+  describe "Webhook.resume/3 when the flow already moved on" do
+    test "does not attempt a resume and records the late arrival on the log", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+      flow = Fixtures.flow_fixture(Map.merge(attrs, %{keywords: [], name: Faker.Person.name()}))
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+
+      {:ok, timed_out} = Webhook.update_log(webhook_log, Webhook.timeout_error())
+
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      signature_payload = %{
+        "organization_id" => attrs.organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      response = %{
+        "organization_id" => attrs.organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp,
+        "signature" =>
+          Glific.signature(
+            attrs.organization_id,
+            Jason.encode!(signature_payload),
+            timestamp
+          ),
+        "webhook_log_id" => timed_out.id,
+        "webhook_name" => "text_to_speech",
+        "message" => "a late answer"
+      }
+
+      assert :ok = Webhook.resume(attrs.organization_id, %{"success" => true}, response)
+
+      log = Repo.get!(WebhookLog, timed_out.id)
+      # the timeout stands, but the late arrival is still recorded
+      assert log.status_code == 400
+      assert log.error == Webhook.timeout_error()
+      assert log.response_json["message"] == "a late answer"
+      # the marker proves resume/4 was skipped -- it does not set error_type
+      assert log.response_json["error_type"] == "flow_not_awaiting"
+    end
+  end
+
   describe "Webhook.update_log/2 after the await window expired" do
     test "a late success callback records its response without relabelling the row", attrs do
       webhook_log = Fixtures.webhook_log_fixture(attrs)

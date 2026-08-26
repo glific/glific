@@ -475,8 +475,28 @@ defmodule Glific.Flows.Webhook do
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
-      resume(organization_id, result, response, contact)
+      if still_awaiting?(response),
+        do: resume(organization_id, result, response, contact),
+        else: record_late_callback(result, response)
     end)
+  end
+
+  # The await window already closed, so there is no context to resume. Stop here rather than
+  # letting resume_contact_flow/4 fail with "no active flows awaiting results" and report a
+  # SystemError for an expected outcome. Skipping also avoids Dispatcher.callback/3, whose
+  # handle_callback/3 does the voice node's NMT + TTS post-processing.
+  @spec record_late_callback(map(), map()) :: :ok
+  defp record_late_callback(result, response) do
+    response = Map.put(response, "error_type", "flow_not_awaiting")
+
+    maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
+    Instrumentation.track_webhook_count(response["webhook_name"], "late_callback")
+
+    Logger.info(
+      "Late callback ignored, flow no longer awaiting a result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}"
+    )
+
+    :ok
   end
 
   # Restores tenant context, validates the callback signature and resolves the
