@@ -454,38 +454,49 @@ defmodule Glific.Flows.Webhook do
 
   @doc """
   Resume a flow parked on any async webhook, from the parsed Kaapi callback.
+
+  The caller must have checked the callback with `valid_callback?/2` first -- this function
+  trusts `response` and does not re-verify the signature.
   """
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
-    with_validated_callback(organization_id, response, "Flow resume", fn contact ->
+    with_contact(organization_id, response, fn contact ->
       resume(organization_id, result, response, contact)
     end)
   end
 
-  # Restores tenant context, validates the callback signature and resolves the
-  # contact BEFORE running `fun`. A forged/unsigned callback must not drive any
-  # log writes, metrics, or flow resume — so validation comes first.
-  @spec with_validated_callback(non_neg_integer(), map(), String.t(), (Contact.t() -> any())) ::
-          :ok
-  defp with_validated_callback(organization_id, response, label, fun) do
+  @doc "Check the HMAC signature on a parsed async callback, logging any rejection."
+  @spec valid_callback?(non_neg_integer(), map()) :: boolean()
+  def valid_callback?(organization_id, response) do
+    if validate_request(organization_id, response) do
+      true
+    else
+      Logger.warning(
+        "Flow resume validation failed: organization_id=#{organization_id}, " <>
+          "flow_id=#{SafeLog.safe_inspect(response["flow_id"])}, " <>
+          "contact_id=#{SafeLog.safe_inspect(response["contact_id"])}"
+      )
+
+      false
+    end
+  end
+
+  # Restores tenant context and resolves the contact before running `fun`. The signature is
+  # checked by the caller via valid_callback?/2, ahead of any expensive work.
+  @spec with_contact(non_neg_integer(), map(), (Contact.t() -> any())) :: :ok
+  defp with_contact(organization_id, response, fun) do
     Repo.put_process_state(organization_id)
     organization = Partners.organization(organization_id)
 
-    with true <- validate_request(organization_id, response),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             id: response["contact_id"],
-             organization_id: organization.id
-           }) do
-      fun.(contact)
-    else
-      false ->
-        Logger.warning(
-          "#{label} validation failed: organization_id=#{organization_id}, flow_id=#{response["flow_id"]}, contact_id=#{response["contact_id"]}, webhook_log_id=#{response["webhook_log_id"]}, result_name=#{response["result_name"]}, timestamp=#{response["timestamp"]}"
-        )
+    case Repo.fetch_by(Contact, %{
+           id: response["contact_id"],
+           organization_id: organization.id
+         }) do
+      {:ok, contact} ->
+        fun.(contact)
 
       {:error, reason} ->
-        Logger.warning("#{label} contact lookup failed: #{SafeLog.safe_inspect(reason)}")
+        Logger.warning("Flow resume contact lookup failed: #{SafeLog.safe_inspect(reason)}")
     end
 
     :ok
