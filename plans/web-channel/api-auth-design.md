@@ -12,7 +12,7 @@
 > | 2 | `org` claim required (§2.1, §2.2 rule 6) | **Dropped** | `kid` resolves to exactly one org and the signature proves key possession, so the claim adds no security — only a way for an integrator to misconfigure. The `kid`-org ↔ Host-org check is retained; it is the load-bearing half. |
 > | 3 | First-link OTP gates a `phone` binding (§2.3) | **Trusted `phone` claim**, no OTP | An OTP to a phone the user does not own is not a workable flow for the target population. Verification is **delegated** to the NGO, stated as their obligation. `allow_jwt_phone_binding` is not being built. |
 > | 4 | No in-place renewal; `session_expired` then reconnect (§2.4) | **`renew_token` inbound event** + `token_expiring` warning | Twilio's `updateToken()` precedent. Renewal must re-verify in full **and resolve to the same contact**, else it is an identity-switch primitive on an already-joined channel. |
-> | 5 | Topic `web_channel:<contact_id>` | **`web_channel:me`** | Under JWT auth the client knows `sub`, not the Glific `contact_id`. Join reply returns `contact_id`. |
+> | 5 | Topic `web_channel:<contact_id>` | **unchanged** — `web_channel:me` was proposed, shipped to the NGO doc, and **withdrawn**. See §10.1 finding 1: a channel topic *is* the PubSub topic, so a literal `me` puts every tenant on one topic. Resolved by `GET /api/v1/web_channel/me` returning `contact_id`. |
 > | 6 | Per-contact revocation "later" (§4.2) | **v1, via logout** | `POST /api/v1/web_channel/logout` sets `contacts.tokens_valid_after` and drops the socket. Driven by shared-device use (one school tablet, many students). |
 > | 7 | — | **`web_message_id`** | Client-supplied opaque idempotency key, mirrors `bsp_message_id`. A duplicate inbound message can advance a flow twice — state corruption, not a double bubble. |
 > | 8 | Display name written to `contacts.name` | **Scoped to the web login** | A shared household number is one contact; a per-login name must not overwrite the WhatsApp-facing name or `contact.fields.name`. Storage (identity row vs `profile.name`) is still open — see §10.3. |
@@ -472,9 +472,9 @@ That line needs a comment saying so.
 **Socket / channel**
 - `WebChannelSocket.connect/3` — accept either credential; assign `token_exp` and `auth_mode`; keep
   `id/1` unchanged (it is the forced-disconnect hook logout depends on)
-- `RoomChannel.join/3` — accept topic **`web_channel:me`** resolving to the socket's contact
-  (changelog #5), keep `web_channel:<id>` for the OTP widget, return `contact_id` in the reply,
-  re-verify the credential, start the sweep timer
+- `RoomChannel.join/3` — **unchanged topic** `web_channel:<contact_id>`, still compared against
+  `socket.assigns.current_contact.id`. Reject a foreign id identically whether or not it exists, so
+  join is not a contact-enumeration oracle. Re-verify the credential, start the sweep timer
 - `RoomChannel.handle_info(:check_expiry, …)` — at `exp − warning` push `token_expiring`; at
   `exp + grace` push `session_expired` → stop
 - `RoomChannel.handle_in("renew_token", …)` — full re-verification **plus the same-contact
@@ -487,6 +487,9 @@ That line needs a comment saying so.
 
 **REST**
 - New `:web_channel_authenticated` pipeline + plug assigning `current_contact`
+- `GET /api/v1/web_channel/me` behind it — returns `contact_id` and display name for the
+  authenticated token. This is what makes the per-contact topic usable by a client that only knows
+  `sub` (§10.1 finding 1). One call per session; the mapping is immutable for a given `sub`
 - `POST /api/v1/web_channel/logout` behind it — set `contacts.tokens_valid_after = now`, then
   `Endpoint.broadcast("web_socket:#{contact_id}", "disconnect", %{})`. Compare with **`iat <=
   tokens_valid_after`**, not `<`: `iat` is second-granularity, so a token minted in the same second
@@ -534,7 +537,7 @@ That line needs a comment saying so.
 | **0c** | Dual-read: identity lookups go through the table, falling back to `contacts.phone`; verify parity in production. Requires §3.7 settled |
 | **0d** | Drop `NOT NULL` on `phone`; add `contacts.channels`; allow web-only contacts |
 | **1** | `web_channel_signing_keys`: schema, context, GraphQL, console UI, **5**-key cap, show-once |
-| **2** | JWT verifier, `:web_channel_authenticated` pipeline, socket/join verification, `web_channel:me`, expiry sweep, `token_expiring` + `renew_token` |
+| **2** | JWT verifier, `:web_channel_authenticated` pipeline, `/me`, socket/join verification, expiry sweep, `token_expiring` + `renew_token` |
 | **3** | Revocation: logout endpoint, `tokens_valid_after`, live socket disconnect |
 | **3b** | `web_message_id` idempotency + media serializer fields. Independent of auth; ship whenever |
 | **4** | Real OTP for Mode A (Glific's own widget only — the NGO path has no OTP) |
@@ -602,7 +605,7 @@ review (§10.2). **Read this triage first.**
 
 | # | Finding | Where | Why it blocks |
 |---|---|---|---|
-| 1 | **`web_channel:me` puts every contact in every tenant on one PubSub topic** | §10.1 | My design error. Cross-tenant presence leak + org-wide silent message loss. Already published in the NGO doc — must be corrected there. Fix: revert to `web_channel:<contact_id>` + `GET /api/v1/web_channel/me` |
+| 1 | ~~`web_channel:me` puts every contact in every tenant on one PubSub topic~~ **RESOLVED** | §10.1 | Topic reverted to `web_channel:<contact_id>`; `GET /api/v1/web_channel/me` added so a client knowing only `sub` can build it. NGO doc §3.2 and §6 corrected and republished. |
 | 2 | **Glific has no clustering; `Endpoint.broadcast`, Presence and forced-disconnect are all node-local** | §10.2 | The web channel silently depends on all three. Passes manual testing on N replicas and fails for staff replies, `flow_wakeup`, broadcasts and triggers. **Also breaks the logout promise already published in NGO §3.5** |
 | 3 | **`update_name` contradicts the name guarantee published in NGO §1.3/§2.4, and the handler is still reachable** | §10.1 | Doc and code say opposite things. "Not in the docs" is not an access control |
 | 4 | **`web_message_id` scoped per-org is an attack primitive** | §10.1 | Supersedes changelog #7. Cross-contact message suppression + metadata oracle. Must be `(org, contact, web_message_id)` |
@@ -641,11 +644,15 @@ Three consequences, none needing exploit code:
   silently lost, org-wide, for as long as one attacker stays connected.**
 - The two halves don't compose at all: `me` for subscription, `<contact_id>` for delivery.
 
-**Fix — take the boring option.** Revert the wire topic to `web_channel:<contact_id>` and add
-`GET /api/v1/web_channel/me` (JWT-authenticated, returns `contact_id` and display name), which the
-client calls once per session. It is one extra request at connect and it removes the whole class of
-problem. We are already adding `/logout` to the same authenticated pipeline, so this is consistent
-rather than novel.
+**RESOLVED — the boring option was taken.** The wire topic is `web_channel:<contact_id>` again, and
+`GET /api/v1/web_channel/me` (JWT-authenticated, returns `contact_id` and display name) gives a
+client that knows only `sub` the id it needs. One extra request per session, cached thereafter; it
+rides the same `:web_channel_authenticated` pipeline as `/logout`, so it adds no new surface. NGO doc
+§3.2 and the §6 sequence diagram are corrected and republished.
+
+Note the second-order benefit: keeping the topic per-contact means the existing `join/3` guard
+(`contact_id == socket.assigns.current_contact.id`) stays the authorization point, which the review
+separately confirmed as sound. The `me` design would have removed that check's meaning entirely.
 
 *Alternative if the round trip is unacceptable:* keep `web_channel:me` as a dumb channel that never
 carries Presence or broadcasts, and have `join/3` explicitly

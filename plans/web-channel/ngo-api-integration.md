@@ -361,19 +361,34 @@ socket.connect()
 
 ### 3.2 Joining the conversation
 
+The conversation topic is `web_channel:<contact_id>`, using **Glific's** id for the person. Your
+server knows them by `sub`; Glific knows them by `contact_id`. Fetch the mapping once:
+
+```
+GET /api/v1/web_channel/me
+Authorization: Bearer <jwt>
+
+→ { "contact_id": 1183, "name": "Asha Kumari" }
+```
+
+The mapping never changes for a given `sub`, so cache it for the life of the session. You can issue
+this request in parallel with opening the socket. Keeping the `contact_id` around is also useful when
+you raise a support ticket, since it is how Glific staff will look the person up.
+
 ```js
-const channel = socket.channel("web_channel:me", {})
+const { contact_id } = await getContactId()          // cached per session
+
+const channel = socket.channel(`web_channel:${contact_id}`, {})
 
 channel.join()
-  .receive("ok", ({ contact_id, messages }) => {
+  .receive("ok", ({ messages }) => {
     render(messages)            // oldest first, ready to render top-to-bottom
   })
   .receive("error", ({ reason }) => console.error(reason))
 ```
 
-The topic `web_channel:me` resolves to whichever contact the token authenticated. You do not need to
-know the Glific `contact_id` in advance — the join reply gives it to you, which is useful for
-support and for correlating with the staff inbox.
+**A token may only join its own contact's topic.** Any other `contact_id` is rejected, whether or not
+it exists — so this is not a way to discover other contacts.
 
 The join reply carries the **most recent 100 messages**, ordered oldest-first.
 
@@ -602,8 +617,10 @@ sequenceDiagram
     G->>G: kid → key → verify signature → check claims<br/>resolve or create contact
     G-->>A: connected
 
-    A->>G: join "web_channel:me"
-    G-->>A: { contact_id, messages: [last 100] }
+    A->>G: GET /api/v1/web_channel/me
+    G-->>A: { contact_id: 1183 }
+    A->>G: join "web_channel:1183"
+    G-->>A: { messages: [last 100] }
 
     U->>A: types "I need help"
     A->>G: new_message { body }
