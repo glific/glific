@@ -1,12 +1,9 @@
 defmodule Glific.AI.Message do
   @moduledoc """
-  One question and every step taken to answer it.
+  One question asked of Glific AI, and how answering it went.
 
-  A message is the unit that has a lifecycle, costs money, and can fail — an
-  individual `Glific.AI.Event` is only a fact that happened and has none of those.
-
-  Glific AI answers one question per message at this stage. When a skill can
-  invoke another skill, a `parent_message_id` records that nesting.
+  Carries the outcome, the model used and the token cost. The individual steps
+  taken are `Glific.AI.Event` rows belonging to it.
   """
 
   use Ecto.Schema

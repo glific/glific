@@ -2,12 +2,9 @@ defmodule Glific.AI.Event do
   @moduledoc """
   A single step taken while answering a question.
 
-  The event log is append-only, and it *is* the resumable state — there is no
-  separate checkpoint table. Reload a conversation's events in `step` order,
-  rebuild the model context, and carry on. Rows are therefore never rewritten.
-
-  Glific AI is read-only at this stage, so there is no `:suggestion` type yet. When
-  the approval path lands, a proposal becomes an event carrying its own status.
+  Append-only: rows are never rewritten. Reloading a conversation's events in
+  `step` order rebuilds the context sent to the model, which is how a follow-up
+  question keeps what came before.
   """
 
   use Ecto.Schema

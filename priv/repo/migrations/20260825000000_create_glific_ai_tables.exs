@@ -8,21 +8,8 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
     * `glific_ai_messages`      — one question and every step taken to answer it
     * `glific_ai_events`        — each individual step, in order
 
-  There is deliberately no checkpoint table: the event log is the resumable state.
-  Reload a message's events in `step` order, rebuild the model context, continue.
-
-  Only what the read-only stage actually needs is here. Three things that earlier
-  designs included are deliberately absent, each a small migration when its feature
-  arrives:
-
-    * the approval path — a proposal will become an event of type `suggestion`
-      carrying its own status. Note that re-adding an enum value needs
-      `ALTER TYPE ... ADD VALUE`, which cannot run inside a transaction, so that
-      migration needs `@disable_ddl_transaction true`.
-    * composition — `parent_message_id` and a depth cap, once a skill can invoke
-      another skill.
-    * a thread list — a title, an archived state and a last-event timestamp, once
-      there is an interface that lists conversations.
+  Reloading a conversation's events in `step` order rebuilds the context sent to
+  the model, which is how a follow-up question keeps what came before.
   """
 
   use Ecto.Migration
@@ -100,8 +87,7 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
       add :status, :glific_ai_message_status_enum,
         null: false,
         default: "pending",
-        comment:
-          "Read-only for now, so there are no waiting states. The approval path adds awaiting_input and awaiting_approval."
+        comment: "Glific AI only reads data at this stage, so a message either finishes or fails."
 
       add :error, :text, comment: "Why it failed, when status is failed"
 
@@ -127,8 +113,7 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
 
       add :user_id, references(:users, on_delete: :delete_all),
         null: false,
-        comment:
-          "Who asked. An Oban worker has no GraphQL layer to authorize against, so the tool wrapper checks this user's role before every read."
+        comment: "Who asked. Reads made while answering are scoped to this user's permissions."
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
@@ -150,17 +135,17 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
   defp create_events do
     create table(:glific_ai_events,
              comment:
-               "Every step taken while answering a question, in order. Append-only: this log is the resumable state, so rows are never rewritten."
+               "Every step taken while answering a question, in order. Append-only: rows are never rewritten."
            ) do
       add :step, :integer,
         null: false,
         comment:
-          "Which step of its own message this is, numbering from 1. It restarts for each message, so conversation order is (message_id, step) and not step alone. Explicit rather than derived from inserted_at so that a retried job cannot write the same step twice."
+          "Which step of its own message this is, from 1. It restarts for each message, so conversation order is (message_id, step). Unique per message, so a retried job cannot write the same step twice."
 
       add :type, :glific_ai_event_type_enum,
         null: false,
         comment:
-          "tool_result is kept distinct from assistant on purpose: it is untrusted content, and the type is what lets the loader frame it as data rather than instruction when rebuilding the context."
+          "tool_result is separate from assistant because tool output is data about the account, never instructions to the model."
 
       add :content, :text,
         comment: "The human-readable part. Reading down this column reads the conversation."

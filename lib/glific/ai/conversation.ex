@@ -2,9 +2,8 @@ defmodule Glific.AI.Conversation do
   @moduledoc """
   A Glific AI chat thread, owned by one user within one organization.
 
-  A conversation groups many `Glific.AI.Message`s, which in turn hold the
-  individual `Glific.AI.Event`s. It carries only what identifies the thread; the
-  columns a thread list would need arrive with the interface that needs them.
+  Groups many `Glific.AI.Message`s, each of which holds its own
+  `Glific.AI.Event`s.
   """
 
   use Ecto.Schema
