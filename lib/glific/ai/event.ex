@@ -34,8 +34,8 @@ defmodule Glific.AI.Event do
           conversation: Conversation.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
         }
 
   schema "glific_ai_events" do
@@ -52,7 +52,7 @@ defmodule Glific.AI.Event do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc "Standard changeset pattern we use for all data types"
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(event, attrs) do
     event

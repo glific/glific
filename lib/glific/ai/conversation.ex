@@ -25,8 +25,8 @@ defmodule Glific.AI.Conversation do
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
         }
 
   schema "glific_ai_conversations" do
@@ -37,12 +37,13 @@ defmodule Glific.AI.Conversation do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc "Standard changeset pattern we use for all data types"
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(conversation, attrs) do
     conversation
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_length(:title, max: 255)
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:organization_id)
   end

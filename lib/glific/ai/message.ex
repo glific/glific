@@ -41,8 +41,8 @@ defmodule Glific.AI.Message do
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
         }
 
   schema "glific_ai_messages" do
@@ -61,7 +61,7 @@ defmodule Glific.AI.Message do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc "Standard changeset pattern we use for all data types"
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
