@@ -82,6 +82,11 @@ defmodule Glific.Flows.Action do
     "nmt_tts_with_bhasini" => "text_to_speech"
   }
 
+  # Upper bound on how long an async webhook node may park the flow. A parked contact sits in
+  # silence until the callback arrives or the window expires, so authors cannot push this past
+  # 5 minutes however long their webhook takes.
+  @max_webhook_wait_time 5 * 60
+
   # They fall under actions, thus not using "wait for response" with them, as that is a router.
   @wait_for ["wait_for_time", "wait_for_result"]
   @template_type ["send_msg", "send_broadcast"]
@@ -116,8 +121,8 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          ## this is a custom delay in minutes for wait for time nodes.
-          ## Currently we use this only for the wait for time node.
+          ## seconds to wait at this node: how long a wait for time/result node parks the
+          ## flow, or how long an async webhook node awaits its callback.
           wait_time: integer() | nil,
 
           # Google sheet node specific fields
@@ -343,7 +348,8 @@ defmodule Glific.Flows.Action do
       method: json["method"],
       result_name: json["result_name"],
       body: json["body"],
-      headers: json["headers"]
+      headers: json["headers"],
+      wait_time: webhook_wait_time(json["wait_time"])
     })
   end
 
@@ -566,6 +572,16 @@ defmodule Glific.Flows.Action do
     ]
   end
 
+  def validate(%{type: "call_webhook", wait_time: wait_time}, errors, _flow)
+      when is_integer(wait_time) and wait_time > @max_webhook_wait_time do
+    [
+      {Webhook,
+       "A webhook can wait at most #{div(@max_webhook_wait_time, 60)} minutes; this node will wait that long instead.",
+       "Warning"}
+      | errors
+    ]
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -662,6 +678,14 @@ defmodule Glific.Flows.Action do
   rescue
     # in case any of the uuids don't exist, we just trap the exception
     _ -> :unknown
+  end
+
+  @spec webhook_wait_time(String.t() | integer() | nil) :: non_neg_integer() | nil
+  defp webhook_wait_time(value) do
+    case Glific.parse_maybe_integer(value) do
+      {:ok, seconds} when is_integer(seconds) and seconds > 0 -> seconds
+      _ -> nil
+    end
   end
 
   ## Label formatter so that we can apply the dynamic label to the message
@@ -1081,9 +1105,11 @@ defmodule Glific.Flows.Action do
 
   @spec do_park(Action.t(), FlowContext.t(), non_neg_integer()) :: FlowContext.t()
   defp do_park(action, context, default_wait_time) do
+    wait_time = min(action.wait_time || default_wait_time, @max_webhook_wait_time)
+
     {:ok, context} =
       FlowContext.update_flow_context(context, %{
-        wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time || default_wait_time),
+        wakeup_at: DateTime.add(DateTime.utc_now(), wait_time),
         is_background_flow: context.flow.is_background,
         is_await_result: true
       })

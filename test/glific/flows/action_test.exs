@@ -412,6 +412,45 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  describe "process/3 — call_webhook wait_time" do
+    @webhook_json %{
+      "uuid" => "UUID 1",
+      "type" => "call_webhook",
+      "url" => "URL",
+      "method" => "METHOD",
+      "result_name" => "RESULT_NAME",
+      "headers" => %{"Content-Type" => "application/json"}
+    }
+
+    defp process_webhook(wait_time) do
+      json =
+        if wait_time == :absent,
+          do: @webhook_json,
+          else: Map.put(@webhook_json, "wait_time", wait_time)
+
+      {action, _uuid_map} = Action.process(json, %{}, %Node{uuid: "Test UUID"})
+      action.wait_time
+    end
+
+    test "parses an integer wait_time" do
+      assert process_webhook(120) == 120
+    end
+
+    test "parses a string wait_time, as the flow editor sends it" do
+      assert process_webhook("120") == 120
+    end
+
+    test "keeps the authored value even above the cap, so validate/3 can flag it" do
+      assert process_webhook(600) == 600
+    end
+
+    test "falls back to nil when absent, blank, zero, negative or unparseable" do
+      for value <- [:absent, nil, "", "  ", 0, "0", -30, "-30", "abc", "60s"] do
+        assert process_webhook(value) == nil
+      end
+    end
+  end
+
   test "process extracts the right values from json for send_broadcast" do
     node = %Node{uuid: "Test UUID"}
 
@@ -1592,6 +1631,34 @@ defmodule Glific.Flows.ActionTest do
       assert {:wait, parked, []} = Action.execute(action, context, [])
       assert parked.is_await_result == false
     end
+
+    defp park_seconds(context, wait_time) do
+      action = %Action{
+        type: "call_webhook",
+        method: "FUNCTION",
+        url: "filesearch-gpt",
+        headers: %{"Content-Type" => "application/json"},
+        body: Jason.encode!(%{"question" => "hi", "assistant_id" => "asst_1"}),
+        result_name: "r",
+        wait_time: wait_time
+      }
+
+      assert {:wait, parked, []} = Action.execute(action, context, [])
+      DateTime.diff(parked.wakeup_at, DateTime.utc_now())
+    end
+
+    test "falls back to the webhook's default window when the node sets no wait_time",
+         %{context: context} do
+      assert_in_delta park_seconds(context, nil), 60, 5
+    end
+
+    test "honours the node's own wait_time over the default", %{context: context} do
+      assert_in_delta park_seconds(context, 240), 240, 5
+    end
+
+    test "caps the park at 5 minutes however long the node asks for", %{context: context} do
+      assert_in_delta park_seconds(context, 3600), 300, 5
+    end
   end
 
   describe "validate/3 — deprecated Bhashini webhooks" do
@@ -1633,6 +1700,29 @@ defmodule Glific.Flows.ActionTest do
         action = %Action{type: "call_webhook", url: url}
         assert Action.validate(action, [], %{}) == []
       end
+    end
+  end
+
+  describe "validate/3 — call_webhook wait_time cap" do
+    test "warns when the node asks to wait longer than the 5 minute cap" do
+      action = %Action{type: "call_webhook", url: "filesearch-gpt", wait_time: 600}
+
+      assert [{Webhook, message, "Warning"}] = Action.validate(action, [], %{})
+      assert message =~ "at most 5 minutes"
+    end
+
+    test "stays quiet at or below the cap, and when no wait_time is set" do
+      for wait_time <- [nil, 60, 300] do
+        action = %Action{type: "call_webhook", url: "filesearch-gpt", wait_time: wait_time}
+        assert Action.validate(action, [], %{}) == []
+      end
+    end
+
+    test "a deprecated webhook still reports the Critical migration error first" do
+      action = %Action{type: "call_webhook", url: "text_to_speech_with_bhasini", wait_time: 600}
+
+      assert [{Webhook, message, "Critical"}] = Action.validate(action, [], %{})
+      assert message =~ "deprecated"
     end
   end
 
