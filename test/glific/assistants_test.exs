@@ -3206,4 +3206,56 @@ defmodule Glific.AssistantsTest do
       assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
     end
   end
+
+  describe "set_live_version/2 evaluation summary" do
+    test "carries over the completed evaluation of the newly live version", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      new_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{
+            assistant_config_version_id: new_config_version.id,
+            status: :completed
+          })
+        )
+
+      assert {:ok, _result} = Assistants.set_live_version(assistant.id, new_config_version.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == evaluation.id
+    end
+
+    test "clears a stale evaluation when the newly live version has none", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      old_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      old_evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{
+            assistant_config_version_id: old_config_version.id,
+            status: :completed
+          })
+        )
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: old_config_version.id,
+          last_evaluation_run_id: old_evaluation.id
+        })
+        |> Repo.update()
+
+      unevaluated_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      assert {:ok, _result} =
+               Assistants.set_live_version(assistant.id, unevaluated_config_version.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
+    end
+  end
 end
