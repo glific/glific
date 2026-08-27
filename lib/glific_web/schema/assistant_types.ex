@@ -168,6 +168,16 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field(:name_or_assistant_id, :string)
   end
 
+  object :knowledge_base_version_update do
+    field :id, :id
+    field :knowledge_base_id, :id
+    field :version_number, :integer
+    field :status, :string
+    field :size, :integer
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+  end
+
   object :assistant_config_version_for_evals do
     field :id, :id
     field :assistant_id, :id
@@ -284,6 +294,30 @@ defmodule GlificWeb.Schema.AssistantTypes do
       arg(:file_id, non_null(:string))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Assistants.get_file/3)
+    end
+  end
+
+  object :assistant_subscriptions do
+    @desc "Delivers an assistant config version's status as it changes (e.g. once Kaapi's sync completes)."
+    field :assistant_config_version_updated, :assistant_config_version do
+      middleware(Authorize, :staff)
+
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
+
+      resolve(fn config_version, _args, _resolution -> {:ok, config_version} end)
+    end
+
+    @desc "Delivers a knowledge base version's status as it changes (e.g. once Kaapi's indexing callback arrives)."
+    field :knowledge_base_version_updated, :knowledge_base_version_update do
+      middleware(Authorize, :staff)
+
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
+
+      resolve(fn knowledge_base_version, _args, _resolution -> {:ok, knowledge_base_version} end)
     end
   end
 end
