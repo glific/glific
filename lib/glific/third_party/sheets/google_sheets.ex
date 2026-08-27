@@ -108,7 +108,7 @@ defmodule Glific.Sheets.GoogleSheets do
       {:ok, rows}
     else
       {:error, "Google API is not active"} ->
-        {:ok, ApiClient.get_csv_content(spreadsheet_id, gid: gid) |> Enum.to_list()}
+        {:ok, ApiClient.get_csv_content(url: sheet_url) |> Enum.to_list()}
 
       {:ok, %{values: nil}} ->
         {:ok, []}
