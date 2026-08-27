@@ -431,6 +431,78 @@ defmodule Glific.Flows.WebhookTest do
     end
   end
 
+  describe "Webhook.maybe_upload_tts_audio/1 when another node is awaiting" do
+    setup attrs do
+      contact = Fixtures.contact_fixture(attrs)
+      flow = Fixtures.flow_fixture(Map.merge(attrs, %{keywords: [], name: Faker.Person.name()}))
+
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: attrs.organization_id,
+          node_uuid: Ecto.UUID.generate(),
+          is_await_result: true
+        })
+
+      response = %{
+        "output_type" => "audio",
+        "message" => Base.encode64("fake audio bytes"),
+        "organization_id" => attrs.organization_id,
+        "contact_id" => contact.id,
+        "flow_id" => flow.id,
+        "context_id" => context.id,
+        "node_uuid" => context.node_uuid
+      }
+
+      %{contact: contact, flow: flow, context: context, response: response}
+    end
+
+    test "skips when the same context has since parked on a different node", ctx do
+      # the timed-out node took the Failure branch and the flow parked on a later async node --
+      # contact + flow still matches, so only the node_uuid distinguishes them
+      result =
+        Webhook.maybe_upload_tts_audio(%{ctx.response | "node_uuid" => Ecto.UUID.generate()})
+
+      assert result["success"] == false
+      assert result["error_type"] == "flow_not_awaiting"
+      assert is_nil(result["message"])
+    end
+
+    test "skips when the contact re-entered the flow and parked on the same node", ctx do
+      # a fresh run reaches the same node: node_uuid matches but it is a different execution,
+      # so only the context_id distinguishes them
+      result =
+        Webhook.maybe_upload_tts_audio(%{ctx.response | "context_id" => ctx.context.id + 1})
+
+      assert result["success"] == false
+      assert result["error_type"] == "flow_not_awaiting"
+    end
+
+    test "attempts the upload when both the context and the node match", ctx do
+      result = Webhook.maybe_upload_tts_audio(ctx.response)
+
+      refute result["error_type"] == "flow_not_awaiting"
+    end
+
+    test "falls back to contact and flow when the callback carries no node_uuid", ctx do
+      # callbacks dispatched before these fields were sent must keep resuming
+      response = Map.drop(ctx.response, ["context_id", "node_uuid"])
+
+      result = Webhook.maybe_upload_tts_audio(response)
+
+      refute result["error_type"] == "flow_not_awaiting"
+    end
+
+    test "falls back to contact and flow when the node_uuid is not a valid uuid", ctx do
+      result = Webhook.maybe_upload_tts_audio(%{ctx.response | "node_uuid" => "not-a-uuid"})
+
+      refute result["error_type"] == "flow_not_awaiting"
+    end
+  end
+
   describe "Webhook.resume/3 when the flow already moved on" do
     test "does not attempt a resume and records the late arrival on the log", attrs do
       contact = Fixtures.contact_fixture(attrs)
@@ -473,6 +545,65 @@ defmodule Glific.Flows.WebhookTest do
       assert log.response_json["message"] == "a late answer"
       # the marker proves resume/4 was skipped -- it does not set error_type
       assert log.response_json["error_type"] == "flow_not_awaiting"
+    end
+
+    test "does not resume a later node the same context has since parked on", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+      flow = Fixtures.flow_fixture(Map.merge(attrs, %{keywords: [], name: Faker.Person.name()}))
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+
+      {:ok, timed_out} = Webhook.update_log(webhook_log, Webhook.timeout_error())
+
+      # the node that timed out took the Failure branch; the flow walked on and parked this same
+      # context on a later async node
+      {:ok, parked_on_later_node} =
+        FlowContext.create_flow_context(%{
+          contact_id: contact.id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: attrs.organization_id,
+          node_uuid: Ecto.UUID.generate(),
+          is_await_result: true
+        })
+
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+
+      signature_payload = %{
+        "organization_id" => attrs.organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp
+      }
+
+      response = %{
+        "organization_id" => attrs.organization_id,
+        "flow_id" => flow.id,
+        "contact_id" => contact.id,
+        "timestamp" => timestamp,
+        "signature" =>
+          Glific.signature(
+            attrs.organization_id,
+            Jason.encode!(signature_payload),
+            timestamp
+          ),
+        "webhook_log_id" => timed_out.id,
+        "webhook_name" => "text_to_speech",
+        "context_id" => parked_on_later_node.id,
+        "node_uuid" => Ecto.UUID.generate(),
+        "result_name" => "tts",
+        "message" => "a late answer"
+      }
+
+      assert :ok = Webhook.resume(attrs.organization_id, %{"success" => true}, response)
+
+      # the later node must be left untouched -- still parked, and with none of the stale
+      # result written into it
+      reloaded = Repo.get!(FlowContext, parked_on_later_node.id)
+      assert reloaded.is_await_result == true
+      assert is_nil(reloaded.completed_at)
+      assert reloaded.node_uuid == parked_on_later_node.node_uuid
+      assert reloaded.results == %{}
     end
   end
 
@@ -664,6 +795,41 @@ defmodule Glific.Flows.WebhookTest do
     jobs = all_enqueued(worker: Webhook, prefix: "global")
     # although we had 2 webhook calls, only 1 job got enqueued
     assert 1 == length(jobs)
+  end
+
+  test "the enqueued webhook job carries the dispatching node's identifiers", attrs do
+    Tesla.Mock.mock(fn %{method: :post} ->
+      %Tesla.Env{status: 200, body: Jason.encode!(@results)}
+    end)
+
+    node_uuid = Ecto.UUID.generate()
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id,
+        node_uuid: node_uuid
+      })
+
+    context = Repo.preload(context, [:contact, :flow])
+
+    action = %Action{
+      headers: %{"Accept" => "application/json"},
+      method: "POST",
+      url: "some url",
+      body: Jason.encode!(@action_body)
+    }
+
+    assert Webhook.execute(action, context) == nil
+
+    [job] = all_enqueued(worker: Webhook, prefix: "global")
+
+    # an async callback is pinned to this node execution by these two -- without them the
+    # guard degrades to a flow-wide check and can resume the wrong node
+    assert job.args["node_uuid"] == node_uuid
+    assert job.args["context_id"] == context.id
   end
 
   test "execute a webhook where url is parse_via_gpt_vision, consecutive webhook calls should work",

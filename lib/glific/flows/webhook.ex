@@ -188,8 +188,9 @@ defmodule Glific.Flows.Webhook do
         webhook_log_id: webhook_log.id,
         flow_id: context.flow_id,
         contact_id: context.contact_id,
-        # for job uniqueness
+        # for job uniqueness, and to pin an async callback to this node execution
         context_id: context.id,
+        node_uuid: context.node_uuid,
         context: %{id: context.id, delay: context.delay, uuids_seen: context.uuids_seen},
         organization_id: context.organization_id,
         action_id: action.uuid
@@ -294,6 +295,8 @@ defmodule Glific.Flows.Webhook do
     enrichment = %{
       "flow_id" => args["flow_id"],
       "contact_id" => args["contact_id"],
+      "context_id" => args["context_id"],
+      "node_uuid" => args["node_uuid"],
       "webhook_log_id" => webhook_log_id,
       "result_name" => result_name
     }
@@ -475,16 +478,19 @@ defmodule Glific.Flows.Webhook do
   @spec resume(non_neg_integer(), map(), map()) :: :ok
   def resume(organization_id, result, response) do
     with_validated_callback(organization_id, response, "Flow resume", fn contact ->
-      if still_awaiting?(response),
-        do: resume(organization_id, result, response, contact),
-        else: record_late_callback(result, response)
+      case awaiting_context(response) do
+        {:ok, context} -> resume(organization_id, result, response, contact, context)
+        :none -> record_late_callback(result, response)
+        :unknown -> resume(organization_id, result, response, contact, flow_id(response))
+      end
     end)
   end
 
-  # The await window already closed, so there is no context to resume. Stop here rather than
-  # letting resume_contact_flow/4 fail with "no active flows awaiting results" and report a
-  # SystemError for an expected outcome. Skipping also avoids Dispatcher.callback/3, whose
-  # handle_callback/3 does the voice node's NMT + TTS post-processing.
+  # The node that dispatched this webhook is no longer parked, so there is nothing to resume.
+  # Stop here rather than letting resume_contact_flow/4 fail with "no active flows awaiting
+  # results" and report a SystemError for an expected outcome. Skipping also avoids
+  # Dispatcher.callback/3, whose handle_callback/3 does the voice node's NMT + TTS
+  # post-processing.
   @spec record_late_callback(map(), map()) :: :ok
   defp record_late_callback(result, response) do
     response = Map.put(response, "error_type", "flow_not_awaiting")
@@ -493,7 +499,7 @@ defmodule Glific.Flows.Webhook do
     Instrumentation.track_webhook_count(response["webhook_name"], "late_callback")
 
     Logger.info(
-      "Late callback ignored, flow no longer awaiting a result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}"
+      "Late callback ignored, node no longer awaiting a result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}, node_uuid=#{response["node_uuid"]}"
     )
 
     :ok
@@ -528,8 +534,14 @@ defmodule Glific.Flows.Webhook do
     :ok
   end
 
-  @spec resume(non_neg_integer(), map(), map(), Contact.t()) :: :ok
-  defp resume(organization_id, result, response, contact) do
+  @spec resume(
+          non_neg_integer(),
+          map(),
+          map(),
+          Contact.t(),
+          FlowContext.t() | non_neg_integer() | nil
+        ) :: :ok
+  defp resume(organization_id, result, response, contact, target) do
     maybe_update_log(response["webhook_log_id"], callback_log_message(result, response))
 
     shaped = Dispatcher.callback(response["webhook_name"], result, response)
@@ -538,7 +550,7 @@ defmodule Glific.Flows.Webhook do
 
     FlowContext.resume_contact_flow(
       contact,
-      response["flow_id"],
+      target,
       %{response_key => shaped},
       resume_message(result, response, organization_id)
     )
@@ -633,14 +645,14 @@ defmodule Glific.Flows.Webhook do
 
   def maybe_upload_tts_audio(response), do: response
 
-  # The flow already moved on -- timed out or completed -- so nothing can consume the audio.
-  # Skipping saves a multi-megabyte GCS upload whose result is discarded. The base64 has to be
-  # dropped as well: callback_log_message/2 copies "message" into the webhook log's response_json,
-  # so leaving it would write the whole payload into the row.
+  # The node that asked for this audio has moved on -- timed out or completed -- so nothing can
+  # consume it. Skipping saves a multi-megabyte GCS upload whose result is discarded. The base64
+  # has to be dropped as well: callback_log_message/2 copies "message" into the webhook log's
+  # response_json, so leaving it would write the whole payload into the row.
   @spec skip_tts_upload(map()) :: map()
   defp skip_tts_upload(response) do
     Logger.info(
-      "Skipping TTS upload, flow no longer awaiting result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}"
+      "Skipping TTS upload, node no longer awaiting result: organization_id=#{response["organization_id"]}, webhook_log_id=#{response["webhook_log_id"]}, node_uuid=#{response["node_uuid"]}"
     )
 
     response
@@ -650,19 +662,47 @@ defmodule Glific.Flows.Webhook do
     |> Map.put("reason", "Flow is no longer awaiting a result; TTS upload skipped")
   end
 
-  # Unusable ids mean we cannot run the lookup, so fall through to the upload -- the same
-  # behaviour as before this check existed. Skipping instead would drop audio a flow may
-  # genuinely be waiting on.
-  @spec still_awaiting?(map()) :: boolean()
-  defp still_awaiting?(response) do
-    case {integer_field(response["contact_id"]), integer_field(response["flow_id"])} do
+  # Resolves the one parked context this callback belongs to. `:unknown` means the ids were
+  # unusable so the lookup could not run -- callers then fall through to the behaviour that
+  # existed before this check, rather than discarding a result a flow may genuinely await.
+  @spec awaiting_context(map()) :: {:ok, FlowContext.t()} | :none | :unknown
+  defp awaiting_context(response) do
+    case {integer_field(response["contact_id"]), flow_id(response)} do
       {contact_id, flow_id} when is_integer(contact_id) and is_integer(flow_id) ->
-        FlowContext.awaiting_result?(contact_id, flow_id)
+        %{
+          contact_id: contact_id,
+          flow_id: flow_id,
+          context_id: integer_field(response["context_id"]),
+          node_uuid: uuid_field(response["node_uuid"])
+        }
+        |> FlowContext.awaiting_context()
+        |> case do
+          nil -> :none
+          context -> {:ok, context}
+        end
 
       _ ->
-        true
+        :unknown
     end
   end
+
+  @spec still_awaiting?(map()) :: boolean()
+  defp still_awaiting?(response), do: awaiting_context(response) != :none
+
+  @spec flow_id(map()) :: integer() | nil
+  defp flow_id(response), do: integer_field(response["flow_id"])
+
+  # A node_uuid that is not a well-formed UUID would make the query raise, so drop it and let
+  # the lookup fall back to contact + flow.
+  @spec uuid_field(any()) :: Ecto.UUID.t() | nil
+  defp uuid_field(value) when is_binary(value) do
+    case Ecto.UUID.cast(value) do
+      {:ok, uuid} -> uuid
+      :error -> nil
+    end
+  end
+
+  defp uuid_field(_value), do: nil
 
   @spec integer_field(any()) :: integer() | nil
   defp integer_field(value) when is_integer(value), do: value

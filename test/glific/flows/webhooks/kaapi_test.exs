@@ -1,5 +1,5 @@
 defmodule Glific.Flows.Webhooks.KaapiTest do
-  use ExUnit.Case, async: true
+  use Glific.DataCase, async: true
 
   alias Glific.Flows.Webhooks.ErrorType
   alias Glific.Flows.Webhooks.Kaapi, as: KaapiSupport
@@ -111,6 +111,26 @@ defmodule Glific.Flows.Webhooks.KaapiTest do
       assert KaapiSupport.from_http_status("File download failed") == :unknown
       assert KaapiSupport.from_http_status(%{"error" => "boom"}) == :unknown
       assert KaapiSupport.from_http_status(nil) == :unknown
+    end
+  end
+
+  describe "build_flow_resume_metadata/4" do
+    test "carries the dispatching node's identifiers through to Kaapi" do
+      node_uuid = Ecto.UUID.generate()
+
+      fields = %{
+        "webhook_log_id" => 7,
+        "result_name" => "tts",
+        "context_id" => 42,
+        "node_uuid" => node_uuid
+      }
+
+      {_callback_url, metadata} = KaapiSupport.build_flow_resume_metadata(1, 2, 3, fields)
+
+      # Kaapi echoes this map back on the callback; without these two the late-callback guard
+      # falls back to a flow-wide check and can resume the wrong node
+      assert metadata.context_id == 42
+      assert metadata.node_uuid == node_uuid
     end
   end
 end

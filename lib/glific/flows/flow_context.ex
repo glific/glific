@@ -991,15 +991,34 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Whether the contact still has a flow parked on `flow_id` awaiting a webhook result.
+  The context still parked on the node that dispatched an async webhook, or nil if the flow
+  has moved on.
+
+  `:context_id` and `:node_uuid` pin the lookup to that one node execution. Matching on
+  contact and flow alone also matches a *later* async node in the same run, or a fresh run of
+  the same flow, and a late callback would then resume that with a stale result. They are nil
+  for callbacks dispatched before those fields were sent, which fall back to contact + flow.
+
+  Bounded to one row: the pinned lookup can only match one, and the fallback takes the newest
+  rather than raising on a contact that somehow has two parked contexts on the same flow --
+  this runs on the callback path, where raising would lose the callback.
   """
-  @spec awaiting_result?(non_neg_integer(), non_neg_integer()) :: boolean()
-  def awaiting_result?(contact_id, flow_id) do
+  @spec awaiting_context(map()) :: FlowContext.t() | nil
+  def awaiting_context(%{contact_id: contact_id, flow_id: flow_id} = dispatch) do
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id and fc.flow_id == ^flow_id)
     |> where([fc], fc.is_await_result == true and is_nil(fc.completed_at))
-    |> Repo.exists?()
+    |> pin_to(:id, dispatch[:context_id])
+    |> pin_to(:node_uuid, dispatch[:node_uuid])
+    |> order_by([fc], desc: fc.id)
+    |> limit(1)
+    |> preload(:flow)
+    |> Repo.one()
   end
+
+  @spec pin_to(Ecto.Query.t(), atom(), term()) :: Ecto.Query.t()
+  defp pin_to(query, _field, nil), do: query
+  defp pin_to(query, field, value), do: where(query, [fc], field(fc, ^field) == ^value)
 
   @doc """
   Resume the flow for a given contact and a given flow id if still active

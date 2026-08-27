@@ -75,7 +75,9 @@ defmodule Glific.Flows.Webhooks.Kaapi do
       timestamp: timestamp,
       signature: signature,
       webhook_log_id: fields["webhook_log_id"],
-      result_name: fields["result_name"]
+      result_name: fields["result_name"],
+      context_id: fields["context_id"],
+      node_uuid: fields["node_uuid"]
     }
 
     {callback_url, request_metadata}
