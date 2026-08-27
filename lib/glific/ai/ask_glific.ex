@@ -26,6 +26,7 @@ defmodule Glific.AI.AskGlific do
     AI.Event,
     AI.Message,
     AI.Models,
+    AI.Provider,
     AI.Request,
     AI.Usage,
     Repo
@@ -311,8 +312,7 @@ defmodule Glific.AI.AskGlific do
   defp unix(nil), do: nil
   defp unix(datetime), do: DateTime.to_unix(datetime)
 
-  @spec describe(term()) :: String.t()
+  @spec describe(:disabled | Provider.failure()) :: String.t()
   defp describe(:disabled), do: "Glific AI is not enabled"
-  defp describe({_kind, message}) when is_binary(message), do: message
-  defp describe(reason), do: Glific.SafeLog.safe_inspect(reason)
+  defp describe({_kind, message}), do: message
 end
