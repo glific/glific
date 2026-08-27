@@ -157,20 +157,6 @@ defmodule Glific.Sheets.GoogleSheets do
     Tesla.client(middleware ++ Glific.get_tesla_retry_middleware())
   end
 
-  # The 3 Sheets v4 REST calls we need, hand-rolled with Tesla's BaseUrl +
-  # PathParams instead of the generated `google_api_sheets` client: that client
-  # resolves spreadsheet_id/range into the URL itself before Tesla's middleware
-  # chain runs, so PathParams never sees a template and every spreadsheet
-  # fragments AppSignal into its own endpoint entry.
-  #
-  # `range` is interpolated directly rather than routed through `path_params`:
-  # PathParams percent-encodes via `URI.encode_www_form/1`, which turns a space
-  # into `+` — wrong for a path segment (sheet/tab names can contain spaces) and
-  # different from what the Sheets API expects. Encoding it ourselves with the
-  # same rule the generated client used keeps the request byte-for-byte
-  # identical; only `spreadsheet_id` (never contains characters that encode
-  # differently between the two schemes) goes through `path_params`, which is
-  # enough to group AppSignal by spreadsheet.
   @spec spreadsheets_get(Tesla.Client.t(), String.t()) :: {:ok, map()} | {:error, any()}
   defp spreadsheets_get(conn, spreadsheet_id) do
     conn
