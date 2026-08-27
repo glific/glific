@@ -349,7 +349,7 @@ defmodule Glific.Flows.Action do
       result_name: json["result_name"],
       body: json["body"],
       headers: json["headers"],
-      wait_time: webhook_wait_time(json["wait_time"])
+      wait_time: webhook_wait_time(json["body"])
     })
   end
 
@@ -680,13 +680,31 @@ defmodule Glific.Flows.Action do
     _ -> :unknown
   end
 
-  @spec webhook_wait_time(String.t() | integer() | nil) :: non_neg_integer() | nil
-  defp webhook_wait_time(value) do
-    case Glific.parse_maybe_integer(value) do
-      {:ok, seconds} when is_integer(seconds) and seconds > 0 -> seconds
+  ## The await window rides in the webhook body the author already edits, so no flow-editor
+  ## change is needed to expose it. Every webhook implementation allowlists the fields it
+  ## forwards, so this key never reaches Kaapi. Read at compile time, hence literals only --
+  ## an expression here would not have been substituted yet.
+  @spec webhook_wait_time(String.t() | nil) :: non_neg_integer() | nil
+  defp webhook_wait_time(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"wait_time" => value}} -> parse_wait_time(value)
       _ -> nil
     end
   end
+
+  defp webhook_wait_time(_body), do: nil
+
+  @spec parse_wait_time(any()) :: non_neg_integer() | nil
+  defp parse_wait_time(value) when is_integer(value) and value > 0, do: value
+
+  defp parse_wait_time(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {seconds, ""} when seconds > 0 -> seconds
+      _ -> nil
+    end
+  end
+
+  defp parse_wait_time(_value), do: nil
 
   ## Label formatter so that we can apply the dynamic label to the message
   @spec process_labels(list() | nil) :: list() | nil

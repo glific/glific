@@ -412,7 +412,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-  describe "process/3 — call_webhook wait_time" do
+  describe "process/3 — call_webhook wait_time read from the body" do
     @webhook_json %{
       "uuid" => "UUID 1",
       "type" => "call_webhook",
@@ -422,31 +422,63 @@ defmodule Glific.Flows.ActionTest do
       "headers" => %{"Content-Type" => "application/json"}
     }
 
-    defp process_webhook(wait_time) do
-      json =
-        if wait_time == :absent,
-          do: @webhook_json,
-          else: Map.put(@webhook_json, "wait_time", wait_time)
-
+    defp process_body(body) do
+      json = Map.put(@webhook_json, "body", body)
       {action, _uuid_map} = Action.process(json, %{}, %Node{uuid: "Test UUID"})
       action.wait_time
     end
 
-    test "parses an integer wait_time" do
-      assert process_webhook(120) == 120
+    test "reads an integer wait_time out of the body" do
+      assert process_body(~s|{"speech": "@results.x", "wait_time": 120}|) == 120
     end
 
-    test "parses a string wait_time, as the flow editor sends it" do
-      assert process_webhook("120") == 120
+    test "reads a string wait_time, as the flow editor's json template leaves it" do
+      assert process_body(~s|{"speech": "", "wait_time": "120"}|) == 120
     end
 
     test "keeps the authored value even above the cap, so validate/3 can flag it" do
-      assert process_webhook(600) == 600
+      assert process_body(~s|{"wait_time": 600}|) == 600
     end
 
-    test "falls back to nil when absent, blank, zero, negative or unparseable" do
-      for value <- [:absent, nil, "", "  ", 0, "0", -30, "-30", "abc", "60s"] do
-        assert process_webhook(value) == nil
+    test "ignores a blank, zero, negative, unparseable or non-scalar wait_time" do
+      for value <- [
+            ~s|""|,
+            ~s|"  "|,
+            "0",
+            ~s|"0"|,
+            "-30",
+            ~s|"-30"|,
+            ~s|"abc"|,
+            ~s|"60s"|,
+            "12.5",
+            "{}",
+            "[]",
+            "null",
+            "true"
+          ] do
+        assert process_body(~s|{"wait_time": | <> value <> "}") == nil
+      end
+    end
+
+    test "is nil when the body has no wait_time, is absent, or is not valid json" do
+      assert process_body(~s|{"speech": ""}|) == nil
+      assert process_body(nil) == nil
+      assert process_body("") == nil
+      assert process_body("not json at all") == nil
+      assert process_body(~s|["a", "list"]|) == nil
+    end
+
+    test "the auto-json template for every async webhook parses to no wait_time" do
+      templates =
+        Path.join(File.cwd!(), "priv/data/flows/webhook.json")
+        |> File.read!()
+        |> Jason.decode!()
+        |> Map.new(fn entry -> {entry["name"], entry["body"]} end)
+
+      for name <- ["speech_to_text", "text_to_speech", "filesearch-gpt", "voice-filesearch-gpt"] do
+        body = Map.fetch!(templates, name)
+        assert body =~ "wait_time", "#{name} template should offer a wait_time field"
+        assert process_body(body) == nil, "#{name} template should default, not park early"
       end
     end
   end
