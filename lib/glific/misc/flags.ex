@@ -463,27 +463,6 @@ defmodule Glific.Flags do
   end
 
   @doc """
-  Get Glific AI feature flag for the organization.
-
-  On for the Glific organization itself in a trusted environment, so internal
-  testing needs no manual toggle. Every other organization is off until the flag
-  is enabled for them.
-  """
-  @spec get_glific_ai_enabled(map()) :: boolean
-  def get_glific_ai_enabled(organization) do
-    get_flag_enabled(:glific_ai_enabled, organization) or
-      Glific.trusted_env?(Application.get_env(:glific, :environment), organization.id)
-  end
-
-  @doc """
-  Set fun_with_flag toggle for Glific AI enabled for an organization
-  """
-  @spec set_glific_ai_enabled(map()) :: map()
-  def set_glific_ai_enabled(organization) do
-    Map.put(organization, :glific_ai_enabled, get_glific_ai_enabled(organization))
-  end
-
-  @doc """
   Set fun_with_flag toggle for ask_glific enabled for an organization
   """
   @spec set_is_ask_glific_enabled(map()) :: map()

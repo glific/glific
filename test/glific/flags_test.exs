@@ -217,20 +217,4 @@ defmodule Glific.FlagsTest do
     assert %{is_prompt_generator_enabled: false} =
              Flags.set_flag_enabled(organization, :is_prompt_generator_enabled)
   end
-
-  test "glific_ai_enabled is on for the Glific org in a trusted env, and togglable elsewhere" do
-    # trusted_env?/2 matches only :dev and :prod; tests run as :test
-    original_env = Application.get_env(:glific, :environment)
-    Application.put_env(:glific, :environment, :dev)
-    on_exit(fn -> Application.put_env(:glific, :environment, original_env) end)
-
-    glific_org = Partners.organization(Glific.glific_organization_id())
-    assert Flags.get_glific_ai_enabled(glific_org)
-
-    other_org = Fixtures.organization_fixture(%{shortcode: "glific_ai_other"})
-    refute Flags.get_glific_ai_enabled(other_org)
-
-    FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: other_org.id})
-    assert %{glific_ai_enabled: true} = Flags.set_glific_ai_enabled(other_org)
-  end
 end
