@@ -81,9 +81,6 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
              comment:
                "One question and every step taken to answer it. Carries the lifecycle, the cost, and the composition tree."
            ) do
-      add :skill, :string,
-        comment: "Which skill the router selected. Null until routing completes."
-
       add :status, :glific_ai_message_status_enum,
         null: false,
         default: "pending",
@@ -123,13 +120,6 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
     end
 
     create index(:glific_ai_messages, [:organization_id])
-    create index(:glific_ai_messages, [:organization_id, :conversation_id])
-
-    create index(:glific_ai_messages, [:organization_id, :status],
-             where: "status IN ('pending', 'running')",
-             name: :glific_ai_messages_in_flight_index,
-             comment: "Finds work that is still open without scanning finished messages"
-           )
   end
 
   defp create_events do
@@ -182,11 +172,6 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
     create unique_index(:glific_ai_events, [:message_id, :step])
 
     create index(:glific_ai_events, [:organization_id])
-
-    create index(:glific_ai_events, [:message_id, :tool_call_id],
-             where: "tool_call_id IS NOT NULL",
-             name: :glific_ai_events_tool_call_index,
-             comment: "Pairs calls to their results during replay"
-           )
+    create index(:glific_ai_events, [:organization_id, :conversation_id])
   end
 end

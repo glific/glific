@@ -31,7 +31,7 @@ defmodule Glific.AI.StorageTest do
           conversation_id: conversation.id,
           user_id: conversation.user_id,
           organization_id: conversation.organization_id,
-          skill: "flow-review"
+          status: :running
         },
         attrs
       )
@@ -115,7 +115,7 @@ defmodule Glific.AI.StorageTest do
     # This is the case conversation-wide numbering would break: both messages are
     # live in the same thread and each starts its own event numbering.
     first = message(conversation)
-    second = message(conversation, %{skill: "knowledge"})
+    second = message(conversation, %{})
 
     assert {:ok, _} = event(first, %{step: 1, type: :user, content: "why is it stuck?"})
     assert {:ok, _} = event(second, %{step: 1, type: :user, content: "and what is an HSM?"})
@@ -145,7 +145,6 @@ defmodule Glific.AI.StorageTest do
 
     failed =
       message(conversation, %{
-        skill: "flow-review",
         status: :failed,
         error: "the provider returned a 400",
         model: "anthropic:claude-opus-5",
