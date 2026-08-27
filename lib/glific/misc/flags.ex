@@ -471,18 +471,8 @@ defmodule Glific.Flags do
   """
   @spec get_glific_ai_enabled(map()) :: boolean
   def get_glific_ai_enabled(organization) do
-    app_env = Application.get_env(:glific, :environment)
-
-    cond do
-      FunWithFlags.enabled?(:glific_ai_enabled, for: %{organization_id: organization.id}) ->
-        true
-
-      Glific.trusted_env?(app_env, organization.id) ->
-        true
-
-      true ->
-        false
-    end
+    get_flag_enabled(:glific_ai_enabled, organization) or
+      Glific.trusted_env?(Application.get_env(:glific, :environment), organization.id)
   end
 
   @doc """

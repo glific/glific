@@ -225,6 +225,26 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
+  describe "set_last_evaluation_run_changeset/2" do
+    test "valid changeset with last_evaluation_run_id", %{valid_attrs: valid_attrs} do
+      assistant = struct(Assistant, valid_attrs)
+
+      changeset =
+        Assistant.set_last_evaluation_run_changeset(assistant, %{last_evaluation_run_id: 123})
+
+      assert changeset.valid?
+      assert get_change(changeset, :last_evaluation_run_id) == 123
+    end
+
+    test "invalid changeset without last_evaluation_run_id", %{valid_attrs: valid_attrs} do
+      assistant = struct(Assistant, valid_attrs)
+      changeset = Assistant.set_last_evaluation_run_changeset(assistant, %{})
+
+      assert changeset.valid? == false
+      assert %{last_evaluation_run_id: ["can't be blank"]} = errors_on(changeset)
+    end
+  end
+
   describe "ExAudit tracking" do
     test "assistant should be audited with ExAudit", %{organization_id: organization_id} do
       {:ok, assistant} =
