@@ -27,9 +27,7 @@ defmodule Glific.AI do
   """
   @spec enabled?(non_neg_integer()) :: boolean()
   def enabled?(organization_id) do
-    organization_id
-    |> Partners.organization()
-    |> Flags.get_glific_ai_enabled()
+    Flags.get_flag_enabled(:glific_ai_enabled, Partners.organization(organization_id))
   end
 
   @doc """
