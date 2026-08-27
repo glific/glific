@@ -124,6 +124,10 @@ defmodule Glific.BigQuery do
   @partition_field "inserted_at"
   @partition_type "MONTH"
 
+  # Expressed in DAY because BigQuery's TIMESTAMP_SUB rejects MONTH — DAY is the largest
+  # date part it accepts. See `partition_filter/2`.
+  @partition_window_days 90
+
   # Per-table clustering keys (highest-selectivity first, max 4). Each org has its
   # own dataset, so there is no `organization_id` column to cluster on. Partitioned
   # tables cluster by entity keys only (time is the partition); unpartitioned fact
@@ -1090,11 +1094,11 @@ defmodule Glific.BigQuery do
   # For MONTH-partitioned tables, also bound the dedup scan by `inserted_at` (the
   # partition key) so BigQuery prunes to recent partitions instead of full-scanning.
   # These are transactional tables whose `updated_at` stays close to creation, so
-  # duplicates (from re-syncs of recently-updated rows) fall inside a 3-month window.
+  # duplicates (from re-syncs of recently-updated rows) fall inside the window.
   @spec partition_filter(String.t(), String.t()) :: String.t()
   defp partition_filter(table, timezone) when table in @partitioned_tables,
     do:
-      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), '#{timezone}')"
+      "\n    AND #{@partition_field} >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL #{@partition_window_days} DAY), '#{timezone}')"
 
   defp partition_filter(_table, _timezone), do: ""
 
