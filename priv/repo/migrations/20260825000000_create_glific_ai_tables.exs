@@ -69,7 +69,7 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
         null: false,
         comment: "Organization scope"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
     end
 
     create index(:glific_ai_conversations, [:organization_id])
@@ -116,7 +116,7 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
         null: false,
         comment: "Organization scope"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
     end
 
     create index(:glific_ai_messages, [:organization_id])
@@ -163,7 +163,7 @@ defmodule Glific.Repo.Migrations.CreateGlificAiTables do
         null: false,
         comment: "Organization scope"
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
     end
 
     # Scoped to the message, not the conversation: two messages in one thread run

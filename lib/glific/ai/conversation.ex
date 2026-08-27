@@ -34,7 +34,7 @@ defmodule Glific.AI.Conversation do
     belongs_to :user, User
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc "Standard changeset pattern we use for all data types"

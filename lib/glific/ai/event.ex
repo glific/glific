@@ -49,7 +49,7 @@ defmodule Glific.AI.Event do
     belongs_to :conversation, Conversation
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc "Standard changeset pattern we use for all data types"
