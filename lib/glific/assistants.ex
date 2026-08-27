@@ -9,6 +9,7 @@ defmodule Glific.Assistants do
   require Logger
 
   alias Ecto.Multi
+  alias Glific.AIEvaluations.AIEvaluation
   alias Glific.Assistants.Assistant
   alias Glific.Assistants.AssistantConfigVersion
   alias Glific.Assistants.KnowledgeBase
@@ -136,7 +137,8 @@ defmodule Glific.Assistants do
          {:ok, updated_assistant} <-
            assistant
            |> Assistant.set_active_config_version_changeset(%{
-             active_config_version_id: version_id
+             active_config_version_id: version_id,
+             last_evaluation_run_id: latest_evaluation_run_id(version_id)
            })
            |> Repo.update() do
       {:ok,
@@ -153,6 +155,19 @@ defmodule Glific.Assistants do
 
   defp validate_version_ready(_version),
     do: {:error, "Version must be in ready status to be set as live"}
+
+  @spec latest_evaluation_run_id(non_neg_integer()) :: non_neg_integer() | nil
+  defp latest_evaluation_run_id(assistant_config_version_id) do
+    AIEvaluation
+    |> where(
+      [e],
+      e.assistant_config_version_id == ^assistant_config_version_id and e.status == :completed
+    )
+    |> order_by([e], desc: e.inserted_at, desc: e.id)
+    |> select([e], e.id)
+    |> limit(1)
+    |> Repo.one()
+  end
 
   @doc "Sets the last evaluation run on the assistant whose active config version matches the given config version id"
   @spec set_last_evaluation_run(non_neg_integer(), non_neg_integer()) :: :ok
