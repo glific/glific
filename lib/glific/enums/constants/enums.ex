@@ -139,6 +139,10 @@ defmodule Glific.Enums.Constants do
       @assistant_config_version_status_const [:in_progress, :ready, :failed]
       @knowledge_base_status_const [:in_progress, :completed, :failed]
       @ai_evaluation_status_const [:create_in_progress, :processing, :failed, :completed]
+
+      # Glific AI — see the schemas under Glific.AI
+      @glific_ai_event_type_const [:user, :assistant, :tool_call, :tool_result]
+      @glific_ai_message_status_const [:pending, :running, :succeeded, :failed, :cancelled]
     end
   end
 end
