@@ -62,11 +62,11 @@ defmodule Glific.Assistants.Assistant do
     timestamps(type: :utc_datetime)
   end
 
-  @doc "Changeset for updating the active_config_version_id"
+  @doc "Changeset for updating the active_config_version_id and its derived last_evaluation_run_id"
   @spec set_active_config_version_changeset(Assistant.t(), map()) :: Ecto.Changeset.t()
   def set_active_config_version_changeset(assistant, attrs) do
     assistant
-    |> cast(attrs, [:active_config_version_id])
+    |> cast(attrs, [:active_config_version_id, :last_evaluation_run_id])
     |> validate_required([:active_config_version_id])
   end
 
