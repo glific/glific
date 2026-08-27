@@ -13,6 +13,7 @@ defmodule Glific.AIEvaluations do
     AIEvaluations.AIEvaluation,
     AIEvaluations.GoldenQA,
     AIEvaluations.OrganizationEvalRequest,
+    Assistants,
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
@@ -109,11 +110,17 @@ defmodule Glific.AIEvaluations do
 
   @spec handle_evaluation_status(tuple(), AIEvaluation.t(), non_neg_integer()) :: :ok
   defp handle_evaluation_status({:ok, %{data: %{status: "completed"} = data}}, evaluation, org_id) do
-    summary_scores = data |> Map.get(:score, %{}) |> Map.get(:summary_scores, [])
+    score = Map.get(data, :score, %{})
+    summary_scores = Map.get(score, :summary_scores, [])
+    overall = Map.get(score, :overall, %{})
 
     case process_evaluation_status(evaluation, %{
            status: :completed,
-           results: %{summary_scores: summary_scores}
+           results: %{
+             summary_scores: summary_scores,
+             verdict: Map.get(overall, :verdict),
+             overall_score: Map.get(overall, :overall_score)
+           }
          }) do
       {:ok, updated_evaluation} ->
         duration_seconds = DateTime.diff(DateTime.utc_now(), evaluation.inserted_at)
@@ -131,6 +138,8 @@ defmodule Glific.AIEvaluations do
           organization_id: org_id,
           entity: %{evaluation_id: updated_evaluation.id}
         })
+
+        Assistants.set_last_evaluation_run(evaluation.assistant_config_version_id, evaluation.id)
 
       {:error, :already_processed} ->
         :ok
