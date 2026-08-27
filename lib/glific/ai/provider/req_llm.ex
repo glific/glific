@@ -33,17 +33,15 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec call([Message.t()], keyword()) ::
           {:ok, Message.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
-    case ReqLLM.generate_text(
-           Models.spec(),
-           Enum.map(messages, &to_req_llm/1),
-           request_opts(opts)
-         ) do
+    {tools, opts} = Keyword.pop(opts, :tools, [])
+
+    Models.spec()
+    |> ReqLLM.generate_text(Enum.map(messages, &to_req_llm/1), request_opts(tools, opts))
+    |> case do
       {:ok, response} ->
-        {:ok, Message.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
+        {:ok, reply(response), usage(response)}
 
       {:error, error} ->
-        # Logged here rather than at the caller: this is the only place that can
-        # see the provider's own error shape.
         Logger.warning("Glific AI provider call failed: #{describe(error)}")
         {:error, {:provider_error, describe(error)}}
     end
@@ -53,17 +51,81 @@ defmodule Glific.AI.Provider.ReqLLM do
       {:error, {:provider_error, Exception.message(exception)}}
   end
 
-  @spec request_opts(keyword()) :: keyword()
-  defp request_opts(opts), do: Keyword.merge(Models.opts(), opts)
+  @spec request_opts([module()], keyword()) :: keyword()
+  defp request_opts([], opts), do: Keyword.merge(Models.opts(), opts)
+
+  defp request_opts(tools, opts) do
+    Models.opts()
+    |> Keyword.merge(opts)
+    |> Keyword.put(:tools, Enum.map(tools, &to_req_llm_tool/1))
+  end
+
+  @spec to_req_llm_tool(module()) :: struct()
+  defp to_req_llm_tool(tool) do
+    ReqLLM.tool(
+      name: tool.name(),
+      description: tool.description(),
+      parameter_schema: tool.parameters()
+    )
+  end
 
   @spec to_req_llm(Message.t()) :: struct()
   defp to_req_llm(%Message{role: :system, content: content}),
     do: ReqLLM.Context.system(content || "")
 
+  defp to_req_llm(%Message{role: :tool} = message),
+    do: ReqLLM.Context.tool_result(message.tool_call_id, message.tool_name, message.content || "")
+
   defp to_req_llm(%Message{role: :assistant, content: content}),
     do: ReqLLM.Context.assistant(content || "")
 
   defp to_req_llm(%Message{content: content}), do: ReqLLM.Context.user(content || "")
+
+  @spec reply(struct()) :: Message.t()
+  defp reply(response) do
+    Message.assistant(
+      ReqLLM.Response.text(response),
+      response |> ReqLLM.Response.tool_calls() |> Enum.map(&tool_call/1)
+    )
+  end
+
+  # req_llm types tool calls loosely, and the shape differs by provider, so every
+  # variant is normalised here rather than leaking outward.
+  @spec tool_call(term()) :: Message.tool_call()
+  defp tool_call(%{name: name} = call) do
+    %{
+      id: id(call),
+      name: name,
+      args: call |> Map.get(:arguments, Map.get(call, :args, %{})) |> arguments()
+    }
+  end
+
+  defp tool_call(%{"name" => name} = call) do
+    %{
+      id: id(call),
+      name: name,
+      args: call |> Map.get("arguments", Map.get(call, "input", %{})) |> arguments()
+    }
+  end
+
+  @spec id(map()) :: String.t()
+  defp id(call) do
+    Map.get(call, :id) || Map.get(call, "id") ||
+      get_in(call, [Access.key(:metadata, %{}), :id]) ||
+      Ecto.UUID.generate()
+  end
+
+  @spec arguments(term()) :: map()
+  defp arguments(args) when is_map(args), do: args
+
+  defp arguments(args) when is_binary(args) do
+    case Jason.decode(args) do
+      {:ok, decoded} when is_map(decoded) -> decoded
+      _ -> %{}
+    end
+  end
+
+  defp arguments(_), do: %{}
 
   @spec usage(struct()) :: Usage.t()
   defp usage(response) do

@@ -21,6 +21,11 @@ defmodule Glific.AI.Provider do
   @doc """
   Sends a conversation to the provider and returns its reply plus what the call
   consumed.
+
+  `opts` may carry `:tools`, a list of `Glific.AI.Tool` modules the model is
+  allowed to ask for. Implementations describe those tools to the provider but
+  never execute them: running a tool goes through `Glific.AI.Tools.run/3`, which
+  is where authorisation and read-only enforcement live.
   """
   @callback generate(messages :: [Message.t()], opts :: keyword()) ::
               {:ok, Message.t(), Usage.t()} | {:error, failure()}

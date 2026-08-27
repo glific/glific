@@ -76,7 +76,14 @@ oban_queues = [
   ],
   contact_import: 10,
   gupshup_high_tps: 10,
-  clone_assistant: 5
+  clone_assistant: 5,
+  glific_ai: [
+    local_limit: 5,
+    global_limit: [
+      allowed: 2,
+      partition: [args: :organization_id]
+    ]
+  ]
 ]
 
 oban_crontab = [
@@ -231,6 +238,14 @@ config :glific, Glific.AI,
   model: "anthropic:claude-opus-5",
   max_tokens: 4_096,
   receive_timeout: 60_000
+
+# What bounds one question. Nothing in a model's control flow stops it looping,
+# so these are the circuit breaker: whichever is reached first ends the run and
+# records why.
+config :glific, Glific.AI.Agent,
+  max_steps: 12,
+  max_cost_usd: "0.50",
+  max_duration_ms: 120_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
