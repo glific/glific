@@ -438,9 +438,9 @@ defmodule Glific.Messages do
     |> then(&Map.merge(attrs, %{interactive_content: &1}))
   end
 
-  @doc false
+  @doc "Sends the OTP as a session message when possible, falling back to the HSM template."
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
-          {:ok, Message.t()}
+          {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_otp_verification_message(contact, otp) do
     case Contacts.can_send_message_to?(contact, false) do
       {:ok, _} -> create_and_send_otp_session_message(contact, otp)
@@ -458,22 +458,37 @@ defmodule Glific.Messages do
     send_default_message(contact, body)
   end
 
-  @doc false
+  @doc "Sends the OTP using the organization's approved verify_otp HSM template."
   @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
-          {:ok, Message.t()}
+          {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_otp_template_message(contact, otp) do
-    # fetch session template by shortcode "verification"
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: "verify_otp",
-        is_hsm: true,
-        organization_id: contact.organization_id
-      })
+    case fetch_verify_otp_template(contact.organization_id) do
+      {:ok, session_template} ->
+        parameters = [otp]
 
-    parameters = [otp]
+        %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
+        |> create_and_send_hsm_message()
 
-    %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
-    |> create_and_send_hsm_message()
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  @spec fetch_verify_otp_template(non_neg_integer()) ::
+          {:ok, SessionTemplate.t()} | {:error, String.t()}
+  defp fetch_verify_otp_template(organization_id) do
+    SessionTemplate
+    |> where([st], ilike(st.shortcode, "verify\\_otp%"))
+    |> where([st], st.is_hsm and st.organization_id == ^organization_id)
+    |> where([st], st.category == "AUTHENTICATION")
+    |> where([st], st.status == "APPROVED" and st.is_active)
+    |> order_by([st], desc: st.updated_at, desc: st.id)
+    |> limit(1)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, "No approved OTP template found"}
+      template -> {:ok, template}
+    end
   end
 
   @doc """
