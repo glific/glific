@@ -358,6 +358,28 @@ defmodule Glific.AssistantsTest do
 
       assert {:error, _} = Assistants.create_knowledge_base_with_version(params)
     end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty",
+         %{organization_id: organization_id} do
+      kb_count_before = Repo.aggregate(KnowledgeBase, :count, :id)
+      kbv_count_before = Repo.aggregate(KnowledgeBaseVersion, :count, :id)
+
+      params = %{media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+
+      assert Repo.aggregate(KnowledgeBase, :count, :id) == kb_count_before
+      assert Repo.aggregate(KnowledgeBaseVersion, :count, :id) == kbv_count_before
+    end
+
+    test "returns nil knowledge base and skips Kaapi when media_info is empty, regardless of id",
+         %{organization_id: organization_id} do
+      params = %{id: 0, media_info: [], organization_id: organization_id}
+
+      assert {:ok, %{knowledge_base: nil, knowledge_base_version: nil}} =
+               Assistants.create_knowledge_base_with_version(params)
+    end
   end
 
   describe "update_assistant/2" do
@@ -476,6 +498,31 @@ defmodule Glific.AssistantsTest do
         |> Repo.one()
 
       assert get_in(new_config_version.settings, ["temperature"]) == 0.5
+    end
+
+    test "unlinks the knowledge base when knowledge_base_version_id is explicitly nil",
+         %{organization_id: organization_id, assistant: assistant} do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{status: 200, body: %{data: %{id: "new_kaapi_uuid_unlink", version: 2}}}
+      end)
+
+      assert {:ok, _result} =
+               Assistants.update_assistant(assistant.id, %{
+                 temperature: 0.5,
+                 knowledge_base_version_id: nil,
+                 organization_id: organization_id
+               })
+
+      new_config_version =
+        AssistantConfigVersion
+        |> where([acv], acv.assistant_id == ^assistant.id)
+        |> order_by([acv], desc: acv.id)
+        |> limit(1)
+        |> Repo.one()
+        |> Repo.preload(:knowledge_base_versions)
+
+      assert new_config_version.knowledge_base_versions == []
     end
 
     test "creates a new config version when effort changes",
@@ -3104,6 +3151,59 @@ defmodule Glific.AssistantsTest do
     test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
       assert :ok =
                Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
+    end
+  end
+
+  describe "set_last_evaluation_run/2" do
+    test "stores the evaluation run on the assistant whose active version matches", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: config_version.id})
+        )
+
+      assert :ok = Assistants.set_last_evaluation_run(config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == evaluation.id
+    end
+
+    test "no-ops when the config version is no longer the active one", attrs do
+      assistant = Fixtures.assistant_fixture(attrs)
+
+      stale_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      new_config_version =
+        Fixtures.assistant_config_version_fixture(Map.merge(attrs, %{assistant_id: assistant.id}))
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: new_config_version.id
+        })
+        |> Repo.update()
+
+      evaluation =
+        Fixtures.ai_evaluation_fixture(
+          Map.merge(attrs, %{assistant_config_version_id: stale_config_version.id})
+        )
+
+      # simulates an evaluation callback landing for a config version that was
+      # superseded as the active one before the callback arrived
+      assert :ok = Assistants.set_last_evaluation_run(stale_config_version.id, evaluation.id)
+
+      assert Repo.get!(Assistant, assistant.id).last_evaluation_run_id == nil
     end
   end
 end

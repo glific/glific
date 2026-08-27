@@ -39,10 +39,16 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     "assets/gql/assistants/set_live_version.gql"
   )
 
+  load_gql(
+    :get_file,
+    GlificWeb.Schema,
+    "assets/gql/assistants/file_result.gql"
+  )
+
   describe "create_knowledge_base/3" do
     setup :enable_kaapi
 
-    test "creates and returns knowledge base on success", %{staff: user} do
+    test "creates and returns knowledge base on success", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -71,7 +77,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns knowledge base without creating one", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, knowledge_base} =
@@ -109,7 +115,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert response["status"] == "in_progress"
     end
 
-    test "returns error when kaapi api fails", %{staff: user} do
+    test "returns error when kaapi api fails", %{manager: user} do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -131,13 +137,33 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert [error | _] = query_data.errors
       assert error[:message] == "Failed to create knowledge base"
     end
+
+    test "returns nil knowledge base when media_info is empty", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user, variables: %{"media_info" => []})
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
+    end
+
+    test "returns nil knowledge base when media_info is empty, regardless of id", %{manager: user} do
+      {:ok, query_data} =
+        auth_query_gql_by(:create_knowledge_base, user,
+          variables: %{"id" => 0, "media_info" => []}
+        )
+
+      assert query_data.data["create_knowledge_base"]["knowledge_base"] == nil
+      assert query_data.data["create_knowledge_base"]["errors"] == nil
+      assert Map.get(query_data, :errors) == nil
+    end
   end
 
   describe "list_assistant_config_versions/3" do
     setup :enable_kaapi
 
     test "returns all config versions for the organization", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, {assistant, _config_version}} = create_assistant_with_config_version(organization_id)
@@ -251,7 +277,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     setup :enable_kaapi
 
     test "initiates clone for a legacy assistant", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, {assistant, _config_version}} =
@@ -266,7 +292,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "initiates clone for a non-legacy assistant with version_id", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -338,7 +364,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns error when a clone is already in progress", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -416,7 +442,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert length(all_enqueued(worker: AssistantCloneWorker, prefix: "global")) == 1
     end
 
-    test "returns error when assistant not found", %{staff: user} do
+    test "returns error when assistant not found", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:clone_assistant, user, variables: %{"id" => -1})
 
@@ -428,7 +454,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
   describe "assistant_versions/3" do
     test "returns all versions for an assistant ordered by version_number desc", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -488,7 +514,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns vector_store linked to each version", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -556,7 +582,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
       assert vs["size"] == "50 B"
     end
 
-    test "returns empty versions for a non-existent assistant", %{staff: user} do
+    test "returns empty versions for a non-existent assistant", %{manager: user} do
       {:ok, query_data} =
         auth_query_gql_by(:assistant_versions, user, variables: %{"assistant_id" => 0})
 
@@ -568,7 +594,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
   describe "set_live_version/3" do
     test "updates active_config_version_id when version is ready", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -620,7 +646,7 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
     end
 
     test "returns error when version is not in ready status", %{
-      staff: user,
+      manager: user,
       organization_id: organization_id
     } do
       {:ok, assistant} =
@@ -654,6 +680,49 @@ defmodule GlificWeb.Resolvers.AssistantsTest do
 
       assert query_data.data["setLiveVersion"] == nil
       assert query_data.errors != nil
+    end
+  end
+
+  describe "get_file/3" do
+    setup :enable_kaapi
+
+    test "returns signed_url on success", %{manager: user} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: "doc_123",
+                fname: "biu-1.pdf",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+              }
+            }
+          }
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "doc_123"})
+
+      result = query_data.data["get_file"]
+      assert result["file_id"] == "doc_123"
+      assert result["filename"] == "biu-1.pdf"
+      assert result["signed_url"] == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns a top-level error when kaapi fails", %{manager: user} do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{status: 404, body: %{success: false, error: "Not Found"}}
+      end)
+
+      {:ok, query_data} =
+        auth_query_gql_by(:get_file, user, variables: %{"file_id" => "missing_doc"})
+
+      assert query_data.data["get_file"] == nil
+      assert [error | _] = query_data.errors
+      assert error[:message] =~ "status 404"
     end
   end
 

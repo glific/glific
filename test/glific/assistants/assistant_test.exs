@@ -225,6 +225,26 @@ defmodule Glific.Assistants.AssistantTest do
     end
   end
 
+  describe "set_last_evaluation_run_changeset/2" do
+    test "valid changeset with last_evaluation_run_id", %{valid_attrs: valid_attrs} do
+      assistant = struct(Assistant, valid_attrs)
+
+      changeset =
+        Assistant.set_last_evaluation_run_changeset(assistant, %{last_evaluation_run_id: 123})
+
+      assert changeset.valid?
+      assert get_change(changeset, :last_evaluation_run_id) == 123
+    end
+
+    test "invalid changeset without last_evaluation_run_id", %{valid_attrs: valid_attrs} do
+      assistant = struct(Assistant, valid_attrs)
+      changeset = Assistant.set_last_evaluation_run_changeset(assistant, %{})
+
+      assert changeset.valid? == false
+      assert %{last_evaluation_run_id: ["can't be blank"]} = errors_on(changeset)
+    end
+  end
+
   describe "ExAudit tracking" do
     test "assistant should be audited with ExAudit", %{organization_id: organization_id} do
       {:ok, assistant} =
@@ -393,6 +413,48 @@ defmodule Glific.Assistants.AssistantTest do
 
       assert is_binary(error_message)
       assert error_message =~ "status 500"
+    end
+  end
+
+  describe "get_file/2" do
+    test "returns signed_url on successful fetch", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->
+          %Tesla.Env{
+            status: 200,
+            body: %{
+              success: true,
+              data: %{
+                id: "doc_123",
+                fname: "biu-1.pdf",
+                signed_url: "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+              }
+            }
+          }
+      end)
+
+      assert {:ok, %{file_id: file_id, filename: filename, signed_url: signed_url}} =
+               Assistants.get_file("doc_123", organization_id)
+
+      assert file_id == "doc_123"
+      assert filename == "biu-1.pdf"
+      assert signed_url == "https://kaapi-test.s3.amazonaws.com/test/biu-1.pdf"
+    end
+
+    test "returns an error when Kaapi fails", %{organization_id: organization_id} do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "This is not a secret/api/v1/documents/doc_123"} ->
+          %Tesla.Env{
+            status: 404,
+            body: %{success: false, error: "Not Found"}
+          }
+      end)
+
+      assert {:error, error_message} =
+               Assistants.get_file("doc_123", organization_id)
+
+      assert is_binary(error_message)
+      assert error_message =~ "status 404"
     end
   end
 

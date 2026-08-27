@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :status, :ai_evaluation_status_enum
     field :failure_reason, :string
     field :results, :json
+    field :duplication_factor, :integer
     field :golden_qa, :ai_eval_golden_qa
     field :assistant_config_version, :ai_eval_config_version
     field :inserted_at, :datetime
@@ -94,6 +95,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :golden_qa_id, non_null(:id)
     field :evaluation_name, non_null(:string)
     field :config_id, non_null(:id)
+    field :duplication_factor, :integer, default_value: 1
   end
 
   object :evaluation_scores_result do
@@ -118,6 +120,12 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
   object :improve_prompt_result do
     field :improve_prompt, :improve_prompt
     field :errors, list_of(:result_error)
+  end
+
+  object :improve_prompt_update do
+    field :status, :string
+    field :config_version, :assistant_config_version
+    field :error, :string
   end
 
   object :ai_evaluation_queries do
@@ -158,6 +166,7 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     @desc "Get Evaluation Scores"
     field :evaluation_scores, :evaluation_scores_result do
       arg(:id, non_null(:id))
+      arg(:export_format, :string)
       middleware(Authorize, :staff)
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       resolve(&Resolvers.AIEvaluations.get_evaluation_scores/3)
@@ -227,6 +236,33 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
       middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
       middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
       resolve(&Resolvers.AIEvaluations.improve_evaluation_prompt/3)
+    end
+  end
+
+  object :ai_evaluation_subscriptions do
+    @desc "Delivers the result of a v2 prompt-improvement request once Kaapi's callback arrives."
+    field :improve_prompt_updated, :improve_prompt_update do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+      middleware(RequireFeatureFlag, {:is_ai_evaluation_enabled, "AI Evaluation V2"})
+
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
+
+      resolve(fn update, _args, _resolution -> {:ok, update} end)
+    end
+
+    @desc "Delivers an AI evaluation's status as it changes (e.g. once Kaapi's run completes)."
+    field :ai_evaluation_updated, :ai_evaluation do
+      middleware(Authorize, :staff)
+      middleware(RequireFeatureFlag, {:ai_evaluations, "AI Evaluations"})
+
+      config(fn _args, %{context: %{current_user: user}} ->
+        {:ok, topic: "#{user.organization_id}"}
+      end)
+
+      resolve(fn evaluation, _args, _resolution -> {:ok, evaluation} end)
     end
   end
 end
