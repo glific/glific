@@ -251,6 +251,8 @@ defmodule GlificWeb.Schema do
     import_fields(:assistant_chat_subscriptions)
 
     import_fields(:ai_evaluation_subscriptions)
+
+    import_fields(:assistant_subscriptions)
   end
 
   @doc """
