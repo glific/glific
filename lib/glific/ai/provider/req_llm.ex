@@ -36,7 +36,7 @@ defmodule Glific.AI.Provider.ReqLLM do
     {tools, opts} = Keyword.pop(opts, :tools, [])
 
     Models.spec()
-    |> ReqLLM.generate_text(Enum.map(messages, &to_req_llm/1), request_opts(tools, opts))
+    |> ReqLLM.generate_text(to_provider_messages(messages), request_opts(tools, opts))
     |> case do
       {:ok, response} ->
         {:ok, reply(response), usage(response)}
@@ -65,9 +65,26 @@ defmodule Glific.AI.Provider.ReqLLM do
     ReqLLM.tool(
       name: tool.name(),
       description: tool.description(),
-      parameter_schema: tool.parameters()
+      parameter_schema: tool.parameters(),
+      callback: &refuse_local_execution/1
     )
   end
+
+  # req_llm requires a callback, but it must never be the thing that runs a tool:
+  # execution goes through Glific.AI.Tools.run/3, which is where authorisation and
+  # read-only enforcement live. Reaching this means the loop was bypassed.
+  @spec refuse_local_execution(map()) :: {:error, String.t()}
+  defp refuse_local_execution(_args),
+    do: {:error, "tools are executed by Glific.AI.Tools, not by the provider client"}
+
+  @doc """
+  Converts Glific messages into the provider's own format.
+
+  Public so the wire shape can be asserted in tests without calling a provider;
+  nothing outside this module should depend on the structs it returns.
+  """
+  @spec to_provider_messages([Message.t()]) :: [struct()]
+  def to_provider_messages(messages), do: Enum.map(messages, &to_req_llm/1)
 
   @spec to_req_llm(Message.t()) :: struct()
   defp to_req_llm(%Message{role: :system, content: content}),
@@ -76,10 +93,24 @@ defmodule Glific.AI.Provider.ReqLLM do
   defp to_req_llm(%Message{role: :tool} = message),
     do: ReqLLM.Context.tool_result(message.tool_call_id, message.tool_name, message.content || "")
 
-  defp to_req_llm(%Message{role: :assistant, content: content}),
-    do: ReqLLM.Context.assistant(content || "")
+  defp to_req_llm(%Message{role: :assistant, tool_calls: []} = message),
+    do: ReqLLM.Context.assistant(message.content || "")
+
+  # A turn where the model asked for tools has to go back carrying those calls.
+  # Without them the tool results that follow reference a call the provider never
+  # saw, and the request is rejected.
+  defp to_req_llm(%Message{role: :assistant} = message) do
+    %{
+      ReqLLM.Context.assistant(message.content || "")
+      | tool_calls: Enum.map(message.tool_calls, &to_req_llm_tool_call/1)
+    }
+  end
 
   defp to_req_llm(%Message{content: content}), do: ReqLLM.Context.user(content || "")
+
+  @spec to_req_llm_tool_call(Message.tool_call()) :: map()
+  defp to_req_llm_tool_call(%{id: id, name: name, args: args}),
+    do: %{id: id, name: name, arguments: args}
 
   @spec reply(struct()) :: Message.t()
   defp reply(response) do
