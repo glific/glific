@@ -142,7 +142,7 @@ defmodule Glific.Enums.Constants do
 
       # Glific AI — see the schemas under Glific.AI
       @glific_ai_event_type_const [:user, :assistant, :tool_call, :tool_result]
-      @glific_ai_request_status_const [:pending, :running, :succeeded, :failed, :cancelled]
+      @glific_ai_message_status_const [:pending, :running, :succeeded, :failed, :cancelled]
     end
   end
 end

@@ -15,12 +15,12 @@ defmodule Glific.AI.Event do
 
   alias Glific.{
     AI.Conversation,
-    AI.Request,
+    AI.Message,
     Enums.GlificAIEventType,
     Partners.Organization
   }
 
-  @required_fields [:request_id, :conversation_id, :organization_id, :step, :type]
+  @required_fields [:message_id, :conversation_id, :organization_id, :step, :type]
   @optional_fields [:content, :data, :tool_call_id]
 
   @type t() :: %__MODULE__{
@@ -31,8 +31,8 @@ defmodule Glific.AI.Event do
           content: String.t() | nil,
           data: map() | nil,
           tool_call_id: String.t() | nil,
-          request_id: non_neg_integer | nil,
-          request: Request.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_id: non_neg_integer | nil,
+          message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           conversation_id: non_neg_integer | nil,
           conversation: Conversation.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -48,7 +48,7 @@ defmodule Glific.AI.Event do
     field :data, :map, default: %{}
     field :tool_call_id, :string
 
-    belongs_to :request, Request
+    belongs_to :message, Message
     belongs_to :conversation, Conversation
     belongs_to :organization, Organization
 
@@ -62,9 +62,9 @@ defmodule Glific.AI.Event do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_number(:step, greater_than: 0)
-    |> foreign_key_constraint(:request_id)
+    |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:organization_id)
-    |> unique_constraint([:request_id, :step])
+    |> unique_constraint([:message_id, :step])
   end
 end

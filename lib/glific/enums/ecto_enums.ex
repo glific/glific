@@ -166,9 +166,9 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.GlificAIRequestStatus,
-  :glific_ai_request_status_enum,
-  Glific.Enums.glific_ai_request_status_const()
+  Glific.Enums.GlificAIMessageStatus,
+  :glific_ai_message_status_enum,
+  Glific.Enums.glific_ai_message_status_const()
 )
 
 defenum(

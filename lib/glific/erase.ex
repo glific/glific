@@ -622,7 +622,7 @@ defmodule Glific.Erase do
       flows
       gcs_jobs
       glific_ai_events
-      glific_ai_requests
+      glific_ai_messages
       glific_ai_conversations
       golden_qas
       group_roles
