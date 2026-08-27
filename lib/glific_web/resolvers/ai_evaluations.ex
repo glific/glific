@@ -57,7 +57,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
-  @max_golden_qa_evaluations 80
+  @max_golden_qa_unique_items 100
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
@@ -119,7 +119,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
-         :ok <- validate_golden_qa_question_limit(row_count, factor),
+         :ok <- validate_golden_qa_question_limit(row_count),
          {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
@@ -263,18 +263,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
-          :ok | {:error, String.t()}
-  defp validate_golden_qa_question_limit(count, factor) do
-    total = count * factor
-
-    if total <= @max_golden_qa_evaluations do
+  @spec validate_golden_qa_question_limit(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_question_limit(count) do
+    if count <= @max_golden_qa_unique_items do
       :ok
     else
       {:error,
-       "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
-         "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
-         "Please reduce the number of questions in the CSV or the duplication factor."}
+       "The CSV contains #{count} questions, which exceeds the maximum allowed limit of " <>
+         "#{@max_golden_qa_unique_items} unique questions. Please reduce the number of " <>
+         "questions in the CSV."}
     end
   end
 
