@@ -164,3 +164,15 @@ defenum(
   :ai_evaluation_status_enum,
   Glific.Enums.ai_evaluation_status_const()
 )
+
+defenum(
+  Glific.Enums.GlificAIRequestStatus,
+  :glific_ai_request_status_enum,
+  Glific.Enums.glific_ai_request_status_const()
+)
+
+defenum(
+  Glific.Enums.GlificAIEventType,
+  :glific_ai_event_type_enum,
+  Glific.Enums.glific_ai_event_type_const()
+)
