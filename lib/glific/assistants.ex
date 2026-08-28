@@ -158,8 +158,8 @@ defmodule Glific.Assistants do
     with {:ok, updated_assistant} <-
            assistant
            |> Assistant.set_active_config_version_changeset(%{
-             active_config_version_id: version_id,
-             last_evaluation_run_id: latest_evaluation_run_id(version_id)
+             active_config_version_id: version.id,
+             last_evaluation_run_id: latest_evaluation_run_id(version.id)
            })
            |> Repo.update() do
       {:ok,
