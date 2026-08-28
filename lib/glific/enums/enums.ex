@@ -124,14 +124,17 @@ defmodule Glific.Enums do
   iex> Glific.Enums.AssistantConfigVersionStatus.__enum_map__()
   Glific.Enums.assistant_config_version_status_const()
 
+  iex> Glific.Enums.AssistantConfigVersionBumpType.__enum_map__()
+  Glific.Enums.assistant_config_version_bump_type_const()
+
   iex> Glific.Enums.KnowledgeBaseStatus.__enum_map__()
   Glific.Enums.knowledge_base_status_const()
 
   iex> Glific.Enums.AIEvaluationStatus.__enum_map__()
   Glific.Enums.ai_evaluation_status_const()
 
-  iex> Glific.Enums.GlificAIRequestStatus.__enum_map__()
-  Glific.Enums.glific_ai_request_status_const()
+  iex> Glific.Enums.GlificAIMessageStatus.__enum_map__()
+  Glific.Enums.glific_ai_message_status_const()
 
   iex> Glific.Enums.GlificAIEventType.__enum_map__()
   Glific.Enums.glific_ai_event_type_const()
@@ -209,14 +212,17 @@ defmodule Glific.Enums do
   defmacro assistant_config_version_status_const,
     do: Macro.expand(@assistant_config_version_status_const, __CALLER__)
 
+  defmacro assistant_config_version_bump_type_const,
+    do: Macro.expand(@assistant_config_version_bump_type_const, __CALLER__)
+
   defmacro knowledge_base_status_const,
     do: Macro.expand(@knowledge_base_status_const, __CALLER__)
 
   defmacro ai_evaluation_status_const,
     do: Macro.expand(@ai_evaluation_status_const, __CALLER__)
 
-  defmacro glific_ai_request_status_const,
-    do: Macro.expand(@glific_ai_request_status_const, __CALLER__)
+  defmacro glific_ai_message_status_const,
+    do: Macro.expand(@glific_ai_message_status_const, __CALLER__)
 
   defmacro glific_ai_event_type_const,
     do: Macro.expand(@glific_ai_event_type_const, __CALLER__)

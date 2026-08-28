@@ -491,6 +491,9 @@ defmodule Glific.Erase do
         "DELETE FROM knowledge_base_versions WHERE organization_id = #{organization_id}",
         "DELETE FROM knowledge_bases WHERE organization_id = #{organization_id}",
         "DELETE FROM assistants WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_events WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_messages WHERE organization_id = #{organization_id}",
+        "DELETE FROM glific_ai_conversations WHERE organization_id = #{organization_id}",
 
         # Keep NGO Main Account, SaaS Admin, and Simulator contacts
         "DELETE FROM contacts
@@ -622,9 +625,8 @@ defmodule Glific.Erase do
       flows
       gcs_jobs
       glific_ai_events
-      glific_ai_requests
+      glific_ai_messages
       glific_ai_conversations
-      glific_ai_org_profiles
       golden_qas
       group_roles
       groups
