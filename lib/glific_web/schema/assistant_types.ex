@@ -73,7 +73,9 @@ defmodule GlificWeb.Schema.AssistantTypes do
 
   object :assistant_config_version do
     field :id, :id
-    field :version_number, :integer
+    field :major_version, :integer
+    field :minor_version, :integer
+    field :version_label, :string
     field :model, :string
     field :prompt, :string
     field :settings, :json
@@ -97,7 +99,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
   object :live_version_assistant do
     field :id, :id
     field :active_config_version_id, :id
-    field :live_version_number, :integer
+    field :live_version_label, :string
   end
 
   object :assistant do
@@ -112,7 +114,7 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :settings, :json
     field :status, :string
     field :new_version_in_progress, :boolean
-    field :live_version_number, :integer
+    field :live_version_label, :string
     field :legacy, :boolean
     field :clone_status, :string
     field :active_config_version_id, :id
@@ -182,7 +184,8 @@ defmodule GlificWeb.Schema.AssistantTypes do
     field :id, :id
     field :assistant_id, :id
     field :kaapi_uuid, :string
-    field :version_number, :integer
+    field :major_version, :integer
+    field :minor_version, :integer
     field :kaapi_version_number, :integer
     field :description, :string
     field :prompt, :string

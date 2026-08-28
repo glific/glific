@@ -19,6 +19,12 @@ defmodule Glific.AssistantsTest do
     :ok
   end
 
+  defp count_config_versions(assistant_id) do
+    AssistantConfigVersion
+    |> where([config_version], config_version.assistant_id == ^assistant_id)
+    |> Repo.aggregate(:count)
+  end
+
   describe "create_knowledge_base/1" do
     test "creates a knowledge base with valid attrs", %{organization_id: organization_id} do
       attrs = %{name: "Test Knowledge Base", organization_id: organization_id}
@@ -1260,6 +1266,10 @@ defmodule Glific.AssistantsTest do
       assert assistant.active_config_version_id == config_version.id
       assert config_version.model == "gpt-4o"
       assert config_version.prompt == "You are a helpful assistant"
+
+      # A brand new assistant's first config version is immediately live at "1.0",
+      # with no explicit publish call needed
+      assert AssistantConfigVersion.version_label(config_version) == "1.0"
 
       config_version = Repo.preload(config_version, :knowledge_base_versions)
       assert length(config_version.knowledge_base_versions) == 1
@@ -3151,6 +3161,219 @@ defmodule Glific.AssistantsTest do
     test "logs and does not raise on a malformed payload", %{organization_id: organization_id} do
       assert :ok =
                Assistants.handle_assistant_chat_callback(organization_id, %{"unexpected" => true})
+    end
+  end
+
+  describe "set_live_version/2" do
+    test "publishing a draft creates a new major version, leaving the draft row untouched",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          kaapi_version_number: 42,
+          status: :ready
+        })
+
+      {:ok, knowledge_base} =
+        Assistants.create_knowledge_base(%{
+          name: "Draft KB",
+          organization_id: organization_id
+        })
+
+      {:ok, knowledge_base_version} =
+        Assistants.create_knowledge_base_version(%{
+          knowledge_base_id: knowledge_base.id,
+          organization_id: organization_id,
+          status: :completed,
+          llm_service_id: "vs_draft_kb",
+          size: 100,
+          files: %{}
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      Repo.insert_all("assistant_config_version_knowledge_base_versions", [
+        %{
+          assistant_config_version_id: draft_version.id,
+          knowledge_base_version_id: knowledge_base_version.id,
+          organization_id: organization_id,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
+
+      assert AssistantConfigVersion.version_label(live_version) == "1.0"
+      assert AssistantConfigVersion.version_label(draft_version) == "1.1"
+
+      assert {:ok,
+              %{
+                id: assistant_id,
+                active_config_version_id: new_live_version_id,
+                live_version_label: "2.0"
+              }} = Assistants.set_live_version(assistant.id, draft_version.id)
+
+      assert assistant_id == assistant.id
+      assert new_live_version_id != draft_version.id
+
+      new_live_version =
+        AssistantConfigVersion
+        |> Repo.get!(new_live_version_id)
+        |> Repo.preload(:knowledge_base_versions)
+
+      assert AssistantConfigVersion.version_label(new_live_version) == "2.0"
+      assert new_live_version.kaapi_version_number == 42
+      assert new_live_version.status == :ready
+
+      # The new major version inherits the draft's linked knowledge base
+      assert Enum.map(new_live_version.knowledge_base_versions, & &1.id) == [
+               knowledge_base_version.id
+             ]
+
+      # The original draft row is untouched, still exists, and is not live
+      unchanged_draft_version = Repo.get!(AssistantConfigVersion, draft_version.id)
+      assert AssistantConfigVersion.version_label(unchanged_draft_version) == "1.1"
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == new_live_version_id
+    end
+
+    test "reactivating an already-major version repoints the pointer without a new row",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      major_version_one =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          bump_type: :major
+        })
+
+      major_version_two =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          bump_type: :major
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: major_version_two.id
+        })
+        |> Repo.update()
+
+      assert AssistantConfigVersion.version_label(major_version_one) == "1.0"
+      assert AssistantConfigVersion.version_label(major_version_two) == "2.0"
+
+      version_count_before = count_config_versions(assistant.id)
+
+      assert {:ok,
+              %{
+                active_config_version_id: active_config_version_id,
+                live_version_label: "1.0"
+              }} = Assistants.set_live_version(assistant.id, major_version_one.id)
+
+      assert active_config_version_id == major_version_one.id
+      assert count_config_versions(assistant.id) == version_count_before
+
+      updated_assistant = Repo.get!(Assistant, assistant.id)
+      assert updated_assistant.active_config_version_id == major_version_one.id
+    end
+
+    test "the next ordinary save after publishing to 2.0 continues the new major line at 2.1",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %{live_version_label: "2.0"}} =
+               Assistants.set_live_version(assistant.id, draft_version.id)
+
+      next_save =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      assert AssistantConfigVersion.version_label(next_save) == "2.1"
+    end
+
+    test "two concurrent promotions of the same draft each produce a distinct, unique major version",
+         %{organization_id: organization_id} do
+      assistant = Fixtures.assistant_fixture(%{organization_id: organization_id})
+
+      live_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id
+        })
+
+      {:ok, assistant} =
+        assistant
+        |> Assistant.set_active_config_version_changeset(%{
+          active_config_version_id: live_version.id
+        })
+        |> Repo.update()
+
+      draft_version =
+        Fixtures.assistant_config_version_fixture(%{
+          assistant_id: assistant.id,
+          organization_id: organization_id,
+          status: :ready
+        })
+
+      [task_one, task_two] =
+        Enum.map(1..2, fn _ ->
+          Task.async(fn ->
+            Repo.put_organization_id(organization_id)
+            Assistants.set_live_version(assistant.id, draft_version.id)
+          end)
+        end)
+
+      results = [Task.await(task_one), Task.await(task_two)]
+
+      assert Enum.all?(results, &match?({:ok, %{live_version_label: _}}, &1))
+
+      major_versions =
+        results
+        |> Enum.map(fn {:ok, %{live_version_label: label}} -> label end)
+        |> Enum.sort()
+
+      assert major_versions == ["2.0", "3.0"]
+      assert count_config_versions(assistant.id) == 4
     end
   end
 

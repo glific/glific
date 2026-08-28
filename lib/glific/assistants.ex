@@ -71,13 +71,13 @@ defmodule Glific.Assistants do
   end
 
   @doc """
-  Lists all config versions for a given assistant, ordered by version_number descending.
+  Lists all config versions for a given assistant, ordered by major/minor version descending.
   Each version includes an `is_live` boolean indicating whether it is the active version.
 
   ## Examples
 
       iex> Glific.Assistants.list_assistant_config_versions(1)
-      [%{id: 2, version_number: 2, is_live: true, ...}, %{id: 1, version_number: 1, is_live: false, ...}]
+      [%{id: 2, version_label: "1.1", is_live: true, ...}, %{id: 1, version_label: "1.0", is_live: false, ...}]
   """
   @spec list_assistant_config_versions(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
   def list_assistant_config_versions(assistant_id) do
@@ -85,7 +85,7 @@ defmodule Glific.Assistants do
       versions =
         from(v in AssistantConfigVersion,
           where: v.assistant_id == ^assistant_id,
-          order_by: [desc: v.version_number]
+          order_by: [desc: v.major_version, desc: v.minor_version]
         )
         |> Repo.all()
         |> Repo.preload(knowledge_base_versions: :knowledge_base)
@@ -94,7 +94,9 @@ defmodule Glific.Assistants do
        Enum.map(versions, fn version ->
          %{
            id: version.id,
-           version_number: version.version_number,
+           major_version: version.major_version,
+           minor_version: version.minor_version,
+           version_label: AssistantConfigVersion.version_label(version),
            model: version.model,
            prompt: version.prompt,
            settings: version.settings,
@@ -113,13 +115,17 @@ defmodule Glific.Assistants do
   Sets a specific config version as the live (active) version for an assistant.
   Only versions with status `:ready` can be set as live.
 
+  A minor (draft) version is promoted to a new major version on publish, leaving the
+  draft row untouched in history. A major version (already published) is simply
+  re-activated, with no new row created.
+
   Returns the updated assistant or an error if the version is not found, does not
   belong to the assistant, or is not in `:ready` status.
 
   ## Examples
 
       iex> Glific.Assistants.set_live_version(1, 2)
-      {:ok, %{id: 1, active_config_version_id: 2, live_version_number: 2}}
+      {:ok, %{id: 1, active_config_version_id: 2, live_version_label: "2.0"}}
 
       iex> Glific.Assistants.set_live_version(1, 99)
       {:error, ["Glific.Assistants.AssistantConfigVersion", "Resource not found"]}
@@ -133,20 +139,10 @@ defmodule Glific.Assistants do
              id: version_id,
              assistant_id: assistant_id
            }),
-         :ok <- validate_version_ready(version),
-         {:ok, updated_assistant} <-
-           assistant
-           |> Assistant.set_active_config_version_changeset(%{
-             active_config_version_id: version_id,
-             last_evaluation_run_id: latest_evaluation_run_id(version_id)
-           })
-           |> Repo.update() do
-      {:ok,
-       %{
-         id: updated_assistant.id,
-         active_config_version_id: updated_assistant.active_config_version_id,
-         live_version_number: version.version_number
-       }}
+         :ok <- validate_version_ready(version) do
+      if version.minor_version == 0,
+        do: reactivate_version(assistant, version),
+        else: promote_draft_to_major(assistant, version)
     end
   end
 
@@ -155,6 +151,74 @@ defmodule Glific.Assistants do
 
   defp validate_version_ready(_version),
     do: {:error, "Version must be in ready status to be set as live"}
+
+  @spec reactivate_version(Assistant.t(), AssistantConfigVersion.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp reactivate_version(assistant, version) do
+    with {:ok, updated_assistant} <-
+           assistant
+           |> Assistant.set_active_config_version_changeset(%{
+             active_config_version_id: version.id,
+             last_evaluation_run_id: latest_evaluation_run_id(version.id)
+           })
+           |> Repo.update() do
+      {:ok,
+       %{
+         id: updated_assistant.id,
+         active_config_version_id: updated_assistant.active_config_version_id,
+         live_version_label: AssistantConfigVersion.version_label(version)
+       }}
+    end
+  end
+
+  @spec promote_draft_to_major(Assistant.t(), AssistantConfigVersion.t()) ::
+          {:ok, map()} | {:error, any()}
+  defp promote_draft_to_major(assistant, version) do
+    version = Repo.preload(version, :knowledge_base_versions)
+    knowledge_base_version = List.first(version.knowledge_base_versions)
+
+    Multi.new()
+    |> Multi.run(:lock, fn repo, _changes ->
+      repo.query("SELECT pg_advisory_xact_lock($1)", [assistant.id])
+    end)
+    |> Multi.insert(:config_version, build_promoted_config_version_changeset(version))
+    |> maybe_link_knowledge_base(knowledge_base_version, version.organization_id)
+    |> Multi.update(:updated_assistant, fn %{config_version: config_version} ->
+      Assistant.set_active_config_version_changeset(assistant, %{
+        active_config_version_id: config_version.id,
+        last_evaluation_run_id: latest_evaluation_run_id(version.id)
+      })
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{updated_assistant: updated_assistant, config_version: config_version}} ->
+        {:ok,
+         %{
+           id: updated_assistant.id,
+           active_config_version_id: updated_assistant.active_config_version_id,
+           live_version_label: AssistantConfigVersion.version_label(config_version)
+         }}
+
+      {:error, _failed, changeset, _changes} ->
+        {:error, changeset}
+    end
+  end
+
+  @spec build_promoted_config_version_changeset(AssistantConfigVersion.t()) :: Ecto.Changeset.t()
+  defp build_promoted_config_version_changeset(version) do
+    AssistantConfigVersion.changeset(%AssistantConfigVersion{}, %{
+      assistant_id: version.assistant_id,
+      organization_id: version.organization_id,
+      description: version.description,
+      prompt: version.prompt,
+      model: version.model,
+      provider: version.provider,
+      settings: version.settings,
+      status: version.status,
+      kaapi_version_number: version.kaapi_version_number,
+      bump_type: :major
+    })
+  end
 
   @spec latest_evaluation_run_id(non_neg_integer()) :: non_neg_integer() | nil
   defp latest_evaluation_run_id(assistant_config_version_id) do
@@ -276,7 +340,7 @@ defmodule Glific.Assistants do
       instructions: active_config_version.prompt,
       status: to_string(active_config_version.status),
       new_version_in_progress: new_version_in_progress,
-      live_version_number: active_config_version.version_number,
+      live_version_label: AssistantConfigVersion.version_label(active_config_version),
       legacy: if(vector_store_data, do: vector_store_data.legacy, else: false),
       clone_status: assistant.clone_status,
       vector_store_data: vector_store_data,
