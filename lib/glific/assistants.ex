@@ -185,7 +185,8 @@ defmodule Glific.Assistants do
     |> maybe_link_knowledge_base(knowledge_base_version, version.organization_id)
     |> Multi.update(:updated_assistant, fn %{config_version: config_version} ->
       Assistant.set_active_config_version_changeset(assistant, %{
-        active_config_version_id: config_version.id
+        active_config_version_id: config_version.id,
+        last_evaluation_run_id: latest_evaluation_run_id(version.id)
       })
     end)
     |> Repo.transaction()
