@@ -100,10 +100,9 @@ defmodule Glific.AI.Provider.ReqLLM do
   # Without them the tool results that follow reference a call the provider never
   # saw, and the request is rejected.
   defp to_req_llm(%Message{role: :assistant} = message) do
-    %{
-      ReqLLM.Context.assistant(message.content || "")
-      | tool_calls: Enum.map(message.tool_calls, &to_req_llm_tool_call/1)
-    }
+    ReqLLM.Context.assistant(message.content || "",
+      tool_calls: Enum.map(message.tool_calls, &to_req_llm_tool_call/1)
+    )
   end
 
   defp to_req_llm(%Message{content: content}), do: ReqLLM.Context.user(content || "")
