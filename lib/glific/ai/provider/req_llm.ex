@@ -17,11 +17,11 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   require Logger
 
-  alias Glific.AI.{Message, Models, Usage}
+  alias Glific.AI.{Models, Turn, Usage}
 
   @impl Glific.AI.Provider
-  @spec generate([Message.t()], keyword()) ::
-          {:ok, Message.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec generate([Turn.t()], keyword()) ::
+          {:ok, Turn.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
     if Models.configured?() do
       call(messages, opts)
@@ -30,8 +30,8 @@ defmodule Glific.AI.Provider.ReqLLM do
     end
   end
 
-  @spec call([Message.t()], keyword()) ::
-          {:ok, Message.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec call([Turn.t()], keyword()) ::
+          {:ok, Turn.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
     case ReqLLM.generate_text(
            Models.spec(),
@@ -39,7 +39,7 @@ defmodule Glific.AI.Provider.ReqLLM do
            request_opts(opts)
          ) do
       {:ok, response} ->
-        {:ok, Message.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
+        {:ok, Turn.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
 
       {:error, error} ->
         # Logged here rather than at the caller: this is the only place that can
@@ -56,14 +56,14 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec request_opts(keyword()) :: keyword()
   defp request_opts(opts), do: Keyword.merge(Models.opts(), opts)
 
-  @spec to_req_llm(Message.t()) :: struct()
-  defp to_req_llm(%Message{role: :system, content: content}),
+  @spec to_req_llm(Turn.t()) :: struct()
+  defp to_req_llm(%Turn{role: :system, content: content}),
     do: ReqLLM.Context.system(content || "")
 
-  defp to_req_llm(%Message{role: :assistant, content: content}),
+  defp to_req_llm(%Turn{role: :assistant, content: content}),
     do: ReqLLM.Context.assistant(content || "")
 
-  defp to_req_llm(%Message{content: content}), do: ReqLLM.Context.user(content || "")
+  defp to_req_llm(%Turn{content: content}), do: ReqLLM.Context.user(content || "")
 
   @spec usage(struct()) :: Usage.t()
   defp usage(response) do

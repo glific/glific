@@ -1,7 +1,7 @@
 defmodule Glific.AITest do
   use Glific.DataCase
 
-  alias Glific.{AI, AI.Message, AI.Models, AI.Usage}
+  alias Glific.{AI, AI.Models, AI.Turn, AI.Usage}
 
   defmodule RecordingProvider do
     @moduledoc false
@@ -11,7 +11,7 @@ defmodule Glific.AITest do
     def generate(messages, _opts) do
       send(self(), {:provider_called, messages})
 
-      {:ok, Message.assistant("a reply"),
+      {:ok, Turn.assistant("a reply"),
        %Usage{input_tokens: 12, output_tokens: 4, cost: Decimal.new("0.0006")}}
     end
   end
@@ -43,7 +43,7 @@ defmodule Glific.AITest do
     disable_flag()
 
     refute AI.enabled?(1)
-    assert {:error, :disabled} = AI.generate(1, [Message.user("hello")])
+    assert {:error, :disabled} = AI.generate(1, [Turn.user("hello")])
     refute_received {:provider_called, _}
   end
 
@@ -53,14 +53,14 @@ defmodule Glific.AITest do
 
     assert AI.enabled?(1)
 
-    assert {:ok, %Message{role: :assistant, content: "a reply"}, %Usage{} = usage} =
-             AI.generate(1, [Message.user("hello")])
+    assert {:ok, %Turn{role: :assistant, content: "a reply"}, %Usage{} = usage} =
+             AI.generate(1, [Turn.user("hello")])
 
     assert usage.input_tokens == 12
     assert usage.output_tokens == 4
     assert Decimal.equal?(usage.cost, Decimal.new("0.0006"))
 
-    assert_received {:provider_called, [%Message{role: :user, content: "hello"}]}
+    assert_received {:provider_called, [%Turn{role: :user, content: "hello"}]}
   end
 
   test "a provider failure is returned, not raised" do
@@ -68,7 +68,7 @@ defmodule Glific.AITest do
     enable_flag()
 
     assert {:error, {:provider_error, "429 rate limited"}} =
-             AI.generate(1, [Message.user("hello")])
+             AI.generate(1, [Turn.user("hello")])
   end
 
   test "the model spec comes from configuration, and a missing one is reported rather than raised" do
@@ -83,7 +83,7 @@ defmodule Glific.AITest do
     refute Models.configured?()
     enable_flag()
 
-    assert {:error, {:not_configured, _}} = AI.generate(1, [Message.user("hello")])
+    assert {:error, {:not_configured, _}} = AI.generate(1, [Turn.user("hello")])
   end
 
   test "usages accumulate, so a request can total the calls it made" do

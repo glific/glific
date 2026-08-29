@@ -12,7 +12,7 @@ defmodule Glific.AI.Provider do
   caller can record a failed request.
   """
 
-  alias Glific.AI.{Message, Usage}
+  alias Glific.AI.{Turn, Usage}
 
   @type failure ::
           {:not_configured, String.t()}
@@ -22,8 +22,8 @@ defmodule Glific.AI.Provider do
   Sends a conversation to the provider and returns its reply plus what the call
   consumed.
   """
-  @callback generate(messages :: [Message.t()], opts :: keyword()) ::
-              {:ok, Message.t(), Usage.t()} | {:error, failure()}
+  @callback generate(messages :: [Turn.t()], opts :: keyword()) ::
+              {:ok, Turn.t(), Usage.t()} | {:error, failure()}
 
   @doc "The configured implementation."
   @spec impl() :: module()
