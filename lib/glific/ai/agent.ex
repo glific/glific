@@ -10,11 +10,11 @@ defmodule Glific.AI.Agent do
   Three limits bound a run, because nothing in the model's control flow does:
 
     * **steps** — how many times we go round the loop
-    * **cost** — a ceiling in USD across every model call in the request
+    * **cost** — a ceiling in USD across every model call in the message
     * **time** — a deadline checked between steps
 
   Whichever is reached first stops the run and records the reason on the
-  request, so a run that will not converge is a recorded outcome rather than a
+  message, so a run that will not converge is a recorded outcome rather than a
   job that never ends.
   """
 
@@ -23,11 +23,11 @@ defmodule Glific.AI.Agent do
   import Ecto.Query
 
   alias Glific.{
+    AI.ChatMessage,
     AI.Event,
     AI.Message,
     AI.Models,
     AI.Provider,
-    AI.Request,
     AI.Tools,
     AI.Usage,
     Repo,
@@ -51,26 +51,26 @@ defmodule Glific.AI.Agent do
   """
 
   @doc """
-  Runs a request to completion and returns the answer.
+  Runs a message to completion and returns the answer.
 
-  Always returns a tuple. The request row is updated with the outcome, the cost
+  Always returns a tuple. The message row is updated with the outcome, the cost
   and, on failure, the reason.
   """
-  @spec run(Request.t(), User.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def run(%Request{} = request, %User{} = user) do
+  @spec run(Message.t(), User.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def run(%Message{} = message, %User{} = user) do
     deadline = System.monotonic_time(:millisecond) + limits()[:max_duration_ms]
 
-    request
+    message
     |> history()
-    |> then(&loop(request, user, [Message.system(@system_prompt) | &1], %Usage{}, deadline))
-    |> finish(request)
+    |> then(&loop(message, user, [ChatMessage.system(@system_prompt) | &1], %Usage{}, deadline))
+    |> finish(message)
   end
 
-  @spec loop(Request.t(), User.t(), [Message.t()], Usage.t(), integer()) ::
+  @spec loop(Message.t(), User.t(), [Message.t()], Usage.t(), integer()) ::
           {:ok, String.t(), Usage.t()} | {:stopped, String.t(), Usage.t()}
-  defp loop(request, user, messages, usage, deadline) do
+  defp loop(message, user, messages, usage, deadline) do
     cond do
-      steps_taken(request) >= limits()[:max_steps] ->
+      steps_taken(message) >= limits()[:max_steps] ->
         {:stopped, "Reached the limit of #{limits()[:max_steps]} steps without finishing.", usage}
 
       Decimal.compare(usage.cost, limits()[:max_cost]) == :gt ->
@@ -81,39 +81,39 @@ defmodule Glific.AI.Agent do
         {:stopped, "Took longer than #{div(limits()[:max_duration_ms], 1000)}s to answer.", usage}
 
       true ->
-        ask(request, user, messages, usage, deadline)
+        ask(message, user, messages, usage, deadline)
     end
   end
 
-  @spec ask(Request.t(), User.t(), [Message.t()], Usage.t(), integer()) ::
+  @spec ask(Message.t(), User.t(), [Message.t()], Usage.t(), integer()) ::
           {:ok, String.t(), Usage.t()} | {:stopped, String.t(), Usage.t()}
-  defp ask(request, user, messages, usage, deadline) do
+  defp ask(message, user, messages, usage, deadline) do
     case Provider.impl().generate(messages, tools: Tools.all()) do
       {:ok, reply, call_usage} ->
         usage = Usage.add(usage, call_usage)
-        continue(request, user, messages, reply, usage, deadline)
+        continue(message, user, messages, reply, usage, deadline)
 
       {:error, reason} ->
         {:stopped, describe(reason), usage}
     end
   end
 
-  @spec continue(Request.t(), User.t(), [Message.t()], Message.t(), Usage.t(), integer()) ::
+  @spec continue(Message.t(), User.t(), [Message.t()], Message.t(), Usage.t(), integer()) ::
           {:ok, String.t(), Usage.t()} | {:stopped, String.t(), Usage.t()}
-  defp continue(request, _user, _messages, %Message{tool_calls: []} = reply, usage, _deadline) do
-    append(request, :assistant, reply.content, %{})
+  defp continue(message, _user, _messages, %ChatMessage{tool_calls: []} = reply, usage, _deadline) do
+    append(message, :assistant, reply.content, %{})
     {:ok, reply.content || "", usage}
   end
 
-  defp continue(request, user, messages, reply, usage, deadline) do
-    results = Enum.map(reply.tool_calls, &run_tool(request, user, &1))
+  defp continue(message, user, messages, reply, usage, deadline) do
+    results = Enum.map(reply.tool_calls, &run_tool(message, user, &1))
 
-    loop(request, user, messages ++ [reply | results], usage, deadline)
+    loop(message, user, messages ++ [reply | results], usage, deadline)
   end
 
-  @spec run_tool(Request.t(), User.t(), Message.tool_call()) :: Message.t()
-  defp run_tool(request, user, %{id: id, name: name, args: args}) do
-    append(request, :tool_call, name, %{"arguments" => args}, id)
+  @spec run_tool(Message.t(), User.t(), ChatMessage.tool_call()) :: Message.t()
+  defp run_tool(message, user, %{id: id, name: name, args: args}) do
+    append(message, :tool_call, name, %{"arguments" => args}, id)
 
     body =
       case Tools.run(name, args, user) do
@@ -121,26 +121,26 @@ defmodule Glific.AI.Agent do
         {:error, message} -> Jason.encode!(%{error: message})
       end
 
-    append(request, :tool_result, nil, %{"output" => body}, id)
-    Message.tool_result(id, name, body)
+    append(message, :tool_result, nil, %{"output" => body}, id)
+    ChatMessage.tool_result(id, name, body)
   end
 
-  @spec finish({:ok, String.t(), Usage.t()} | {:stopped, String.t(), Usage.t()}, Request.t()) ::
+  @spec finish({:ok, String.t(), Usage.t()} | {:stopped, String.t(), Usage.t()}, Message.t()) ::
           {:ok, String.t()} | {:error, String.t()}
-  defp finish({:ok, answer, usage}, request) do
-    record(request, %{status: :succeeded, model: Models.spec()}, usage)
+  defp finish({:ok, answer, usage}, message) do
+    record(message, %{status: :succeeded, model: Models.spec()}, usage)
     {:ok, answer}
   end
 
-  defp finish({:stopped, reason, usage}, request) do
-    record(request, %{status: :failed, error: reason, model: Models.spec()}, usage)
+  defp finish({:stopped, reason, usage}, message) do
+    record(message, %{status: :failed, error: reason, model: Models.spec()}, usage)
     {:error, reason}
   end
 
-  @spec record(Request.t(), map(), Usage.t()) :: Request.t()
-  defp record(request, attrs, usage) do
-    request
-    |> Request.changeset(
+  @spec record(Message.t(), map(), Usage.t()) :: Message.t()
+  defp record(message, attrs, usage) do
+    message
+    |> Message.changeset(
       Map.merge(attrs, %{
         input_tokens: usage.input_tokens,
         output_tokens: usage.output_tokens,
@@ -153,38 +153,38 @@ defmodule Glific.AI.Agent do
   # The conversation so far, from earlier requests in the same thread. Tool
   # traffic is left out: what matters for the next question is what was asked
   # and what was answered.
-  @spec history(Request.t()) :: [Message.t()]
-  defp history(request) do
+  @spec history(Message.t()) :: [Message.t()]
+  defp history(message) do
     Event
-    |> where([e], e.conversation_id == ^request.conversation_id)
-    |> where([e], e.request_id != ^request.id)
+    |> where([e], e.conversation_id == ^message.conversation_id)
+    |> where([e], e.message_id != ^message.id)
     |> where([e], e.type in [:user, :assistant])
-    |> order_by([e], asc: e.request_id, asc: e.step)
+    |> order_by([e], asc: e.message_id, asc: e.step)
     |> Repo.all()
     |> Enum.map(fn
-      %Event{type: :assistant, content: content} -> Message.assistant(content || "")
-      %Event{content: content} -> Message.user(content || "")
+      %Event{type: :assistant, content: content} -> ChatMessage.assistant(content || "")
+      %Event{content: content} -> ChatMessage.user(content || "")
     end)
-    |> Kernel.++(current_question(request))
+    |> Kernel.++(current_question(message))
   end
 
-  @spec current_question(Request.t()) :: [Message.t()]
-  defp current_question(request) do
+  @spec current_question(Message.t()) :: [Message.t()]
+  defp current_question(message) do
     Event
-    |> where([e], e.request_id == ^request.id and e.type == :user)
+    |> where([e], e.message_id == ^message.id and e.type == :user)
     |> order_by([e], asc: e.step)
     |> Repo.all()
-    |> Enum.map(&Message.user(&1.content || ""))
+    |> Enum.map(&ChatMessage.user(&1.content || ""))
   end
 
-  @spec append(Request.t(), atom(), String.t() | nil, map(), String.t() | nil) :: Event.t()
-  defp append(request, type, content, data, tool_call_id \\ nil) do
+  @spec append(Message.t(), atom(), String.t() | nil, map(), String.t() | nil) :: Event.t()
+  defp append(message, type, content, data, tool_call_id \\ nil) do
     %Event{}
     |> Event.changeset(%{
-      request_id: request.id,
-      conversation_id: request.conversation_id,
-      organization_id: request.organization_id,
-      step: next_step(request),
+      message_id: message.id,
+      conversation_id: message.conversation_id,
+      organization_id: message.organization_id,
+      step: next_step(message),
       type: type,
       content: content,
       data: data,
@@ -193,13 +193,13 @@ defmodule Glific.AI.Agent do
     |> Repo.insert!()
   end
 
-  @spec next_step(Request.t()) :: non_neg_integer()
-  defp next_step(request), do: steps_taken(request) + 1
+  @spec next_step(Message.t()) :: non_neg_integer()
+  defp next_step(message), do: steps_taken(message) + 1
 
-  @spec steps_taken(Request.t()) :: non_neg_integer()
-  defp steps_taken(request) do
+  @spec steps_taken(Message.t()) :: non_neg_integer()
+  defp steps_taken(message) do
     Event
-    |> where([e], e.request_id == ^request.id)
+    |> where([e], e.message_id == ^message.id)
     |> Repo.aggregate(:count)
   end
 

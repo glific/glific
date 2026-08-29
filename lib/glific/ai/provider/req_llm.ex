@@ -3,7 +3,7 @@ defmodule Glific.AI.Provider.ReqLLM do
   The `req_llm` implementation of `Glific.AI.Provider`.
 
   This is the **only** module in Glific that names `req_llm`. Its types do not
-  escape: what goes in and comes out are `Glific.AI.Message` and
+  escape: what goes in and comes out are `Glific.AI.ChatMessage` and
   `Glific.AI.Usage` structs. That containment is what makes the library choice
   reversible — replacing it means writing a sibling module, not migrating stored
   conversations or touching any caller.
@@ -17,11 +17,11 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   require Logger
 
-  alias Glific.AI.{Message, Models, Usage}
+  alias Glific.AI.{ChatMessage, Models, Usage}
 
   @impl Glific.AI.Provider
-  @spec generate([Message.t()], keyword()) ::
-          {:ok, Message.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec generate([ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
     if Models.configured?() do
       call(messages, opts)
@@ -30,13 +30,13 @@ defmodule Glific.AI.Provider.ReqLLM do
     end
   end
 
-  @spec call([Message.t()], keyword()) ::
-          {:ok, Message.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec call([ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
     {tools, opts} = Keyword.pop(opts, :tools, [])
 
     Models.spec()
-    |> ReqLLM.generate_text(to_provider_messages(messages), request_opts(tools, opts))
+    |> ReqLLM.generate_text(to_provider_chat_messages(messages), request_opts(tools, opts))
     |> case do
       {:ok, response} ->
         {:ok, reply(response), usage(response)}
@@ -78,42 +78,42 @@ defmodule Glific.AI.Provider.ReqLLM do
     do: {:error, "tools are executed by Glific.AI.Tools, not by the provider client"}
 
   @doc """
-  Converts Glific messages into the provider's own format.
+  Converts Glific chat messages into the provider's own format.
 
   Public so the wire shape can be asserted in tests without calling a provider;
   nothing outside this module should depend on the structs it returns.
   """
-  @spec to_provider_messages([Message.t()]) :: [struct()]
-  def to_provider_messages(messages), do: Enum.map(messages, &to_req_llm/1)
+  @spec to_provider_chat_messages([ChatMessage.t()]) :: [struct()]
+  def to_provider_chat_messages(messages), do: Enum.map(messages, &to_req_llm/1)
 
-  @spec to_req_llm(Message.t()) :: struct()
-  defp to_req_llm(%Message{role: :system, content: content}),
+  @spec to_req_llm(ChatMessage.t()) :: struct()
+  defp to_req_llm(%ChatMessage{role: :system, content: content}),
     do: ReqLLM.Context.system(content || "")
 
-  defp to_req_llm(%Message{role: :tool} = message),
+  defp to_req_llm(%ChatMessage{role: :tool} = message),
     do: ReqLLM.Context.tool_result(message.tool_call_id, message.tool_name, message.content || "")
 
-  defp to_req_llm(%Message{role: :assistant, tool_calls: []} = message),
+  defp to_req_llm(%ChatMessage{role: :assistant, tool_calls: []} = message),
     do: ReqLLM.Context.assistant(message.content || "")
 
   # A turn where the model asked for tools has to go back carrying those calls.
   # Without them the tool results that follow reference a call the provider never
   # saw, and the request is rejected.
-  defp to_req_llm(%Message{role: :assistant} = message) do
+  defp to_req_llm(%ChatMessage{role: :assistant} = message) do
     ReqLLM.Context.assistant(message.content || "",
       tool_calls: Enum.map(message.tool_calls, &to_req_llm_tool_call/1)
     )
   end
 
-  defp to_req_llm(%Message{content: content}), do: ReqLLM.Context.user(content || "")
+  defp to_req_llm(%ChatMessage{content: content}), do: ReqLLM.Context.user(content || "")
 
-  @spec to_req_llm_tool_call(Message.tool_call()) :: map()
+  @spec to_req_llm_tool_call(ChatMessage.tool_call()) :: map()
   defp to_req_llm_tool_call(%{id: id, name: name, args: args}),
     do: %{id: id, name: name, arguments: args}
 
-  @spec reply(struct()) :: Message.t()
+  @spec reply(struct()) :: ChatMessage.t()
   defp reply(response) do
-    Message.assistant(
+    ChatMessage.assistant(
       ReqLLM.Response.text(response),
       response |> ReqLLM.Response.tool_calls() |> Enum.map(&tool_call/1)
     )
@@ -121,7 +121,7 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   # req_llm types tool calls loosely, and the shape differs by provider, so every
   # variant is normalised here rather than leaking outward.
-  @spec tool_call(term()) :: Message.tool_call()
+  @spec tool_call(term()) :: ChatMessage.tool_call()
   defp tool_call(%{name: name} = call) do
     %{
       id: id(call),

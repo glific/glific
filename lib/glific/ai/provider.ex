@@ -12,7 +12,7 @@ defmodule Glific.AI.Provider do
   caller can record a failed request.
   """
 
-  alias Glific.AI.{Message, Usage}
+  alias Glific.AI.{ChatMessage, Usage}
 
   @type failure ::
           {:not_configured, String.t()}
@@ -27,8 +27,8 @@ defmodule Glific.AI.Provider do
   never execute them: running a tool goes through `Glific.AI.Tools.run/3`, which
   is where authorisation and read-only enforcement live.
   """
-  @callback generate(messages :: [Message.t()], opts :: keyword()) ::
-              {:ok, Message.t(), Usage.t()} | {:error, failure()}
+  @callback generate(messages :: [ChatMessage.t()], opts :: keyword()) ::
+              {:ok, ChatMessage.t(), Usage.t()} | {:error, failure()}
 
   @doc "The configured implementation."
   @spec impl() :: module()

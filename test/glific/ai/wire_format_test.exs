@@ -10,7 +10,7 @@ defmodule Glific.AI.WireFormatTest do
 
   use ExUnit.Case, async: true
 
-  alias Glific.AI.{Message, Tools}
+  alias Glific.AI.{ChatMessage, Tools}
   alias Glific.AI.Provider.ReqLLM, as: Adapter
 
   defp encode(messages) do
@@ -18,7 +18,7 @@ defmodule Glific.AI.WireFormatTest do
 
     {:ok, context} =
       messages
-      |> Adapter.to_provider_messages()
+      |> Adapter.to_provider_chat_messages()
       |> Elixir.ReqLLM.Context.normalize()
 
     Elixir.ReqLLM.Providers.Anthropic.Context.encode_request(context, model)
@@ -29,10 +29,10 @@ defmodule Glific.AI.WireFormatTest do
 
     encoded =
       encode([
-        Message.system("you are a helper"),
-        Message.user("what flows do I have?"),
-        Message.assistant(nil, [call]),
-        Message.tool_result("toolu_1", "list_flows", ~s({"flows":[]}))
+        ChatMessage.system("you are a helper"),
+        ChatMessage.user("what flows do I have?"),
+        ChatMessage.assistant(nil, [call]),
+        ChatMessage.tool_result("toolu_1", "list_flows", ~s({"flows":[]}))
       ])
 
     blocks = encoded[:messages] |> Enum.flat_map(&List.wrap(&1[:content] || &1["content"]))
@@ -52,7 +52,7 @@ defmodule Glific.AI.WireFormatTest do
   end
 
   test "a plain assistant turn is unaffected" do
-    encoded = encode([Message.user("hi"), Message.assistant("hello")])
+    encoded = encode([ChatMessage.user("hi"), ChatMessage.assistant("hello")])
     roles = Enum.map(encoded[:messages], &(&1[:role] || &1["role"]))
     assert roles == ["user", "assistant"]
   end

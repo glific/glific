@@ -15,7 +15,7 @@ defmodule Glific.AI do
   """
 
   alias Glific.{
-    AI.Message,
+    AI.ChatMessage,
     AI.Provider,
     AI.Usage,
     Flags,
@@ -37,8 +37,8 @@ defmodule Glific.AI do
   cost against a request. Returns `{:error, :disabled}` without contacting any
   provider when the feature flag is off.
   """
-  @spec generate(non_neg_integer(), [Message.t()], keyword()) ::
-          {:ok, Message.t(), Usage.t()} | {:error, :disabled | Provider.failure()}
+  @spec generate(non_neg_integer(), [ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, :disabled | Provider.failure()}
   def generate(organization_id, messages, opts \\ []) do
     if enabled?(organization_id) do
       Provider.impl().generate(messages, opts)

@@ -5,10 +5,10 @@ defmodule Glific.AI.AgentTest do
 
   alias Glific.{
     AI.Agent,
+    AI.ChatMessage,
     AI.Conversation,
     AI.Event,
     AI.Message,
-    AI.Request,
     AI.Tools,
     AI.Usage,
     Fixtures,
@@ -33,7 +33,7 @@ defmodule Glific.AI.AgentTest do
           {:ok, reply, %Usage{input_tokens: 10, output_tokens: 5, cost: Decimal.new("0.001")}}
 
         [] ->
-          {:ok, Message.assistant("done"), %Usage{cost: Decimal.new("0.001")}}
+          {:ok, ChatMessage.assistant("done"), %Usage{cost: Decimal.new("0.001")}}
       end
     end
   end
@@ -45,7 +45,7 @@ defmodule Glific.AI.AgentTest do
     @impl Glific.AI.Provider
     def generate(_messages, _opts) do
       call = %{id: Ecto.UUID.generate(), name: "list_flows", args: %{}}
-      {:ok, Message.assistant(nil, [call]), %Usage{cost: Decimal.new("0.001")}}
+      {:ok, ChatMessage.assistant(nil, [call]), %Usage{cost: Decimal.new("0.001")}}
     end
   end
 
@@ -56,7 +56,7 @@ defmodule Glific.AI.AgentTest do
     @impl Glific.AI.Provider
     def generate(_messages, _opts) do
       call = %{id: Ecto.UUID.generate(), name: "list_flows", args: %{}}
-      {:ok, Message.assistant(nil, [call]), %Usage{cost: Decimal.new("10.00")}}
+      {:ok, ChatMessage.assistant(nil, [call]), %Usage{cost: Decimal.new("10.00")}}
     end
   end
 
@@ -88,8 +88,8 @@ defmodule Glific.AI.AgentTest do
         |> Repo.insert!()
 
     request =
-      %Request{}
-      |> Request.changeset(%{
+      %Message{}
+      |> Message.changeset(%{
         conversation_id: conversation.id,
         user_id: user.id,
         organization_id: user.organization_id,
@@ -100,7 +100,7 @@ defmodule Glific.AI.AgentTest do
 
     %Event{}
     |> Event.changeset(%{
-      request_id: request.id,
+      message_id: request.id,
       conversation_id: conversation.id,
       organization_id: user.organization_id,
       step: 1,
@@ -121,8 +121,8 @@ defmodule Glific.AI.AgentTest do
     use_provider(ScriptedProvider)
 
     ScriptedProvider.script([
-      Message.assistant(nil, [%{id: "call_1", name: "list_flows", args: %{"name" => "Reg"}}]),
-      Message.assistant("You have one flow called Registration flow.")
+      ChatMessage.assistant(nil, [%{id: "call_1", name: "list_flows", args: %{"name" => "Reg"}}]),
+      ChatMessage.assistant("You have one flow called Registration flow.")
     ])
 
     {_conversation, request} = ask("what flows do I have?", user)
@@ -137,7 +137,7 @@ defmodule Glific.AI.AgentTest do
              {4, :assistant, _}
            ] =
              Event
-             |> where([e], e.request_id == ^request.id)
+             |> where([e], e.message_id == ^request.id)
              |> order_by([e], asc: e.step)
              |> select([e], {e.step, e.type, e.content})
              |> Repo.all()
@@ -149,7 +149,7 @@ defmodule Glific.AI.AgentTest do
 
   test "cost and outcome are recorded on the request", %{user: user} do
     use_provider(ScriptedProvider)
-    ScriptedProvider.script([Message.assistant("a short answer")])
+    ScriptedProvider.script([ChatMessage.assistant("a short answer")])
 
     {_conversation, request} = ask("hello", user)
     assert {:ok, _} = Agent.run(request, user)
@@ -163,13 +163,13 @@ defmodule Glific.AI.AgentTest do
 
   test "a follow-up carries the earlier exchange", %{user: user} do
     use_provider(ScriptedProvider)
-    ScriptedProvider.script([Message.assistant("An HSM is a template message.")])
+    ScriptedProvider.script([ChatMessage.assistant("An HSM is a template message.")])
 
     {conversation, first} = ask("what is an HSM?", user)
     assert {:ok, _} = Agent.run(first, user)
 
     Process.delete(:seen)
-    ScriptedProvider.script([Message.assistant("You send one from a flow.")])
+    ScriptedProvider.script([ChatMessage.assistant("You send one from a flow.")])
     {_, second} = ask("how do I send one?", user, conversation)
     assert {:ok, _} = Agent.run(second, user)
 
@@ -198,7 +198,7 @@ defmodule Glific.AI.AgentTest do
     assert request.status == :failed
     assert request.error =~ "6 steps"
 
-    steps = Event |> where([e], e.request_id == ^request.id) |> Repo.aggregate(:count)
+    steps = Event |> where([e], e.message_id == ^request.id) |> Repo.aggregate(:count)
     assert steps >= 6
   end
 
@@ -226,15 +226,17 @@ defmodule Glific.AI.AgentTest do
     assert request.error == "upstream is down"
 
     assert [%Event{type: :user, content: "a question"}] =
-             Event |> where([e], e.request_id == ^request.id) |> Repo.all()
+             Event |> where([e], e.message_id == ^request.id) |> Repo.all()
   end
 
   test "a tool error is handed to the model rather than ending the run", %{user: user} do
     use_provider(ScriptedProvider)
 
     ScriptedProvider.script([
-      Message.assistant(nil, [%{id: "call_1", name: "get_flow", args: %{"flow_id" => 999_999}}]),
-      Message.assistant("There is no flow with that id.")
+      ChatMessage.assistant(nil, [
+        %{id: "call_1", name: "get_flow", args: %{"flow_id" => 999_999}}
+      ]),
+      ChatMessage.assistant("There is no flow with that id.")
     ])
 
     {_conversation, request} = ask("describe flow 999999", user)

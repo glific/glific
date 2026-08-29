@@ -3,10 +3,10 @@ defmodule Glific.AI.WorkerTest do
   use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
+    AI.ChatMessage,
     AI.Conversation,
     AI.Event,
     AI.Message,
-    AI.Request,
     AI.Usage,
     AI.Worker,
     Fixtures,
@@ -21,7 +21,7 @@ defmodule Glific.AI.WorkerTest do
     def generate(_messages, _opts) do
       # Captured inside the job, so the test can assert who the run acted as.
       send(:worker_test, {:ran_as, Glific.Repo.get_current_user()})
-      {:ok, Message.assistant("an answer"), %Usage{cost: Decimal.new("0.002")}}
+      {:ok, ChatMessage.assistant("an answer"), %Usage{cost: Decimal.new("0.002")}}
     end
   end
 
@@ -39,8 +39,8 @@ defmodule Glific.AI.WorkerTest do
       |> Repo.insert!()
 
     request =
-      %Request{}
-      |> Request.changeset(%{
+      %Message{}
+      |> Message.changeset(%{
         conversation_id: conversation.id,
         user_id: user.id,
         organization_id: 1,
@@ -51,7 +51,7 @@ defmodule Glific.AI.WorkerTest do
 
     %Event{}
     |> Event.changeset(%{
-      request_id: request.id,
+      message_id: request.id,
       conversation_id: conversation.id,
       organization_id: 1,
       step: 1,
@@ -65,7 +65,7 @@ defmodule Glific.AI.WorkerTest do
 
   test "the job runs the request and records the answer", %{user: user, request: request} do
     assert :ok =
-             perform_job(Worker, %{"request_id" => request.id, "organization_id" => 1})
+             perform_job(Worker, %{"message_id" => request.id, "organization_id" => 1})
 
     request = Repo.reload!(request)
     assert request.status == :succeeded
@@ -73,7 +73,7 @@ defmodule Glific.AI.WorkerTest do
 
     assert [%Event{type: :user}, %Event{type: :assistant, content: "an answer"}] =
              Event
-             |> Ecto.Query.where([e], e.request_id == ^request.id)
+             |> Ecto.Query.where([e], e.message_id == ^request.id)
              |> Ecto.Query.order_by([e], asc: e.step)
              |> Repo.all()
 
@@ -88,7 +88,7 @@ defmodule Glific.AI.WorkerTest do
     root = Glific.Partners.organization(1).root_user
     refute root.id == user.id
 
-    assert :ok = perform_job(Worker, %{"request_id" => request.id, "organization_id" => 1})
+    assert :ok = perform_job(Worker, %{"message_id" => request.id, "organization_id" => 1})
 
     assert_received {:ran_as, ran_as}
     assert ran_as.id == user.id
@@ -98,7 +98,7 @@ defmodule Glific.AI.WorkerTest do
   test "enqueue/1 schedules the request on the glific_ai queue", %{request: request} do
     assert {:ok, job} = Worker.enqueue(request)
     assert job.queue == "glific_ai"
-    assert job.args["request_id"] == request.id
+    assert job.args["message_id"] == request.id
     assert job.max_attempts == 1
   end
 end
