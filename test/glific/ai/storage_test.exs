@@ -6,7 +6,7 @@ defmodule Glific.AI.StorageTest do
   alias Glific.{
     AI.Conversation,
     AI.Event,
-    AI.Request,
+    AI.Message,
     Fixtures,
     Repo
   }
@@ -23,15 +23,15 @@ defmodule Glific.AI.StorageTest do
     |> Repo.insert!()
   end
 
-  defp request(conversation, attrs \\ %{}) do
-    %Request{}
-    |> Request.changeset(
+  defp message(conversation, attrs \\ %{}) do
+    %Message{}
+    |> Message.changeset(
       Map.merge(
         %{
           conversation_id: conversation.id,
           user_id: conversation.user_id,
           organization_id: conversation.organization_id,
-          skill: "flow-review"
+          status: :running
         },
         attrs
       )
@@ -39,14 +39,14 @@ defmodule Glific.AI.StorageTest do
     |> Repo.insert!()
   end
 
-  defp event(request, attrs) do
+  defp event(message, attrs) do
     %Event{}
     |> Event.changeset(
       Map.merge(
         %{
-          request_id: request.id,
-          conversation_id: request.conversation_id,
-          organization_id: request.organization_id
+          message_id: message.id,
+          conversation_id: message.conversation_id,
+          organization_id: message.organization_id
         },
         attrs
       )
@@ -54,17 +54,17 @@ defmodule Glific.AI.StorageTest do
     |> Repo.insert()
   end
 
-  test "one organization cannot see another's conversations, requests or events" do
+  test "one organization cannot see another's conversations, messages or events" do
     other_org = Fixtures.organization_fixture(%{shortcode: "glific_ai_other"})
 
     mine = conversation(1)
-    my_request = request(mine)
-    {:ok, _} = event(my_request, %{step: 1, type: :user, content: "hello"})
+    my_message = message(mine)
+    {:ok, _} = event(my_message, %{step: 1, type: :user, content: "hello"})
 
     Repo.put_organization_id(other_org.id)
 
     assert [] == Repo.all(Conversation)
-    assert [] == Repo.all(Request)
+    assert [] == Repo.all(Message)
     assert [] == Repo.all(Event)
 
     Repo.put_organization_id(1)
@@ -73,14 +73,14 @@ defmodule Glific.AI.StorageTest do
     assert 1 == Repo.aggregate(Event, :count)
   end
 
-  test "deleting a conversation removes its requests and events, and the organization FKs cascade" do
+  test "deleting a conversation removes its messages and events, and the organization FKs cascade" do
     conversation = conversation(1)
-    first = request(conversation)
+    first = message(conversation)
     {:ok, _} = event(first, %{step: 1, type: :assistant, content: "here you go"})
 
     Repo.delete!(conversation)
 
-    assert 0 == Repo.aggregate(Request, :count)
+    assert 0 == Repo.aggregate(Message, :count)
     assert 0 == Repo.aggregate(Event, :count)
 
     # An organization being removed must take its Glific AI data with it.
@@ -92,7 +92,7 @@ defmodule Glific.AI.StorageTest do
           where:
             t.relname in ^[
               "glific_ai_conversations",
-              "glific_ai_requests",
+              "glific_ai_messages",
               "glific_ai_events"
             ] and
               c.contype == "f" and c.confdeltype == "c",
@@ -105,17 +105,17 @@ defmodule Glific.AI.StorageTest do
     assert Enum.sort(cascading) == [
              "glific_ai_conversations",
              "glific_ai_events",
-             "glific_ai_requests"
+             "glific_ai_messages"
            ]
   end
 
-  test "two requests in one conversation can both number their steps from 1" do
+  test "two messages in one conversation can both number their steps from 1" do
     conversation = conversation(1)
 
-    # This is the case conversation-wide numbering would break: both requests are
+    # This is the case conversation-wide numbering would break: both messages are
     # live in the same thread and each starts its own event numbering.
-    first = request(conversation)
-    second = request(conversation, %{skill: "knowledge"})
+    first = message(conversation)
+    second = message(conversation, %{})
 
     assert {:ok, _} = event(first, %{step: 1, type: :user, content: "why is it stuck?"})
     assert {:ok, _} = event(second, %{step: 1, type: :user, content: "and what is an HSM?"})
@@ -128,24 +128,23 @@ defmodule Glific.AI.StorageTest do
                data: %{"name" => "list_flows"}
              })
 
-    # ...but a request may not reuse a step of its own.
+    # ...but a message may not reuse a step of its own.
     assert {:error, changeset} = event(first, %{step: 1, type: :assistant})
-    assert errors_on(changeset).request_id != [] or errors_on(changeset).step != []
+    assert errors_on(changeset).message_id != [] or errors_on(changeset).step != []
 
-    # A whole thread reads back in order across both requests.
+    # A whole thread reads back in order across both messages.
     assert [{_, 1}, {_, 2}, {_, 1}] =
              Event
-             |> order_by([e], asc: e.request_id, asc: e.step)
-             |> select([e], {e.request_id, e.step})
+             |> order_by([e], asc: e.message_id, asc: e.step)
+             |> select([e], {e.message_id, e.step})
              |> Repo.all()
   end
 
-  test "a failed request keeps its reason and its cost" do
+  test "a failed message keeps its reason and its cost" do
     conversation = conversation(1)
 
     failed =
-      request(conversation, %{
-        skill: "flow-review",
+      message(conversation, %{
         status: :failed,
         error: "the provider returned a 400",
         model: "anthropic:claude-opus-5",
@@ -158,7 +157,7 @@ defmodule Glific.AI.StorageTest do
     assert failed.error == "the provider returned a 400"
     assert Decimal.equal?(failed.cost, Decimal.new("0.0042"))
 
-    # A failed request is still listed, so the thread renders.
-    assert [failed.id] == Request |> select([r], r.id) |> Repo.all()
+    # A failed message is still listed, so the thread renders.
+    assert [failed.id] == Message |> select([r], r.id) |> Repo.all()
   end
 end

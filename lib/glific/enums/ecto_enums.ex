@@ -154,6 +154,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.AssistantConfigVersionBumpType,
+  :assistant_config_version_bump_type_enum,
+  Glific.Enums.assistant_config_version_bump_type_const()
+)
+
+defenum(
   Glific.Enums.KnowledgeBaseStatus,
   :knowledge_base_status_enum,
   Glific.Enums.knowledge_base_status_const()
@@ -166,9 +172,9 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.GlificAIRequestStatus,
-  :glific_ai_request_status_enum,
-  Glific.Enums.glific_ai_request_status_const()
+  Glific.Enums.GlificAIMessageStatus,
+  :glific_ai_message_status_enum,
+  Glific.Enums.glific_ai_message_status_const()
 )
 
 defenum(

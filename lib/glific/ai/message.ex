@@ -1,60 +1,76 @@
 defmodule Glific.AI.Message do
   @moduledoc """
-  Glific's own message format, independent of any provider library.
+  One question asked of Glific AI, and how answering it went.
 
-  This is the boundary that keeps the provider choice replaceable: provider
-  structs never leave `Glific.AI.Provider` implementations, and everything above
-  that boundary — including what is written to `glific_ai_events` — speaks in
-  these structs instead.
+  Carries the outcome, the model used and the token cost. The individual steps
+  taken are `Glific.AI.Event` rows belonging to it.
   """
 
-  @type role :: :system | :user | :assistant | :tool
+  use Ecto.Schema
+  import Ecto.Changeset
 
-  @typedoc """
-  A tool the model asked us to run. `id` is the provider's identifier for the
-  call, and pairing the eventual result back to it is what lets a conversation
-  be replayed faithfully.
-  """
-  @type tool_call :: %{id: String.t(), name: String.t(), args: map()}
+  alias Glific.{
+    AI.Conversation,
+    Enums.GlificAIMessageStatus,
+    Partners.Organization,
+    Users.User
+  }
+
+  @required_fields [:conversation_id, :user_id, :organization_id]
+  @optional_fields [
+    :status,
+    :error,
+    :model,
+    :input_tokens,
+    :output_tokens,
+    :cost
+  ]
 
   @type t() :: %__MODULE__{
-          role: role(),
-          content: String.t() | nil,
-          tool_calls: [tool_call()],
-          tool_call_id: String.t() | nil,
-          tool_name: String.t() | nil
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          status: GlificAIMessageStatus.t() | nil,
+          error: String.t() | nil,
+          model: String.t() | nil,
+          input_tokens: non_neg_integer | nil,
+          output_tokens: non_neg_integer | nil,
+          cost: Decimal.t() | nil,
+          conversation_id: non_neg_integer | nil,
+          conversation: Conversation.t() | Ecto.Association.NotLoaded.t() | nil,
+          user_id: non_neg_integer | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
         }
 
-  @enforce_keys [:role]
-  defstruct role: nil, content: nil, tool_calls: [], tool_call_id: nil, tool_name: nil
+  schema "glific_ai_messages" do
+    field :status, GlificAIMessageStatus, default: :pending
+    field :error, :string
+    field :model, :string
 
-  @doc "A message from the person asking."
-  @spec user(String.t()) :: t()
-  def user(content), do: %__MODULE__{role: :user, content: content}
+    field :input_tokens, :integer, default: 0
+    field :output_tokens, :integer, default: 0
+    field :cost, :decimal, default: Decimal.new("0")
 
-  @doc "Standing instructions for the model."
-  @spec system(String.t()) :: t()
-  def system(content), do: %__MODULE__{role: :system, content: content}
+    belongs_to :conversation, Conversation
+    belongs_to :user, User
+    belongs_to :organization, Organization
 
-  @doc "A reply from the model, which may ask for tools to be run."
-  @spec assistant(String.t() | nil, [tool_call()]) :: t()
-  def assistant(content, tool_calls \\ []),
-    do: %__MODULE__{role: :assistant, content: content, tool_calls: tool_calls}
-
-  @doc """
-  The outcome of running one tool, addressed back to the call that asked for it.
-  """
-  @spec tool_result(String.t(), String.t(), String.t()) :: t()
-  def tool_result(tool_call_id, tool_name, content) do
-    %__MODULE__{
-      role: :tool,
-      tool_call_id: tool_call_id,
-      tool_name: tool_name,
-      content: content
-    }
+    timestamps(type: :utc_datetime_usec)
   end
 
-  @doc "Whether the model is asking for tools rather than answering."
-  @spec tool_calls?(t()) :: boolean()
-  def tool_calls?(%__MODULE__{tool_calls: calls}), do: calls != []
+  @doc "Standard changeset pattern we use for all data types"
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
+  def changeset(message, attrs) do
+    message
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+    |> validate_number(:input_tokens, greater_than_or_equal_to: 0)
+    |> validate_number(:output_tokens, greater_than_or_equal_to: 0)
+    |> foreign_key_constraint(:conversation_id)
+    |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:organization_id)
+  end
 end
