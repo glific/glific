@@ -1,22 +1,17 @@
 defmodule Glific.AI do
   @moduledoc """
-  Glific AI — the public boundary for asking a model something.
+  Entry point for asking a model something.
 
-  At this stage this module does one thing: it decides whether Glific AI is
-  permitted to run for an organisation, and if so hands the conversation to the
-  configured provider. Routing, skills, tools and the agent loop sit above it in
-  later work; storage lives in `Glific.AI.Conversation` and friends.
+  Checks whether Glific AI is enabled for the organisation, then hands the
+  conversation to the configured provider.
 
-  Two guarantees callers can rely on:
-
-    * with the feature flag off for an organisation, **no provider call is
-      made** — the flag is checked before anything is sent
-    * a provider failure comes back as `{:error, reason}`, never as an exception
+  With the flag off, no provider call is made. A provider failure is returned as
+  `{:error, reason}` rather than raised.
   """
 
   alias Glific.{
+    AI.ChatMessage,
     AI.Provider,
-    AI.Turn,
     AI.Usage,
     Flags,
     Partners
@@ -37,8 +32,8 @@ defmodule Glific.AI do
   cost against a request. Returns `{:error, :disabled}` without contacting any
   provider when the feature flag is off.
   """
-  @spec generate(non_neg_integer(), [Turn.t()], keyword()) ::
-          {:ok, Turn.t(), Usage.t()} | {:error, :disabled | Provider.failure()}
+  @spec generate(non_neg_integer(), [ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, :disabled | Provider.failure()}
   def generate(organization_id, messages, opts \\ []) do
     if enabled?(organization_id) do
       Provider.impl().generate(messages, opts)
