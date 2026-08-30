@@ -1,38 +1,34 @@
 defmodule Glific.AI.AskGlific do
   @moduledoc """
-  Glific AI behind the existing Ask Glific interface.
+  Answers Ask Glific questions with Glific AI instead of Dify.
 
-  `Glific.AskGlific` routes here instead of to Dify when the `glific_ai_enabled`
-  flag is on for an organisation. The return shapes are identical, so the chat
-  window, its history and its feedback control keep working with no frontend
-  change — the only difference is where the answer comes from and where the
-  conversation is stored.
+  `Glific.AskGlific` routes here when the `glific_ai_enabled` flag is on for an
+  organisation. The return shapes match the Dify path, so the chat window, its
+  history and its feedback control work unchanged.
 
-  Two differences from the Dify path worth knowing:
+  Two differences:
 
-    * conversation ids are Glific's own integer ids rendered as strings, not
-      Dify UUIDs. Existing Dify conversations are not migrated; a user who is
-      switched over starts a fresh history.
-    * the current user is set from the person who asked, so reads run under
-      their permissions. The Dify path calls `Repo.put_process_state/1`, which
-      substitutes the organisation's root user.
+    * conversation ids are Glific ids rendered as strings, not Dify UUIDs.
+      Existing Dify conversations are not migrated, so a user switched over
+      starts with an empty history.
+    * the current user is set from whoever asked, so reads run under their
+      permissions rather than the organisation's root user.
   """
 
   import Ecto.Query
 
   alias Glific.{
     AI,
+    AI.ChatMessage,
     AI.Conversation,
     AI.Event,
     AI.Message,
     AI.Models,
     AI.Provider,
-    AI.Request,
     AI.Usage,
     Repo
   }
 
-  @skill "knowledge"
   @name_length 60
   @default_limit 20
 
@@ -80,7 +76,7 @@ defmodule Glific.AI.AskGlific do
   @doc """
   The exchanges in one conversation, oldest first.
 
-  Ordered by `(request_id, step)` rather than by timestamp: two requests in
+  Ordered by `(message_id, step)` rather than by timestamp: two questions in
   one thread can be in flight at once, and timestamps can tie.
   """
   @spec get_messages(String.t(), map(), map()) :: {:ok, map()} | {:error, String.t()}
@@ -138,45 +134,44 @@ defmodule Glific.AI.AskGlific do
   @spec answer(Conversation.t(), String.t(), boolean(), map()) ::
           {:ok, map()} | {:error, String.t()}
   defp answer(conversation, query, new?, user) do
-    request = start_request(conversation, user)
-    history = conversation |> events_query() |> Repo.all() |> Enum.map(&to_message/1)
+    message = start_message(conversation, user)
+    history = conversation |> events_query() |> Repo.all() |> Enum.map(&to_chat_message/1)
 
-    {:ok, _} = append(request, 1, :user, query)
+    {:ok, _} = append(message, 1, :user, query)
 
-    case AI.generate(user.organization_id, history ++ [Message.user(query)]) do
-      {:ok, %Message{content: content}, %Usage{} = usage} ->
-        {:ok, event} = append(request, 2, :assistant, content)
-        finish(request, :succeeded, usage)
+    case AI.generate(user.organization_id, history ++ [ChatMessage.user(query)]) do
+      {:ok, %ChatMessage{content: content}, %Usage{} = usage} ->
+        {:ok, event} = append(message, 2, :assistant, content)
+        finish(message, :succeeded, usage)
         {:ok, result(conversation, content, event, new?, query)}
 
       {:error, reason} ->
-        fail(request, reason)
+        fail(message, reason)
         {:error, describe(reason)}
     end
   end
 
-  @spec start_request(Conversation.t(), map()) :: Request.t()
-  defp start_request(conversation, user) do
-    %Request{}
-    |> Request.changeset(%{
+  @spec start_message(Conversation.t(), map()) :: Message.t()
+  defp start_message(conversation, user) do
+    %Message{}
+    |> Message.changeset(%{
       conversation_id: conversation.id,
       user_id: user.id,
       organization_id: conversation.organization_id,
-      skill: @skill,
       model: Models.spec(),
       status: :running
     })
     |> Repo.insert!()
   end
 
-  @spec append(Request.t(), non_neg_integer(), atom(), String.t() | nil) ::
+  @spec append(Message.t(), non_neg_integer(), atom(), String.t() | nil) ::
           {:ok, Event.t()} | {:error, Ecto.Changeset.t()}
-  defp append(request, step, type, content) do
+  defp append(message, step, type, content) do
     %Event{}
     |> Event.changeset(%{
-      request_id: request.id,
-      conversation_id: request.conversation_id,
-      organization_id: request.organization_id,
+      message_id: message.id,
+      conversation_id: message.conversation_id,
+      organization_id: message.organization_id,
       step: step,
       type: type,
       content: content
@@ -184,10 +179,10 @@ defmodule Glific.AI.AskGlific do
     |> Repo.insert()
   end
 
-  @spec finish(Request.t(), atom(), Usage.t()) :: Request.t()
-  defp finish(request, status, usage) do
-    request
-    |> Request.changeset(%{
+  @spec finish(Message.t(), atom(), Usage.t()) :: Message.t()
+  defp finish(message, status, usage) do
+    message
+    |> Message.changeset(%{
       status: status,
       input_tokens: usage.input_tokens,
       output_tokens: usage.output_tokens,
@@ -196,10 +191,10 @@ defmodule Glific.AI.AskGlific do
     |> Repo.update!()
   end
 
-  @spec fail(Request.t(), term()) :: Request.t()
-  defp fail(request, reason) do
-    request
-    |> Request.changeset(%{status: :failed, error: describe(reason)})
+  @spec fail(Message.t(), term()) :: Message.t()
+  defp fail(message, reason) do
+    message
+    |> Message.changeset(%{status: :failed, error: describe(reason)})
     |> Repo.update!()
   end
 
@@ -244,10 +239,10 @@ defmodule Glific.AI.AskGlific do
     Event
     |> where([e], e.conversation_id == ^conversation.id)
     |> where([e], e.type in [:user, :assistant])
-    |> order_by([e], asc: e.request_id, asc: e.step)
+    |> order_by([e], asc: e.message_id, asc: e.step)
   end
 
-  # ── rendering, to the shapes the existing GraphQL types expect ───────────
+  # ── rendering, to the shapes the GraphQL types expect ────────────────────
 
   @spec result(Conversation.t(), String.t() | nil, Event.t(), boolean(), String.t()) :: map()
   defp result(conversation, content, event, new?, query) do
@@ -277,14 +272,14 @@ defmodule Glific.AI.AskGlific do
     }
   end
 
-  # The interface shows one row per exchange, so a user event and the assistant
-  # event that answered it are folded together.
+  # The interface shows one row per exchange, so a question and the answer to it
+  # are folded together.
   @spec exchanges([Event.t()], Conversation.t()) :: [map()]
   defp exchanges(events, conversation) do
     events
-    |> Enum.group_by(& &1.request_id)
-    |> Enum.sort_by(fn {request_id, _} -> request_id end)
-    |> Enum.map(fn {_request_id, grouped} -> exchange(grouped, conversation) end)
+    |> Enum.group_by(& &1.message_id)
+    |> Enum.sort_by(fn {message_id, _} -> message_id end)
+    |> Enum.map(fn {_message_id, grouped} -> exchange(grouped, conversation) end)
   end
 
   @spec exchange([Event.t()], Conversation.t()) :: map()
@@ -302,11 +297,11 @@ defmodule Glific.AI.AskGlific do
     }
   end
 
-  @spec to_message(Event.t()) :: Message.t()
-  defp to_message(%Event{type: :assistant, content: content}),
-    do: Message.assistant(content || "")
+  @spec to_chat_message(Event.t()) :: ChatMessage.t()
+  defp to_chat_message(%Event{type: :assistant, content: content}),
+    do: ChatMessage.assistant(content || "")
 
-  defp to_message(%Event{content: content}), do: Message.user(content || "")
+  defp to_chat_message(%Event{content: content}), do: ChatMessage.user(content || "")
 
   @spec unix(DateTime.t() | nil) :: integer() | nil
   defp unix(nil), do: nil

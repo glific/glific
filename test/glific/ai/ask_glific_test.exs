@@ -2,10 +2,10 @@ defmodule Glific.AI.AskGlificTest do
   use Glific.DataCase
 
   alias Glific.{
+    AI.ChatMessage,
     AI.Conversation,
     AI.Event,
     AI.Message,
-    AI.Request,
     AI.Usage,
     AskGlific,
     Fixtures,
@@ -20,7 +20,7 @@ defmodule Glific.AI.AskGlificTest do
     def generate(messages, _opts) do
       send(self(), {:asked_with, messages})
 
-      {:ok, Message.assistant("an answer"),
+      {:ok, ChatMessage.assistant("an answer"),
        %Usage{input_tokens: 20, output_tokens: 6, cost: Decimal.new("0.0011")}}
     end
   end
@@ -63,11 +63,10 @@ defmodule Glific.AI.AskGlificTest do
     assert conversation.user_id == user.id
     assert to_string(conversation.id) == result.conversation_id
 
-    assert [request] = Repo.all(Request)
-    assert request.status == :succeeded
-    assert request.skill == "knowledge"
-    assert request.input_tokens == 20
-    assert Decimal.equal?(request.cost, Decimal.new("0.0011"))
+    assert [message] = Repo.all(Message)
+    assert message.status == :succeeded
+    assert message.input_tokens == 20
+    assert Decimal.equal?(message.cost, Decimal.new("0.0011"))
 
     assert [{1, :user, "what is an HSM?"}, {2, :assistant, "an answer"}] =
              Event
@@ -80,7 +79,7 @@ defmodule Glific.AI.AskGlificTest do
     use_provider(EchoProvider)
 
     {:ok, first} = AskGlific.ask(%{query: "what is an HSM?"}, user)
-    assert_received {:asked_with, [%Message{content: "what is an HSM?"}]}
+    assert_received {:asked_with, [%ChatMessage{content: "what is an HSM?"}]}
 
     {:ok, _} =
       AskGlific.ask(
@@ -138,14 +137,14 @@ defmodule Glific.AI.AskGlificTest do
              AskGlific.submit_feedback(%{message_id: "999999", rating: "like"}, user)
   end
 
-  test "a provider failure is recorded as a failed request, not lost", %{user: user} do
+  test "a provider failure is recorded as a failed message, not lost", %{user: user} do
     use_provider(FailingProvider)
 
     assert {:error, "upstream timeout"} = AskGlific.ask(%{query: "a question"}, user)
 
-    assert [request] = Repo.all(Request)
-    assert request.status == :failed
-    assert request.error == "upstream timeout"
+    assert [message] = Repo.all(Message)
+    assert message.status == :failed
+    assert message.error == "upstream timeout"
 
     # The question is still on record even though no answer came back.
     assert [%Event{type: :user, content: "a question"}] = Repo.all(Event)
