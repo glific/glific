@@ -1,7 +1,7 @@
 defmodule Glific.AI.Tools.ListFlows do
   @moduledoc """
-  Lists the organisation's flows, so a question naming a flow can be resolved to
-  an id before anything else is looked up.
+  Lists the organisation's flows, so a flow named in a question can be resolved
+  to an id.
   """
 
   @behaviour Glific.AI.Tool

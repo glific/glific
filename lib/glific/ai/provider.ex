@@ -2,14 +2,12 @@ defmodule Glific.AI.Provider do
   @moduledoc """
   The contract for talking to an AI provider.
 
-  One implementation exists — `Glific.AI.Provider.ReqLLM`. The point of the
-  behaviour is that it is the only thing the rest of Glific AI depends on, so
-  replacing the client library means writing a second implementation rather than
-  changing callers or migrating stored data.
+  Everything above this behaviour depends on it rather than on a client library,
+  so changing library means adding an implementation.
 
-  Implementations must never raise on a provider failure: a timeout, a rate
-  limit, a 5xx or a rejected model all come back as `{:error, reason}` so the
-  caller can record a failed request.
+  Implementations must not raise on a provider failure. A timeout, rate limit,
+  5xx or rejected model all return `{:error, reason}`, so the caller can record
+  a failed message.
   """
 
   alias Glific.AI.{ChatMessage, Usage}

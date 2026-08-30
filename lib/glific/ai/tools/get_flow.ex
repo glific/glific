@@ -1,11 +1,9 @@
 defmodule Glific.AI.Tools.GetFlow do
   @moduledoc """
-  Describes the structure of one flow: its nodes, what each one sends or asks,
-  and where each exit leads.
+  Describes one flow: its nodes, what each sends or asks, and where exits lead.
 
-  Returns a summary rather than the raw definition. A published flow's JSON runs
-  to hundreds of kilobytes, most of it layout coordinates and localisation, and
-  none of that helps answer a question about behaviour.
+  A summary rather than the raw definition, which is mostly editor layout and
+  localisation and can run to hundreds of kilobytes.
   """
 
   @behaviour Glific.AI.Tool

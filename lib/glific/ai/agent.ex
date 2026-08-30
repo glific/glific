@@ -1,21 +1,15 @@
 defmodule Glific.AI.Agent do
   @moduledoc """
-  Runs one question to an answer.
+  Runs one question through to an answer.
 
-  The model is asked; if it requests tools, those run and their results are fed
-  back; that repeats until it answers or a limit stops it. Every step is
-  appended to `glific_ai_events`, which is what makes the exchange replayable —
-  reload a conversation's events and you have the context for the next question.
+  Asks the model; if it requests tools, runs them and feeds the results back;
+  repeats until it answers or a limit stops it. Every step is appended to
+  `glific_ai_events`, so the next question can be answered with this one's
+  context.
 
-  Three limits bound a run, because nothing in the model's control flow does:
-
-    * **steps** — how many times we go round the loop
-    * **cost** — a ceiling in USD across every model call in the message
-    * **time** — a deadline checked between steps
-
-  Whichever is reached first stops the run and records the reason on the
-  message, so a run that will not converge is a recorded outcome rather than a
-  job that never ends.
+  Three configurable limits bound a run — a step count, a cost ceiling in USD
+  across every model call, and a deadline. Whichever is reached first ends the
+  run and records the reason on the message.
   """
 
   require Logger
@@ -150,9 +144,8 @@ defmodule Glific.AI.Agent do
     |> Repo.update!()
   end
 
-  # The conversation so far, from earlier requests in the same thread. Tool
-  # traffic is left out: what matters for the next question is what was asked
-  # and what was answered.
+  # Earlier questions and answers in this conversation. Tool steps are left out;
+  # only what was asked and answered is useful as context.
   @spec history(Message.t()) :: [Message.t()]
   defp history(message) do
     Event

@@ -1,10 +1,8 @@
 defmodule Glific.AI.Models do
   @moduledoc """
-  The only module that knows which provider and model Glific AI uses.
+  Which provider and model Glific AI uses, read from application config.
 
-  Everything is read from application configuration, so switching provider or
-  model is a configuration change and never a code change. No other module may
-  name a model — that is the property this module exists to protect.
+  No other module names a model, so switching one is a config change.
   """
 
   @default_max_tokens 4_096

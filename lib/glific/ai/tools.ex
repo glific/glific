@@ -1,26 +1,17 @@
 defmodule Glific.AI.Tools do
   @moduledoc """
-  The single route by which Glific AI reads an organisation's data.
+  The only route by which Glific AI reads an organisation's data.
 
-  Every tool call goes through `run/3`, which is deliberately the only entry
-  point: authorisation, read-only enforcement, result limits and error handling
-  are applied here rather than repeated in each tool, so a new tool cannot
-  forget them. If these reads are ever exposed over a transport such as MCP, the
-  transport calls this function and the guarantees below still hold.
+  Every tool call goes through `run/3`, so these hold for all tools rather than
+  being repeated in each one:
 
-  What `run/3` guarantees:
-
-    * **The read runs as the person who asked.** The organisation and current
-      user are set from the caller's user, not inherited from whatever process
-      state happens to exist. Background jobs in Glific normally install the
-      organisation's *root user*, which would let the assistant read past the
-      asker's permissions.
-    * **Nothing can write.** The call runs inside a transaction marked
-      `transaction_read_only`, so a write is refused by Postgres rather than by
-      convention.
-    * **Failure is data, not a crash.** Unknown tools, invalid arguments and
-      exceptions all come back as `{:error, message}` for the model to read.
-    * **Results are bounded**, so one query cannot exhaust the context window.
+    * the read runs as the user who asked, set here rather than inherited from
+      whatever the process state happens to hold
+    * nothing can write — the call runs in a `transaction_read_only`
+      transaction, so Postgres refuses a write
+    * unknown tools, invalid arguments and exceptions return `{:error, message}`
+      for the model to read, rather than ending the run
+    * results are size-capped, so one query cannot fill the context window
   """
 
   require Logger
@@ -92,8 +83,8 @@ defmodule Glific.AI.Tools do
     end
   end
 
-  # Only atoms that already exist, so a model naming a nonsense argument cannot
-  # grow the atom table.
+  # Existing atoms only: a model naming a nonsense argument must not grow the
+  # atom table.
   @spec to_atom(atom() | String.t()) :: atom() | nil
   defp to_atom(key) when is_atom(key), do: key
 

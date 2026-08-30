@@ -1,12 +1,11 @@
 defmodule Glific.AI.Worker do
   @moduledoc """
-  Runs a Glific AI request in the background.
+  Runs a Glific AI message in the background.
 
-  Deliberately `max_attempts: 1`. A retry would call the model again — spending
-  money a second time and quite possibly producing a different answer to the
-  same question — and `req_llm` already retries the HTTP call itself for the
-  transient cases worth retrying. A failure is recorded on the request instead,
-  where it is visible.
+  `max_attempts: 1` on purpose: a retry would call the model again, costing
+  money twice and possibly answering differently. `req_llm` already retries the
+  HTTP call for transient failures. A failure is recorded on the message
+  instead.
   """
 
   use Oban.Worker, queue: :glific_ai, max_attempts: 1

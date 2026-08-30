@@ -1,13 +1,11 @@
 defmodule Glific.AI.ChatMessage do
   @moduledoc """
-  One message in a conversation with a model, in Glific's own format.
+  One message sent to or received from a model, in Glific's own format.
 
-  In-memory only: it is what goes to the provider and what comes back.
-  `Glific.AI.Message` is the stored row for the same exchange.
+  In-memory only. `Glific.AI.Message` is the stored row.
 
-  Provider structs never leave `Glific.AI.Provider` implementations — everything
-  above that boundary speaks in these instead, so the client library can be
-  replaced without touching callers.
+  Provider library structs never leave `Glific.AI.Provider` implementations;
+  everything above that boundary uses these instead.
   """
 
   @type role :: :system | :user | :assistant | :tool

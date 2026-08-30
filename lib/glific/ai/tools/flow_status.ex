@@ -2,10 +2,9 @@ defmodule Glific.AI.Tools.FlowStatus do
   @moduledoc """
   Reports where contacts currently sit inside a flow.
 
-  This is the single best answer to *"why isn't my flow working"* — it shows
-  contacts piled up at one node, or killed contexts and the reason. It has no
-  GraphQL query, so it is not reachable through the public API at all; running
-  in-process is what makes it available.
+  Shows how many are waiting at each node, how many finished, and how many were
+  stopped and why — which is usually what "the flow isn't working" turns out to
+  mean.
   """
 
   @behaviour Glific.AI.Tool

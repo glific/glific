@@ -2,8 +2,8 @@ defmodule Glific.AI.Tools.ListContactFields do
   @moduledoc """
   Lists the contact fields this organisation has defined.
 
-  Flows read and write these by shortcode, so knowing the real list is what stops
-  an answer inventing a field name that does not exist.
+  Flows read and write these by shortcode, so the real list is what stops an
+  answer inventing a field that does not exist.
   """
 
   @behaviour Glific.AI.Tool

@@ -1,13 +1,13 @@
 defmodule Glific.AI.Tool do
   @moduledoc """
-  A single read operation Glific AI may perform against an organisation's data.
+  A single read Glific AI may perform against an organisation's data.
 
-  A tool declares what it is called, when it applies and what arguments it takes,
-  and implements `run/1`. It never receives a user or an organisation: both come
-  from the process state that `Glific.AI.Tools.run/3` establishes before calling
-  it, so a tool cannot read outside the caller's tenant even by mistake.
+  A tool declares its name, when it applies and its arguments, and implements
+  `run/1`. It is never passed a user or an organisation — `Glific.AI.Tools.run/3`
+  sets both in the process state first, so a tool cannot read outside the
+  caller's organisation.
 
-  Adding a capability is a new module plus one line in `Glific.AI.Tools`.
+  Adding one is a new module plus a line in `Glific.AI.Tools`.
   """
 
   @doc "Identifier the model uses to call this tool. Stable; changing it is a breaking change."

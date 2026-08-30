@@ -2,15 +2,10 @@ defmodule Glific.AI.Provider.ReqLLM do
   @moduledoc """
   The `req_llm` implementation of `Glific.AI.Provider`.
 
-  This is the **only** module in Glific that names `req_llm`. Its types do not
-  escape: what goes in and comes out are `Glific.AI.ChatMessage` and
-  `Glific.AI.Usage` structs. That containment is what makes the library choice
-  reversible — replacing it means writing a sibling module, not migrating stored
-  conversations or touching any caller.
+  The only module that names `req_llm`, and its types stay inside: callers pass
+  and receive `Glific.AI.ChatMessage` and `Glific.AI.Usage`.
 
-  Every provider failure is returned, never raised. A timeout, a rate limit, a
-  5xx or a model the provider rejects all arrive as `{:error, reason}` so the
-  caller records a failed request instead of losing the job to an exception.
+  Provider failures are returned, never raised.
   """
 
   @behaviour Glific.AI.Provider
@@ -70,9 +65,9 @@ defmodule Glific.AI.Provider.ReqLLM do
     )
   end
 
-  # req_llm requires a callback, but it must never be the thing that runs a tool:
-  # execution goes through Glific.AI.Tools.run/3, which is where authorisation and
-  # read-only enforcement live. Reaching this means the loop was bypassed.
+  # req_llm requires a callback, but tools are run by Glific.AI.Tools.run/3,
+  # which is where authorisation and read-only enforcement live. Reaching this
+  # means something bypassed the loop.
   @spec refuse_local_execution(map()) :: {:error, String.t()}
   defp refuse_local_execution(_args),
     do: {:error, "tools are executed by Glific.AI.Tools, not by the provider client"}
@@ -96,9 +91,9 @@ defmodule Glific.AI.Provider.ReqLLM do
   defp to_req_llm(%ChatMessage{role: :assistant, tool_calls: []} = message),
     do: ReqLLM.Context.assistant(message.content || "")
 
-  # A turn where the model asked for tools has to go back carrying those calls.
-  # Without them the tool results that follow reference a call the provider never
-  # saw, and the request is rejected.
+  # A message where the model asked for tools has to go back carrying those
+  # calls. Without them the tool results that follow reference a call the
+  # provider never saw, and it rejects the request.
   defp to_req_llm(%ChatMessage{role: :assistant} = message) do
     ReqLLM.Context.assistant(message.content || "",
       tool_calls: Enum.map(message.tool_calls, &to_req_llm_tool_call/1)
@@ -119,8 +114,8 @@ defmodule Glific.AI.Provider.ReqLLM do
     )
   end
 
-  # req_llm types tool calls loosely, and the shape differs by provider, so every
-  # variant is normalised here rather than leaking outward.
+  # req_llm types tool calls loosely and the shape differs by provider, so they
+  # are normalised here rather than leaking outward.
   @spec tool_call(term()) :: ChatMessage.tool_call()
   defp tool_call(%{name: name} = call) do
     %{
