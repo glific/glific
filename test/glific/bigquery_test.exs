@@ -180,7 +180,7 @@ defmodule Glific.BigQueryTest do
       FROM `test_dataset.messages` delta
       WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
         'Asia/Kolkata')
-      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 MONTH), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+      AND inserted_at >= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 DAY), 'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
   """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
@@ -224,7 +224,30 @@ defmodule Glific.BigQueryTest do
       )
 
     assert query =~ "DELETE FROM `test_dataset.contacts`"
-    refute query =~ "INTERVAL 3 MONTH"
+    refute query =~ "INTERVAL 90 DAY"
+  end
+
+  test "generate_duplicate_removal_query/3 only uses date parts TIMESTAMP_SUB accepts", attrs do
+    # BigQuery's TIMESTAMP_SUB rejects anything larger than DAY, and the failure is a
+    # query-analysis error, so an invalid part breaks the dedup for every org silently.
+    for table <- ~w(messages flow_contexts flow_results wa_messages messages_media contacts) do
+      query =
+        BigQuery.generate_duplicate_removal_query(
+          table,
+          %{project_id: "test_project", dataset_id: "test_dataset"},
+          attrs.organization_id
+        )
+
+      parts =
+        Regex.scan(~r/TIMESTAMP_SUB\(.*?INTERVAL \d+ (\w+)\)/s, query, capture: :all_but_first)
+
+      refute parts == [], "#{table}: expected at least one TIMESTAMP_SUB in the dedup query"
+
+      for [part] <- parts do
+        assert part in ~w(MICROSECOND MILLISECOND SECOND MINUTE HOUR DAY),
+               "#{table}: TIMESTAMP_SUB does not support the #{part} date part"
+      end
+    end
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
