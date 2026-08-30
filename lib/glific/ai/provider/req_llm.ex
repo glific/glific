@@ -2,26 +2,21 @@ defmodule Glific.AI.Provider.ReqLLM do
   @moduledoc """
   The `req_llm` implementation of `Glific.AI.Provider`.
 
-  This is the **only** module in Glific that names `req_llm`. Its types do not
-  escape: what goes in and comes out are `Glific.AI.Message` and
-  `Glific.AI.Usage` structs. That containment is what makes the library choice
-  reversible — replacing it means writing a sibling module, not migrating stored
-  conversations or touching any caller.
+  The only module that names `req_llm`, and its types stay inside: callers pass
+  and receive `Glific.AI.ChatMessage` and `Glific.AI.Usage`.
 
-  Every provider failure is returned, never raised. A timeout, a rate limit, a
-  5xx or a model the provider rejects all arrive as `{:error, reason}` so the
-  caller records a failed request instead of losing the job to an exception.
+  Provider failures are returned, never raised.
   """
 
   @behaviour Glific.AI.Provider
 
   require Logger
 
-  alias Glific.AI.{Models, Turn, Usage}
+  alias Glific.AI.{ChatMessage, Models, Usage}
 
   @impl Glific.AI.Provider
-  @spec generate([Turn.t()], keyword()) ::
-          {:ok, Turn.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec generate([ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
     if Models.configured?() do
       call(messages, opts)
@@ -30,8 +25,8 @@ defmodule Glific.AI.Provider.ReqLLM do
     end
   end
 
-  @spec call([Turn.t()], keyword()) ::
-          {:ok, Turn.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+  @spec call([ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
     case ReqLLM.generate_text(
            Models.spec(),
@@ -39,7 +34,7 @@ defmodule Glific.AI.Provider.ReqLLM do
            request_opts(opts)
          ) do
       {:ok, response} ->
-        {:ok, Turn.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
+        {:ok, ChatMessage.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
 
       {:error, error} ->
         # Logged here rather than at the caller: this is the only place that can
@@ -56,14 +51,14 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec request_opts(keyword()) :: keyword()
   defp request_opts(opts), do: Keyword.merge(Models.opts(), opts)
 
-  @spec to_req_llm(Turn.t()) :: struct()
-  defp to_req_llm(%Turn{role: :system, content: content}),
+  @spec to_req_llm(ChatMessage.t()) :: struct()
+  defp to_req_llm(%ChatMessage{role: :system, content: content}),
     do: ReqLLM.Context.system(content || "")
 
-  defp to_req_llm(%Turn{role: :assistant, content: content}),
+  defp to_req_llm(%ChatMessage{role: :assistant, content: content}),
     do: ReqLLM.Context.assistant(content || "")
 
-  defp to_req_llm(%Turn{content: content}), do: ReqLLM.Context.user(content || "")
+  defp to_req_llm(%ChatMessage{content: content}), do: ReqLLM.Context.user(content || "")
 
   @spec usage(struct()) :: Usage.t()
   defp usage(response) do
