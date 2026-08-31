@@ -537,8 +537,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert reason == "Timeout occurred, please try again."
     end
 
-    test "returns error when questions × duplication_factor exceeds 80", %{staff: user} do
-      csv_path = create_csv_with_rows(41)
+    test "returns error when unique question count exceeds 100", %{staff: user} do
+      csv_path = create_csv_with_rows(101)
       on_exit(fn -> File.rm(csv_path) end)
 
       upload = %Plug.Upload{
@@ -561,12 +561,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         assert {:ok, %{errors: [%{message: msg}]}} =
                  AIEvaluations.create_golden_qa(nil, args, resolution)
 
-        assert msg =~
-                 "exceeds the maximum allowed limit of 80"
-
-        assert msg =~ "41 questions"
-        assert msg =~ "2 duplication factor"
-        assert msg =~ "82"
+        assert msg =~ "101 questions"
+        assert msg =~ "exceeds the maximum allowed limit of 100 unique questions"
 
         assert called(
                  Glific.Metrics.increment(
@@ -577,10 +573,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       end
     end
 
-    test "succeeds when questions × duplication_factor equals exactly 80 (boundary)", %{
+    test "succeeds when unique question count equals exactly 100 (boundary)", %{
       staff: user
     } do
-      csv_path = create_csv_with_rows(40)
+      csv_path = create_csv_with_rows(100)
       on_exit(fn -> File.rm(csv_path) end)
 
       upload = %Plug.Upload{
@@ -601,7 +597,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
         input: %{
           name: "valid_name",
           file: upload,
-          duplication_factor: 2
+          duplication_factor: 5
         }
       }
 
@@ -613,7 +609,7 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert golden_qa.name == "valid_name"
     end
 
-    test "succeeds when questions × duplication_factor is well under 80", %{staff: user} do
+    test "succeeds when unique question count is well under 100", %{staff: user} do
       csv_path = create_csv_with_rows(5)
       on_exit(fn -> File.rm(csv_path) end)
 
@@ -1332,6 +1328,103 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
       assert scores.status == "completed"
     end
 
+    test "defaults export_format to row when not passed", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "row"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{trace_id: "item_0_0", question_id: 1, llm_answer: "answer", scores: []}
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(nil, %{id: evaluation.id}, resolution)
+
+      [trace] = scores.score.traces
+      assert trace.trace_id == "item_0_0"
+    end
+
+    test "passes export_format through to Kaapi as a query param", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{data: %{status: "completed", summary_scores: []}}
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      assert scores.status == "completed"
+    end
+
+    test "grouped export_format returns traces with llm_answers and nested scores", %{
+      staff: user,
+      evaluation: evaluation
+    } do
+      Tesla.Mock.mock(fn %{method: :get, query: query} ->
+        assert query[:export_format] == "grouped"
+
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{
+              status: "completed",
+              score: %{
+                traces: [
+                  %{
+                    question_id: 1,
+                    llm_answers: ["answer 1", "answer 2"],
+                    trace_ids: ["item_0_0", "item_0_1"],
+                    scores: [[%{name: "score", value: 5}], [%{name: "score", value: 4}]]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      end)
+
+      resolution = %{context: %{current_user: user}}
+
+      assert {:ok, %{scores: scores}} =
+               AIEvaluations.get_evaluation_scores(
+                 nil,
+                 %{id: evaluation.id, export_format: "grouped"},
+                 resolution
+               )
+
+      [trace] = scores.score.traces
+      assert trace.llm_answers == ["answer 1", "answer 2"]
+      assert length(trace.scores) == 2
+    end
+
     test "returns timeout error when Kaapi times out", %{staff: user, evaluation: evaluation} do
       Tesla.Mock.mock(fn %{method: :get} ->
         {:error, :timeout}
@@ -1851,8 +1944,10 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       resolution = %{context: %{current_user: user}}
 
-      assert {:ok, %{evaluation: _evaluation}} =
+      assert {:ok, %{evaluation: evaluation}} =
                AIEvaluations.create_evaluation(nil, args, resolution)
+
+      assert evaluation.duplication_factor == 3
 
       FunWithFlags.disable(:is_ai_evaluation_enabled,
         for_actor: %{organization_id: user.organization_id}

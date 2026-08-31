@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowContext do
   alias Glific.Flows.MessageBroadcast
   alias Glific.Flows.MessageVarParser
   alias Glific.Flows.Node
+  alias Glific.Flows.WakeupWorker
   alias Glific.Flows.Webhook
   alias Glific.Flows.WebhookLog
   alias Glific.Flows.Webhooks.{Instrumentation, Registry}
@@ -916,21 +917,27 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @wake_up_flow_limit 500
-
-  @spec wakeup_flows(non_neg_integer) :: any
+  @spec wakeup_flows :: any
   @doc """
-  Find all the contexts which need to be woken up and processed
+  Find all the contexts which need to be woken up and queue each one as its
+  own job. Jobs run in the `:flow_wakeup` queue, which limits execution to one
+  job at a time per organization (see `config/config.exs`), so a single
+  organization's overdue contexts are drained one at a time while different
+  organizations process in parallel.
   """
-  def wakeup_flows(_organization_id) do
+  def wakeup_flows do
     FlowContext
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
-    |> limit(@wake_up_flow_limit)
-    |> preload(:flow)
-    |> Repo.all()
-    |> Enum.each(&wakeup_one(&1))
+    |> distinct(true)
+    |> select([fc], fc.organization_id)
+    |> Repo.all(skip_organization_id: true)
+    |> Enum.each(fn organization_id ->
+      %{organization_id: organization_id}
+      |> WakeupWorker.new()
+      |> Oban.insert()
+    end)
   end
 
   @doc """
@@ -939,8 +946,6 @@ defmodule Glific.Flows.FlowContext do
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def wakeup_one(context, message \\ nil) do
-    # update the context woken up time as soon as possible to avoid someone else
-    # grabbing this context
     {:ok, context} =
       update_flow_context(
         context,

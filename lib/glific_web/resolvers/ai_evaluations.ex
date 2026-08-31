@@ -57,7 +57,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
 
   # 1MB
   @max_golden_qa_file_size 1 * 1024 * 1024
-  @max_golden_qa_evaluations 80
+  @max_golden_qa_unique_items 100
   @create_golden_qa_success_metric "Golden QA Create Success"
   @create_golden_qa_failure_metric "Golden QA Create Failure"
   @ai_evaluation_create_success_metric "AI Evaluation Created"
@@ -119,7 +119,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
          :ok <- validate_duplication_factor(factor),
          :ok <- validate_golden_qa_file_size(file, user),
          {:ok, row_count} <- validate_csv_structure(file),
-         :ok <- validate_golden_qa_question_limit(row_count, factor),
+         :ok <- validate_golden_qa_question_limit(row_count),
          {:ok, kaapi_dataset} <- upload_dataset(dataset, user.organization_id) do
       create_golden_qa_record(kaapi_dataset, name, file, factor, user)
     else
@@ -263,18 +263,15 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     end
   end
 
-  @spec validate_golden_qa_question_limit(non_neg_integer(), integer()) ::
-          :ok | {:error, String.t()}
-  defp validate_golden_qa_question_limit(count, factor) do
-    total = count * factor
-
-    if total <= @max_golden_qa_evaluations do
+  @spec validate_golden_qa_question_limit(non_neg_integer()) :: :ok | {:error, String.t()}
+  defp validate_golden_qa_question_limit(count) do
+    if count <= @max_golden_qa_unique_items do
       :ok
     else
       {:error,
-       "The total number of evaluations (#{count} questions × #{factor} duplication factor = #{total}) " <>
-         "exceeds the maximum allowed limit of #{@max_golden_qa_evaluations}. " <>
-         "Please reduce the number of questions in the CSV or the duplication factor."}
+       "The CSV contains #{count} questions, which exceeds the maximum allowed limit of " <>
+         "#{@max_golden_qa_unique_items} unique questions. Please reduce the number of " <>
+         "questions in the CSV."}
     end
   end
 
@@ -383,8 +380,12 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
   """
   @spec get_evaluation_scores(map(), map(), map()) ::
           {:ok, %{scores: map()} | %{errors: [%{message: String.t()}]}}
-  def get_evaluation_scores(_, %{id: evaluation_id}, %{context: %{current_user: user}}) do
-    case AIEvaluations.get_evaluation_scores(evaluation_id, user.organization_id) do
+  def get_evaluation_scores(_, %{id: evaluation_id} = args, %{context: %{current_user: user}}) do
+    case AIEvaluations.get_evaluation_scores(
+           evaluation_id,
+           user.organization_id,
+           args[:export_format] || "row"
+         ) do
       {:ok, %{data: data}} ->
         {:ok, %{scores: data}}
 
@@ -450,6 +451,7 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
              status: status,
              failure_reason: (data.status == "failed" && Map.get(data, :error_message)) || nil,
              kaapi_evaluation_id: data.id,
+             duplication_factor: duplication_factor,
              golden_qa_id: input.golden_qa_id,
              assistant_config_version_id: input.config_id,
              organization_id: user.organization_id
@@ -499,7 +501,10 @@ defmodule GlificWeb.Resolvers.AIEvaluations do
     organization = Partners.organization(organization_id)
 
     if Flags.get_flag_enabled(:is_ai_evaluation_enabled, organization) do
+      callback_url = Glific.api_callback_base(organization.shortcode) <> "/kaapi/evaluation_run"
+
       kaapi_input
+      |> Map.put(:callback_url, callback_url)
       |> Map.put(:duplication_factor, duplication_factor)
       |> Kaapi.create_evaluation_v2(organization_id)
     else
