@@ -74,7 +74,7 @@ defmodule GlificWeb.Resolvers.Flows do
 
   @doc false
   @spec export_flow_localization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, %{export_data: String.t()}}
+          {:ok, %{export_data: String.t()}} | {:error, any}
   def export_flow_localization(_, %{id: flow_id} = args, %{
         context: %{current_user: user}
       }) do
@@ -84,18 +84,22 @@ defmodule GlificWeb.Resolvers.Flows do
       do: Glific.Metrics.increment("Export with auto translate"),
       else: Glific.Metrics.increment("Export without auto translate")
 
-    # load the flow
-    {rows, _errors} =
-      user.organization_id
-      |> Flows.get_complete_flow(flow_id)
-      |> Export.export_localization(add_translation)
+    # this result type has no `errors` field, so a not-found flow surfaces as
+    # a plain top-level GraphQL error instead
+    case Flows.get_complete_flow(user.organization_id, flow_id) do
+      nil ->
+        {:error, dgettext("errors", "Flow not found")}
 
-    data =
-      rows
-      |> CSV.encode(delimiter: "\n")
-      |> Enum.join("")
+      flow ->
+        {rows, _errors} = Export.export_localization(flow, add_translation)
 
-    {:ok, %{export_data: data}}
+        data =
+          rows
+          |> CSV.encode(delimiter: "\n")
+          |> Enum.join("")
+
+        {:ok, %{export_data: data}}
+    end
   end
 
   @doc false
@@ -112,17 +116,22 @@ defmodule GlificWeb.Resolvers.Flows do
         context: %{current_user: user}
       }) do
     Glific.Metrics.increment("Import translations")
-    flow = Flows.get_complete_flow(user.organization_id, flow_id)
 
-    {:ok, stream} = StringIO.open(data)
+    case Flows.get_complete_flow(user.organization_id, flow_id) do
+      nil ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
 
-    stream
-    |> IO.binstream(:line)
-    |> CSV.decode!(escape_max_lines: 50)
-    |> Enum.into([])
-    |> Import.import_localization(flow)
+      flow ->
+        {:ok, stream} = StringIO.open(data)
 
-    {:ok, %{success: true}}
+        stream
+        |> IO.binstream(:line)
+        |> CSV.decode!(escape_max_lines: 50)
+        |> Enum.into([])
+        |> Import.import_localization(flow)
+
+        {:ok, %{success: true}}
+    end
   end
 
   @doc false
@@ -131,11 +140,12 @@ defmodule GlificWeb.Resolvers.Flows do
   def inline_flow_localization(_, %{id: flow_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, _result} <-
-           user.organization_id
-           |> Flows.get_complete_flow(flow_id)
-           |> Export.translate() do
+    with flow when not is_nil(flow) <- Flows.get_complete_flow(user.organization_id, flow_id),
+         {:ok, _result} <- Export.translate(flow) do
       {:ok, %{success: true}}
+    else
+      nil -> {:error, ["Flow", dgettext("errors", "Flow not found")]}
+      {:error, _} = error -> error
     end
   end
 

@@ -327,19 +327,25 @@ defmodule Glific.Flows.FlowContext do
       # ensure the parent is still active. If the parent completed (or was terminated)
       # we don't get back a valid parent
       if parent do
-        Logger.info(
-          "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
-        )
+        parent_flow = Flow.get_flow(context.organization_id, parent.flow_uuid, context.status)
 
-        ## add delay so that it does not execute the message before sub flows
-        ## adding this line separately so that we can easily identify this in different cases.
+        # ensure the parent's flow can still be loaded. If it was deleted or
+        # unpublished since the parent context was created, we cannot resume it
+        if parent_flow do
+          Logger.info(
+            "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
+          )
 
-        parent = Map.put(parent, :delay, max(context.delay + @min_delay, @min_delay))
+          ## add delay so that it does not execute the message before sub flows
+          ## adding this line separately so that we can easily identify this in different cases.
 
-        parent
-        |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
-        |> merge_child_results(context)
-        |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
+          parent = Map.put(parent, :delay, max(context.delay + @min_delay, @min_delay))
+
+          parent
+          |> load_context(parent_flow)
+          |> merge_child_results(context)
+          |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
+        end
       end
     end
 
@@ -967,20 +973,27 @@ defmodule Glific.Flows.FlowContext do
       }
     )
 
-    {:ok, flow} =
-      Flows.get_cached_flow(
-        context.organization_id,
-        {:flow_uuid, context.flow_uuid, context.status}
-      )
+    case Flows.get_cached_flow(
+           context.organization_id,
+           {:flow_uuid, context.flow_uuid, context.status}
+         ) do
+      {:ok, flow} ->
+        message = message || handle_nil_message(flow, context)
 
-    message = message || handle_nil_message(flow, context)
+        context
+        |> FlowContext.load_context(flow)
+        |> FlowContext.step_forward(message)
+        |> case do
+          {:ok, context} -> {:ok, context, []}
+          {:error, message} -> {:error, message}
+        end
 
-    context
-    |> FlowContext.load_context(flow)
-    |> FlowContext.step_forward(message)
-    |> case do
-      {:ok, context} -> {:ok, context, []}
-      {:error, message} -> {:error, message}
+      {:error, error} ->
+        Glific.log_error(
+          "FlowContext.wakeup_one: failed to load cached flow for flow_uuid #{context.flow_uuid}, status #{context.status}, org #{context.organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
+        )
+
+        {:error, "Could not find flow to wake up context #{context.id}"}
     end
   end
 

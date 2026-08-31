@@ -733,6 +733,40 @@ defmodule Glific.FLowsTest do
     assert message == "Group ID is empty"
   end
 
+  test "start_group_flow/4 returns an error instead of crashing when the flow cannot be loaded",
+       %{organization_id: organization_id} = _attrs do
+    group = Fixtures.group_fixture()
+    default_results = %{key: "value"}
+
+    # id 9999 does not correspond to any flow, so get_cached_flow/2 fails to
+    # load it from the DB (Repo.one!/1 raises, Cachex wraps it) and returns
+    # {:error, _} instead of {:ok, flow}
+    flow = %Flow{id: 9999, organization_id: organization_id}
+
+    assert {:error, error} = Flows.start_group_flow(flow, [group.id], default_results)
+    assert get_in(error, [Access.at(1)]) == "Flow not found"
+  end
+
+  test "Broadcast.process_broadcast_group/1 returns :ok instead of crashing when the flow cannot be loaded",
+       %{organization_id: organization_id} = _attrs do
+    group = Fixtures.group_fixture()
+
+    # id 9999 does not correspond to any flow, so get_cached_flow/2 fails to
+    # load it from the DB (Repo.one!/1 raises, Cachex wraps it) and returns
+    # {:error, _} instead of {:ok, flow}. The broadcast is not persisted, so
+    # unprocessed_contacts/1 simply finds no matching contacts to process.
+    message_broadcast = %MessageBroadcast{
+      id: nil,
+      organization_id: organization_id,
+      flow_id: 9999,
+      group_id: group.id,
+      type: "flow",
+      default_results: %{}
+    }
+
+    assert :ok = Broadcast.process_broadcast_group(message_broadcast)
+  end
+
   test "copy_flow/2 with valid data makes a copy of a template flow",
        %{organization_id: organization_id} = _attrs do
     user = Repo.get_current_user()
@@ -800,6 +834,44 @@ defmodule Glific.FLowsTest do
       Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
     assert loaded_flow.skip_validation == true
+  end
+
+  test "get_flow/3 returns nil instead of raising when no revision matches the given status",
+       %{organization_id: organization_id} = attrs do
+    # flow_fixture/1 only creates a "draft" revision, so there is no
+    # "published" revision to find; Repo.one!/1 raises Ecto.NoResultsError,
+    # Cachex wraps it, and get_cached_flow/2 returns {:error, _} instead of
+    # {:ok, flow}
+    flow =
+      flow_fixture(
+        Map.merge(attrs, %{name: "Unpublished get_flow Test", keywords: ["unpubgetflow"]})
+      )
+
+    assert Flow.get_flow(organization_id, flow.uuid, "published") == nil
+  end
+
+  test "start_sub_flow/3 returns an error instead of crashing when the sub flow cannot be loaded",
+       %{organization_id: organization_id} = attrs do
+    # give the context a real, existing flow (so context.flow preloads to a
+    # concrete row) and use a uuid that does not correspond to any flow at all
+    parent_flow =
+      flow_fixture(
+        Map.merge(attrs, %{name: "Sub Flow Parent Context", keywords: ["subflowparentctx"]})
+      )
+
+    context =
+      Fixtures.flow_context_fixture(%{
+        organization_id: organization_id,
+        flow_id: parent_flow.id,
+        flow_uuid: parent_flow.uuid
+      })
+
+    missing_flow_uuid = Ecto.UUID.generate()
+
+    assert {:error, message} = Flow.start_sub_flow(context, missing_flow_uuid, context.id)
+
+    assert message ==
+             "Could not find flow with uuid #{missing_flow_uuid} to start as a sub flow"
   end
 
   test "publish_flow/1 handles invalid expression errors",

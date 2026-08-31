@@ -167,39 +167,46 @@ defmodule Glific.Processor.ConsumerFlow do
         ) ::
           {Message.t(), map()}
   def continue_current_context(context, message, _body, state) do
-    {:ok, flow} =
-      Flows.get_cached_flow(
-        message.organization_id,
-        {:flow_uuid, context.flow_uuid, context.status}
-      )
+    case Flows.get_cached_flow(
+           message.organization_id,
+           {:flow_uuid, context.flow_uuid, context.status}
+         ) do
+      {:ok, flow} ->
+        {:ok, message} =
+          message
+          |> Messages.update_message(%{flow_id: context.flow_id})
 
-    {:ok, message} =
-      message
-      |> Messages.update_message(%{flow_id: context.flow_id})
+        context
+        |> maybe_update_current_node(flow, message)
+        |> Map.merge(%{last_message: message})
+        |> FlowContext.load_context(flow)
+        # we are using message.body here since we want to use the original message
+        # not the stripped version
+        # I'm not sure why we are creating a message here instead of reusing the existing
+        # message. We'll switch this to using message in the next release (1.0.1)
+        |> FlowContext.step_forward(
+          Messages.create_temp_message(
+            message.organization_id,
+            message.body,
+            type: message.type,
+            id: message.id,
+            media: message.media,
+            media_id: message.media_id,
+            location: message.location,
+            interactive_content: message.interactive_content,
+            whatsapp_form_response: message.whatsapp_form_response
+          )
+        )
 
-    context
-    |> maybe_update_current_node(flow, message)
-    |> Map.merge(%{last_message: message})
-    |> FlowContext.load_context(flow)
-    # we are using message.body here since we want to use the original message
-    # not the stripped version
-    # I'm not sure why we are creating a message here instead of reusing the existing
-    # message. We'll switch this to using message in the next release (1.0.1)
-    |> FlowContext.step_forward(
-      Messages.create_temp_message(
-        message.organization_id,
-        message.body,
-        type: message.type,
-        id: message.id,
-        media: message.media,
-        media_id: message.media_id,
-        location: message.location,
-        interactive_content: message.interactive_content,
-        whatsapp_form_response: message.whatsapp_form_response
-      )
-    )
+        {message, state}
 
-    {message, state}
+      {:error, error} ->
+        Glific.log_error(
+          "ConsumerFlow.continue_current_context: failed to load cached flow for flow_uuid #{context.flow_uuid}, status #{context.status}, org #{message.organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
+        )
+
+        {message, state}
+    end
   end
 
   @spec draft_keyword?(map(), String.t()) :: boolean()

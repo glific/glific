@@ -683,4 +683,17 @@ defmodule Glific.Processor.ConsumerFlowTest do
     assert new_context.results["result_1"]["screen_0_Choose_one_0"] == "0_Yes"
     assert new_context.results["result_1"]["screen_1_Customer_service_2"] == "0_Excellent"
   end
+
+  test "continue_current_context/4 returns the message/state tuple unchanged instead of crashing when the flow can no longer be loaded",
+       attrs do
+    # flow_context_fixture/1 defaults to a random flow_uuid that matches no
+    # flow at all, so get_cached_flow/2 fails to load it and returns
+    # {:error, _} instead of {:ok, flow}
+    flow_context = Fixtures.flow_context_fixture(%{organization_id: attrs.organization_id})
+    message = Fixtures.message_fixture(%{organization_id: attrs.organization_id})
+    state = ConsumerFlow.load_state(attrs.organization_id)
+
+    assert {^message, ^state} =
+             ConsumerFlow.continue_current_context(flow_context, message, "body", state)
+  end
 end
