@@ -23,40 +23,48 @@ defmodule Glific.AI.Tools do
     * **Results are bounded**, so one query cannot exhaust the context window.
   """
 
-  require Logger
+  alias Glific.{AI.Tool, Repo, SafeLog, Users.User}
 
-  alias Glific.{Repo, SafeLog, Users.User}
-
-  @tools [
-    Glific.AI.Tools.ListFlows,
-    Glific.AI.Tools.GetFlow,
-    Glific.AI.Tools.FlowStatus,
-    Glific.AI.Tools.ListTemplates,
-    Glific.AI.Tools.ListContactFields
+  @modules [
+    Glific.AI.Tools.Flows,
+    Glific.AI.Tools.Templates,
+    Glific.AI.Tools.Contacts,
+    Glific.AI.Tools.Messages,
+    Glific.AI.Tools.Organization,
+    Glific.AI.Tools.Triggers,
+    Glific.AI.Tools.Assistants,
+    Glific.AI.Tools.Groups,
+    Glific.AI.Tools.Forms
   ]
 
   @max_result_bytes 20_000
 
   @doc """
-  Every tool Glific AI may call.
+  Every feature module Glific AI may read through.
 
-  Configurable so a deployment can withhold a tool without a code change, and so
-  a later skill can be given a narrower set than the default.
+  Configurable so a deployment can withhold an area without a code change, and
+  so a later skill can be given a narrower set than the default.
   """
-  @spec all() :: [module()]
-  def all do
+  @spec modules() :: [module()]
+  def modules do
     :glific
     |> Application.get_env(__MODULE__, [])
-    |> Keyword.get(:tools, @tools)
+    |> Keyword.get(:modules, @modules)
   end
 
-  @doc "Looks a tool up by the name the model uses."
-  @spec fetch(String.t()) :: {:ok, module()} | :error
+  @doc "Every operation, flattened across the feature modules, as the model sees them."
+  @spec all() :: [Tool.spec()]
+  def all, do: Enum.flat_map(modules(), & &1.specs())
+
+  @doc "Looks an operation up by the name the model uses."
+  @spec fetch(String.t()) :: {:ok, {module(), Tool.spec()}} | :error
   def fetch(name) do
-    case Enum.find(all(), &(&1.name() == name)) do
-      nil -> :error
-      tool -> {:ok, tool}
-    end
+    Enum.find_value(modules(), :error, fn module ->
+      case Enum.find(module.specs(), &(&1.name == name)) do
+        nil -> nil
+        spec -> {:ok, {module, spec}}
+      end
+    end)
   end
 
   @doc """
@@ -66,26 +74,26 @@ defmodule Glific.AI.Tools do
   """
   @spec run(String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
   def run(name, args, %User{} = user) do
-    with {:ok, tool} <- lookup(name),
-         {:ok, validated} <- validate(tool, args) do
-      execute(tool, validated, user)
+    with {:ok, {module, spec}} <- lookup(name),
+         {:ok, validated} <- validate(spec, args) do
+      execute(module, name, validated, user)
     end
   end
 
-  @spec lookup(String.t()) :: {:ok, module()} | {:error, String.t()}
+  @spec lookup(String.t()) :: {:ok, {module(), Tool.spec()}} | {:error, String.t()}
   defp lookup(name) do
     case fetch(name) do
-      {:ok, tool} -> {:ok, tool}
+      {:ok, found} -> {:ok, found}
       :error -> {:error, ~s(There is no tool called "#{name}".)}
     end
   end
 
-  @spec validate(module(), map()) :: {:ok, map()} | {:error, String.t()}
-  defp validate(tool, args) do
+  @spec validate(Tool.spec(), map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate(spec, args) do
     args
     |> Enum.map(fn {key, value} -> {to_atom(key), value} end)
     |> Enum.reject(fn {key, _} -> is_nil(key) end)
-    |> NimbleOptions.validate(tool.parameters())
+    |> NimbleOptions.validate(spec.parameters)
     |> case do
       {:ok, validated} -> {:ok, Map.new(validated)}
       {:error, error} -> {:error, Exception.message(error)}
@@ -103,14 +111,14 @@ defmodule Glific.AI.Tools do
     ArgumentError -> nil
   end
 
-  @spec execute(module(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
-  defp execute(tool, args, user) do
+  @spec execute(module(), String.t(), map(), User.t()) :: {:ok, term()} | {:error, String.t()}
+  defp execute(module, name, args, user) do
     Repo.put_organization_id(user.organization_id)
     Repo.put_current_user(user)
 
     Repo.transaction(fn ->
       Repo.query!("SET LOCAL transaction_read_only = on")
-      tool.run(args)
+      module.run(name, args)
     end)
     |> case do
       {:ok, {:ok, result}} ->
@@ -128,12 +136,30 @@ defmodule Glific.AI.Tools do
       {:error, "The lookup failed: #{Exception.message(exception)}"}
   end
 
+  # Bounds any result, not just a top-level list: `get_flow` returns a map whose
+  # node list is the part that can run away.
   @spec limit(term()) :: term()
-  defp limit(result) when is_list(result) do
+  defp limit(result) do
     if byte_size(SafeLog.safe_inspect(result)) > @max_result_bytes,
-      do: %{truncated: true, showing: Enum.take(result, 20), of: length(result)},
+      do: trim(result),
       else: result
   end
 
-  defp limit(result), do: result
+  @spec trim(term()) :: term()
+  defp trim(result) when is_list(result),
+    do: %{truncated: true, showing: Enum.take(result, 20), of: length(result)}
+
+  defp trim(result) when is_map(result) and not is_struct(result) do
+    {key, list} =
+      result
+      |> Enum.filter(fn {_k, v} -> is_list(v) end)
+      |> Enum.max_by(fn {_k, v} -> length(v) end, fn -> {nil, []} end)
+
+    case key do
+      nil -> %{truncated: true, result: SafeLog.safe_inspect(result) |> String.slice(0, 2_000)}
+      key -> Map.put(result, key, trim(list))
+    end
+  end
+
+  defp trim(result), do: result
 end

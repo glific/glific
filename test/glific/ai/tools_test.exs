@@ -3,19 +3,28 @@ defmodule Glific.AI.ToolsTest do
 
   alias Glific.{AI.Tools, Fixtures, Flows.Flow, Repo}
 
-  defmodule WritingTool do
+  defmodule Misbehaving do
     @moduledoc false
     @behaviour Glific.AI.Tool
 
     @impl Glific.AI.Tool
-    def name, do: "writing_tool"
-    @impl Glific.AI.Tool
-    def description, do: "attempts a write, to prove it cannot"
-    @impl Glific.AI.Tool
-    def parameters, do: []
+    def specs do
+      [
+        %{
+          name: "writing_tool",
+          description: "attempts a write, to prove it cannot",
+          parameters: []
+        },
+        %{
+          name: "raising_tool",
+          description: "raises, to prove the gateway catches it",
+          parameters: []
+        }
+      ]
+    end
 
     @impl Glific.AI.Tool
-    def run(_args) do
+    def run("writing_tool", _args) do
       Glific.Flows.Flow
       |> Glific.Repo.all()
       |> hd()
@@ -24,42 +33,33 @@ defmodule Glific.AI.ToolsTest do
 
       {:ok, :wrote}
     end
-  end
 
-  defmodule RaisingTool do
-    @moduledoc false
-    @behaviour Glific.AI.Tool
-
-    @impl Glific.AI.Tool
-    def name, do: "raising_tool"
-    @impl Glific.AI.Tool
-    def description, do: "raises, to prove the gateway catches it"
-    @impl Glific.AI.Tool
-    def parameters, do: []
-    @impl Glific.AI.Tool
-    def run(_args), do: raise("something went wrong deep inside")
+    def run("raising_tool", _args), do: raise("something went wrong deep inside")
   end
 
   setup do
     original = Application.get_env(:glific, Tools, [])
-    Application.put_env(:glific, Tools, tools: Tools.all() ++ [WritingTool, RaisingTool])
+    Application.put_env(:glific, Tools, modules: Tools.modules() ++ [Misbehaving])
     on_exit(fn -> Application.put_env(:glific, Tools, original) end)
 
     user = Fixtures.user_fixture(%{organization_id: 1})
     flow = Fixtures.flow_fixture(%{organization_id: 1, name: "Registration flow"})
-    %{user: user, flow: flow}
+    contact = Fixtures.contact_fixture(%{organization_id: 1})
+    assistant = Fixtures.assistant_fixture(%{organization_id: 1})
+    %{user: user, flow: flow, contact: contact, assistant: assistant}
   end
 
   describe "the gateway's guarantees" do
     test "an unknown tool is reported, not raised", %{user: user} do
       assert {:error, message} = Tools.run("no_such_tool", %{}, user)
-      assert message =~ "no tool called"
+      assert message == ~s(There is no tool called "no_such_tool".)
     end
 
     test "invalid arguments are reported, not raised", %{user: user} do
       assert {:error, message} = Tools.run("get_flow", %{"flow_id" => "not a number"}, user)
-      assert is_binary(message)
-      assert {:error, _} = Tools.run("get_flow", %{}, user)
+      assert message =~ "invalid value for :flow_id option"
+      assert {:error, missing} = Tools.run("get_flow", %{}, user)
+      assert missing =~ "required :flow_id option not found"
     end
 
     test "an argument name that is not a known atom does not crash", %{user: user} do
@@ -69,6 +69,14 @@ defmodule Glific.AI.ToolsTest do
     test "an exception inside a tool comes back as a result", %{user: user} do
       assert {:error, message} = Tools.run("raising_tool", %{}, user)
       assert message =~ "something went wrong deep inside"
+    end
+
+    test "a write inside a tool is refused by the database", %{user: user} do
+      original = Flow |> Repo.all() |> hd()
+
+      assert {:error, message} = Tools.run("writing_tool", %{}, user)
+      assert message =~ "cannot execute UPDATE in a read-only transaction"
+      assert Repo.get(Flow, original.id).name == original.name
     end
 
     test "the read runs as the given user, whatever the process state said", %{user: user} do
@@ -88,17 +96,46 @@ defmodule Glific.AI.ToolsTest do
       assert {:ok, theirs} = Tools.run("list_flows", %{}, other_user)
       refute Enum.any?(theirs, &(&1.name == "Registration flow"))
     end
+
+    test "every operation declares a name, a description and a schema" do
+      names = Enum.map(Tools.all(), & &1.name)
+      assert names == Enum.uniq(names)
+
+      for spec <- Tools.all() do
+        assert is_binary(spec.name) and spec.name != ""
+        assert is_binary(spec.description) and spec.description != ""
+        assert is_list(spec.parameters)
+        assert {:ok, {module, ^spec}} = Tools.fetch(spec.name)
+        assert function_exported?(module, :run, 2)
+      end
+    end
   end
 
-  describe "the tools themselves" do
+  describe "flows" do
     test "list_flows finds a flow by partial name", %{user: user} do
       assert {:ok, flows} = Tools.run("list_flows", %{"name" => "Registration"}, user)
       assert [%{name: "Registration flow"} | _] = flows
     end
 
-    test "get_flow explains an unknown id rather than failing", %{user: user} do
-      assert {:error, message} = Tools.run("get_flow", %{"flow_id" => 999_999}, user)
-      assert message =~ "No flow with id 999999"
+    test "get_flow describes the nodes of a revision that exists", %{user: user, flow: flow} do
+      assert {:ok, described} =
+               Tools.run("get_flow", %{"flow_id" => flow.id, "status" => "draft"}, user)
+
+      assert described.name == "Registration flow"
+      assert described.revision == "draft"
+      assert is_list(described.nodes)
+      assert Enum.all?(described.nodes, &Map.has_key?(&1, :uuid))
+    end
+
+    test "get_flow distinguishes an unknown flow from a missing revision", %{
+      user: user,
+      flow: flow
+    } do
+      assert {:error, unknown} = Tools.run("get_flow", %{"flow_id" => 999_999}, user)
+      assert unknown == "No flow with id 999999 exists in this organisation."
+
+      assert {:error, unpublished} = Tools.run("get_flow", %{"flow_id" => flow.id}, user)
+      assert unpublished =~ "exists but has no published revision"
     end
 
     test "flow_status reports where contacts are", %{user: user, flow: flow} do
@@ -107,32 +144,77 @@ defmodule Glific.AI.ToolsTest do
       assert %{waiting_at_node: _, completed: _, stopped: _} = result.contacts
     end
 
-    test "list_contact_fields and list_templates return data", %{user: user} do
+    test "flow_status explains an unknown id", %{user: user} do
+      assert {:error, message} = Tools.run("flow_status", %{"flow_id" => 999_999}, user)
+      assert message == "No flow with id 999999 exists in this organisation."
+    end
+
+    test "list_webhook_logs returns the calls a flow made", %{user: user} do
+      Fixtures.webhook_log_fixture(%{organization_id: 1})
+
+      assert {:ok, logs} = Tools.run("list_webhook_logs", %{}, user)
+      assert Enum.any?(logs, &is_binary(&1.url))
+    end
+  end
+
+  describe "every tool runs" do
+    test "each tool returns data rather than an error", %{
+      user: user,
+      contact: contact,
+      flow: flow,
+      assistant: assistant
+    } do
       Fixtures.contacts_field_fixture(%{organization_id: 1, name: "Age", shortcode: "age"})
 
-      assert {:ok, fields} = Tools.run("list_contact_fields", %{}, user)
-      assert Enum.any?(fields, &(&1.shortcode == "age"))
+      args = %{
+        "get_contact" => %{"contact_id" => contact.id},
+        "contact_history" => %{"contact_id" => contact.id},
+        "message_history" => %{"contact_id" => contact.id},
+        "get_flow" => %{"flow_id" => flow.id, "status" => "draft"},
+        "flow_status" => %{"flow_id" => flow.id},
+        "flow_results" => %{"flow_id" => flow.id},
+        "flow_counts" => %{"flow_id" => flow.id},
+        "get_assistant" => %{"assistant_id" => assistant.id}
+      }
 
-      assert {:ok, templates} = Tools.run("list_templates", %{"limit" => 5}, user)
-      assert is_list(templates)
+      failures =
+        for spec <- Tools.all(),
+            spec.name not in ["writing_tool", "raising_tool"],
+            result = Tools.run(spec.name, Map.get(args, spec.name, %{}), user),
+            match?({:error, _}, result) do
+          {spec.name, result}
+        end
+
+      assert failures == []
     end
-  end
 
-  test "every registered tool declares a name, a description and a schema" do
-    for tool <- Tools.all(), tool not in [WritingTool, RaisingTool] do
-      assert is_binary(tool.name()) and tool.name() != ""
-      assert is_binary(tool.description()) and tool.description() != ""
-      assert is_list(tool.parameters())
-      assert {:ok, tool} == Tools.fetch(tool.name())
+    test "get_assistant and the id-only tools explain a missing id", %{user: user} do
+      assert {:error, message} = Tools.run("get_assistant", %{"assistant_id" => 999_999}, user)
+      assert message == "No assistant with id 999999 exists in this organisation."
     end
-  end
 
-  test "a write inside a tool is refused by the database", %{user: user} do
-    original = Flow |> Repo.all() |> hd()
+    # A spec with no matching `run/2` clause raises rather than answering, and it
+    # is only reachable through the name in the spec, so check every one.
+    test "every declared tool has a matching run clause", %{user: user} do
+      for spec <- Tools.all(), spec.name not in ["writing_tool", "raising_tool"] do
+        assert {:ok, {module, _}} = Tools.fetch(spec.name)
 
-    assert {:error, message} = Tools.run("writing_tool", %{}, user)
+        refute match?(
+                 {:error, "The lookup failed: no function clause matching" <> _},
+                 Tools.run(spec.name, %{}, user)
+               ),
+               "#{module}.run/2 has no clause for #{spec.name}"
+      end
+    end
 
-    assert message =~ "read-only" or message =~ "cannot execute"
-    assert Repo.get(Flow, original.id).name == original.name
+    test "provider_status never returns credential values", %{user: user} do
+      assert {:ok, providers} = Tools.run("provider_status", %{}, user)
+
+      for provider <- providers do
+        refute Map.has_key?(provider, :keys)
+        refute Map.has_key?(provider, :secrets)
+        assert Map.has_key?(provider, :is_active)
+      end
+    end
   end
 end
