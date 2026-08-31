@@ -7,6 +7,7 @@ defmodule Glific.Groups.WAGroups do
 
   alias Glific.{
     Contacts,
+    CSV.Encoding,
     Groups.ContactWAGroup,
     Groups.ContactWAGroups,
     Groups.WAGroup,
@@ -830,7 +831,10 @@ defmodule Glific.Groups.WAGroups do
     # then a background job adds the rest and creates the contacts.
     numbers = import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1)
 
-    with {:ok, wa_group} <-
+    # Encoding is checked before createGroup — the member import rejects a non-UTF-8
+    # CSV, and creating the group first would leave an empty group behind.
+    with :ok <- Encoding.validate(import_data),
+         {:ok, wa_group} <-
            create_group_via_maytapi(org_id, wa_managed_phone_id, %{name: name, numbers: numbers}) do
       case WAGroupMemberImport.import_members(org_id, wa_group.id, data: import_data) do
         {:ok, _} ->
