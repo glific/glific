@@ -975,13 +975,7 @@ defmodule Glific.ThirdParty.Kaapi do
     {"gpt-5.6-terra", "All-rounder"},
     {"gpt-5.4", "All-rounder"}
   ]
-  @recommended_badges Map.new(@recommended_models)
-  @recommended_order @recommended_models
-                     |> Enum.map(&elem(&1, 0))
-                     |> Enum.with_index()
-                     |> Map.new()
   @deprecated_models ~w(gpt-4o gpt-4o-mini)
-  @deprecated_badge "Deprecating"
   @default_model "gpt-5.6-luna"
 
   @doc """
@@ -1005,11 +999,15 @@ defmodule Glific.ThirdParty.Kaapi do
   defp annotate_model(%{model_name: model_name} = model) do
     metadata =
       cond do
-        badge = @recommended_badges[model_name] ->
-          %{category: "recommended", badge: badge, is_default: model_name == @default_model}
+        entry = List.keyfind(@recommended_models, model_name, 0) ->
+          %{
+            category: "recommended",
+            badge: elem(entry, 1),
+            is_default: model_name == @default_model
+          }
 
         model_name in @deprecated_models ->
-          %{category: "deprecated", badge: @deprecated_badge, is_default: false}
+          %{category: "deprecated", badge: "Deprecating", is_default: false}
 
         true ->
           %{category: "all", badge: nil, is_default: false}
@@ -1020,13 +1018,16 @@ defmodule Glific.ThirdParty.Kaapi do
 
   @spec sort_models(list(map())) :: list(map())
   defp sort_models(models) do
-    Enum.sort_by(models, fn model ->
-      model_name = Map.get(model, :model_name)
+    Enum.sort_by(models, fn %{model_name: model_name, category: category} ->
+      case category do
+        "recommended" ->
+          {0, Enum.find_index(@recommended_models, &(elem(&1, 0) == model_name)), ""}
 
-      case model[:category] do
-        "recommended" -> {0, @recommended_order[model_name], ""}
-        "all" -> {1, 0, to_string(model_name)}
-        _ -> {2, 0, to_string(model_name)}
+        "all" ->
+          {1, 0, model_name}
+
+        _ ->
+          {2, 0, model_name}
       end
     end)
   end
