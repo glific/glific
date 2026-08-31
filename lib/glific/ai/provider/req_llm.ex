@@ -12,11 +12,12 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   require Logger
 
-  alias Glific.AI.{ChatMessage, Models, Usage}
+  alias Glific.AI.{ChatMessage, Models}
 
   @impl Glific.AI.Provider
   @spec generate([ChatMessage.t()], keyword()) ::
-          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+          {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
+          | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
     if Models.configured?(opts) do
       call(messages, opts)
@@ -26,7 +27,8 @@ defmodule Glific.AI.Provider.ReqLLM do
   end
 
   @spec call([ChatMessage.t()], keyword()) ::
-          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+          {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
+          | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
     {model, opts} = Keyword.pop(opts, :model)
 
@@ -62,26 +64,16 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   defp to_req_llm(%ChatMessage{content: content}), do: ReqLLM.Context.user(content || "")
 
-  @spec usage(struct()) :: Usage.t()
+  @spec usage(struct()) :: Glific.AI.Provider.usage()
   defp usage(response) do
-    case ReqLLM.Response.usage(response) do
-      %{} = usage ->
-        %Usage{
-          input_tokens: Map.get(usage, :input_tokens, 0) || 0,
-          output_tokens: Map.get(usage, :output_tokens, 0) || 0,
-          cost: to_decimal(Map.get(usage, :total_cost))
-        }
+    usage = ReqLLM.Response.usage(response) || %{}
 
-      _ ->
-        %Usage{}
-    end
+    %{
+      input_tokens: Map.get(usage, :input_tokens) || 0,
+      output_tokens: Map.get(usage, :output_tokens) || 0,
+      cost: Map.get(usage, :total_cost) || 0
+    }
   end
-
-  @spec to_decimal(number() | Decimal.t() | nil) :: Decimal.t()
-  defp to_decimal(nil), do: Decimal.new("0")
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
 
   @spec describe(term()) :: String.t()
   defp describe(%{__exception__: true} = error), do: Exception.message(error)

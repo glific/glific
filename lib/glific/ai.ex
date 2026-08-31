@@ -12,7 +12,6 @@ defmodule Glific.AI do
   alias Glific.{
     AI.ChatMessage,
     AI.Provider,
-    AI.Usage,
     Flags,
     Partners
   }
@@ -35,7 +34,7 @@ defmodule Glific.AI do
   flag is off.
   """
   @spec generate(non_neg_integer(), [ChatMessage.t()], keyword()) ::
-          {:ok, ChatMessage.t(), Usage.t()} | {:error, :disabled | Provider.failure()}
+          {:ok, ChatMessage.t(), Provider.usage()} | {:error, :disabled | Provider.failure()}
   def generate(organization_id, messages, opts \\ []) do
     if enabled?(organization_id) do
       Provider.impl().generate(messages, opts)

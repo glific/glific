@@ -10,7 +10,17 @@ defmodule Glific.AI.Provider do
   a failed message.
   """
 
-  alias Glific.AI.{ChatMessage, Usage}
+  alias Glific.AI.ChatMessage
+
+  @typedoc """
+  What one call consumed, as the provider reports it. Cost is the provider's own
+  estimate in USD — for observability, not an invoice.
+  """
+  @type usage :: %{
+          input_tokens: non_neg_integer(),
+          output_tokens: non_neg_integer(),
+          cost: number()
+        }
 
   @type failure ::
           {:not_configured, String.t()}
@@ -21,12 +31,9 @@ defmodule Glific.AI.Provider do
   consumed.
   """
   @callback generate(messages :: [ChatMessage.t()], opts :: keyword()) ::
-              {:ok, ChatMessage.t(), Usage.t()} | {:error, failure()}
+              {:ok, ChatMessage.t(), usage()} | {:error, failure()}
 
-  @doc "The configured implementation."
+  @doc "The module that talks to the provider."
   @spec impl() :: module()
-  def impl do
-    Application.get_env(:glific, Glific.AI, [])
-    |> Keyword.get(:provider, Glific.AI.Provider.ReqLLM)
-  end
+  def impl, do: Glific.AI.Provider.ReqLLM
 end
