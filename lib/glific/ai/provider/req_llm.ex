@@ -12,28 +12,25 @@ defmodule Glific.AI.Provider.ReqLLM do
 
   require Logger
 
-  alias Glific.AI.{ChatMessage, Models}
+  @default_max_tokens 4_096
+  @default_receive_timeout 60_000
+
+  alias Glific.AI.{ChatMessage, Provider}
 
   @impl Glific.AI.Provider
   @spec generate([ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
-    if Models.configured?(opts) do
-      call(messages, opts)
-    else
-      {:error, {:not_configured, "no model is configured for Glific AI"}}
-    end
+    call(messages, opts)
   end
 
   @spec call([ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
-    {model, opts} = Keyword.pop(opts, :model)
-
     case ReqLLM.generate_text(
-           Models.spec(model: model),
+           Provider.model(opts),
            Enum.map(messages, &to_req_llm/1),
            request_opts(opts)
          ) do
@@ -53,7 +50,16 @@ defmodule Glific.AI.Provider.ReqLLM do
   end
 
   @spec request_opts(keyword()) :: keyword()
-  defp request_opts(opts), do: Keyword.merge(Models.opts(), opts)
+  # max_tokens and receive_timeout are req_llm's own option names, so the mapping
+  # from our config stays here rather than in the behaviour.
+  @spec request_opts(keyword()) :: keyword()
+  defp request_opts(opts) do
+    [
+      max_tokens: Provider.config()[:max_tokens] || @default_max_tokens,
+      receive_timeout: Provider.config()[:receive_timeout] || @default_receive_timeout
+    ]
+    |> Keyword.merge(Keyword.delete(opts, :model))
+  end
 
   @spec to_req_llm(ChatMessage.t()) :: struct()
   defp to_req_llm(%ChatMessage{role: :system, content: content}),
