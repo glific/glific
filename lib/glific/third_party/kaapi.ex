@@ -968,6 +968,69 @@ defmodule Glific.ThirdParty.Kaapi do
     end
   end
 
+  @recommended_models [
+    {"gpt-5.6-luna", "Best value"},
+    {"gpt-5-nano", "Fastest"},
+    {"gpt-5-mini", "Budget"},
+    {"gpt-5.6-terra", "All-rounder"},
+    {"gpt-5.4", "All-rounder"}
+  ]
+  @recommended_badges Map.new(@recommended_models)
+  @recommended_order @recommended_models
+                     |> Enum.map(&elem(&1, 0))
+                     |> Enum.with_index()
+                     |> Map.new()
+  @deprecated_models ~w(gpt-4o gpt-4o-mini)
+  @deprecated_badge "Deprecating"
+  @default_model "gpt-5.6-luna"
+
+  @doc """
+  The model preselected in the model dropdown and used when none is supplied.
+  """
+  @spec default_model() :: String.t()
+  def default_model, do: @default_model
+
+  @doc """
+  List active Kaapi models annotated with `category`, `badge` and `is_default`, ordered
+  recommended first, then the rest alphabetically, then the ones being deprecated.
+  """
+  @spec list_models_with_metadata(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
+  def list_models_with_metadata(organization_id) do
+    with {:ok, models} <- list_models(organization_id) do
+      {:ok, models |> Enum.map(&annotate_model/1) |> sort_models()}
+    end
+  end
+
+  @spec annotate_model(map()) :: map()
+  defp annotate_model(%{model_name: model_name} = model) do
+    metadata =
+      cond do
+        badge = @recommended_badges[model_name] ->
+          %{category: "recommended", badge: badge, is_default: model_name == @default_model}
+
+        model_name in @deprecated_models ->
+          %{category: "deprecated", badge: @deprecated_badge, is_default: false}
+
+        true ->
+          %{category: "all", badge: nil, is_default: false}
+      end
+
+    Map.merge(model, metadata)
+  end
+
+  @spec sort_models(list(map())) :: list(map())
+  defp sort_models(models) do
+    Enum.sort_by(models, fn model ->
+      model_name = Map.get(model, :model_name)
+
+      case model[:category] do
+        "recommended" -> {0, @recommended_order[model_name], ""}
+        "all" -> {1, 0, to_string(model_name)}
+        _ -> {2, 0, to_string(model_name)}
+      end
+    end)
+  end
+
   @spec fetch_and_cache_models(non_neg_integer(), tuple()) :: {:ok, list(map())} | {:error, any()}
   defp fetch_and_cache_models(organization_id, cache_key) do
     with {:ok, secrets} <- fetch_kaapi_creds(organization_id),

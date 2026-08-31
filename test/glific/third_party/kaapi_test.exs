@@ -341,6 +341,80 @@ defmodule Glific.ThirdParty.KaapiTest do
     end
   end
 
+  describe "list_models_with_metadata/1" do
+    setup [:enable_kaapi_credential]
+
+    setup do
+      Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
+      :ok
+    end
+
+    defp mock_models(model_names) do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: %{
+            data: %{data: Enum.map(model_names, &%{provider: "openai", model_name: &1})}
+          }
+        }
+      end)
+    end
+
+    test "annotates recommended, all and deprecated models" do
+      mock_models(["gpt-4o", "gpt-4.1", "gpt-5-nano", "gpt-5.6-luna"])
+
+      assert {:ok, models} = Kaapi.list_models_with_metadata(1)
+
+      assert Enum.map(models, &{&1.model_name, &1.category, &1.badge, &1.is_default}) == [
+               {"gpt-5.6-luna", "recommended", "Best value", true},
+               {"gpt-5-nano", "recommended", "Fastest", false},
+               {"gpt-4.1", "all", nil, false},
+               {"gpt-4o", "deprecated", "Deprecating", false}
+             ]
+    end
+
+    test "orders recommended by the curated order, then all alphabetically, then deprecated" do
+      mock_models([
+        "gpt-4o-mini",
+        "o3",
+        "gpt-4o",
+        "gpt-5.4",
+        "gpt-5.2-pro",
+        "gpt-5-mini",
+        "gpt-5.6-luna"
+      ])
+
+      assert {:ok, models} = Kaapi.list_models_with_metadata(1)
+
+      assert Enum.map(models, & &1.model_name) == [
+               "gpt-5.6-luna",
+               "gpt-5-mini",
+               "gpt-5.4",
+               "gpt-5.2-pro",
+               "o3",
+               "gpt-4o",
+               "gpt-4o-mini"
+             ]
+    end
+
+    test "does not inject curated models that Kaapi did not return" do
+      mock_models(["gpt-4.1"])
+
+      assert {:ok, models} = Kaapi.list_models_with_metadata(1)
+      assert Enum.map(models, & &1.model_name) == ["gpt-4.1"]
+      refute Enum.any?(models, & &1.is_default)
+    end
+
+    test "propagates the error when the model list cannot be fetched" do
+      mock(fn %Tesla.Env{method: :get} ->
+        %Tesla.Env{status: 200, body: %{unexpected: "shape"}}
+      end)
+
+      assert {:error, reason} = Kaapi.list_models_with_metadata(1)
+      assert reason =~ "Unexpected Kaapi list_models response"
+    end
+  end
+
   describe "list_models/1 without kaapi configured" do
     test "returns error when Kaapi is not active for the organization" do
       Cachex.del(:glific_cache, {:global, {:kaapi_models, "openai"}})
