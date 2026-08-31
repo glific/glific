@@ -40,6 +40,12 @@ defmodule Glific.AI.Provider do
   @callback generate(messages :: [ChatMessage.t()], opts :: keyword()) ::
               {:ok, ChatMessage.t(), usage()} | {:error, failure()}
 
+  @doc """
+  The model this call will use, so telemetry can tag it without resolving
+  configuration itself. `nil` when none is configured.
+  """
+  @callback model(opts :: keyword()) :: String.t() | nil
+
   @doc "The module that talks to the provider."
   @spec impl() :: module()
   def impl, do: Glific.AI.Provider.ReqLLM
