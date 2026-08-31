@@ -22,11 +22,16 @@ defmodule Glific.AI.Provider do
           cost: number()
         }
 
-  @type failure :: {:provider_error, String.t()}
+  @typedoc """
+  Why a call failed.
 
-  @doc "Settings every implementation reads."
-  @spec config() :: keyword()
-  def config, do: Application.get_env(:glific, Glific.AI, [])
+  The message is deliberately generic: the caller records it against a message
+  row and shows it to a user, so it must never carry request detail. What
+  actually went wrong is logged and reported to AppSignal by the implementation.
+  """
+  @type failure ::
+          {:not_configured, String.t()}
+          | {:provider_error, String.t()}
 
   @doc """
   Sends a conversation to the provider and returns its reply plus what the call
@@ -34,20 +39,6 @@ defmodule Glific.AI.Provider do
   """
   @callback generate(messages :: [ChatMessage.t()], opts :: keyword()) ::
               {:ok, ChatMessage.t(), usage()} | {:error, failure()}
-
-  @doc """
-  The model to use: `opts[:model]` when given, otherwise the configured default.
-
-  The default is a light model; a caller passes `model:` when one question needs
-  a stronger one. This is the only place a model is resolved.
-  """
-  @spec model(keyword()) :: String.t() | nil
-  def model(opts \\ []) do
-    case opts[:model] do
-      override when is_binary(override) and override != "" -> override
-      _ -> config()[:model]
-    end
-  end
 
   @doc "The module that talks to the provider."
   @spec impl() :: module()

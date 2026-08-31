@@ -3,7 +3,7 @@ defmodule Glific.AI.Provider.ReqLLM do
   The `req_llm` implementation of `Glific.AI.Provider`.
 
   The only module that names `req_llm`, and its types stay inside: callers pass
-  and receive `Glific.AI.ChatMessage` and `Glific.AI.Usage`.
+  and receive `Glific.AI.ChatMessage` and a plain usage map.
 
   Provider failures are returned, never raised.
   """
@@ -11,6 +11,8 @@ defmodule Glific.AI.Provider.ReqLLM do
   @behaviour Glific.AI.Provider
 
   require Logger
+
+  @failure_message "The AI provider could not complete the request"
 
   @default_max_tokens 4_096
   @default_receive_timeout 60_000
@@ -22,31 +24,52 @@ defmodule Glific.AI.Provider.ReqLLM do
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
-    call(messages, opts)
+    case model(opts) do
+      nil -> {:error, {:not_configured, "No model is configured for Glific AI"}}
+      spec -> call(spec, messages, opts)
+    end
   end
 
-  @spec call([ChatMessage.t()], keyword()) ::
+  @spec call(String.t(), [ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
           | {:error, Glific.AI.Provider.failure()}
-  defp call(messages, opts) do
-    case ReqLLM.generate_text(
-           Provider.model(opts),
-           Enum.map(messages, &to_req_llm/1),
-           request_opts(opts)
-         ) do
+  defp call(spec, messages, opts) do
+    started = System.monotonic_time(:millisecond)
+
+    case ReqLLM.generate_text(spec, Enum.map(messages, &to_req_llm/1), request_opts(opts)) do
       {:ok, response} ->
+        record(spec, "succeeded", started)
         {:ok, ChatMessage.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
 
       {:error, error} ->
-        # Logged here rather than at the caller: this is the only place that can
-        # see the provider's own error shape.
-        Logger.warning("Glific AI provider call failed: #{describe(error)}")
-        {:error, {:provider_error, describe(error)}}
+        failed(spec, started, Glific.SafeLog.safe_inspect(error))
     end
   rescue
     exception ->
       Glific.log_exception(exception)
-      {:error, {:provider_error, Exception.message(exception)}}
+      {:error, {:provider_error, @failure_message}}
+  catch
+    :exit, reason ->
+      failed(spec, System.monotonic_time(:millisecond), Glific.SafeLog.safe_inspect(reason))
+  end
+
+  @spec failed(String.t(), integer(), String.t()) :: {:error, Provider.failure()}
+  defp failed(spec, started, detail) do
+    record(spec, "failed", started)
+    Glific.log_error("Glific AI call failed on #{spec}: #{detail}")
+    {:error, {:provider_error, @failure_message}}
+  end
+
+  @spec record(String.t(), String.t(), integer()) :: :ok
+  defp record(spec, outcome, started) do
+    tags = %{outcome: outcome, model: spec}
+    Appsignal.increment_counter("glific_ai_call_count", 1, tags)
+
+    Appsignal.add_distribution_value(
+      "glific_ai_call_latency",
+      System.monotonic_time(:millisecond) - started,
+      tags
+    )
   end
 
   @spec request_opts(keyword()) :: keyword()
@@ -55,10 +78,21 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec request_opts(keyword()) :: keyword()
   defp request_opts(opts) do
     [
-      max_tokens: Provider.config()[:max_tokens] || @default_max_tokens,
-      receive_timeout: Provider.config()[:receive_timeout] || @default_receive_timeout
+      max_tokens: config()[:max_tokens] || @default_max_tokens,
+      receive_timeout: config()[:receive_timeout] || @default_receive_timeout
     ]
     |> Keyword.merge(Keyword.delete(opts, :model))
+  end
+
+  @spec config() :: keyword()
+  defp config, do: Application.get_env(:glific, Glific.AI, [])
+
+  @spec model(keyword()) :: String.t() | nil
+  defp model(opts) do
+    case opts[:model] do
+      override when is_binary(override) and override != "" -> override
+      _ -> config()[:model]
+    end
   end
 
   @spec to_req_llm(ChatMessage.t()) :: struct()
@@ -80,8 +114,4 @@ defmodule Glific.AI.Provider.ReqLLM do
       cost: Map.get(usage, :total_cost) || 0
     }
   end
-
-  @spec describe(term()) :: String.t()
-  defp describe(%{__exception__: true} = error), do: Exception.message(error)
-  defp describe(error), do: Glific.SafeLog.safe_inspect(error)
 end
