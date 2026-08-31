@@ -3,55 +3,85 @@ defmodule Glific.AI.Provider.ReqLLM do
   The `req_llm` implementation of `Glific.AI.Provider`.
 
   The only module that names `req_llm`, and its types stay inside: callers pass
-  and receive `Glific.AI.ChatMessage` and `Glific.AI.Usage`.
+  and receive `Glific.AI.ChatMessage` and a plain usage map.
 
   Provider failures are returned, never raised.
   """
 
+  alias Glific.AI.{ChatMessage, Provider}
+
   @behaviour Glific.AI.Provider
 
-  require Logger
+  @failure_message "The AI provider could not complete the request"
 
-  alias Glific.AI.{ChatMessage, Models, Usage}
+  @default_max_tokens 4_096
+  @default_receive_timeout 60_000
 
+  @doc """
+  Sends a conversation to the provider.
+
+  Pass `model:` to override the configured default for this call.
+  """
   @impl Glific.AI.Provider
   @spec generate([ChatMessage.t()], keyword()) ::
-          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
+          {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
+          | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
-    if Models.configured?(opts) do
-      call(messages, opts)
-    else
-      {:error, {:not_configured, "no model is configured for Glific AI"}}
+    case model(opts) do
+      nil -> {:error, {:not_configured, "No model is configured for Glific AI"}}
+      spec -> call(spec, messages, opts)
     end
   end
 
-  @spec call([ChatMessage.t()], keyword()) ::
-          {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
-  defp call(messages, opts) do
-    {model, opts} = Keyword.pop(opts, :model)
+  @doc "The model this call resolves to, from `model:` or configuration."
+  @impl Glific.AI.Provider
+  @spec model(keyword()) :: String.t() | nil
+  def model(opts) do
+    case opts[:model] do
+      override when is_binary(override) and override != "" -> override
+      _ -> config()[:model]
+    end
+  end
 
-    case ReqLLM.generate_text(
-           Models.spec(model: model),
-           Enum.map(messages, &to_req_llm/1),
-           request_opts(opts)
-         ) do
+  @spec call(String.t(), [ChatMessage.t()], keyword()) ::
+          {:ok, ChatMessage.t(), Glific.AI.Provider.usage()}
+          | {:error, Glific.AI.Provider.failure()}
+  defp call(spec, messages, opts) do
+    case ReqLLM.generate_text(spec, Enum.map(messages, &to_req_llm/1), request_opts(opts)) do
       {:ok, response} ->
         {:ok, ChatMessage.assistant(ReqLLM.Response.text(response) || ""), usage(response)}
 
       {:error, error} ->
-        # Logged here rather than at the caller: this is the only place that can
-        # see the provider's own error shape.
-        Logger.warning("Glific AI provider call failed: #{describe(error)}")
-        {:error, {:provider_error, describe(error)}}
+        failed(spec, Glific.SafeLog.safe_inspect(error))
     end
   rescue
     exception ->
       Glific.log_exception(exception)
-      {:error, {:provider_error, Exception.message(exception)}}
+      {:error, {:provider_error, @failure_message}}
+  catch
+    :exit, reason ->
+      failed(spec, Glific.SafeLog.safe_inspect(reason))
   end
 
+  @spec failed(String.t(), String.t()) :: {:error, Provider.failure()}
+  defp failed(spec, detail) do
+    Glific.log_error("Glific AI call failed on #{spec}: #{detail}")
+    {:error, {:provider_error, @failure_message}}
+  end
+
+  # max_tokens and receive_timeout are req_llm's own option names, so mapping our
+  # config onto them belongs here rather than in the behaviour.
   @spec request_opts(keyword()) :: keyword()
-  defp request_opts(opts), do: Keyword.merge(Models.opts(), opts)
+  defp request_opts(opts) do
+    [
+      max_tokens: config()[:max_tokens] || @default_max_tokens,
+      receive_timeout: config()[:receive_timeout] || @default_receive_timeout
+    ]
+    |> Keyword.merge(Keyword.delete(opts, :model))
+  end
+
+  @spec config() :: keyword()
+  defp config, do: Application.get_env(:glific, Glific.AI, [])
 
   @spec to_req_llm(ChatMessage.t()) :: struct()
   defp to_req_llm(%ChatMessage{role: :system, content: content}),
@@ -60,30 +90,17 @@ defmodule Glific.AI.Provider.ReqLLM do
   defp to_req_llm(%ChatMessage{role: :assistant, content: content}),
     do: ReqLLM.Context.assistant(content || "")
 
-  defp to_req_llm(%ChatMessage{content: content}), do: ReqLLM.Context.user(content || "")
+  defp to_req_llm(%ChatMessage{role: :user, content: content}),
+    do: ReqLLM.Context.user(content || "")
 
-  @spec usage(struct()) :: Usage.t()
+  @spec usage(struct()) :: Glific.AI.Provider.usage()
   defp usage(response) do
-    case ReqLLM.Response.usage(response) do
-      %{} = usage ->
-        %Usage{
-          input_tokens: Map.get(usage, :input_tokens, 0) || 0,
-          output_tokens: Map.get(usage, :output_tokens, 0) || 0,
-          cost: to_decimal(Map.get(usage, :total_cost))
-        }
+    usage = ReqLLM.Response.usage(response) || %{}
 
-      _ ->
-        %Usage{}
-    end
+    %{
+      input_tokens: Map.get(usage, :input_tokens) || 0,
+      output_tokens: Map.get(usage, :output_tokens) || 0,
+      cost: Map.get(usage, :total_cost) || 0
+    }
   end
-
-  @spec to_decimal(number() | Decimal.t() | nil) :: Decimal.t()
-  defp to_decimal(nil), do: Decimal.new("0")
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-
-  @spec describe(term()) :: String.t()
-  defp describe(%{__exception__: true} = error), do: Exception.message(error)
-  defp describe(error), do: Glific.SafeLog.safe_inspect(error)
 end

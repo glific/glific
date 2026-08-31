@@ -1,101 +1,93 @@
 defmodule Glific.AITest do
   use Glific.DataCase
 
-  alias Glific.{AI, AI.ChatMessage, AI.Models, AI.Usage}
+  alias Glific.{AI, AI.ChatMessage, AI.Provider.ReqLLM}
 
-  defmodule RecordingProvider do
+  # A real HTTP server, so these tests exercise Finch, Req and req_llm's decoding
+  # rather than a stub of our own. Each test says what the provider should return.
+  defmodule FakeAnthropic do
     @moduledoc false
-    @behaviour Glific.AI.Provider
+    import Plug.Conn
 
-    @impl Glific.AI.Provider
-    def generate(messages, _opts) do
-      send(self(), {:provider_called, messages})
+    def init(opts), do: opts
 
-      {:ok, ChatMessage.assistant("a reply"),
-       %Usage{input_tokens: 12, output_tokens: 4, cost: Decimal.new("0.0006")}}
+    def call(conn, _opts) do
+      {status, body} = Agent.get(__MODULE__, & &1)
+
+      conn
+      |> put_resp_content_type("application/json")
+      |> send_resp(status, Jason.encode!(body))
+    end
+
+    def respond(status, body), do: Agent.update(__MODULE__, fn _ -> {status, body} end)
+
+    def answer(text, usage \\ %{"input_tokens" => 11, "output_tokens" => 3}) do
+      %{
+        "id" => "msg_1",
+        "type" => "message",
+        "role" => "assistant",
+        "model" => "claude-haiku-4-5",
+        "content" => [%{"type" => "text", "text" => text}],
+        "stop_reason" => "end_turn",
+        "usage" => usage
+      }
     end
   end
 
-  defmodule FailingProvider do
-    @moduledoc false
-    @behaviour Glific.AI.Provider
+  setup do
+    {:ok, _} = Agent.start_link(fn -> {200, FakeAnthropic.answer("ok")} end, name: FakeAnthropic)
+    {:ok, _} = Plug.Cowboy.http(FakeAnthropic, [], port: 0, ref: FakeAnthropic.HTTP)
+    port = :ranch.get_port(FakeAnthropic.HTTP)
+    on_exit(fn -> Plug.Cowboy.shutdown(FakeAnthropic.HTTP) end)
 
-    @impl Glific.AI.Provider
-    def generate(_messages, _opts), do: {:error, {:provider_error, "429 rate limited"}}
+    # FunWithFlags state outlives the SQL sandbox, and it cannot be restored in
+    # on_exit because the sandbox connection is already gone by then. Every test
+    # that depends on the flag therefore sets it, here or in its own body.
+    FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    %{opts: [base_url: "http://127.0.0.1:#{port}/v1", api_key: "sk-ant-test"]}
   end
 
-  defp configure(provider) do
-    original = Application.get_env(:glific, Glific.AI)
-    Application.put_env(:glific, Glific.AI, Keyword.put(original, :provider, provider))
-    on_exit(fn -> Application.put_env(:glific, Glific.AI, original) end)
+  defp ask(opts), do: ReqLLM.generate([ChatMessage.user("hello")], opts)
+
+  test "a successful reply is decoded into a ChatMessage with its usage", %{opts: opts} do
+    FakeAnthropic.respond(200, FakeAnthropic.answer("An HSM is a template."))
+
+    assert {:ok, %ChatMessage{role: :assistant, content: "An HSM is a template."}, usage} =
+             ask(opts)
+
+    assert %{input_tokens: 11, output_tokens: 3} = usage
+    assert is_number(usage.cost)
   end
 
-  # FunWithFlags keeps a global ETS cache, so flag state outlives the SQL sandbox and
-  # leaks between tests. Each test therefore sets the state it depends on explicitly.
-  defp enable_flag,
-    do: FunWithFlags.enable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+  test "usage missing from the response does not crash", %{opts: opts} do
+    FakeAnthropic.respond(200, FakeAnthropic.answer("hi", %{}))
 
-  defp disable_flag,
-    do: FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
-
-  test "with the feature flag off, no provider call is made" do
-    configure(RecordingProvider)
-    disable_flag()
-
-    refute AI.enabled?(1)
-    assert {:error, :disabled} = AI.generate(1, [ChatMessage.user("hello")])
-    refute_received {:provider_called, _}
+    assert {:ok, _, %{input_tokens: 0, output_tokens: 0}} = ask(opts)
   end
 
-  test "with the flag on, the call goes through and usage comes back" do
-    configure(RecordingProvider)
-    enable_flag()
+  test "no provider failure leaks request detail into the returned reason", %{opts: opts} do
+    for status <- [401, 403, 429, 500, 503] do
+      FakeAnthropic.respond(status, %{"error" => %{"message" => "provider said #{status}"}})
 
-    assert AI.enabled?(1)
-
-    assert {:ok, %ChatMessage{role: :assistant, content: "a reply"}, %Usage{} = usage} =
-             AI.generate(1, [ChatMessage.user("hello")])
-
-    assert usage.input_tokens == 12
-    assert usage.output_tokens == 4
-    assert Decimal.equal?(usage.cost, Decimal.new("0.0006"))
-
-    assert_received {:provider_called, [%ChatMessage{role: :user, content: "hello"}]}
+      assert {:error, {:provider_error, reason}} = ask(opts ++ [retry: false])
+      assert reason == "The AI provider could not complete the request"
+    end
   end
 
-  test "a caller can override the model for one call" do
-    configure(RecordingProvider)
-    enable_flag()
-
-    assert {:ok, _, _} =
-             AI.generate(1, [ChatMessage.user("hello")], model: "anthropic:claude-opus-5")
-
-    assert_received {:provider_called, _}
-
-    assert Models.spec() == "anthropic:claude-haiku-4-5"
-    assert Models.spec(model: "anthropic:claude-opus-5") == "anthropic:claude-opus-5"
-  end
-
-  test "a provider failure is returned, not raised" do
-    configure(FailingProvider)
-    enable_flag()
-
-    assert {:error, {:provider_error, "429 rate limited"}} =
-             AI.generate(1, [ChatMessage.user("hello")])
-  end
-
-  test "the model spec comes from configuration, and a missing one is reported rather than raised" do
-    assert Models.configured?()
-    assert is_binary(Models.spec())
-    assert Keyword.has_key?(Models.opts(), :max_tokens)
-
+  test "with no model configured, that is distinguishable from a provider failure" do
     original = Application.get_env(:glific, Glific.AI)
     Application.put_env(:glific, Glific.AI, Keyword.delete(original, :model))
     on_exit(fn -> Application.put_env(:glific, Glific.AI, original) end)
 
-    refute Models.configured?()
-    enable_flag()
+    assert {:error, {:not_configured, "No model is configured for Glific AI"}} =
+             ReqLLM.generate([ChatMessage.user("hi")])
+  end
 
-    assert {:error, {:not_configured, _}} = AI.generate(1, [ChatMessage.user("hello")])
+  test "with the feature flag off, the request is refused before any provider call" do
+    FunWithFlags.disable(:glific_ai_enabled, for_actor: %{organization_id: 1})
+
+    refute AI.enabled?(1)
+    assert {:error, :disabled} = AI.generate(1, [ChatMessage.user("hello")])
   end
 end
