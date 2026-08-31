@@ -76,7 +76,8 @@ defmodule Glific.AI.Provider.ReqLLM do
     )
   end
 
-  # max_tokens and receive_timeout are req_llm's own option names, so the mapping
+  # max_tokens and receive_timeout are req_llm's own option names, so mapping our
+  # config onto them belongs here rather than in the behaviour.
   @spec request_opts(keyword()) :: keyword()
   defp request_opts(opts) do
     [

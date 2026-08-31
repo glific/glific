@@ -227,7 +227,8 @@ config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 config :mime, :types, %{
   "audio/amr" => ["amr"],
   "audio/mp4" => ["m4a"],
-  "audio/ogg" => ["oga", "ogg"]
+  "audio/ogg" => ["oga", "ogg"],
+  "video/3gpp" => ["3gp", "3gpp"]
 }
 
 config :glific, Glific.AI,

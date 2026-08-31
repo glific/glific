@@ -66,6 +66,17 @@ defmodule Glific.AITest do
     assert {:ok, _, %{input_tokens: 0, output_tokens: 0}} = ask(opts)
   end
 
+  test "no provider failure leaks request detail into the returned reason", %{opts: opts} do
+    for status <- [401, 403, 429, 500, 503] do
+      FakeAnthropic.respond(status, %{"error" => %{"message" => "provider said #{status}"}})
+
+      assert {:error, {:provider_error, reason}} = ask(opts ++ [retry: false])
+      refute reason =~ "sk-ant"
+      refute reason =~ "api_key"
+      refute reason =~ to_string(status)
+    end
+  end
+
   test "with no model configured, that is distinguishable from a provider failure" do
     original = Application.get_env(:glific, Glific.AI)
     Application.put_env(:glific, Glific.AI, Keyword.delete(original, :model))
