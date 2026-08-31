@@ -2796,7 +2796,7 @@ defmodule Glific.TemplatesTest do
 
   test "translate_session_template/2 derives the source language from the anchor template's own record, not from client input",
        attrs do
-    source_language = language_fixture(@valid_language_attrs_1)
+    source_language = language_fixture(%{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
     target_language = language_fixture()
     anchor_template = session_template_fixture(Map.put(attrs, :language_id, source_language.id))
 
