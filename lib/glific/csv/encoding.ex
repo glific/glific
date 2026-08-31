@@ -1,13 +1,11 @@
 defmodule Glific.CSV.Encoding do
   @moduledoc """
-  Guards CSV ingest against files that are not valid UTF-8.
+  Rejects CSV uploads that are not valid UTF-8.
 
-  Spreadsheet apps write `.csv` in whatever encoding the export menu picked, and the
-  extension records none of it. Google Sheets and Excel's "CSV UTF-8" give us UTF-8;
-  Excel's plain "CSV (Comma delimited)" gives us the Windows codepage of the machine
-  it ran on, and "Unicode Text" gives us UTF-16. Only UTF-8 survives our pipeline —
-  Postgres rejects the rest at insert time — so reject the others up front with a
-  message that names the fix.
+  `.csv` records no encoding, so the bytes depend on the export: Google Sheets and
+  Excel's "CSV UTF-8" give UTF-8, Excel's plain "CSV (Comma delimited)" gives a
+  Windows codepage and "Unicode Text" gives UTF-16. Only UTF-8 survives the
+  pipeline, so the rest are rejected here with a message naming the fix.
   """
 
   @bom <<0xEF, 0xBB, 0xBF>>
@@ -19,9 +17,7 @@ defmodule Glific.CSV.Encoding do
   @utf16_error "The file looks like UTF-16 or UTF-32 text, which we cannot read " <>
                  "(Excel's \"Unicode Text\" export writes this). " <> @resave_hint
 
-  @doc """
-  Check that a CSV is valid UTF-8, accepting either the raw contents or a line stream.
-  """
+  @doc "Check a CSV is valid UTF-8, given either its raw contents or a line stream."
   @spec validate(binary() | Enumerable.t()) :: :ok | {:error, String.t()}
   def validate(contents) when is_binary(contents),
     do: contents |> String.split("\n") |> validate()
@@ -39,7 +35,10 @@ defmodule Glific.CSV.Encoding do
   end
 
   @doc """
-  Strip the leading UTF-8 BOM that Excel's "CSV UTF-8" export writes.
+  Strip the leading byte order mark (BOM) that Excel's "CSV UTF-8" export writes.
+
+  A BOM is valid UTF-8, so `validate/1` cannot catch it, but it corrupts the first
+  header of the row it precedes.
   """
   @spec strip_bom(Enumerable.t()) :: Enumerable.t()
   def strip_bom(lines) do

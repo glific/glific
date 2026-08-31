@@ -831,8 +831,7 @@ defmodule Glific.Groups.WAGroups do
     # then a background job adds the rest and creates the contacts.
     numbers = import_data |> WAGroupMemberImport.extract_phones() |> Enum.take(1)
 
-    # Encoding is checked before createGroup — the member import rejects a non-UTF-8
-    # CSV, and creating the group first would leave an empty group behind.
+    # Validated before createGroup, else a CSV the import rejects leaves an empty group.
     with :ok <- Encoding.validate(import_data),
          {:ok, wa_group} <-
            create_group_via_maytapi(org_id, wa_managed_phone_id, %{name: name, numbers: numbers}) do
