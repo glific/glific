@@ -221,13 +221,18 @@ defmodule Glific.Flows.Broadcast do
 
     contacts = unprocessed_contacts(message_broadcast)
 
-    {:ok, flow} =
-      Flows.get_cached_flow(
-        message_broadcast.organization_id,
-        {:flow_id, message_broadcast.flow_id, @status}
-      )
+    case Flows.get_cached_flow(
+           message_broadcast.organization_id,
+           {:flow_id, message_broadcast.flow_id, @status}
+         ) do
+      {:ok, flow} ->
+        broadcast_for_contacts(%{flow: flow, type: :flow}, contacts, opts)
 
-    broadcast_for_contacts(%{flow: flow, type: :flow}, contacts, opts)
+      {:error, error} ->
+        Glific.log_error(
+          "Broadcast.process_broadcast_group: failed to load cached flow for flow_id #{message_broadcast.flow_id}, org #{message_broadcast.organization_id}: #{Glific.SafeLog.safe_inspect(error)}"
+        )
+    end
 
     :ok
   end
