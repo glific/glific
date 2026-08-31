@@ -975,18 +975,22 @@ defmodule Glific.ThirdParty.Kaapi do
     {"gpt-5.6-terra", "All-rounder"},
     {"gpt-5.4", "All-rounder"}
   ]
-  @deprecated_models ~w(gpt-4o gpt-4o-mini)
-  @default_model "gpt-5.6-luna"
+  @to_be_deprecated_models ~w(gpt-4o gpt-4o-mini)
+
+  # Deliberately still gpt-4o. Moving the default to gpt-5.6-luna changes the model every
+  # assistant created without an explicit one is persisted with, so it is held back from
+  # the dropdown categorisation change.
+  @default_model "gpt-4o"
 
   @doc """
-  The model preselected in the model dropdown and used when none is supplied.
+  The model an assistant is created with when the caller supplies none.
   """
   @spec default_model() :: String.t()
   def default_model, do: @default_model
 
   @doc """
-  List active Kaapi models annotated with `category`, `badge` and `is_default`, ordered
-  recommended first, then the rest alphabetically, then the ones being deprecated.
+  List active Kaapi models annotated with `category` and `badge`, ordered recommended first,
+  then the rest alphabetically, then the ones NGOs should migrate off.
   """
   @spec list_models_with_metadata(non_neg_integer()) :: {:ok, list(map())} | {:error, any()}
   def list_models_with_metadata(organization_id) do
@@ -1000,17 +1004,13 @@ defmodule Glific.ThirdParty.Kaapi do
     metadata =
       cond do
         entry = List.keyfind(@recommended_models, model_name, 0) ->
-          %{
-            category: "recommended",
-            badge: elem(entry, 1),
-            is_default: model_name == @default_model
-          }
+          %{category: "recommended", badge: elem(entry, 1)}
 
-        model_name in @deprecated_models ->
-          %{category: "deprecated", badge: "Deprecating", is_default: false}
+        model_name in @to_be_deprecated_models ->
+          %{category: "to_be_deprecated", badge: "Deprecating"}
 
         true ->
-          %{category: "all", badge: nil, is_default: false}
+          %{category: "all", badge: nil}
       end
 
     Map.merge(model, metadata)

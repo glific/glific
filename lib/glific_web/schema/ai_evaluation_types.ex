@@ -113,10 +113,9 @@ defmodule GlificWeb.Schema.AIEvaluationTypes do
     field :output_modalities, list_of(:string)
     field :pricing, :json
 
-    @desc "One of: recommended, all, deprecated"
+    @desc "One of: recommended, all, to_be_deprecated"
     field :category, :string
     field :badge, :string
-    field :is_default, :boolean
   end
 
   object :improve_prompt do

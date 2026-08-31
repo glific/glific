@@ -1491,9 +1491,8 @@ defmodule GlificWeb.Resolvers.AIEvaluationsTest do
 
       assert {:ok, [model]} = AIEvaluations.list_kaapi_models(nil, %{}, resolution)
       assert model.model_name == "gpt-4o"
-      assert model.category == "deprecated"
+      assert model.category == "to_be_deprecated"
       assert model.badge == "Deprecating"
-      refute model.is_default
     end
   end
 

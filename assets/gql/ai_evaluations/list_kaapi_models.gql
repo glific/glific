@@ -9,6 +9,5 @@ query KaapiModels {
     pricing
     category
     badge
-    isDefault
   }
 }

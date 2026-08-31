@@ -360,20 +360,20 @@ defmodule Glific.ThirdParty.KaapiTest do
       end)
     end
 
-    test "annotates recommended, all and deprecated models" do
+    test "annotates recommended, all and to-be-deprecated models" do
       mock_models(["gpt-4o", "gpt-4.1", "gpt-5-nano", "gpt-5.6-luna"])
 
       assert {:ok, models} = Kaapi.list_models_with_metadata(1)
 
-      assert Enum.map(models, &{&1.model_name, &1.category, &1.badge, &1.is_default}) == [
-               {"gpt-5.6-luna", "recommended", "Best value", true},
-               {"gpt-5-nano", "recommended", "Fastest", false},
-               {"gpt-4.1", "all", nil, false},
-               {"gpt-4o", "deprecated", "Deprecating", false}
+      assert Enum.map(models, &{&1.model_name, &1.category, &1.badge}) == [
+               {"gpt-5.6-luna", "recommended", "Best value"},
+               {"gpt-5-nano", "recommended", "Fastest"},
+               {"gpt-4.1", "all", nil},
+               {"gpt-4o", "to_be_deprecated", "Deprecating"}
              ]
     end
 
-    test "orders recommended by the curated order, then all alphabetically, then deprecated" do
+    test "orders recommended by the curated order, then all alphabetically, then to-be-deprecated" do
       mock_models([
         "gpt-4o-mini",
         "o3",
@@ -402,7 +402,10 @@ defmodule Glific.ThirdParty.KaapiTest do
 
       assert {:ok, models} = Kaapi.list_models_with_metadata(1)
       assert Enum.map(models, & &1.model_name) == ["gpt-4.1"]
-      refute Enum.any?(models, & &1.is_default)
+    end
+
+    test "keeps the default model unchanged until the recommended list is adopted" do
+      assert Kaapi.default_model() == "gpt-4o"
     end
 
     test "propagates the error when the model list cannot be fetched" do
