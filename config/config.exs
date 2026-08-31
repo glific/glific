@@ -224,11 +224,8 @@ config :ex_audit,
 # Throttle OTP requests: at most `count` per client IP within `scale_ms` (default 1 / 30s).
 config :glific, :otp_rate_limit, scale_ms: 30_000, count: 1
 
-# Glific AI. The model spec lives here and nowhere else — no module names a model,
-# so changing provider or model is a configuration change. Credentials are secrets
-# and are read from the environment in runtime.exs, never from this file.
 config :glific, Glific.AI,
-  model: "anthropic:claude-opus-5",
+  model: "anthropic:claude-haiku-4-5",
   max_tokens: 4_096,
   receive_timeout: 60_000
 

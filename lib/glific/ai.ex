@@ -26,11 +26,13 @@ defmodule Glific.AI do
   end
 
   @doc """
-  Sends a conversation to the configured provider on behalf of an organisation.
+  Sends a conversation to the provider on behalf of an organisation.
 
   Returns the model's reply and what the call consumed, so the caller can record
-  cost against a request. Returns `{:error, :disabled}` without contacting any
-  provider when the feature flag is off.
+  the cost.
+
+  Returns `{:error, :disabled}` without contacting any provider when the feature
+  flag is off.
   """
   @spec generate(non_neg_integer(), [ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Usage.t()} | {:error, :disabled | Provider.failure()}

@@ -18,7 +18,7 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec generate([ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   def generate(messages, opts \\ []) do
-    if Models.configured?() do
+    if Models.configured?(opts) do
       call(messages, opts)
     else
       {:error, {:not_configured, "no model is configured for Glific AI"}}
@@ -28,8 +28,10 @@ defmodule Glific.AI.Provider.ReqLLM do
   @spec call([ChatMessage.t()], keyword()) ::
           {:ok, ChatMessage.t(), Usage.t()} | {:error, Glific.AI.Provider.failure()}
   defp call(messages, opts) do
+    {model, opts} = Keyword.pop(opts, :model)
+
     case ReqLLM.generate_text(
-           Models.spec(),
+           Models.spec(model: model),
            Enum.map(messages, &to_req_llm/1),
            request_opts(opts)
          ) do

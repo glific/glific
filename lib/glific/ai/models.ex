@@ -9,10 +9,13 @@ defmodule Glific.AI.Models do
   @default_receive_timeout 60_000
 
   @doc """
-  The configured model spec, in the provider's `"provider:model"` form.
+  The model to use, in the provider's `"provider:model"` form.
+
+  `opts[:model]` overrides the configured default, so a caller that needs a
+  stronger model for one question can ask for it without changing config.
   """
-  @spec spec() :: String.t() | nil
-  def spec, do: config()[:model]
+  @spec spec(keyword()) :: String.t() | nil
+  def spec(opts \\ []), do: opts[:model] || config()[:model]
 
   @doc "Per-call options derived from configuration."
   @spec opts() :: keyword()
@@ -24,12 +27,12 @@ defmodule Glific.AI.Models do
   end
 
   @doc """
-  Whether a model has been configured at all. A missing model is a
-  misconfiguration to report, not a reason to fail at boot.
+  Whether a model is available. A missing model is a misconfiguration to
+  report, not a reason to fail at boot.
   """
-  @spec configured?() :: boolean()
-  def configured? do
-    case spec() do
+  @spec configured?(keyword()) :: boolean()
+  def configured?(opts \\ []) do
+    case spec(opts) do
       spec when is_binary(spec) -> spec != ""
       _ -> false
     end

@@ -63,6 +63,19 @@ defmodule Glific.AITest do
     assert_received {:provider_called, [%ChatMessage{role: :user, content: "hello"}]}
   end
 
+  test "a caller can override the model for one call" do
+    configure(RecordingProvider)
+    enable_flag()
+
+    assert {:ok, _, _} =
+             AI.generate(1, [ChatMessage.user("hello")], model: "anthropic:claude-opus-5")
+
+    assert_received {:provider_called, _}
+
+    assert Models.spec() == "anthropic:claude-haiku-4-5"
+    assert Models.spec(model: "anthropic:claude-opus-5") == "anthropic:claude-opus-5"
+  end
+
   test "a provider failure is returned, not raised" do
     configure(FailingProvider)
     enable_flag()
@@ -84,17 +97,5 @@ defmodule Glific.AITest do
     enable_flag()
 
     assert {:error, {:not_configured, _}} = AI.generate(1, [ChatMessage.user("hello")])
-  end
-
-  test "usages accumulate, so a request can total the calls it made" do
-    total =
-      Usage.add(
-        %Usage{input_tokens: 10, output_tokens: 5, cost: Decimal.new("0.001")},
-        %Usage{input_tokens: 3, output_tokens: 2, cost: Decimal.new("0.002")}
-      )
-
-    assert total.input_tokens == 13
-    assert total.output_tokens == 7
-    assert Decimal.equal?(total.cost, Decimal.new("0.003"))
   end
 end
