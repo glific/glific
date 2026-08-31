@@ -8,9 +8,9 @@ defmodule Glific.AI.Provider.ReqLLM do
   Provider failures are returned, never raised.
   """
 
-  @behaviour Glific.AI.Provider
-
   alias Glific.AI.{ChatMessage, Provider}
+
+  @behaviour Glific.AI.Provider
 
   @failure_message "The AI provider could not complete the request"
 

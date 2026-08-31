@@ -71,9 +71,7 @@ defmodule Glific.AITest do
       FakeAnthropic.respond(status, %{"error" => %{"message" => "provider said #{status}"}})
 
       assert {:error, {:provider_error, reason}} = ask(opts ++ [retry: false])
-      refute reason =~ "sk-ant"
-      refute reason =~ "api_key"
-      refute reason =~ to_string(status)
+      assert reason == "The AI provider could not complete the request"
     end
   end
 
@@ -82,7 +80,8 @@ defmodule Glific.AITest do
     Application.put_env(:glific, Glific.AI, Keyword.delete(original, :model))
     on_exit(fn -> Application.put_env(:glific, Glific.AI, original) end)
 
-    assert {:error, {:not_configured, _}} = ReqLLM.generate([ChatMessage.user("hi")])
+    assert {:error, {:not_configured, "No model is configured for Glific AI"}} =
+             ReqLLM.generate([ChatMessage.user("hi")])
   end
 
   test "with the feature flag off, the request is refused before any provider call" do
