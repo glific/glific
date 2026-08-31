@@ -10,6 +10,7 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     Assistants.Assistant,
     Assistants.AssistantConfigVersion,
     Assistants.KnowledgeBaseVersion,
+    Enums.AssistantConfigVersionBumpType,
     Enums.AssistantConfigVersionStatus,
     Partners.Organization
   }
@@ -19,7 +20,9 @@ defmodule Glific.Assistants.AssistantConfigVersion do
           id: non_neg_integer() | nil,
           assistant_id: non_neg_integer() | nil,
           assistant: Assistant.t() | Ecto.Association.NotLoaded.t() | nil,
-          version_number: non_neg_integer() | nil,
+          major_version: non_neg_integer() | nil,
+          minor_version: non_neg_integer() | nil,
+          bump_type: AssistantConfigVersionBumpType.t(),
           kaapi_version_number: non_neg_integer() | nil,
           description: String.t() | nil,
           prompt: String.t() | nil,
@@ -49,13 +52,17 @@ defmodule Glific.Assistants.AssistantConfigVersion do
   @optional_fields [
     :description,
     :failure_reason,
-    :version_number,
+    :major_version,
+    :minor_version,
+    :bump_type,
     :kaapi_version_number,
     :deleted_at
   ]
 
   schema "assistant_config_versions" do
-    field(:version_number, :integer)
+    field(:major_version, :integer, read_after_writes: true)
+    field(:minor_version, :integer, read_after_writes: true)
+    field(:bump_type, AssistantConfigVersionBumpType, default: :minor)
     field(:kaapi_version_number, :integer)
     field(:description, :string)
     field(:prompt, :string)
@@ -90,8 +97,13 @@ defmodule Glific.Assistants.AssistantConfigVersion do
     |> validate_required(@required_fields)
     |> assoc_constraint(:assistant)
     |> unique_constraint(
-      [:assistant_id, :version_number],
-      name: :assistant_config_versions_assistant_id_version_number_index
+      [:assistant_id, :major_version, :minor_version],
+      name: :assistant_config_versions_assistant_id_major_version_minor_vers
     )
   end
+
+  @doc "Display label for a config version, e.g. `\"1.3\"`."
+  @spec version_label(t()) :: String.t()
+  def version_label(%__MODULE__{major_version: major, minor_version: minor}),
+    do: "#{major}.#{minor}"
 end

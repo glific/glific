@@ -42,15 +42,31 @@ defmodule Glific.Flows.Expression do
   run allowlisted operations), but they are gaps to close before this is
   considered complete:
 
-    * **Only single-clause functions with simple variable params.** Multi-clause
-      / pattern-matching functions (`fn 1 -> ...; _ -> ... end`), destructuring
-      params (`fn {a, b} -> ... end`) and arity > 2 are rejected.
+    * **Only single-clause functions, arity 1 or 2.** Multi-clause functions
+      (`fn 1 -> ...; _ -> ... end`) and arity > 2 are rejected. Params may use
+      the same pattern grammar as `with` / `case` clauses — bare variables and
+      `_`, literals, tuples, lists (including `[h | t]`), maps (subset match),
+      and pins. A call whose argument does not match the pattern returns
+      `{:error, _}` (there is no `FunctionClauseError` escape hatch).
     * **No function-reference captures.** `&String.upcase/1` is rejected; it must
       be written `&String.upcase(&1)` or `fn x -> String.upcase(x) end`.
     * **The node cap does not bound closure work.** `@max_nodes` limits AST size,
       but `Enum.map(list, fn ...)` runs the body once per element, so a small AST
       can do work proportional to the list length. Runtime cost is still bounded
       by the `isolated/1` heap and timeout caps — not by `@max_nodes`.
+
+  ## `with` and `case` expressions
+
+  `with pat <- expr, ... do body [else pat -> body ...] end` and
+  `case expr do pat -> body ... end` are both supported. They are pure control
+  flow — every clause rhs, body and else body is interpreted through `eval_node`,
+  and patterns only *bind data* (the sole sub-evaluation is a pin `^x`, an
+  allowlisted lookup), so they introduce no new reachability. Supported patterns:
+  variables and `_`, literals and safe atoms, tuples, lists (including `[h | t]`),
+  maps (subset match), and pins. Guards on a clause
+  (`{:ok, x} when is_integer(x) -> ...`) are **not** supported and reject.
+  A `case` with no matching clause rejects at runtime (there is no `CaseClauseError`
+  escape hatch — we return `{:error, _}`).
   """
 
   # The complete set of callable functions, keyed `{alias, fun, arity}`.
@@ -77,9 +93,11 @@ defmodule Glific.Flows.Expression do
     {:String, :split, 2} => &String.split/2,
     {:String, :split, 3} => &String.split/3,
     {:String, :to_integer, 1} => &String.to_integer/1,
+    {:String, :to_float, 1} => &String.to_float/1,
     {:String, :starts_with?, 2} => &String.starts_with?/2,
     {:String, :ends_with?, 2} => &String.ends_with?/2,
     {:String, :contains?, 2} => &String.contains?/2,
+    {:String, :graphemes, 1} => &String.graphemes/1,
     # Decimal
     {:Decimal, :round, 2} => &Decimal.round/2,
     {:Decimal, :from_float, 1} => &Decimal.from_float/1,
@@ -98,6 +116,11 @@ defmodule Glific.Flows.Expression do
     {:Enum, :filter, 2} => &Enum.filter/2,
     {:Enum, :reject, 2} => &Enum.reject/2,
     {:Enum, :map, 2} => &Enum.map/2,
+    {:Enum, :into, 2} => &Enum.into/2,
+    {:Enum, :into, 3} => &Enum.into/3,
+    {:Enum, :with_index, 1} => &Enum.with_index/1,
+    {:Enum, :with_index, 2} => &Enum.with_index/2,
+    {:Enum, :group_by, 2} => &Enum.group_by/2,
     {:Enum, :at, 3} => &Enum.at/3,
     {:Enum, :slice, 2} => &Enum.slice/2,
     {:Enum, :find, 3} => &Enum.find/3,
@@ -106,6 +129,8 @@ defmodule Glific.Flows.Expression do
     {:Enum, :max, 2} => &Enum.max/2,
     {:Enum, :max_by, 2} => &Enum.max_by/2,
     {:Enum, :map_join, 3} => &Enum.map_join/3,
+    {:Enum, :take, 2} => &Enum.take/2,
+    {:Enum, :reverse, 1} => &Enum.reverse/1,
     {:Enum, :random, 1} => &Enum.random/1,
     {:Enum, :take_random, 2} => &Enum.take_random/2,
     {:List, :first, 1} => &List.first/1,
@@ -113,6 +138,8 @@ defmodule Glific.Flows.Expression do
     {:List, :wrap, 1} => &List.wrap/1,
     {:Map, :get, 2} => &Map.get/2,
     {:Map, :get, 3} => &Map.get/3,
+    {:MapSet, :new, 1} => &MapSet.new/1,
+    {:MapSet, :member?, 2} => &MapSet.member?/2,
     # Integer / Float / URI / Jason
     {:Integer, :to_string, 1} => &Integer.to_string/1,
     {:Float, :parse, 1} => &Float.parse/1,
@@ -127,6 +154,7 @@ defmodule Glific.Flows.Expression do
     {:Date, :compare, 2} => &Date.compare/2,
     {:Date, :days_in_month, 1} => &Date.days_in_month/1,
     {:Date, :from_iso8601!, 1} => &Date.from_iso8601!/1,
+    {:Date, :to_iso8601, 1} => &Date.to_iso8601/1,
     {:Time, :diff, 3} => &Time.diff/3,
     {:Time, :from_iso8601!, 1} => &Time.from_iso8601!/1,
     {:DateTime, :utc_now, 0} => &DateTime.utc_now/0,
@@ -145,6 +173,7 @@ defmodule Glific.Flows.Expression do
     {:DateTime, :to_iso8601, 1} => &DateTime.to_iso8601/1,
     {:DateTime, :add, 3} => &DateTime.add/3,
     {:DateTime, :from_iso8601, 1} => &DateTime.from_iso8601/1,
+    {:DateTime, :shift_zone!, 2} => &DateTime.shift_zone!/2,
     {:NaiveDateTime, :new!, 2} => &NaiveDateTime.new!/2,
     {:DateTime, :new!, 3} => &DateTime.new!/3,
     # Timex (today/0 kept as UTC per the note above)
@@ -154,10 +183,13 @@ defmodule Glific.Flows.Expression do
     {:Timex, :now, 1} => &Timex.now/1,
     {:Timex, :diff, 3} => &Timex.diff/3,
     {:Timex, :compare, 2} => &Timex.compare/2,
+    {:Timex, :compare, 3} => &Timex.compare/3,
     {:Timex, :to_unix, 1} => &Timex.to_unix/1,
+    {:Timex, :to_date, 1} => &Timex.to_date/1,
     {:Timex, :format!, 2} => &Timex.format!/2,
     {:Timex, :shift, 2} => &Timex.shift/2,
     {:Timex, :parse!, 2} => &Timex.parse!/2,
+    {:Timex, :parse!, 3} => &Timex.parse!/3,
     {:Timex, :format!, 3} => &Timex.format!/3,
     {:Timex, :month_name, 1} => &Timex.month_name/1,
     {:Timex, :to_datetime, 2} => &Timex.to_datetime/2,
@@ -170,6 +202,10 @@ defmodule Glific.Flows.Expression do
     {:Regex, :replace, 3} => &Regex.replace/3,
     {:Regex, :replace, 4} => &Regex.replace/4,
     {:Regex, :scan, 2} => &Regex.scan/2,
+    # Explicit Kernel operator forms, for the pipe idiom `x |> Kernel.>(0)` where a
+    # bare operator cannot appear. Identical to the allowlisted operators.
+    {:Kernel, :+, 2} => &Kernel.+/2,
+    {:Kernel, :>, 2} => &Kernel.>/2,
     # Glific flow helper. send_template/2 is PURE: it builds a JSON template
     # descriptor string and does NOT send anything (the flow engine sends later).
     # Each entry maps to the actual function the author named (the per-NGO
@@ -182,8 +218,11 @@ defmodule Glific.Flows.Expression do
     {[:Glific, :Clients, :DigitalGreen], :send_template, 2} =>
       &Glific.Clients.DigitalGreen.send_template/2,
     {[:Glific, :Clients, :ArogyaWorld], :template, 2} => &Glific.Clients.ArogyaWorld.template/2,
+    {[:Glific, :Clients, :ArogyaWorld], :template, 1} => &Glific.Clients.ArogyaWorld.template/1,
+    {[:Glific, :Clients, :PehlayAkshar], :template, 2} => &Glific.Clients.PehlayAkshar.template/2,
     {[:Glific, :Clients, :Tap], :template, 2} => &Glific.Clients.Tap.template/2,
-    {[:Glific, :Clients, :Tap], :template, 1} => &Glific.Clients.Tap.template/1
+    {[:Glific, :Clients, :Tap], :template, 1} => &Glific.Clients.Tap.template/1,
+    {[:Glific, :Templates], :template, 2} => &Glific.Templates.template/2
   }
 
   # Operators / Kernel functions callable bare, as `{name, arity}`. Kept as plain
@@ -217,6 +256,7 @@ defmodule Glific.Flows.Expression do
     {:!, 1},
     {:in, 2},
     {:to_string, 1},
+    {:inspect, 1},
     {:is_number, 1},
     {:is_binary, 1},
     {:is_integer, 1},
@@ -225,6 +265,7 @@ defmodule Glific.Flows.Expression do
     {:min, 2},
     {:then, 2},
     {:.., 2},
+    {:"..//", 3},
     {:hd, 1},
     {:is_map, 1}
   ]
@@ -335,8 +376,8 @@ defmodule Glific.Flows.Expression do
         {:cont, {:ok, [text | acc]}}
 
       {:expr, ast}, {:ok, acc} ->
-        case isolated(fn -> eval_node(ast, bindings) end) do
-          {:ok, value} -> {:cont, {:ok, [to_output(value) | acc]}}
+        case isolated(fn -> to_output(eval_node(ast, bindings)) end) do
+          {:ok, output} -> {:cont, {:ok, [output | acc]}}
           {:error, _} = err -> {:halt, err}
         end
     end)
@@ -372,7 +413,7 @@ defmodule Glific.Flows.Expression do
 
       {:expr, src}, {:ok, acc} ->
         case eval_expr(src, bindings) do
-          {:ok, value} -> {:cont, {:ok, [to_output(value) | acc]}}
+          {:ok, output} -> {:cont, {:ok, [output | acc]}}
           {:error, _} = err -> {:halt, err}
         end
     end)
@@ -498,6 +539,15 @@ defmodule Glific.Flows.Expression do
 
   defp validate_ast({:cond, _, [[{:do, clauses}]]}), do: validate_cond(clauses)
 
+  # with — twin of the eval_node clause. Validates each clause's pattern + rhs,
+  # then the do body and any else clauses.
+  defp validate_ast({:with, _, clauses}) when is_list(clauses), do: validate_with(clauses)
+
+  # case value do pat -> body ... end — twin of the eval_node clause.
+  defp validate_ast({:case, _, [value, [{:do, clauses}]]}) when is_list(clauses) do
+    with :ok <- validate_ast(value), do: validate_case(clauses)
+  end
+
   defp validate_ast({:&&, _, [a, b]}), do: validate_all([a, b])
   defp validate_ast({:||, _, [a, b]}), do: validate_all([a, b])
 
@@ -533,20 +583,14 @@ defmodule Glific.Flows.Expression do
     end)
   end
 
-  # single-clause fn with simple params; the body is validated like any other
-  # expression (param vars are bare vars, always structurally valid).
+  # single-clause fn — params share the `with`/`case` pattern grammar (bare vars,
+  # literals, tuples, lists, maps, pins). Arity capped to match make_fun/3 at
+  # runtime, so validate/1 cannot green-light a closure that eval_node/2 rejects.
   defp validate_ast({:fn, _, [{:->, _, [params, body]}]}) when is_list(params) do
-    cond do
-      not Enum.all?(params, &match?({name, _, nil} when is_atom(name), &1)) ->
-        {:error, "unsupported fn parameter"}
-
-      # Bound arity to match make_fun/3 at runtime, so validate/1 cannot
-      # green-light a closure that eval_node/2 would reject.
-      length(params) not in [1, 2] ->
-        {:error, "unsupported fn arity"}
-
-      true ->
-        validate_ast(body)
+    if length(params) in [1, 2] do
+      with :ok <- validate_patterns(params), do: validate_ast(body)
+    else
+      {:error, "unsupported fn arity"}
     end
   end
 
@@ -559,6 +603,14 @@ defmodule Glific.Flows.Expression do
       do: validate_ast(inner),
       else: {:error, "unsupported capture"}
   end
+
+  # computed alias — a capitalised trailing name on a variable, e.g.
+  # `@contact.fields.Grade`, parses as an alias whose first segment is the
+  # `@contact.fields` AST node (not an atom). It is a field reference, not a
+  # module, so reinterpret it as the field-access chain the author meant. A real
+  # bare module has an all-atom segment list and falls through to the clause below.
+  defp validate_ast({:__aliases__, meta, [inner | segments]}) when not is_atom(inner),
+    do: validate_ast(alias_to_field_access(inner, segments, meta))
 
   # bare module name used as a value, e.g. `String` on its own instead of
   # `String.upcase(x)` (twin of the eval_node clause). Rejected like before, but
@@ -576,6 +628,9 @@ defmodule Glific.Flows.Expression do
   # keyword-list pair (twin of the eval_node clause) — validate only the value
   defp validate_ast({key, value}) when is_atom(key), do: validate_ast(value)
 
+  # generic 2-tuple literal (3+ element tuples parse as {:{}, _, [...]}).
+  defp validate_ast({a, b}), do: validate_all([a, b])
+
   defp validate_ast(node), do: {:error, "disallowed expression: #{safe_desc(node)}"}
 
   defp validate_cond(clauses) do
@@ -588,6 +643,130 @@ defmodule Glific.Flows.Expression do
 
       other, :ok ->
         {:halt, {:error, "disallowed cond clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  # Clauses are `pat -> body`. A guard (`pat when g -> body`) wraps the pattern in
+  # `{:when, _, ...}`, which is not in the pattern grammar and rejects — same
+  # behavior as `with`.
+  defp validate_case(clauses) do
+    Enum.reduce_while(clauses, :ok, fn
+      {:->, _, [[pattern], body]}, :ok ->
+        with :ok <- validate_pattern(pattern),
+             :ok <- validate_ast(body) do
+          {:cont, :ok}
+        else
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed case clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  # -- with validation (twin of eval_with/pattern matching) -----------------
+
+  defp validate_with(clauses) do
+    {steps, last} = Enum.split(clauses, -1)
+
+    case last do
+      [do_else] when is_list(do_else) ->
+        if Keyword.keyword?(do_else) and Keyword.has_key?(do_else, :do),
+          do: validate_with_body(steps, do_else),
+          else: {:error, "malformed with"}
+
+      _ ->
+        {:error, "malformed with"}
+    end
+  end
+
+  defp validate_with_body(steps, do_else) do
+    with :ok <- validate_with_steps(steps),
+         :ok <- validate_ast(Keyword.fetch!(do_else, :do)) do
+      validate_with_else(Keyword.get(do_else, :else))
+    end
+  end
+
+  defp validate_with_steps(steps) do
+    Enum.reduce_while(steps, :ok, fn step, :ok ->
+      case validate_with_step(step) do
+        :ok -> {:cont, :ok}
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp validate_with_step({arrow, _, [pattern, expr]}) when arrow in [:<-, :=] do
+    with :ok <- validate_pattern(pattern), do: validate_ast(expr)
+  end
+
+  defp validate_with_step(expr), do: validate_ast(expr)
+
+  defp validate_with_else(nil), do: :ok
+
+  defp validate_with_else(clauses) when is_list(clauses) do
+    Enum.reduce_while(clauses, :ok, fn
+      {:->, _, [[pattern], body]}, :ok ->
+        with :ok <- validate_pattern(pattern),
+             :ok <- validate_ast(body) do
+          {:cont, :ok}
+        else
+          {:error, _} = err -> {:halt, err}
+        end
+
+      other, :ok ->
+        {:halt, {:error, "disallowed with else clause #{safe_desc(other)}"}}
+    end)
+  end
+
+  defp validate_with_else(_), do: {:error, "malformed with else"}
+
+  # Pattern grammar — the structural twin of match_pattern/3, same order.
+  defp validate_pattern({:_, _, ctx}) when is_atom(ctx), do: :ok
+  defp validate_pattern({name, _, ctx}) when is_atom(name) and is_atom(ctx), do: :ok
+  defp validate_pattern({:^, _, [var]}), do: validate_ast(var)
+  defp validate_pattern({:{}, _, elems}) when is_list(elems), do: validate_patterns(elems)
+
+  defp validate_pattern({:%{}, _, pairs}) when is_list(pairs) do
+    Enum.reduce_while(pairs, :ok, fn {k, v_pattern}, :ok ->
+      with :ok <- validate_key(k),
+           :ok <- validate_pattern(v_pattern) do
+        {:cont, :ok}
+      else
+        {:error, _} = err -> {:halt, err}
+      end
+    end)
+  end
+
+  defp validate_pattern(literal)
+       when is_integer(literal) or is_float(literal) or is_binary(literal) or
+              is_boolean(literal) or is_nil(literal),
+       do: :ok
+
+  defp validate_pattern(atom) when is_atom(atom) do
+    if atom in @safe_atoms,
+      do: :ok,
+      else: {:error, "bare atom #{Glific.SafeLog.safe_inspect(atom)}"}
+  end
+
+  defp validate_pattern({p1, p2}), do: validate_patterns([p1, p2])
+  defp validate_pattern(list) when is_list(list), do: validate_list_pattern(list)
+  defp validate_pattern(pattern), do: {:error, "unsupported pattern: #{safe_desc(pattern)}"}
+
+  defp validate_list_pattern([{:|, _, [head, tail]}]), do: validate_patterns([head, tail])
+
+  defp validate_list_pattern([pattern | rest]) do
+    with :ok <- validate_pattern(pattern), do: validate_list_pattern(rest)
+  end
+
+  defp validate_list_pattern([]), do: :ok
+
+  defp validate_patterns(patterns) do
+    Enum.reduce_while(patterns, :ok, fn pattern, :ok ->
+      case validate_pattern(pattern) do
+        :ok -> {:cont, :ok}
+        {:error, _} = err -> {:halt, err}
+      end
     end)
   end
 
@@ -641,12 +820,15 @@ defmodule Glific.Flows.Expression do
 
   # Phase 1 path: content has already been through MessageVarParser, so all
   # @vars are literals and `existing_atoms_only: true` is both safe and lossless.
-  @spec eval_expr(String.t(), binding()) :: {:ok, any()} | {:error, String.t()}
+  # `to_output/1` runs inside `isolated/1` so a non-stringable result (e.g. a tuple
+  # returned by a `with` whose clauses did not match) degrades to an error tuple
+  # instead of raising out of a function specced to return {:ok, _} | {:error, _}.
+  @spec eval_expr(String.t(), binding()) :: {:ok, String.t()} | {:error, String.t()}
   defp eval_expr(src, bindings) do
     with {:ok, ast} <- parse(src, true),
          :ok <- check_size(ast),
          :ok <- safe_shape(ast) do
-      isolated(fn -> eval_node(ast, bindings) end)
+      isolated(fn -> to_output(eval_node(ast, bindings)) end)
     end
   end
 
@@ -761,6 +943,21 @@ defmodule Glific.Flows.Expression do
   # cond do c -> body ... end
   defp eval_node({:cond, _, [[{:do, clauses}]]}, bindings), do: eval_cond(clauses, bindings)
 
+  # with pat <- expr, ... do body [else pat -> body ...] end
+  # Pattern-matching control flow. Each `pat <- expr` evaluates expr and matches;
+  # a non-match short-circuits to the else clauses, or returns the unmatched value
+  # when there is no else. Patterns only bind data (the sole sub-evaluation is a
+  # pin `^x`, an allowlisted lookup), so this stays within the security boundary.
+  defp eval_node({:with, _, clauses}, bindings) when is_list(clauses) do
+    {steps, do_else} = split_with(clauses)
+    eval_with(steps, Keyword.fetch!(do_else, :do), Keyword.get(do_else, :else), bindings)
+  end
+
+  # case value do pat -> body ... end
+  defp eval_node({:case, _, [value_expr, [{:do, clauses}]]}, bindings) do
+    eval_case(clauses, eval_node(value_expr, bindings), bindings)
+  end
+
   # short-circuit && / ||
   defp eval_node({:&&, _, [a, b]}, bindings) do
     va = eval_node(a, bindings)
@@ -826,6 +1023,12 @@ defmodule Glific.Flows.Expression do
   defp eval_node({:&, _, [inner]}, bindings),
     do: make_capture(max_placeholder(inner, 0), inner, bindings)
 
+  # computed alias — a capitalised trailing field/result name on a variable, e.g.
+  # `@contact.fields.Grade` (twin of the validate_ast clause). Reinterpreted as
+  # the field-access chain the author meant, so it resolves like any other var.
+  defp eval_node({:__aliases__, meta, [inner | segments]}, bindings) when not is_atom(inner),
+    do: eval_node(alias_to_field_access(inner, segments, meta), bindings)
+
   # bare module name used as a value (e.g. `String` on its own, not
   # `String.upcase(x)`). Still fail-closed; only the message is friendlier.
   defp eval_node({:__aliases__, _, segments}, _bindings) when is_list(segments),
@@ -844,6 +1047,9 @@ defmodule Glific.Flows.Expression do
   # inert atom label (it can never name a module or be called); the value is
   # interpreted through the allowlist like anything else.
   defp eval_node({key, value}, bindings) when is_atom(key), do: {key, eval_node(value, bindings)}
+
+  # generic 2-tuple literal — twin of the validate_ast clause.
+  defp eval_node({a, b}, bindings), do: {eval_node(a, bindings), eval_node(b, bindings)}
 
   defp eval_node(node, _), do: reject(safe_desc(node))
 
@@ -882,6 +1088,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:in, [a, b]) when is_list(b), do: Enum.member?(b, a)
   defp kernel_call(:in, _), do: reject("in requires a list")
   defp kernel_call(:to_string, [a]), do: to_string(a)
+  defp kernel_call(:inspect, [a]), do: inspect(a)
   defp kernel_call(:is_number, [a]), do: is_number(a)
   defp kernel_call(:is_binary, [a]), do: is_binary(a)
   defp kernel_call(:is_integer, [a]), do: is_integer(a)
@@ -891,6 +1098,7 @@ defmodule Glific.Flows.Expression do
   defp kernel_call(:then, [value, fun]) when is_function(fun, 1), do: fun.(value)
   defp kernel_call(:then, _), do: reject("then requires a function")
   defp kernel_call(:.., [a, b]), do: Range.new(a, b)
+  defp kernel_call(:"..//", [a, b, c]), do: Range.new(a, b, c)
   defp kernel_call(:hd, [a]) when is_list(a) and a != [], do: hd(a)
   defp kernel_call(:hd, _), do: reject("hd requires a non-empty list")
   defp kernel_call(:is_map, [a]), do: is_map(a)
@@ -898,23 +1106,34 @@ defmodule Glific.Flows.Expression do
 
   # -- anonymous-function closures ------------------------------------------
 
-  defp build_closure(params, body, bindings) do
-    names =
-      Enum.map(params, fn
-        {name, _, nil} when is_atom(name) -> name
-        _ -> reject("unsupported fn parameter")
-      end)
+  defp build_closure(params, body, bindings), do: make_fun(params, body, bindings)
 
-    make_fun(names, body, bindings)
-  end
-
+  # Patterns are matched at call time via match_pattern/3 — the same data-only
+  # matcher `with` / `case` use. A non-matching argument surfaces as {:error, _}
+  # via reject/1; there is no FunctionClauseError escape hatch.
   defp make_fun([p1], body, bindings),
-    do: fn a1 -> eval_node(body, Map.put(bindings, p1, a1)) end
+    do: fn a1 -> apply_fun([p1], [a1], body, bindings) end
 
   defp make_fun([p1, p2], body, bindings),
-    do: fn a1, a2 -> eval_node(body, bindings |> Map.put(p1, a1) |> Map.put(p2, a2)) end
+    do: fn a1, a2 -> apply_fun([p1, p2], [a1, a2], body, bindings) end
 
   defp make_fun(_params, _body, _bindings), do: reject("unsupported fn arity")
+
+  defp apply_fun(patterns, args, body, bindings) do
+    case match_all(patterns, args, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> reject("fn parameter did not match")
+    end
+  end
+
+  defp match_all([], [], bindings), do: {:ok, bindings}
+
+  defp match_all([pattern | rest_p], [arg | rest_a], bindings) do
+    case match_pattern(pattern, arg, bindings) do
+      {:ok, bound} -> match_all(rest_p, rest_a, bound)
+      :nomatch -> :nomatch
+    end
+  end
 
   defp max_placeholder({:&, _, [n]}, acc) when is_integer(n), do: max(n, acc)
 
@@ -959,6 +1178,181 @@ defmodule Glific.Flows.Expression do
   end
 
   defp eval_cond([other | _], _bindings), do: reject("disallowed cond clause #{safe_desc(other)}")
+
+  # -- case evaluation ------------------------------------------------------
+  # Reuses match_pattern/3 (the same data-only matcher `with` uses).
+  defp eval_case([], _value, _bindings), do: reject("no case clause matched")
+
+  defp eval_case([{:->, _, [[pattern], body]} | rest], value, bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> eval_case(rest, value, bindings)
+    end
+  end
+
+  defp eval_case([other | _], _value, _bindings),
+    do: reject("disallowed case clause #{safe_desc(other)}")
+
+  # -- with evaluation & pattern matching -----------------------------------
+
+  # Split the trailing `[do: ..., else: ...]` keyword list off the match steps.
+  defp split_with(clauses) do
+    {steps, last} = Enum.split(clauses, -1)
+
+    case last do
+      [do_else] when is_list(do_else) ->
+        if Keyword.keyword?(do_else) and Keyword.has_key?(do_else, :do),
+          do: {steps, do_else},
+          else: reject("malformed with")
+
+      _ ->
+        reject("malformed with")
+    end
+  end
+
+  defp eval_with([], body, _else_clauses, bindings), do: eval_node(body, bindings)
+
+  defp eval_with([{:<-, _, [pattern, expr]} | rest], body, else_clauses, bindings) do
+    value = eval_node(expr, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_with(rest, body, else_clauses, bound)
+      :nomatch -> with_else(value, else_clauses, bindings)
+    end
+  end
+
+  defp eval_with([{:=, _, [pattern, expr]} | rest], body, else_clauses, bindings) do
+    value = eval_node(expr, bindings)
+
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_with(rest, body, else_clauses, bound)
+      :nomatch -> reject("no match of right hand side value in with")
+    end
+  end
+
+  defp eval_with([expr | rest], body, else_clauses, bindings) do
+    _ = eval_node(expr, bindings)
+    eval_with(rest, body, else_clauses, bindings)
+  end
+
+  # No else: a non-match returns the unmatched value. With else: route the value
+  # through the else clauses like a case.
+  defp with_else(value, nil, _bindings), do: value
+
+  defp with_else(value, clauses, bindings) when is_list(clauses),
+    do: eval_with_else(clauses, value, bindings)
+
+  defp eval_with_else([], _value, _bindings), do: reject("no with else clause matched")
+
+  defp eval_with_else([{:->, _, [[pattern], body]} | rest], value, bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> eval_node(body, bound)
+      :nomatch -> eval_with_else(rest, value, bindings)
+    end
+  end
+
+  defp eval_with_else([other | _], _value, _bindings),
+    do: reject("disallowed with else clause #{safe_desc(other)}")
+
+  # Returns {:ok, bindings} with any variables bound, or :nomatch. Only binds
+  # data; the sole sub-evaluation is a pin (^x), an allowlisted lookup. Order is
+  # the structural twin of validate_pattern/1.
+  @spec match_pattern(Macro.t(), any(), binding()) :: {:ok, binding()} | :nomatch
+  defp match_pattern({:_, _, ctx}, _value, bindings) when is_atom(ctx), do: {:ok, bindings}
+
+  defp match_pattern({name, _, ctx}, value, bindings) when is_atom(name) and is_atom(ctx),
+    do: {:ok, Map.put(bindings, name, value)}
+
+  defp match_pattern({:^, _, [var]}, value, bindings) do
+    if eval_node(var, bindings) === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern({:{}, _, elems}, value, bindings) when is_list(elems) do
+    if is_tuple(value) and tuple_size(value) == length(elems),
+      do: match_sequence(elems, Tuple.to_list(value), bindings),
+      else: :nomatch
+  end
+
+  defp match_pattern({:%{}, _, pairs}, value, bindings) when is_list(pairs) and is_map(value) do
+    Enum.reduce_while(pairs, {:ok, bindings}, fn {k, v_pattern}, {:ok, acc} ->
+      case Map.fetch(value, eval_key(k, acc)) do
+        {:ok, v} ->
+          case match_pattern(v_pattern, v, acc) do
+            {:ok, acc2} -> {:cont, {:ok, acc2}}
+            :nomatch -> {:halt, :nomatch}
+          end
+
+        :error ->
+          {:halt, :nomatch}
+      end
+    end)
+  end
+
+  defp match_pattern({:%{}, _, _}, _value, _bindings), do: :nomatch
+
+  defp match_pattern(literal, value, bindings)
+       when is_integer(literal) or is_float(literal) or is_binary(literal) or
+              is_boolean(literal) or is_nil(literal) do
+    if literal === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern(atom, value, bindings) when is_atom(atom) do
+    if atom in @safe_atoms and atom === value, do: {:ok, bindings}, else: :nomatch
+  end
+
+  defp match_pattern({p1, p2}, value, bindings) do
+    case value do
+      {v1, v2} -> match_sequence([p1, p2], [v1, v2], bindings)
+      _ -> :nomatch
+    end
+  end
+
+  defp match_pattern(patterns, value, bindings) when is_list(patterns),
+    do: match_list(patterns, value, bindings)
+
+  defp match_pattern(pattern, _value, _bindings),
+    do: reject("unsupported pattern: #{safe_desc(pattern)}")
+
+  defp match_sequence([], [], bindings), do: {:ok, bindings}
+
+  defp match_sequence([pattern | patterns], [value | values], bindings) do
+    case match_pattern(pattern, value, bindings) do
+      {:ok, bound} -> match_sequence(patterns, values, bound)
+      :nomatch -> :nomatch
+    end
+  end
+
+  defp match_sequence(_patterns, _values, _bindings), do: :nomatch
+
+  defp match_list([{:|, _, [head_pattern, tail_pattern]}], value, bindings) do
+    case value do
+      [v | vs] ->
+        case match_pattern(head_pattern, v, bindings) do
+          {:ok, bound} -> match_pattern(tail_pattern, vs, bound)
+          :nomatch -> :nomatch
+        end
+
+      _ ->
+        :nomatch
+    end
+  end
+
+  defp match_list([], [], bindings), do: {:ok, bindings}
+
+  defp match_list([pattern | patterns], value, bindings) do
+    case value do
+      [v | vs] ->
+        case match_pattern(pattern, v, bindings) do
+          {:ok, bound} -> match_list(patterns, vs, bound)
+          :nomatch -> :nomatch
+        end
+
+      _ ->
+        :nomatch
+    end
+  end
+
+  defp match_list(_patterns, _value, _bindings), do: :nomatch
 
   defp inject_pipe(left, {call, meta, args}) when is_list(args), do: {call, meta, [left | args]}
   defp inject_pipe(left, {call, meta, nil}), do: {call, meta, [left]}
@@ -1013,9 +1407,27 @@ defmodule Glific.Flows.Expression do
     _ -> "unsupported construct"
   end
 
-  @spec alias_as_value_error([atom()]) :: String.t()
+  # `segments` are usually atoms (`String`, `Foo.Bar`), but a computed alias such
+  # as `@contact.fields.Grade` (a capitalised trailing name) carries a non-atom
+  # first segment — an AST node, not something `to_string/1` can render. Stringify
+  # each segment defensively so this never raises out of validate_ast/eval_node.
+  @spec alias_as_value_error([Macro.t()]) :: String.t()
   defp alias_as_value_error(segments) do
-    path = Enum.join(segments, ".")
+    path = Enum.map_join(segments, ".", &alias_segment/1)
     "module #{path} used as a value; call it as #{path}.function(...)"
+  end
+
+  @spec alias_segment(Macro.t()) :: String.t()
+  defp alias_segment(segment) when is_atom(segment), do: Atom.to_string(segment)
+  defp alias_segment(segment), do: safe_desc(segment)
+
+  # Fold a computed alias's segments onto its inner expression as nested field
+  # access: `@contact.fields` + [:Grade] -> `@contact.fields.Grade`. The result is
+  # an ordinary field-access node, gated exactly like any other (maps only, keys
+  # are data), so this adds no reachability — it only stops a capitalised field
+  # name from being misread as a module.
+  @spec alias_to_field_access(Macro.t(), [atom()], keyword()) :: Macro.t()
+  defp alias_to_field_access(inner, segments, meta) do
+    Enum.reduce(segments, inner, fn segment, acc -> {{:., meta, [acc, segment]}, meta, []} end)
   end
 end
